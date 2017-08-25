@@ -40,7 +40,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
@@ -516,13 +515,12 @@ public final class GenerateParseInfoVisitor
 
     // CSS names.
     SortedMap<String, CssTagsPrefixPresence> cssNameMap = new CollectCssNamesVisitor().exec(node);
-    List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
+    ImmutableMap.Builder<String, String> cssTagPrefixes = ImmutableMap.builder();
     for (Map.Entry<String, CssTagsPrefixPresence> entry : cssNameMap.entrySet()) {
-      entrySnippetPairs.add(
-          Pair.of(
-              "\"" + entry.getKey() + "\"", "CssTagsPrefixPresence." + entry.getValue().name()));
+      cssTagPrefixes.put(
+          "\"" + entry.getKey() + "\"", "CssTagsPrefixPresence." + entry.getValue().name());
     }
-    appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", entrySnippetPairs);
+    appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", cssTagPrefixes.build());
     ilb.appendLineEnd(",");
     appendImmutableList(ilb, "<String>", deltemplates);
     ilb.appendLineEnd(");");
@@ -673,16 +671,13 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("\"", node.getTemplateName(), "\",");
 
     if (!transitiveParamMap.isEmpty()) {
-      List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
+      ImmutableMap.Builder<String, String> entrySnippetPairs = ImmutableMap.builder();
       for (TemplateParam param : transitiveParamMap.values()) {
-        entrySnippetPairs.add(
-            Pair.of(
-                "\"" + param.name() + "\"",
-                param.isRequired()
-                    ? "ParamRequisiteness.REQUIRED"
-                    : "ParamRequisiteness.OPTIONAL"));
+        entrySnippetPairs.put(
+            "\"" + param.name() + "\"",
+            param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
       }
-      appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs);
+      appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs.build());
       ilb.appendLineEnd(",");
     } else {
       ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of(),");
@@ -953,16 +948,15 @@ public final class GenerateParseInfoVisitor
    *     ImmutableMap.
    */
   private static void appendImmutableMap(
-      IndentedLinesBuilder ilb,
-      String typeParamSnippet,
-      Collection<Pair<String, String>> entrySnippetPairs) {
+      IndentedLinesBuilder ilb, String typeParamSnippet, Map<String, String> entrySnippetPairs) {
     if (entrySnippetPairs.isEmpty()) {
       ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
 
     } else {
       ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
-      for (Pair<String, String> entrySnippetPair : entrySnippetPairs) {
-        ilb.appendLine("    .put(", entrySnippetPair.first, ", ", entrySnippetPair.second, ")");
+      for (Map.Entry<String, String> entrySnippetPair : entrySnippetPairs.entrySet()) {
+        ilb.appendLine(
+            "    .put(", entrySnippetPair.getKey(), ", ", entrySnippetPair.getValue(), ")");
       }
       ilb.appendLineStart("    .build()");
     }

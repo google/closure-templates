@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableMap;
@@ -27,7 +28,6 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import javax.annotation.Nullable;
@@ -306,10 +306,21 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     // if they both have the same user-supplied placeholder name (if any) and the same tag text.
     // If one of the MsgHtmlTagNodes is not only raw text, then the two MsgHtmlTagNodes are never
     // considered the same placeholder (so use the instance as the sameness key)
-    return isOnlyRawText ?
-        Pair.of(userSuppliedPlaceholderName, fullTagText) : this;
+    return isOnlyRawText ? SamenessKey.create(userSuppliedPlaceholderName, fullTagText) : this;
   }
 
+  @AutoValue
+  abstract static class SamenessKey {
+    static SamenessKey create(String userSuppliedPlaceholderName, String fullTagText) {
+      return new AutoValue_MsgHtmlTagNode_SamenessKey(userSuppliedPlaceholderName, fullTagText);
+    }
+
+    @Nullable
+    abstract String userSuppliedPlaceholderName();
+
+    @Nullable
+    abstract String fullTagText();
+  }
 
   @Override public String toSourceString() {
 

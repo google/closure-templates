@@ -16,6 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -25,7 +26,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -822,14 +822,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         int dotIndex = pySrcOptions.getBidiIsRtlFn().lastIndexOf('.');
         // When importing the module, we'll use the constant name to avoid potential conflicts.
         String bidiModulePath = pySrcOptions.getBidiIsRtlFn().substring(0, dotIndex);
-        Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(bidiModulePath);
-        String bidiNamespace = nameSpaceAndName.first;
-        String bidiModuleName = nameSpaceAndName.second;
+        NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(bidiModulePath);
         pyCodeBuilder.appendLine(
             "from ",
-            bidiNamespace,
+            namespaceAndName.namespace(),
             " import ",
-            bidiModuleName,
+            namespaceAndName.name(),
             " as ",
             SoyBidiUtils.IS_RTL_MODULE_ALIAS);
       }
@@ -837,11 +835,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Add import and instantiate statements for translator module
       // TODO(steveyang): remember the check when implementing MsgNode
       if (!pySrcOptions.getTranslationClass().isEmpty()) {
-        Pair<String, String> nameSpaceAndName =
-            namespaceAndNameFromModule(pySrcOptions.getTranslationClass());
-        String translationNamespace = nameSpaceAndName.first;
-        String translationName = nameSpaceAndName.second;
-        pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
+        NamespaceAndName namespaceAndName =
+            NamespaceAndName.fromModule(pySrcOptions.getTranslationClass());
+        String translationName = namespaceAndName.name();
+        pyCodeBuilder.appendLine(
+            "from ", namespaceAndName.namespace(), " import ", translationName);
         pyCodeBuilder.appendLine(PyExprUtils.TRANSLATOR_NAME, " = ", translationName, "()");
       }
     }
@@ -867,19 +865,17 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       for (String calleeModule : calleeModules) {
-        Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
-        String calleeNamespace = nameSpaceAndName.first;
-        String calleeName = nameSpaceAndName.second;
+        NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(calleeModule);
         if (namespaceManifest.containsKey(calleeModule)) {
           pyCodeBuilder.appendLine(
-              "import ", namespaceManifest.get(calleeModule), " as ", calleeName);
+              "import ", namespaceManifest.get(calleeModule), " as ", namespaceAndName.name());
         } else {
           pyCodeBuilder.appendLineStart(
-              calleeName,
+              namespaceAndName.name(),
               " = runtime.namespaced_import('",
-              calleeName,
+              namespaceAndName.name(),
               "', namespace='",
-              calleeNamespace,
+              namespaceAndName.namespace(),
               "'");
           if (!pySrcOptions.getEnvironmentModulePath().isEmpty()) {
             pyCodeBuilder
@@ -943,19 +939,21 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-  /**
-   * Helper to retrieve the namespace and name from a module name.
-   *
-   * @param moduleName Python module name in dot notation format.
-   */
-  private static Pair<String, String> namespaceAndNameFromModule(String moduleName) {
-    String namespace = moduleName;
-    String name = moduleName;
-    int lastDotIndex = moduleName.lastIndexOf('.');
-    if (lastDotIndex != -1) {
-      namespace = moduleName.substring(0, lastDotIndex);
-      name = moduleName.substring(lastDotIndex + 1);
+  @AutoValue
+  abstract static class NamespaceAndName {
+    static NamespaceAndName fromModule(String moduleName) {
+      String namespace = moduleName;
+      String name = moduleName;
+      int lastDotIndex = moduleName.lastIndexOf('.');
+      if (lastDotIndex != -1) {
+        namespace = moduleName.substring(0, lastDotIndex);
+        name = moduleName.substring(lastDotIndex + 1);
+      }
+      return new AutoValue_GenPyCodeVisitor_NamespaceAndName(namespace, name);
     }
-    return Pair.of(namespace, name);
+
+    abstract String namespace();
+
+    abstract String name();
   }
 }

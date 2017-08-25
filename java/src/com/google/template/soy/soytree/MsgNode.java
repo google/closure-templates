@@ -20,7 +20,9 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -30,7 +32,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import java.util.ArrayDeque;
@@ -415,12 +416,11 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The generated SubstUnitInfo for the given MsgNode.
    */
   private static SubstUnitInfo genSubstUnitInfo(MsgNode msgNode) {
-    return genFinalSubstUnitInfoMapsHelper(genPrelimSubstUnitInfoMapsHelper(msgNode));
+    return genFinalSubstUnitInfoMapsHelper(RepresentativeNodes.createFromNode(msgNode));
   }
-
   /**
-   * Private helper for genSubstUnitInfo(). Determines representative nodes and builds preliminary
-   * maps.
+   * Private helper class for genSubstUnitInfo(). Determines representative nodes and builds
+   * preliminary maps.
    *
    * <p>If there are multiple nodes in the message that should share the same var name, then the
    * first such node encountered becomes the "representative node" for the group ("repNode" in
@@ -433,81 +433,74 @@ public final class MsgNode extends AbstractBlockCommandNode
    *
    * <p>The base var names are preliminary because some of the final var names will be the base
    * names plus a unique suffix.
-   *
-   * @param msgNode The MsgNode being processed.
-   * @return A pair of (1) a multimap from each base name to its list of representative nodes, and
-   *     (2) a map from each non-representative node to its respective representative node.
    */
-  @SuppressWarnings("unchecked")
-  private static Pair<
-          ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
-      genPrelimSubstUnitInfoMapsHelper(MsgNode msgNode) {
+  @AutoValue
+  abstract static class RepresentativeNodes {
+    static RepresentativeNodes createFromNode(MsgNode msgNode) {
+      ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
+      Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
 
-    ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
-    Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
+      Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
 
-    Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
-
-    // Seed the traversal queue with the children of this MsgNode.
-    for (SoyNode child : msgNode.getChildren()) {
-      if (child instanceof MsgSubstUnitNode) {
-        traversalQueue.add((MsgSubstUnitNode) child);
+      // Seed the traversal queue with the children of this MsgNode.
+      for (SoyNode child : msgNode.getChildren()) {
+        if (child instanceof MsgSubstUnitNode) {
+          traversalQueue.add((MsgSubstUnitNode) child);
+        }
       }
-    }
 
-    while (!traversalQueue.isEmpty()) {
-      MsgSubstUnitNode node = traversalQueue.remove();
+      while (!traversalQueue.isEmpty()) {
+        MsgSubstUnitNode node = traversalQueue.remove();
 
-      if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode)) {
-        for (CaseOrDefaultNode child : ((ParentSoyNode<CaseOrDefaultNode>) node).getChildren()) {
-          for (SoyNode grandchild : child.getChildren()) {
-            if (grandchild instanceof MsgSubstUnitNode) {
-              traversalQueue.add((MsgSubstUnitNode) grandchild);
+        if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode)) {
+          for (CaseOrDefaultNode child : ((ParentSoyNode<CaseOrDefaultNode>) node).getChildren()) {
+            for (SoyNode grandchild : child.getChildren()) {
+              if (grandchild instanceof MsgSubstUnitNode) {
+                traversalQueue.add((MsgSubstUnitNode) grandchild);
+              }
             }
           }
         }
-      }
 
-      String baseName = node.getBaseVarName();
-      if (!baseNameToRepNodesMap.containsKey(baseName)) {
-        // Case 1: First occurrence of this base name.
-        baseNameToRepNodesMap.put(baseName, node);
-      } else {
-        boolean isNew = true;
-        for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
-          if (node.shouldUseSameVarNameAs(other)) {
-            // Case 2: Should use same var name as another node we've seen.
-            nonRepNodeToRepNodeMap.put(node, other);
-            isNew = false;
-            break;
+        String baseName = node.getBaseVarName();
+        if (!baseNameToRepNodesMap.containsKey(baseName)) {
+          // Case 1: First occurrence of this base name.
+          baseNameToRepNodesMap.put(baseName, node);
+        } else {
+          boolean isNew = true;
+          for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
+            if (node.shouldUseSameVarNameAs(other)) {
+              // Case 2: Should use same var name as another node we've seen.
+              nonRepNodeToRepNodeMap.put(node, other);
+              isNew = false;
+              break;
+            }
+          }
+          if (isNew) {
+            // Case 3: New representative node that has the same base name as another node we've
+            // seen, but should not use the same var name.
+            baseNameToRepNodesMap.put(baseName, node);
           }
         }
-        if (isNew) {
-          // Case 3: New representative node that has the same base name as another node we've seen,
-          // but should not use the same var name.
-          baseNameToRepNodesMap.put(baseName, node);
-        }
       }
+      return new AutoValue_MsgNode_RepresentativeNodes(
+          ImmutableListMultimap.copyOf(baseNameToRepNodesMap),
+          ImmutableMap.copyOf(nonRepNodeToRepNodeMap));
     }
 
-    return Pair.of(baseNameToRepNodesMap, nonRepNodeToRepNodeMap);
+    abstract ImmutableListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap();
+
+    abstract ImmutableMap<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap();
   }
 
   /**
    * Private helper for genSubstUnitInfo(). Generates the final SubstUnitInfo given preliminary
    * maps.
    *
-   * @param prelimMaps A pair of (1) a multimap from each base name to its list of representative
-   *     nodes, and (2) a map from each non-representative node to its respective representative
-   *     node.
    * @return The generated SubstUnitInfo.
    */
   private static SubstUnitInfo genFinalSubstUnitInfoMapsHelper(
-      Pair<ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
-          prelimMaps) {
-
-    ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = prelimMaps.first;
-    Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = prelimMaps.second;
+      RepresentativeNodes representativeNodes) {
 
     // ------ Step 1: Build final map of var name to representative node. ------
     //
@@ -521,8 +514,9 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
 
-    for (String baseName : baseNameToRepNodesMap.keys()) {
-      List<MsgSubstUnitNode> nodesWithSameBaseName = baseNameToRepNodesMap.get(baseName);
+    for (String baseName : representativeNodes.baseNameToRepNodesMap().keys()) {
+      List<MsgSubstUnitNode> nodesWithSameBaseName =
+          representativeNodes.baseNameToRepNodesMap().get(baseName);
       if (nodesWithSameBaseName.size() == 1) {
         substUnitVarNameToRepNodeMap.put(baseName, nodesWithSameBaseName.get(0));
       } else {
@@ -533,7 +527,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           do {
             newName = baseName + "_" + nextSuffix;
             ++nextSuffix;
-          } while (baseNameToRepNodesMap.containsKey(newName));
+          } while (representativeNodes.baseNameToRepNodesMap().containsKey(newName));
           substUnitVarNameToRepNodeMap.put(newName, repNode);
         }
       }
@@ -549,7 +543,8 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
 
     // Add mappings for the non-representative nodes.
-    for (Map.Entry<MsgSubstUnitNode, MsgSubstUnitNode> entry : nonRepNodeToRepNodeMap.entrySet()) {
+    for (Map.Entry<MsgSubstUnitNode, MsgSubstUnitNode> entry :
+        representativeNodes.nonRepNodeToRepNodeMap().entrySet()) {
       MsgSubstUnitNode nonRepNode = entry.getKey();
       MsgSubstUnitNode repNode = entry.getValue();
       substUnitNodeToVarNameMap.put(nonRepNode, substUnitNodeToVarNameMap.get(repNode));

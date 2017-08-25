@@ -15,9 +15,9 @@
  */
 package com.google.template.soy.pysrc.internal;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
@@ -66,6 +66,17 @@ import java.util.List;
  */
 final class PyCodeBuilder {
 
+  @AutoValue
+  abstract static class OutputVar {
+    static OutputVar create(String name, boolean isInited) {
+      return new AutoValue_PyCodeBuilder_OutputVar(name, isInited);
+    }
+
+    abstract String name();
+
+    abstract boolean isInited();
+  }
+
   /** The size of a single indent level. */
   private static final int INDENT_SIZE = 2;
   /** A buffer to accumulate the generated code. */
@@ -73,7 +84,7 @@ final class PyCodeBuilder {
   /** The current indent (some even number of spaces). */
   private String indent;
   /** The current stack of output variables. */
-  private final Deque<Pair<String, Boolean>> outputVars;
+  private final Deque<OutputVar> outputVars;
   /** The current output variable name. */
   private String currOutputVarName;
   /** Whether the current output variable is initialized. */
@@ -168,7 +179,7 @@ final class PyCodeBuilder {
    * @param outputVarName The new output variable name.
    */
   public void pushOutputVar(String outputVarName) {
-    outputVars.push(Pair.of(outputVarName, false));
+    outputVars.push(OutputVar.create(outputVarName, false));
     currOutputVarName = outputVarName;
     currOutputVarIsInited = false;
   }
@@ -178,10 +189,10 @@ final class PyCodeBuilder {
    */
   void popOutputVar() {
     outputVars.pop();
-    Pair<String, Boolean> topPair = outputVars.peek(); // null if outputVars is now empty
-    if (topPair != null) {
-      currOutputVarName = topPair.first;
-      currOutputVarIsInited = topPair.second;
+    OutputVar outputVar = outputVars.peek(); // null if outputVars is now empty
+    if (outputVar != null) {
+      currOutputVarName = outputVar.name();
+      currOutputVarIsInited = outputVar.isInited();
     } else {
       currOutputVarName = null;
       currOutputVarIsInited = false;
@@ -195,7 +206,7 @@ final class PyCodeBuilder {
    */
   void setOutputVarInited() {
     outputVars.pop();
-    outputVars.push(Pair.of(currOutputVarName, true));
+    outputVars.push(OutputVar.create(currOutputVarName, true));
     currOutputVarIsInited = true;
   }
 
