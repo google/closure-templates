@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.error.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -162,18 +161,14 @@ public class SoyMsgBundleHandler {
    * @param options The options for generating the output extracted messages file (depending on the
    *     message plugin being used, none or some of the options may be applicable).
    * @param outputFile The output file to write to.
-   * @param errorReporter For reporting errors.
    * @throws SoyMsgException If there's an error while processing the messages.
    * @throws IOException If there's an error while accessing the file.
    */
   public void writeToExtractedMsgsFile(
-      SoyMsgBundle msgBundle,
-      OutputFileOptions options,
-      File outputFile,
-      ErrorReporter errorReporter)
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
       throws IOException, SoyMsgException {
 
-    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options, errorReporter);
+    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
     BaseUtils.ensureDirsExistInPath(outputFile.getPath());
     Files.asCharSink(outputFile, UTF_8).write(cs);
   }

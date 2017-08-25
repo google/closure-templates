@@ -16,7 +16,6 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgException;
@@ -36,8 +35,7 @@ public class XliffMsgPlugin implements SoyMsgPlugin {
   public XliffMsgPlugin() {}
 
   @Override
-  public CharSequence generateExtractedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter)
+  public CharSequence generateExtractedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
       throws SoyMsgException {
 
     return XliffGenerator.generateXliff(
