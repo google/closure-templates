@@ -26,7 +26,6 @@ import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
-import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.tofu.internal.TofuModule;
@@ -53,9 +52,6 @@ public final class SoyModule extends AbstractModule {
     install(new JsSrcModule());
     install(new PySrcModule());
     install(new IncrementalDomSrcModule());
-
-    // TODO(user): get rid of guice injection in passes.
-    install(new SharedPassesModule());
 
     install(new SharedModule());
 

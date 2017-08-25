@@ -280,18 +280,17 @@ public class RenderVisitorTest {
 
     StringBuilder outputSb = new StringBuilder();
     RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                null,
-                data,
-                TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse(),
-                msgBundle,
-                xidRenamingMap,
-                cssRenamingMap,
-                false);
+        new RenderVisitor(
+            new EvalVisitorFactoryImpl(),
+            outputSb,
+            null,
+            data,
+            TEST_IJ_DATA,
+            Predicates.<String>alwaysFalse(),
+            msgBundle,
+            xidRenamingMap,
+            cssRenamingMap,
+            false);
     for (SoyNode node : templateNode.getChildren()) {
       new RewriteRemaindersVisitor(boom).exec(node);
     }
@@ -332,18 +331,17 @@ public class RenderVisitorTest {
       StringBuilder outputSb) {
     TemplateRegistry templateRegistry = parseResult.registry();
     RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
-                data,
-                ijData,
-                activeDelPackageNames,
-                null,
-                xidRenamingMap,
-                cssRenamingMap,
-                false);
+        new RenderVisitor(
+            new EvalVisitorFactoryImpl(),
+            outputSb,
+            templateRegistry,
+            data,
+            ijData,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap,
+            false);
     TemplateNode templateNode = templateRegistry.getBasicTemplate(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -1031,18 +1029,17 @@ public class RenderVisitorTest {
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);
 
     RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                output,
-                templateRegistry,
-                data,
-                testIj,
-                Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap,
-                false);
+        new RenderVisitor(
+            new EvalVisitorFactoryImpl(),
+            output,
+            templateRegistry,
+            data,
+            testIj,
+            Predicates.<String>alwaysFalse(),
+            null,
+            xidRenamingMap,
+            cssRenamingMap,
+            false);
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =

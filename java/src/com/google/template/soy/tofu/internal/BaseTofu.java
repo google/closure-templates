@@ -36,9 +36,9 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.InScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -76,8 +76,6 @@ public class BaseTofu implements SoyTofu {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  private final RenderVisitorFactory renderVisitorFactory;
-
   private final TemplateRegistry templateRegistry;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
@@ -85,18 +83,15 @@ public class BaseTofu implements SoyTofu {
   /**
    * @param valueConverter Instance of SoyValueConverter to use.
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param renderVisitorFactory Factory for creating an instance of RenderVisitor.
    */
   @AssistedInject
   public BaseTofu(
       SoyValueConverter valueConverter,
       @ApiCall GuiceSimpleScope apiCallScope,
-      RenderVisitorFactory renderVisitorFactory,
       @Assisted TemplateRegistry templates,
       @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
     this.valueConverter = valueConverter;
     this.apiCallScope = apiCallScope;
-    this.renderVisitorFactory = renderVisitorFactory;
     this.templateRegistry = templates;
     this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
   }
@@ -234,7 +229,8 @@ public class BaseTofu implements SoyTofu {
 
     try {
       RenderVisitor rv =
-          renderVisitorFactory.create(
+          new RenderVisitor(
+              new EvalVisitorFactoryImpl(),
               outputBuf,
               templateRegistry,
               data,

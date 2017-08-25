@@ -44,7 +44,6 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -161,8 +160,7 @@ public class EvalVisitorTest {
     ExprNode expr = ((FunctionNode) code.getExpr().getChild(0)).getChild(0);
 
     EvalVisitor evalVisitor =
-        INJECTOR
-            .getInstance(EvalVisitorFactory.class)
+        new EvalVisitorFactoryImpl()
             .create(
                 TestingEnvironment.createForTest(testData, LOCALS),
                 TEST_IJ_DATA,

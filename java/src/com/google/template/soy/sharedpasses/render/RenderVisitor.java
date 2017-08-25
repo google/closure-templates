@@ -171,7 +171,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    */
-  protected RenderVisitor(
+  public RenderVisitor(
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry,
