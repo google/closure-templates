@@ -149,7 +149,7 @@ public final class SimplifyExprVisitorTest {
     private void simplifiesTo(String expected) {
       ExprRootNode exprRoot = new ExprRootNode(SoyFileParser.parseExprOrDie(actual()));
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
-      new SimplifyExprVisitor(new PreevalVisitorFactory()).exec(exprRoot);
+      new SimplifyExprVisitor().exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
     }
   }

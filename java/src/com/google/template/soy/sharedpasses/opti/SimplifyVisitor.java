@@ -54,9 +54,7 @@ public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
   public static SimplifyVisitor create() {
-    PreevalVisitorFactory preevalVisitorFactory = new PreevalVisitorFactory();
-    return new SimplifyVisitor(
-        new SimplifyExprVisitor(preevalVisitorFactory), preevalVisitorFactory);
+    return new SimplifyVisitor(new SimplifyExprVisitor(), new PreevalVisitorFactory());
   }
 
   private final SimplifyExprVisitor simplifyExprVisitor;

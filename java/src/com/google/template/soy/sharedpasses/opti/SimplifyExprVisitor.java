@@ -55,8 +55,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   /** The PreevalVisitor for this instance (can reuse). */
   private final PreevalVisitor preevalVisitor;
 
-  SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
-    this.preevalVisitor = preevalVisitorFactory.create(Environment.prerenderingEnvironment());
+  SimplifyExprVisitor() {
+    this.preevalVisitor = new PreevalVisitor(Environment.prerenderingEnvironment());
   }
 
   // -----------------------------------------------------------------------------------------------

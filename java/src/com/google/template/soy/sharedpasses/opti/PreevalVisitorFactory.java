@@ -32,11 +32,6 @@ import javax.annotation.Nullable;
  */
 final class PreevalVisitorFactory implements EvalVisitorFactory {
 
-
-  public PreevalVisitor create(Environment env) {
-    return new PreevalVisitor(env);
-  }
-
   @Override
   public PreevalVisitor create(
       Environment env,
