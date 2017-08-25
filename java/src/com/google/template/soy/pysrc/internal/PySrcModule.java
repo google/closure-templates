@@ -19,19 +19,13 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
-import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
-import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import java.util.Set;
-import javax.inject.Singleton;
 
 /**
  * Guice module for the Python Source backend.
@@ -60,19 +54,5 @@ public final class PySrcModule extends AbstractModule {
     bind(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {})
         .toProvider(GuiceSimpleScope.<ImmutableMap<String, String>>getUnscopedProvider())
         .in(ApiCallScope.class);
-  }
-
-  /**
-   * Builds and provides the map of SoyPySrcDirectives (name to directive).
-   *
-   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
-   *     SoyDirective may or may not implement SoyPySrcPrintDirective.
-   */
-  @Provides
-  @Singleton
-  ImmutableMap<String, SoyPySrcPrintDirective> provideSoyPySrcDirectivesMap(
-      Set<SoyPrintDirective> soyDirectivesSet) {
-    return FunctionAdapters.buildSpecificSoyDirectivesMap(
-        soyDirectivesSet, SoyPySrcPrintDirective.class);
   }
 }

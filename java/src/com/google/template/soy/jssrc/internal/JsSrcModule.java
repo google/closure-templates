@@ -17,20 +17,12 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
-import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import java.util.Map;
-import java.util.Set;
-import javax.inject.Singleton;
 
 /**
  * Guice module for the JS Source backend.
@@ -59,35 +51,5 @@ public class JsSrcModule extends AbstractModule {
     bind(SoyJsSrcOptions.class)
         .toProvider(GuiceSimpleScope.<SoyJsSrcOptions>getUnscopedProvider())
         .in(ApiCallScope.class);
-  }
-
-  /**
-   * Builds and provides the map of SoyJsSrcDirectives (name to directive).
-   *
-   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
-   *     SoyDirective may or may not implement SoyJsSrcPrintDirective.
-   */
-  @Provides
-  @Singleton
-  Map<String, SoyJsSrcPrintDirective> provideSoyJsSrcDirectivesMap(
-      Set<SoyPrintDirective> soyDirectivesSet) {
-
-    return FunctionAdapters.buildSpecificSoyDirectivesMap(
-        soyDirectivesSet, SoyJsSrcPrintDirective.class);
-  }
-
-  /**
-   * Builds and provides the map of SoyLibraryAssistedJsSrcDirectives (name to directive).
-   *
-   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
-   *     SoyDirective may or may not implement SoyLibraryAssistedJsSrcDirectives.
-   */
-  @Provides
-  @Singleton
-  Map<String, SoyLibraryAssistedJsSrcPrintDirective> provideSoyLibraryAssistedJsSrcDirectivesMap(
-      Set<SoyPrintDirective> soyDirectivesSet) {
-
-    return FunctionAdapters.buildSpecificSoyDirectivesMap(
-        soyDirectivesSet, SoyLibraryAssistedJsSrcPrintDirective.class);
   }
 }
