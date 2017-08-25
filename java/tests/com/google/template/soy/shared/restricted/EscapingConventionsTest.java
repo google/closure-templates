@@ -80,7 +80,7 @@ public class EscapingConventionsTest {
         // But the untrusted strings are defanged by the escape directive.
         "escapeJsString",
         // A lexer is applied to the below.
-        JS_LEXER,
+        EscapingConventionsTest::lexJs,
         // And we should get these tokens back, but with any possible value for the nulls, since
         // the actual escaped strings depend on the untrusted string.
         "var",
@@ -107,7 +107,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "var x = '[[1+2]] {$s}';",
         "escapeJsString",
-        ANGULAR_INTERPOLATION_LEXER,
+        EscapingConventionsTest::lexAngularInterpolation,
         ImmutableList.of("\\[[1+2]]", "{{{1:2} }}", "{ { {[1+2]}", "[] [{1+2}]"),
         "var x = '",
         "[[1+2]]",
@@ -119,7 +119,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "var x = /foo-{$s}/; x.test('foo-bar');",
         "escapeJsRegex",
-        JS_LEXER,
+        EscapingConventionsTest::lexJs,
         "var",
         " ",
         "x",
@@ -140,7 +140,14 @@ public class EscapingConventionsTest {
   @Test
   public void testHtmlDirective() throws Exception {
     assertEscaping(
-        "<div><!-- {$s} --></div>", "escapeHtml", HTML_LEXER, "<div", ">", null, "</div", ">");
+        "<div><!-- {$s} --></div>",
+        "escapeHtml",
+        EscapingConventionsTest::lexHtml,
+        "<div",
+        ">",
+        null,
+        "</div",
+        ">");
   }
 
   @Test
@@ -148,7 +155,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<textarea>'{$s}'</textarea>",
         "escapeHtmlRcdata",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         "<textarea",
         ">",
         null,
@@ -161,7 +168,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<div title=\"{$s}\" class='{$s}'>",
         "escapeHtmlAttribute",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         "<div",
         " ",
         "title=",
@@ -177,7 +184,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<div title=\"{$s}\" class='{$s}' id=x{$s}>",
         "escapeHtmlAttributeNospace",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         "<div",
         " ",
         "title=",
@@ -196,7 +203,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<h{$s} id=foo onclick='foo()'>",
         "filterHtmlElementName",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         (String) null,
         " ",
         "id=",
@@ -212,7 +219,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<h1 id=foo on{$s}='foo()'>",
         "filterHtmlAttributes",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         "<h1",
         " ",
         "id=",
@@ -229,7 +236,7 @@ public class EscapingConventionsTest {
         "div { font-family: \"{$s}\", '{$s}';\n"
             + "  background-image: url('{$s}'); border-image: url(\"${s}\") }",
         "escapeCssString",
-        CSS_LEXER,
+        EscapingConventionsTest::lexCss,
         "div",
         " ",
         "{",
@@ -262,7 +269,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "div#id-{$s}.class-{$s} { color: red; border-color: #33f; margin: 0 -2px 4.5 .25in }",
         "filterCssValue",
-        CSS_LEXER,
+        EscapingConventionsTest::lexCss,
         UNTRUSTED_VALUES,
         "div",
         null,
@@ -301,7 +308,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "http://foo{$s}/bar{$s}?foo={$s}&{$s}=bar#{$s}1",
         "escapeUri",
-        URI_LEXER,
+        EscapingConventionsTest::lexUri,
         "http",
         "://",
         null,
@@ -322,7 +329,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "<a href={$s}.html><a href='{$s}.html'><a href=\"{$s}.html\">",
         "escapeUri",
-        HTML_LEXER,
+        EscapingConventionsTest::lexHtml,
         "<a",
         " ",
         "href=",
@@ -343,7 +350,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "border-image: url({$s}) url('{$s}') url(\"{$s}\");",
         "escapeUri",
-        CSS_LEXER,
+        EscapingConventionsTest::lexCss,
         "border-image",
         ":",
         " ",
@@ -360,7 +367,7 @@ public class EscapingConventionsTest {
     assertEscaping(
         "{$s}?foo=bar#s={$s}",
         "normalizeUri",
-        URI_LEXER,
+        EscapingConventionsTest::lexUri,
         ImmutableList.of("http://www.google.com/O'Leary"),
         "http",
         "://",
@@ -384,7 +391,7 @@ public class EscapingConventionsTest {
       assertEscaping(
           "<div title={$s}>",
           "escapeHtml",
-          HTML_LEXER,
+          EscapingConventionsTest::lexHtml,
           ImmutableList.of("foo onclick=alert(42)"),
           "<div",
           " ",
@@ -441,189 +448,187 @@ public class EscapingConventionsTest {
    * Create a lexer used by unittests to check that maliciously injected values can't violate the
    * boundaries of string literals, comments, identifiers, etc. in template code.
    */
-  private static Function<String, List<String>> makeLexer(final String... regexParts) {
-    return new Function<String, List<String>>() {
-      @Override
-      public List<String> apply(String src) {
-        ImmutableList.Builder<String> tokens = ImmutableList.builder();
-        Pattern token = Pattern.compile(Joiner.on("").join(regexParts), Pattern.DOTALL);
-        while (src.length() != 0) {
-          Matcher m = token.matcher(src);
-          if (m.find()) {
-            tokens.add(m.group());
-            src = src.substring(m.end());
-          } else {
-            throw new IllegalArgumentException("Cannot lex `" + src + "`");
-          }
-        }
-        return tokens.build();
+  private static ImmutableList<String> lexString(String src, final String... regexParts) {
+    ImmutableList.Builder<String> tokens = ImmutableList.builder();
+    Pattern token = Pattern.compile(Joiner.on("").join(regexParts), Pattern.DOTALL);
+    while (src.length() != 0) {
+      Matcher m = token.matcher(src);
+      if (m.find()) {
+        tokens.add(m.group());
+        src = src.substring(m.end());
+      } else {
+        throw new IllegalArgumentException("Cannot lex `" + src + "`");
       }
-    };
+    }
+    return tokens.build();
   }
 
   /** Glosses over regexular expression, number, and punctuation boundaries. */
-  private static final Function<String, List<String>> JS_LEXER =
-      makeLexer(
-          "^(?:",
-          // A double quoted string not containing a newline.
-          "\"(?:[^\\\\\"\r\n\u2028\u2029]|\\\\.)*\"|",
-          // A single quoted string not containing a newline.
-          "'(?:[^\\\\\'\r\n\u2028\u2029]|\\\\.)*'|",
-          // A C style block comment.
-          "/\\*.*?\\*/|",
-          // A C++ style line comment.
-          "//[^\r\n\u2028\u2029]*|",
-          // Space.
-          "\\s+|",
-          // A run of word characters or numbers.
-          "\\w+|", // A simplification of numbers.
-          // A run of punctuation.
-          "[^\\s\"\'/\\w]+|",
-          // A division operator.
-          "/=?(?![\\S])|", // A simplification of div ops vs regexs.
-          // A regular expression literal.
-          "/(?:",
-          // Regular expression character other than an escape or charset.
-          "[^\r\n\u2028\u2029\\\\/\\[]|",
-          // An escape sequence.
-          "\\\\[^\r\n\u2028\u2029]|",
-          // A charset.
-          "\\[",
-          "(?:",
-          // A charset member.
-          "[^\\]\r\b\u2028\u2029\\\\]|",
-          // An escape.
-          "\\\\[^\r\n\u2028\u2029]",
-          ")*",
-          "\\]",
-          ")*/",
-          ")");
+  private static ImmutableList<String> lexJs(String src) {
+    return lexString(
+        src,
+        "^(?:",
+        // A double quoted string not containing a newline.
+        "\"(?:[^\\\\\"\r\n\u2028\u2029]|\\\\.)*\"|",
+        // A single quoted string not containing a newline.
+        "'(?:[^\\\\\'\r\n\u2028\u2029]|\\\\.)*'|",
+        // A C style block comment.
+        "/\\*.*?\\*/|",
+        // A C++ style line comment.
+        "//[^\r\n\u2028\u2029]*|",
+        // Space.
+        "\\s+|",
+        // A run of word characters or numbers.
+        "\\w+|", // A simplification of numbers.
+        // A run of punctuation.
+        "[^\\s\"\'/\\w]+|",
+        // A division operator.
+        "/=?(?![\\S])|", // A simplification of div ops vs regexs.
+        // A regular expression literal.
+        "/(?:",
+        // Regular expression character other than an escape or charset.
+        "[^\r\n\u2028\u2029\\\\/\\[]|",
+        // An escape sequence.
+        "\\\\[^\r\n\u2028\u2029]|",
+        // A charset.
+        "\\[",
+        "(?:",
+        // A charset member.
+        "[^\\]\r\b\u2028\u2029\\\\]|",
+        // An escape.
+        "\\\\[^\r\n\u2028\u2029]",
+        ")*",
+        "\\]",
+        ")*/",
+        ")");
+  }
 
-  private static final Function<String, List<String>> HTML_LEXER =
-      makeLexer(
-          "^(?:",
-          // Beginning of a tag including its name.
-          "</?[\\w:-]+|",
-          // An HTML style comment.
-          "<!--[^<>\"']*-->|",
-          // Spaces.
-          "\\s+|",
-          // End of a tag.
-          "/?>|",
-          // An attribute name and equal sign.
-          "[\\w:-]+=|",
-          // A double quoted attribute value.
-          "\"[^\"<>]*\"|",
-          // A single quoted attribute value.
-          "\'[^\'<>]*\'|",
-          // An IE back quoted attribute value.
-          "`[^`]*`|",
-          // Raw HTML text (excl. quotes), or unquoted attribute value.
-          "(?:[^\\s<>\"'`=]|[\\w:-](?!=))+",
-          ")");
+  private static ImmutableList<String> lexHtml(String src) {
+    return lexString(
+        src,
+        "^(?:",
+        // Beginning of a tag including its name.
+        "</?[\\w:-]+|",
+        // An HTML style comment.
+        "<!--[^<>\"']*-->|",
+        // Spaces.
+        "\\s+|",
+        // End of a tag.
+        "/?>|",
+        // An attribute name and equal sign.
+        "[\\w:-]+=|",
+        // A double quoted attribute value.
+        "\"[^\"<>]*\"|",
+        // A single quoted attribute value.
+        "\'[^\'<>]*\'|",
+        // An IE back quoted attribute value.
+        "`[^`]*`|",
+        // Raw HTML text (excl. quotes), or unquoted attribute value.
+        "(?:[^\\s<>\"'`=]|[\\w:-](?!=))+",
+        ")");
+  }
 
-  private static final Function<String, List<String>> CSS_LEXER =
-      makeLexer(
-          "^(?i:", // CSS is case insensitive
-          // Escaping text span start or end.  Allowed in CSS.
-          "<!--|",
-          "-->|",
-          // A double quoted string.
-          "\"(?:[^\\\\\"\r\n\f]|\\\\.)*\"|",
-          // A single quoted string.
-          "'(?:[^\\\\\'\r\n\f]|\\\\.)*'|",
-          // An identifier  (other than url), hash color literal, or quantity
-          "(?!url\\b)[.#@!]?(?:[\\w-]|\\.[0-9]|\\\\[0-9a-f]+[ \t\r\n\f]?)+%?|",
-          // A C style comments.  Line comments are non-standard in CSS.
-          "/\\*.*?\\*+/|",
-          // Punctuation.
-          "[:{}();,~]|",
-          // A url literal.
-          "url\\(\\s*(?:",
-          // Double quoted.
-          "\"(?:[^\\\\\"\r\n\f]|\\\\.)*\"|",
-          // Single quoted.
-          "'(?:[^\\\\\'\r\n\f]|\\\\.)*'|",
-          // Unquoted.
-          "(?:[!#$%&*-\\[\\]-~\u0080-\uffff]|\\\\[0-9a-f]+[ \t\r\n\f]?)*",
-          ")\\s*\\)|",
-          // Space.
-          "\\s+",
-          ")");
+  private static ImmutableList<String> lexCss(String src) {
+    return lexString(
+        src,
+        "^(?i:", // CSS is case insensitive
+        // Escaping text span start or end.  Allowed in CSS.
+        "<!--|",
+        "-->|",
+        // A double quoted string.
+        "\"(?:[^\\\\\"\r\n\f]|\\\\.)*\"|",
+        // A single quoted string.
+        "'(?:[^\\\\\'\r\n\f]|\\\\.)*'|",
+        // An identifier  (other than url), hash color literal, or quantity
+        "(?!url\\b)[.#@!]?(?:[\\w-]|\\.[0-9]|\\\\[0-9a-f]+[ \t\r\n\f]?)+%?|",
+        // A C style comments.  Line comments are non-standard in CSS.
+        "/\\*.*?\\*+/|",
+        // Punctuation.
+        "[:{}();,~]|",
+        // A url literal.
+        "url\\(\\s*(?:",
+        // Double quoted.
+        "\"(?:[^\\\\\"\r\n\f]|\\\\.)*\"|",
+        // Single quoted.
+        "'(?:[^\\\\\'\r\n\f]|\\\\.)*'|",
+        // Unquoted.
+        "(?:[!#$%&*-\\[\\]-~\u0080-\uffff]|\\\\[0-9a-f]+[ \t\r\n\f]?)*",
+        ")\\s*\\)|",
+        // Space.
+        "\\s+",
+        ")");
+  }
 
   /** Lexes URIs returning each of the parts defined in RFC3986 for hierarchical URIs separately. */
-  private static final Function<String, List<String>> URI_LEXER =
-      new Function<String, List<String>>() {
-
-        @Override
-        public List<String> apply(String s) {
-          Matcher m =
-              Pattern.compile( // Pattern from RFC 3986 Appendix B.
-                      "^(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\\?([^#]*))?(?:#(.*))?",
-                      Pattern.DOTALL)
-                  .matcher(s);
-          assertTrue(m.find());
-          String scheme = m.group(1);
-          String authority = m.group(2);
-          String path = m.group(3);
-          String query = m.group(4);
-          String fragment = m.group(5);
-          ImmutableList.Builder<String> out = ImmutableList.builder();
-          if (scheme != null) {
-            out.add(scheme);
-            out.add("://");
+  private static ImmutableList<String> lexUri(String s) {
+    Matcher m =
+        Pattern.compile( // Pattern from RFC 3986 Appendix B.
+                "^(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\\?([^#]*))?(?:#(.*))?",
+                Pattern.DOTALL)
+            .matcher(s);
+    assertTrue(m.find());
+    String scheme = m.group(1);
+    String authority = m.group(2);
+    String path = m.group(3);
+    String query = m.group(4);
+    String fragment = m.group(5);
+    ImmutableList.Builder<String> out = ImmutableList.builder();
+    if (scheme != null) {
+      out.add(scheme);
+      out.add("://");
+    }
+    if (authority != null) {
+      out.add(authority);
+    }
+    if (path != null) {
+      int pos = 0;
+      int queryLen = path.length();
+      for (int i = 0; i < queryLen; ++i) {
+        if (path.charAt(i) == '/') {
+          if (pos != i) {
+            out.add(path.substring(pos, i));
           }
-          if (authority != null) {
-            out.add(authority);
-          }
-          if (path != null) {
-            int pos = 0;
-            int queryLen = path.length();
-            for (int i = 0; i < queryLen; ++i) {
-              if (path.charAt(i) == '/') {
-                if (pos != i) {
-                  out.add(path.substring(pos, i));
-                }
-                pos = i + 1;
-                out.add(path.substring(i, i + 1));
-              }
-            }
-            if (pos != queryLen) {
-              out.add(path.substring(pos));
-            }
-          }
-          if (query != null) {
-            out.add("?");
-            int pos = 0;
-            int queryLen = query.length();
-            for (int i = 0; i < queryLen; ++i) {
-              if (query.charAt(i) == '&' || query.charAt(i) == '=') {
-                out.add(query.substring(pos, i));
-                pos = i + 1;
-                out.add(query.substring(i, i + 1));
-              }
-            }
-            out.add(query.substring(pos));
-          }
-          if (fragment != null) {
-            out.add("#");
-            out.add(fragment);
-          }
-          return out.build();
+          pos = i + 1;
+          out.add(path.substring(i, i + 1));
         }
-      };
+      }
+      if (pos != queryLen) {
+        out.add(path.substring(pos));
+      }
+    }
+    if (query != null) {
+      out.add("?");
+      int pos = 0;
+      int queryLen = query.length();
+      for (int i = 0; i < queryLen; ++i) {
+        if (query.charAt(i) == '&' || query.charAt(i) == '=') {
+          out.add(query.substring(pos, i));
+          pos = i + 1;
+          out.add(query.substring(i, i + 1));
+        }
+      }
+      out.add(query.substring(pos));
+    }
+    if (fragment != null) {
+      out.add("#");
+      out.add(fragment);
+    }
+    return out.build();
+  }
 
-  private static final Function<String, List<String>> ANGULAR_INTERPOLATION_LEXER =
-      makeLexer(
-          "^(",
-          // Usual interpolation symbols wrapping Angular expressions
-          "\\{\\{.*?(\\}\\}|$)|",
-          "\\[\\{.*?(\\}\\]|$)|",
-          "\\{\\[.*?(\\]\\}|$)|",
-          "\\[\\[.*?(\\]\\]|$)|",
-          // A string not containing interpolation start and end symbols
-          "([^{\\[]|[{\\[]([^{\\[]|$))+",
-          ")");
+  private static ImmutableList<String> lexAngularInterpolation(String src) {
+    return lexString(
+        src,
+        "^(",
+        // Usual interpolation symbols wrapping Angular expressions
+        "\\{\\{.*?(\\}\\}|$)|",
+        "\\[\\{.*?(\\}\\]|$)|",
+        "\\{\\[.*?(\\]\\}|$)|",
+        "\\[\\[.*?(\\]\\]|$)|",
+        // A string not containing interpolation start and end symbols
+        "([^{\\[]|[{\\[]([^{\\[]|$))+",
+        ")");
+  }
 
   /** Problematic strings to escape that should stress token boundaries. */
   private static final ImmutableList<String> UNTRUSTED_VALUES =

@@ -137,7 +137,7 @@ public class RenderOnlySoyMsgBundleImplTest {
     }
     // Test the size first, to protect against dupes.
     assertEquals(testMessages.size(), actualMessages.size());
-    assertEquals(testMessages.size(), ImmutableSet.copyOf(actualMessages).size());
+    assertEquals(testMessages.size(), (int) actualMessages.stream().distinct().count());
     // Now assert they contain the same messages.
     assertEquals(ImmutableSet.copyOf(testMessages), ImmutableSet.copyOf(actualMessages));
   }

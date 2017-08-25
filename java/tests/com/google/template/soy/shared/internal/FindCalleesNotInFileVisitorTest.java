@@ -18,7 +18,6 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
@@ -82,13 +81,7 @@ public final class FindCalleesNotInFileVisitorTest {
 
     Iterable<String> calleesNotInFile =
         Iterables.transform(
-            new FindCalleesNotInFileVisitor().exec(soyFile),
-            new Function<CallBasicNode, String>() {
-              @Override
-              public String apply(CallBasicNode node) {
-                return node.getCalleeName();
-              }
-            });
+            new FindCalleesNotInFileVisitor().exec(soyFile), CallBasicNode::getCalleeName);
     assertThat(calleesNotInFile)
         .containsExactly("boo.woo.hoo", "boo.foo.too", "boo.foo.zoo", "boo.hoo.roo");
   }

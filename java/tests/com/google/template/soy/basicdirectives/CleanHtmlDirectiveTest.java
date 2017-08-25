@@ -16,11 +16,10 @@
 
 package com.google.template.soy.basicdirectives;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
-import com.google.common.base.Function;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
@@ -32,6 +31,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -65,9 +65,10 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     // All possible OptionalSafeTags.
     Object[] optionalSafeTagsAsArgs =
-        FluentIterable.from(ImmutableSet.copyOf(OptionalSafeTag.values()))
-            .transform(OptionalSafeTag.TO_TAG_NAME)
-            .toArray(String.class);
+        ImmutableSet.copyOf(OptionalSafeTag.values())
+            .stream()
+            .map(OptionalSafeTag.TO_TAG_NAME)
+            .toArray(String[]::new);
 
     // Safe tags are preserved. Others are not.
     assertTofuOutput(
@@ -108,10 +109,10 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     // All possible OptionalSafeTags.
     ImmutableList<JsExpr> optionalSafeTagsAsJsExprs =
-        FluentIterable.from(ImmutableSet.copyOf(OptionalSafeTag.values()))
-            .transform(OptionalSafeTag.TO_TAG_NAME)
-            .transform(STRING_TO_JS_EXPR)
-            .toList();
+        Arrays.stream(OptionalSafeTag.values())
+            .map(OptionalSafeTag.TO_TAG_NAME)
+            .map(input -> new JsExpr(String.format("'%s'", input), Integer.MAX_VALUE))
+            .collect(toImmutableList());
 
     assertThat(cleanHtml.applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs).getText())
         .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['li', 'ol', 'span', 'ul'])");
@@ -166,10 +167,10 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     // All possible OptionalSafeTags.
     ImmutableList<PyExpr> optionalSafeTagsAsPyExprs =
-        FluentIterable.from(ImmutableSet.copyOf(OptionalSafeTag.values()))
-            .transform(OptionalSafeTag.TO_TAG_NAME)
-            .transform(STRING_TO_PY_EXPR)
-            .toList();
+        Arrays.stream(OptionalSafeTag.values())
+            .map(OptionalSafeTag.TO_TAG_NAME)
+            .map(input -> new PyExpr(String.format("'%s'", input), Integer.MAX_VALUE))
+            .collect(toImmutableList());
 
     assertThat(cleanHtml.applyForPySrc(data, optionalSafeTagsAsPyExprs).getText())
         .isEqualTo("sanitize.clean_html('data', ['li', 'ol', 'span', 'ul'])");
@@ -212,20 +213,4 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   private SanitizedContent sanitizedHtml(String s) {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(s, ContentKind.HTML);
   }
-
-  private static final Function<String, JsExpr> STRING_TO_JS_EXPR =
-      new Function<String, JsExpr>() {
-        @Override
-        public JsExpr apply(String input) {
-          return new JsExpr(String.format("'%s'", input), Integer.MAX_VALUE);
-        }
-      };
-
-  private static final Function<String, PyExpr> STRING_TO_PY_EXPR =
-      new Function<String, PyExpr>() {
-        @Override
-        public PyExpr apply(String input) {
-          return new PyExpr(String.format("'%s'", input), Integer.MAX_VALUE);
-        }
-      };
 }
