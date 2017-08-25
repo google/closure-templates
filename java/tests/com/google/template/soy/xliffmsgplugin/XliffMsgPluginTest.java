@@ -16,12 +16,13 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -52,21 +53,24 @@ public final class XliffMsgPluginTest {
     // Test without target language.
     OutputFileOptions outputFileOptions = new OutputFileOptions();
     CharSequence extractedMsgsFile =
-        msgPlugin.generateExtractedMsgsFile(msgBundle, outputFileOptions);
+        msgPlugin.generateExtractedMsgsFile(
+            msgBundle, outputFileOptions, ErrorReporter.exploding());
 
     URL expectedExtractedMsgsFile =
         Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2_extracted.xlf");
-    assertEquals(
-        Resources.toString(expectedExtractedMsgsFile, UTF_8), extractedMsgsFile.toString());
+    assertThat(extractedMsgsFile.toString())
+        .isEqualTo(Resources.toString(expectedExtractedMsgsFile, UTF_8));
 
     // Test with target language.
     outputFileOptions.setTargetLocaleString("x-zz");
-    extractedMsgsFile = msgPlugin.generateExtractedMsgsFile(msgBundle, outputFileOptions);
+    extractedMsgsFile =
+        msgPlugin.generateExtractedMsgsFile(
+            msgBundle, outputFileOptions, ErrorReporter.exploding());
 
     expectedExtractedMsgsFile =
         Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2_extracted_x-zz.xlf");
-    assertEquals(
-        Resources.toString(expectedExtractedMsgsFile, UTF_8), extractedMsgsFile.toString());
+    assertThat(extractedMsgsFile.toString())
+        .isEqualTo(Resources.toString(expectedExtractedMsgsFile, UTF_8));
   }
 
   @Test
@@ -78,43 +82,45 @@ public final class XliffMsgPluginTest {
     SoyMsgBundle msgBundle =
         msgPlugin.parseTranslatedMsgsFile(Resources.toString(translatedMsgsFile, UTF_8));
 
-    assertEquals(5, msgBundle.getNumMsgs());
+    assertThat(msgBundle.getNumMsgs()).isEqualTo(5);
 
     List<SoyMsg> msgs = Lists.newArrayList();
     for (SoyMsg msg : msgBundle) {
       msgs.add(msg);
     }
-    assertEquals(5, msgs.size());
+    assertThat(msgs).hasSize(5);
 
     SoyMsg moscowMsg = msgs.get(0);
-    assertEquals(626010707674174792L, moscowMsg.getId());
+    assertThat(moscowMsg.getId()).isEqualTo(626010707674174792L);
     List<SoyMsgPart> moscowMsgParts = moscowMsg.getParts();
-    assertEquals(1, moscowMsgParts.size());
-    assertEquals("Zmoscow", ((SoyMsgRawTextPart) moscowMsgParts.get(0)).getRawText());
+    assertThat(moscowMsgParts).hasSize(1);
+    assertThat(((SoyMsgRawTextPart) moscowMsgParts.get(0)).getRawText()).isEqualTo("Zmoscow");
 
-    assertEquals(948230478248061386L, msgs.get(1).getId());
+    assertThat(msgs.get(1).getId()).isEqualTo(948230478248061386L);
 
     SoyMsg mooseMsg = msgs.get(2);
-    assertEquals(2764913337766789440L, mooseMsg.getId());
+    assertThat(mooseMsg.getId()).isEqualTo(2764913337766789440L);
     List<SoyMsgPart> mooseMsgParts = mooseMsg.getParts();
-    assertEquals(7, mooseMsgParts.size());
-    assertEquals("Zmoose ", ((SoyMsgRawTextPart) mooseMsgParts.get(0)).getRawText());
-    assertEquals(
-        "START_ITALIC", ((SoyMsgPlaceholderPart) mooseMsgParts.get(1)).getPlaceholderName());
-    assertEquals("zalso", ((SoyMsgRawTextPart) mooseMsgParts.get(2)).getRawText());
-    assertEquals("END_ITALIC", ((SoyMsgPlaceholderPart) mooseMsgParts.get(3)).getPlaceholderName());
-    assertEquals(" zsays ", ((SoyMsgRawTextPart) mooseMsgParts.get(4)).getRawText());
-    assertEquals("XXX", ((SoyMsgPlaceholderPart) mooseMsgParts.get(5)).getPlaceholderName());
-    assertEquals(".", ((SoyMsgRawTextPart) mooseMsgParts.get(6)).getRawText());
+    assertThat(mooseMsgParts).hasSize(7);
+    assertThat(((SoyMsgRawTextPart) mooseMsgParts.get(0)).getRawText()).isEqualTo("Zmoose ");
+    assertThat(((SoyMsgPlaceholderPart) mooseMsgParts.get(1)).getPlaceholderName())
+        .isEqualTo("START_ITALIC");
+    assertThat(((SoyMsgRawTextPart) mooseMsgParts.get(2)).getRawText()).isEqualTo("zalso");
+    assertThat(((SoyMsgPlaceholderPart) mooseMsgParts.get(3)).getPlaceholderName())
+        .isEqualTo("END_ITALIC");
+    assertThat(((SoyMsgRawTextPart) mooseMsgParts.get(4)).getRawText()).isEqualTo(" zsays ");
+    assertThat(((SoyMsgPlaceholderPart) mooseMsgParts.get(5)).getPlaceholderName())
+        .isEqualTo("XXX");
+    assertThat(((SoyMsgRawTextPart) mooseMsgParts.get(6)).getRawText()).isEqualTo(".");
 
     SoyMsg cowMsg = msgs.get(3);
-    assertEquals(6632711700686641662L, cowMsg.getId());
+    assertThat(cowMsg.getId()).isEqualTo(6632711700686641662L);
     List<SoyMsgPart> cowMsgParts = cowMsg.getParts();
-    assertEquals(3, cowMsgParts.size());
-    assertEquals("Zcow zsays ", ((SoyMsgRawTextPart) cowMsgParts.get(0)).getRawText());
-    assertEquals("MOO", ((SoyMsgPlaceholderPart) cowMsgParts.get(1)).getPlaceholderName());
-    assertEquals(".", ((SoyMsgRawTextPart) cowMsgParts.get(2)).getRawText());
+    assertThat(cowMsgParts).hasSize(3);
+    assertThat(((SoyMsgRawTextPart) cowMsgParts.get(0)).getRawText()).isEqualTo("Zcow zsays ");
+    assertThat(((SoyMsgPlaceholderPart) cowMsgParts.get(1)).getPlaceholderName()).isEqualTo("MOO");
+    assertThat(((SoyMsgRawTextPart) cowMsgParts.get(2)).getRawText()).isEqualTo(".");
 
-    assertEquals(8577643341484516105L, msgs.get(4).getId());
+    assertThat(msgs.get(4).getId()).isEqualTo(8577643341484516105L);
   }
 }

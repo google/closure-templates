@@ -58,6 +58,7 @@ import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
+import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -779,6 +780,24 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     reportWarnings();
     return bundle;
+  }
+
+  /**
+   * Extracts all messages from this Soy file set and writes the messages to an extracted messages
+   * file.
+   *
+   * @param msgBundleHandler Handler to write the messages.
+   * @param options Options to configure how to write the extracted messages.
+   * @param outputFile Where to write the extracted messages.
+   * @throws IOException If there are errors writing to the output file.
+   */
+  void extractMsgsAndWriteToFile(
+      SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, File outputFile)
+      throws IOException {
+    SoyMsgBundle bundle = extractMsgs();
+    msgBundleHandler.writeToExtractedMsgsFile(bundle, options, outputFile, errorReporter);
+    throwIfErrorsPresent();
+    reportWarnings();
   }
 
   /**
