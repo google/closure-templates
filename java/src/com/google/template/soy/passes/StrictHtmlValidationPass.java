@@ -369,7 +369,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       if (node.numChildren() > 1) {
         // At this point we can safely cast it to a close tag.
         HtmlCloseTagNode lastTag = (HtmlCloseTagNode) lastChild;
-        if (!tagMatches.get(lastTag).equals(firstTag)) {
+        // If the map does not contain the last tag, other part of this compiler pass should enforce
+        // that there is an error thrown. Don't report another error here since it is a duplicate.
+        // This check make sures that there is exactly one top-level element -- the last tag must
+        // close the first tag within {velog} command.
+        if (tagMatches.get(lastTag) != null && !tagMatches.get(lastTag).equals(firstTag)) {
           errorReporter.report(
               tagMatches.get(lastTag).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
         }
