@@ -247,7 +247,8 @@ public final class CommandTagAttribute {
     if (valueExprList.size() > 1) {
       reporter.report(
           valueExprList.get(1).getSourceLocation(), EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
-      return null;
+      // Return the first expr to avoid an NPE in CallNode ctor.
+      return valueExprList.get(0);
     }
     return Iterables.getOnlyElement(valueExprList);
   }
