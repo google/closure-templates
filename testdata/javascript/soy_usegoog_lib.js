@@ -3446,7 +3446,7 @@ goog.addDependency('html/safeurl.js', ['goog.html.SafeUrl'], ['goog.asserts', 'g
 goog.addDependency('html/safeurl_test.js', ['goog.html.safeUrlTest'], ['goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/attributewhitelist.js', ['goog.html.sanitizer.AttributeSanitizedWhitelist', 'goog.html.sanitizer.AttributeWhitelist'], [], {});
 goog.addDependency('html/sanitizer/csssanitizer.js', ['goog.html.sanitizer.CssSanitizer'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.uncheckedconversions', 'goog.object', 'goog.string'], {});
-goog.addDependency('html/sanitizer/csssanitizer_test.js', ['goog.html.CssSanitizerTest'], ['goog.array', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.sanitizer.CssSanitizer', 'goog.html.testing', 'goog.string', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], {});
+goog.addDependency('html/sanitizer/csssanitizer_test.js', ['goog.html.CssSanitizerTest'], ['goog.array', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.sanitizer.CssSanitizer', 'goog.html.testing', 'goog.string', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], {});
 goog.addDependency('html/sanitizer/htmlsanitizer.js', ['goog.html.sanitizer.HtmlSanitizer', 'goog.html.sanitizer.HtmlSanitizer.Builder', 'goog.html.sanitizer.HtmlSanitizerAttributePolicy', 'goog.html.sanitizer.HtmlSanitizerPolicy', 'goog.html.sanitizer.HtmlSanitizerPolicyContext', 'goog.html.sanitizer.HtmlSanitizerPolicyHints', 'goog.html.sanitizer.HtmlSanitizerUrlPolicy'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.functions', 'goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.sanitizer.AttributeSanitizedWhitelist', 'goog.html.sanitizer.AttributeWhitelist', 'goog.html.sanitizer.CssSanitizer', 'goog.html.sanitizer.TagBlacklist', 'goog.html.sanitizer.TagWhitelist', 'goog.html.uncheckedconversions', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/htmlsanitizer_test.js', ['goog.html.HtmlSanitizerTest'], ['goog.array', 'goog.dom', 'goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.sanitizer.HtmlSanitizer', 'goog.html.sanitizer.HtmlSanitizer.Builder', 'goog.html.sanitizer.TagWhitelist', 'goog.html.sanitizer.unsafe', 'goog.html.testing', 'goog.object', 'goog.string.Const', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/tagblacklist.js', ['goog.html.sanitizer.TagBlacklist'], [], {});
@@ -3906,9 +3906,9 @@ goog.addDependency('storage/mechanism/errorcode.js', ['goog.storage.mechanism.Er
 goog.addDependency('storage/mechanism/errorhandlingmechanism.js', ['goog.storage.mechanism.ErrorHandlingMechanism'], ['goog.storage.mechanism.Mechanism'], {});
 goog.addDependency('storage/mechanism/errorhandlingmechanism_test.js', ['goog.storage.mechanism.ErrorHandlingMechanismTest'], ['goog.storage.mechanism.ErrorHandlingMechanism', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('storage/mechanism/html5localstorage.js', ['goog.storage.mechanism.HTML5LocalStorage'], ['goog.storage.mechanism.HTML5WebStorage'], {});
-goog.addDependency('storage/mechanism/html5localstorage_test.js', ['goog.storage.mechanism.HTML5LocalStorageTest'], ['goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.storage.mechanism.mechanismTestDefinition', 'goog.testing.jsunit', 'goog.userAgent'], {});
+goog.addDependency('storage/mechanism/html5localstorage_test.js', ['goog.storage.mechanism.HTML5LocalStorageTest'], ['goog.storage.mechanism.HTML5LocalStorage', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.storage.mechanism.mechanismTestDefinition', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], {});
 goog.addDependency('storage/mechanism/html5sessionstorage.js', ['goog.storage.mechanism.HTML5SessionStorage'], ['goog.storage.mechanism.HTML5WebStorage'], {});
-goog.addDependency('storage/mechanism/html5sessionstorage_test.js', ['goog.storage.mechanism.HTML5SessionStorageTest'], ['goog.storage.mechanism.HTML5SessionStorage', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.storage.mechanism.mechanismTestDefinition', 'goog.testing.jsunit', 'goog.userAgent'], {});
+goog.addDependency('storage/mechanism/html5sessionstorage_test.js', ['goog.storage.mechanism.HTML5SessionStorageTest'], ['goog.storage.mechanism.HTML5SessionStorage', 'goog.storage.mechanism.mechanismSeparationTester', 'goog.storage.mechanism.mechanismSharingTester', 'goog.storage.mechanism.mechanismTestDefinition', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], {});
 goog.addDependency('storage/mechanism/html5webstorage.js', ['goog.storage.mechanism.HTML5WebStorage'], ['goog.asserts', 'goog.iter.Iterator', 'goog.iter.StopIteration', 'goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.IterableMechanism'], {});
 goog.addDependency('storage/mechanism/html5webstorage_test.js', ['goog.storage.mechanism.HTML5MockStorage', 'goog.storage.mechanism.HTML5WebStorageTest', 'goog.storage.mechanism.MockThrowableStorage'], ['goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.HTML5WebStorage', 'goog.testing.jsunit'], {});
 goog.addDependency('storage/mechanism/ieuserdata.js', ['goog.storage.mechanism.IEUserData'], ['goog.asserts', 'goog.iter.Iterator', 'goog.iter.StopIteration', 'goog.storage.mechanism.ErrorCode', 'goog.storage.mechanism.IterableMechanism', 'goog.structs.Map', 'goog.userAgent'], {});
@@ -11253,6 +11253,19 @@ goog.debug.fnNameCache_ = {};
  * @private
  */
 goog.debug.fnNameResolver_;
+
+
+/**
+ * Freezes the given object, but only in debug mode (and in browsers that
+ * support it).  Note that this is a shallow freeze, so for deeply nested
+ * objects it must be called at every level to ensure deep immutability.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ */
+goog.debug.freeze = goog.DEBUG && Object.freeze || function(arg) {
+  return arg;
+};
 
 //javascript/closure/i18n/uchar.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.

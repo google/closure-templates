@@ -354,15 +354,6 @@ final class HtmlTagEntry {
     return openTag;
   }
 
-  /**
-   * Try to match a close tag with a stack of open tags, and report errors accordingly.
-   *
-   * <p>Return false if openStack is empty or we cannot find a common prefix for the current close
-   * tag. Notably returning true does not mean we find a match for the current close tag. When we
-   * definitely know there is a mismatch and report an error for that, we still return true. The
-   * return value is used by {@code StrictHtmlValidationPass} to decide whether we should add the
-   * closeTag to the queue.
-   */
   static @Nullable HtmlTagEntry tryMatchCloseTag(
       ArrayDeque<HtmlTagEntry> openStack, TagName closeTag, ErrorReporter errorReporter) {
     // Pop out every optional tags that does not match the current close tag.
@@ -388,6 +379,17 @@ final class HtmlTagEntry {
     return openStack.peekFirst();
   }
 
+  /**
+   * Try to match a close tag with a stack of open tags, and report errors accordingly.
+   *
+   * <p>Return false if openStack is empty or we cannot find a common prefix for the current close
+   * tag. Notably returning true does not mean we find a match for the current close tag. When we
+   * definitely know there is a mismatch and report an error for that, we still return true. The
+   * return value is used by {@code StrictHtmlValidationPass} to decide whether we should add the
+   * closeTag to the queue.
+   *
+   * <p>TODO(b/65293620): Change the return results to an enum.
+   */
   static boolean tryMatchCloseTag(
       ArrayDeque<HtmlTagEntry> openStack,
       HtmlTagEntry closeTag,

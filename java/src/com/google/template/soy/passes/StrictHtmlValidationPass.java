@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
@@ -73,6 +74,8 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyErrorKind.of("Foreign elements (svg) must be opened and closed within the same block.");
   private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
+      SoyErrorKind.of("Unexpected HTML close tag.");
+  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_IN_CONTROL =
       SoyErrorKind.of(
           "Unexpected HTML close tag. Within an if or switch block, "
               + "all branches must end with unmatched open tags or unmatched close tags.");
@@ -212,7 +215,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // Report an error if this node is a void tag. Void tag should never be closed.
       if (closeTag.isDefinitelyVoid()) {
         errorReporter.report(
-            node.getSourceLocation(), INVALID_CLOSE_TAG, closeTag.getStaticTagName());
+            closeTag.getTagLocation(), INVALID_CLOSE_TAG, closeTag.getStaticTagName());
         return;
       }
       // Switch back to html mode if we leave a svg tag.
@@ -223,7 +226,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // If we cannot find a matching open tag in current block, put the current tag into
       // closeTagQueue and compare everything after we visit the entire template node.
       if (!HtmlTagEntry.tryMatchCloseTag(openTagStack, entry, tagMatches, errorReporter)) {
-        closeTagQueue.addLast(entry);
+        if (isInControlBlock(node)) {
+          closeTagQueue.addLast(entry);
+        } else {
+          errorReporter.report(closeTag.getTagLocation(), UNEXPECTED_CLOSE_TAG);
+        }
       }
     }
 
@@ -247,7 +254,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG_IN_CONTROL);
         openTagBranches.clear();
         closeTagBranches.clear();
       }
@@ -294,7 +301,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG_IN_CONTROL);
         openTagBranches.clear();
         closeTagBranches.clear();
       }
@@ -491,6 +498,23 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
       // Switch back to the original html mode.
       inForeignContent = inForeignContentBeforeBlock;
+    }
+
+    /** Recursively check if a soy node is under a control block. */
+    private static boolean isInControlBlock(SoyNode node) {
+      SoyNode parent = node.getParent();
+      if (parent instanceof TemplateNode
+          || parent instanceof SoyFileNode
+          || parent instanceof SoyFileSetNode) {
+        return false;
+      }
+      if (parent instanceof IfCondNode
+          || parent instanceof IfElseNode
+          || parent instanceof SwitchCaseNode
+          || parent instanceof SwitchDefaultNode) {
+        return true;
+      }
+      return isInControlBlock(parent);
     }
   }
 }
