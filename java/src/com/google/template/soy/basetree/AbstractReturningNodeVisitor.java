@@ -16,7 +16,7 @@
 
 package com.google.template.soy.basetree;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +32,7 @@ import java.util.List;
  * @see AbstractNodeVisitor
  */
 public abstract class AbstractReturningNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
+  private static final Node[] EMPTY_NODE_ARRAY = new Node[0];
 
   @Override
   public R exec(N node) {
@@ -53,7 +54,7 @@ public abstract class AbstractReturningNodeVisitor<N extends Node, R> implements
    * @see #visitChildrenAllowingConcurrentModification
    */
   protected List<R> visitChildren(ParentNode<? extends N> node) {
-    List<R> results = Lists.newArrayListWithCapacity(node.numChildren());
+    List<R> results = new ArrayList<>(node.numChildren());
     for (N child : node.getChildren()) {
       results.add(visit(child));
     }
@@ -71,9 +72,13 @@ public abstract class AbstractReturningNodeVisitor<N extends Node, R> implements
    * @see #visitChildren
    */
   protected List<R> visitChildrenAllowingConcurrentModification(ParentNode<? extends N> node) {
-    List<R> results = Lists.newArrayListWithCapacity(node.numChildren());
-    for (N child : Lists.newArrayList(node.getChildren()) /*copy*/) {
-      results.add(visit(child));
+    List<R> results = new ArrayList<>(node.numChildren());
+    // use toArray to create a copy to avoid concurrent modification exception
+    for (Node child : node.getChildren().toArray(EMPTY_NODE_ARRAY)) {
+      // safe since the parent only contains subtypes of N.
+      @SuppressWarnings("unchecked")
+      N typedChild = (N) child;
+      results.add(visit(typedChild));
     }
     return results;
   }

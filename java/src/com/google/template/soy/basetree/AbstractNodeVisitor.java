@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basetree;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +31,7 @@ import java.util.List;
  * @see AbstractReturningNodeVisitor
  */
 public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
+  private static final Node[] EMPTY_NODE_ARRAY = new Node[0];
 
   @Override
   public R exec(N node) {
@@ -53,7 +53,11 @@ public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisi
    * @see #visitChildrenAllowingConcurrentModification
    */
   protected void visitChildren(ParentNode<? extends N> node) {
-    visitAll(node.getChildren());
+    List<? extends N> children = node.getChildren();
+    int size = children.size();
+    for (int i = 0; i < size; i++) {
+      visit(children.get(i));
+    }
   }
 
   /**
@@ -66,16 +70,12 @@ public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisi
    * @see #visitChildren
    */
   protected void visitChildrenAllowingConcurrentModification(ParentNode<? extends N> node) {
-    // TODO(lukes): consider using CopyOnWriteArrayList for .getChildre and we could avoid this
-    // or possibly introduce dedicated tree mutation apis to allow us to apply mutations after
-    // iteration
-    visitAll(new ArrayList<>(node.getChildren()));
-  }
-
-  private void visitAll(List<? extends N> children) {
-    int size = children.size();
-    for (int i = 0; i < size; i++) {
-      visit(children.get(i));
+    // use toArray to create a copy to avoid concurrent modification exception
+    for (Node child : node.getChildren().toArray(EMPTY_NODE_ARRAY)) {
+      // safe since the parent only contains subtypes of N.
+      @SuppressWarnings("unchecked")
+      N typedChild = (N) child;
+      visit(typedChild);
     }
   }
 }
