@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -74,6 +75,11 @@ final class VeLogValidationPass extends CompilerFilePass {
           "The logging function ''{0}'' can only be evaluated in a print command that is the "
               + "only direct child of an html attribute value.{1}",
           SoyErrorKind.StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind NO_PRINT_DIRECTIVES =
+      SoyErrorKind.of(
+          "The logging function ''{0}'' can only be evaluated in a print command with no print "
+              + "directives.");
 
   private final ErrorReporter reporter;
   private final boolean enabled;
@@ -142,6 +148,13 @@ final class VeLogValidationPass extends CompilerFilePass {
           function.getFunctionName(),
           " It isn't in a print node.");
       return;
+    }
+    PrintNode printNode = (PrintNode) holderNode;
+    if (printNode.numChildren() != 0) {
+      reporter.report(
+          printNode.getChild(0).getSourceLocation(),
+          NO_PRINT_DIRECTIVES,
+          function.getFunctionName());
     }
     if (holderNode.getParent().getKind() != SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
       reporter.report(
