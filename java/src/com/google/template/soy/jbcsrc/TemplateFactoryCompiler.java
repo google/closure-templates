@@ -16,13 +16,21 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.defineDefaultConstructor;
-import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
-import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.defineDefaultConstructor;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Flags;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -102,7 +110,7 @@ final class TemplateFactoryCompiler {
     if (Flags.DEBUG) {
       new Statement() {
         @Override
-        void doGen(CodeBuilder adapter) {
+        protected void doGen(CodeBuilder adapter) {
           adapter.pushType(template.typeInfo().type());
           adapter.visitVarInsn(Opcodes.ASTORE, 0);
           adapter.returnValue();
@@ -125,7 +133,7 @@ final class TemplateFactoryCompiler {
         Statement.returnExpression(template.constructor().construct(paramsVar, ijVar));
     new Statement() {
       @Override
-      void doGen(CodeBuilder ga) {
+      protected void doGen(CodeBuilder ga) {
         ga.mark(start);
         returnTemplate.gen(ga);
         ga.mark(end);

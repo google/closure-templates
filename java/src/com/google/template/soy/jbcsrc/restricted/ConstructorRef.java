@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
-import com.google.template.soy.jbcsrc.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,12 +34,12 @@ import org.objectweb.asm.commons.Method;
 
 /** A reference to a type that can be constructed at runtime. */
 @AutoValue
-abstract class ConstructorRef {
+public abstract class ConstructorRef {
   /**
    * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
    * given parameter types.
    */
-  static ConstructorRef create(TypeInfo type, Method init) {
+  public static ConstructorRef create(TypeInfo type, Method init) {
     checkArgument(
         init.getName().equals("<init>") && init.getReturnType().equals(Type.VOID_TYPE),
         "'%s' is not a valid constructor",
@@ -51,12 +51,12 @@ abstract class ConstructorRef {
    * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
    * given parameter types.
    */
-  static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
+  public static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
     return create(
         type, new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)));
   }
 
-  static ConstructorRef create(Class<?> clazz, Class<?>... argTypes) {
+  public static ConstructorRef create(Class<?> clazz, Class<?>... argTypes) {
     TypeInfo type = TypeInfo.create(clazz);
     Constructor<?> c;
     try {
@@ -70,23 +70,23 @@ abstract class ConstructorRef {
         type, Method.getMethod(c), ImmutableList.copyOf(constructorType.getArgumentTypes()));
   }
 
-  static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
-  static final ConstructorRef LINKED_HASH_MAP_SIZE = create(LinkedHashMap.class, int.class);
-  static final ConstructorRef AUGMENTED_PARAM_STORE =
+  public static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
+  public static final ConstructorRef LINKED_HASH_MAP_SIZE = create(LinkedHashMap.class, int.class);
+  public static final ConstructorRef AUGMENTED_PARAM_STORE =
       create(AugmentedParamStore.class, SoyRecord.class, int.class);
-  static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
+  public static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
 
-  abstract TypeInfo instanceClass();
+  public abstract TypeInfo instanceClass();
 
-  abstract Method method();
+  public abstract Method method();
 
-  abstract ImmutableList<Type> argTypes();
+  public abstract ImmutableList<Type> argTypes();
 
   /**
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
-  Expression construct(final Expression... args) {
+  public Expression construct(final Expression... args) {
     return construct(Arrays.asList(args));
   }
 
@@ -94,11 +94,11 @@ abstract class ConstructorRef {
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
-  Expression construct(final Iterable<? extends Expression> args) {
+  public Expression construct(final Iterable<? extends Expression> args) {
     Expression.checkTypes(argTypes(), args);
     return new Expression(instanceClass().type(), Feature.NON_NULLABLE) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.newInstance(instanceClass().type());
         // push a second reference onto the stack so there is still a reference to the new object
         // after invoking the constructor (constructors are void methods)

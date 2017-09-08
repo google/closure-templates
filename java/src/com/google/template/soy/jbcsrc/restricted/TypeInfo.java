@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -28,14 +28,14 @@ import org.objectweb.asm.Type;
  * represent primitive or array types or method descriptors.
  */
 @AutoValue
-abstract class TypeInfo {
-  static TypeInfo create(Class<?> clazz) {
+public abstract class TypeInfo {
+  public static TypeInfo create(Class<?> clazz) {
     Type type = Type.getType(clazz);
     return new AutoValue_TypeInfo(
         clazz.getName(), clazz.getSimpleName(), type.getInternalName(), type);
   }
 
-  static TypeInfo create(String className) {
+  public static TypeInfo create(String className) {
     // Translates a java class name (foo.bar.Baz$Quux) to a java 'internal' name and then translates
     // that to a Type object
     Type type = Type.getObjectType(className.replace('.', '/'));
@@ -45,16 +45,16 @@ abstract class TypeInfo {
     return new AutoValue_TypeInfo(className, simpleName, type.getInternalName(), type);
   }
 
-  abstract String className();
+  public abstract String className();
 
-  abstract String simpleName();
+  public abstract String simpleName();
 
-  abstract String internalName();
+  public abstract String internalName();
 
-  abstract Type type();
+  public abstract Type type();
 
   /** Returns a new {@link TypeInfo} for an inner class of this class. */
-  final TypeInfo innerClass(String simpleName) {
+  public final TypeInfo innerClass(String simpleName) {
     checkArgument(
         simpleName.indexOf('$') == -1, "Simple names shouldn't contain '$': %s", simpleName);
     String className = className() + '$' + simpleName;

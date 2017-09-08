@@ -17,11 +17,17 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_RESULT_TYPE;
-import static com.google.template.soy.jbcsrc.Statement.returnExpression;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveRestoreState;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
@@ -141,7 +147,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         isSoftLimited.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, reattachPoint); // if !softLimited
         // ok we were limited, save state and return
@@ -203,7 +209,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         // Legend: RR = RenderResult, Z = boolean
         callRender.gen(adapter); // Stack: RR
         adapter.dup(); // Stack: RR, RR
@@ -244,7 +250,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(readField));
     return new Statement() {
       @Override
-      void doGen(final CodeBuilder adapter) {
+      protected void doGen(final CodeBuilder adapter) {
         int[] keys = new int[reattaches.size()];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = i;
@@ -277,7 +283,8 @@ final class DetachState implements ExpressionDetacher.Factory {
               }
             },
             // Use tableswitch instead of lookupswitch.  TableSwitch is appropriate because our case
-            // labels are sequential integers in the range [0, N).  This means that switch is O(1) and
+            // labels are sequential integers in the range [0, N).  This means that switch is O(1)
+            // and
             // there are no 'holes' meaning that it is compact in the bytecode.
             true);
       }

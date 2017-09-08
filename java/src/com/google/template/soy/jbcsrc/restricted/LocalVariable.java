@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,17 +44,18 @@ import org.objectweb.asm.Type;
  * generate local variable debugging tables in this case (e.g. there is no way to map a method
  * parameter index to a local variable index).
  */
-final class LocalVariable extends Expression {
+public final class LocalVariable extends Expression {
   // TODO(lukes): the fact that you need to specify the start and end labels during construction
   // ends up being awkward... Due to the fact that it is unclear who is responsible for actually
   // visiting the labels.  Maybe this object should be label agnostic and the labels should just be
   // parameters to tableEntry?
 
-  static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
+  public static LocalVariable createThisVar(TypeInfo owner, Label start, Label end) {
     return new LocalVariable("this", owner.type(), 0, start, end, Feature.NON_NULLABLE);
   }
 
-  static LocalVariable createLocal(String name, int index, Type type, Label start, Label end) {
+  public static LocalVariable createLocal(
+      String name, int index, Type type, Label start, Label end) {
     checkArgument(!name.equals("this"));
     return new LocalVariable(name, type, index, start, end);
   }
@@ -74,31 +75,31 @@ final class LocalVariable extends Expression {
   }
 
   /** The name of the variable, ends up in debugging tables. */
-  String variableName() {
+  public String variableName() {
     return variableName;
   }
 
-  int index() {
+  public int index() {
     return index;
   }
 
   /** A label defining the earliest point at which this variable is defined. */
-  Label start() {
+  public Label start() {
     return start;
   }
 
   /** A label defining the latest point at which this variable is defined. */
-  Label end() {
+  public Label end() {
     return end;
   }
 
   @Override
-  LocalVariable asCheap() {
+  public LocalVariable asCheap() {
     return this;
   }
 
   @Override
-  LocalVariable asNonNullable() {
+  public LocalVariable asNonNullable() {
     if (isNonNullable()) {
       return this;
     }
@@ -109,7 +110,7 @@ final class LocalVariable extends Expression {
    * Write a local variable table entry for this variable. This informs debuggers about variable
    * names, types and lifetime.
    */
-  void tableEntry(CodeBuilder mv) {
+  public void tableEntry(CodeBuilder mv) {
     mv.visitLocalVariable(
         variableName(),
         resultType().getDescriptor(),
@@ -120,14 +121,14 @@ final class LocalVariable extends Expression {
   }
 
   @Override
-  void doGen(CodeBuilder mv) {
+  protected void doGen(CodeBuilder mv) {
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
   /**
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    */
-  Statement store(final Expression expr) {
+  public Statement store(final Expression expr) {
     return store(expr, Optional.<Label>absent());
   }
 
@@ -137,7 +138,7 @@ final class LocalVariable extends Expression {
    * @param expr The expression to store
    * @param firstVarInstruction A label to use to mark the store instruction
    */
-  Statement store(final Expression expr, Label firstVarInstruction) {
+  public Statement store(final Expression expr, Label firstVarInstruction) {
     return store(expr, Optional.<Label>of(firstVarInstruction));
   }
 
@@ -146,7 +147,7 @@ final class LocalVariable extends Expression {
     expr.checkAssignableTo(resultType());
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
         if (firstVarInstruction.isPresent()) {
           adapter.mark(firstVarInstruction.get());

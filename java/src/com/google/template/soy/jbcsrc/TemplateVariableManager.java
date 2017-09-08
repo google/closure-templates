@@ -18,11 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.MSG_PLACEHOLDER_MAP_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
@@ -30,6 +30,16 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.ClassFieldManager;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -65,7 +75,7 @@ import org.objectweb.asm.commons.Method;
  * <p>Finally, this class can be used to generate static, per template fields for storing state.
  * Currently, this is used to store default english messages and raw text constants > 64K in length.
  */
-final class TemplateVariableManager {
+final class TemplateVariableManager implements ClassFieldManager {
   enum SaveStrategy {
     /** Means that the value of the variable should be recalculated rather than saved to a field. */
     DERIVED,
@@ -371,7 +381,7 @@ final class TemplateVariableManager {
           // TODO(lukes): we could generate null writes for when object typed fields go out of
           // scope.  This would potentially allow intermediate results to be collected sooner.
           @Override
-          void doGen(CodeBuilder adapter) {
+          protected void doGen(CodeBuilder adapter) {
             for (Label label : endLabels) {
               adapter.visitLabel(label);
             }
@@ -421,14 +431,8 @@ final class TemplateVariableManager {
     }
   }
 
-  /**
-   * Adds a private static final field and returns a reference to it.
-   *
-   * @param proposedName The proposed name. The actual name will be this plus an optional suffix to
-   *     ensure uniqueness.
-   * @param initializer An expression to initialize the field.
-   */
-  FieldRef addStaticField(String proposedName, Expression initializer) {
+  @Override
+  public FieldRef addStaticField(String proposedName, Expression initializer) {
     String name = fieldNames.generateName(proposedName);
     FieldRef ref =
         FieldRef.create(
@@ -471,7 +475,7 @@ final class TemplateVariableManager {
       initializers.add(
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               adapter.loadThis();
               newStringBuilder.gen(adapter);
               tempBufferField.putUnchecked(adapter);
@@ -486,7 +490,7 @@ final class TemplateVariableManager {
       initializers.add(
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               adapter.loadThis();
               newHashMap.gen(adapter);
               msgPlaceholderMapField.putUnchecked(adapter);

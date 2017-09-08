@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
+import com.google.template.soy.jbcsrc.internal.ClassData;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +41,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   }
 
   @Override
-  ClassData getClassData(String name) {
+  protected ClassData getClassData(String name) {
     ClassData classDef = classesByName.get(name);
     if (classDef != null) {
       return classDef;

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
@@ -25,7 +25,7 @@ import org.junit.runners.JUnit4;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 
-/** Tests for {@link BytecodeProducer} */
+/** Tests for {@link com.google.template.soy.jbcsrc.restricted.BytecodeProducer} */
 @RunWith(JUnit4.class)
 public class BytecodeProducerTest {
 
@@ -34,7 +34,7 @@ public class BytecodeProducerTest {
     BytecodeProducer producer =
         new BytecodeProducer() {
           @Override
-          void doGen(CodeBuilder adapter) {
+          protected void doGen(CodeBuilder adapter) {
             BytecodeUtils.constant('c').gen(adapter);
           }
         };

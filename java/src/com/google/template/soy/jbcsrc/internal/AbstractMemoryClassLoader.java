@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.internal;
 
 import com.google.common.base.Throwables;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.net.URL;
 import java.security.AccessController;
@@ -25,7 +26,7 @@ import java.security.ProtectionDomain;
 import javax.annotation.Nullable;
 
 /** Base class to share code between our custom memory based classloader implementations. */
-abstract class AbstractMemoryClassLoader extends ClassLoader {
+public abstract class AbstractMemoryClassLoader extends ClassLoader {
   private static final ProtectionDomain DEFAULT_PROTECTION_DOMAIN;
 
   static {
@@ -41,19 +42,20 @@ abstract class AbstractMemoryClassLoader extends ClassLoader {
             });
   }
 
-  AbstractMemoryClassLoader() {
+  protected AbstractMemoryClassLoader() {
     // We want our loaded classes to be a child classloader of ours to make sure they have access
     // to the same classes that we do.
     this(AbstractMemoryClassLoader.class.getClassLoader());
   }
 
-  AbstractMemoryClassLoader(ClassLoader classLoader) {
+  protected AbstractMemoryClassLoader(ClassLoader classLoader) {
     super(classLoader);
   }
 
   /** Returns a data object for a class with the given name or {@code null} if it doesn't exist. */
   @Nullable
-  abstract ClassData getClassData(String name);
+  @ForOverride
+  protected abstract ClassData getClassData(String name);
 
   @Override
   public final Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {

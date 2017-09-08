@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link TypeInfo}. */
+/** Tests for {@link com.google.template.soy.jbcsrc.restricted.TypeInfo}. */
 @RunWith(JUnit4.class)
 public final class TypeInfoTest {
   static class Inner {}

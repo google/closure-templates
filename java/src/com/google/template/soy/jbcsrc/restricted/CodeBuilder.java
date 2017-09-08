@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
@@ -40,14 +40,14 @@ import org.objectweb.asm.commons.TableSwitchGenerator;
  * <p>So instead we use forwarding to reuse the safe subset of the {@link GeneratorAdapter} api and
  * this allows us to skip past all the local variable munging.
  */
-final class CodeBuilder extends MethodVisitor {
+public final class CodeBuilder extends MethodVisitor {
   private final GeneratorAdapter adapter;
 
-  CodeBuilder(int access, Method method, MethodVisitor mv) {
+  public CodeBuilder(int access, Method method, MethodVisitor mv) {
     this(mv, access, method.getName(), method.getDescriptor());
   }
 
-  CodeBuilder(int access, Method method, @Nullable Type[] exceptions, ClassVisitor cv) {
+  public CodeBuilder(int access, Method method, @Nullable Type[] exceptions, ClassVisitor cv) {
     this(
         access,
         method,
@@ -59,7 +59,7 @@ final class CodeBuilder extends MethodVisitor {
             getInternalNames(exceptions)));
   }
 
-  CodeBuilder(MethodVisitor mv, int access, String name, String desc) {
+  public CodeBuilder(MethodVisitor mv, int access, String name, String desc) {
     super(Opcodes.ASM5, mv);
     this.adapter = new GeneratorAdapter(mv, access, name, desc);
   }

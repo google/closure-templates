@@ -16,12 +16,12 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.isPrimitive;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.numericConversion;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.unboxUnchecked;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 import static com.google.template.soy.types.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.types.proto.JavaQualifiedNames.underscoresToCamelCase;
 import static com.google.template.soy.types.proto.ProtoUtils.getJsType;
@@ -57,9 +57,19 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
-import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
+import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.SanitizedType;
@@ -261,7 +271,7 @@ final class ProtoUtils {
           hasCheck =
               new BytecodeProducer() {
                 @Override
-                void doGen(CodeBuilder adapter) {
+                protected void doGen(CodeBuilder adapter) {
                   getCaseRef.invokeUnchecked(adapter);
                   adapter.visitMethodInsn(
                       Opcodes.INVOKEVIRTUAL,
@@ -279,7 +289,7 @@ final class ProtoUtils {
           hasCheck =
               new BytecodeProducer() {
                 @Override
-                void doGen(CodeBuilder adapter) {
+                protected void doGen(CodeBuilder adapter) {
                   hasMethodRef.invokeUnchecked(adapter);
                   adapter.ifZCmp(Opcodes.IFNE, hasFieldLabel);
                 }
@@ -297,7 +307,7 @@ final class ProtoUtils {
                     getMethodRef.returnType(),
                     getMethodRef.features().minus(Feature.NON_NULLABLE)) {
                   @Override
-                  void doGen(CodeBuilder adapter) {
+                  protected void doGen(CodeBuilder adapter) {
                     typedBaseExpr.gen(adapter);
 
                     // Call .has<Field>().
@@ -375,7 +385,7 @@ final class ProtoUtils {
                     EXTENDABLE_MESSAGE_GET_EXTENSION.returnType(),
                     EXTENDABLE_MESSAGE_GET_EXTENSION.features().minus(Feature.NON_NULLABLE)) {
                   @Override
-                  void doGen(CodeBuilder adapter) {
+                  protected void doGen(CodeBuilder adapter) {
                     typedBaseExpr.gen(adapter);
 
                     // call hasExtension()
@@ -451,7 +461,7 @@ final class ProtoUtils {
       return SoyExpression.forString(
           new Expression(STRING_TYPE, Feature.NON_NULLABLE) {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               byteArray.gen(adapter);
               BASE_ENCODING_BASE_64.invokeUnchecked(adapter);
               // swap the two top items of the stack.
@@ -562,7 +572,7 @@ final class ProtoUtils {
       Expression expression =
           new Expression(messageRuntimeType(descriptor).type()) {
             @Override
-            void doGen(CodeBuilder cb) {
+            protected void doGen(CodeBuilder cb) {
               newBuilderCall.gen(cb);
 
               for (Statement setter : setters) {
@@ -610,7 +620,7 @@ final class ProtoUtils {
       final boolean isNullable = !baseArg.isNonNullable();
       return new Statement() {
         @Override
-        void doGen(CodeBuilder cb) {
+        protected void doGen(CodeBuilder cb) {
           baseArg.gen(cb);
 
           Label argIsNull = null;
@@ -659,7 +669,7 @@ final class ProtoUtils {
               .withSource(
                   new Expression(listArg.resultType(), listArg.features()) {
                     @Override
-                    void doGen(CodeBuilder cb) {
+                    protected void doGen(CodeBuilder cb) {
                       listArg.gen(cb);
 
                       cb.dup();
@@ -677,7 +687,7 @@ final class ProtoUtils {
       final Statement handle = handleRepeatedNotNull(nonNull, field);
       return new Statement() {
         @Override
-        void doGen(CodeBuilder cb) {
+        protected void doGen(CodeBuilder cb) {
           handle.gen(cb);
           cb.mark(end); // jump here if listArg is null
         }
@@ -735,7 +745,7 @@ final class ProtoUtils {
       // Put the entire for-loop together
       return new Statement() {
         @Override
-        void doGen(CodeBuilder cb) {
+        protected void doGen(CodeBuilder cb) {
           list.initializer().gen(cb);
           listSize.initializer().gen(cb);
 
@@ -781,7 +791,7 @@ final class ProtoUtils {
 
       return new Statement() {
         @Override
-        void doGen(CodeBuilder cb) {
+        protected void doGen(CodeBuilder cb) {
           // Put baseArg on stack
 
           baseArg.gen(cb);

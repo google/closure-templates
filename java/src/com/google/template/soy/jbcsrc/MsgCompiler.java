@@ -18,13 +18,20 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;

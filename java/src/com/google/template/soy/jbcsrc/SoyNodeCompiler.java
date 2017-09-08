@@ -17,15 +17,15 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
-import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
+import static com.google.template.soy.jbcsrc.restricted.Statement.NULL_STATEMENT;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
@@ -45,6 +45,15 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
+import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -312,7 +321,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Statement exitScope = scope.exitScope();
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         for (Statement initializer : rangeArgs.initStatements()) {
           initializer.gen(adapter);
         }
@@ -384,7 +393,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       incrementCurrentIndex =
           new Statement() {
             @Override
-            void doGen(CodeBuilder cb) {
+            protected void doGen(CodeBuilder cb) {
               cb.iinc(currentIndex.local().index(), increment);
             }
           };
@@ -405,7 +414,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       incrementCurrentIndex =
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               currentIndex.local().gen(adapter);
               incrementVariable.local().gen(adapter);
               adapter.visitInsn(Opcodes.IADD);
@@ -458,7 +467,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         node.numChildren() == 2 ? visitChildrenInNewScope(node.getChild(1)) : null;
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         listVar.initializer().gen(adapter);
         listSizeVar.initializer().gen(adapter);
         listSizeVar.local().gen(adapter);

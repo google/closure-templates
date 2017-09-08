@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 
 import com.google.protobuf.GeneratedMessage;
+import com.google.template.soy.jbcsrc.restricted.Flags;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +38,13 @@ import org.objectweb.asm.util.CheckClassAdapter;
  * ClassWriter#getCommonSuperClass} for compiler generated types as well as set common defaults for
  * all classwriters used by {@code jbcsrc}.
  */
-final class SoyClassWriter extends ClassVisitor {
+public final class SoyClassWriter extends ClassVisitor {
   /** Returns a new SoyClassWriter for writing a new class of the given type. */
-  static Builder builder(TypeInfo type) {
+  public static Builder builder(TypeInfo type) {
     return new Builder(type);
   }
 
-  static final class Builder {
+  public static final class Builder {
     private final TypeInfo type;
     private int access = Opcodes.ACC_FINAL | Opcodes.ACC_SUPER;
     private TypeInfo baseClass = OBJECT;
@@ -60,29 +62,29 @@ final class SoyClassWriter extends ClassVisitor {
      * @param access The access permissions, a bit mask composed from constants like {@link
      *     Opcodes#ACC_PUBLIC}
      */
-    Builder setAccess(int access) {
+    public Builder setAccess(int access) {
       this.access = access;
       return this;
     }
 
     /** Sets the base class for this type. The default is {@code Object}. */
-    Builder extending(TypeInfo baseClass) {
+    public Builder extending(TypeInfo baseClass) {
       this.baseClass = checkNotNull(baseClass);
       return this;
     }
 
     /** Adds an {@code interface} to the class. */
-    Builder implementing(TypeInfo typeInfo) {
+    public Builder implementing(TypeInfo typeInfo) {
       interfaces.add(typeInfo.internalName());
       return this;
     }
 
-    Builder sourceFileName(String fileName) {
+    public Builder sourceFileName(String fileName) {
       this.fileName = checkNotNull(fileName);
       return this;
     }
 
-    SoyClassWriter build() {
+    public SoyClassWriter build() {
       return new SoyClassWriter(new Writer(), this);
     }
   }
@@ -112,7 +114,7 @@ final class SoyClassWriter extends ClassVisitor {
   }
 
   /** Sets the number of 'detach states' needed by the compiled class. */
-  void setNumDetachStates(int numDetachStates) {
+  public void setNumDetachStates(int numDetachStates) {
     checkArgument(numDetachStates >= 0);
     this.numDetachStates = numDetachStates;
   }
@@ -140,7 +142,7 @@ final class SoyClassWriter extends ClassVisitor {
   }
 
   /** Returns the bytecode of the class that was build with this class writer. */
-  ClassData toClassData() {
+  public ClassData toClassData() {
     return ClassData.create(typeInfo, writer.toByteArray(), numFields, numDetachStates);
   }
 

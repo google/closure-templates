@@ -16,11 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -48,8 +48,14 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
+import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;

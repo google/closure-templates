@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.StandardNames.LARGE_STRING_CONSTANT;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Utf8;
@@ -38,9 +37,9 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.jbcsrc.Expression.Feature;
-import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -58,38 +57,40 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
 
 /** A set of utilities for generating simple expressions in bytecode */
-final class BytecodeUtils {
+public final class BytecodeUtils {
+  private static final String LARGE_STRING_CONSTANT_NAME = "$const_string";
+
   // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
-  static final TypeInfo OBJECT = TypeInfo.create(Object.class);
+  public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
 
-  static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
+  public static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.class);
-  static final Type LOGGING_ADVISING_BUILDER_TYPE =
+  public static final Type LOGGING_ADVISING_BUILDER_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
-  static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
-  static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
-  static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
-  static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
-  static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
-  static final Type LIST_TYPE = Type.getType(List.class);
-  static final Type MESSAGE_TYPE = Type.getType(Message.class);
-  static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
-  static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);
-  static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
-  static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
-  static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
-  static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
-  static final Type SOY_PROTO_VALUE_IMPL_TYPE = Type.getType(SoyProtoValueImpl.class);
-  static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
-  static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
-  static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
-  static final Type STRING_TYPE = Type.getType(String.class);
-  static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
+  public static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
+  public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
+  public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
+  public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
+  public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
+  public static final Type LIST_TYPE = Type.getType(List.class);
+  public static final Type MESSAGE_TYPE = Type.getType(Message.class);
+  public static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
+  public static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);
+  public static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
+  public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
+  public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
+  public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
+  public static final Type SOY_PROTO_VALUE_IMPL_TYPE = Type.getType(SoyProtoValueImpl.class);
+  public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
+  public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
+  public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
+  public static final Type STRING_TYPE = Type.getType(String.class);
+  public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
 
-  static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
-  static final Method NULLARY_INIT = Method.getMethod("void <init>()");
+  public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
+  public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
 
   private static final LoadingCache<Type, Optional<Class<?>>> objectTypeToClassCache =
       CacheBuilder.newBuilder()
@@ -152,7 +153,7 @@ final class BytecodeUtils {
    *
    * <p>Analogous to {@code right instanceof left}.
    */
-  static boolean isPossiblyAssignableFrom(Type left, Type right) {
+  public static boolean isPossiblyAssignableFrom(Type left, Type right) {
     return doIsAssignableFrom(left, right, true);
   }
 
@@ -161,7 +162,7 @@ final class BytecodeUtils {
    *
    * <p>Analogous to {@code right instanceof left}.
    */
-  static boolean isDefinitelyAssignableFrom(Type left, Type right) {
+  public static boolean isDefinitelyAssignableFrom(Type left, Type right) {
     return doIsAssignableFrom(left, right, false);
   }
 
@@ -197,7 +198,7 @@ final class BytecodeUtils {
    * @throws IllegalArgumentException if the class cannot be found. It is expected that this method
    *     will only be called for types that have a runtime on the compilers classpath.
    */
-  static Class<?> classFromAsmType(Type type) {
+  public static Class<?> classFromAsmType(Type type) {
     Optional<Class<?>> maybeClass = objectTypeToClassCache.getUnchecked(type);
     if (!maybeClass.isPresent()) {
       throw new IllegalArgumentException("Could not load: " + type);
@@ -208,7 +209,7 @@ final class BytecodeUtils {
   private static final Expression FALSE =
       new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
         @Override
-        void doGen(CodeBuilder mv) {
+        protected void doGen(CodeBuilder mv) {
           mv.pushBoolean(false);
         }
       };
@@ -216,58 +217,58 @@ final class BytecodeUtils {
   private static final Expression TRUE =
       new Expression(Type.BOOLEAN_TYPE, Feature.CHEAP) {
         @Override
-        void doGen(CodeBuilder mv) {
+        protected void doGen(CodeBuilder mv) {
           mv.pushBoolean(true);
         }
       };
 
   /** Returns an {@link Expression} that can load the given boolean constant. */
-  static Expression constant(boolean value) {
+  public static Expression constant(boolean value) {
     return value ? TRUE : FALSE;
   }
 
   /** Returns an {@link Expression} that can load the given int constant. */
-  static Expression constant(final int value) {
+  public static Expression constant(final int value) {
     return new Expression(Type.INT_TYPE, Feature.CHEAP) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given char constant. */
-  static Expression constant(final char value) {
+  public static Expression constant(final char value) {
     return new Expression(Type.CHAR_TYPE, Feature.CHEAP) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.pushInt(value);
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given long constant. */
-  static Expression constant(final long value) {
+  public static Expression constant(final long value) {
     return new Expression(Type.LONG_TYPE, Feature.CHEAP) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.pushLong(value);
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given double constant. */
-  static Expression constant(final double value) {
+  public static Expression constant(final double value) {
     return new Expression(Type.DOUBLE_TYPE, Feature.CHEAP) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.pushDouble(value);
       }
     };
   }
 
   /** Returns an {@link Expression} that can load the given String constant. */
-  static Expression constant(final String value) {
+  public static Expression constant(final String value) {
     checkNotNull(value);
     checkArgument(
         Utf8.encodedLength(value) <= MAX_CONSTANT_STRING_LENGTH,
@@ -280,7 +281,7 @@ final class BytecodeUtils {
    *
    * <p>Unlike {@link #constant(String)} this can handle strings larger than 65K bytes.
    */
-  static Expression constant(String value, TemplateVariableManager manager) {
+  public static Expression constant(String value, ClassFieldManager manager) {
     int encodedLength = Utf8.encodedLength(value);
     if (encodedLength <= MAX_CONSTANT_STRING_LENGTH) {
       return stringConstant(value);
@@ -302,7 +303,7 @@ final class BytecodeUtils {
         stringExpression = stringExpression.invoke(MethodRef.STRING_CONCAT, substringConstant);
       }
     } while (startIndex < length);
-    FieldRef fieldRef = manager.addStaticField(LARGE_STRING_CONSTANT, stringExpression);
+    FieldRef fieldRef = manager.addStaticField(LARGE_STRING_CONSTANT_NAME, stringExpression);
     return fieldRef.accessor();
   }
 
@@ -334,14 +335,14 @@ final class BytecodeUtils {
   private static Expression stringConstant(final String value) {
     return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.pushString(value);
       }
     };
   }
 
   /** Returns an {@link Expression} that evaluates to the given ContentKind, or null. */
-  static Expression constant(@Nullable ContentKind kind) {
+  public static Expression constant(@Nullable ContentKind kind) {
     return (kind == null)
         ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
         : FieldRef.enumReference(kind).accessor();
@@ -351,21 +352,22 @@ final class BytecodeUtils {
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
    * equivalent to the given {@link SanitizedContentKind}, or null.
    */
-  static Expression constantSanitizedContentKindAsContentKind(@Nullable SanitizedContentKind kind) {
+  public static Expression constantSanitizedContentKindAsContentKind(
+      @Nullable SanitizedContentKind kind) {
     return (kind == null)
         ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
         : FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */
-  static Expression constantNull(Type type) {
+  public static Expression constantNull(Type type) {
     checkArgument(
         type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY,
         "%s is not a reference type",
         type);
     return new Expression(type, Feature.CHEAP) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         mv.visitInsn(Opcodes.ACONST_NULL);
       }
     };
@@ -378,7 +380,7 @@ final class BytecodeUtils {
    * @throws IllegalArgumentException if either the expression or the target type is not a numeric
    *     primitive
    */
-  static Expression numericConversion(final Expression expr, final Type to) {
+  public static Expression numericConversion(final Expression expr, final Type to) {
     if (to.equals(expr.resultType())) {
       return expr;
     }
@@ -387,7 +389,7 @@ final class BytecodeUtils {
     }
     return new Expression(to, expr.features()) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
         adapter.cast(expr.resultType(), to);
       }
@@ -416,8 +418,8 @@ final class BytecodeUtils {
     }
   }
 
-  /** Returns {@code true} if {@link type} is a primitive type. */
-  static boolean isPrimitive(Type type) {
+  /** Returns {@code true} if {@link Type} is a primitive type. */
+  public static boolean isPrimitive(Type type) {
     switch (type.getSort()) {
       case Type.OBJECT:
       case Type.ARRAY:
@@ -450,7 +452,7 @@ final class BytecodeUtils {
    * }
    * }</pre>
    */
-  static void defineDefaultConstructor(ClassVisitor cv, TypeInfo ownerType) {
+  public static void defineDefaultConstructor(ClassVisitor cv, TypeInfo ownerType) {
     CodeBuilder mg = new CodeBuilder(Opcodes.ACC_PUBLIC, NULLARY_INIT, null, cv);
     mg.visitCode();
     Label start = mg.mark();
@@ -471,7 +473,7 @@ final class BytecodeUtils {
   // that way we could save a branch.  Maybe these operators are a failed abstraction?
 
   /** Compares the two primitive valued expressions using the provided comparison operation. */
-  static Expression compare(
+  public static Expression compare(
       final int comparisonOpcode, final Expression left, final Expression right) {
     checkArgument(
         left.resultType().equals(right.resultType()),
@@ -483,7 +485,7 @@ final class BytecodeUtils {
         Expression.areAllCheap(left, right) ? Features.of(Feature.CHEAP) : Features.of();
     return new Expression(Type.BOOLEAN_TYPE, features) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         left.gen(mv);
         right.gen(mv);
         Label ifTrue = mv.newLabel();
@@ -522,12 +524,12 @@ final class BytecodeUtils {
    * Returns an expression that evaluates to the logical negation of the given boolean valued
    * expression.
    */
-  static Expression logicalNot(final Expression baseExpr) {
+  public static Expression logicalNot(final Expression baseExpr) {
     baseExpr.checkAssignableTo(Type.BOOLEAN_TYPE);
     checkArgument(baseExpr.resultType().equals(Type.BOOLEAN_TYPE), "not a boolean expression");
     return new Expression(Type.BOOLEAN_TYPE, baseExpr.features()) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         baseExpr.gen(mv);
         // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
         // this. This is most likely useful for allowing true to be represented by any non-zero
@@ -545,7 +547,7 @@ final class BytecodeUtils {
   }
 
   /** Compares two {@link SoyExpression}s for equality using soy == semantics. */
-  static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
+  public static Expression compareSoyEquals(final SoyExpression left, final SoyExpression right) {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
     // otherwise we special case primitives and eventually fall back to our runtime.
@@ -595,7 +597,7 @@ final class BytecodeUtils {
    * Returns an expression that evaluates to {@code left} if left is non null, and evaluates to
    * {@code right} otherwise.
    */
-  static Expression firstNonNull(final Expression left, final Expression right) {
+  public static Expression firstNonNull(final Expression left, final Expression right) {
     checkArgument(left.resultType().getSort() == Type.OBJECT);
     checkArgument(right.resultType().getSort() == Type.OBJECT);
     Features features = Features.of();
@@ -607,7 +609,7 @@ final class BytecodeUtils {
     }
     return new Expression(left.resultType(), features) {
       @Override
-      void doGen(CodeBuilder cb) {
+      protected void doGen(CodeBuilder cb) {
         Label leftIsNonNull = new Label();
         left.gen(cb); // Stack: L
         cb.dup(); // Stack: L, L
@@ -624,7 +626,7 @@ final class BytecodeUtils {
    * Returns an expression that evaluates equivalently to a java ternary expression: {@code
    * condition ? left : right}
    */
-  static Expression ternary(
+  public static Expression ternary(
       final Expression condition, final Expression trueBranch, final Expression falseBranch) {
     checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
     checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
@@ -637,7 +639,7 @@ final class BytecodeUtils {
     }
     return new Expression(trueBranch.resultType(), features) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         condition.gen(mv);
         Label ifFalse = new Label();
         Label end = new Label();
@@ -655,7 +657,7 @@ final class BytecodeUtils {
    * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
    * expressions.
    */
-  static Expression logicalOr(Expression... expressions) {
+  public static Expression logicalOr(Expression... expressions) {
     return logicalOr(ImmutableList.copyOf(expressions));
   }
 
@@ -663,7 +665,7 @@ final class BytecodeUtils {
    * Implements the short circuiting logical or ({@code ||}) operator over the list of boolean
    * expressions.
    */
-  static Expression logicalOr(List<? extends Expression> expressions) {
+  public static Expression logicalOr(List<? extends Expression> expressions) {
     return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), true);
   }
 
@@ -671,7 +673,7 @@ final class BytecodeUtils {
    * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
    * expressions.
    */
-  static Expression logicalAnd(Expression... expressions) {
+  public static Expression logicalAnd(Expression... expressions) {
     return logicalAnd(ImmutableList.copyOf(expressions));
   }
 
@@ -679,7 +681,7 @@ final class BytecodeUtils {
    * Implements the short circuiting logical and ({@code &&}) operator over the list of boolean
    * expressions.
    */
-  static Expression logicalAnd(List<? extends Expression> expressions) {
+  public static Expression logicalAnd(List<? extends Expression> expressions) {
     return doShortCircuitingLogicalOperator(ImmutableList.copyOf(expressions), false);
   }
 
@@ -697,7 +699,7 @@ final class BytecodeUtils {
         Type.BOOLEAN_TYPE,
         Expression.areAllCheap(expressions) ? Features.of(Feature.CHEAP) : Features.of()) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label shortCircuit = new Label();
         for (int i = 0; i < expressions.size(); i++) {
@@ -723,12 +725,12 @@ final class BytecodeUtils {
    *
    * <p>NOTE: {@code ImmutableList} rejects null elements.
    */
-  static Expression asImmutableList(Iterable<? extends Expression> items) {
+  public static Expression asImmutableList(Iterable<? extends Expression> items) {
     return MethodRef.IMMUTABLE_LIST_COPY_OF_COLLECTION.invoke(asList(items));
   }
 
   /** Returns an expression that returns a new {@link ArrayList} containing all the given items. */
-  static Expression asList(Iterable<? extends Expression> items) {
+  public static Expression asList(Iterable<? extends Expression> items) {
     final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
     if (copy.isEmpty()) {
       return MethodRef.IMMUTABLE_LIST_OF.invoke();
@@ -738,7 +740,7 @@ final class BytecodeUtils {
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
     return new Expression(ARRAY_LIST_TYPE, Feature.NON_NULLABLE) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (Expression child : copy) {
           mv.dup();
@@ -755,7 +757,7 @@ final class BytecodeUtils {
    * nullExit} if it is {@code null}. At {@code nullSafeExit} there will be a null value at the top
    * of the stack.
    */
-  static void nullCoalesce(CodeBuilder builder, Label nullExit) {
+  public static void nullCoalesce(CodeBuilder builder, Label nullExit) {
     builder.dup();
     Label nonNull = new Label();
     builder.ifNonNull(nonNull);
@@ -779,7 +781,7 @@ final class BytecodeUtils {
    *
    * @return the type of the result of the unbox operation
    */
-  static Type unboxUnchecked(CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType) {
+  public static Type unboxUnchecked(CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType) {
     checkArgument(soyType.isBoxed(), "Expected %s to be a boxed type", soyType);
     Type fromType = soyType.runtimeType();
     checkArgument(
@@ -835,7 +837,7 @@ final class BytecodeUtils {
    * Returns an expression that returns a new {@link LinkedHashMap} containing all the given
    * entries.
    */
-  static Expression newLinkedHashMap(
+  public static Expression newLinkedHashMap(
       Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
     final ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
     final ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
@@ -848,7 +850,7 @@ final class BytecodeUtils {
         ConstructorRef.LINKED_HASH_MAP_SIZE.construct(constant(hashMapCapacity(keysCopy.size())));
     return new Expression(LINKED_HASH_MAP_TYPE, Feature.NON_NULLABLE) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
         for (int i = 0; i < keysCopy.size(); i++) {
           Expression key = keysCopy.get(i);

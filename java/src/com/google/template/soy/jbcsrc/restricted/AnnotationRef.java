@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -40,7 +40,7 @@ import org.objectweb.asm.Type;
  * to typo field names, which are silently ignored, since it is assumed in the parser that the field
  * is from a different version of the annotation.
  */
-final class AnnotationRef<T extends Annotation> {
+public final class AnnotationRef<T extends Annotation> {
   private static final Ordering<Method> METHOD_ORDERING =
       new Ordering<Method>() {
         @Override
@@ -49,7 +49,7 @@ final class AnnotationRef<T extends Annotation> {
         }
       };
 
-  static <T extends Annotation> AnnotationRef<T> forType(Class<T> annType) {
+  public static <T extends Annotation> AnnotationRef<T> forType(Class<T> annType) {
     checkArgument(annType.isAnnotation());
     return new AnnotationRef<>(annType);
   }
@@ -94,7 +94,7 @@ final class AnnotationRef<T extends Annotation> {
   }
 
   /** Writes the given annotation to the visitor. */
-  void write(T instance, ClassVisitor visitor) {
+  public void write(T instance, ClassVisitor visitor) {
     doWrite(instance, visitor.visitAnnotation(typeDescriptor, isRuntimeVisible));
   }
 

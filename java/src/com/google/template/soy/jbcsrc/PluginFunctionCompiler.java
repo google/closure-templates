@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
@@ -34,6 +34,12 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -240,7 +246,7 @@ final class PluginFunctionCompiler {
     return SoyExpression.forBool(
         new Expression(Type.BOOLEAN_TYPE, soyExpression.features()) {
           @Override
-          void doGen(CodeBuilder adapter) {
+          protected void doGen(CodeBuilder adapter) {
             soyExpression.gen(adapter);
             Label isNull = new Label();
             adapter.ifNull(isNull);

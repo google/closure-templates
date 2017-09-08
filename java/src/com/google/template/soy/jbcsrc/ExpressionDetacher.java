@@ -16,11 +16,16 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
@@ -79,7 +84,7 @@ interface ExpressionDetacher {
       soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
       return new Expression(SOY_VALUE_TYPE) {
         @Override
-        void doGen(CodeBuilder adapter) {
+        protected void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
           // invocations.  This makes it difficult/confusing to use the expression api. So instead
           // call a bunch of unchecked invocations.
@@ -107,7 +112,7 @@ interface ExpressionDetacher {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
       return new Expression(soyValueProviderList.resultType()) {
         @Override
-        void doGen(CodeBuilder cb) {
+        protected void doGen(CodeBuilder cb) {
           // We use a bunch of dup() operations in order to save extra field reads and method
           // invocations.  This makes it difficult/confusing to use the expression api. So instead
           // call a bunch of unchecked invocations.

@@ -17,19 +17,19 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Predicates.notNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
-import static com.google.template.soy.jbcsrc.FieldRef.createField;
-import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
-import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
-import static com.google.template.soy.jbcsrc.MethodRef.RENDER_RESULT_DONE;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
-import static com.google.template.soy.jbcsrc.Statement.returnExpression;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
+import static com.google.template.soy.jbcsrc.restricted.FieldRef.createField;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
+import static com.google.template.soy.jbcsrc.restricted.MethodRef.RENDER_RESULT_DONE;
+import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
@@ -44,6 +44,18 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
+import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -277,7 +289,7 @@ final class LazyClosureCompiler {
       Statement doResolveImpl =
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               adapter.mark(start);
               storeExpr.gen(adapter);
               returnDone.gen(adapter);
@@ -290,7 +302,7 @@ final class LazyClosureCompiler {
           generateConstructor(
               new Statement() {
                 @Override
-                void doGen(CodeBuilder adapter) {
+                protected void doGen(CodeBuilder adapter) {
                   adapter.loadThis();
                   adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
                 }
@@ -334,7 +346,7 @@ final class LazyClosureCompiler {
       Statement fullMethodBody =
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               adapter.mark(start);
               nodeBody.gen(adapter);
               adapter.mark(end);
@@ -352,7 +364,7 @@ final class LazyClosureCompiler {
       Statement superClassContstructor =
           new Statement() {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               adapter.loadThis();
               contentKind.gen(adapter);
               adapter.invokeConstructor(baseClass.type(), DETACHABLE_CONTENT_PROVIDER_INIT);
@@ -398,7 +410,7 @@ final class LazyClosureCompiler {
       Statement constructorBody =
           new Statement() {
             @Override
-            void doGen(CodeBuilder cb) {
+            protected void doGen(CodeBuilder cb) {
               cb.mark(start);
               // call super()
               superClassConstructorInvocation.gen(cb);

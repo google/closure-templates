@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
-import static com.google.template.soy.jbcsrc.SoyExpression.forList;
-import static com.google.template.soy.jbcsrc.SoyExpression.forSanitizedString;
-import static com.google.template.soy.jbcsrc.SoyExpression.forString;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forList;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSanitizedString;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -46,7 +46,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.objectweb.asm.Type;
 
-/** Tests for {@link SoyExpression} */
+/** Tests for {@link com.google.template.soy.jbcsrc.restricted.SoyExpression} */
 @RunWith(JUnit4.class)
 public class SoyExpressionTest {
 

@@ -16,6 +16,17 @@ The jbcsrc implementation is split across several packages.
     The base package contains the core compiler implementation and the public
     compiler entry point: `BytecodeCompiler`
 
+*   `com.google.template.soy.jbcsrc.restricted`
+
+    Defines the main code generation APIs and utilities. Notably the
+    `Expression` and `Statement` types. This package is also available to
+    compiler internal plugins.
+
+*   `com.google.template.soy.jbcsrc.internal`
+
+    Contains private types for defining classes and loading classes from memory
+    buffers.
+
 *   `com.google.template.soy.jbcsrc.runtime`
 
     This package contains helper classes and utility routines that are only

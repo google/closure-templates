@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -28,7 +28,7 @@ import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
 /** An object that can produce bytecode. */
-abstract class BytecodeProducer {
+public abstract class BytecodeProducer {
   /**
    * This bit tracks whether or not the current thread is generating code.
    *
@@ -53,13 +53,11 @@ abstract class BytecodeProducer {
 
   protected final SourceLocation location;
 
-  BytecodeProducer() {
+  protected BytecodeProducer() {
     this(SourceLocation.UNKNOWN);
   }
 
-  // when UNKNOWN source locations go away, so can this use of isKnown
-  @SuppressWarnings("deprecation")
-  BytecodeProducer(SourceLocation location) {
+  protected BytecodeProducer(SourceLocation location) {
     if (Flags.DEBUG && isGenerating.get()) {
       throw new IllegalStateException(
           "All bytecode producers should be constructed prior to code generation (.gen()) being "
@@ -71,7 +69,7 @@ abstract class BytecodeProducer {
   }
 
   /** Writes the bytecode to the adapter. */
-  final void gen(CodeBuilder adapter) {
+  public final void gen(CodeBuilder adapter) {
     boolean shouldClearIsGeneratingBit = false;
     if (Flags.DEBUG && !isGenerating.get()) {
       isGenerating.set(true);
@@ -104,10 +102,10 @@ abstract class BytecodeProducer {
   }
 
   @ForOverride
-  abstract void doGen(CodeBuilder adapter);
+  protected abstract void doGen(CodeBuilder adapter);
 
   /** Returns a human readable string for the code that this {@link BytecodeProducer} generates. */
-  final String trace() {
+  public final String trace() {
     // TODO(lukes): textifier has support for custom label names by overriding appendLabel.
     // Consider trying to make use of (using the Label.info field? adding a custom NamedLabel
     // sub type?)

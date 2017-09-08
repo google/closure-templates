@@ -16,10 +16,13 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;

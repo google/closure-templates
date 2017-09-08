@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
@@ -49,7 +49,7 @@ import org.objectweb.asm.Type;
  * <p>In {@code jbcsrc} all types have a corresponding runtime type, and often distinct 'boxed' and
  * 'unboxed' forms.
  */
-abstract class SoyRuntimeType {
+public abstract class SoyRuntimeType {
 
   /**
    * Returns the unboxed {@code jbcsrc} representation of the given type, or absent if no such
@@ -57,7 +57,7 @@ abstract class SoyRuntimeType {
    *
    * <p>Types will fail to have unboxed representations mostly for unknown, any and union types.
    */
-  static Optional<SoyRuntimeType> getUnboxedType(SoyType soyType) {
+  public static Optional<SoyRuntimeType> getUnboxedType(SoyType soyType) {
     // Optional is immutable so Optional<Subclass> can always be safely cast to Optional<SuperClass>
     @SuppressWarnings("unchecked")
     Optional<SoyRuntimeType> typed = (Optional) primitiveTypeCache.getUnchecked(soyType);
@@ -65,7 +65,7 @@ abstract class SoyRuntimeType {
   }
 
   /** Returns the boxed representation of the given type. */
-  static SoyRuntimeType getBoxedType(SoyType soyType) {
+  public static SoyRuntimeType getBoxedType(SoyType soyType) {
     return boxedTypeCache.getUnchecked(soyType);
   }
 
@@ -213,27 +213,27 @@ abstract class SoyRuntimeType {
     this.runtimeType = checkNotNull(runtimeType);
   }
 
-  final SoyType soyType() {
+  public final SoyType soyType() {
     return soyType;
   }
 
-  final Type runtimeType() {
+  public final Type runtimeType() {
     return runtimeType;
   }
 
-  boolean assignableToNullableInt() {
+  public boolean assignableToNullableInt() {
     return assignableToNullableType(IntType.getInstance());
   }
 
-  boolean assignableToNullableFloat() {
+  public boolean assignableToNullableFloat() {
     return assignableToNullableType(FloatType.getInstance());
   }
 
-  boolean assignableToNullableNumber() {
+  public boolean assignableToNullableNumber() {
     return assignableToNullableType(SoyTypes.NUMBER_TYPE);
   }
 
-  boolean assignableToNullableString() {
+  public boolean assignableToNullableString() {
     return soyType.getKind().isKnownStringOrSanitizedContent()
         || (soyType.getKind() == Kind.UNION
             && SoyTypes.removeNull(soyType).getKind().isKnownStringOrSanitizedContent());
@@ -253,16 +253,16 @@ abstract class SoyRuntimeType {
    * compile time. So {@link #isKnownString()} on that soy expression will return false even though
    * it may in fact be a string.
    */
-  boolean isKnownString() {
+  public boolean isKnownString() {
     return soyType.getKind() == Kind.STRING;
   }
 
-  boolean isKnownStringOrSanitizedContent() {
+  public boolean isKnownStringOrSanitizedContent() {
     // It 'is' a string if it is unboxed or is one of our string types
     return soyType.getKind().isKnownStringOrSanitizedContent();
   }
 
-  boolean isKnownSanitizedContent() {
+  public boolean isKnownSanitizedContent() {
     return soyType.getKind().isKnownSanitizedContent();
   }
 
@@ -272,7 +272,7 @@ abstract class SoyRuntimeType {
    * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
    * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
    */
-  boolean isKnownInt() {
+  public boolean isKnownInt() {
     return soyType.getKind() == Kind.INT;
   }
 
@@ -282,27 +282,27 @@ abstract class SoyRuntimeType {
    * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
    * <em>not</em> a float, just that it is not <em>known</em> to be a float at compile time.
    */
-  final boolean isKnownFloat() {
+  public final boolean isKnownFloat() {
     return soyType.getKind() == Kind.FLOAT;
   }
 
-  final boolean isKnownList() {
+  public final boolean isKnownList() {
     return soyType.getKind() == Kind.LIST;
   }
 
-  final boolean isKnownMap() {
+  public final boolean isKnownMap() {
     return soyType.getKind() == Kind.MAP;
   }
 
-  final boolean isKnownRecord() {
+  public final boolean isKnownRecord() {
     return soyType.getKind() == Kind.RECORD;
   }
 
-  final boolean isKnownBool() {
+  public final boolean isKnownBool() {
     return soyType.getKind() == Kind.BOOL;
   }
 
-  final boolean isKnownProto() {
+  public final boolean isKnownProto() {
     return soyType.getKind() == Kind.PROTO;
   }
 
@@ -313,15 +313,15 @@ abstract class SoyRuntimeType {
    * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
    * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
    */
-  final boolean isKnownNumber() {
+  public final boolean isKnownNumber() {
     return SoyTypes.NUMBER_TYPE.isAssignableFrom(soyType);
   }
 
-  final SoyRuntimeType asNonNullable() {
+  public final SoyRuntimeType asNonNullable() {
     return withNewSoyType(SoyTypes.removeNull(soyType));
   }
 
-  final SoyRuntimeType asNullable() {
+  public final SoyRuntimeType asNullable() {
     return withNewSoyType(SoyTypes.makeNullable(soyType));
   }
 

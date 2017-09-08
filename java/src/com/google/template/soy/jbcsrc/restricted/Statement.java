@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.THROWABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.THROWABLE_TYPE;
 
 import com.google.template.soy.base.SourceLocation;
 import java.io.IOException;
@@ -36,19 +36,19 @@ import org.objectweb.asm.commons.Method;
  * are unchanged by the generated code (i.e. the frame map at the start of the statement is
  * identical to the frame map at the end of the statement).
  */
-abstract class Statement extends BytecodeProducer {
+public abstract class Statement extends BytecodeProducer {
   private static final Type[] IO_EXCEPTION_ARRAY = new Type[] {Type.getType(IOException.class)};
 
-  static final Statement NULL_STATEMENT =
+  public static final Statement NULL_STATEMENT =
       new Statement() {
         @Override
-        void doGen(CodeBuilder adapter) {}
+        protected void doGen(CodeBuilder adapter) {}
       };
 
-  static final Statement RETURN =
+  public static final Statement RETURN =
       new Statement() {
         @Override
-        void doGen(CodeBuilder adapter) {
+        protected void doGen(CodeBuilder adapter) {
           adapter.returnValue();
         }
       };
@@ -59,13 +59,13 @@ abstract class Statement extends BytecodeProducer {
    * <p>This does not validate that the return type is appropriate. It is our callers responsibility
    * to do that.
    */
-  static Statement returnExpression(final Expression expression) {
+  public static Statement returnExpression(final Expression expression) {
     // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
     // is compatible with the return type of the method, but i don't know how to get that
     // information here (reasonably).  So it is the caller's responsibility.
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.returnValue();
       }
@@ -77,11 +77,11 @@ abstract class Statement extends BytecodeProducer {
    *
    * <p>This does not validate that the throwable is compatible with the methods throws clause.
    */
-  static Statement throwExpression(final Expression expression) {
+  public static Statement throwExpression(final Expression expression) {
     expression.checkAssignableTo(THROWABLE_TYPE);
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.throwException();
       }
@@ -89,16 +89,16 @@ abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns a statement that concatenates all the provided statements. */
-  static Statement concat(Statement... statements) {
+  public static Statement concat(Statement... statements) {
     return concat(Arrays.asList(statements));
   }
 
   /** Returns a statement that concatenates all the provided statements. */
-  static Statement concat(final Iterable<? extends Statement> statements) {
+  public static Statement concat(final Iterable<? extends Statement> statements) {
     checkNotNull(statements);
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         for (Statement statement : statements) {
           statement.gen(adapter);
         }
@@ -106,11 +106,11 @@ abstract class Statement extends BytecodeProducer {
     };
   }
 
-  Statement() {
+  protected Statement() {
     super();
   }
 
-  Statement(SourceLocation location) {
+  protected Statement(SourceLocation location) {
     super(location);
   }
 
@@ -121,7 +121,7 @@ abstract class Statement extends BytecodeProducer {
    * @param method The method signature
    * @param visitor The class visitor to write it to
    */
-  final void writeMethod(int access, Method method, ClassVisitor visitor) {
+  public final void writeMethod(int access, Method method, ClassVisitor visitor) {
     writeMethodTo(new CodeBuilder(access, method, null, visitor));
   }
 
@@ -132,7 +132,7 @@ abstract class Statement extends BytecodeProducer {
    * @param method The method signature
    * @param visitor The class visitor to write it to
    */
-  final void writeIOExceptionMethod(int access, Method method, ClassVisitor visitor) {
+  public final void writeIOExceptionMethod(int access, Method method, ClassVisitor visitor) {
     writeMethodTo(new CodeBuilder(access, method, IO_EXCEPTION_ARRAY, visitor));
   }
 
@@ -152,10 +152,10 @@ abstract class Statement extends BytecodeProducer {
    * Returns a new statement identical to this one but with the given label applied at the start of
    * the statement.
    */
-  final Statement labelStart(final Label label) {
+  public final Statement labelStart(final Label label) {
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         adapter.mark(label);
         Statement.this.gen(adapter);
       }
@@ -163,14 +163,14 @@ abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns a new {@link Statement} with the source location attached. */
-  final Statement withSourceLocation(SourceLocation location) {
+  public final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);
     if (location.equals(this.location)) {
       return this;
     }
     return new Statement(location) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
       }
     };
@@ -180,7 +180,7 @@ abstract class Statement extends BytecodeProducer {
   final Expression then(final Expression expression) {
     return new Expression(expression.resultType(), expression.features()) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
         expression.gen(adapter);
       }

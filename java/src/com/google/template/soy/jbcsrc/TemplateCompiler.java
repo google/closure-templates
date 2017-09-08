@@ -16,19 +16,19 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
-import static com.google.template.soy.jbcsrc.FieldRef.createField;
-import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
-import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
-import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_CONTEXT_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
+import static com.google.template.soy.jbcsrc.restricted.FieldRef.createField;
+import static com.google.template.soy.jbcsrc.restricted.FieldRef.createFinalField;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
@@ -39,6 +39,19 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
+import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.AnnotationRef;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -247,7 +260,7 @@ final class TemplateCompiler {
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         adapter.mark(start);
         methodBody.body().gen(adapter);
         adapter.mark(end);
@@ -289,7 +302,7 @@ final class TemplateCompiler {
     Statement constructorBody =
         new Statement() {
           @Override
-          void doGen(CodeBuilder ga) {
+          protected void doGen(CodeBuilder ga) {
             ga.mark(start);
             // call super()
             thisVar.gen(ga);

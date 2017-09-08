@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.internal;
 
 import com.google.common.collect.ImmutableMap;
 
 /** A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s. */
-final class MemoryClassLoader extends AbstractMemoryClassLoader {
+public final class MemoryClassLoader extends AbstractMemoryClassLoader {
   static {
     // Since we only override findClass(), we can call this method to get fine grained locking
     // support with no additional work. Our superclass will lock all calls to findClass with a per
@@ -35,17 +35,17 @@ final class MemoryClassLoader extends AbstractMemoryClassLoader {
    */
   private final ImmutableMap<String, ClassData> classesByName;
 
-  MemoryClassLoader(Iterable<ClassData> classes) {
+  public MemoryClassLoader(Iterable<ClassData> classes) {
     this.classesByName = indexByClassname(classes);
   }
 
-  MemoryClassLoader(ClassLoader parent, Iterable<ClassData> classes) {
+  public MemoryClassLoader(ClassLoader parent, Iterable<ClassData> classes) {
     super(parent);
     this.classesByName = indexByClassname(classes);
   }
 
   @Override
-  ClassData getClassData(String name) {
+  protected ClassData getClassData(String name) {
     return classesByName.get(name);
   }
 

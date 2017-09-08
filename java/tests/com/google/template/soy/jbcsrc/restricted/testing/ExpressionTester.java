@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted.testing;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -25,6 +25,16 @@ import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
+import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -81,7 +91,7 @@ public final class ExpressionTester {
     return Truth.assertAbout(FACTORY).that(resp);
   }
 
-  static final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
+  public static final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
     private ClassData compiledClass;
     private Invoker invoker;
 
@@ -89,7 +99,7 @@ public final class ExpressionTester {
       super(strategy, subject);
     }
 
-    ExpressionSubject evaluatesTo(int expected) {
+    public ExpressionSubject evaluatesTo(int expected) {
       compile();
       if (((IntInvoker) invoker).invoke() != expected) {
         fail("evaluatesTo", expected);
@@ -101,7 +111,7 @@ public final class ExpressionTester {
      * Asserts on the literal code of the expression, use sparingly since it may lead to overly
      * coupled tests.
      */
-    ExpressionSubject hasCode(String... instructions) {
+    public ExpressionSubject hasCode(String... instructions) {
       compile();
       String formatted = Joiner.on('\n').join(instructions);
       if (!formatted.equals(actual().trace().trim())) {
@@ -114,7 +124,7 @@ public final class ExpressionTester {
      * Asserts on the literal code of the expression, use sparingly since it may lead to overly
      * coupled tests.
      */
-    ExpressionSubject doesNotContainCode(String... instructions) {
+    public ExpressionSubject doesNotContainCode(String... instructions) {
       compile();
       String formatted = Joiner.on('\n').join(instructions);
       String actual = actual().trace().trim();
@@ -124,7 +134,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesTo(boolean expected) {
+    public ExpressionSubject evaluatesTo(boolean expected) {
       compile();
       boolean actual;
       try {
@@ -139,7 +149,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesTo(double expected) {
+    public ExpressionSubject evaluatesTo(double expected) {
       compile();
       double actual;
       try {
@@ -154,7 +164,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesTo(long expected) {
+    public ExpressionSubject evaluatesTo(long expected) {
       compile();
       long actual;
       try {
@@ -169,7 +179,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesTo(char expected) {
+    public ExpressionSubject evaluatesTo(char expected) {
       compile();
       char actual;
       try {
@@ -184,7 +194,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesTo(Object expected) {
+    public ExpressionSubject evaluatesTo(Object expected) {
       compile();
       Object actual;
       try {
@@ -199,7 +209,7 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
+    public ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
       compile();
       Object actual;
       try {
@@ -214,11 +224,11 @@ public final class ExpressionTester {
       return this;
     }
 
-    ExpressionSubject throwsException(Class<? extends Throwable> clazz) {
+    public ExpressionSubject throwsException(Class<? extends Throwable> clazz) {
       return throwsException(clazz, null);
     }
 
-    ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
+    public ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
       compile();
       try {
         invoker.voidInvoke();
@@ -256,7 +266,7 @@ public final class ExpressionTester {
         }
       };
 
-  static <T> T createInvoker(Class<T> clazz, Expression expr) {
+  public static <T> T createInvoker(Class<T> clazz, Expression expr) {
     Class<? extends Invoker> expected = invokerForType(expr.resultType());
     checkArgument(
         clazz.equals(expected),
@@ -283,7 +293,7 @@ public final class ExpressionTester {
     }
   }
 
-  static ClassData createClass(Class<? extends Invoker> targetInterface, Expression expr) {
+  public static ClassData createClass(Class<? extends Invoker> targetInterface, Expression expr) {
     java.lang.reflect.Method invokeMethod;
     try {
       invokeMethod = targetInterface.getMethod("invoke");
@@ -320,7 +330,7 @@ public final class ExpressionTester {
                 .toStatement(),
             new Statement() {
               @Override
-              void doGen(CodeBuilder adapter) {
+              protected void doGen(CodeBuilder adapter) {
                 adapter.visitInsn(Opcodes.RETURN);
               }
             })
@@ -364,7 +374,8 @@ public final class ExpressionTester {
       case Type.ARRAY:
       case Type.OBJECT:
         return ObjectInvoker.class;
+      default:
+        throw new AssertionError("unsupported type" + type);
     }
-    throw new AssertionError("unsupported type" + type);
   }
 }

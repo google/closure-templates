@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalAnd;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalOr;
-import static com.google.template.soy.jbcsrc.ExpressionTester.assertThatExpression;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalAnd;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalOr;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.junit.runners.JUnit4;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-/** Tests for {@link BytecodeUtils} */
+/** Tests for {@link com.google.template.soy.jbcsrc.restricted.BytecodeUtils} */
 @RunWith(JUnit4.class)
 public class BytecodeUtilsTest {
 
@@ -164,7 +164,7 @@ public class BytecodeUtilsTest {
   private static Expression throwingBoolExpression() {
     return new Expression(Type.BOOLEAN_TYPE) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         adapter.throwException(
             Type.getType(IllegalStateException.class), "shouldn't have called me");
       }

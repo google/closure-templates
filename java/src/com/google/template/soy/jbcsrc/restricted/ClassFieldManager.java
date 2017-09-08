@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc.
+ * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
-/** Holds flags controlling compiler behavior. */
-final class Flags {
+/** An object that can add fields to a class. */
+public interface ClassFieldManager {
   /**
-   * Controls extra debug checks in the compiler that are generally redundant with bytecode
-   * verification. Currently only enabled in tests.
+   * Adds a private static final field and returns a reference to it.
+   *
+   * @param proposedName The proposed name. The actual name will be this plus an optional suffix to
+   *     ensure uniqueness.
+   * @param initializer An expression to initialize the field.
    */
-  static final boolean DEBUG = Boolean.getBoolean("soy_jbcsrc_debug_mode");
-
-  private Flags() {}
+  FieldRef addStaticField(String proposedName, Expression initializer);
 }

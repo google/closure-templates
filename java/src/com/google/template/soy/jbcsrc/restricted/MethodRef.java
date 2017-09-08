@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.Expression.areAllCheap;
+import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -39,9 +39,9 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.Expression.Feature;
-import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -65,87 +65,87 @@ import org.objectweb.asm.commons.Method;
 
 /** A reference to a method that can be called at runtime. */
 @AutoValue
-abstract class MethodRef {
+public abstract class MethodRef {
 
-  static final MethodRef ADVISING_STRING_BUILDER_GET_AND_CLEAR =
+  public static final MethodRef ADVISING_STRING_BUILDER_GET_AND_CLEAR =
       create(LoggingAdvisingAppendable.BufferingAppendable.class, "getAndClearBuffer")
           .asNonNullable();
 
-  static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
+  public static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
 
-  static final MethodRef BOOLEAN_DATA_FOR_VALUE =
+  public static final MethodRef BOOLEAN_DATA_FOR_VALUE =
       create(BooleanData.class, "forValue", boolean.class).asNonNullable();
 
-  static final MethodRef BOOLEAN_VALUE = create(Boolean.class, "booleanValue").asCheap();
+  public static final MethodRef BOOLEAN_VALUE = create(Boolean.class, "booleanValue").asCheap();
 
-  static final MethodRef BOOLEAN_TO_STRING =
+  public static final MethodRef BOOLEAN_TO_STRING =
       create(Boolean.class, "toString", boolean.class).asCheap().asNonNullable();
 
-  static final MethodRef COMPILED_TEMPLATE_RENDER =
+  public static final MethodRef COMPILED_TEMPLATE_RENDER =
       create(CompiledTemplate.class, "render", LoggingAdvisingAppendable.class, RenderContext.class)
           .asNonNullable();
 
-  static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
+  public static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
       create(DictImpl.class, "forProviderMap", Map.class).asNonNullable();
 
-  static final MethodRef DOUBLE_TO_STRING =
+  public static final MethodRef DOUBLE_TO_STRING =
       create(Double.class, "toString", double.class).asNonNullable();
 
-  static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
+  public static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
 
-  static final MethodRef STRING_COMPARE_TO = create(String.class, "compareTo", String.class);
+  public static final MethodRef STRING_COMPARE_TO = create(String.class, "compareTo", String.class);
 
-  static final MethodRef FLOAT_DATA_FOR_VALUE =
+  public static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
 
   // cheap() because it's zero-arg
-  static final MethodRef IMMUTABLE_LIST_OF =
+  public static final MethodRef IMMUTABLE_LIST_OF =
       create(ImmutableList.class, "of").asCheap().asNonNullable();
 
-  static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
+  public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
       create(ImmutableList.class, "copyOf", Collection.class).asCheap().asNonNullable();
 
-  static final MethodRef INTEGER_DATA_FOR_VALUE =
+  public static final MethodRef INTEGER_DATA_FOR_VALUE =
       create(IntegerData.class, "forValue", long.class).asNonNullable();
 
-  static final MethodRef INTS_CHECKED_CAST =
+  public static final MethodRef INTS_CHECKED_CAST =
       create(Ints.class, "checkedCast", long.class).asCheap();
 
-  static final MethodRef LINKED_HASH_MAP_CLEAR = create(LinkedHashMap.class, "clear");
+  public static final MethodRef LINKED_HASH_MAP_CLEAR = create(LinkedHashMap.class, "clear");
 
-  static final MethodRef LINKED_HASH_MAP_PUT =
+  public static final MethodRef LINKED_HASH_MAP_PUT =
       create(LinkedHashMap.class, "put", Object.class, Object.class);
 
-  static final MethodRef LIST_GET = create(List.class, "get", int.class).asCheap();
+  public static final MethodRef LIST_GET = create(List.class, "get", int.class).asCheap();
 
-  static final MethodRef LIST_SIZE = create(List.class, "size").asCheap();
+  public static final MethodRef LIST_SIZE = create(List.class, "size").asCheap();
 
-  static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
+  public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       create(ListImpl.class, "forProviderList", List.class);
 
-  static final MethodRef LONG_PARSE_LONG =
+  public static final MethodRef LONG_PARSE_LONG =
       create(Long.class, "parseLong", String.class).asCheap().asNonNullable();
 
-  static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
+  public static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
 
-  static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
+  public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
 
-  static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
+  public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
 
-  static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
+  public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 
-  static final MethodRef ORDAIN_AS_SAFE =
+  public static final MethodRef ORDAIN_AS_SAFE =
       create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
 
-  static final MethodRef PARAM_STORE_SET_FIELD =
+  public static final MethodRef PARAM_STORE_SET_FIELD =
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
 
-  static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
+  public static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
-  static final MethodRef SOY_PROTO_VALUE_IMPL_CREATE =
+  public static final MethodRef SOY_PROTO_VALUE_IMPL_CREATE =
       create(SoyProtoValueImpl.class, "create", Message.class).asNonNullable();
 
-  static final MethodRef RENDER_CONTEXT_GET_DELTEMPLATE =
+  public static final MethodRef RENDER_CONTEXT_GET_DELTEMPLATE =
       create(
           RenderContext.class,
           "getDelTemplate",
@@ -155,41 +155,43 @@ abstract class MethodRef {
           SoyRecord.class,
           SoyRecord.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_FUNCTION =
+  public static final MethodRef RENDER_CONTEXT_GET_FUNCTION =
       create(RenderContext.class, "getFunction", String.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_LOCALE = create(RenderContext.class, "getLocale");
+  public static final MethodRef RENDER_CONTEXT_GET_LOCALE =
+      create(RenderContext.class, "getLocale");
 
-  static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE =
+  public static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE =
       create(RenderContext.class, "getPrintDirective", String.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_SOY_MSG_PARTS =
+  public static final MethodRef RENDER_CONTEXT_GET_SOY_MSG_PARTS =
       create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
 
-  static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
+  public static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
       create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
 
-  static final MethodRef RENDER_CONTEXT_RENAME_XID =
+  public static final MethodRef RENDER_CONTEXT_RENAME_XID =
       create(RenderContext.class, "renameXid", String.class).asNonNullable();
 
-  static final MethodRef RENDER_CONTEXT_USE_PRIMARY_MSG =
+  public static final MethodRef RENDER_CONTEXT_USE_PRIMARY_MSG =
       create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO =
+  public static final MethodRef RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO =
       create(RenderContext.class, "getDebugSoyTemplateInfo");
 
-  static final MethodRef RENDER_RESULT_DONE =
+  public static final MethodRef RENDER_RESULT_DONE =
       create(RenderResult.class, "done").asCheap().asNonNullable();
 
-  static final MethodRef RENDER_RESULT_IS_DONE = create(RenderResult.class, "isDone").asCheap();
+  public static final MethodRef RENDER_RESULT_IS_DONE =
+      create(RenderResult.class, "isDone").asCheap();
 
-  static final MethodRef RENDER_RESULT_LIMITED =
+  public static final MethodRef RENDER_RESULT_LIMITED =
       create(RenderResult.class, "limited").asCheap().asNonNullable();
 
-  static final MethodRef RUNTIME_APPLY_ESCAPERS_DYNAMIC =
+  public static final MethodRef RUNTIME_APPLY_ESCAPERS_DYNAMIC =
       create(JbcSrcRuntime.class, "applyEscapersDynamic", CompiledTemplate.class, List.class);
 
-  static final MethodRef RUNTIME_APPLY_ESCAPERS =
+  public static final MethodRef RUNTIME_APPLY_ESCAPERS =
       create(
           JbcSrcRuntime.class,
           "applyEscapers",
@@ -197,7 +199,7 @@ abstract class MethodRef {
           ContentKind.class,
           List.class);
 
-  static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
+  public static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
       create(
           JbcSrcRuntime.class,
           "applyPrintDirective",
@@ -205,54 +207,54 @@ abstract class MethodRef {
           SoyValue.class,
           List.class);
 
-  static final MethodRef RUNTIME_CALL_SOY_FUNCTION =
+  public static final MethodRef RUNTIME_CALL_SOY_FUNCTION =
       create(JbcSrcRuntime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
 
-  static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
+  public static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
       create(JbcSrcRuntime.class, "coerceToBoolean", double.class);
 
-  static final MethodRef RUNTIME_COERCE_TO_STRING =
+  public static final MethodRef RUNTIME_COERCE_TO_STRING =
       create(JbcSrcRuntime.class, "coerceToString", SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_EQUAL =
+  public static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
-  static final MethodRef RUNTIME_COMPARE_STRING =
+  public static final MethodRef RUNTIME_COMPARE_STRING =
       create(SharedRuntime.class, "compareString", String.class, SoyValue.class);
 
-  static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
+  public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)
           .asNonNullable();
 
-  static final MethodRef RUNTIME_GET_LIST_ITEM =
+  public static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
 
-  static final MethodRef RUNTIME_GET_LIST_STATUS =
+  public static final MethodRef RUNTIME_GET_LIST_STATUS =
       create(JbcSrcRuntime.class, "getListStatus", List.class);
 
-  static final MethodRef RUNTIME_GET_MAP_ITEM =
+  public static final MethodRef RUNTIME_GET_MAP_ITEM =
       create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
 
-  static final MethodRef RUNTIME_LESS_THAN =
+  public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_LESS_THAN_OR_EQUAL =
+  public static final MethodRef RUNTIME_LESS_THAN_OR_EQUAL =
       create(SharedRuntime.class, "lessThanOrEqual", SoyValue.class, SoyValue.class)
           .asNonNullable();
 
-  static final MethodRef RUNTIME_LOGGER =
+  public static final MethodRef RUNTIME_LOGGER =
       create(JbcSrcRuntime.class, "logger").asCheap().asNonNullable();
 
-  static final MethodRef RUNTIME_MINUS =
+  public static final MethodRef RUNTIME_MINUS =
       create(SharedRuntime.class, "minus", SoyValue.class, SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_NEGATIVE =
+  public static final MethodRef RUNTIME_NEGATIVE =
       create(SharedRuntime.class, "negative", SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_PLUS =
+  public static final MethodRef RUNTIME_PLUS =
       create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS =
+  public static final MethodRef RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS =
       create(
           JbcSrcRuntime.class,
           "renderSoyMsgPartsWithPlaceholders",
@@ -261,44 +263,47 @@ abstract class MethodRef {
           Map.class,
           Appendable.class);
 
-  static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
+  public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class)
           .asNonNullable();
 
-  static final MethodRef RUNTIME_TIMES =
+  public static final MethodRef RUNTIME_TIMES =
       create(SharedRuntime.class, "times", SoyValue.class, SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
+  public static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
       create(JbcSrcRuntime.class, "unexpectedStateError", int.class).asNonNullable();
 
-  static final MethodRef SOY_LIST_AS_JAVA_LIST =
+  public static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();
 
-  static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
+  public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
-  static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
+  public static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
       create(SoyProtoValueImpl.class, "getProtoField", String.class).asCheap().asNonNullable();
 
-  static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
+  public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValueImpl.class, "getProto").asCheap().asNonNullable();
 
-  static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
+  public static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
       create(SoyValue.class, "coerceToBoolean").asCheap();
 
-  static final MethodRef SOY_VALUE_BOOLEAN_VALUE = create(SoyValue.class, "booleanValue").asCheap();
+  public static final MethodRef SOY_VALUE_BOOLEAN_VALUE =
+      create(SoyValue.class, "booleanValue").asCheap();
 
-  static final MethodRef SOY_VALUE_FLOAT_VALUE = create(SoyValue.class, "floatValue").asCheap();
+  public static final MethodRef SOY_VALUE_FLOAT_VALUE =
+      create(SoyValue.class, "floatValue").asCheap();
 
-  static final MethodRef SOY_VALUE_LONG_VALUE = create(SoyValue.class, "longValue").asCheap();
+  public static final MethodRef SOY_VALUE_LONG_VALUE =
+      create(SoyValue.class, "longValue").asCheap();
 
-  static final MethodRef SOY_VALUE_NUMBER_VALUE =
+  public static final MethodRef SOY_VALUE_NUMBER_VALUE =
       create(SoyValue.class, "numberValue").asNonNullable();
 
-  static final MethodRef SOY_VALUE_STRING_VALUE =
+  public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
-  static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
+  public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(
               SoyValueProvider.class,
               "renderAndResolve",
@@ -306,31 +311,31 @@ abstract class MethodRef {
               boolean.class)
           .asNonNullable();
 
-  static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
+  public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
 
-  static final MethodRef SOY_VALUE_PROVIDER_STATUS =
+  public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();
 
-  static final MethodRef STRING_CONCAT =
+  public static final MethodRef STRING_CONCAT =
       create(String.class, "concat", String.class).asNonNullable();
 
-  static final MethodRef STRING_IS_EMPTY = create(String.class, "isEmpty");
+  public static final MethodRef STRING_IS_EMPTY = create(String.class, "isEmpty");
 
-  static final MethodRef STRING_VALUE_OF =
+  public static final MethodRef STRING_VALUE_OF =
       create(String.class, "valueOf", Object.class).asNonNullable();
 
-  static final MethodRef STRING_DATA_FOR_VALUE =
+  public static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();
 
-  static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
+  public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       create(LoggingAdvisingAppendable.class, "buffering").asNonNullable();
 
-  static final MethodRef LOG_STATEMENT_CREATE =
+  public static final MethodRef LOG_STATEMENT_CREATE =
       create(LogStatement.class, "create", long.class, Message.class, boolean.class)
           .asNonNullable();
 
-  static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
+  public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
       // Ensure that the method exists and is public.
@@ -342,7 +347,7 @@ abstract class MethodRef {
     return create(m);
   }
 
-  static MethodRef create(java.lang.reflect.Method method) {
+  public static MethodRef create(java.lang.reflect.Method method) {
     Class<?> clazz = method.getDeclaringClass();
     TypeInfo ownerType = TypeInfo.create(method.getDeclaringClass());
     boolean isStatic = Modifier.isStatic(method.getModifiers());
@@ -368,7 +373,7 @@ abstract class MethodRef {
         Features.of());
   }
 
-  static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
+  public static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
     return new AutoValue_MethodRef(
         Opcodes.INVOKEVIRTUAL,
         owner,
@@ -378,7 +383,7 @@ abstract class MethodRef {
         Features.of());
   }
 
-  static MethodRef createStaticMethod(TypeInfo owner, Method method) {
+  public static MethodRef createStaticMethod(TypeInfo owner, Method method) {
     return new AutoValue_MethodRef(
         Opcodes.INVOKESTATIC,
         owner,
@@ -395,35 +400,35 @@ abstract class MethodRef {
   abstract int opcode();
 
   /** The 'internal name' of the type that owns the method. */
-  abstract TypeInfo owner();
+  public abstract TypeInfo owner();
 
-  abstract Method method();
+  public abstract Method method();
 
-  abstract Type returnType();
+  public abstract Type returnType();
 
   abstract ImmutableList<Type> argTypes();
 
-  abstract Features features();
+  public abstract Features features();
 
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are
   // actually calling the method rather than generating an expression that will output code that
   // will invoke the method.
-  Statement invokeVoid(final Expression... args) {
+  public Statement invokeVoid(final Expression... args) {
     return invokeVoid(Arrays.asList(args));
   }
 
-  Statement invokeVoid(final Iterable<? extends Expression> args) {
+  public Statement invokeVoid(final Iterable<? extends Expression> args) {
     checkState(Type.VOID_TYPE.equals(returnType()), "Method return type is not void.");
     Expression.checkTypes(argTypes(), args);
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         doInvoke(adapter, args);
       }
     };
   }
 
-  Expression invoke(final Expression... args) {
+  public Expression invoke(final Expression... args) {
     return invoke(Arrays.asList(args));
   }
 
@@ -438,17 +443,17 @@ abstract class MethodRef {
     }
     return new Expression(returnType(), features) {
       @Override
-      void doGen(CodeBuilder mv) {
+      protected void doGen(CodeBuilder mv) {
         doInvoke(mv, args);
       }
     };
   }
 
-  MethodRef asCheap() {
+  public MethodRef asCheap() {
     return withFeature(Feature.CHEAP);
   }
 
-  MethodRef asNonNullable() {
+  public MethodRef asNonNullable() {
     return withFeature(Feature.NON_NULLABLE);
   }
 
@@ -465,7 +470,7 @@ abstract class MethodRef {
    * is not useful for representing operations. For example, explicit dup operations are awkward in
    * the Expression api.
    */
-  void invokeUnchecked(CodeBuilder cb) {
+  public void invokeUnchecked(CodeBuilder cb) {
     cb.visitMethodInsn(
         opcode(),
         owner().internalName(),

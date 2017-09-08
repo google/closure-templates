@@ -16,14 +16,14 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.firstNonNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ternary;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
@@ -68,6 +68,13 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
@@ -534,7 +541,7 @@ final class ExpressionCompiler {
       return SoyExpression.forInt(
           new Expression(Type.LONG_TYPE) {
             @Override
-            void doGen(CodeBuilder mv) {
+            protected void doGen(CodeBuilder mv) {
               leftInt.gen(mv);
               rightInt.gen(mv);
               mv.visitInsn(operator);
@@ -549,7 +556,7 @@ final class ExpressionCompiler {
       return SoyExpression.forFloat(
           new Expression(Type.DOUBLE_TYPE) {
             @Override
-            void doGen(CodeBuilder mv) {
+            protected void doGen(CodeBuilder mv) {
               leftFloat.gen(mv);
               rightFloat.gen(mv);
               mv.visitInsn(operator);
@@ -567,7 +574,7 @@ final class ExpressionCompiler {
         return SoyExpression.forInt(
             new Expression(Type.LONG_TYPE, child.features()) {
               @Override
-              void doGen(CodeBuilder mv) {
+              protected void doGen(CodeBuilder mv) {
                 intExpr.gen(mv);
                 mv.visitInsn(Opcodes.LNEG);
               }
@@ -578,7 +585,7 @@ final class ExpressionCompiler {
         return SoyExpression.forFloat(
             new Expression(Type.DOUBLE_TYPE, child.features()) {
               @Override
-              void doGen(CodeBuilder mv) {
+              protected void doGen(CodeBuilder mv) {
                 floatExpr.gen(mv);
                 mv.visitInsn(Opcodes.DNEG);
               }
@@ -778,7 +785,7 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           new Expression(Type.BOOLEAN_TYPE) {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               // implements index == 0 ? true : false
               expr.gen(adapter);
               Label ifFirst = new Label();
@@ -806,7 +813,7 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           new Expression(Type.BOOLEAN_TYPE) {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               // 'index + 1 == length ? true : false'
               index.gen(adapter);
               adapter.pushInt(1);
@@ -844,7 +851,7 @@ final class ExpressionCompiler {
           .withSource(
               new Expression(childExpr.resultType(), childExpr.features()) {
                 @Override
-                void doGen(CodeBuilder adapter) {
+                protected void doGen(CodeBuilder adapter) {
                   childExpr.gen(adapter);
                   adapter.dup();
                   Label end = new Label();
@@ -959,7 +966,7 @@ final class ExpressionCompiler {
             .withSource(
                 new Expression(baseExpr.resultType(), baseExpr.features()) {
                   @Override
-                  void doGen(CodeBuilder adapter) {
+                  protected void doGen(CodeBuilder adapter) {
                     baseExpr.gen(adapter);
                     BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
                   }

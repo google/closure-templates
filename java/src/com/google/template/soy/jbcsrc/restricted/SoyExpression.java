@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
@@ -58,37 +58,37 @@ import org.objectweb.asm.Type;
  * <p>All soy expressions are convertible to {@code boolean} or {@link String} valued expressions,
  * but depending on the type they may also support additional unboxing conversions.
  */
-final class SoyExpression extends Expression {
+public final class SoyExpression extends Expression {
 
-  static SoyExpression forSoyValue(SoyType type, Expression delegate) {
+  public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
   }
 
-  static SoyExpression forBool(Expression delegate) {
+  public static SoyExpression forBool(Expression delegate) {
     return new SoyExpression(getUnboxedType(BoolType.getInstance()), delegate);
   }
 
-  static SoyExpression forFloat(Expression delegate) {
+  public static SoyExpression forFloat(Expression delegate) {
     return new SoyExpression(getUnboxedType(FloatType.getInstance()), delegate);
   }
 
-  static SoyExpression forInt(Expression delegate) {
+  public static SoyExpression forInt(Expression delegate) {
     return new SoyExpression(getUnboxedType(IntType.getInstance()), delegate);
   }
 
-  static SoyExpression forString(Expression delegate) {
+  public static SoyExpression forString(Expression delegate) {
     return new SoyExpression(getUnboxedType(StringType.getInstance()), delegate);
   }
 
-  static SoyExpression forSanitizedString(Expression delegate, SanitizedContentKind kind) {
+  public static SoyExpression forSanitizedString(Expression delegate, SanitizedContentKind kind) {
     return new SoyExpression(getUnboxedType(SanitizedType.getTypeForContentKind(kind)), delegate);
   }
 
-  static SoyExpression forList(ListType listType, Expression delegate) {
+  public static SoyExpression forList(ListType listType, Expression delegate) {
     return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
-  static SoyExpression forProto(SoyRuntimeType type, Expression delegate) {
+  public static SoyExpression forProto(SoyRuntimeType type, Expression delegate) {
     checkArgument(type.soyType().getKind() == Kind.PROTO);
     return new SoyExpression(type, delegate);
   }
@@ -96,7 +96,7 @@ final class SoyExpression extends Expression {
   /**
    * Returns an Expression that evaluates to a list containing all the items as boxed soy values.
    */
-  static Expression asBoxedList(List<SoyExpression> items) {
+  public static Expression asBoxedList(List<SoyExpression> items) {
     List<Expression> childExprs = new ArrayList<>(items.size());
     for (SoyExpression child : items) {
       childExprs.add(child.box());
@@ -104,29 +104,29 @@ final class SoyExpression extends Expression {
     return BytecodeUtils.asList(childExprs);
   }
 
-  static final SoyExpression NULL =
+  public static final SoyExpression NULL =
       new SoyExpression(
           getUnboxedType(NullType.getInstance()),
           new Expression(OBJECT.type(), Feature.CHEAP) {
             @Override
-            void doGen(CodeBuilder cb) {
+            protected void doGen(CodeBuilder cb) {
               cb.pushNull();
             }
           });
 
-  static final SoyExpression NULL_BOXED =
+  public static final SoyExpression NULL_BOXED =
       new SoyExpression(
           SoyRuntimeType.getBoxedType(NullType.getInstance()),
           new Expression(SOY_VALUE_TYPE, Feature.CHEAP) {
             @Override
-            void doGen(CodeBuilder cb) {
+            protected void doGen(CodeBuilder cb) {
               cb.pushNull();
             }
           });
 
-  static final SoyExpression TRUE = forBool(BytecodeUtils.constant(true));
+  public static final SoyExpression TRUE = forBool(BytecodeUtils.constant(true));
 
-  static final SoyExpression FALSE = forBool(BytecodeUtils.constant(false));
+  public static final SoyExpression FALSE = forBool(BytecodeUtils.constant(false));
 
   private static SoyRuntimeType getUnboxedType(SoyType soyType) {
     return SoyRuntimeType.getUnboxedType(soyType).get();
@@ -147,47 +147,47 @@ final class SoyExpression extends Expression {
   }
 
   /** Returns the {@link SoyType} of the expression. */
-  final SoyType soyType() {
+  public final SoyType soyType() {
     return soyRuntimeType.soyType();
   }
 
   /** Returns the {@link SoyRuntimeType} of the expression. */
-  final SoyRuntimeType soyRuntimeType() {
+  public final SoyRuntimeType soyRuntimeType() {
     return soyRuntimeType;
   }
 
   @Override
-  final void doGen(CodeBuilder adapter) {
+  protected final void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 
   @Override
-  SoyExpression withSourceLocation(SourceLocation location) {
+  public SoyExpression withSourceLocation(SourceLocation location) {
     return withSource(delegate.withSourceLocation(location));
   }
 
-  boolean assignableToNullableInt() {
+  public boolean assignableToNullableInt() {
     return soyRuntimeType.assignableToNullableInt();
   }
 
-  boolean assignableToNullableFloat() {
+  public boolean assignableToNullableFloat() {
     return soyRuntimeType.assignableToNullableFloat();
   }
 
-  boolean assignableToNullableNumber() {
+  public boolean assignableToNullableNumber() {
     return soyRuntimeType.assignableToNullableNumber();
   }
 
-  boolean assignableToNullableString() {
+  public boolean assignableToNullableString() {
     return soyRuntimeType.assignableToNullableString();
   }
 
-  boolean isBoxed() {
+  public boolean isBoxed() {
     return soyRuntimeType.isBoxed();
   }
 
   /** Returns an Expression of a non-null {@link SoyValueProvider} providing this value. */
-  Expression boxAsSoyValueProvider() {
+  public Expression boxAsSoyValueProvider() {
     if (soyType().equals(NullType.getInstance())) {
       if (delegate == NULL || delegate == NULL_BOXED) {
         return FieldRef.NULL_PROVIDER.accessor();
@@ -204,7 +204,7 @@ final class SoyExpression extends Expression {
       return new Expression(
           BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.features().plus(Feature.NON_NULLABLE)) {
         @Override
-        void doGen(CodeBuilder adapter) {
+        protected void doGen(CodeBuilder adapter) {
           Label end = new Label();
           delegate.gen(adapter);
           adapter.dup();
@@ -218,7 +218,7 @@ final class SoyExpression extends Expression {
     return new Expression(
         BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.features().plus(Feature.NON_NULLABLE)) {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
         delegate.gen(adapter);
         adapter.dup();
@@ -235,7 +235,7 @@ final class SoyExpression extends Expression {
   }
 
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
-  SoyExpression box() {
+  public SoyExpression box() {
     if (isBoxed()) {
       return this;
     }
@@ -262,7 +262,7 @@ final class SoyExpression extends Expression {
     return asBoxed(
         new Expression(soyRuntimeType.box().runtimeType(), features()) {
           @Override
-          void doGen(CodeBuilder adapter) {
+          protected void doGen(CodeBuilder adapter) {
             Label end = null;
             delegate.gen(adapter);
             if (!isNonNullable) {
@@ -305,7 +305,7 @@ final class SoyExpression extends Expression {
   }
 
   /** Coerce this expression to a boolean value. */
-  SoyExpression coerceToBoolean() {
+  public SoyExpression coerceToBoolean() {
     // First deal with primitives which don't have to care about null.
     if (BytecodeUtils.isPrimitive(resultType())) {
       return coercePrimitiveToBoolean();
@@ -322,7 +322,7 @@ final class SoyExpression extends Expression {
       return withSource(
               new Expression(delegate.resultType(), delegate.features()) {
                 @Override
-                void doGen(CodeBuilder adapter) {
+                protected void doGen(CodeBuilder adapter) {
                   delegate.gen(adapter);
                   adapter.dup();
                   Label nonNull = new Label();
@@ -366,7 +366,7 @@ final class SoyExpression extends Expression {
     return forBool(
         new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
           @Override
-          void doGen(CodeBuilder adapter) {
+          protected void doGen(CodeBuilder adapter) {
             delegate.gen(adapter);
             adapter.pop();
             adapter.pushBoolean(true);
@@ -375,7 +375,7 @@ final class SoyExpression extends Expression {
   }
 
   /** Coerce this expression to a string value. */
-  SoyExpression coerceToString() {
+  public SoyExpression coerceToString() {
     if (soyRuntimeType.isKnownString() && !isBoxed()) {
       return this;
     }
@@ -400,7 +400,7 @@ final class SoyExpression extends Expression {
   }
 
   /** Coerce this expression to a double value. Useful for float-int comparisons. */
-  SoyExpression coerceToDouble() {
+  public SoyExpression coerceToDouble() {
     if (!isBoxed()) {
       if (soyRuntimeType.isKnownFloat()) {
         return this;
@@ -428,7 +428,7 @@ final class SoyExpression extends Expression {
    * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()}
    * which are designed for that use case.
    */
-  SoyExpression unboxAs(Class<?> asType) {
+  public SoyExpression unboxAs(Class<?> asType) {
     checkArgument(
         !SoyValue.class.isAssignableFrom(asType),
         "Cannot use unboxAs() to convert to a SoyValue: %s, use .box() instead",
@@ -493,7 +493,7 @@ final class SoyExpression extends Expression {
       Expression nonNullDelegate =
           new Expression(resultType(), features()) {
             @Override
-            void doGen(CodeBuilder adapter) {
+            protected void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
               BytecodeUtils.nullCoalesce(adapter, end);
             }
@@ -521,7 +521,7 @@ final class SoyExpression extends Expression {
   }
 
   /** Returns a new {@link SoyExpression} with the same type but a new delegate expression. */
-  SoyExpression withSource(Expression expr) {
+  public SoyExpression withSource(Expression expr) {
     if (expr == delegate) {
       return this;
     }
@@ -534,12 +534,12 @@ final class SoyExpression extends Expression {
    * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
    * expressions.
    */
-  SoyExpression applyPrintDirective(Expression renderContext, SoyPrintDirective directive) {
+  public SoyExpression applyPrintDirective(Expression renderContext, SoyPrintDirective directive) {
     return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
   }
 
   /** Applies a print directive to the soyValue. */
-  SoyExpression applyPrintDirective(
+  public SoyExpression applyPrintDirective(
       Expression renderContext, SoyPrintDirective directive, Expression argsList) {
     // Technically the type is either StringData or SanitizedContent depending on this type, but
     // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
@@ -557,27 +557,27 @@ final class SoyExpression extends Expression {
   }
 
   @Override
-  SoyExpression asCheap() {
+  public SoyExpression asCheap() {
     return withSource(delegate.asCheap());
   }
 
   @Override
-  SoyExpression asNonNullable() {
+  public SoyExpression asNonNullable() {
     return new SoyExpression(soyRuntimeType.asNonNullable(), delegate.asNonNullable());
   }
 
   @Override
-  SoyExpression asNullable() {
+  public SoyExpression asNullable() {
     return new SoyExpression(soyRuntimeType.asNullable(), delegate.asNullable());
   }
 
   @Override
-  SoyExpression labelStart(Label label) {
+  public SoyExpression labelStart(Label label) {
     return withSource(delegate.labelStart(label));
   }
 
   @Override
-  SoyExpression labelEnd(Label label) {
+  public SoyExpression labelEnd(Label label) {
     return withSource(delegate.labelEnd(label));
   }
 }

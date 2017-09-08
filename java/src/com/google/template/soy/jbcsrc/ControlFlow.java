@@ -20,6 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -49,7 +52,7 @@ final class ControlFlow {
     checkArgument(!ifs.isEmpty());
     return new Statement() {
       @Override
-      void doGen(CodeBuilder adapter) {
+      protected void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label next;
         for (int i = 0; i < ifs.size(); i++) {

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -40,8 +41,8 @@ import org.objectweb.asm.util.TraceClassVisitor;
  *
  * <p>Note: not using an @AutoValue since it copies
  */
-final class ClassData {
-  static ClassData create(TypeInfo type, byte[] b, int numFields, int numDetachStates) {
+public final class ClassData {
+  public static ClassData create(TypeInfo type, byte[] b, int numFields, int numDetachStates) {
     return new ClassData(type, b, numFields, numDetachStates);
   }
 
@@ -57,20 +58,20 @@ final class ClassData {
     this.numDetachStates = numDetachStates;
   }
 
-  TypeInfo type() {
+  public TypeInfo type() {
     return type;
   }
 
   /** Caution, this returns the underlying array and is mutable. */
-  byte[] data() {
+  public byte[] data() {
     return data;
   }
 
-  int numberOfFields() {
+  public int numberOfFields() {
     return numberOfFields;
   }
 
-  int numberOfDetachStates() {
+  public int numberOfDetachStates() {
     return numDetachStates;
   }
 
@@ -83,7 +84,7 @@ final class ClassData {
    * locals). Additionally, the error messages are more useful than what the java verifier normally
    * presents.
    */
-  void checkClass() {
+  public void checkClass() {
     ClassNode cv = new ClassNode();
     new ClassReader(data).accept(new CheckClassAdapter(cv, true /* check data flow */), 0);
     // double check our fields while we are here.

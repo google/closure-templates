@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.restricted;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -30,7 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.objectweb.asm.Opcodes;
 
-/** Tests for {@link AnnotationRef}. */
+/** Tests for {@link com.google.template.soy.jbcsrc.restricted.AnnotationRef}. */
 @RunWith(JUnit4.class)
 public class AnnotationRefTest {
   @Rule public final TestName testName = new TestName();

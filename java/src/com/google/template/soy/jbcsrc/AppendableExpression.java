@@ -17,12 +17,18 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
 
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -89,7 +95,7 @@ final class AppendableExpression extends Expression {
   }
 
   @Override
-  void doGen(CodeBuilder adapter) {
+  protected void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 
@@ -126,12 +132,12 @@ final class AppendableExpression extends Expression {
   }
 
   @Override
-  AppendableExpression labelStart(Label label) {
+  public AppendableExpression labelStart(Label label) {
     return withNewDelegate(delegate.labelStart(label), this.hasSideEffects);
   }
 
   @Override
-  Statement toStatement() {
+  public Statement toStatement() {
     // .toStatement() by default just generates the expression and adds a 'POP' instruction
     // to clear the stack. However, this is only neccesary when the expression in question has a
     // side effect worth preserving.  If we know that it does not we can just return the empty

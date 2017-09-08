@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.jbcsrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jbcsrc.SoyExpression.FALSE;
-import static com.google.template.soy.jbcsrc.SoyExpression.TRUE;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.FALSE;
+import static com.google.template.soy.jbcsrc.restricted.SoyExpression.TRUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.testing.GcFinalization;
-import com.google.template.soy.jbcsrc.ExpressionTester.BooleanInvoker;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.BooleanInvoker;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import org.junit.Test;
@@ -35,7 +37,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
-/** Tests for {@link MemoryClassLoader} */
+/** Tests for {@link com.google.template.soy.jbcsrc.internal.MemoryClassLoader} */
 @RunWith(JUnit4.class)
 public class MemoryClassLoaderTest {
 
