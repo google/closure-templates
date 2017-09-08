@@ -46,7 +46,7 @@ import javax.inject.Singleton;
 public final class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Inject
-  RoundFunction() {}
+  public RoundFunction() {}
 
   @Override
   public String getName() {

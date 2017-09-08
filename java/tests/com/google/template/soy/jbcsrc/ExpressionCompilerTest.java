@@ -43,6 +43,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -59,6 +60,8 @@ import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.Expres
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soyparse.PluginResolver;
+import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -659,7 +662,11 @@ public class ExpressionCompilerTest {
     // vardef
     // TODO(lukes): this logic would be useful in a lot of tests and potentially unblock efforts to
     // eliminate UNDECLARED vars
-    ExprNode expr = SoyFileParser.parseExprOrDie(soyExpr);
+    ExprNode expr =
+        SoyFileParser.parseExpression(
+            soyExpr,
+            PluginResolver.nullResolver(Mode.ALLOW_UNDEFINED, ErrorReporter.exploding()),
+            ErrorReporter.exploding());
     final StringBuilder templateBody = new StringBuilder();
     new AbstractExprNodeVisitor<Void>() {
       final Set<String> names = new HashSet<>();

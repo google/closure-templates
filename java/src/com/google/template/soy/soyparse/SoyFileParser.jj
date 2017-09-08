@@ -76,6 +76,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -409,8 +410,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
-  private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
-      SoyErrorKind.of("Invalid range specification.");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
@@ -465,13 +464,18 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
-    return parseExpression(exprText, ErrorReporter.exploding());
+    return parseExpression(
+        exprText,
+        PluginResolver.nullResolver(
+            PluginResolver.Mode.REQUIRE_DEFINITIONS,
+            ErrorReporter.exploding()),
+        ErrorReporter.exploding());
   }
 
   /** Attempts to parse the given input as a Soy expression. Returns null if parsing fails. */
   @Nullable
-  public static ExprNode parseExpression(String exprText, ErrorReporter errorReporter) {
-    SoyFileParser parser = new SoyFileParser(exprText, errorReporter);
+  public static ExprNode parseExpression(String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
+    SoyFileParser parser = new SoyFileParser(exprText, resolver, errorReporter);
 
     try {
       return parser.ExprInput();
@@ -497,6 +501,8 @@ public class SoyFileParser {
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
 
+  private PluginResolver pluginResolver;
+
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
@@ -512,6 +518,7 @@ public class SoyFileParser {
    */
   public SoyFileParser(
       SoyTypeRegistry typeRegistry,
+      PluginResolver pluginResolver,
       IdGenerator nodeIdGen,
       Reader input,
       SoyFileKind soyFileKind,
@@ -519,6 +526,7 @@ public class SoyFileParser {
       ErrorReporter errorReporter) {
     this(input);
     this.typeRegistry = checkNotNull(typeRegistry);
+    this.pluginResolver = checkNotNull(pluginResolver);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.soyFileKind = checkNotNull(soyFileKind);
     this.filePath = checkNotNull(filePath);
@@ -526,10 +534,11 @@ public class SoyFileParser {
   }
 
   /** Constructor for use by parseExpression() only. */
-  private SoyFileParser(String input, ErrorReporter errorReporter) {
+  private SoyFileParser(String input, PluginResolver pluginResolver, ErrorReporter errorReporter) {
     // this starts the lexer in EXPR state instead of DEFAULT
     this(new SoyFileParserTokenManager(new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
     this.filePath = "expression parser";
+    this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
   }
 
@@ -2270,8 +2279,12 @@ private PrintDirectiveNode PrintDirective() :
     if (!args.isEmpty()) {
       loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
-
-    return new PrintDirectiveNode(nodeIdGen.genId(), loc, directive.image, args);
+    String name = directive.image;
+    return new PrintDirectiveNode(
+        nodeIdGen.genId(),
+        loc,
+        args,
+        pluginResolver.lookupPrintDirective(name, args.size(), loc));
   }
 }
 
@@ -2669,14 +2682,11 @@ private ForNode ForStmt() :
     {
       // Same as above, we do not want to make "range" a token.
       if (!(rangeExpr instanceof FunctionNode)
-          || !((FunctionNode) rangeExpr).getFunctionName().equals("range")) {
+          || ((FunctionNode) rangeExpr).getSoyFunction() != BuiltinFunction.RANGE) {
         errorReporter.report(
-            rangeExpr.getSourceLocation(), PARSER_ERROR, rangeExpr.toSourceString(), "range()");
+            rangeExpr.getSourceLocation(), PARSER_ERROR, rangeExpr.toSourceString(), "range(...)");
       } else {
         rangeArgs = ((FunctionNode) rangeExpr).getChildren();
-        if (rangeArgs.size() == 0 || rangeArgs.size() > 3) {
-          errorReporter.report(rangeExpr.getSourceLocation(), INVALID_RANGE_SPECIFICATION);
-        }
       }
     }
 
@@ -3436,10 +3446,11 @@ private ExprNode GlobalOrFunction() :
         closeParen = <RPAREN>
 
         {
+          SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
           FunctionNode fnNode =
               new FunctionNode(
-                  ident.identifier(),
-                  ident.location().extend(createSrcLoc(closeParen)));
+                  pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
+                  loc);
           fnNode.addChildren(params);
           return fnNode;
         }
@@ -3461,7 +3472,7 @@ private ExprNode GlobalOrFunction() :
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
       return new ProtoInitNode(name, ImmutableList.<String>of(), loc);
     } else {
-      return new FunctionNode(name, loc);
+      return new FunctionNode(pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
   }
 }

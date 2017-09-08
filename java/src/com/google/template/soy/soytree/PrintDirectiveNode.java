@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
@@ -28,7 +27,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' directive.
@@ -38,20 +36,19 @@ import javax.annotation.Nullable;
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
-  /** The directive name (including vertical bar). */
-  private final String name;
-
-  @Nullable private SoyPrintDirective printDirective;
+  private final SoyPrintDirective printDirective;
 
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
 
   public PrintDirectiveNode(
-      int id, SourceLocation location, String name, ImmutableList<ExprNode> args) {
+      int id,
+      SourceLocation location,
+      ImmutableList<ExprNode> args,
+      SoyPrintDirective printDirective) {
     super(id, location);
-    Preconditions.checkArgument(name.charAt(0) == '|');
-    this.name = name;
     this.args = ExprRootNode.wrap(args);
+    this.printDirective = checkNotNull(printDirective);
   }
 
   /**
@@ -61,7 +58,6 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
    */
   private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.name = orig.name;
     List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
     for (ExprRootNode origArg : orig.args) {
       tempArgs.add(origArg.copy(copyState));
@@ -77,7 +73,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   /** Returns the directive name (including vertical bar). */
   public String getName() {
-    return name;
+    return printDirective.getName();
   }
 
   /** The parsed args. */
@@ -87,7 +83,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   @Override
   public String toSourceString() {
-    return args.isEmpty() ? name : name + ":" + SoyTreeUtils.toSourceString(args);
+    return args.isEmpty() ? getName() : getName() + ":" + SoyTreeUtils.toSourceString(args);
   }
 
   @Override
@@ -100,12 +96,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     return new PrintDirectiveNode(this, copyState);
   }
 
-  public void setPrintDirective(SoyPrintDirective soyPrintDirective) {
-    this.printDirective = checkNotNull(soyPrintDirective);
-  }
-
-  /** Returns the print directive for this node, or {@code null} if it hasn't been resolved yet. */
-  @Nullable
+  /** Returns the print directive for this node. */
   public SoyPrintDirective getPrintDirective() {
     return printDirective;
   }

@@ -16,14 +16,11 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -41,7 +38,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.StringType;
-import java.util.Set;
 
 /**
  * Checks the signatures of functions.
@@ -51,30 +47,19 @@ import java.util.Set;
  */
 final class CheckFunctionCallsPass extends CompilerFilePass {
 
-  private static final SoyErrorKind INCORRECT_NUM_ARGS =
-      SoyErrorKind.of("Function ''{0}'' called with {1} arguments (expected {2}).");
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
-  private static final SoyErrorKind UNKNOWN_FUNCTION = SoyErrorKind.of("Unknown function ''{0}''.");
 
   private final ErrorReporter errorReporter;
-  private final boolean allowUnknownFunction;
   private final CheckFunctionCallsExprVisitor exprNodeVisitor = new CheckFunctionCallsExprVisitor();
 
-  /** User-declared syntax version. */
-  private SyntaxVersion declaredSyntaxVersion;
-
   CheckFunctionCallsPass(
-      boolean allowUnknownFunctions,
-      SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
-    this.allowUnknownFunction = allowUnknownFunctions;
     this.errorReporter = errorReporter;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   @Override
@@ -99,26 +84,13 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
     /** Check the function signature. */
     @Override
     protected void visitFunctionNode(FunctionNode node) {
-      String fnName = node.getFunctionName();
+      // TODO(lukes): move this logic to run as part of ResolveExpressionsTypeVisitor (possibly
+      // extracted into a helper class)
       SoyFunction function = node.getSoyFunction();
-      if (function == null) {
-        if (declaredSyntaxVersion != SyntaxVersion.V1_0 && !allowUnknownFunction) {
-          // In Soy V2, all functions must be available as SoyFunctions at compile time.
-          errorReporter.report(node.getSourceLocation(), UNKNOWN_FUNCTION, fnName);
-        }
-        return;
-      }
-
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      checkNumArgs(function, node);
-
-      // If there were arity errors, don't run further function visits
-      if (!errorReporter.errorsSince(checkpoint)) {
-        if (function instanceof BuiltinFunction) {
-          visitNonpluginFunction((BuiltinFunction) function, node);
-        } else {
-          visitFunction(function, node);
-        }
+      if (function instanceof BuiltinFunction) {
+        visitNonpluginFunction((BuiltinFunction) function, node);
+      } else {
+        visitFunction(function, node);
       }
 
       // Recurse to operands.
@@ -183,19 +155,6 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
       } else if (fn instanceof ParseFloatFunction) {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
-      }
-    }
-
-    private void checkNumArgs(SoyFunction function, FunctionNode node) {
-      int numArgs = node.numChildren();
-      Set<Integer> arities = function.getValidArgsSizes();
-      if (!arities.contains(numArgs)) {
-        errorReporter.report(
-            node.getSourceLocation(),
-            INCORRECT_NUM_ARGS,
-            function.getName(),
-            numArgs,
-            Joiner.on(" or ").join(arities));
       }
     }
 

@@ -391,10 +391,9 @@ public final class TemplateParserTest {
   @Test
   public void testRecognizeCommands() throws Exception {
     // Starts with `for`
-    assertInvalidTemplate(
-        "{@param blah : ? }\n{formatDate($blah)}", "Unknown function 'formatDate'");
+    assertInvalidTemplate("{@param blah : ? }\n{formatDate($blah)}", "Unknown function");
     // Starts with `msg`
-    assertInvalidTemplate("{@param blah : ? }\n{msgblah($blah)}", "Unknown function 'msgblah'");
+    assertInvalidTemplate("{@param blah : ? }\n{msgblah($blah)}", "Unknown function");
     assertValidTemplate("{let $a: 2 /}"); // Not a print
 
     assertValidTemplate(

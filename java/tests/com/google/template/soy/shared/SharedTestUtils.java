@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -30,6 +31,8 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.soyparse.PluginResolver;
+import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -161,7 +164,11 @@ public final class SharedTestUtils {
   /** Returns a template body for the given soy expression. With type specializations. */
   public static String createTemplateBodyForExpression(
       String soyExpr, final Map<String, SoyType> typeMap) {
-    ExprNode expr = SoyFileParser.parseExprOrDie(soyExpr);
+    ExprNode expr =
+        SoyFileParser.parseExpression(
+            soyExpr,
+            PluginResolver.nullResolver(Mode.ALLOW_UNDEFINED, ErrorReporter.exploding()),
+            ErrorReporter.exploding());
     final Set<String> loopVarNames = new HashSet<>();
     final Set<String> names = new HashSet<>();
     new AbstractExprNodeVisitor<Void>() {

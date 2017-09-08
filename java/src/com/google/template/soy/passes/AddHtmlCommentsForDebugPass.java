@@ -188,8 +188,8 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFileSetPass {
   private IfNode createSoyDebug(
       SourceLocation insertionLocation, IdGenerator nodeIdGen, String htmlComment) {
     IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
-    FunctionNode funcNode = new FunctionNode(DebugSoyTemplateInfoFunction.NAME, insertionLocation);
-    funcNode.setSoyFunction(DebugSoyTemplateInfoFunction.INSTANCE);
+    FunctionNode funcNode =
+        new FunctionNode(DebugSoyTemplateInfoFunction.INSTANCE, insertionLocation);
     funcNode.setType(BoolType.getInstance());
     IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), insertionLocation, "if", funcNode);
     HtmlCommentNode htmlCommentNode = new HtmlCommentNode(nodeIdGen.genId(), insertionLocation);

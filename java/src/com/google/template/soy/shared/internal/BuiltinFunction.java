@@ -19,7 +19,6 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -44,10 +43,16 @@ public enum BuiltinFunction implements SoyFunction {
   CSS("css"),
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
+  RANGE("range"),
+  REMAINDER("remainder"),
   ;
 
+  public static ImmutableSet<String> names() {
+    return NONPLUGIN_FUNCTIONS_BY_NAME.keySet();
+  }
+
   /** Map of NonpluginFunctions by function name. */
-  private static final Map<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
+  private static final ImmutableMap<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
 
   static {
     ImmutableMap.Builder<String, BuiltinFunction> mapBuilder = ImmutableMap.builder();
@@ -84,6 +89,8 @@ public enum BuiltinFunction implements SoyFunction {
     switch (this) {
       case CSS:
         return ImmutableSet.of(1, 2);
+      case RANGE:
+        return ImmutableSet.of(1, 2, 3);
       default:
         return ImmutableSet.of(1);
     }

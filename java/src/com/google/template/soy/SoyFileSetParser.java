@@ -27,6 +27,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
+import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -66,6 +67,7 @@ public final class SoyFileSetParser {
   private final ErrorReporter errorReporter;
 
   private final SoyTypeRegistry typeRegistry;
+  private final PluginResolver pluginResolver;
 
   /**
    * @param astCache The AST cache to use, if any.
@@ -75,6 +77,7 @@ public final class SoyFileSetParser {
       @Nullable SoyAstCache astCache,
       ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers,
       SoyTypeRegistry typeRegistry,
+      PluginResolver pluginResolver,
       PassManager passManager,
       ErrorReporter errorReporter) {
     this.cache = astCache;
@@ -82,6 +85,7 @@ public final class SoyFileSetParser {
     this.errorReporter = checkNotNull(errorReporter);
     this.passManager = checkNotNull(passManager);
     this.typeRegistry = checkNotNull(typeRegistry);
+    this.pluginResolver = checkNotNull(pluginResolver);
   }
 
   /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
@@ -163,6 +167,7 @@ public final class SoyFileSetParser {
       }
       return new SoyFileParser(
               typeRegistry,
+              pluginResolver,
               nodeIdGen,
               soyFileReader,
               soyFileSupplier.getSoyFileKind(),

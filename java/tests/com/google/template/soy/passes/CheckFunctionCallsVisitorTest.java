@@ -32,52 +32,6 @@ import org.junit.runners.JUnit4;
 public final class CheckFunctionCallsVisitorTest {
 
   @Test
-  public void testPureFunctionOk() {
-    assertSuccess(
-        "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " * @param y",
-        " */",
-        "{template .foo}",
-        "  {print min($x, $y)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testIncorrectArity() {
-    assertFunctionCallsInvalid(
-        "Function 'min' called with 1 arguments (expected 2).",
-        "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " */",
-        "{template .foo}",
-        "  {print min($x)}",
-        "{/template}");
-    assertFunctionCallsInvalid(
-        "Function 'index' called with 0 arguments (expected 1).",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {print index()}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNestedFunctionCall() {
-    assertFunctionCallsInvalid(
-        "Function 'min' called with 1 arguments (expected 2).",
-        "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " * @param y",
-        " */",
-        "{template .foo}",
-        "  {print min(min($x), min($x, $y))}",
-        "{/template}");
-  }
-
-  @Test
   public void testNotALoopVariable1() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -255,26 +209,6 @@ public final class CheckFunctionCallsVisitorTest {
         "{template .foo deprecatedV1=\"true\"}",
         "  {let $blah: 'foo' /}",
         "  {let $m: v1Expression($blah) /}",
-        "{/template}");
-  }
-
-  @Test
-  public void testUnrecognizedFunction() {
-    assertFunctionCallsInvalid(
-        "Unknown function 'bogus'.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {print bogus()}",
-        "{/template}");
-  }
-
-  @Test
-  public void testUnrecognizedFunctionOkInV1() {
-    assertPasses(
-        SyntaxVersion.V1_0,
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {print bogus()}",
         "{/template}");
   }
 

@@ -37,6 +37,7 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -249,7 +250,6 @@ public final class SoyFileSetParserBuilder {
     PassManager.Builder passManager =
         new PassManager.Builder()
             .setDeclaredSyntaxVersion(declaredSyntaxVersion)
-            .setSoyFunctionMap(soyFunctionMap)
             .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
             .setErrorReporter(errorReporter)
             .setTypeRegistry(typeRegistry)
@@ -263,7 +263,16 @@ public final class SoyFileSetParserBuilder {
       passManager.allowUnknownGlobals();
     }
     return new SoyFileSetParser(
-            astCache, soyFileSuppliers, typeRegistry, passManager.build(), errorReporter)
+            astCache,
+            soyFileSuppliers,
+            typeRegistry,
+            new PluginResolver(
+                PluginResolver.Mode.REQUIRE_DEFINITIONS,
+                soyPrintDirectiveMap,
+                soyFunctionMap,
+                errorReporter),
+            passManager.build(),
+            errorReporter)
         .parse();
   }
 }

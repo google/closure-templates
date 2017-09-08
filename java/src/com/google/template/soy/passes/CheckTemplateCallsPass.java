@@ -328,8 +328,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
         // create a node to wrap param in float coercion
         FunctionNode newParam =
-            new FunctionNode(FloatFunction.INSTANCE.getName(), root.getRoot().getSourceLocation());
-        newParam.setSoyFunction(FloatFunction.INSTANCE);
+            new FunctionNode(FloatFunction.INSTANCE, root.getRoot().getSourceLocation());
         newParam.setType(FloatType.getInstance());
 
         newParam.addChild(root.getRoot());

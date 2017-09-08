@@ -107,9 +107,8 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
           new PrintDirectiveNode(
               nodeIdGen.genId(),
               getSourceLocation(),
-              escapingDirective.getName(),
-              ImmutableList.<ExprNode>of());
-      printDirectiveNode.setPrintDirective(escapingDirective);
+              ImmutableList.<ExprNode>of(),
+              escapingDirective);
       printNode.addChild(printDirectiveNode);
     }
     return printNode;

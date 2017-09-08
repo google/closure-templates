@@ -41,7 +41,7 @@ public final class RandomIntFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Inject
-  RandomIntFunction() {}
+  public RandomIntFunction() {}
 
   @Override
   public String getName() {

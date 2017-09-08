@@ -103,9 +103,8 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
           new PrintDirectiveNode(
               nodeIdGen.genId(),
               node.getSourceLocation(),
-              EscapeHtmlDirective.NAME,
-              ImmutableList.<ExprNode>of());
-      newEscapeHtmlDirectiveNode.setPrintDirective(new EscapeHtmlDirective());
+              ImmutableList.<ExprNode>of(),
+              new EscapeHtmlDirective());
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

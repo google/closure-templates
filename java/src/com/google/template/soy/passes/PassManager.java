@@ -31,13 +31,11 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -81,7 +79,6 @@ public final class PassManager {
   private final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
   private final ImmutableList<CompilerFileSetPass> simplificationPasses;
   private final SoyTypeRegistry registry;
-  private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   private final ErrorReporter errorReporter;
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
@@ -91,7 +88,6 @@ public final class PassManager {
 
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
-    this.soyFunctionMap = checkNotNull(builder.soyFunctionMap);
     this.errorReporter = checkNotNull(builder.errorReporter);
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
@@ -123,12 +119,6 @@ public final class PassManager {
             .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new ResolveNamesPass());
-    singleFilePassesBuilder.add(new ResolveFunctionsPass());
-    singleFilePassesBuilder.add(
-        new ValidatePrintDirectivesPass(
-            errorReporter,
-            builder.soyPrintDirectives,
-            builder.allowUnknownFunctionsAndPrintDirectives));
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
@@ -150,15 +140,11 @@ public final class PassManager {
         .add(new CheckSyntaxVersionPass());
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
+      // TODO(lukes): both of these are really about type checking, they should be part of
+      // ResolveExpressionTypesVisitor
       singleFilePassesBuilder
           .add(new CheckProtoInitCallsPass(errorReporter))
-          // uses the syntax version to conditionally enable unknown functions for v1 templates
-          // TODO(lukes): remove!
-          .add(
-              new CheckFunctionCallsPass(
-                  builder.allowUnknownFunctionsAndPrintDirectives,
-                  declaredSyntaxVersion,
-                  errorReporter));
+          .add(new CheckFunctionCallsPass(errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
@@ -282,13 +268,11 @@ public final class PassManager {
   /** A builder for configuring the pass manager. */
   public static final class Builder {
     private SoyTypeRegistry registry;
-    private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
-    private boolean allowUnknownFunctionsAndPrintDirectives;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
@@ -299,11 +283,6 @@ public final class PassManager {
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
-      return this;
-    }
-
-    public Builder setSoyFunctionMap(ImmutableMap<String, ? extends SoyFunction> functionMap) {
-      this.soyFunctionMap = checkNotNull(functionMap);
       return this;
     }
 
@@ -375,17 +354,6 @@ public final class PassManager {
       return this;
     }
 
-    /**
-     * Allows unknown functions and print directives
-     *
-     * <p>This option is only available for the parseinfo generator and message extractor which
-     * historically has not had proper build dependencies and thus often references unknown plugins.
-     */
-    public Builder allowUnknownFunctionsAndPrintDirectives() {
-      this.allowUnknownFunctionsAndPrintDirectives = true;
-      return this;
-    }
-
     /** Configures this passmanager to run the conformance pass using the given config object. */
     public Builder setConformanceConfig(ValidatedConformanceConfig conformanceConfig) {
       this.conformanceConfig = checkNotNull(conformanceConfig);
@@ -452,13 +420,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new ResolveNamesVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class ResolveFunctionsPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      SoyTreeUtils.execOnAllV2Exprs(file, new ResolveFunctionsVisitor(soyFunctionMap));
     }
   }
 

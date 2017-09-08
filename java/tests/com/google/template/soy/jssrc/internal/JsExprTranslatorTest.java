@@ -18,22 +18,22 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.basicfunctions.RandomIntFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,8 +46,6 @@ import org.junit.runners.JUnit4;
 public final class JsExprTranslatorTest {
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
-  private static final ImmutableMap<String, ? extends SoyFunction> SOY_FUNCTIONS =
-      INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
 
   @Test
   public void testTranslateToCodeChunk() {
@@ -60,15 +58,28 @@ public final class JsExprTranslatorTest {
       // will be replaced with one of the functions below
       expr.addChild(new NullNode(SourceLocation.UNKNOWN));
 
-      FunctionNode userFnNode = new FunctionNode("userFn", SourceLocation.UNKNOWN);
+      FunctionNode userFnNode =
+          new FunctionNode(
+              new SoyFunction() {
+                @Override
+                public String getName() {
+                  return "userFn";
+                }
+
+                @Override
+                public Set<Integer> getValidArgsSizes() {
+                  return ImmutableSet.of(1);
+                }
+              },
+              SourceLocation.UNKNOWN);
       userFnNode.addChild(new IntegerNode(5, SourceLocation.UNKNOWN));
 
-      FunctionNode randomIntFnNode = new FunctionNode("randomInt", SourceLocation.UNKNOWN);
+      FunctionNode randomIntFnNode =
+          new FunctionNode(new RandomIntFunction(), SourceLocation.UNKNOWN);
       randomIntFnNode.addChild(new IntegerNode(4, SourceLocation.UNKNOWN));
 
       // Test unsupported function (Soy V1 syntax).
       expr.replaceChild(1, userFnNode);
-      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       assertThat(
               jsExprTranslator
@@ -84,7 +95,6 @@ public final class JsExprTranslatorTest {
 
       // Test supported function.
       expr.replaceChild(1, randomIntFnNode);
-      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
       assertThat(
               jsExprTranslator
                   .translateToCodeChunk(

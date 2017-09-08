@@ -25,9 +25,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soyparse.PluginResolver;
+import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -147,8 +150,16 @@ public final class SimplifyExprVisitorTest {
     }
 
     private void simplifiesTo(String expected) {
-      ExprRootNode exprRoot = new ExprRootNode(SoyFileParser.parseExprOrDie(actual()));
-      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
+      ExprRootNode exprRoot =
+          new ExprRootNode(
+              SoyFileParser.parseExpression(
+                  actual(),
+                  new PluginResolver(
+                      Mode.REQUIRE_DEFINITIONS,
+                      ImmutableMap.<String, SoyPrintDirective>of(),
+                      SOY_FUNCTIONS,
+                      ErrorReporter.exploding()),
+                  ErrorReporter.exploding()));
       new SimplifyExprVisitor().exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
     }

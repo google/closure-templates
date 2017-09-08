@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.soyparse.PluginResolver;
+import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import java.util.ArrayList;
 import java.util.List;
@@ -163,6 +165,9 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
   }
 
   private ExprNode parse(String exprText) {
-    return SoyFileParser.parseExprOrDie(exprText);
+    return SoyFileParser.parseExpression(
+        exprText,
+        PluginResolver.nullResolver(Mode.ALLOW_UNDEFINED, ErrorReporter.exploding()),
+        ErrorReporter.exploding());
   }
 }

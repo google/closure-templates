@@ -16,10 +16,11 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import javax.annotation.Nullable;
 
 /**
  * A node representing a function (with args as children).
@@ -29,18 +30,15 @@ import javax.annotation.Nullable;
  */
 public final class FunctionNode extends AbstractParentExprNode {
 
-  /** The function name. */
-  private final String functionName;
-
-  @Nullable private SoyFunction soyFunction;
+  private final SoyFunction soyFunction;
 
   /**
-   * @param functionName The function name.
+   * @param soyFunction The SoyFunction.
    * @param sourceLocation The node's source location.
    */
-  public FunctionNode(String functionName, SourceLocation sourceLocation) {
+  public FunctionNode(SoyFunction soyFunction, SourceLocation sourceLocation) {
     super(sourceLocation);
-    this.functionName = functionName;
+    this.soyFunction = checkNotNull(soyFunction);
   }
 
   /**
@@ -50,7 +48,6 @@ public final class FunctionNode extends AbstractParentExprNode {
    */
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.functionName = orig.functionName;
     this.soyFunction = orig.soyFunction;
   }
 
@@ -61,23 +58,18 @@ public final class FunctionNode extends AbstractParentExprNode {
 
   /** Returns the function name. */
   public String getFunctionName() {
-    return functionName;
+    return soyFunction.getName();
   }
 
-  @Nullable
   public SoyFunction getSoyFunction() {
     return soyFunction;
-  }
-
-  public void setSoyFunction(SoyFunction soyFunction) {
-    this.soyFunction = soyFunction;
   }
 
   @Override
   public String toSourceString() {
 
     StringBuilder sourceSb = new StringBuilder();
-    sourceSb.append(functionName).append('(');
+    sourceSb.append(getFunctionName()).append('(');
 
     boolean isFirst = true;
     for (ExprNode child : getChildren()) {

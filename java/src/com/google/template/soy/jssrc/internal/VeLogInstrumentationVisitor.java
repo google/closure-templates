@@ -82,8 +82,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
     IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
     ifNode.addChild(ifCondNode);
-    FunctionNode funcNode = new FunctionNode(VeLogFunction.NAME, insertionLocation);
-    funcNode.setSoyFunction(VeLogFunction.INSTANCE);
+    FunctionNode funcNode = new FunctionNode(VeLogFunction.INSTANCE, insertionLocation);
     funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
     funcNode.addChild(
         node.getConfigExpression() == null
@@ -141,8 +140,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             nodeIdGen.genId(), insertionLocation, insertionLocation.getBeginPoint());
     PlusOpNode plusOp = new PlusOpNode(insertionLocation);
     plusOp.addChild(new StringNode("data-", insertionLocation));
-    FunctionNode xidFunction = new FunctionNode(BuiltinFunction.XID.getName(), insertionLocation);
-    xidFunction.setSoyFunction(BuiltinFunction.XID);
+    FunctionNode xidFunction = new FunctionNode(BuiltinFunction.XID, insertionLocation);
     xidFunction.addChild(new StringNode(attributeName, insertionLocation));
     plusOp.addChild(xidFunction);
     PrintNode attributeNameNode =
