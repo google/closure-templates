@@ -17,9 +17,9 @@
 package com.google.template.soy;
 
 import com.google.common.base.Optional;
+import com.google.common.io.Files;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
@@ -109,14 +109,12 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 
-    SoyMsgBundle msgBundle = sfs.extractMsgs();
     OutputFileOptions options = new OutputFileOptions();
     options.setSourceLocaleString(sourceLocaleString);
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    injector
-        .getInstance(SoyMsgBundleHandler.class)
-        .writeToExtractedMsgsFile(msgBundle, options, outputFile);
+    sfs.extractAndWriteMsgs(
+        injector.getInstance(SoyMsgBundleHandler.class), options, Files.asByteSink(outputFile));
   }
 }

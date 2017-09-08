@@ -58,6 +58,7 @@ import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
+import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -761,6 +762,31 @@ public final class SoyFileSet {
    */
   public SoyMsgBundle extractMsgs() {
     resetErrorReporter();
+    SoyMsgBundle bundle = doExtractMsgs();
+    reportWarnings();
+    return bundle;
+  }
+
+  /**
+   * Extracts all messages from this Soy file set and writes the messages to an output sink.
+   *
+   * @param msgBundleHandler Handler to write the messages.
+   * @param options Options to configure how to write the extracted messages.
+   * @param output Where to write the extracted messages.
+   * @throws IOException If there are errors writing to the output.
+   */
+  public void extractAndWriteMsgs(
+      SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, ByteSink output)
+      throws IOException {
+    resetErrorReporter();
+    SoyMsgBundle bundle = doExtractMsgs();
+    msgBundleHandler.writeExtractedMsgs(bundle, options, output);
+    throwIfErrorsPresent();
+    reportWarnings();
+  }
+
+  /** Performs the parsing and extraction logic. */
+  private SoyMsgBundle doExtractMsgs() {
     // extractMsgs disables a bunch of passes since it is typically not configured with things
     // like global definitions, type definitions, etc.
     SoyFileSetNode soyTree =
@@ -777,7 +803,6 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
     throwIfErrorsPresent();
-    reportWarnings();
     return bundle;
   }
 

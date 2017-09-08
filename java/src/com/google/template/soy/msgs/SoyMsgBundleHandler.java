@@ -18,6 +18,7 @@ package com.google.template.soy.msgs;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -106,7 +107,7 @@ public class SoyMsgBundleHandler {
    * @throws IOException If there's an error while accessing the file.
    * @throws SoyMsgException If there's an error while processing the messages.
    */
-  public SoyMsgBundle createFromFile(File inputFile) throws IOException, SoyMsgException {
+  public SoyMsgBundle createFromFile(File inputFile) throws IOException {
 
     // TODO: This is for backwards-compatibility. Figure out how to get rid of this.
     // We special-case English locales because they often don't have translated files and falling
@@ -136,7 +137,7 @@ public class SoyMsgBundleHandler {
    * @throws IOException If there's an error while accessing the resource.
    * @throws SoyMsgException If there's an error while processing the messages.
    */
-  public SoyMsgBundle createFromResource(URL inputResource) throws IOException, SoyMsgException {
+  public SoyMsgBundle createFromResource(URL inputResource) throws IOException {
 
     try {
       String inputFileContent = Resources.asCharSource(inputResource, UTF_8).read();
@@ -163,14 +164,34 @@ public class SoyMsgBundleHandler {
    * @param outputFile The output file to write to.
    * @throws SoyMsgException If there's an error while processing the messages.
    * @throws IOException If there's an error while accessing the file.
+   * @deprecated Use {@link #writeExtractedMsgs} instead.
    */
+  @Deprecated
   public void writeToExtractedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
-      throws IOException, SoyMsgException {
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile) throws IOException {
+
+    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
+    writeExtractedMsgs(msgBundle, options, Files.asByteSink(outputFile));
+  }
+
+  /**
+   * Generates extracted messages (source messages to be translated) from a given message bundle,
+   * and writes it out.
+   *
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * @param msgBundle The message bundle to write.
+   * @param options The options for generating the output extracted messages (depending on the
+   *     message plugin being used, none or some of the options may be applicable).
+   * @param output The output to write to.
+   * @throws SoyMsgException If there's an error while processing the messages.
+   * @throws IOException If there's an error writing the messages.
+   */
+  public void writeExtractedMsgs(SoyMsgBundle msgBundle, OutputFileOptions options, ByteSink output)
+      throws IOException {
 
     CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
-    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.asCharSink(outputFile, UTF_8).write(cs);
+    output.asCharSink(UTF_8).write(cs);
   }
 
   /**
@@ -187,8 +208,7 @@ public class SoyMsgBundleHandler {
    * @throws SoyMsgException If there's an error while processing the messages.
    */
   public void writeToTranslatedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
-      throws IOException, SoyMsgException {
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile) throws IOException {
 
     if (!(msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
       throw new SoyMsgException(
