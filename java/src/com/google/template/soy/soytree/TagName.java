@@ -64,8 +64,23 @@ public final class TagName {
   // void tags in HTML spec.
   private static final ImmutableSet<String> VOID_TAG_NAMES =
       ImmutableSet.of(
-          "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
-          "meta", "param", "source", "track", "wbr");
+          "area",
+          "base",
+          "br",
+          "col",
+          "command",
+          "embed",
+          "hr",
+          "img",
+          "input",
+          "keygen",
+          "link",
+          "meta",
+          "param",
+          "plaintext", // go/framebusting recommends using unclosed <plaintext> and <plaintext/>.
+          "source",
+          "track",
+          "wbr");
 
   /**
    * A map that is used to check whether a particular optional tag can be popped (auto closed) by a
