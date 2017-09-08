@@ -254,41 +254,9 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       } else {
         templateBody = file.substring(startOfFunction, endOfFunction);
       }
-      return new StringSubject(badCodeStrategy(failureStrategy, "template body"), templateBody);
-    }
-
-    private FailureStrategy badCodeStrategy(final FailureStrategy delegate, final String type) {
-      return new FailureStrategy() {
-        private String prependMessage(String message) {
-          return "Unexpected "
-              + type
-              + " generated for "
-              + actual()
-              + ":"
-              + (message.isEmpty() ? "" : " " + message);
-        }
-
-        @Override
-        public void fail(String message) {
-          delegate.fail(prependMessage(message));
-        }
-
-        @Override
-        public void fail(String message, Throwable cause) {
-          delegate.fail(prependMessage(message), cause);
-        }
-
-        @Override
-        public void failComparing(String message, CharSequence expected, CharSequence actual) {
-          delegate.failComparing(prependMessage(message), expected, actual);
-        }
-
-        @Override
-        public void failComparing(
-            String message, CharSequence expected, CharSequence actual, Throwable cause) {
-          delegate.failComparing(prependMessage(message), expected, actual, cause);
-        }
-      };
+      return check()
+          .withMessage("Unexpected template body generated for %s:", actual())
+          .that(templateBody);
     }
 
     @Override
