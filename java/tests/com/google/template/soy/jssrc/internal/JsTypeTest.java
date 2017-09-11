@@ -150,10 +150,10 @@ public final class JsTypeTest {
   }
 
   private StringSubject assertThatTypeExprForRecordMember(SoyType soyType) {
-    return assertThat(forSoyType(soyType, false).typeExprForRecordMember(/*optional=*/ false));
+    return assertThat(forSoyType(soyType, false).typeExprForRecordMember(/* isOptional= */ false));
   }
 
   private StringSubject assertThatTypeExprForOptionalRecordMember(SoyType soyType) {
-    return assertThat(forSoyType(soyType, false).typeExprForRecordMember(/*optional=*/ true));
+    return assertThat(forSoyType(soyType, false).typeExprForRecordMember(/* isOptional= */ true));
   }
 }

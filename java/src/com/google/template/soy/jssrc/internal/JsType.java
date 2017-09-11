@@ -291,7 +291,8 @@ final class JsType {
           for (Map.Entry<String, SoyType> member : recordType.getMembers().entrySet()) {
             JsType forSoyType = forSoyType(member.getValue(), isIncrementalDom);
             builder.addRequires(forSoyType.getGoogRequires());
-            members.put(member.getKey(), forSoyType.typeExprForRecordMember(/*optional=*/ false));
+            members.put(
+                member.getKey(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
           return builder
               // trailing comma is important to prevent parsing ambiguity for the unknown type
