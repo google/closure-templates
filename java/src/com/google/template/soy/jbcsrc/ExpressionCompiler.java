@@ -74,7 +74,9 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
@@ -877,10 +879,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitCssFunction(FunctionNode node) {
       StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
-      Expression renamedSelector =
-          parameters
-              .getRenderContext()
-              .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(selector.getValue()));
+      Expression renamedSelector = parameters.getRenderContext().renameCss(selector.getValue());
 
       if (node.numChildren() == 1) {
         return SoyExpression.forString(renamedSelector);
@@ -896,22 +895,21 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitXidFunction(FunctionNode node) {
       StringNode xid = (StringNode) Iterables.getOnlyElement(node.getChildren());
-      Expression renamedXid =
-          parameters
-              .getRenderContext()
-              .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(xid.getValue()));
+      Expression renamedXid = parameters.getRenderContext().renameXid(xid.getValue());
       return SoyExpression.forString(renamedXid);
     }
 
     // Non-builtin functions
 
-    // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
-    // and pull it out of there.  However, it seems like we should be able to turn some of those
-    // calls into static method calls (maybe be stashing instances in static fields in our
-    // template). We would probably need to introduce a new mechanism for registering functions.
-    // Or we should just 'intrinsify' a number of extra function (isNonnull for example)
     @Override
     SoyExpression visitPluginFunction(FunctionNode node) {
+      SoyFunction fn = node.getSoyFunction();
+      List<SoyExpression> args = visitChildren(node);
+      if (fn instanceof SoyJbcSrcFunction) {
+        return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getRenderContext(), args);
+      }
+      // TODO(lukes): migrate all the functionality of the PluginFunctionCompiler to be implemented
+      // as SoyJbcSrcFunctions and then eliminate the PluginFunctionCompiler
       return functions.callPluginFunction(node, visitChildren(node));
     }
 

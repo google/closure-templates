@@ -165,43 +165,6 @@ public abstract class MethodRef {
   public static final MethodRef SOY_PROTO_VALUE_IMPL_CREATE =
       create(SoyProtoValueImpl.class, "create", Message.class).asNonNullable();
 
-  public static final MethodRef RENDER_CONTEXT_GET_DELTEMPLATE =
-      create(
-          RenderContext.class,
-          "getDelTemplate",
-          String.class,
-          String.class,
-          boolean.class,
-          SoyRecord.class,
-          SoyRecord.class);
-
-  public static final MethodRef RENDER_CONTEXT_GET_FUNCTION =
-      create(RenderContext.class, "getFunction", String.class);
-
-  public static final MethodRef RENDER_CONTEXT_GET_LOCALE =
-      create(RenderContext.class, "getLocale");
-
-  public static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE =
-      create(RenderContext.class, "getPrintDirective", String.class);
-
-  public static final MethodRef RENDER_CONTEXT_GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
-      create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
-
-  public static final MethodRef RENDER_CONTEXT_GET_SOY_MSG_PARTS =
-      create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
-
-  public static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
-      create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
-
-  public static final MethodRef RENDER_CONTEXT_RENAME_XID =
-      create(RenderContext.class, "renameXid", String.class).asNonNullable();
-
-  public static final MethodRef RENDER_CONTEXT_USE_PRIMARY_MSG =
-      create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
-
-  public static final MethodRef RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO =
-      create(RenderContext.class, "getDebugSoyTemplateInfo");
-
   public static final MethodRef RENDER_RESULT_DONE =
       create(RenderResult.class, "done").asCheap().asNonNullable();
 

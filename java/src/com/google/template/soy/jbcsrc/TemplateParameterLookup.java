@@ -49,7 +49,7 @@ interface TemplateParameterLookup {
    * Returns an expression that produces the current {@link
    * com.google.template.soy.jbcsrc.shared.RenderContext}.
    */
-  Expression getRenderContext();
+  RenderContextExpression getRenderContext();
 
   /**
    * Returns the current template's parameter dictionary. The returned expression will have a {@link

@@ -20,20 +20,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
-import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
@@ -527,34 +521,6 @@ public final class SoyExpression extends Expression {
       return this;
     }
     return new SoyExpression(soyRuntimeType, expr);
-  }
-
-  /**
-   * Applies a print directive to the soyValue, only useful for parameterless print directives such
-   * as those applied to {@link MsgNode msg nodes} and {@link CallNode call nodes} for autoescaping.
-   * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
-   * expressions.
-   */
-  public SoyExpression applyPrintDirective(Expression renderContext, SoyPrintDirective directive) {
-    return applyPrintDirective(renderContext, directive, ImmutableList.of());
-  }
-
-  /** Applies a print directive to the soyValue. */
-  public SoyExpression applyPrintDirective(
-      Expression renderContext, SoyPrintDirective directive, List<SoyExpression> argsList) {
-    // Technically the type is either StringData or SanitizedContent depending on this type, but
-    // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
-    // benefit (and strangely there is no common super type for SanitizedContent and String), this
-    // is probably because after escaping, the only thing you would ever do is convert to a string.
-    // TODO(lukes): we could improve the runtime type by inspecting to see if the directive is a
-    // SanitizedContentOperator
-    return SoyExpression.forSoyValue(
-        UnknownType.getInstance(),
-        MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
-            renderContext.invoke(
-                MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive.getName())),
-            this.box(),
-            asBoxedList(argsList)));
   }
 
   @Override

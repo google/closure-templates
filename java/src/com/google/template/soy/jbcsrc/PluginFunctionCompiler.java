@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
@@ -179,10 +178,7 @@ final class PluginFunctionCompiler {
   }
 
   private SoyExpression invokeDebugSoyTemplateInfoFunction() {
-    return SoyExpression.forBool(
-        parameterLookup
-            .getRenderContext()
-            .invoke(MethodRef.RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO));
+    return SoyExpression.forBool(parameterLookup.getRenderContext().getDebugSoyTemplateInfo());
   }
 
   /** @see com.google.template.soy.basicfunctions.AugmentMapFunction */
@@ -343,8 +339,7 @@ final class PluginFunctionCompiler {
 
   private SoyExpression invokeSoyFunction(FunctionNode node, List<SoyExpression> args) {
     Expression soyJavaFunctionExpr =
-        MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(
-            parameterLookup.getRenderContext(), constant(node.getFunctionName()));
+        parameterLookup.getRenderContext().getFunction(node.getFunctionName());
     Expression list = SoyExpression.asBoxedList(args);
     // Most soy functions don't have return types, but if they do we should enforce it
     return SoyExpression.forSoyValue(

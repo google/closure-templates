@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -135,9 +134,9 @@ public class ExpressionCompilerTest {
             }
 
             @Override
-            public Expression getRenderContext() {
-              return staticFieldReference(ExpressionCompiler.class, "currentRenderContext")
-                  .accessor();
+            public RenderContextExpression getRenderContext() {
+              return new RenderContextExpression(
+                  BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
             }
 
             @Override

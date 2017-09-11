@@ -29,6 +29,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -92,6 +93,10 @@ public final class RenderContext {
   @Nullable
   public ULocale getLocale() {
     return msgBundle.getLocale();
+  }
+
+  public BidiGlobalDir getBidiGlobalDir() {
+    return BidiGlobalDir.forStaticIsRtl(msgBundle.isRtl());
   }
 
   public String renameCssSelector(String selector) {

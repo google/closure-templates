@@ -543,11 +543,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (PrintDirectiveNode child : node.getChildren()) {
       checkState(child.getArgs().isEmpty()); // sanity
       printDirectives.add(
-          parameterLookup
-              .getRenderContext()
-              .invoke(
-                  MethodRef.RENDER_CONTEXT_GET_ESCAPING_DIRECTIVE_AS_FUNCTION,
-                  constant(child.getName())));
+          parameterLookup.getRenderContext().getEscapingDirectiveAsFunction(child.getName()));
     }
     Label reattachPoint = new Label();
     return appendableExpression
@@ -569,10 +565,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // because instead of wrapping the soy value, we would just wrap the appendable.
     for (PrintDirectiveNode printDirective : node.getChildren()) {
       value =
-          value.applyPrintDirective(
-              parameterLookup.getRenderContext(),
-              printDirective.getPrintDirective(),
-              basic.compileToList(printDirective.getArgs()));
+          parameterLookup
+              .getRenderContext()
+              .applyPrintDirective(
+                  printDirective.getPrintDirective(),
+                  value,
+                  basic.compileToList(printDirective.getArgs()));
     }
     return value;
   }
@@ -692,10 +690,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           IfBlock.create(
               parameterLookup
                   .getRenderContext()
-                  .invoke(
-                      MethodRef.RENDER_CONTEXT_USE_PRIMARY_MSG,
-                      constant(idAndParts.id),
-                      constant(fallbackIdAndParts.id)),
+                  .usePrimaryMsg(idAndParts.id, fallbackIdAndParts.id),
               renderDefault);
       return ControlFlow.ifElseChain(
           ImmutableList.of(ifAvailableRenderDefault),
@@ -737,11 +732,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Expression calleeExpression =
         parameterLookup
             .getRenderContext()
-            .invoke(
-                MethodRef.RENDER_CONTEXT_GET_DELTEMPLATE,
-                constant(node.getDelCalleeName()),
+            .getDeltemplate(
+                node.getDelCalleeName(),
                 variantExpr,
-                constant(node.allowEmptyDefault()),
+                node.allowEmptyDefault(),
                 prepareParamsHelper(node, reattachPoint),
                 parameterLookup.getIjRecord());
     if (!node.getEscapingDirectives().isEmpty()) {
@@ -831,10 +825,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Expression getEscapingDirectivesList(CallNode node) {
     List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectives().size());
     for (SoyPrintDirective directive : node.getEscapingDirectives()) {
-      directiveExprs.add(
-          parameterLookup
-              .getRenderContext()
-              .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive.getName())));
+      directiveExprs.add(parameterLookup.getRenderContext().getPrintDirective(directive.getName()));
     }
     return BytecodeUtils.asList(directiveExprs);
   }

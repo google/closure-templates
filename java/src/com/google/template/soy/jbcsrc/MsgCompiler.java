@@ -156,12 +156,7 @@ final class MsgCompiler {
       MsgPartsAndIds partsAndId, MsgNode msg, List<SoyPrintDirective> escapingDirectives) {
     Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
     Expression soyMsgParts =
-        parameterLookup
-            .getRenderContext()
-            .invoke(
-                MethodRef.RENDER_CONTEXT_GET_SOY_MSG_PARTS,
-                constant(partsAndId.id),
-                soyMsgDefaultParts);
+        parameterLookup.getRenderContext().getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
@@ -173,7 +168,7 @@ final class MsgCompiler {
               msg,
               escapingDirectives,
               soyMsgParts,
-              parameterLookup.getRenderContext().invoke(MethodRef.RENDER_CONTEXT_GET_LOCALE),
+              parameterLookup.getRenderContext().getLocale(),
               partsAndId.parts);
     }
     return Statement.concat(
@@ -262,7 +257,7 @@ final class MsgCompiler {
                 .checkedCast(SoyMsgRawTextPart.class)
                 .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
     for (SoyPrintDirective directive : escapingDirectives) {
-      text = text.applyPrintDirective(parameterLookup.getRenderContext(), directive);
+      text = parameterLookup.getRenderContext().applyPrintDirective(directive, text);
     }
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
@@ -299,7 +294,7 @@ final class MsgCompiler {
           SoyExpression.forString(
               tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
       for (SoyPrintDirective directive : escapingDirectives) {
-        value = value.applyPrintDirective(parameterLookup.getRenderContext(), directive);
+        value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
       }
       render =
           Statement.concat(

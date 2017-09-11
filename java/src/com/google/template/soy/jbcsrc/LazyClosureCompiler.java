@@ -558,14 +558,14 @@ final class LazyClosureCompiler {
     }
 
     @Override
-    public Expression getRenderContext() {
+    public RenderContextExpression getRenderContext() {
       if (renderContextCapture == null) {
         params.fieldNames.claimName(RENDER_CONTEXT_FIELD);
         renderContextCapture =
             ParentCapture.create(
                 params.type, RENDER_CONTEXT_FIELD, parentParameterLookup.getRenderContext());
       }
-      return renderContextCapture.field().accessor(thisVar);
+      return new RenderContextExpression(renderContextCapture.field().accessor(thisVar));
     }
 
     @Override

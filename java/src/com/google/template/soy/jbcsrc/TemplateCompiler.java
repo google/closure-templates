@@ -246,7 +246,8 @@ final class TemplateCompiler {
         new TemplateVariableManager(
             fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
-    TemplateVariables variables = new TemplateVariables(variableSet, thisVar, contextVar);
+    TemplateVariables variables =
+        new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -337,10 +338,12 @@ final class TemplateCompiler {
   private final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
     private final Expression thisRef;
-    private final Expression renderContext;
+    private final RenderContextExpression renderContext;
 
     TemplateVariables(
-        TemplateVariableManager variableSet, Expression thisRef, Expression renderContext) {
+        TemplateVariableManager variableSet,
+        Expression thisRef,
+        RenderContextExpression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;
@@ -362,7 +365,7 @@ final class TemplateCompiler {
     }
 
     @Override
-    public Expression getRenderContext() {
+    public RenderContextExpression getRenderContext() {
       return renderContext;
     }
 
