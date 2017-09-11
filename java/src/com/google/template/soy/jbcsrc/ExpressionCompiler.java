@@ -120,7 +120,6 @@ final class ExpressionCompiler {
           new CompilerVisitor(
               parameters,
               varManager,
-              new PluginFunctionCompiler(parameters),
               Suppliers.ofInstance(BasicDetacher.INSTANCE));
     }
 
@@ -207,10 +206,7 @@ final class ExpressionCompiler {
             throw new AssertionError();
           }
         };
-    return Optional.of(
-        new CompilerVisitor(
-                parameters, varManager, new PluginFunctionCompiler(parameters), throwingSupplier)
-            .exec(node));
+    return Optional.of(new CompilerVisitor(parameters, varManager, throwingSupplier).exec(node));
   }
 
   /**
@@ -222,7 +218,6 @@ final class ExpressionCompiler {
         new CompilerVisitor(
             parameters,
             varManager,
-            new PluginFunctionCompiler(parameters),
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // neccesary.
@@ -253,17 +248,14 @@ final class ExpressionCompiler {
     final Supplier<? extends ExpressionDetacher> detacher;
     final TemplateParameterLookup parameters;
     final TemplateVariableManager varManager;
-    final PluginFunctionCompiler functions;
 
     CompilerVisitor(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
-        PluginFunctionCompiler functions,
         Supplier<? extends ExpressionDetacher> detacher) {
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
-      this.functions = functions;
     }
 
     @Override
@@ -908,9 +900,17 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJbcSrcFunction) {
         return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getRenderContext(), args);
       }
-      // TODO(lukes): migrate all the functionality of the PluginFunctionCompiler to be implemented
-      // as SoyJbcSrcFunctions and then eliminate the PluginFunctionCompiler
-      return functions.callPluginFunction(node, visitChildren(node));
+      // We support a fallback to dynamically lookup the function at runtime.  In the long run we
+      // should consider migrating everyone to use SoyJbcSrcFunction.
+      Expression soyJavaFunctionExpr =
+          parameters.getRenderContext().getFunction(node.getFunctionName());
+      Expression list = SoyExpression.asBoxedList(args);
+      // Most soy functions don't have return types, but if they do we should enforce it
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.RUNTIME_CALL_SOY_FUNCTION
+              .invoke(soyJavaFunctionExpr, list)
+              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
     }
 
     // Proto initialization calls

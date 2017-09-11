@@ -16,11 +16,13 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -39,7 +41,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class MinFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   MinFunction() {}
@@ -59,16 +62,7 @@ public final class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
-    return min(arg0, arg1);
-  }
-
-  /** Returns the numeric minimum of the two arguments. */
-  public static NumberData min(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.min(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.min(arg0.numberValue(), arg1.numberValue()));
-    }
+    return BasicFunctionsRuntime.min(arg0, arg1);
   }
 
   @Override
@@ -87,5 +81,33 @@ public final class MinFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
 
     PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("min");
     return fnBuilder.addArg(arg0).addArg(arg1).asPyExpr();
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef MATH_MIN_DOUBLE =
+        MethodRef.create(Math.class, "min", double.class, double.class).asCheap();
+    static final MethodRef MATH_MIN_LONG =
+        MethodRef.create(Math.class, "min", long.class, long.class).asCheap();
+    static final MethodRef MIN_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "min", SoyValue.class, SoyValue.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression left = args.get(0);
+    SoyExpression right = args.get(1);
+    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      return SoyExpression.forInt(
+          JbcSrcMethods.MATH_MIN_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
+    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
+      return SoyExpression.forFloat(
+          JbcSrcMethods.MATH_MIN_DOUBLE.invoke(
+              left.unboxAs(double.class), right.unboxAs(double.class)));
+    } else {
+      return SoyExpression.forSoyValue(
+          NUMBER_TYPE, JbcSrcMethods.MIN_FN.invoke(left.box(), right.box()));
+    }
   }
 }

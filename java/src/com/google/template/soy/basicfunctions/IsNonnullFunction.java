@@ -23,6 +23,11 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -35,6 +40,8 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
 /**
  * Soy function that checks whether its argument is a defined nonnull value.
@@ -42,7 +49,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+class IsNonnullFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   IsNonnullFunction() {}
@@ -77,5 +85,30 @@ class IsNonnullFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFu
     // Note: This check could blow up if the variable was never created at all. However, this should
     // not be possible as a variable not found in the function is assumed to be part of opt_data.
     return PyExprUtils.genPyNotNullCheck(args.get(0));
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    final SoyExpression arg = args.get(0);
+    if (BytecodeUtils.isPrimitive(arg.resultType())) {
+      return SoyExpression.TRUE;
+    }
+    // This is what javac generates for 'someObject != null'
+    return SoyExpression.forBool(
+        new Expression(Type.BOOLEAN_TYPE, arg.features()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            arg.gen(adapter);
+            Label isNull = new Label();
+            adapter.ifNull(isNull);
+            // non-null
+            adapter.pushBoolean(true);
+            Label end = new Label();
+            adapter.goTo(end);
+            adapter.mark(isNull);
+            adapter.pushBoolean(false);
+            adapter.mark(end);
+          }
+        });
   }
 }

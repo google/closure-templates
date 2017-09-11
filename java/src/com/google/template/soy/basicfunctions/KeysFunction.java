@@ -17,10 +17,12 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -28,7 +30,11 @@ import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import java.util.ArrayList;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -47,7 +53,10 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 public final class KeysFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   @Inject
   KeysFunction() {}
@@ -70,18 +79,7 @@ public final class KeysFunction
       throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
     }
 
-    return ListImpl.forProviderList(keys((SoyMap) arg));
-  }
-
-  /**
-   * Returns a list of all the keys in the given map.
-   *
-   * <p>Do not inline; required for jbcsrc. Must be mutable list.
-   */
-  public static List<SoyValue> keys(SoyMap map) {
-    List<SoyValue> list = new ArrayList<>(map.getItemCnt());
-    Iterables.addAll(list, map.getItemKeys());
-    return list;
+    return ListImpl.forProviderList(BasicFunctionsRuntime.keys((SoyMap) arg));
   }
 
   @Override
@@ -101,5 +99,29 @@ public final class KeysFunction
     PyExpr arg = args.get(0);
 
     return new PyListExpr("(" + arg.getText() + ").keys()", Integer.MAX_VALUE);
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef KEYS_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyMap.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression soyExpression = args.get(0);
+    SoyType argType = soyExpression.soyType();
+    // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
+    SoyType listElementType;
+    if (argType.getKind() == SoyType.Kind.MAP) {
+      listElementType = ((MapType) argType).getKeyType(); // pretty much just string
+    } else if (argType.getKind() == SoyType.Kind.LIST) {
+      listElementType = IntType.getInstance();
+    } else {
+      listElementType = UnknownType.getInstance();
+    }
+    return SoyExpression.forList(
+        ListType.of(listElementType),
+        JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 }

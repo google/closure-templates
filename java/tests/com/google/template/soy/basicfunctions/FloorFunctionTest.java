@@ -17,14 +17,19 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.types.primitive.UnknownType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,6 +50,30 @@ public class FloorFunctionTest {
 
     SoyValue integer = IntegerData.forValue(14);
     assertEquals(IntegerData.forValue(14), floorFunction.computeForJava(ImmutableList.of(integer)));
+  }
+
+  @Test
+  public void testComputeForJbcSrc() {
+    FloorFunction floorFunction = new FloorFunction();
+    assertThatExpression(
+            floorFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(SoyExpression.forInt(BytecodeUtils.constant(1L)))))
+        .evaluatesTo(1L);
+
+    assertThatExpression(
+            floorFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(SoyExpression.forFloat(BytecodeUtils.constant(2.5D)))))
+        .evaluatesTo(2L);
+    assertThatExpression(
+            floorFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(
+                    SoyExpression.forSoyValue(
+                        UnknownType.getInstance(),
+                        MethodRef.FLOAT_DATA_FOR_VALUE.invoke(BytecodeUtils.constant(2.5D))))))
+        .evaluatesTo(2L);
   }
 
   @Test

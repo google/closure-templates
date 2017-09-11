@@ -21,12 +21,17 @@ import com.google.common.primitives.Doubles;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.primitive.FloatType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -46,7 +51,10 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 public final class ParseFloatFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   @Inject
   ParseFloatFunction() {}
@@ -63,7 +71,8 @@ public final class ParseFloatFunction
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    Double d = Doubles.tryParse(args.get(0).stringValue());
+    String stringValue = args.get(0).stringValue();
+    Double d = Doubles.tryParse(stringValue);
     return (d == null || d.isNaN()) ? NullData.INSTANCE : FloatData.forValue(d);
   }
 
@@ -84,5 +93,18 @@ public final class ParseFloatFunction
   public PyExpr computeForPySrc(List<PyExpr> args) {
     return new PyExpr(
         String.format("runtime.parse_float(%s)", args.get(0).getText()), Integer.MAX_VALUE);
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef PARSE_FLOAT =
+        MethodRef.create(BasicFunctionsRuntime.class, "parseFloat", String.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SoyTypes.makeNullable(FloatType.getInstance()),
+        JbcSrcMethods.PARSE_FLOAT.invoke(args.get(0).unboxAs(String.class)));
   }
 }

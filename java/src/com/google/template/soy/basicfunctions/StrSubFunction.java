@@ -22,6 +22,10 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -34,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * A function that returns a substring of a given string.
@@ -50,7 +55,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-final class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class StrSubFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   StrSubFunction() {}
@@ -124,5 +130,41 @@ final class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySr
 
     return new PyStringExpr(
         "(" + base + ")[" + start.getText() + ":" + (end != null ? end.getText() : "") + "]");
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef STRING_SUBSTR_START =
+        MethodRef.create(String.class, "substring", int.class).asNonNullable();
+    static final MethodRef STRING_SUBSTR_START_END =
+        MethodRef.create(String.class, "substring", int.class, int.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    if (args.size() == 2) {
+      return invokeStrSubFunction(args.get(0), args.get(1));
+    }
+    return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
+  }
+
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
+  private SoyExpression invokeStrSubFunction(SoyExpression str, SoyExpression startIndex) {
+    return SoyExpression.forString(
+        str.unboxAs(String.class)
+            .invoke(
+                JbcSrcMethods.STRING_SUBSTR_START,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
+  }
+
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
+  private SoyExpression invokeStrSubFunction(
+      SoyExpression str, SoyExpression startIndex, SoyExpression endIndex) {
+    return SoyExpression.forString(
+        str.unboxAs(String.class)
+            .invoke(
+                JbcSrcMethods.STRING_SUBSTR_START_END,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
+                BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 }

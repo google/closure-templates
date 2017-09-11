@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -27,9 +28,12 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
+import com.google.template.soy.types.primitive.UnknownType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -57,6 +61,24 @@ public class IsNonnullFunctionTest {
     assertEquals(
         BooleanData.TRUE,
         isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(StringData.forValue(""))));
+  }
+
+  @Test
+  public void testComputeForJbcSrc() {
+    IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
+    assertThatExpression(
+            isNonnullFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(
+                    SoyExpression.forSoyValue(
+                        UnknownType.getInstance(),
+                        BytecodeUtils.constantNull(BytecodeUtils.SOY_VALUE_TYPE)))))
+        .evaluatesTo(false);
+    assertThatExpression(
+            isNonnullFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(SoyExpression.forInt(BytecodeUtils.constant(1L)).box())))
+        .evaluatesTo(true);
   }
 
   @Test

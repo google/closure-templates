@@ -16,11 +16,13 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -39,7 +41,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class MaxFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   MaxFunction() {}
@@ -59,16 +62,7 @@ public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
-    return max(arg0, arg1);
-  }
-
-  /** Returns the numeric maximum of the two arguments. */
-  public static NumberData max(SoyValue arg0, SoyValue arg1) {
-    if (arg0 instanceof IntegerData && arg1 instanceof IntegerData) {
-      return IntegerData.forValue(Math.max(arg0.longValue(), arg1.longValue()));
-    } else {
-      return FloatData.forValue(Math.max(arg0.numberValue(), arg1.numberValue()));
-    }
+    return BasicFunctionsRuntime.max(arg0, arg1);
   }
 
   @Override
@@ -87,5 +81,33 @@ public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
 
     PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("max");
     return fnBuilder.addArg(arg0).addArg(arg1).asPyExpr();
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    private static final MethodRef MAX_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "max", SoyValue.class, SoyValue.class)
+            .asNonNullable();
+    private static final MethodRef MATH_MAX_DOUBLE =
+        MethodRef.create(Math.class, "max", double.class, double.class).asCheap();
+    private static final MethodRef MATH_MAX_LONG =
+        MethodRef.create(Math.class, "max", long.class, long.class).asCheap();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression left = args.get(0);
+    SoyExpression right = args.get(1);
+    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      return SoyExpression.forInt(
+          JbcSrcMethods.MATH_MAX_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
+    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
+      return SoyExpression.forFloat(
+          JbcSrcMethods.MATH_MAX_DOUBLE.invoke(
+              left.unboxAs(double.class), right.unboxAs(double.class)));
+    } else {
+      return SoyExpression.forSoyValue(
+          NUMBER_TYPE, JbcSrcMethods.MAX_FN.invoke(left.box(), right.box()));
+    }
   }
 }

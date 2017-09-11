@@ -18,6 +18,8 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -34,7 +36,10 @@ import java.util.Set;
  * templates.
  */
 public final class DebugSoyTemplateInfoFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   // $$ prefix ensures that the function cannot be used directly
   public static final String NAME = "$$debugSoyTemplateInfo";
@@ -82,5 +87,10 @@ public final class DebugSoyTemplateInfoFunction
     // 'debugSoyTemplateInfo' is used for inpsecting soy template info from rendered pages.
     // Always resolve to false since there is no plan to support this feature in PySrc.
     return new PyExpr("False", Integer.MAX_VALUE);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forBool(context.getDebugSoyTemplateInfo());
   }
 }

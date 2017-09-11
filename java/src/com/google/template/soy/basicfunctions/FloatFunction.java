@@ -19,6 +19,9 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -27,6 +30,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.List;
 import java.util.Set;
+import org.objectweb.asm.Type;
 
 /**
  * Soy special function for automatic coercion of an int into a float.
@@ -36,7 +40,8 @@ import java.util.Set;
  * existing templates. It is not meant to be used directly in Soy templates.
  */
 @SoyPureFunction
-public final class FloatFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class FloatFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   // $$ prefix ensures that the function cannot be used directly
   public static final String NAME = "$$float";
@@ -71,5 +76,14 @@ public final class FloatFunction implements SoyJavaFunction, SoyJsSrcFunction, S
   public PyExpr computeForPySrc(List<PyExpr> args) {
     // int -> float coercion is a no-op in python
     return args.get(0);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression arg = args.get(0);
+    SoyExpression unboxed = arg.isBoxed() ? arg.unboxAs(long.class) : arg;
+    SoyExpression result =
+        SoyExpression.forFloat(BytecodeUtils.numericConversion(unboxed, Type.DOUBLE_TYPE));
+    return arg.isCheap() ? result.asCheap() : result;
   }
 }

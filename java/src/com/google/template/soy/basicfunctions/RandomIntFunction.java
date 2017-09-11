@@ -21,6 +21,9 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -38,7 +41,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class RandomIntFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   public RandomIntFunction() {}
@@ -58,12 +61,7 @@ public final class RandomIntFunction
     SoyValue arg = args.get(0);
 
     long longValue = arg.longValue();
-    return IntegerData.forValue(randomInt(longValue));
-  }
-
-  /** Returns a random integer between {@code 0} and the provided argument. */
-  public static long randomInt(long longValue) {
-    return (long) Math.floor(Math.random() * longValue);
+    return IntegerData.forValue(BasicFunctionsRuntime.randomInt(longValue));
   }
 
   @Override
@@ -81,5 +79,17 @@ public final class RandomIntFunction
     PyExpr arg = args.get(0);
     // Subtract 1 from the argument as the python randint function is inclusive on both sides.
     return new PyExpr("random.randint(0, " + arg.getText() + " - 1)", Integer.MAX_VALUE);
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef RANDOM_INT_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "randomInt", long.class).asCheap();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forInt(
+        JbcSrcMethods.RANDOM_INT_FN.invoke(args.get(0).unboxAs(long.class)));
   }
 }

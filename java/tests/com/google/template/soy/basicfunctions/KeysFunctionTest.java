@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -26,9 +27,16 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
+import com.google.template.soy.types.primitive.UnknownType;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +67,36 @@ public class KeysFunctionTest {
       resultItems.add(itemProvider.resolve().stringValue());
     }
     assertEquals(Sets.newHashSet("boo", "foo", "goo"), resultItems);
+  }
+
+  @Test
+  public void testComputeForJbcSrc() {
+    KeysFunction keysFunction = new KeysFunction();
+    // empty map becomes empty list
+    assertThatExpression(
+            keysFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(
+                    SoyExpression.forSoyValue(
+                        UnknownType.getInstance(),
+                        MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+                            BytecodeUtils.newLinkedHashMap(
+                                ImmutableList.<Expression>of(), ImmutableList.<Expression>of()))))))
+        .evaluatesTo(ImmutableList.of());
+    assertThatExpression(
+            keysFunction.computeForJbcSrc(
+                /*context=*/ null,
+                ImmutableList.of(
+                    SoyExpression.forSoyValue(
+                        UnknownType.getInstance(),
+                        MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+                            BytecodeUtils.newLinkedHashMap(
+                                ImmutableList.<Expression>of(
+                                    BytecodeUtils.constant("a"), BytecodeUtils.constant("b")),
+                                ImmutableList.<Expression>of(
+                                    FieldRef.NULL_PROVIDER.accessor(),
+                                    FieldRef.NULL_PROVIDER.accessor())))))))
+        .evaluatesTo(ImmutableList.of(StringData.forValue("a"), StringData.forValue("b")));
   }
 
   @Test

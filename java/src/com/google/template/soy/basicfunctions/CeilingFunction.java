@@ -19,6 +19,10 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * Soy function that takes the ceiling of a number.
@@ -36,7 +41,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class CeilingFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   CeilingFunction() {}
@@ -53,19 +59,7 @@ public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction,
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    return ceil(args.get(0));
-  }
-
-  /**
-   * Returns the smallest (closest to negative infinity) integer value that is greater than or equal
-   * to the argument.
-   */
-  public static IntegerData ceil(SoyValue arg) {
-    if (arg instanceof IntegerData) {
-      return (IntegerData) arg;
-    } else {
-      return IntegerData.forValue((int) Math.ceil(arg.floatValue()));
-    }
+    return IntegerData.forValue(BasicFunctionsRuntime.ceil(args.get(0)));
   }
 
   @Override
@@ -80,5 +74,26 @@ public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction,
     PyExpr arg = args.get(0);
 
     return new PyExpr("int(math.ceil(" + arg.getText() + "))", Integer.MAX_VALUE);
+  }
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef CEIL_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "ceil", SoyValue.class).asCheap();
+    static final MethodRef MATH_CEIL = MethodRef.create(Math.class, "ceil", double.class).asCheap();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression argument = args.get(0);
+    switch (argument.resultType().getSort()) {
+      case Type.LONG:
+        return argument;
+      case Type.DOUBLE:
+        return SoyExpression.forInt(
+            BytecodeUtils.numericConversion(
+                JbcSrcMethods.MATH_CEIL.invoke(argument), Type.LONG_TYPE));
+      default:
+        return SoyExpression.forInt(JbcSrcMethods.CEIL_FN.invoke(argument.box()));
+    }
   }
 }

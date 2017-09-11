@@ -20,12 +20,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.primitive.IntType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -45,7 +50,10 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 public final class ParseIntFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   @Inject
   ParseIntFunction() {}
@@ -88,5 +96,18 @@ public final class ParseIntFunction
   public PyExpr computeForPySrc(List<PyExpr> args) {
     String arg = args.get(0).getText();
     return new PyExpr(String.format("runtime.parse_int(%s)", arg), Integer.MAX_VALUE);
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef PARSE_INT =
+        MethodRef.create(BasicFunctionsRuntime.class, "parseInt", String.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SoyTypes.makeNullable(IntType.getInstance()),
+        JbcSrcMethods.PARSE_INT.invoke(args.get(0).unboxAs(String.class)));
   }
 }

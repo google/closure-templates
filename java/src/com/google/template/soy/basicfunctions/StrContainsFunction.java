@@ -23,6 +23,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -46,7 +49,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class StrContainsFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   StrContainsFunction() {}
@@ -96,5 +100,19 @@ final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, So
 
     String exprText = "(" + arg0 + ").find(" + arg1 + ") != -1";
     return new PyExpr(exprText, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef STRING_CONTAINS =
+        MethodRef.create(String.class, "contains", CharSequence.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    SoyExpression left = args.get(0);
+    SoyExpression right = args.get(1);
+    return SoyExpression.forBool(
+        left.unboxAs(String.class).invoke(JbcSrcMethods.STRING_CONTAINS, right.coerceToString()));
   }
 }

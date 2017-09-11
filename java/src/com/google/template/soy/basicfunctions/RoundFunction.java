@@ -16,14 +16,17 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * Soy function that rounds a number to a specified number of digits before or after the decimal
@@ -43,7 +47,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class RoundFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   public RoundFunction() {}
@@ -62,36 +67,7 @@ public final class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, S
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
     int numDigitsAfterPt = (args.size() == 2) ? args.get(1).integerValue() : 0 /* default */;
-    return round(value, numDigitsAfterPt);
-  }
-
-  /**
-   * Rounds the given value to the closest decimal point left (negative numbers) or right (positive
-   * numbers) of the decimal point
-   */
-  public static NumberData round(SoyValue value, int numDigitsAfterPoint) {
-    // NOTE: for more accurate rounding, this should really be using BigDecimal which can do correct
-    // decimal arithmetic.  However, for compatibility with js, that probably isn't an option.
-    if (numDigitsAfterPoint == 0) {
-      return IntegerData.forValue(round(value));
-    } else if (numDigitsAfterPoint > 0) {
-      double valueDouble = value.numberValue();
-      double shift = Math.pow(10, numDigitsAfterPoint);
-      return FloatData.forValue(Math.round(valueDouble * shift) / shift);
-    } else {
-      double valueDouble = value.numberValue();
-      double shift = Math.pow(10, -numDigitsAfterPoint);
-      return IntegerData.forValue((int) (Math.round(valueDouble / shift) * shift));
-    }
-  }
-
-  /** Rounds the given value to the closest integer. */
-  public static long round(SoyValue value) {
-    if (value instanceof IntegerData) {
-      return value.longValue();
-    } else {
-      return Math.round(value.numberValue());
-    }
+    return BasicFunctionsRuntime.round(value, numDigitsAfterPt);
   }
 
   @Override
@@ -191,5 +167,43 @@ public final class RoundFunction implements SoyJavaFunction, SoyJsSrcFunction, S
       }
     }
     return numDigitsAfterPtAsInt;
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef MATH_ROUND =
+        MethodRef.create(Math.class, "round", double.class).asCheap();
+    static final MethodRef ROUND_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "round", SoyValue.class).asNonNullable();
+    static final MethodRef ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "round", SoyValue.class, int.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    if (args.size() == 1) {
+      return invokeRoundFunction(args.get(0));
+    }
+    return invokeRoundFunction(args.get(0), args.get(1));
+  }
+
+  private SoyExpression invokeRoundFunction(SoyExpression soyExpression) {
+    if (soyExpression.assignableToNullableInt()) {
+      return soyExpression;
+    }
+    if (soyExpression.assignableToNullableFloat()) {
+      return SoyExpression.forInt(
+          JbcSrcMethods.MATH_ROUND.invoke(soyExpression.unboxAs(double.class)));
+    }
+    return SoyExpression.forInt(JbcSrcMethods.ROUND_FN.invoke(soyExpression.box()));
+  }
+
+  private SoyExpression invokeRoundFunction(SoyExpression value, SoyExpression digitsAfterPoint) {
+    return SoyExpression.forSoyValue(
+        NUMBER_TYPE,
+        JbcSrcMethods.ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN.invoke(
+            value.box(),
+            BytecodeUtils.numericConversion(digitsAfterPoint.unboxAs(long.class), Type.INT_TYPE)));
   }
 }
