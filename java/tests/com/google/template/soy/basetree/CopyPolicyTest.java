@@ -42,7 +42,7 @@ import org.junit.runners.JUnit4;
 public final class CopyPolicyTest {
 
   @Test
-  public void testCopy() throws IOException, SecurityException {
+  public void testCopy() throws IOException {
     // We use top level classes to ignore node types defined as inner classes for tests.
     ImmutableSet<ClassInfo> topLevelClasses =
         ClassPath.from(ClassLoader.getSystemClassLoader()).getTopLevelClasses();

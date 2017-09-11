@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.CopyState;
 
 /**
@@ -35,8 +34,7 @@ public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
    * @param sourceLocation The node's source location.
    * @param commandName The name of the Soy command.
    */
-  public CaseOrDefaultNode(int id, SourceLocation sourceLocation, String commandName)
-      throws SoySyntaxException {
+  public CaseOrDefaultNode(int id, SourceLocation sourceLocation, String commandName) {
     super(id, sourceLocation, commandName);
     Preconditions.checkArgument("case".equals(commandName) || "default".equals(commandName));
   }

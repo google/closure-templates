@@ -21,7 +21,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import java.util.ArrayDeque;
@@ -41,7 +40,7 @@ public final class AbstractExprNodeVisitorTest {
   private static final SourceLocation LOC = SourceLocation.UNKNOWN;
 
   @Test
-  public void testConcreteImplementation() throws SoySyntaxException {
+  public void testConcreteImplementation() {
 
     IntegerNode expr = new IntegerNode(17, LOC);
 
@@ -50,7 +49,7 @@ public final class AbstractExprNodeVisitorTest {
   }
 
   @Test
-  public void testInterfaceImplementation() throws SoySyntaxException {
+  public void testInterfaceImplementation() {
 
     MinusOpNode expr = new MinusOpNode(LOC);
     expr.addChild(new IntegerNode(17, LOC));
@@ -67,7 +66,7 @@ public final class AbstractExprNodeVisitorTest {
   }
 
   @Test
-  public void testNotImplemented() throws SoySyntaxException {
+  public void testNotImplemented() {
 
     MinusOpNode expr = new MinusOpNode(LOC);
     expr.addChild(new FloatNode(17.0, LOC));

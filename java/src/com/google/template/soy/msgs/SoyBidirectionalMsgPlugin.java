@@ -38,8 +38,7 @@ public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
    * @return The message bundle object built from the messages file.
    * @throws SoyMsgException If there was an error parsing the file content.
    */
-  public SoyMsgBundle parseExtractedMsgsFile(String extractedMsgsFileContent)
-      throws SoyMsgException;
+  public SoyMsgBundle parseExtractedMsgsFile(String extractedMsgsFileContent);
 
   /**
    * Builds the content of a translated msgs file from a given message bundle object.
@@ -53,8 +52,7 @@ public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
    * @return The content of the generated translated msgs file.
    * @throws SoyMsgException If there was an error building the file content.
    */
-  public CharSequence generateTranslatedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
-      throws SoyMsgException;
+  public CharSequence generateTranslatedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options);
 
   // Note: parseTranslatedMsgsFile() is defined in SoyMsgPlugin.
 

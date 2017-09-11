@@ -679,8 +679,7 @@ final class InferenceEngine {
      *     after the call ends.
      */
     private DerivedNameAndContext inferCallSite(
-        CallNode callNode, Context startContext, String templateName, Inferences inferences)
-        throws SoyAutoescapeException {
+        CallNode callNode, Context startContext, String templateName, Inferences inferences) {
       inferences.recordTemplateChecked(templateName);
       List<TemplateNode> targets = inferences.lookupTemplates(templateName);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);

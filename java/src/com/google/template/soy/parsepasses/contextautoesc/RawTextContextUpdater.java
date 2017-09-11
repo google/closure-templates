@@ -80,8 +80,7 @@ final class RawTextContextUpdater {
    * @param context The context before rawText.
    * @return the next context transition.
    */
-  public static Context processRawText(RawTextNode rawTextNode, Context context)
-      throws SoyAutoescapeException {
+  public static Context processRawText(RawTextNode rawTextNode, Context context) {
     String rawText = rawTextNode.getRawText();
     int offset = 0;
     int length = rawText.length();

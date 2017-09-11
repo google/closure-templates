@@ -77,7 +77,7 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(String[] args) throws IOException, SoySyntaxException {
+  public static void main(String[] args) throws IOException {
     new SoyMsgPruner().runMain(args);
   }
 

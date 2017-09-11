@@ -121,7 +121,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(final String[] args) throws IOException, SoySyntaxException {
+  public static void main(final String[] args) throws IOException {
     new SoyToPySrcCompiler().runMain(args);
   }
 

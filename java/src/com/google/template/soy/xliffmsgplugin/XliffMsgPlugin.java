@@ -37,16 +37,14 @@ public class XliffMsgPlugin implements SoyMsgPlugin {
 
   @Override
   public CharSequence generateExtractedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter)
-      throws SoyMsgException {
+      SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter) {
 
     return XliffGenerator.generateXliff(
         msgBundle, options.getSourceLocaleString(), options.getTargetLocaleString());
   }
 
   @Override
-  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent)
-      throws SoyMsgException {
+  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent) {
 
     try {
       return XliffParser.parseXliffTargetMsgs(translatedMsgsFileContent);

@@ -600,7 +600,7 @@ public final class ContextualAutoescaperTest {
             "`<div a=\"q\">{$ij.foo}</div>`\n",
             "{/template}"));
 
-    // can't merge accross different template depths
+    // can't merge across different template depths
     assertRewriteFails(
         "In file no-path:4:23, template ns.foo: {if} command branch ends in a different context "
             + "than preceding branches: {else}</div>",
@@ -2821,7 +2821,7 @@ public final class ContextualAutoescaperTest {
   private static final String NONCE =
       "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
 
-  private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {
+  private void assertContextualRewritingNoop(String expectedOutput) {
     assertContextualRewriting(expectedOutput, expectedOutput);
   }
 

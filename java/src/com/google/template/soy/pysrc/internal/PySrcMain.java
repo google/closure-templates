@@ -89,8 +89,7 @@ public final class PySrcMain {
       TemplateRegistry templateRegistry,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
-      ErrorReporter errorReporter)
-      throws SoySyntaxException {
+      ErrorReporter errorReporter) {
 
     try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
@@ -126,7 +125,7 @@ public final class PySrcMain {
       String outputPathFormat,
       String inputPathsPrefix,
       ErrorReporter errorReporter)
-      throws SoySyntaxException, IOException {
+      throws IOException {
 
     ImmutableList<SoyFileNode> srcsToCompile =
         ImmutableList.copyOf(

@@ -22,7 +22,6 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
 import java.util.List;
@@ -41,7 +40,7 @@ public final class PrintNodeTest {
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   @Test
-  public void testPlaceholderMethods() throws SoySyntaxException {
+  public void testPlaceholderMethods() {
     String template =
         "{@param boo: ?}\n"
             + "{$boo}\n" // 0

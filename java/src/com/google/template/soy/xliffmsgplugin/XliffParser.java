@@ -53,8 +53,7 @@ class XliffParser {
    * @throws SAXException If there's an error parsing the data.
    * @throws SoyMsgException If there's an error in parsing the data.
    */
-  static SoyMsgBundle parseXliffTargetMsgs(String xliffContent)
-      throws SAXException, SoyMsgException {
+  static SoyMsgBundle parseXliffTargetMsgs(String xliffContent) throws SAXException {
 
     // Get a SAX parser.
     SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
