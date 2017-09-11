@@ -17,7 +17,10 @@
 package com.google.template.soy.msgs;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
 import java.util.Locale;
@@ -55,15 +58,17 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
         : bundle;
   }
 
-  private final SoyMsgBundle bundle;
+  private final SoyMsgBundle delegate;
   private final String localeString;
   private final ULocale locale;
+  private final boolean isRtl;
 
   @VisibleForTesting
-  SoyMsgBundleWithFullLocale(SoyMsgBundle bundle, ULocale locale, String localeString) {
-    this.bundle = bundle;
+  SoyMsgBundleWithFullLocale(SoyMsgBundle delegate, ULocale locale, String localeString) {
+    this.delegate = delegate;
     this.locale = locale;
     this.localeString = localeString;
+    this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
   }
 
   @Override
@@ -77,22 +82,32 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
   }
 
   @Override
+  public boolean isRtl() {
+    return isRtl;
+  }
+
+  @Override
   public SoyMsg getMsg(long msgId) {
-    return bundle.getMsg(msgId);
+    return delegate.getMsg(msgId);
+  }
+
+  @Override
+  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+    return delegate.getMsgParts(msgId);
   }
 
   @Override
   public int getNumMsgs() {
-    return bundle.getNumMsgs();
+    return delegate.getNumMsgs();
   }
 
   @Override
   public Iterator<SoyMsg> iterator() {
-    return bundle.iterator();
+    return delegate.iterator();
   }
 
   @VisibleForTesting
   public SoyMsgBundle getInnerSoyMsgBundle() {
-    return bundle;
+    return delegate;
   }
 }
