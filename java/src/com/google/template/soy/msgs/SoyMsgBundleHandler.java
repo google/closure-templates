@@ -153,28 +153,6 @@ public class SoyMsgBundleHandler {
   // Soy internal methods.
 
   /**
-   * Generates an extracted messages file (source messages to be translated) from a given message
-   * bundle, and writes it to file.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param msgBundle The message bundle to write to file.
-   * @param options The options for generating the output extracted messages file (depending on the
-   *     message plugin being used, none or some of the options may be applicable).
-   * @param outputFile The output file to write to.
-   * @throws SoyMsgException If there's an error while processing the messages.
-   * @throws IOException If there's an error while accessing the file.
-   * @deprecated Use {@link #writeExtractedMsgs} instead.
-   */
-  @Deprecated
-  public void writeToExtractedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile) throws IOException {
-
-    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    writeExtractedMsgs(msgBundle, options, Files.asByteSink(outputFile));
-  }
-
-  /**
    * Generates extracted messages (source messages to be translated) from a given message bundle,
    * and writes it out.
    *
