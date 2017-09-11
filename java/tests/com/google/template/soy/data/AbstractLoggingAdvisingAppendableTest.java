@@ -18,6 +18,9 @@ package com.google.template.soy.data;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
+import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import java.io.IOException;
 import org.junit.Test;
@@ -109,5 +112,14 @@ public final class AbstractLoggingAdvisingAppendableTest {
     } catch (IllegalStateException ise) {
       assertThat(ise).hasMessageThat().contains("unbalanced");
     }
+  }
+
+  @Test
+  public void testAppliesEscapersToPlaceholder() throws IOException {
+    BufferingAppendable buffering = LoggingAdvisingAppendable.buffering();
+    buffering.appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation.create("foo", "placeholder", ImmutableList.of()),
+        ImmutableList.of(Functions.forMap(ImmutableMap.of("placeholder", "replacement"))));
+    assertThat(buffering.toString()).isEqualTo("replacement");
   }
 }

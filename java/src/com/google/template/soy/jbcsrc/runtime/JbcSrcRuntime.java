@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -388,9 +389,14 @@ public final class JbcSrcRuntime {
         protected final void doExitLoggableElement() {}
 
         @Override
-        protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+        protected void doAppendLoggingFunctionInvocation(
+            LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
             throws IOException {
-          System.out.append(funCall.placeholderValue());
+          String val = funCall.placeholderValue();
+          for (Function<String, String> directive : escapers) {
+            val = directive.apply(val);
+          }
+          System.out.append(val);
         }
       };
 

@@ -18,6 +18,8 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -177,9 +179,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall) throws IOException {
-      delegate.appendLoggingFunctionInvocation(funCall);
-      buffer.appendLoggingFunctionInvocation(funCall);
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      buffer.appendLoggingFunctionInvocation(funCall, escapers);
       return this;
     }
   }

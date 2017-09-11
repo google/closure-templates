@@ -19,16 +19,21 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
@@ -50,6 +55,19 @@ final class AppendableExpression extends Expression {
 
   private static final MethodRef EXIT_LOGGABLE_STATEMENT =
       MethodRef.create(LoggingAdvisingAppendable.class, "exitLoggableElement").asNonNullable();
+
+  private static final MethodRef APPEND_LOGGING_FUNCTION_INVOCATION =
+      MethodRef.create(
+              LoggingAdvisingAppendable.class,
+              "appendLoggingFunctionInvocation",
+              LoggingFunctionInvocation.class,
+              ImmutableList.class)
+          .asNonNullable();
+
+  private static final MethodRef LOGGING_FUNCTION_INVOCATION_CREATE =
+      MethodRef.create(
+              LoggingFunctionInvocation.class, "create", String.class, String.class, List.class)
+          .asNonNullable();
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(
@@ -121,14 +139,33 @@ final class AppendableExpression extends Expression {
     return delegate.invoke(SOFT_LIMITED);
   }
 
-  /* Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
+  /** Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
   AppendableExpression enterLoggableElement(Expression logStatement) {
     return withNewDelegate(delegate.invoke(ENTER_LOGGABLE_STATEMENT, logStatement), true);
   }
 
-  /* Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
+  /** Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
   AppendableExpression exitLoggableElement() {
     return withNewDelegate(delegate.invoke(EXIT_LOGGABLE_STATEMENT), true);
+  }
+
+  /**
+   * Invokes {@link LoggingAdvisingAppendable#appendLoggingFunctionInvocation} on the appendable.
+   */
+  AppendableExpression appendLoggingFunctionInvocation(
+      String functionName,
+      String placeholderValue,
+      List<SoyExpression> args,
+      List<Expression> escapingDirectives) {
+    return withNewDelegate(
+        delegate.invoke(
+            APPEND_LOGGING_FUNCTION_INVOCATION,
+            LOGGING_FUNCTION_INVOCATION_CREATE.invoke(
+                constant(functionName),
+                constant(placeholderValue),
+                SoyExpression.asBoxedList(args)),
+            BytecodeUtils.asImmutableList(escapingDirectives)),
+        true);
   }
 
   @Override

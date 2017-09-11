@@ -726,6 +726,10 @@ public final class BytecodeUtils {
    * <p>NOTE: {@code ImmutableList} rejects null elements.
    */
   public static Expression asImmutableList(Iterable<? extends Expression> items) {
+    ImmutableList<Expression> copy = ImmutableList.copyOf(items);
+    if (copy.size() < MethodRef.IMMUTABLE_LIST_OF.size()) {
+      return MethodRef.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
+    }
     return MethodRef.IMMUTABLE_LIST_COPY_OF_COLLECTION.invoke(asList(items));
   }
 
@@ -733,7 +737,7 @@ public final class BytecodeUtils {
   public static Expression asList(Iterable<? extends Expression> items) {
     final ImmutableList<Expression> copy = ImmutableList.copyOf(items);
     if (copy.isEmpty()) {
-      return MethodRef.IMMUTABLE_LIST_OF.invoke();
+      return MethodRef.IMMUTABLE_LIST_OF.get(0).invoke();
     }
     // Note, we cannot neccesarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.

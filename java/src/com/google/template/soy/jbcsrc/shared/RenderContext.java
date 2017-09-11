@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.shared;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -26,6 +27,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -116,6 +119,28 @@ public final class RenderContext {
           "Failed to find Soy print directive with name '" + name + "'");
     }
     return printDirective;
+  }
+
+  public Function<String, String> getEscapingDirectiveAsFunction(String name) {
+    final SoyJavaPrintDirective printDirective = soyJavaDirectivesMap.get(name);
+    if (printDirective == null) {
+      throw new IllegalStateException(
+          "Failed to find Soy print directive with name '" + name + "'");
+    }
+    if (!printDirective.getValidArgsSizes().contains(0)) {
+      throw new IllegalStateException(
+          "Soy print directive with name '" + name + "' is not an escaping directive");
+    }
+    // TODO(lukes): this adapter is lame.  there should just be a way to get the print directive to
+    // hand us an escaper or a function rather than writing this adapter.
+    return new Function<String, String>() {
+      @Override
+      public String apply(String input) {
+        return printDirective
+            .applyForJava(StringData.forValue(input), ImmutableList.<SoyValue>of())
+            .stringValue();
+      }
+    };
   }
 
   /**

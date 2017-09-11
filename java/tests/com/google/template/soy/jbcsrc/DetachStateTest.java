@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
@@ -80,7 +81,8 @@ public final class DetachStateTest {
     protected void doExitLoggableElement() {}
 
     @Override
-    protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+    protected void doAppendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
       delegate.append(funCall.placeholderValue());
     }

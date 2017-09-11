@@ -131,10 +131,11 @@ public class SoyExpressionTest {
         .evaluatesTo(false);
     assertThatExpression(forList(list, constantNull(Type.getType(List.class))).box())
         .evaluatesTo(null);
-    assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.invoke()).coerceToBoolean())
+    assertThatExpression(
+            forList(list, MethodRef.IMMUTABLE_LIST_OF.get(0).invoke()).coerceToBoolean())
         .evaluatesTo(true);
     // SoyList uses Object identity for equality so we can't really assert on the value.
-    assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.invoke()).box())
+    assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.get(0).invoke()).box())
         .evaluatesToInstanceOf(ListImpl.class);
   }
 

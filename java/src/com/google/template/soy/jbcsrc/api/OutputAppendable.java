@@ -17,6 +17,8 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -107,9 +109,14 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   }
 
   @Override
-  protected void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+  protected void doAppendLoggingFunctionInvocation(
+      LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
-    outputAppendable.append(logger.evalLoggingFunction(funCall));
+    String value = logger.evalLoggingFunction(funCall);
+    for (Function<String, String> directive : escapers) {
+      value = directive.apply(value);
+    }
+    outputAppendable.append(value);
   }
 
   @Override

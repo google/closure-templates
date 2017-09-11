@@ -134,12 +134,12 @@ final class ExpressionCompiler {
     /**
      * Returns an expression that evaluates to a {@code List<SoyValue>} containing all the children.
      */
-    Expression compileToList(List<? extends ExprNode> children) {
+    List<SoyExpression> compileToList(List<? extends ExprNode> children) {
       List<SoyExpression> soyExprs = new ArrayList<>(children.size());
       for (ExprNode expr : children) {
         soyExprs.add(compile(expr));
       }
-      return SoyExpression.asBoxedList(soyExprs);
+      return soyExprs;
     }
   }
 

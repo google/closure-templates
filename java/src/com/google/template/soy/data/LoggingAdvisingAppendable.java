@@ -17,6 +17,9 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,9 +64,19 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   /** Called whenever a loggable element is exited. */
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
-  /** Called whenever a logging function is being rendered. */
+  /**
+   * Called whenever a logging function is being rendered.
+   *
+   * <p>TODO(lukes): come up with a better interface than Function. Maybe Escaper?
+   *
+   * @param funCall The function invocation
+   * @param escapers The escapers to apply to the result. NOTE: this should be SoyJavaPrintDirective
+   *     or similar but that would cause cycles between soy.data and soy.shared.restricted
+   * @return this
+   */
   public abstract LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-      LoggingFunctionInvocation funCall) throws IOException;
+      LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException;
 
   /** A {@link LoggingAdvisingAppendable} that renders to an appendable. */
   private static class DelegatingToAppendable<T extends Appendable>
@@ -90,9 +103,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    protected void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+    protected void doAppendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      delegate.append(funCall.placeholderValue());
+      escapePlaceholder(funCall.placeholderValue(), escapers);
     }
 
     @Override
@@ -148,17 +162,19 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall) {
-      getCommandsAndAddPendingStringData().add(funCall);
+    protected void doAppendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
-
+    
     public void clearAndReplayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (commands != null) {
         for (Object o : getCommandsAndAddPendingStringData()) {
           if (o instanceof String) {
             appendable.append((String) o);
-          } else if (o instanceof LoggingFunctionInvocation) {
-            appendable.appendLoggingFunctionInvocation((LoggingFunctionInvocation) o);
+          } else if (o instanceof LoggingFunctionCommand) {
+            ((LoggingFunctionCommand) o).replayOn(appendable);
           } else if (o == EXIT_MARKER) {
             appendable.exitLoggableElement();
           } else {
@@ -176,13 +192,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       if (commands != null) {
         // NOTE: this ignores all the logging statements which is as it should be since they don't
         // affect output
-        for (Object o : getCommandsAndAddPendingStringData()) {
-          if (o instanceof String) {
-            delegate.append((String) o);
-          } else if (o instanceof LoggingFunctionInvocation) {
-            delegate.append(((LoggingFunctionInvocation) o).placeholderValue());
-          }
-        }
+        appendCommandsToBuilder(getCommandsAndAddPendingStringData(), delegate);
         commands = null;
       }
       String value = delegate.toString();
@@ -196,18 +206,49 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         // NOTE: this ignores all the logging statements which is as it should be since they don't
         // affect output
         StringBuilder builder = new StringBuilder();
-        for (Object o : commands) {
-          if (o instanceof String) {
-            builder.append((String) o);
-          } else if (o instanceof LoggingFunctionInvocation) {
-            builder.append(((LoggingFunctionInvocation) o).placeholderValue());
-          }
-        }
+        appendCommandsToBuilder(commands, builder);
         builder.append(delegate);
         return builder.toString();
       } else {
         return delegate.toString();
       }
     }
+
+    private void appendCommandsToBuilder(List<Object> commands2, StringBuilder builder) {
+      for (Object o : commands2) {
+        if (o instanceof String) {
+          builder.append((String) o);
+        } else if (o instanceof LoggingFunctionCommand) {
+          LoggingFunctionCommand command = (LoggingFunctionCommand) o;
+          builder.append(escapePlaceholder(command.fn().placeholderValue(), command.escapers()));
+        }
+      }
+    }
+
+    @AutoValue
+    abstract static class LoggingFunctionCommand {
+      static LoggingFunctionCommand create(
+          LoggingFunctionInvocation fn, ImmutableList<Function<String, String>> escapers) {
+        return new AutoValue_LoggingAdvisingAppendable_BufferingAppendable_LoggingFunctionCommand(
+            fn, escapers);
+      }
+
+      abstract LoggingFunctionInvocation fn();
+
+      abstract ImmutableList<Function<String, String>> escapers();
+
+      LoggingAdvisingAppendable replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+        return appendable.appendLoggingFunctionInvocation(fn(), escapers());
+      }
+    }
+  }
+
+  private static String escapePlaceholder(
+      String placeholder, List<Function<String, String>> escapers) {
+    // TODO(lukes): we should be able to do this at compile time
+    for (Function<String, String> escaper : escapers) {
+      placeholder = escaper.apply(placeholder);
+    }
+    return placeholder;
   }
 }

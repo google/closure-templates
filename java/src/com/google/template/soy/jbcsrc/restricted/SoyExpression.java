@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -535,12 +536,12 @@ public final class SoyExpression extends Expression {
    * expressions.
    */
   public SoyExpression applyPrintDirective(Expression renderContext, SoyPrintDirective directive) {
-    return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
+    return applyPrintDirective(renderContext, directive, ImmutableList.of());
   }
 
   /** Applies a print directive to the soyValue. */
   public SoyExpression applyPrintDirective(
-      Expression renderContext, SoyPrintDirective directive, Expression argsList) {
+      Expression renderContext, SoyPrintDirective directive, List<SoyExpression> argsList) {
     // Technically the type is either StringData or SanitizedContent depending on this type, but
     // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
     // benefit (and strangely there is no common super type for SanitizedContent and String), this
@@ -553,7 +554,7 @@ public final class SoyExpression extends Expression {
             renderContext.invoke(
                 MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive.getName())),
             this.box(),
-            argsList));
+            asBoxedList(argsList)));
   }
 
   @Override

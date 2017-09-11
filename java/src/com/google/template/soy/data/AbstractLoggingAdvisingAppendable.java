@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.data;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ForOverride;
 import java.io.IOException;
 
@@ -75,9 +77,10 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
   /** Called whenever a logging function is being rendered. */
   @Override
   public final AbstractLoggingAdvisingAppendable appendLoggingFunctionInvocation(
-      LoggingFunctionInvocation funCall) throws IOException {
+      LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
     if (!isLogOnly()) {
-      doAppendLoggingFunctionInvocation(funCall);
+      doAppendLoggingFunctionInvocation(funCall, escapers);
     }
     return this;
   }
@@ -128,6 +131,7 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
   protected abstract void doExitLoggableElement();
 
   @ForOverride
-  protected abstract void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+  protected abstract void doAppendLoggingFunctionInvocation(
+      LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 }

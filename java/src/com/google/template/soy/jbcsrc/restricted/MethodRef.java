@@ -98,9 +98,29 @@ public abstract class MethodRef {
   public static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
 
-  // cheap() because it's zero-arg
-  public static final MethodRef IMMUTABLE_LIST_OF =
-      create(ImmutableList.class, "of").asCheap().asNonNullable();
+  /** a list of all the ImmutableList.of overloads, indexed by arity. */
+  public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
+
+  static {
+    MethodRef[] immutableListOfMethods = new MethodRef[12];
+    for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
+      if (m.getName().equals("of")) {
+        Class<?>[] params = m.getParameterTypes();
+        if (params.length > 0 && params[params.length - 1].isArray()) {
+          // skip the one that takes an array in the final position
+          continue;
+        }
+        MethodRef ref = MethodRef.create(m).asNonNullable();
+        int arity = params.length;
+        if (arity == 0) {
+          // the zero arg one is 'cheap'
+          ref = ref.asCheap();
+        }
+        immutableListOfMethods[arity] = ref;
+      }
+    }
+    IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
+  }
 
   public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
       create(ImmutableList.class, "copyOf", Collection.class).asCheap().asNonNullable();
@@ -163,6 +183,9 @@ public abstract class MethodRef {
 
   public static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE =
       create(RenderContext.class, "getPrintDirective", String.class);
+
+  public static final MethodRef RENDER_CONTEXT_GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
+      create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
   public static final MethodRef RENDER_CONTEXT_GET_SOY_MSG_PARTS =
       create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);

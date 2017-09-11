@@ -33,6 +33,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -44,6 +45,7 @@ import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -96,7 +98,29 @@ public final class VeLoggingTest {
 
     @Override
     public String evalLoggingFunction(LoggingFunctionInvocation value) {
-      throw new UnsupportedOperationException();
+      switch (value.functionName()) {
+        case "depth":
+          return Integer.toString(depth);
+        default:
+          throw new UnsupportedOperationException(value.toString());
+      }
+    }
+  }
+
+  private static final class DepthFunction implements LoggingFunction {
+    @Override
+    public String getName() {
+      return "depth";
+    }
+
+    @Override
+    public Set<Integer> getValidArgsSizes() {
+      return ImmutableSet.of(0);
+    }
+
+    @Override
+    public String getPlaceholder() {
+      return "depth_placholder";
     }
   }
 
@@ -161,9 +185,9 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         "{let $foo kind=\"html\"}{velog Foo}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
-    // TODO(b/63699313): we lost one of the log statements... fix that by changing how we coerce
-    // content blocks to strings
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    // TODO(b/63699313): we lost both of the log statements.  One is because of how we are coercing
+    // to strings and another is due to how the escaping directives work.
+    assertThat(testLogger.builder.toString()).isEqualTo("");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
   }
 
@@ -184,6 +208,34 @@ public final class VeLoggingTest {
                 + "  velog{id=1}\n"
                 + "    velog{id=1, logonly}\n"
                 + "      velog{id=1, logonly}");
+  }
+
+  @Test
+  public void testLogging_loggingFunction_basic() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "<div data-depth={depth()}></div>"
+            + "{velog Foo}<div data-depth={depth()}></div>{/velog}"
+            + "<div data-depth={depth()}></div>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString())
+        .isEqualTo("<div data-depth=0></div><div data-depth=1></div><div data-depth=0></div>");
+  }
+
+  @Test
+  public void testLogging_loggingFunction_usesPlaceholders() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $html kind=\"html\"}{velog Foo}<div data-depth={depth()}></div>{/velog}{/let}"
+            + "<script>{$html}</script>");
+    // nothing is logged because no elements were rendered
+    assertThat(testLogger.builder.toString()).isEqualTo("");
+    // everything is escaped, and the placeholder is used instead of a 'real value'
+    assertThat(sb.toString()).contains("depth_placholder");
   }
 
   private void renderTemplate(OutputAppendable output, String... templateBodyLines)
@@ -207,6 +259,8 @@ public final class VeLoggingTest {
                             .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
                             .buildNoFiles())))
             .setLoggingConfig(config)
+            .addSoyFunction(new DepthFunction())
+            .runAutoescaper(true)
             .options(
                 new SoyGeneralOptions().setExperimentalFeatures(Arrays.asList("logging_support")))
             .parse()

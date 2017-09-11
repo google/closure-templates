@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
@@ -55,6 +56,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -501,6 +503,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitPrintNode(PrintNode node) {
+    if (node.getExpr().getRoot() instanceof FunctionNode) {
+      FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
+      if (fn.getSoyFunction() instanceof LoggingFunction) {
+        return visitLoggingFunction(node, fn, (LoggingFunction) fn.getSoyFunction());
+      }
+    }
     // First check our special case for compatible content types (no print directives) and an
     // expression that evaluates to a SoyValueProvider.  This will allow us to render incrementally
     if (node.getChildren().isEmpty()) {
@@ -527,6 +535,29 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     return stmt;
+  }
+
+  private Statement visitLoggingFunction(
+      PrintNode node, FunctionNode fn, LoggingFunction loggingFunction) {
+    List<Expression> printDirectives = new ArrayList<>(node.numChildren());
+    for (PrintDirectiveNode child : node.getChildren()) {
+      checkState(child.getArgs().isEmpty()); // sanity
+      printDirectives.add(
+          parameterLookup
+              .getRenderContext()
+              .invoke(
+                  MethodRef.RENDER_CONTEXT_GET_ESCAPING_DIRECTIVE_AS_FUNCTION,
+                  constant(child.getName())));
+    }
+    Label reattachPoint = new Label();
+    return appendableExpression
+        .appendLoggingFunctionInvocation(
+            loggingFunction.getName(),
+            loggingFunction.getPlaceholder(),
+            exprCompiler.asBasicCompiler(reattachPoint).compileToList(fn.getChildren()),
+            printDirectives)
+        .labelStart(reattachPoint)
+        .toStatement();
   }
 
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
