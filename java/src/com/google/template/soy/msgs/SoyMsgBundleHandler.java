@@ -22,6 +22,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -162,13 +163,18 @@ public class SoyMsgBundleHandler {
    * @param options The options for generating the output extracted messages (depending on the
    *     message plugin being used, none or some of the options may be applicable).
    * @param output The output to write to.
+   * @param errorReporter For reporting errors.
    * @throws SoyMsgException If there's an error while processing the messages.
    * @throws IOException If there's an error writing the messages.
    */
-  public void writeExtractedMsgs(SoyMsgBundle msgBundle, OutputFileOptions options, ByteSink output)
+  public void writeExtractedMsgs(
+      SoyMsgBundle msgBundle,
+      OutputFileOptions options,
+      ByteSink output,
+      ErrorReporter errorReporter)
       throws IOException {
 
-    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
+    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options, errorReporter);
     output.asCharSink(UTF_8).write(cs);
   }
 

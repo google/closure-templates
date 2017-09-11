@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -52,7 +53,8 @@ public final class XliffMsgPluginTest {
     // Test without target language.
     OutputFileOptions outputFileOptions = new OutputFileOptions();
     CharSequence extractedMsgsFile =
-        msgPlugin.generateExtractedMsgsFile(msgBundle, outputFileOptions);
+        msgPlugin.generateExtractedMsgsFile(
+            msgBundle, outputFileOptions, ErrorReporter.exploding());
 
     URL expectedExtractedMsgsFile =
         Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2_extracted.xlf");
@@ -61,7 +63,9 @@ public final class XliffMsgPluginTest {
 
     // Test with target language.
     outputFileOptions.setTargetLocaleString("x-zz");
-    extractedMsgsFile = msgPlugin.generateExtractedMsgsFile(msgBundle, outputFileOptions);
+    extractedMsgsFile =
+        msgPlugin.generateExtractedMsgsFile(
+            msgBundle, outputFileOptions, ErrorReporter.exploding());
 
     expectedExtractedMsgsFile =
         Resources.getResource(XliffMsgPluginTest.class, "test_data/test-v2_extracted_x-zz.xlf");

@@ -785,7 +785,7 @@ public final class SoyFileSet {
       throws IOException {
     resetErrorReporter();
     SoyMsgBundle bundle = doExtractMsgs();
-    msgBundleHandler.writeExtractedMsgs(bundle, options, output);
+    msgBundleHandler.writeExtractedMsgs(bundle, options, output, errorReporter);
     throwIfErrorsPresent();
     reportWarnings();
   }
