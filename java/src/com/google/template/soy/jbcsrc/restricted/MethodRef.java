@@ -55,7 +55,6 @@ import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,16 +100,20 @@ public abstract class MethodRef {
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 
+  public static final MethodRef IMMUTABLE_LIST_OF_ARRAY;
+
   static {
     MethodRef[] immutableListOfMethods = new MethodRef[12];
+    MethodRef immutableListOfArray = null;
     for (java.lang.reflect.Method m : ImmutableList.class.getMethods()) {
       if (m.getName().equals("of")) {
         Class<?>[] params = m.getParameterTypes();
+        MethodRef ref = MethodRef.create(m).asNonNullable();
         if (params.length > 0 && params[params.length - 1].isArray()) {
           // skip the one that takes an array in the final position
+          immutableListOfArray = ref;
           continue;
         }
-        MethodRef ref = MethodRef.create(m).asNonNullable();
         int arity = params.length;
         if (arity == 0) {
           // the zero arg one is 'cheap'
@@ -119,11 +122,9 @@ public abstract class MethodRef {
         immutableListOfMethods[arity] = ref;
       }
     }
+    IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
     IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
   }
-
-  public static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
-      create(ImmutableList.class, "copyOf", Collection.class).asCheap().asNonNullable();
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
       create(IntegerData.class, "forValue", long.class).asNonNullable();

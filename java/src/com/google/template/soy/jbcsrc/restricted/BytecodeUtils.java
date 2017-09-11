@@ -25,6 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -64,6 +65,7 @@ public final class BytecodeUtils {
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
   public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
+  private static final Type OBJECT_ARRAY_TYPE = Type.getType(Object[].class);
 
   public static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
       Type.getType(LoggingAdvisingAppendable.class);
@@ -730,7 +732,29 @@ public final class BytecodeUtils {
     if (copy.size() < MethodRef.IMMUTABLE_LIST_OF.size()) {
       return MethodRef.IMMUTABLE_LIST_OF.get(copy.size()).invoke(copy);
     }
-    return MethodRef.IMMUTABLE_LIST_COPY_OF_COLLECTION.invoke(asList(items));
+    ImmutableList<Expression> explicit = copy.subList(0, MethodRef.IMMUTABLE_LIST_OF.size());
+    Expression remainder =
+        asArray(OBJECT_ARRAY_TYPE, copy.subList(MethodRef.IMMUTABLE_LIST_OF.size(), copy.size()));
+    return MethodRef.IMMUTABLE_LIST_OF_ARRAY.invoke(
+        Iterables.concat(explicit, ImmutableList.of(remainder)));
+  }
+
+  private static Expression asArray(
+      final Type arrayType, final ImmutableList<? extends Expression> elements) {
+    final Type elementType = arrayType.getElementType();
+    return new Expression(arrayType, Feature.NON_NULLABLE) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        adapter.pushInt(elements.size());
+        adapter.newArray(elementType);
+        for (int i = 0; i < elements.size(); i++) {
+          adapter.dup(); // dup the array
+          adapter.pushInt(i); // the index to store into
+          elements.get(i).gen(adapter); // the element to store
+          adapter.arrayStore(elementType);
+        }
+      }
+    };
   }
 
   /** Returns an expression that returns a new {@link ArrayList} containing all the given items. */
@@ -739,7 +763,7 @@ public final class BytecodeUtils {
     if (copy.isEmpty()) {
       return MethodRef.IMMUTABLE_LIST_OF.get(0).invoke();
     }
-    // Note, we cannot neccesarily use ImmutableList for anything besides the empty list because
+    // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
     return new Expression(ARRAY_LIST_TYPE, Feature.NON_NULLABLE) {

@@ -319,4 +319,9 @@ public final class CodeBuilder extends MethodVisitor {
   public void swap() {
     adapter.swap();
   }
+
+  /** See {@link GeneratorAdapter#swap()} */
+  public void arrayStore(Type type) {
+    adapter.arrayStore(type);
+  }
 }

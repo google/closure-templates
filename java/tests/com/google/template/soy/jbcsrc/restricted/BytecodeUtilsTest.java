@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.asImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalAnd;
@@ -147,6 +148,23 @@ public class BytecodeUtilsTest {
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testAsImmutableList() {
+    // ImmutableList.of has overloads up to 11 arguments with a catchall varargs after that, go up
+    // to 20 to test all the possibilities and then some
+    for (int n = 0; n < 20; n++) {
+      ImmutableList.Builder<Expression> expressionBuilder = ImmutableList.builder();
+      ImmutableList.Builder<String> actualBuilder = ImmutableList.builder();
+      for (int i = 0; i < n; i++) {
+        String string = Integer.toString(i);
+        expressionBuilder.add(constant(string));
+        actualBuilder.add(string);
+      }
+      assertThatExpression(asImmutableList(expressionBuilder.build()))
+          .evaluatesTo(actualBuilder.build());
     }
   }
 
