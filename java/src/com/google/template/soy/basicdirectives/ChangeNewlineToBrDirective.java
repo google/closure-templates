@@ -18,20 +18,20 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,9 +46,8 @@ final class ChangeNewlineToBrDirective
     implements SanitizedContentOperator,
         SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
-
-  private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   @Inject
   public ChangeNewlineToBrDirective() {}
@@ -77,22 +76,20 @@ final class ChangeNewlineToBrDirective
 
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    String result = NEWLINE_PATTERN.matcher(value.coerceToString()).replaceAll("<br>");
+    return BasicDirectivesRuntime.changeNewlineToBr(value);
+  }
 
-    // Make sure to transmit the known direction, if any, to any downstream directive that may need
-    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
-    // and the transformation we make is only valid in HTML, we only transmit the direction when we
-    // get HTML SanitizedContent.
-    // TODO(user): Consider always returning HTML SanitizedContent.
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
-        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            result, ContentKind.HTML, sanitizedContent.getContentDirection());
-      }
-    }
+  private static final class JbcSrcMethods {
 
-    return StringData.forValue(result);
+    static final MethodRef CHANGE_NEWLINE_TO_BR =
+        MethodRef.create(BasicDirectivesRuntime.class, "changeNewlineToBr", SoyValue.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        StringType.getInstance(), JbcSrcMethods.CHANGE_NEWLINE_TO_BR.invoke(value));
   }
 
   @Override

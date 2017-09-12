@@ -18,10 +18,14 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -47,12 +51,15 @@ import javax.inject.Singleton;
 public abstract class BasicEscapeDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   /** The directive name, including the leading vertical bar ("|"). */
   private final String name;
+
+  @LazyInit private MethodRef javaSoyValueSanitizer;
 
   /** @param name E.g. {@code |escapeUri}. */
   public BasicEscapeDirective(String name) {
@@ -98,6 +105,21 @@ public abstract class BasicEscapeDirective
   public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     String pyFnName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name.substring(1));
     return new PyExpr("sanitize." + pyFnName + "(" + value.getText() + ")", Integer.MAX_VALUE);
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    MethodRef sanitizerMethod = javaSoyValueSanitizer;
+    if (sanitizerMethod == null) {
+      // lazily allocated
+      sanitizerMethod =
+          MethodRef.create(Sanitizers.class, name.substring(1), SoyValue.class).asNonNullable();
+      javaSoyValueSanitizer = sanitizerMethod;
+    }
+    // almost all the escaper functions have versions which accept a raw String, in theory we could
+    // take advantage of this to avoid boxing, but the risk is that we might throw away information
+    // about the content kind of the string.
+    return SoyExpression.forString(sanitizerMethod.invoke(value.box()));
   }
 
   // -----------------------------------------------------------------------------------------------

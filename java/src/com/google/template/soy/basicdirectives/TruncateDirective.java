@@ -20,6 +20,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -31,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * A directive that truncates a string to a maximum length if it is too long, optionally adding
@@ -42,7 +47,8 @@ import javax.inject.Singleton;
 final class TruncateDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   @Inject
   public TruncateDirective() {}
@@ -75,10 +81,6 @@ final class TruncateDirective
     }
 
     String str = value.coerceToString();
-    if (str.length() <= maxLen) {
-      return StringData.forValue(str); // no need to truncate
-    }
-
     boolean doAddEllipsis;
     if (args.size() == 2) {
       try {
@@ -91,31 +93,23 @@ final class TruncateDirective
       doAddEllipsis = true; // default to true
     }
 
-    // If doAddEllipsis, either reduce maxLen to compensate, or else if maxLen is too small, just
-    // turn off doAddEllipsis.
-    if (doAddEllipsis) {
-      if (maxLen > 3) {
-        maxLen -= 3;
-      } else {
-        doAddEllipsis = false;
-      }
-    }
+    return StringData.forValue(BasicDirectivesRuntime.truncate(str, maxLen, doAddEllipsis));
+  }
 
-    // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
-    if (Character.isHighSurrogate(str.charAt(maxLen - 1))
-        && Character.isLowSurrogate(str.charAt(maxLen))) {
-      maxLen -= 1;
-    }
+  private static final class JbcSrcMethods {
+    static final MethodRef TRUNCATE =
+        MethodRef.create(
+                BasicDirectivesRuntime.class, "truncate", String.class, int.class, boolean.class)
+            .asNonNullable();
+  }
 
-    // Truncate.
-    str = str.substring(0, maxLen);
-
-    // Add ellipsis.
-    if (doAddEllipsis) {
-      str += "...";
-    }
-
-    return StringData.forValue(str);
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forString(
+        JbcSrcMethods.TRUNCATE.invoke(
+            value.coerceToString(),
+            BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE),
+            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(true)));
   }
 
   @Override
