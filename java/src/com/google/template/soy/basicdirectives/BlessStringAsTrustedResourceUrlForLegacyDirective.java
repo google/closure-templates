@@ -18,9 +18,6 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -45,8 +42,7 @@ import javax.inject.Singleton;
 final class BlessStringAsTrustedResourceUrlForLegacyDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyPySrcPrintDirective {
 
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
@@ -71,22 +67,6 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.blessStringAsTrustedResourceUrlForLegacy(value);
-  }
-
-  private static final class JbcSrcMethods {
-    static final MethodRef BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY =
-        MethodRef.create(
-                Sanitizers.class, "blessStringAsTrustedResourceUrlForLegacy", SoyValue.class)
-            .asCheap();
-  }
-
-  @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
-    return SoyExpression.forSoyValue(
-        value.soyType(),
-        JbcSrcMethods.BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY
-            .invoke(value)
-            .checkedCast(value.resultType()));
   }
 
   @Override

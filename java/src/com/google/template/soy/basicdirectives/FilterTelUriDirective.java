@@ -18,9 +18,6 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -28,11 +25,11 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-import com.google.template.soy.types.primitive.SanitizedType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 
 /**
  * Implements the |filterTelUri directive, which only accepts tel URIs.
@@ -45,8 +42,7 @@ import javax.inject.Singleton;
 final class FilterTelUriDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyPySrcPrintDirective {
 
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
@@ -67,17 +63,6 @@ final class FilterTelUriDirective
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterTelUri(value);
-  }
-
-  private static final class JbcSrcMethods {
-    static final MethodRef FILTER_TEL_URI =
-        MethodRef.create(Sanitizers.class, "filterTelUri", SoyValue.class).asNonNullable();
-  }
-
-  @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
-    return SoyExpression.forSoyValue(
-        SanitizedType.UriType.getInstance(), JbcSrcMethods.FILTER_TEL_URI.invoke(value.box()));
   }
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {

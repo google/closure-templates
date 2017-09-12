@@ -26,11 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -39,9 +34,6 @@ import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
-import com.google.template.soy.types.primitive.SanitizedType;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -62,8 +54,7 @@ import javax.inject.Singleton;
 final class CleanHtmlDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyPySrcPrintDirective {
 
   private static final Joiner ARG_JOINER = Joiner.on(", ");
 
@@ -102,25 +93,6 @@ final class CleanHtmlDirective
             .toSet();
 
     return Sanitizers.cleanHtml(value, optionalSafeTags);
-  }
-
-  private static final class JbcSrcMethods {
-    static final MethodRef CLEAN_HTML =
-        MethodRef.create(Sanitizers.class, "cleanHtml", SoyValue.class, Collection.class)
-            .asNonNullable();
-    static final MethodRef FROM_TAG_NAME =
-        MethodRef.create(OptionalSafeTag.class, "fromTagName", String.class).asNonNullable();
-  }
-
-  @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
-    List<Expression> optionalSafeTags = new ArrayList<>();
-    for (SoyExpression arg : args) {
-      optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAs(String.class)));
-    }
-    return SoyExpression.forSoyValue(
-        SanitizedType.HtmlType.getInstance(),
-        JbcSrcMethods.CLEAN_HTML.invoke(value.box(), BytecodeUtils.asList(optionalSafeTags)));
   }
 
   @Override

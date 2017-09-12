@@ -19,8 +19,6 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -43,10 +41,7 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPurePrintDirective
 final class TextDirective
-    implements SoyJavaPrintDirective,
-        SoyJsSrcPrintDirective,
-        SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
   @Inject
   public TextDirective() {}
@@ -76,12 +71,6 @@ final class TextDirective
   }
 
   @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
-    // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
-    return value;
-  }
-
-  @Override
   public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     // Coerce to string, since sometimes this will be the root of an expression and will be used as
     // a return value or let-block assignment.
@@ -92,5 +81,4 @@ final class TextDirective
   public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return value.toPyString();
   }
-
 }
