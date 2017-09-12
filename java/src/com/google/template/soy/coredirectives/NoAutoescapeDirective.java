@@ -18,11 +18,15 @@ package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -35,7 +39,9 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPurePrintDirective
 public class NoAutoescapeDirective
-    implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective {
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   public static final String NAME = "|noAutoescape";
 
@@ -60,6 +66,17 @@ public class NoAutoescapeDirective
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterNoAutoescape(value);
+  }
+
+  private static final class JbcSrcMethods {
+    static final MethodRef FILTER_NO_AUTOESCAPE =
+        MethodRef.create(Sanitizers.class, "filterNoAutoescape", SoyValue.class);
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        UnknownType.getInstance(), JbcSrcMethods.FILTER_NO_AUTOESCAPE.invoke(value.box()));
   }
 
   @Override

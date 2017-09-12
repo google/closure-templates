@@ -17,19 +17,20 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ShortCircuitable;
-import com.google.template.soy.shared.restricted.EscapingConventions;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.types.primitive.SanitizedType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -45,6 +46,7 @@ public class EscapeHtmlDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective,
         ShortCircuitable {
 
   public static final String NAME = "|escapeHtml";
@@ -74,19 +76,18 @@ public class EscapeHtmlDirective
 
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    // Pass through known content direction, if any, for use in BidiSpanWrapDirective.
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
-        return value;
-      }
-      valueDir = sanitizedContent.getContentDirection();
-    }
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        EscapingConventions.EscapeHtml.INSTANCE.escape(value.coerceToString()),
-        ContentKind.HTML,
-        valueDir);
+    return CoreDirectivesRuntime.escapeHtml(value);
+  }
+
+  private static final class JbcSrcMethods {
+    static final MethodRef ESCAPE_HTML =
+        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class).asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SanitizedType.HtmlType.getInstance(), JbcSrcMethods.ESCAPE_HTML.invoke(value.box()));
   }
 
   @Override
