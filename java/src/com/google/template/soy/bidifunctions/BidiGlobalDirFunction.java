@@ -21,6 +21,10 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -32,6 +36,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL).
@@ -39,7 +44,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiGlobalDirFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -63,6 +71,19 @@ final class BidiGlobalDirFunction
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     return IntegerData.forValue(bidiGlobalDirProvider.get().getStaticValue());
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef GET_STATIC_VALUE =
+        MethodRef.create(BidiGlobalDir.class, "getStaticValue").asCheap();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forInt(
+        BytecodeUtils.numericConversion(
+            context.getBidiGlobalDir().invoke(JbcSrcMethods.GET_STATIC_VALUE), Type.LONG_TYPE));
   }
 
   @Override

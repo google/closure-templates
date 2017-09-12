@@ -17,15 +17,15 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.BidiUtils;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -47,7 +47,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiDirAttrFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -71,25 +74,32 @@ final class BidiDirAttrFunction
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
-    Dir valueDir = null;
-    boolean isHtmlForValueDirEstimation = false;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueDir = sanitizedContent.getContentDirection();
-      if (valueDir == null) {
-        isHtmlForValueDirEstimation = sanitizedContent.getContentKind() == ContentKind.HTML;
-      }
-    }
-    if (valueDir == null) {
-      isHtmlForValueDirEstimation =
-          isHtmlForValueDirEstimation || (args.size() == 2 && args.get(1).booleanValue());
-      valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
-    }
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        BidiFunctionsRuntime.bidiDirAttr(
+            bidiGlobalDirProvider.get(), value, (args.size() == 2 && args.get(1).booleanValue())),
+        ContentKind.ATTRIBUTES);
+  }
 
-    BidiFormatter bidiFormatter =
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
-    String dirAttr = bidiFormatter.knownDirAttr(valueDir);
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(dirAttr, ContentKind.ATTRIBUTES);
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef DIR_ATTR =
+        MethodRef.create(
+                BidiFunctionsRuntime.class,
+                "bidiDirAttr",
+                BidiGlobalDir.class,
+                SoyValue.class,
+                boolean.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forSanitizedString(
+        JbcSrcMethods.DIR_ATTR.invoke(
+            context.getBidiGlobalDir(),
+            args.get(0).box(),
+            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(false)),
+        SanitizedContentKind.ATTRIBUTES);
   }
 
   @Override

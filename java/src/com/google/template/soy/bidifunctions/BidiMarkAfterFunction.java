@@ -17,13 +17,13 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -45,7 +45,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiMarkAfterFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -70,17 +73,30 @@ final class BidiMarkAfterFunction
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
     boolean isHtml = args.size() == 2 && args.get(1).booleanValue();
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueDir = sanitizedContent.getContentDirection();
-      isHtml = isHtml || sanitizedContent.getContentKind() == ContentKind.HTML;
-    }
+    String markAfterKnownDir =
+        BidiFunctionsRuntime.bidiMarkAfter(bidiGlobalDirProvider.get(), value, isHtml);
+    return StringData.forValue(markAfterKnownDir);
+  }
 
-    int bidiGlobalDir = bidiGlobalDirProvider.get().getStaticValue();
-    return StringData.forValue(
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDir)
-            .markAfterKnownDir(valueDir, value.coerceToString(), isHtml));
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef MARK_AFTER =
+        MethodRef.create(
+                BidiFunctionsRuntime.class,
+                "bidiMarkAfter",
+                BidiGlobalDir.class,
+                SoyValue.class,
+                boolean.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forString(
+        JbcSrcMethods.MARK_AFTER.invoke(
+            context.getBidiGlobalDir(),
+            args.get(0).box(),
+            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(false)));
   }
 
   @Override

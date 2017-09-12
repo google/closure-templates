@@ -17,12 +17,12 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.internal.i18n.BidiUtils;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or 0 for
@@ -40,7 +41,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiTextDirFunction
-    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   @Inject
   BidiTextDirFunction() {}
@@ -58,21 +62,26 @@ final class BidiTextDirFunction
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
-    Dir valueDir = null;
-    boolean isHtmlForValueDirEstimation = false;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueDir = sanitizedContent.getContentDirection();
-      if (valueDir == null) {
-        isHtmlForValueDirEstimation = sanitizedContent.getContentKind() == ContentKind.HTML;
-      }
-    }
-    if (valueDir == null) {
-      isHtmlForValueDirEstimation =
-          isHtmlForValueDirEstimation || (args.size() == 2 && args.get(1).booleanValue());
-      valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
-    }
-    return IntegerData.forValue(valueDir.ord);
+    return IntegerData.forValue(
+        BidiFunctionsRuntime.bidiTextDir(value, args.size() == 2 && args.get(1).booleanValue()));
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef BIDI_TEXT_DIR =
+        MethodRef.create(BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class, boolean.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+    return SoyExpression.forInt(
+        BytecodeUtils.numericConversion(
+            JbcSrcMethods.BIDI_TEXT_DIR.invoke(
+                args.get(0).box(),
+                args.size() > 1
+                    ? args.get(1).unboxAs(boolean.class)
+                    : BytecodeUtils.constant(false)),
+            Type.LONG_TYPE));
   }
 
   @Override
