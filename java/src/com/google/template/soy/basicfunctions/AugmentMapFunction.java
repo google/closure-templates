@@ -22,6 +22,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -108,7 +109,7 @@ public final class AugmentMapFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     SoyExpression arg0 = args.get(0);
     SoyExpression arg1 = args.get(1);
     Expression first = arg0.checkedCast(SoyDict.class);

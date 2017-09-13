@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -31,7 +31,7 @@ import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
 
 /** An expression for a {@link RenderContext} object. */
-final class RenderContextExpression extends Expression implements SoyJbcSrcFunction.Context {
+final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
@@ -144,7 +144,7 @@ final class RenderContextExpression extends Expression implements SoyJbcSrcFunct
   SoyExpression applyPrintDirective(
       SoyPrintDirective directive, SoyExpression value, List<SoyExpression> args) {
     if (directive instanceof SoyJbcSrcPrintDirective) {
-      value = ((SoyJbcSrcPrintDirective) directive).applyForJbcSrc(value, args);
+      value = ((SoyJbcSrcPrintDirective) directive).applyForJbcSrc(this, value, args);
     } else {
       value =
           SoyExpression.forSoyValue(

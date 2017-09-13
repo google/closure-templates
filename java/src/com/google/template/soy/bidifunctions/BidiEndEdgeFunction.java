@@ -21,6 +21,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -81,7 +82,7 @@ final class BidiEndEdgeFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forString(JbcSrcMethods.END_EDGE.invoke(context.getBidiGlobalDir()));
   }
 

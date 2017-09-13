@@ -18,6 +18,7 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
@@ -80,7 +81,8 @@ final class FilterImageDataUriDirective
   }
 
   @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
         SanitizedType.UriType.getInstance(), JbcSrcMethods.FILTER_IMAGE_DATA.invoke(value.box()));
   }

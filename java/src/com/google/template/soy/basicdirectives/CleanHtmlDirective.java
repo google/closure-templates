@@ -28,6 +28,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
@@ -113,7 +114,8 @@ final class CleanHtmlDirective
   }
 
   @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     List<Expression> optionalSafeTags = new ArrayList<>();
     for (SoyExpression arg : args) {
       optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAs(String.class)));

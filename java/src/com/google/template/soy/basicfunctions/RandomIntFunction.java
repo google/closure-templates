@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -88,7 +89,7 @@ public final class RandomIntFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forInt(
         JbcSrcMethods.RANDOM_INT_FN.invoke(args.get(0).unboxAs(long.class)));
   }

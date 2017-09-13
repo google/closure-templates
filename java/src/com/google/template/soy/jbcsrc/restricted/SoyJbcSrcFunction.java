@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.jbcsrc.restricted;
 
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import java.util.List;
 
@@ -28,25 +27,11 @@ import java.util.List;
  */
 public interface SoyJbcSrcFunction extends SoyFunction {
   /**
-   * Provides access to rendering contextual information.
-   *
-   * <p>Subject to change.
-   */
-  interface Context {
-    /** Returns an expression that evaluates to the current {@link BidiGlobalDir} */
-    Expression getBidiGlobalDir();
-    /**
-     * Returns an expression that evaluates to {@code true} if debug tracing comments are enabled.
-     */
-    Expression getDebugSoyTemplateInfo();
-  }
-
-  /**
    * Computes this function on the given arguments for the Jbcsrc Source backend.
    *
    * @param context Contextual data for the current render operation.
    * @param args The function arguments.
    * @return The computed result of this function.
    */
-  SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args);
+  SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args);
 }

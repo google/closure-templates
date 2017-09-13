@@ -20,6 +20,7 @@ import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -95,7 +96,7 @@ public final class MinFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     SoyExpression left = args.get(0);
     SoyExpression right = args.get(1);
     if (left.assignableToNullableInt() && right.assignableToNullableInt()) {

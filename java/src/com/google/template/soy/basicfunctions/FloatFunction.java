@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -79,7 +80,7 @@ public final class FloatFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     SoyExpression arg = args.get(0);
     SoyExpression unboxed = arg.isBoxed() ? arg.unboxAs(long.class) : arg;
     SoyExpression result =

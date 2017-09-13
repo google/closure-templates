@@ -23,6 +23,7 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
@@ -108,7 +109,8 @@ public abstract class BasicEscapeDirective
   }
 
   @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     MethodRef sanitizerMethod = javaSoyValueSanitizer;
     if (sanitizerMethod == null) {
       // lazily allocated

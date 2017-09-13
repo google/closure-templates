@@ -19,6 +19,7 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -76,7 +77,8 @@ final class TextDirective
   }
 
   @Override
-  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
     return value;
   }

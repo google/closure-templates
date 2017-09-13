@@ -24,6 +24,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -181,7 +182,7 @@ public final class RoundFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     if (args.size() == 1) {
       return invokeRoundFunction(args.get(0));
     }

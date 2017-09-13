@@ -21,6 +21,7 @@ import com.google.common.primitives.Doubles;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -102,7 +103,7 @@ public final class ParseFloatFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
         SoyTypes.makeNullable(FloatType.getInstance()),
         JbcSrcMethods.PARSE_FLOAT.invoke(args.get(0).unboxAs(String.class)));

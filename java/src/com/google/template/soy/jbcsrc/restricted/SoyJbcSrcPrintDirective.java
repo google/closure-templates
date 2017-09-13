@@ -39,5 +39,6 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
-  SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args);
+  SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args);
 }

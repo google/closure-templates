@@ -26,6 +26,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
@@ -82,7 +83,7 @@ final class IsNullFunction
   }
 
   @Override
-  public SoyExpression computeForJbcSrc(Context context, List<SoyExpression> args) {
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     final SoyExpression arg = args.get(0);
     if (BytecodeUtils.isPrimitive(arg.resultType())) {
       return SoyExpression.FALSE;
