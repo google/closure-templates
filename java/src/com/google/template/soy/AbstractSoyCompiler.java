@@ -52,12 +52,6 @@ import org.kohsuke.args4j.Option;
  * <p>Defines common flags and performs shared initialization routines.
  */
 abstract class AbstractSoyCompiler {
-  private static final class CommandLineError extends Error {
-    CommandLineError(String msg) {
-      super(msg);
-    }
-  }
-
   /** The string to prepend to the usage message. */
   private final String usagePrefix =
       "Usage:\n"

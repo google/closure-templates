@@ -20,6 +20,7 @@ import com.google.inject.Module;
 import java.io.File;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.NamedOptionDef;
 import org.kohsuke.args4j.OptionDef;
 import org.kohsuke.args4j.spi.OptionHandler;
 import org.kohsuke.args4j.spi.Parameters;
@@ -154,7 +155,8 @@ final class SoyCmdLineParser extends CmdLineParser {
 
     @Override
     Module parseItem(String item) {
-      return instantiatePluginModule(((SoyCmdLineParser) this.owner).pluginLoader, item);
+      return instantiatePluginModule(
+          ((NamedOptionDef) option).name(), ((SoyCmdLineParser) this.owner).pluginLoader, item);
     }
   }
 
@@ -192,7 +194,10 @@ final class SoyCmdLineParser extends CmdLineParser {
         setter.addValue(null);
       } else {
         setter.addValue(
-            instantiatePluginModule(((SoyCmdLineParser) this.owner).pluginLoader, parameter));
+            instantiatePluginModule(
+                ((NamedOptionDef) option).name(),
+                ((SoyCmdLineParser) this.owner).pluginLoader,
+                parameter));
       }
       return 1;
     }
@@ -209,12 +214,20 @@ final class SoyCmdLineParser extends CmdLineParser {
    * @param moduleName The name of the plugin module to instantiate.
    * @return A new instance of the specified plugin module.
    */
-  private static Module instantiatePluginModule(ClassLoader loader, String moduleName) {
+  private static Module instantiatePluginModule(
+      String moduleFlagName, ClassLoader loader, String moduleName) {
     try {
       return (Module) Class.forName(moduleName, true, loader).getConstructor().newInstance();
 
     } catch (ReflectiveOperationException e) {
-      throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
+      throw new CommandLineError(
+          "Cannot instantiate plugin module \""
+              + moduleName
+              + "\", registered with flag --"
+              + moduleFlagName
+              + ".  Please make sure that the module exists and is on the compiler classpath."
+              + "\nCaused by "
+              + e);
     }
   }
 }
