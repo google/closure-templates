@@ -14,8 +14,7 @@
       <method>
         <name>ordainAsSafe</name>
         <distrusts>*</distrusts>
-        <trusts>com.google.template.soy.basicdirectives.ChangeNewlineToBrDirective</trusts>
-        <trusts>com.google.template.soy.basicdirectives.InsertWordBreaksDirective</trusts>
+        <trusts>com.google.template.soy.basicdirectives.BasicDirectivesRuntime</trusts>
         <trusts>com.google.template.soy.bididirectives.BidiUnicodeWrapDirective</trusts>
         <trusts>com.google.template.soy.bidifunctions.BidiDirAttrFunction</trusts>
         <trusts>com.google.template.soy.coredirectives.CoreDirectivesRuntime</trusts>

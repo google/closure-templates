@@ -89,7 +89,6 @@
       <version>1</version>
       <scope>compile</scope>
     </dependency>
-
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>

@@ -467,6 +467,8 @@ def parse_float(s):
     return None
   return None if math.isnan(f) else f
 
+def unsupported(str):
+  raise Exception("unsupported feature: " + str)
 
 ######################
 # Utility functions. #

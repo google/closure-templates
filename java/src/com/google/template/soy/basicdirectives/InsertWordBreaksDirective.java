@@ -18,21 +18,26 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * A directive that inserts word breaks as necessary.
@@ -46,7 +51,9 @@ import javax.inject.Singleton;
 final class InsertWordBreaksDirective
     implements SanitizedContentOperator,
         SoyJavaPrintDirective,
-        SoyLibraryAssistedJsSrcPrintDirective {
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   @Inject
   InsertWordBreaksDirective() {}
@@ -83,91 +90,23 @@ final class InsertWordBreaksDirective
       throw new IllegalArgumentException(
           "Could not parse 'insertWordBreaks' parameter as integer.");
     }
+    return BasicDirectivesRuntime.insertWordBreaks(value, maxCharsBetweenWordBreaks);
+  }
 
-    StringBuilder result = new StringBuilder();
+  private static final class JbcSrcMethods {
+    static final MethodRef INSERT_WORD_BREAKS =
+        MethodRef.create(
+                BasicDirectivesRuntime.class, "insertWordBreaks", SoyValue.class, int.class)
+            .asNonNullable();
+  }
 
-    // These variables keep track of important state while looping through the string below.
-    boolean isInTag = false; // whether we're inside an HTML tag
-    boolean isMaybeInEntity = false; // whether we might be inside an HTML entity
-    int numCharsWithoutBreak = 0; // number of characters since the last word break
-
-    String str = value.coerceToString();
-    for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
-      codePoint = str.codePointAt(i);
-
-      // If hit maxCharsBetweenWordBreaks, and next char is not a space, then add <wbr>.
-      if (numCharsWithoutBreak >= maxCharsBetweenWordBreaks && codePoint != ' ') {
-        result.append("<wbr>");
-        numCharsWithoutBreak = 0;
-      }
-
-      if (isInTag) {
-        // If inside an HTML tag and we see '>', it's the end of the tag.
-        if (codePoint == '>') {
-          isInTag = false;
-        }
-
-      } else if (isMaybeInEntity) {
-        switch (codePoint) {
-            // If maybe inside an entity and we see ';', it's the end of the entity. The entity
-            // that just ended counts as one char, so increment numCharsWithoutBreak.
-          case ';':
-            isMaybeInEntity = false;
-            ++numCharsWithoutBreak;
-            break;
-            // If maybe inside an entity and we see '<', we weren't actually in an entity. But
-            // now we're inside an HTML tag.
-          case '<':
-            isMaybeInEntity = false;
-            isInTag = true;
-            break;
-            // If maybe inside an entity and we see ' ', we weren't actually in an entity. Just
-            // correct the state and reset the numCharsWithoutBreak since we just saw a space.
-          case ' ':
-            isMaybeInEntity = false;
-            numCharsWithoutBreak = 0;
-            break;
-        }
-
-      } else { // !isInTag && !isInEntity
-        switch (codePoint) {
-            // When not within a tag or an entity and we see '<', we're now inside an HTML tag.
-          case '<':
-            isInTag = true;
-            break;
-            // When not within a tag or an entity and we see '&', we might be inside an entity.
-          case '&':
-            isMaybeInEntity = true;
-            break;
-            // When we see a space, reset the numCharsWithoutBreak count.
-          case ' ':
-            numCharsWithoutBreak = 0;
-            break;
-            // When we see a non-space, increment the numCharsWithoutBreak.
-          default:
-            ++numCharsWithoutBreak;
-            break;
-        }
-      }
-
-      // In addition to adding <wbr>s, we still have to add the original characters.
-      result.appendCodePoint(codePoint);
-    }
-
-    // Make sure to transmit the known direction, if any, to any downstream directive that may need
-    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
-    // and the transformation we make is only valid in HTML, we only transmit the direction when we
-    // get HTML SanitizedContent.
-    // TODO(user): Consider always returning HTML SanitizedContent.
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
-        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            result.toString(), ContentKind.HTML, sanitizedContent.getContentDirection());
-      }
-    }
-
-    return StringData.forValue(result.toString());
+  @Override
+  public SoyExpression applyForJbcSrc(SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        StringType.getInstance(),
+        JbcSrcMethods.INSERT_WORD_BREAKS.invoke(
+            value.box(),
+            BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE)));
   }
 
   @Override
@@ -183,4 +122,8 @@ final class InsertWordBreaksDirective
     return ImmutableSet.of("soy");
   }
 
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+    return new PyExpr("runtime.unsupported('|insertWordBreaks')", Integer.MAX_VALUE);
+  }
 }
