@@ -44,9 +44,7 @@ public final class SharedModuleTest {
 
   // pysrc has intentionally not implemented a few directives.
   private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
-      ImmutableSet.of(NoAutoescapeDirective.NAME, IdDirective.NAME, "|insertWordBreaks");
-  private static final ImmutableSet<String> JBCSRC_DIRECTIVE_BLACKLIST =
-      ImmutableSet.of("|bidiSpanWrap", "|bidiUnicodeWrap", "|formatNum");
+      ImmutableSet.of(NoAutoescapeDirective.NAME, IdDirective.NAME);
 
   private Injector injector;
 
@@ -60,9 +58,7 @@ public final class SharedModuleTest {
     for (SoyPrintDirective directive : injector.getInstance(new Key<Set<SoyPrintDirective>>() {})) {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
-      if (!JBCSRC_DIRECTIVE_BLACKLIST.contains(directive.getName())) {
-        assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
-      }
+      assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
       if (!PYSRC_DIRECTIVE_BLACKLIST.contains(directive.getName())) {
         assertThat(directive).isInstanceOf(SoyPySrcPrintDirective.class);
       }

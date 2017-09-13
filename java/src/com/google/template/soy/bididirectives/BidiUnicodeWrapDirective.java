@@ -17,20 +17,18 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -48,7 +46,8 @@ import javax.inject.Singleton;
 final class BidiUnicodeWrapDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -76,46 +75,22 @@ final class BidiUnicodeWrapDirective
 
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    ContentKind valueKind = null;
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueKind = sanitizedContent.getContentKind();
-      valueDir = sanitizedContent.getContentDirection();
-    }
-    BidiFormatter bidiFormatter =
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
+    return BidiDirectivesRuntime.bidiUnicodeWrap(bidiGlobalDirProvider.get(), value);
+  }
 
-    // We treat the value as HTML if and only if it says it's HTML, even though in legacy usage, we
-    // sometimes have an HTML string (not SanitizedContent) that is passed to an autoescape="false"
-    // template or a {print $foo |noAutoescape}, with the output going into an HTML context without
-    // escaping. We simply have no way of knowing if this is what is happening when we get
-    // non-SanitizedContent input, and most of the time it isn't.
-    boolean isHtml = valueKind == ContentKind.HTML;
-    String wrappedValue =
-        bidiFormatter.unicodeWrapWithKnownDir(valueDir, value.coerceToString(), isHtml);
+  private static final class JbcSrcMethods {
+    static final MethodRef BIDI_UNICODE_WRAP =
+        MethodRef.create(
+                BidiDirectivesRuntime.class, "bidiUnicodeWrap", BidiGlobalDir.class, SoyValue.class)
+            .asNonNullable();
+  }
 
-    // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
-    // anything, we will indicate this known direction in the output SanitizedContent, even though
-    // the intended consumer of that information - a bidi wrapping directive - has already been run.
-    Dir wrappedValueDir = bidiFormatter.getContextDir();
-
-    // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
-    // Unicode-wrapping safe HTML.
-    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML) {
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, wrappedValueDir);
-    }
-
-    // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
-    // anything better to do, we output non-SanitizedContent.
-    // TODO(user): Consider throwing a runtime error on receipt of SanitizedContent other than
-    // TEXT, or HTML.
-    if (valueKind != null) {
-      return StringData.forValue(wrappedValue);
-    }
-
-    // The input was not SanitizedContent, so our output isn't SanitizedContent either.
-    return StringData.forValue(wrappedValue);
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        StringType.getInstance(),
+        JbcSrcMethods.BIDI_UNICODE_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
   }
 
   @Override

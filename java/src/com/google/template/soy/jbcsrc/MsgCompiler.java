@@ -168,7 +168,7 @@ final class MsgCompiler {
               msg,
               escapingDirectives,
               soyMsgParts,
-              parameterLookup.getRenderContext().getLocale(),
+              parameterLookup.getRenderContext().getULocale(),
               partsAndId.parts);
     }
     return Statement.concat(

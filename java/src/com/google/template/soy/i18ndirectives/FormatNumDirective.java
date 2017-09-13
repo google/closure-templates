@@ -20,9 +20,13 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -31,9 +35,6 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.ibm.icu.text.CompactDecimalFormat;
-import com.ibm.icu.text.CompactDecimalFormat.CompactStyle;
-import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.ULocale;
 import java.util.List;
 import java.util.Set;
@@ -56,7 +57,8 @@ import javax.inject.Provider;
 class FormatNumDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   // Map of format arguments to the Closure Format enum.
   private static final ImmutableMap<String, String> JS_ARGS_TO_ENUM =
@@ -114,41 +116,16 @@ class FormatNumDirective
 
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    ULocale uLocale =
-        I18nUtils.parseULocale(localeStringProvider.get()).setKeywordValue("numbers", "local");
+    ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get());
+    String numbersKeyword = "local";
     if (args.size() > 1) {
       // A keyword for ULocale was passed (like 'native', for instance, to use native characters).
-      uLocale = uLocale.setKeywordValue("numbers", args.get(1).stringValue());
+      numbersKeyword = args.get(1).stringValue();
     }
-
-    NumberFormat numberFormat;
     String formatType = args.isEmpty() ? DEFAULT_FORMAT : args.get(0).stringValue();
-    if ("decimal".equals(formatType)) {
-      numberFormat = NumberFormat.getInstance(uLocale);
-    } else if ("percent".equals(formatType)) {
-      numberFormat = NumberFormat.getPercentInstance(uLocale);
-    } else if ("currency".equals(formatType)) {
-      numberFormat = NumberFormat.getCurrencyInstance(uLocale);
-    } else if ("scientific".equals(formatType)) {
-      numberFormat = NumberFormat.getScientificInstance(uLocale);
-    } else if ("compact_short".equals(formatType)) {
-      CompactDecimalFormat compactNumberFormat =
-          CompactDecimalFormat.getInstance(uLocale, CompactStyle.SHORT);
-      compactNumberFormat.setMaximumSignificantDigits(3);
-      numberFormat = compactNumberFormat;
-    } else if ("compact_long".equals(formatType)) {
-      CompactDecimalFormat compactNumberFormat =
-          CompactDecimalFormat.getInstance(uLocale, CompactStyle.LONG);
-      compactNumberFormat.setMaximumSignificantDigits(3);
-      numberFormat = compactNumberFormat;
-    } else {
-      throw new IllegalArgumentException(
-          "First argument to formatNum must be "
-              + "constant, and one of: 'decimal', 'currency', 'percent', 'scientific', "
-              + "'compact_short', or 'compact_long'.");
-    }
-
-    return StringData.forValue(numberFormat.format(((NumberData) value).toFloat()));
+    double number = value.numberValue();
+    return StringData.forValue(
+        I18NDirectivesRuntime.formatNum(uLocale, number, formatType, numbersKeyword));
   }
 
   @Override
@@ -180,6 +157,31 @@ class FormatNumDirective
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
     return REQUIRED_JS_LIBS;
+  }
+
+  private static final class JbcSrcMethods {
+    static final MethodRef FORMAT_NUM =
+        MethodRef.create(
+                I18NDirectivesRuntime.class,
+                "formatNum",
+                ULocale.class,
+                double.class,
+                String.class,
+                String.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forString(
+        JbcSrcMethods.FORMAT_NUM.invoke(
+            context.getULocale(),
+            value.coerceToDouble(),
+            !args.isEmpty()
+                ? args.get(0).unboxAs(String.class)
+                : BytecodeUtils.constant(DEFAULT_FORMAT),
+            args.size() > 1 ? args.get(1).unboxAs(String.class) : BytecodeUtils.constant("local")));
   }
 
   /**

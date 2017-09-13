@@ -17,15 +17,15 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -49,7 +49,8 @@ final class BidiSpanWrapDirective
     implements SanitizedContentOperator,
         SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyPySrcPrintDirective {
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -84,29 +85,22 @@ final class BidiSpanWrapDirective
 
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      valueDir = ((SanitizedContent) value).getContentDirection();
-    }
-    BidiFormatter bidiFormatter =
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
+    return StringData.forValue(
+        BidiDirectivesRuntime.bidiSpanWrap(bidiGlobalDirProvider.get(), value));
+  }
 
-    // We always treat the value as HTML, because span-wrapping is only useful when its output will
-    // be treated as HTML (without escaping), and because |bidiSpanWrap is not itself specified to
-    // do HTML escaping in Soy. (Both explicit and automatic HTML escaping, if any, is done before
-    // calling |bidiSpanWrap because BidiSpanWrapDirective implements SanitizedContentOperator,
-    // but this does not mean that the input has to be HTML SanitizedContent. In legacy usage, a
-    // string that is not SanitizedContent is often printed in an autoescape="false" template or by
-    // a print with a |noAutoescape, in which case our input is just SoyData.) If the output will be
-    // treated as HTML, the input had better be safe HTML/HTML-escaped (even if it isn't HTML
-    // SanitizedData), or we have an XSS opportunity and a much bigger problem than bidi garbling.
-    String wrappedValue =
-        bidiFormatter.spanWrapWithKnownDir(valueDir, value.coerceToString(), true /* isHtml */);
+  private static final class JbcSrcMethods {
+    static final MethodRef BIDI_SPAN_WRAP =
+        MethodRef.create(
+                BidiDirectivesRuntime.class, "bidiSpanWrap", BidiGlobalDir.class, SoyValue.class)
+            .asNonNullable();
+  }
 
-    // Like other directives implementing SanitizedContentOperator, BidiSpanWrapDirective is called
-    // after the escaping (if any) has already been done, and thus there is no need for it to
-    // produce actual SanitizedContent.
-    return StringData.forValue(wrappedValue);
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forString(
+        JbcSrcMethods.BIDI_SPAN_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
   }
 
   @Override

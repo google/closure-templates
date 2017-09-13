@@ -121,7 +121,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
         ijRecord);
   }
 
-  Expression getLocale() {
+  @Override
+  public Expression getULocale() {
     return delegate.invoke(GET_LOCALE);
   }
 
