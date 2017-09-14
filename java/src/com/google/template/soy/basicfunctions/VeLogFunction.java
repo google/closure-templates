@@ -52,13 +52,13 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
         String.format(
-            "soy.$$velog(%1$s, %2$s, opt_ijData.$$loggingMetadata)",
+            "soy.velog.$$log('%1$s', %2$s, opt_ijData.$$loggingMetadata)",
             args.get(0).getText(), args.get(1).getText()),
         Integer.MAX_VALUE);
   }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+    return ImmutableSet.of("soy.velog");
   }
 }
