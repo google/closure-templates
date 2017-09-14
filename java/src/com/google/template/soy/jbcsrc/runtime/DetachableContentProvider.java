@@ -102,8 +102,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   private RenderResult doRenderIntoBufferingAppendable(LoggingAdvisingAppendable target) {
     RenderResult result = doRender(target);
     if (result.isDone()) {
-      // TODO(lukes): we need a way to capture all the log events and pass them to one of these
-      // string objects
+      // This drops logs, but that is sometimes necessary.  We should make sure this only happens
+      // when it has to by making sure that renderAndResolve is used for all printing usecases
       String string = target.toString();
       if (contentKind != null) {
         resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
@@ -130,6 +130,20 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
     TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+      delegate.enterSanitizedContent(kind);
+      buffer.enterSanitizedContent(kind);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContent() {
+      delegate.exitSanitizedContent();
+      buffer.exitSanitizedContent();
+      return this;
     }
 
     @Override

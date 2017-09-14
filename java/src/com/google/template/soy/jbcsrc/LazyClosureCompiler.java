@@ -339,7 +339,7 @@ final class LazyClosureCompiler {
               AppendableExpression.forLocal(appendableVar),
               variableSet,
               lookup);
-      CompiledMethodBody compileChildren = soyNodeCompiler.compileChildren(renderUnit);
+      CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();
       final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());

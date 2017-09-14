@@ -22,9 +22,11 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_AD
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -68,6 +70,16 @@ final class AppendableExpression extends Expression {
       MethodRef.create(
               LoggingFunctionInvocation.class, "create", String.class, String.class, List.class)
           .asNonNullable();
+
+  private static final MethodRef ENTER_SANITIZED_CONTENT =
+      MethodRef.create(LoggingAdvisingAppendable.class, "enterSanitizedContent", ContentKind.class)
+          .asNonNullable()
+          .asCheap();
+
+  private static final MethodRef EXIT_SANITIZED_CONTENT =
+      MethodRef.create(LoggingAdvisingAppendable.class, "exitSanitizedContent")
+          .asNonNullable()
+          .asCheap();
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(
@@ -166,6 +178,21 @@ final class AppendableExpression extends Expression {
                 SoyExpression.asBoxedList(args)),
             BytecodeUtils.asImmutableList(escapingDirectives)),
         true);
+  }
+
+  /**
+   * Invokes {@link LoggingAdvisingAppendable#enterSanitizedContent(ContentKind)} on the appendable.
+   */
+  AppendableExpression enterSanitizedContent(SanitizedContentKind kind) {
+    return withNewDelegate(
+        delegate.invoke(
+            ENTER_SANITIZED_CONTENT, BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)),
+        true);
+  }
+
+  /** Invokes {@link LoggingAdvisingAppendable#exitSanitizedContent()} on the appendable. */
+  AppendableExpression exitSanitizedContent() {
+    return withNewDelegate(delegate.invoke(EXIT_SANITIZED_CONTENT), true);
   }
 
   @Override

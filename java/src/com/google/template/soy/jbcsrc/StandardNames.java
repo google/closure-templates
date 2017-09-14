@@ -24,6 +24,7 @@ final class StandardNames {
   static final String RENDER_CONTEXT_FIELD = "$renderContext";
   static final String CURRENT_CALLEE_FIELD = "$currentCallee";
   static final String CURRENT_RENDEREE_FIELD = "$currentRenderee";
+  static final String CURRENT_APPENDABLE_FIELD = "$currentAppendable";
   static final String TEMP_BUFFER_FIELD = "$tmpBuffer";
   static final String MSG_PLACEHOLDER_MAP_FIELD = "$msgPlaceholderMap";
 

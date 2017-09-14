@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,6 +64,28 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
   /** Called whenever a loggable element is exited. */
   public abstract LoggingAdvisingAppendable exitLoggableElement();
+
+  /**
+   * Marks the beginning of a sequence of sanitized content in the appendable. All the {@link
+   * #append} commands until a matching {@link #exitSanitizedContent()} should be considered to be
+   * content of the given kind that has already been sanitized.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * @param kind The kind of content that we are entering.
+   */
+  public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+    return this;
+  }
+
+  /**
+   * Marks the end of a sequence of sanitized content.
+   *
+   * <p>The default implementation does nothing.
+   */
+  public LoggingAdvisingAppendable exitSanitizedContent() {
+    return this;
+  }
 
   /**
    * Called whenever a logging function is being rendered.

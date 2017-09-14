@@ -142,7 +142,7 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
   public abstract String getContent();
 
   /** Returns the kind of content. */
-  public ContentKind getContentKind() {
+  public final ContentKind getContentKind() {
     return contentKind;
   }
 
@@ -354,7 +354,7 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
     @Override
     public void render(LoggingAdvisingAppendable appendable) throws IOException {
-      appendable.append(content);
+      appendable.enterSanitizedContent(getContentKind()).append(content).exitSanitizedContent();
     }
 
     @Override
@@ -376,7 +376,9 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
     @Override
     public void render(LoggingAdvisingAppendable appendable) throws IOException {
+      appendable.enterSanitizedContent(getContentKind());
       thunk.render(appendable);
+      appendable.exitSanitizedContent();
     }
 
     @Override

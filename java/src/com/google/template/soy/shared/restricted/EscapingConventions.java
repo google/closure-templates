@@ -243,7 +243,6 @@ public final class EscapingConventions {
       return sb != null ? sb.toString() : string;
     }
 
-    // TODO(lukes): consider eliminating this method, it was removed from the Escaper interface.
     public final Appendable escape(final Appendable out) {
       return new Appendable() {
         @Override

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_APPENDABLE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.MSG_PLACEHOLDER_MAP_FIELD;
@@ -301,6 +302,8 @@ final class TemplateVariableManager implements ClassFieldManager {
   // Allocated lazily
   @Nullable private FieldRef currentRendereeField;
   // Allocated lazily
+  @Nullable private FieldRef currentAppendable;
+  // Allocated lazily
   @Nullable private FieldRef tempBufferField;
   // Allocated lazily
   @Nullable private FieldRef msgPlaceholderMapField;
@@ -465,6 +468,9 @@ final class TemplateVariableManager implements ClassFieldManager {
     if (currentRendereeField != null) {
       currentRendereeField.defineField(writer);
     }
+    if (currentAppendable != null) {
+      currentAppendable.defineField(writer);
+    }
     if (tempBufferField != null) {
       tempBufferField.defineField(writer);
       // If a template needs a temp buffer then we initialize it eagerly in the template constructor
@@ -578,6 +584,24 @@ final class TemplateVariableManager implements ClassFieldManager {
       local =
           currentRendereeField =
               FieldRef.createField(owner, CURRENT_RENDEREE_FIELD, SoyValueProvider.class);
+    }
+    return local;
+  }
+
+  /**
+   * Returns the field that holds the currently rendering LoggingAdvisingAppendable object that is
+   * used for streaming renders.
+   *
+   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
+   * restoring the current renderee to a local.
+   */
+  FieldRef getCurrentAppendable() {
+    FieldRef local = currentAppendable;
+    if (local == null) {
+      local =
+          currentAppendable =
+              FieldRef.createField(
+                  owner, CURRENT_APPENDABLE_FIELD, LoggingAdvisingAppendable.class);
     }
     return local;
   }

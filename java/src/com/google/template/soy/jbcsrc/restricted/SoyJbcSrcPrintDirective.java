@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.jbcsrc.restricted;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.List;
 
@@ -41,4 +42,35 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
    */
   SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args);
+
+  /**
+   * A print directive that supports streaming.
+   *
+   * <p>Streaming print directives work by wrapping the {@link LoggingAdvisingAppendable} object.
+   * This means that the {@code value} is not passed directly to the directive, instead the {@code
+   * value} is represented by a sequence of {@link LoggingAdvisingAppendable#append(CharSequence)
+   * append} operations on the wrapped appendable object. It is further more expected that all
+   * non-append operations (e.g. {@link
+   * LoggingAdvisingAppendable#enterLoggableElement(com.google.template.soy.data.LogStatement)}) are
+   * simply proxied through to the underlying object.
+   *
+   * <p>NOTE: any streamable print directive must also support a non-streaming option. The compiler
+   * will prefer to use the streaming option but it will not always be possible or necessary (for
+   * example, if the content is a compile time constant then we may avoid streaming it, or if this
+   * print directive is combined with non-streamable print directives then we will not be able to
+   * stream.
+   */
+  interface Streamable extends SoyJbcSrcPrintDirective {
+    /**
+     * Applies the directive to a {@link LoggingAdvisingAppendable} object.
+     *
+     * @param context The rendering context object.
+     * @param delegateAppendable The delegate appendable
+     * @param args The print directive arguments.
+     * @return An expression of type {@link LoggingAdvisingAppendable} that applies the print
+     *     directive logic.
+     */
+    Expression applyForJbcSrcStreaming(
+        JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args);
+  }
 }

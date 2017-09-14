@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -35,6 +36,7 @@ import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.ExprNode;
@@ -54,6 +56,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggingFunction;
@@ -189,17 +192,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     abstract int numberOfDetachStates();
   }
 
-  CompiledMethodBody compile(TemplateNode node) {
-    Statement templateBody = visit(node);
-    return getCompiledBody(templateBody);
-  }
-
-  CompiledMethodBody compileChildren(RenderUnitNode node) {
+  CompiledMethodBody compile(RenderUnitNode node) {
     Statement templateBody = visitChildrenInNewScope(node);
-    return getCompiledBody(templateBody);
-  }
-
-  private CompiledMethodBody getCompiledBody(Statement templateBody) {
+    // Tag the content with the kind
+    if (node.getContentKind() != null) {
+      templateBody =
+          Statement.concat(
+              appendableExpression.enterSanitizedContent(node.getContentKind()).toStatement(),
+              templateBody,
+              appendableExpression.exitSanitizedContent().toStatement());
+    }
     Statement jumpTable = detachState.generateReattachTable();
     return CompiledMethodBody.create(
         Statement.concat(jumpTable, templateBody), detachState.getNumberOfDetaches());
@@ -509,21 +511,23 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         return visitLoggingFunction(node, fn, (LoggingFunction) fn.getSoyFunction());
       }
     }
-    // First check our special case for compatible content types (no print directives) and an
-    // expression that evaluates to a SoyValueProvider.  This will allow us to render incrementally
-    if (node.getChildren().isEmpty()) {
+    // First check our special case where all print directives are streamable and an expression that
+    // evaluates to a SoyValueProvider.  This will allow us to render incrementally.
+    if (areAllPrintDirectivesStreamable(node)) {
       Label reattachPoint = new Label();
       ExprRootNode expr = node.getExpr();
       Optional<Expression> asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
       if (asSoyValueProvider.isPresent()) {
-        return renderIncrementally(asSoyValueProvider.get(), reattachPoint);
+        return renderIncrementally(asSoyValueProvider.get(), node.getChildren(), reattachPoint);
       }
     }
 
-    // otherwise we need to do some escapes or simply cannot do incremental rendering
+    // otherwise we need to apply some non-streaming print directives, or the expression would
+    // require boxing to be a print directive (which usually means it is quite trivial).
     Label reattachPoint = new Label();
     SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
+    // TODO(lukes): call value.render?
     AppendableExpression renderSoyValue =
         appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
 
@@ -535,6 +539,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     return stmt;
+  }
+
+  private boolean areAllPrintDirectivesStreamable(PrintNode node) {
+    for (PrintDirectiveNode directiveNode : node.getChildren()) {
+      if (!(directiveNode.getPrintDirective() instanceof SoyJbcSrcPrintDirective.Streamable)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private Statement visitLoggingFunction(
@@ -576,7 +589,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /**
-   * TODO(lukes): if the expression is a param, then this is kind of silly since it looks like
+   * Renders a {@link SoyValueProvider} incrementally via {@link SoyValueProvider#renderAndResolve}
+   *
+   * <p>The strategy is to:
+   *
+   * <ul>
+   *   <li>Stash the SoyValueProvider in a field {@code $currentRenderee}, so that if we detach
+   *       halfway through rendering we don't lose the value. Note, we could use the scope/variable
+   *       system of {@link TemplateVariableManager} to manage this value, but we know there will
+   *       only ever be 1 live at a time, so we can just manage the single special field ourselves.
+   *   <li>Apply all the streaming autoescapers to the current appendable. Also, stash it in the
+   *       {@code $currentAppendable} field for the same reasons as above.
+   *   <li>Invoke {@link SoyValueProvider#renderAndResolve} with the standard detach logic.
+   *   <li>Clear the two fields once rendering is complete.
+   * </ul>
+   *
+   * <p>TODO(lukes): if the expression is a param, then this is kind of silly since it looks like
    *
    * <pre>{@code
    * SoyValueProvider localParam = this.param;
@@ -589,28 +617,81 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * expression was just a field read... And this is the _common_case for .renderAndResolve calls.
    * to actually do this we could add a mechanism similar to the SaveStrategy enum for expressions,
    * kind of like {@link Expression#isCheap()} which isn't that useful in practice.
+   *
+   * @param soyValueProvider The value to render incrementally
+   * @param directives The streaming print directives applied to the expression
+   * @param reattachPoint The point where execution should resume if the soyValueProvider detaches
+   *     while being evaluated.
+   * @return a statement for the full render.
    */
-  private Statement renderIncrementally(Expression soyValueProvider, Label reattachPoint) {
+  private Statement renderIncrementally(
+      Expression soyValueProvider, List<PrintDirectiveNode> directives, Label reattachPoint) {
     // In this case we want to render the SoyValueProvider via renderAndResolve which will
     // enable incremental rendering of parameters for lazy transclusions!
     // This actually ends up looking a lot like how calls work so we use the same strategy.
     FieldRef currentRendereeField = variables.getCurrentRenderee();
     Statement initRenderee =
         currentRendereeField.putInstanceField(thisVar, soyValueProvider).labelStart(reattachPoint);
+    Statement clearRenderee =
+        currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
 
+    // TODO(lukes): we should have similar logic for calls and message escaping
+    Statement initAppendable = Statement.NULL_STATEMENT;
+    Statement clearAppendable = Statement.NULL_STATEMENT;
+    Expression appendable = appendableExpression;
+    if (!directives.isEmpty()) {
+      Label printDirectiveArgumentReattachPoint = new Label();
+      appendable =
+          applyStreamingPrintDirectives(
+              directives, appendable, printDirectiveArgumentReattachPoint);
+      FieldRef currentAppendable = variables.getCurrentAppendable();
+      initAppendable =
+          currentAppendable
+              .putInstanceField(thisVar, appendable)
+              .labelStart(printDirectiveArgumentReattachPoint);
+      appendable = currentAppendable.accessor(thisVar);
+      clearAppendable =
+          currentAppendable.putInstanceField(
+              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+    }
     Expression callRenderAndResolve =
         currentRendereeField
             .accessor(thisVar)
             .invoke(
                 MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-                appendableExpression,
+                appendable,
                 // the isLast param
                 // TODO(lukes): pass a real value here when we have expression use analysis.
                 constant(false));
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
-    Statement clearRenderee =
-        currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
-    return Statement.concat(initRenderee, doCall, clearRenderee);
+    return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
+  }
+
+  /**
+   * Applies all the streaming print directives to the appendable.
+   *
+   * @param directives The directives. All are guaranteed to be {@link
+   *     com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable streamable}
+   * @param appendable The appendable to wrap
+   * @param printDirectiveArgumentReattachPoint The point to resume execution if any of the argument
+   *     expressions detach.
+   * @return The wrapped appendable
+   */
+  private Expression applyStreamingPrintDirectives(
+      List<PrintDirectiveNode> directives,
+      Expression appendable,
+      Label printDirectiveArgumentReattachPoint) {
+    BasicExpressionCompiler basic =
+        exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint);
+    for (PrintDirectiveNode directive : directives) {
+      appendable =
+          ((SoyJbcSrcPrintDirective.Streamable) directive.getPrintDirective())
+              .applyForJbcSrcStreaming(
+                  parameterLookup.getRenderContext(),
+                  appendable,
+                  basic.compileToList(directive.getArgs()));
+    }
+    return appendable;
   }
 
   /**
