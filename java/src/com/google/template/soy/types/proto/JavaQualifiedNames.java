@@ -198,9 +198,8 @@ public final class JavaQualifiedNames {
     if (fileOptions.hasJavaPackage()) {
       sb.append(fileOptions.getJavaPackage());
     } else {
-      sb.append("com.google.protos");
       if (!file.getPackage().isEmpty()) {
-        sb.append('.').append(file.getPackage());
+        sb.append(file.getPackage());
       }
     }
 
@@ -287,6 +286,8 @@ public final class JavaQualifiedNames {
         case ".protodevel":
         case ".proto":
           return filename.substring(0, lastDot);
+        default:
+          throw new AssertionError();
       }
     }
     return filename;
