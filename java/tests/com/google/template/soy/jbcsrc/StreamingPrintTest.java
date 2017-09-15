@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
-import static org.junit.Assert.fail;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -32,9 +30,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -136,63 +132,14 @@ public final class StreamingPrintTest {
         .isEqualTo("param_prefix future2 param_suffix unstreamable_suffix foo_suffix");
   }
 
-  /**
-   * This test demonstrates a change in behavior when streaming print directives are in use, they
-   * can elide some runtime type checking. This is because the compiler explicitly puts in {@code
-   * checkcast} instructions whenever calling {@link SoyValueProvider#resolve} (see every caller of
-   * {@link ExpressionDetacher#resolveSoyValueProvider(Expression)}). However, when we are able to
-   * stream a soy value provider we can't insert a {@code checkcast} instruction because we never
-   * actually calculate the full value.
-   *
-   * <p>We could change SoyValueProvider.renderAndResolve to accept a TypePredicate and we could
-   * sometimes enforce it, but for the time being this isn't happening.
-   */
-  @Test
-  public void testStreamingDisablesRuntimeTypeChecks() throws IOException {
-    CompiledTemplates templates =
-        compileFile(
-            "{namespace ns}",
-            "",
-            "{template .streamable}",
-            "  {@param i : int}",
-            "  {$i |streaming}",
-            "{/template}",
-            "",
-            "{template .nonstreamable}",
-            "  {@param i : int}",
-            "  {$i |nonstreaming}",
-            "{/template}");
-    RenderContext context = getDefaultContext(templates);
-    SoyDict badParam = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("i", "notAnInt");
-    BufferingAppendable output = BufferingAppendable.buffering();
-    templates
-        .getTemplateFactory("ns.streamable")
-        .create(badParam, EMPTY_DICT)
-        .render(output, context);
-    assertThat(output.getAndClearBuffer()).isEqualTo("(null: notAnInt)");
-
-    try {
-      templates
-          .getTemplateFactory("ns.nonstreamable")
-          .create(badParam, EMPTY_DICT)
-          .render(output, context);
-      fail("Expected ClassCastException");
-    } catch (ClassCastException cce) {
-      assertThat(cce)
-          .hasMessageThat()
-          .isEqualTo(
-              "com.google.template.soy.data.restricted.StringData$ConstantString cannot be cast to "
-                  + "com.google.template.soy.data.restricted.IntegerData");
-    }
-  }
-
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
             SoyFileSetParserBuilder.forFileContents(file)
                 .addPrintDirective(new StreamingDirective())
                 .addPrintDirective(new NonStreamingDirective())
-                .runAutoescaper(true)
+                // TODO(lukes): migrate autoescapers to use streaming and then test them here
+                .runAutoescaper(false)
                 .parse()
                 .registry(),
             false,
@@ -317,7 +264,7 @@ public final class StreamingPrintTest {
     }
 
     private LoggingAdvisingAppendable getDelegateForAppend() throws IOException {
-      return delegate.append('(').append(String.valueOf(kindStack.peek())).append(": ");
+      return delegate.append('(').append(kindStack.peek().toString()).append(": ");
     }
   }
 }

@@ -16,13 +16,12 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.shared.restricted.EscapingConventions;
-import com.google.template.soy.shared.restricted.StreamingEscaper;
 
 /** Runtime functions for implementing the directives in this package. */
 public final class CoreDirectivesRuntime {
@@ -41,13 +40,7 @@ public final class CoreDirectivesRuntime {
     }
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.EscapeHtml.INSTANCE.escape(value.coerceToString()),
-        SanitizedContent.ContentKind.HTML,
+        ContentKind.HTML,
         valueDir);
-  }
-
-  public static LoggingAdvisingAppendable streamingEscapeHtml(
-      final LoggingAdvisingAppendable delegate) {
-    return StreamingEscaper.create(
-        delegate, EscapingConventions.EscapeHtml.INSTANCE, SanitizedContent.ContentKind.HTML);
   }
 }
