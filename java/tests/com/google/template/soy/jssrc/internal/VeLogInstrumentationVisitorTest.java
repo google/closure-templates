@@ -77,6 +77,23 @@ public final class VeLogInstrumentationVisitorTest {
                 + "<input{if $ij.$$loggingMetaData}"
                 + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if} />"
                 + "{/velog}");
+    assertThatSourceString(runPass("{velog Bar logonly=\"true\"}<input/>{/velog}"))
+        .isEqualTo(
+            "{velog Bar logonly=\"true\"}"
+                + "<input"
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + xid('soylog')}={$$velog(2, null, true)}"
+                + "{/if} />"
+                + "{/velog}");
+    assertThatSourceString(
+            runPass("{@param foo: bool}" + "{velog Bar logonly=\"$foo\"}<input/>{/velog}"))
+        .isEqualTo(
+            "{velog Bar logonly=\"$foo\"}"
+                + "<input"
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + xid('soylog')}={$$velog(2, null, $foo)}"
+                + "{/if} />"
+                + "{/velog}");
   }
 
   @Test
@@ -92,7 +109,9 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog Bar logonly=\"true\"}"
                 + "<input id=\"1\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2, null)}{/if} />"
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + xid('soylog')}={$$velog(2, null, true)}"
+                + "{/if} />"
                 + "{/velog}");
     assertThatSourceString(
             runPass(

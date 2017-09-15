@@ -88,6 +88,9 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         node.getConfigExpression() == null
             ? new NullNode(insertionLocation)
             : node.getConfigExpression().copy(new CopyState()));
+    if (node.getLogonlyExpression() != null) {
+      funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
+    }
     PrintNode attributeValue =
         new PrintNode(
             nodeIdGen.genId(),

@@ -45,15 +45,17 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2);
+    return ImmutableSet.of(2, 3);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
         String.format(
-            "soy.velog.$$log('%1$s', %2$s, opt_ijData.$$loggingMetadata)",
-            args.get(0).getText(), args.get(1).getText()),
+            "soy.velog.$$log('%1$s', %2$s, %3$s, opt_ijData.$$loggingMetadata)",
+            args.get(0).getText(),
+            args.get(1).getText(),
+            args.size() > 2 ? args.get(2).getText() : "false"),
         Integer.MAX_VALUE);
   }
 
