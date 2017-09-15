@@ -185,9 +185,9 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         "{let $foo kind=\"html\"}{velog Foo}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
-    // TODO(b/63699313): we lost both of the log statements.  One is because of how we are coercing
-    // to strings and another is due to how the escaping directives work.
-    assertThat(testLogger.builder.toString()).isEqualTo("");
+    // TODO(b/63699313): we lost one of the log statements. This is because on second evaluation of
+    // a let variable we should replay the logs instead of coercing the buffer to a string.
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
   }
 

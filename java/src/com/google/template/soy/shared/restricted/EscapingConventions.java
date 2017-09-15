@@ -243,6 +243,12 @@ public final class EscapingConventions {
       return sb != null ? sb.toString() : string;
     }
 
+    /**
+     * Escapes all the bytes written to the returned appendable with this strategy.
+     *
+     * <p>This is guaranteed to not do any buffering, each {@link Appendable#append} operation will
+     * directly pass through into a series of {@code append} operations on the delegate.
+     */
     public final Appendable escape(final Appendable out) {
       return new Appendable() {
         @Override

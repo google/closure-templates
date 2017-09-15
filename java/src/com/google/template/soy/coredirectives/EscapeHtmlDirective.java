@@ -17,9 +17,11 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -47,7 +49,7 @@ public class EscapeHtmlDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective,
+        SoyJbcSrcPrintDirective.Streamable,
         ShortCircuitable {
 
   public static final String NAME = "|escapeHtml";
@@ -83,6 +85,10 @@ public class EscapeHtmlDirective
   private static final class JbcSrcMethods {
     static final MethodRef ESCAPE_HTML =
         MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class).asNonNullable();
+    static final MethodRef STREAMING_ESCAPE_HTML =
+        MethodRef.create(
+                CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class)
+            .asNonNullable();
   }
 
   @Override
@@ -90,6 +96,12 @@ public class EscapeHtmlDirective
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
         SanitizedType.HtmlType.getInstance(), JbcSrcMethods.ESCAPE_HTML.invoke(value.box()));
+  }
+
+  @Override
+  public Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return JbcSrcMethods.STREAMING_ESCAPE_HTML.invoke(delegateAppendable);
   }
 
   @Override
