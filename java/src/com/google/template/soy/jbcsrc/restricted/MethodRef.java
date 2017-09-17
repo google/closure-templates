@@ -22,6 +22,8 @@ import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.UnsignedInts;
+import com.google.common.primitives.UnsignedLongs;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -146,12 +148,21 @@ public abstract class MethodRef {
 
   public static final MethodRef LONG_PARSE_LONG =
       create(Long.class, "parseLong", String.class).asCheap().asNonNullable();
+  public static final MethodRef UNSIGNED_LONGS_PARSE_UNSIGNED_LONG =
+      create(UnsignedLongs.class, "parseUnsignedLong", String.class).asCheap();
+  public static final MethodRef UNSIGNED_LONGS_TO_STRING =
+      create(UnsignedLongs.class, "toString", long.class).asCheap().asNonNullable();
+  public static final MethodRef UNSIGNED_INTS_SATURATED_CAST =
+      create(UnsignedInts.class, "saturatedCast", long.class).asCheap();
+  public static final MethodRef UNSIGNED_INTS_TO_LONG =
+      create(UnsignedInts.class, "toLong", int.class).asCheap();
 
   public static final MethodRef LONG_TO_STRING = create(Long.class, "toString", long.class);
 
   public static final MethodRef NUMBER_DOUBLE_VALUE = create(Number.class, "doubleValue").asCheap();
 
   public static final MethodRef NUMBER_LONG_VALUE = create(Number.class, "longValue").asCheap();
+  public static final MethodRef NUMBER_INT_VALUE = create(Number.class, "intValue").asCheap();
 
   public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 

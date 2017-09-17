@@ -39,6 +39,39 @@ message Foo {
   optional int64 long_field = 20;
 }
 
+message SixtyFourBitIntFieldsAsStrings {
+  optional int64 int64 = 1 [jstype = JS_STRING];
+  optional sint64 sint64 = 2 [jstype = JS_STRING];
+  optional uint64 uint64 = 3 [jstype = JS_STRING];
+  optional fixed64 fixed64 = 4 [jstype = JS_STRING];
+  optional sfixed64 sfixed64 = 5 [jstype = JS_STRING];
+  extensions 1000 to max;
+}
+
+extend SixtyFourBitIntFieldsAsStrings {
+  optional int64 ext_int64 = 1001 [jstype = JS_STRING];
+  optional sint64 ext_sint64 = 1002 [jstype = JS_STRING];
+  optional uint64 ext_uint64 = 1003 [jstype = JS_STRING];
+  optional fixed64 ext_fixed64 = 1004 [jstype = JS_STRING];
+  optional sfixed64 ext_sfixed64 = 1005 [jstype = JS_STRING];
+}
+
+message ThirtyTwoBitIntFields {
+  optional int32 int32 = 1;
+  optional sint32 sint32 = 2;
+  optional uint32 uint32 = 3;
+  optional fixed32 fixed32 = 4;
+  optional fixed32 sfixed32 = 5;
+  extensions 1000 to max;
+}
+extend ThirtyTwoBitIntFields {
+  optional int32 ext_int32 = 1001;
+  optional sint32 ext_sint32 = 1002;
+  optional uint32 ext_uint32 = 1003;
+  optional fixed32 ext_fixed32 = 1004;
+  optional sfixed32 ext_sfixed32 = 1005;
+}
+
 message JsType {
   optional int64 long_with_no_js_type = 1;
 

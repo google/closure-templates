@@ -19,7 +19,11 @@ package com.google.template.soy.types.proto;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.UnsignedInts;
+import com.google.common.primitives.UnsignedLongs;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
@@ -141,14 +145,17 @@ abstract class FieldInterpreter {
   private static FieldInterpreter getScalarType(FieldDescriptor fieldDescriptor) {
     // Field definition includes an option that overrides normal type.
     if (ProtoUtils.hasJsType(fieldDescriptor)) {
-      ProtoUtils.JsType jsType = ProtoUtils.getJsType(fieldDescriptor);
+      JSType jsType = ProtoUtils.getJsType(fieldDescriptor);
       switch (jsType) {
-        case INT52:
-        case NUMBER:
-          // in java soy ints are big enough, to work for both cases.
+        case JS_NORMAL:
+        case JS_NUMBER:
+          // in java soy ints are big enough, to work for both cases.  except for unsigned, but we
+          // can't really support that in javascript anyway.
           return LONG_AS_INT;
-
-        case STRING:
+        case JS_STRING:
+          if (ProtoUtils.isUnsigned(fieldDescriptor)) {
+            return UNSIGNEDLONG_AS_STRING;
+          }
           return LONG_AS_STRING;
       }
     }
@@ -174,10 +181,11 @@ abstract class FieldInterpreter {
         return LONG_AS_INT;
       case INT32:
       case SINT32:
-      case UINT32:
-      case FIXED32:
       case SFIXED32:
         return INT;
+      case UINT32:
+      case FIXED32:
+        return UNSIGNED_INT;
 
       case FIXED64:
       case SINT64:
@@ -264,7 +272,26 @@ abstract class FieldInterpreter {
 
         @Override
         Object protoFromSoy(SoyValue field) {
-          return field.integerValue();
+          return Ints.saturatedCast(field.longValue());
+        }
+      };
+
+  /** A {@link FieldInterpreter} for int typed fields. */
+  private static final FieldInterpreter UNSIGNED_INT =
+      new FieldInterpreter() {
+        @Override
+        public SoyValueProvider soyFromProto(Object field) {
+          return IntegerData.forValue(UnsignedInts.toLong(((Number) field).intValue()));
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return IntType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return UnsignedInts.saturatedCast(field.longValue());
         }
       };
 
@@ -303,6 +330,29 @@ abstract class FieldInterpreter {
         @Override
         Object protoFromSoy(SoyValue field) {
           return Long.parseLong(field.stringValue());
+        }
+      };
+
+  /**
+   * A {@link FieldInterpreter} for uint64 typed fields interpreted as soy strings.
+   *
+   * <p>TODO(lukes): when soy fully switches to java8 use the methods on java.lang.Long
+   */
+  private static final FieldInterpreter UNSIGNEDLONG_AS_STRING =
+      new FieldInterpreter() {
+        @Override
+        public SoyValueProvider soyFromProto(Object field) {
+          return StringData.forValue(UnsignedLongs.toString((Long) field));
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return StringType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return UnsignedLongs.parseUnsignedLong(field.stringValue());
         }
       };
 

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -26,6 +27,7 @@ import static com.google.template.soy.types.proto.JavaQualifiedNames.getFieldNam
 import static com.google.template.soy.types.proto.JavaQualifiedNames.underscoresToCamelCase;
 import static com.google.template.soy.types.proto.ProtoUtils.getJsType;
 import static com.google.template.soy.types.proto.ProtoUtils.hasJsType;
+import static com.google.template.soy.types.proto.ProtoUtils.isUnsigned;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -39,6 +41,7 @@ import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
@@ -74,7 +77,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.JavaQualifiedNames;
-import com.google.template.soy.types.proto.ProtoUtils.JsType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -351,11 +353,25 @@ final class ProtoUtils {
           return SoyExpression.forInt(
               numericConversion(field.invoke(PROTO_ENUM_GET_NUMBER), Type.LONG_TYPE));
         case INT:
-          return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
+          // Since soy 'int's are java longs, we can actually fully represent an unsigned 32bit
+          // integer.
+          if (isUnsigned(descriptor)) {
+            return SoyExpression.forInt(MethodRef.UNSIGNED_INTS_TO_LONG.invoke(field));
+          } else {
+            return SoyExpression.forInt(numericConversion(field, Type.LONG_TYPE));
+          }
         case LONG:
           if (shouldConvertBetweenStringAndLong(descriptor)) {
-            return SoyExpression.forString(MethodRef.LONG_TO_STRING.invoke(field));
+            if (isUnsigned(descriptor)) {
+              return SoyExpression.forString(MethodRef.UNSIGNED_LONGS_TO_STRING.invoke(field));
+            } else {
+              return SoyExpression.forString(MethodRef.LONG_TO_STRING.invoke(field));
+            }
           }
+          // If the value is large and the field is unsigned we might corrupt it here (e.g. it will
+          // appear negative).  We don't have a solution for this currently.  In theory we could add
+          // the concept of unsigned integers to soy and then implement arithmetic on them... but
+          // that is insane!
           return SoyExpression.forInt(field);
         case BOOLEAN:
           return SoyExpression.forBool(field);
@@ -434,9 +450,23 @@ final class ProtoUtils {
                   field.checkedCast(ProtocolMessageEnum.class).invoke(PROTO_ENUM_GET_NUMBER),
                   Type.LONG_TYPE));
         case INT:
+          if (isUnsigned(descriptor)) {
+            return SoyExpression.forInt(
+                MethodRef.UNSIGNED_INTS_TO_LONG.invoke(
+                    field.checkedCast(Integer.class).invoke(MethodRef.NUMBER_INT_VALUE)));
+          } else {
+            return SoyExpression.forInt(
+                field.checkedCast(Integer.class).invoke(MethodRef.NUMBER_LONG_VALUE));
+          }
         case LONG:
           if (shouldConvertBetweenStringAndLong(descriptor)) {
-            return SoyExpression.forString(field.invoke(MethodRef.OBJECT_TO_STRING));
+            if (isUnsigned(descriptor)) {
+              return SoyExpression.forString(
+                  MethodRef.UNSIGNED_LONGS_TO_STRING.invoke(
+                      field.checkedCast(Long.class).invoke(MethodRef.NUMBER_LONG_VALUE)));
+            } else {
+              return SoyExpression.forString(field.invoke(MethodRef.OBJECT_TO_STRING));
+            }
           }
           return SoyExpression.forInt(
               field.checkedCast(Number.class).invoke(MethodRef.NUMBER_LONG_VALUE));
@@ -893,13 +923,21 @@ final class ProtoUtils {
           }
           break;
         case INT:
-          if (!currentType.equals(Type.INT_TYPE)) {
+          checkState(currentType.equals(Type.LONG_TYPE));
+          if (isUnsigned(field)) {
+            MethodRef.UNSIGNED_INTS_SATURATED_CAST.invokeUnchecked(cb);
+          } else {
+            // lossy!
             cb.cast(currentType, Type.INT_TYPE);
           }
           break;
         case LONG:
           if (shouldConvertBetweenStringAndLong(field)) {
-            MethodRef.LONG_PARSE_LONG.invokeUnchecked(cb);
+            if (isUnsigned(field)) {
+              MethodRef.UNSIGNED_LONGS_PARSE_UNSIGNED_LONG.invokeUnchecked(cb);
+            } else {
+              MethodRef.LONG_PARSE_LONG.invokeUnchecked(cb);
+            }
           }
           break;
         case BYTE_STRING:
@@ -957,8 +995,8 @@ final class ProtoUtils {
 
   private static boolean shouldConvertBetweenStringAndLong(FieldDescriptor descriptor) {
     if (hasJsType(descriptor)) {
-      JsType jsType = getJsType(descriptor);
-      if (jsType == JsType.STRING) {
+      JSType jsType = getJsType(descriptor);
+      if (jsType == JSType.JS_STRING) {
         return true;
       }
     }

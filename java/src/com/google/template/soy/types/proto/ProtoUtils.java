@@ -16,7 +16,11 @@
 
 package com.google.template.soy.types.proto;
 
+
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -108,12 +112,39 @@ public final class ProtoUtils {
     return null;
   }
 
+  /** Only int64 fields can have jstype annotations. */
+  private static final ImmutableSet<Type> JS_TYPEABLE_FIELDS =
+      Sets.immutableEnumSet(Type.INT64, Type.SFIXED64, Type.UINT64, Type.FIXED64, Type.SINT64);
+
   /** Returns true if this field has a valid jstype annotation. */
   public static boolean hasJsType(FieldDescriptor fieldDescriptor) {
+    if (!JS_TYPEABLE_FIELDS.contains(fieldDescriptor.getType())) {
+      return false;
+    }
+    if (fieldDescriptor.getOptions().hasJstype()) {
+      return true;
+    }
     return false;
   }
 
-  public static JsType getJsType(FieldDescriptor fieldDescriptor) {
+  /** Returns true if this field is an unsigned integer. */
+  public static boolean isUnsigned(FieldDescriptor descriptor) {
+    switch (descriptor.getType()) {
+      case FIXED32:
+      case FIXED64:
+      case UINT32:
+      case UINT64:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static JSType getJsType(FieldDescriptor fieldDescriptor) {
+    boolean hasJstype = fieldDescriptor.getOptions().hasJstype();
+    if (hasJstype) {
+      return fieldDescriptor.getOptions().getJstype();
+    }
     return null;
   }
 
@@ -152,21 +183,6 @@ public final class ProtoUtils {
     } else {
       return true;
     }
-  }
-
-  /**
-   * Correspond to JavaScript types that a .proto file author might want to specify as the
-   * representation for a proto field's value instead of leaving it up to Soy's inference rules.
-   */
-  public enum JsType {
-    /**
-     * JavaScript's number type is a float with a 52 bit mantissa, so can precisely represent all
-     * signed 52b integers.
-     */
-    INT52,
-    NUMBER,
-    STRING,
-    ;
   }
 
 
