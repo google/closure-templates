@@ -18,15 +18,12 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -39,6 +36,7 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -46,6 +44,8 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * Visitor for generating Python expressions for parse tree nodes.
@@ -56,8 +56,28 @@ import java.util.List;
 public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   /** Injectable factory for creating an instance of this class. */
-  public static interface GenPyExprsVisitorFactory {
-    public GenPyExprsVisitor create(LocalVariableStack localVarExprs, ErrorReporter errorReporter);
+  public static final class GenPyExprsVisitorFactory {
+    private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
+    // inject a provider since there is a circular dependency between GenPyExprsVisitorFactory and
+    // GenPyCallExprVisitor
+    private final Provider<GenPyCallExprVisitor> genPyCallExprVisitor;
+
+    @Inject
+    GenPyExprsVisitorFactory(
+        IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+        Provider<GenPyCallExprVisitor> genPyCallExprVisitor) {
+      this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
+      this.genPyCallExprVisitor = genPyCallExprVisitor;
+    }
+
+    public GenPyExprsVisitor create(LocalVariableStack localVarExprs, ErrorReporter errorReporter) {
+      return new GenPyExprsVisitor(
+          isComputableAsPyExprVisitor,
+          this,
+          genPyCallExprVisitor.get(),
+          localVarExprs,
+          errorReporter);
+    }
   }
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
@@ -66,8 +86,6 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final GenPyCallExprVisitor genPyCallExprVisitor;
 
-  private final MsgFuncGeneratorFactory msgFuncGeneratorFactory;
-
   private final LocalVariableStack localVarExprs;
 
   /** List to collect the results. */
@@ -75,18 +93,15 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final ErrorReporter errorReporter;
 
-  @AssistedInject
   GenPyExprsVisitor(
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      MsgFuncGeneratorFactory msgFuncGeneratorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
-      @Assisted LocalVariableStack localVarExprs,
-      @Assisted ErrorReporter errorReporter) {
+      LocalVariableStack localVarExprs,
+      ErrorReporter errorReporter) {
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
-    this.msgFuncGeneratorFactory = msgFuncGeneratorFactory;
     this.localVarExprs = localVarExprs;
     this.errorReporter = errorReporter;
   }
@@ -204,16 +219,12 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    PyExpr msg =
-        msgFuncGeneratorFactory.create(node.getMsg(), localVarExprs, errorReporter).getPyExpr();
+    PyExpr msg = generateMsgFunc(node.getMsg());
 
     // MsgFallbackGroupNode could only have one child or two children. See MsgFallbackGroupNode.
     if (node.hasFallbackMsg()) {
       StringBuilder pyExprTextSb = new StringBuilder();
-      PyExpr fallbackMsg =
-          msgFuncGeneratorFactory
-              .create(node.getFallbackMsg(), localVarExprs, errorReporter)
-              .getPyExpr();
+      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg());
 
       // Build Python ternary expression: a if cond else c
       pyExprTextSb.append(msg.getText()).append(" if ");
@@ -248,6 +259,11 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       msg = ((SoyPySrcPrintDirective) directive).applyForPySrc(msg, ImmutableList.<PyExpr>of());
     }
     pyExprs.add(msg);
+  }
+
+  private PyStringExpr generateMsgFunc(MsgNode msg) {
+    return new MsgFuncGenerator(genPyExprsVisitorFactory, msg, localVarExprs, errorReporter)
+        .getPyExpr();
   }
 
   /**

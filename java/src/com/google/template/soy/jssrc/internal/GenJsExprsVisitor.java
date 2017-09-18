@@ -20,8 +20,6 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -47,6 +45,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * Visitor for generating JS expressions for parse tree nodes.
@@ -56,19 +56,41 @@ import java.util.List;
  */
 public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.WithValue>> {
 
-  /**
-   * Injectable factory for creating an instance of this class.
-   */
-  public interface GenJsExprsVisitorFactory {
+  /** Injectable factory for creating an instance of this class. */
+  public static class GenJsExprsVisitorFactory {
+    protected final JsExprTranslator jsExprTranslator;
+    // We are using a provider to resolve a circular dependency between GenCallCodeUtils and this
+    // factory.
+    protected final Provider<GenCallCodeUtils> genCallCodeUtils;
+    protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
+
+    @Inject
+    protected GenJsExprsVisitorFactory(
+        JsExprTranslator jsExprTranslator,
+        Provider<GenCallCodeUtils> genCallCodeUtils,
+        IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
+      this.jsExprTranslator = jsExprTranslator;
+      this.genCallCodeUtils = genCallCodeUtils;
+      this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
+    }
 
     /**
-     * @param templateAliases A mapping for looking up the function name for a given fully
-     *     qualified name.
+     * @param templateAliases A mapping for looking up the function name for a given fully qualified
+     *     name.
      */
-    GenJsExprsVisitor create(
+    public GenJsExprsVisitor create(
         TranslationContext translationContext,
         TemplateAliases templateAliases,
-        ErrorReporter errorReporter);
+        ErrorReporter errorReporter) {
+      return new GenJsExprsVisitor(
+          jsExprTranslator,
+          genCallCodeUtils.get(),
+          isComputableAsJsExprsVisitor,
+          this,
+          translationContext,
+          errorReporter,
+          templateAliases);
+    }
   }
 
   private static final SoyErrorKind ARITY_MISMATCH =
@@ -99,18 +121,17 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
-   * @param templateAliases A mapping for looking up the function name for a given fully
-   *     qualified name.
+   * @param templateAliases A mapping for looking up the function name for a given fully qualified
+   *     name.
    */
-  @AssistedInject
-  public GenJsExprsVisitor(
+  protected GenJsExprsVisitor(
       JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
-      @Assisted TranslationContext translationContext,
-      @Assisted ErrorReporter errorReporter,
-      @Assisted TemplateAliases templateAliases) {
+      TranslationContext translationContext,
+      ErrorReporter errorReporter,
+      TemplateAliases templateAliases) {
     this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;

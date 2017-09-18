@@ -21,8 +21,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
@@ -46,6 +44,7 @@ import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
 /**
  * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
@@ -53,22 +52,32 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class BaseTofu implements SoyTofu {
+public final class BaseTofu implements SoyTofu {
 
   /**
    * Injectable factory for creating an instance of this class.
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public interface BaseTofuFactory {
+  public static final class BaseTofuFactory {
+    private final GuiceSimpleScope apiCallScope;
+    private final SoyValueConverter valueConverter;
+
+    @Inject
+    BaseTofuFactory(SoyValueConverter valueConverter, @ApiCall GuiceSimpleScope apiCallScope) {
+      this.valueConverter = valueConverter;
+      this.apiCallScope = apiCallScope;
+    }
 
     /**
      * @param templates The full set of templates.
      * @param templateToIjParamsInfoMap the ij params for each template.
      */
-    BaseTofu create(
+    public BaseTofu create(
         TemplateRegistry templates,
-        ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap);
+        ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
+      return new BaseTofu(valueConverter, apiCallScope, templates, templateToIjParamsInfoMap);
+    }
   }
 
   private final SoyValueConverter valueConverter;
@@ -84,12 +93,11 @@ public class BaseTofu implements SoyTofu {
    * @param valueConverter Instance of SoyValueConverter to use.
    * @param apiCallScope The scope object that manages the API call scope.
    */
-  @AssistedInject
-  public BaseTofu(
+  BaseTofu(
       SoyValueConverter valueConverter,
       @ApiCall GuiceSimpleScope apiCallScope,
-      @Assisted TemplateRegistry templates,
-      @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
+      TemplateRegistry templates,
+      ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
     this.valueConverter = valueConverter;
     this.apiCallScope = apiCallScope;
     this.templateRegistry = templates;

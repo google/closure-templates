@@ -19,8 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -46,6 +44,7 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.LinkedHashMap;
@@ -56,13 +55,6 @@ import java.util.Map;
  *
  */
 public final class MsgFuncGenerator {
-
-  /** Factory for assisted injection */
-  public static interface MsgFuncGeneratorFactory {
-    MsgFuncGenerator create(
-        MsgNode node, LocalVariableStack localVarExprs, ErrorReporter errorReporter);
-  }
-
   /** The msg node to generate the function calls from. */
   private final MsgNode msgNode;
 
@@ -81,12 +73,11 @@ public final class MsgFuncGenerator {
 
   private final TranslateToPyExprVisitor translateToPyExprVisitor;
 
-  @AssistedInject
   MsgFuncGenerator(
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      @Assisted MsgNode msgNode,
-      @Assisted LocalVariableStack localVarExprs,
-      @Assisted ErrorReporter errorReporter) {
+      MsgNode msgNode,
+      LocalVariableStack localVarExprs,
+      ErrorReporter errorReporter) {
     this.msgNode = msgNode;
     this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     this.translateToPyExprVisitor = new TranslateToPyExprVisitor(localVarExprs, errorReporter);

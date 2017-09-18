@@ -28,7 +28,6 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.tofu.internal.TofuModule;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
@@ -48,7 +47,6 @@ public final class SoyModule extends AbstractModule {
     // eliminating injection points from the backends would help with this effort also.
 
     // Install requisite modules.
-    install(new TofuModule());
     install(new JsSrcModule());
     install(new PySrcModule());
     install(new IncrementalDomSrcModule());

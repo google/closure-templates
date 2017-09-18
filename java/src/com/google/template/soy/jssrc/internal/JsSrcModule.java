@@ -17,10 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 
@@ -42,10 +39,6 @@ public class JsSrcModule extends AbstractModule {
     bind(IsComputableAsJsExprsVisitor.class);
     bind(JsExprTranslator.class);
     bind(DelTemplateNamer.class);
-
-    // Bind providers of factories (created via assisted inject).
-    install(new FactoryModuleBuilder().build(GenJsExprsVisitorFactory.class));
-    install(new FactoryModuleBuilder().build(TranslateExprNodeVisitorFactory.class));
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
     bind(SoyJsSrcOptions.class)

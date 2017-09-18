@@ -48,8 +48,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
@@ -98,6 +96,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Inject;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
@@ -166,9 +165,18 @@ public class TranslateExprNodeVisitor
               + "because the different union member types have different access methods.");
 
   /** Injectable factory for creating an instance of this class. */
-  public interface TranslateExprNodeVisitorFactory {
+  public static final class TranslateExprNodeVisitorFactory {
+    private final SoyJsSrcOptions jsSrcOptions;
+
+    @Inject
+    TranslateExprNodeVisitorFactory(SoyJsSrcOptions jsSrcOptions) {
+      this.jsSrcOptions = jsSrcOptions;
+    }
+
     TranslateExprNodeVisitor create(
-        TranslationContext translationContext, ErrorReporter errorReporter);
+        TranslationContext translationContext, ErrorReporter errorReporter) {
+      return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter);
+    }
   }
 
   /** The options for generating JS source code. */
@@ -183,11 +191,10 @@ public class TranslateExprNodeVisitor
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
 
-  @AssistedInject
   TranslateExprNodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
-      @Assisted TranslationContext translationContext,
-      @Assisted ErrorReporter errorReporter) {
+      TranslationContext translationContext,
+      ErrorReporter errorReporter) {
     this.jsSrcOptions = jsSrcOptions;
     this.errorReporter = errorReporter;
     this.variableMappings = translationContext.soyToJsVariableMappings();

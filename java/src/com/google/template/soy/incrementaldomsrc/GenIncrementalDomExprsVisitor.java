@@ -17,8 +17,6 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
@@ -29,22 +27,48 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 /** Overrides the base class to provide the correct helpers classes. */
 public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
 
   /** Injectable factory for creating an instance of this class. */
-  public interface GenIncrementalDomExprsVisitorFactory extends GenJsExprsVisitorFactory {}
+  public static final class GenIncrementalDomExprsVisitorFactory extends GenJsExprsVisitorFactory {
 
-  @AssistedInject
+    @SuppressWarnings("unchecked")
+    @Inject
+    GenIncrementalDomExprsVisitorFactory(
+        JsExprTranslator jsExprTranslator,
+        Provider<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
+        IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor) {
+      super(jsExprTranslator, (Provider) genCallCodeUtils, isComputableAsJsExprsVisitor);
+    }
+
+    @Override
+    public GenIncrementalDomExprsVisitor create(
+        TranslationContext translationContext,
+        TemplateAliases templateAliases,
+        ErrorReporter errorReporter) {
+      return new GenIncrementalDomExprsVisitor(
+          jsExprTranslator,
+          (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
+          (IsComputableAsIncrementalDomExprsVisitor) isComputableAsJsExprsVisitor,
+          this,
+          translationContext,
+          errorReporter,
+          templateAliases);
+    }
+  }
+
   public GenIncrementalDomExprsVisitor(
       JsExprTranslator jsExprTranslator,
       IncrementalDomGenCallCodeUtils genCallCodeUtils,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
-      @Assisted TranslationContext translationContext,
-      @Assisted ErrorReporter errorReporter,
-      @Assisted TemplateAliases templateAliases) {
+      TranslationContext translationContext,
+      ErrorReporter errorReporter,
+      TemplateAliases templateAliases) {
     super(
         jsExprTranslator,
         genCallCodeUtils,

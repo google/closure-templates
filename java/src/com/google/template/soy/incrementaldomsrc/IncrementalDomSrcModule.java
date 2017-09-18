@@ -17,10 +17,7 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
-import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 
@@ -33,12 +30,6 @@ public class IncrementalDomSrcModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    // Bind providers of factories (created via assisted inject).
-    install(
-        new FactoryModuleBuilder()
-            .implement(GenJsExprsVisitor.class, GenIncrementalDomExprsVisitor.class)
-            .build(GenIncrementalDomExprsVisitorFactory.class));
-
     // Bindings for when explicit dependencies are required.
     bind(IncrementalDomSrcMain.class);
     bind(GenIncrementalDomCodeVisitor.class);
