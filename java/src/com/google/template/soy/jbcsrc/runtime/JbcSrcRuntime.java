@@ -153,23 +153,6 @@ public final class JbcSrcRuntime {
     return directive.applyForJava(value, args);
   }
 
-  // TODO(msamuel): should access to these be restricted since it can be
-  // used to mint typed strings.
-  /**
-   * Wraps a given template with a collection of escapers to apply.
-   *
-   * @param delegate The delegate template to render
-   * @param directives The set of directives to apply
-   */
-  public static CompiledTemplate applyEscapersDynamic(
-      CompiledTemplate delegate, List<SoyJavaPrintDirective> directives) {
-    ContentKind kind = delegate.kind();
-    if (canSkipEscaping(directives, kind)) {
-      return delegate;
-    }
-    return new EscapedCompiledTemplate(delegate, directives, kind);
-  }
-
   /**
    * Wraps a given template with a collection of escapers to apply.
    *
@@ -177,7 +160,11 @@ public final class JbcSrcRuntime {
    * @param directives The set of directives to apply
    */
   public static CompiledTemplate applyEscapers(
-      CompiledTemplate delegate, ContentKind kind, List<SoyJavaPrintDirective> directives) {
+      CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
+    ContentKind kind = delegate.kind();
+    if (canSkipEscaping(directives, kind)) {
+      return delegate;
+    }
     return new EscapedCompiledTemplate(delegate, directives, kind);
   }
 
@@ -188,7 +175,7 @@ public final class JbcSrcRuntime {
    * case where we skip escaping and but the escapers would actually modify the input.
    */
   private static boolean canSkipEscaping(
-      List<SoyJavaPrintDirective> directives, @Nullable ContentKind kind) {
+      ImmutableList<SoyJavaPrintDirective> directives, @Nullable ContentKind kind) {
     if (kind == null) {
       return false;
     }
@@ -419,9 +406,6 @@ public final class JbcSrcRuntime {
     private final CompiledTemplate delegate;
     private final ImmutableList<SoyJavaPrintDirective> directives;
     @Nullable private final ContentKind kind;
-
-    // TODO(user): tracks adding streaming print directives which would help with this, since
-    // it would allow us to eliminate this buffer which fundamentally breaks incremental rendering
 
     // Note: render() may be called multiple times as part of a render operation that detaches
     // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
