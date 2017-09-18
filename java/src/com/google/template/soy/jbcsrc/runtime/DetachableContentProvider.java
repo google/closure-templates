@@ -45,6 +45,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
   // Will be either a SanitizedContent or a StringData.
   private SoyString resolvedValue;
+  private BufferingAppendable buffer;
 
   // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
@@ -56,8 +57,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
   @Override
   public final SoyValue resolve() {
-    SoyString local = resolvedValue;
-    checkState(local != null, "called resolve() before status() returned ready.");
+    checkState(isDone(), "called resolve() before status() returned ready.");
+    SoyString local = getResolvedValue();
     checkState(
         local != TombstoneValue.INSTANCE,
         "called resolve() after calling renderAndResolve with isLast == true");
@@ -66,7 +67,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
   @Override
   public final RenderResult status() {
-    if (resolvedValue != null) {
+    if (isDone()) {
       return RenderResult.done();
     }
     LoggingAdvisingAppendable.BufferingAppendable currentBuilder =
@@ -74,15 +75,19 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = LoggingAdvisingAppendable.buffering();
     }
-    return doRenderIntoBufferingAppendable(currentBuilder);
+    RenderResult result = doRender(currentBuilder);
+    if (result.isDone()) {
+      buffer = currentBuilder;
+      builder = null;
+    }
+    return result;
   }
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
-    SoyValue value = resolvedValue;
-    if (value != null) {
-      value.render(appendable);
+    if (isDone()) {
+      buffer.replayOn(appendable);
       return RenderResult.done();
     }
     if (isLast) {
@@ -97,22 +102,36 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = new TeeAdvisingAppendable(appendable);
     }
-    return doRenderIntoBufferingAppendable(currentBuilder);
-  }
-
-  private RenderResult doRenderIntoBufferingAppendable(LoggingAdvisingAppendable target) {
-    RenderResult result = doRender(target);
+    RenderResult result = doRender(currentBuilder);
     if (result.isDone()) {
-      // This drops logs, but that is sometimes necessary.  We should make sure this only happens
-      // when it has to by making sure that renderAndResolve is used for all printing usecases
-      String string = target.toString();
-      if (contentKind != null) {
-        resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
-      } else {
-        resolvedValue = StringData.forValue(string);
-      }
+      buffer = currentBuilder.buffer;
+      builder = null;
     }
     return result;
+  }
+
+  private boolean isDone() {
+    return resolvedValue != null || buffer != null;
+  }
+
+  private SoyString getResolvedValue() {
+    SoyString local = resolvedValue;
+    if (local == null) {
+      if (buffer != null) {
+        String string = buffer.toString();
+        // This drops logs, but that is sometimes necessary.  We should make sure this only happens
+        // when it has to by making sure that renderAndResolve is used for all printing usecases
+        if (contentKind != null) {
+          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
+        } else {
+          local = StringData.forValue(string);
+        }
+        resolvedValue = local;
+      } else {
+        throw new AssertionError("getResolvedValue() should only be called if the value isDone.");
+      }
+    }
+    return local;
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */

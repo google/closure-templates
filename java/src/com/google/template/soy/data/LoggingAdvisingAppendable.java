@@ -149,12 +149,16 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
   public static final class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
-    private static final Object EXIT_MARKER = new Object();
-    // lazily allocated list that contains one of 4 types of objects
-    // - String literal string content
-    // - LogStatement
-    // - EXIT_MARKER
-    // - LoggingFunctionInvocation
+    private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
+    private static final Object EXIT_SANITIZED_CONTENT_MARKER = new Object();
+    // lazily allocated list that contains one of 6 types of objects, each which corresponds to one
+    // of the callback methods.
+    // - String literal string content -> corresponds to a contiguous sequence of append calls
+    // - LogStatement -> corresponds to enterLoggableElement
+    // - EXIT_LOG_STATEMENT_MARKER -> corresponds to exitLoggableElement
+    // - ContentKind -> corresponds to enterSanitizedContent
+    // - EXIT_SANITIZED_CONTENT_MARKER -> corresponds to exitSanitizedContent call
+    // - LoggingFunctionInvocation -> corresponds to appendLoggingFunctionInvocation
     private List<Object> commands;
 
     BufferingAppendable() {
@@ -175,6 +179,18 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return commands;
     }
 
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
+      getCommandsAndAddPendingStringData().add(kind);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
+      getCommandsAndAddPendingStringData().add(EXIT_SANITIZED_CONTENT_MARKER);
+      return this;
+    }
+
     /** Called whenever a loggable element is entered. */
     @Override
     protected final void doEnterLoggableElement(LogStatement statement) {
@@ -184,7 +200,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     /** Called whenever a loggable element is exited. */
     @Override
     protected final void doExitLoggableElement() {
-      getCommandsAndAddPendingStringData().add(EXIT_MARKER);
+      getCommandsAndAddPendingStringData().add(EXIT_LOG_STATEMENT_MARKER);
     }
 
     @Override
@@ -201,10 +217,16 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
             appendable.append((String) o);
           } else if (o instanceof LoggingFunctionCommand) {
             ((LoggingFunctionCommand) o).replayOn(appendable);
-          } else if (o == EXIT_MARKER) {
+          } else if (o == EXIT_LOG_STATEMENT_MARKER) {
             appendable.exitLoggableElement();
-          } else {
+          } else if (o == EXIT_SANITIZED_CONTENT_MARKER) {
+            appendable.exitSanitizedContent();
+          } else if (o instanceof LogStatement) {
             appendable.enterLoggableElement((LogStatement) o);
+          } else if (o instanceof ContentKind) {
+            appendable.enterSanitizedContent((ContentKind) o);
+          } else {
+            throw new AssertionError("unexpected command object: " + o);
           }
         }
       } else {
@@ -238,8 +260,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
     }
 
-    private void appendCommandsToBuilder(List<Object> commands2, StringBuilder builder) {
-      for (Object o : commands2) {
+    private static void appendCommandsToBuilder(List<Object> commands, StringBuilder builder) {
+      for (Object o : commands) {
         if (o instanceof String) {
           builder.append((String) o);
         } else if (o instanceof LoggingFunctionCommand) {
@@ -267,7 +289,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
   }
 
-  protected String escapePlaceholder(String placeholder, List<Function<String, String>> escapers) {
+  protected static String escapePlaceholder(
+      String placeholder, List<Function<String, String>> escapers) {
     // TODO(lukes): we should be able to do this at compile time
     for (Function<String, String> escaper : escapers) {
       placeholder = escaper.apply(placeholder);
