@@ -102,7 +102,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
             ErrorReporter.exploding());
     printNode.setHtmlContext(htmlContext);
 
-    for (SoyPrintDirective escapingDirective : getEscapingDirectives()) {
+    for (SoyPrintDirective escapingDirective : getEscapingDirectiveNames()) {
       PrintDirectiveNode printDirectiveNode =
           new PrintDirectiveNode(
               nodeIdGen.genId(),
@@ -153,7 +153,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
   }
 
   /** Sets the inferred escaping directives from the contextual engine. */
-  public void setEscapingDirectives(ImmutableList<SoyPrintDirective> escapingDirectiveNames) {
+  public void setEscapingDirectiveNames(ImmutableList<SoyPrintDirective> escapingDirectiveNames) {
     this.escapingDirectiveNames = escapingDirectiveNames;
   }
 
@@ -162,7 +162,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    *
    * <p>It is an error to call this before the contextual rewriter has been run.
    */
-  public ImmutableList<SoyPrintDirective> getEscapingDirectives() {
+  public ImmutableList<SoyPrintDirective> getEscapingDirectiveNames() {
     return escapingDirectiveNames;
   }
 }

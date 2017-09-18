@@ -55,7 +55,7 @@ import org.junit.runners.JUnit4;
 
 /** A test for the behavior of the compiler when streaming print directives are in use. */
 @RunWith(JUnit4.class)
-public final class StreamingPrintDirectivesTest {
+public final class StreamingPrintTest {
 
   @Test
   public void testStreaming() throws IOException {
@@ -206,41 +206,6 @@ public final class StreamingPrintDirectivesTest {
     BufferingAppendable output = BufferingAppendable.buffering();
     templates.getTemplateFactory("ns.tag").create(EMPTY_DICT, EMPTY_DICT).render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
-  }
-
-  @Test
-  public void testStreamingCall() throws IOException {
-    // As of right now only a few directives support streaming, but this includes |escapeHtml and
-    // |escapeJsString, so we should be able to transitively stream through all of that.
-    CompiledTemplates templates =
-        compileFile(
-            "{namespace ns}",
-            "",
-            "{template .foo}",
-            "  {call .bar data=\"all\"/}",
-            "{/template}",
-            "",
-            "{template .bar}",
-            "  <script>var x=\"{call .baz data=\"all\" /}\";</script>",
-            "{/template}",
-            "",
-            "{template .baz kind=\"text\"}",
-            "  {@param future : ?}",
-            "  \"{$future}\" ",
-            "{/template}",
-            "");
-    RenderContext context = getDefaultContext(templates);
-    BufferingAppendable output = BufferingAppendable.buffering();
-    SettableFuture<String> future = SettableFuture.create();
-    CompiledTemplate template =
-        templates
-            .getTemplateFactory("ns.foo")
-            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("future", future), EMPTY_DICT);
-    template.render(output, context);
-    assertThat(output.getAndClearBuffer()).isEqualTo("<script>var x=\"\\x22");
-    future.set("hello");
-    template.render(output, context);
-    assertThat(output.getAndClearBuffer()).isEqualTo("hello\\x22\";</script>");
   }
 
   static CompiledTemplates compileFile(String... fileBody) {

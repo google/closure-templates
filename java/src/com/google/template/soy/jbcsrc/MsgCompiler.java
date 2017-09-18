@@ -18,8 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
-import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
@@ -155,7 +153,7 @@ final class MsgCompiler {
    * @param escapingDirectives The set of escaping directives to apply.
    */
   Statement compileMessage(
-      MsgPartsAndIds partsAndId, MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives) {
+      MsgPartsAndIds partsAndId, MsgNode msg, List<SoyPrintDirective> escapingDirectives) {
     Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
     Expression soyMsgParts =
         parameterLookup.getRenderContext().getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
@@ -258,8 +256,6 @@ final class MsgCompiler {
                 .invoke(MethodRef.LIST_GET, constant(0))
                 .checkedCast(SoyMsgRawTextPart.class)
                 .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
-    // Note: there is no point in trying to stream here, since we are starting with a constant
-    // string.
     for (SoyPrintDirective directive : escapingDirectives) {
       text = parameterLookup.getRenderContext().applyPrintDirective(directive, text);
     }
@@ -269,7 +265,7 @@ final class MsgCompiler {
   /** Handles a complex message with placeholders. */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
-      ImmutableList<SoyPrintDirective> escapingDirectives,
+      List<SoyPrintDirective> escapingDirectives,
       Expression soyMsgParts,
       Expression locale,
       ImmutableList<SoyMsgPart> parts) {
@@ -284,16 +280,10 @@ final class MsgCompiler {
     Statement populateMap = Statement.concat(placeholderNameToPutStatement.values());
     Statement clearMap = placeholderMap.invokeVoid(MethodRef.LINKED_HASH_MAP_CLEAR);
     Statement render;
-    if (areAllPrintDirectivesStreamable(escapingDirectives)) {
-      // No need to save/restore since rendering a message doesn't detach.  All detaching for data
-      // should have already happened as part of constructing the placholder map.
+    if (escapingDirectives.isEmpty()) {
       render =
           MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
-              soyMsgParts,
-              locale,
-              placeholderMap,
-              applyStreamingEscapingDirectives(
-                  escapingDirectives, appendableExpression, parameterLookup.getRenderContext()));
+              soyMsgParts, locale, placeholderMap, appendableExpression);
     } else {
       // render into the handy buffer we already have!
       Statement renderToBuffer =
@@ -311,7 +301,9 @@ final class MsgCompiler {
               renderToBuffer,
               appendableExpression.appendString(value.coerceToString()).toStatement());
     }
-    return Statement.concat(populateMap, render, clearMap);
+    Statement detach = detachState.detachLimited(appendableExpression);
+    return Statement.concat(populateMap, render, clearMap, detach)
+        .withSourceLocation(msg.getSourceLocation());
   }
 
   /**

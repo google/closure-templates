@@ -150,7 +150,7 @@ final class Rewriter {
     /** Sets the escaping directives we inferred on the node. */
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-      node.setEscapingDirectives(getDirectivesForNode(node));
+      node.setEscapingDirectiveNames(getDirectivesForNode(node));
       visitChildren(node);
     }
 

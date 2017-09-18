@@ -251,7 +251,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     }
 
     // Escaping directives apply to messages, especially in attribute context.
-    for (SoyPrintDirective directive : node.getEscapingDirectives()) {
+    for (SoyPrintDirective directive : node.getEscapingDirectiveNames()) {
       Preconditions.checkState(
           directive instanceof SoyPySrcPrintDirective,
           "Contextual autoescaping produced a bogus directive: %s",
