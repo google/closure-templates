@@ -17,7 +17,9 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -42,7 +44,7 @@ import javax.inject.Singleton;
 public class NoAutoescapeDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   public static final String NAME = "|noAutoescape";
 
@@ -72,6 +74,9 @@ public class NoAutoescapeDirective
   private static final class JbcSrcMethods {
     static final MethodRef FILTER_NO_AUTOESCAPE =
         MethodRef.create(Sanitizers.class, "filterNoAutoescape", SoyValue.class);
+    static final MethodRef FILTER_NO_AUTOESCAPE_STREAMING =
+        MethodRef.create(
+            Sanitizers.class, "filterNoAutoescapeStreaming", LoggingAdvisingAppendable.class);
   }
 
   @Override
@@ -79,6 +84,12 @@ public class NoAutoescapeDirective
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
         UnknownType.getInstance(), JbcSrcMethods.FILTER_NO_AUTOESCAPE.invoke(value.box()));
+  }
+
+  @Override
+  public Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return JbcSrcMethods.FILTER_NO_AUTOESCAPE_STREAMING.invoke(delegateAppendable);
   }
 
   @Override

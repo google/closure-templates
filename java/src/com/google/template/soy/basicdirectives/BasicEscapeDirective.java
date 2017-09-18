@@ -19,10 +19,12 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -61,6 +63,7 @@ public abstract class BasicEscapeDirective
   private final String name;
 
   @LazyInit private MethodRef javaSoyValueSanitizer;
+  @LazyInit private MethodRef javaStreamingSanitizer;
 
   /** @param name E.g. {@code |escapeUri}. */
   public BasicEscapeDirective(String name) {
@@ -124,13 +127,36 @@ public abstract class BasicEscapeDirective
     return SoyExpression.forString(sanitizerMethod.invoke(value.box()));
   }
 
+  /**
+   * Default implementation for {@link Streamable}.
+   *
+   * <p>Subclasses can simply add {@code implements Streamable} if they have an implementation in
+   * Sanitizers.<name>Streaming. If they don't, this method will throw while trying to find it.
+   */
+  public final Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    MethodRef sanitizerMethod = javaStreamingSanitizer;
+    if (sanitizerMethod == null) {
+      // lazily allocated
+      sanitizerMethod =
+          MethodRef.create(
+                  Sanitizers.class,
+                  name.substring(1) + "Streaming",
+                  LoggingAdvisingAppendable.class)
+              .asNonNullable();
+      javaStreamingSanitizer = sanitizerMethod;
+    }
+    MethodRef streamingSanitizersMethod = sanitizerMethod;
+    return streamingSanitizersMethod.invoke(delegateAppendable);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Concrete subclasses.
 
   /** Implements the |escapeCssString directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class EscapeCssString extends BasicEscapeDirective {
+  static final class EscapeCssString extends BasicEscapeDirective implements Streamable {
 
     EscapeCssString() {
       super("|escapeCssString");
@@ -163,7 +189,7 @@ public abstract class BasicEscapeDirective
    */
   @Singleton
   @SoyPurePrintDirective
-  static final class NormalizeHtml extends BasicEscapeDirective {
+  static final class NormalizeHtml extends BasicEscapeDirective implements Streamable {
 
     NormalizeHtml() {
       super("|normalizeHtml");
@@ -253,7 +279,7 @@ public abstract class BasicEscapeDirective
   /** Implements the |escapeJsRegex directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class EscapeJsRegex extends BasicEscapeDirective {
+  static final class EscapeJsRegex extends BasicEscapeDirective implements Streamable {
 
     EscapeJsRegex() {
       super("|escapeJsRegex");
@@ -268,7 +294,7 @@ public abstract class BasicEscapeDirective
   /** Implements the |escapeJsString directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class EscapeJsString extends BasicEscapeDirective {
+  static final class EscapeJsString extends BasicEscapeDirective implements Streamable {
 
     EscapeJsString() {
       super("|escapeJsString");
@@ -333,7 +359,7 @@ public abstract class BasicEscapeDirective
   /** Implements the |normalizeUri directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class NormalizeUri extends BasicEscapeDirective {
+  static final class NormalizeUri extends BasicEscapeDirective implements Streamable {
 
     NormalizeUri() {
       super("|normalizeUri");

@@ -74,4 +74,71 @@ public final class SharedModuleTest {
       assertThat(function).isInstanceOf(SoyPySrcFunction.class);
     }
   }
+
+  // This test serves to document exactly which escaping directives do and do not support streaming
+  // in jbcsrc.  If someone adds a new one, they will need to update this test and document why
+  // it doesn't support streaming.
+  @Test
+  public void testStreamingPrintDirectives() throws Exception {
+    ImmutableSet.Builder<String> streamingPrintDirectives = ImmutableSet.builder();
+    ImmutableSet.Builder<String> nonStreamingPrintDirectives = ImmutableSet.builder();
+    for (SoyPrintDirective directive : injector.getInstance(new Key<Set<SoyPrintDirective>>() {})) {
+      if (directive instanceof SoyJbcSrcPrintDirective.Streamable) {
+        streamingPrintDirectives.add(directive.getName());
+      } else {
+        nonStreamingPrintDirectives.add(directive.getName());
+      }
+    }
+    assertThat(streamingPrintDirectives.build())
+        .containsExactly(
+            "|escapeHtml",
+            "|blessStringAsTrustedResourceUrlForLegacy",
+            "|id",
+            "|escapeCssString",
+            "|normalizeHtml",
+            "|escapeJsString",
+            "|escapeJsRegex",
+            "|text",
+            "|noAutoescape",
+            "|normalizeUri");
+    assertThat(nonStreamingPrintDirectives.build())
+        .containsExactly(
+            // These all make sense to be streaming, though it might make sense to just skip
+            // some of the deprecated ones.
+            "|changeNewlineToBr",
+            "|insertWordBreaks",
+            "|truncate",
+            "|escapeHtmlRcdata",
+            // TODO(b/18260376): this one should be fixable since it is just doing % encoding, but
+            // the current strategy relies on a guava class that doesn't support streaming.  May
+            // require completely reimplementing it :/
+            "|escapeUri",
+            // These can't be made streaming because it would require a complex state machine or
+            // they require knowing the full content to work.  For example all the filters, which
+            // generally validate via a regular expression.
+            // As below, we may want to make these support the Streamable interface but internally
+            // buffer.
+            "|filterHtmlElementName",
+            "|filterCssValue",
+            "|escapeJsValue",
+            "|filterHtmlAttributes",
+            "|filterNormalizeUri",
+            "|filterNormalizeMediaUri",
+            "|filterTrustedResourceUri",
+            "|filterImageDataUri",
+            "|filterTelUri",
+            // These two could be made streaming, it would require some refactoring of the
+            // Sanitizers.stripHtmlTags method but it is probably a good idea.
+            "|escapeHtmlAttribute",
+            "|escapeHtmlAttributeNospace",
+            // These one could possibly be made streaming, but it would require a lot of work.
+            // We might want to add a warning if log directives are lost due to this.
+            // Or we could possibly add a version of 'streaming' which actually just buffers all
+            // the commands and preserves them.  This way logging directives could be preserved
+            // through the print directive.
+            "|cleanHtml",
+            "|bidiSpanWrap",
+            "|bidiUnicodeWrap",
+            "|formatNum");
+  }
 }

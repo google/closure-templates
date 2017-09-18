@@ -19,6 +19,7 @@ package com.google.template.soy.coredirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
@@ -39,7 +40,7 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPurePrintDirective
 public class IdDirective
-    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyJbcSrcPrintDirective {
+    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyJbcSrcPrintDirective.Streamable {
 
   public static final String NAME = "|id";
 
@@ -70,6 +71,12 @@ public class IdDirective
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return value.coerceToString();
+  }
+
+  @Override
+  public Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return delegateAppendable;
   }
 
   @Override

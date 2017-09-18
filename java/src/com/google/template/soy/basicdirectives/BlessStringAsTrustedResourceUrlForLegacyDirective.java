@@ -17,7 +17,9 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -47,7 +49,7 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
@@ -79,6 +81,12 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
         MethodRef.create(
                 Sanitizers.class, "blessStringAsTrustedResourceUrlForLegacy", SoyValue.class)
             .asCheap();
+    static final MethodRef BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY_STREAMING =
+        MethodRef.create(
+                Sanitizers.class,
+                "blessStringAsTrustedResourceUrlForLegacyStreaming",
+                LoggingAdvisingAppendable.class)
+            .asCheap();
   }
 
   @Override
@@ -90,6 +98,13 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
         JbcSrcMethods.BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY
             .invoke(value)
             .checkedCast(value.resultType()));
+  }
+
+  @Override
+  public Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return JbcSrcMethods.BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY_STREAMING.invoke(
+        delegateAppendable);
   }
 
   @Override

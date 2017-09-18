@@ -17,14 +17,20 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
+import com.google.template.soy.data.LogStatement;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -161,6 +167,11 @@ public final class Sanitizers {
     return normalizeHtml(value.coerceToString());
   }
 
+  public static LoggingAdvisingAppendable normalizeHtmlStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.NormalizeHtml.INSTANCE);
+  }
+
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */
   public static String normalizeHtml(String value) {
     return EscapingConventions.NormalizeHtml.INSTANCE.escape(value);
@@ -231,6 +242,11 @@ public final class Sanitizers {
     return escapeJsString(value.coerceToString());
   }
 
+  public static LoggingAdvisingAppendable escapeJsStringStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingEscaper.create(appendable, EscapingConventions.EscapeJsString.INSTANCE);
+  }
+
   /** Converts plain text to the body of a JavaScript string by using {@code \n} style escapes. */
   public static String escapeJsString(String value) {
     return EscapingConventions.EscapeJsString.INSTANCE.escape(value);
@@ -278,6 +294,12 @@ public final class Sanitizers {
     return escapeJsRegex(value.coerceToString());
   }
 
+  /** Converts the input to the body of a JavaScript regular expression literal. */
+  public static LoggingAdvisingAppendable escapeJsRegexStreaming(
+      LoggingAdvisingAppendable delegate) {
+    return StreamingEscaper.create(delegate, EscapingConventions.EscapeJsRegex.INSTANCE);
+  }
+
   /** Converts plain text to the body of a JavaScript regular expression literal. */
   public static String escapeJsRegex(String value) {
     return EscapingConventions.EscapeJsRegex.INSTANCE.escape(value);
@@ -287,6 +309,12 @@ public final class Sanitizers {
   public static String escapeCssString(SoyValue value) {
     value = normalizeNull(value);
     return escapeCssString(value.coerceToString());
+  }
+
+  /** Converts the input to the body of a CSS string literal. */
+  public static LoggingAdvisingAppendable escapeCssStringStreaming(
+      LoggingAdvisingAppendable delegate) {
+    return StreamingEscaper.create(delegate, EscapingConventions.EscapeCssString.INSTANCE);
   }
 
   /** Converts plain text to the body of a CSS string literal. */
@@ -342,6 +370,14 @@ public final class Sanitizers {
   public static String normalizeUri(SoyValue value) {
     value = normalizeNull(value);
     return normalizeUri(value.coerceToString());
+  }
+
+  /**
+   * Converts a piece of URI content to a piece of URI content that can be safely embedded in an
+   * HTML attribute by percent encoding.
+   */
+  public static LoggingAdvisingAppendable normalizeUriStreaming(LoggingAdvisingAppendable value) {
+    return StreamingEscaper.create(value, EscapingConventions.NormalizeUri.INSTANCE);
   }
 
   /**
@@ -436,6 +472,15 @@ public final class Sanitizers {
    */
   public static SoyValue blessStringAsTrustedResourceUrlForLegacy(String value) {
     return StringData.forValue(value);
+  }
+
+  /**
+   * For any resource string/variable which has |blessStringAsTrustedResuorceUrlForLegacy directive
+   * apply a no-op escaping directive
+   */
+  public static LoggingAdvisingAppendable blessStringAsTrustedResourceUrlForLegacyStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return appendable;
   }
 
   /**
@@ -548,6 +593,112 @@ public final class Sanitizers {
       return StringData.forValue(EscapingConventions.INNOCUOUS_OUTPUT);
     }
     return value;
+  }
+
+  /**
+   * Applies the |noAutoescape directive and filters explicitly tainted content.
+   *
+   * <p>See {@link #filterNoAutoescape(SoyValue)}
+   */
+  public static LoggingAdvisingAppendable filterNoAutoescapeStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return new ForwardingLoggingAdvisingAppendable(appendable) {
+      /**
+       * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
+       * #exitSanitizedContent()}
+       */
+      private int contentDepth;
+
+      /**
+       * The {@link #contentDepth} of the first {@link ContentKind#TEXT} block that is currently
+       * active, or {@code -1} if there isn't one active.
+       */
+      private int firstTextDepth = -1;
+
+      private boolean isInText() {
+        return firstTextDepth != -1;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
+        super.enterSanitizedContent(kind);
+        int depth = contentDepth;
+        if (kind == ContentKind.TEXT && !isInText()) {
+          logger.log(
+              Level.WARNING, "|noAutoescape received value explicitly tagged as ContentKind.TEXT");
+          // append directly to the delegate.
+          delegate.append(EscapingConventions.INNOCUOUS_OUTPUT);
+          firstTextDepth = depth;
+        }
+        contentDepth = depth + 1;
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
+        int currentElementDepth = contentDepth - 1;
+        if (currentElementDepth < 0) {
+          throw new IllegalStateException("enter/exitSanitizedContent statements are unbalanced!");
+        }
+        // This means that we are exiting the node that first entered textual content
+        if (currentElementDepth == firstTextDepth) {
+          firstTextDepth = -1;
+        }
+        contentDepth = currentElementDepth;
+        return super.exitSanitizedContent();
+      }
+
+      @Override
+      public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+          LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+          throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.appendLoggingFunctionInvocation(funCall, escapers);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(char c) throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.append(c);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.append(csq);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+          throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.append(csq, start, end);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+        if (isInText()) {
+          return this;
+        }
+        return super.enterLoggableElement(statement);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitLoggableElement() {
+        if (isInText()) {
+          return this;
+        }
+        return super.exitLoggableElement();
+      }
+    };
   }
 
   /** True iff the given value is sanitized content of the given kind. */

@@ -16,11 +16,14 @@
 
 package com.google.template.soy.shared.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -31,6 +34,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Test;
@@ -807,6 +811,26 @@ public class SanitizersTest {
   }
 
   @Test
+  public void testFilterNoAutoescapeStreaming() throws IOException {
+    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
+    escapingBuffer.append("foo");
+    assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
+    escapingBuffer.enterSanitizedContent(ContentKind.HTML);
+    escapingBuffer.append("foo");
+    assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
+    escapingBuffer.enterSanitizedContent(ContentKind.TEXT);
+    assertThat(buffer.getAndClearBuffer()).isEqualTo("zSoyz");
+    escapingBuffer.append("foo");
+    escapingBuffer.enterSanitizedContent(ContentKind.HTML);
+    escapingBuffer.append("foo");
+    escapingBuffer.exitSanitizedContent();
+    escapingBuffer.exitSanitizedContent(); // exits the text call
+    // nothing was rendered between the calls
+    assertThat(buffer.getAndClearBuffer()).isEqualTo("");
+  }
+
+  @Test
   public void testEmbedCssIntoHtml() {
     assertEquals("", Sanitizers.embedCssIntoHtml(""));
     assertEquals("foo", Sanitizers.embedCssIntoHtml("foo"));
@@ -819,4 +843,5 @@ public class SanitizersTest {
         "background: url(<\\/style/>)", // Semantically equivalent
         Sanitizers.embedCssIntoHtml("background: url(</style/>)"));
   }
+  
 }

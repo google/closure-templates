@@ -73,8 +73,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * <p>The default implementation does nothing.
    *
    * @param kind The kind of content that we are entering.
+   * @throws IOException
    */
-  public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+  public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
     return this;
   }
 
@@ -82,8 +83,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * Marks the end of a sequence of sanitized content.
    *
    * <p>The default implementation does nothing.
+   *
+   * @throws IOException
    */
-  public LoggingAdvisingAppendable exitSanitizedContent() {
+  public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
     return this;
   }
 
@@ -190,8 +193,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         throws IOException {
       getCommandsAndAddPendingStringData().add(LoggingFunctionCommand.create(funCall, escapers));
     }
-    
-    public void clearAndReplayOn(LoggingAdvisingAppendable appendable) throws IOException {
+
+    public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (commands != null) {
         for (Object o : getCommandsAndAddPendingStringData()) {
           if (o instanceof String) {
@@ -204,10 +207,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
             appendable.enterLoggableElement((LogStatement) o);
           }
         }
-        commands = null;
       } else {
         appendable.append(delegate);
-        delegate.setLength(0);
       }
     }
 
@@ -266,8 +267,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
   }
 
-  private static String escapePlaceholder(
-      String placeholder, List<Function<String, String>> escapers) {
+  protected String escapePlaceholder(String placeholder, List<Function<String, String>> escapers) {
     // TODO(lukes): we should be able to do this at compile time
     for (Function<String, String> escaper : escapers) {
       placeholder = escaper.apply(placeholder);

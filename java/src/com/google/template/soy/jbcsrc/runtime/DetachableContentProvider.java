@@ -22,6 +22,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -125,7 +126,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
    * command on which this is based.
    */
   private static final class TeeAdvisingAppendable extends LoggingAdvisingAppendable {
-    final LoggingAdvisingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    final BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
     final LoggingAdvisingAppendable delegate;
 
     TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
@@ -133,14 +134,14 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
       delegate.enterSanitizedContent(kind);
       buffer.enterSanitizedContent(kind);
       return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable exitSanitizedContent() {
+    public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
       delegate.exitSanitizedContent();
       buffer.exitSanitizedContent();
       return this;
