@@ -130,8 +130,7 @@ public final class SharedTestUtils {
     soyFileContentBuilder
         .append("{namespace " + namespace)
         .append(" autoescape=\"" + autoEscaping.getKey() + "\"")
-        .append(strictHtml ? " stricthtml=\"true\"}\n" : "}\n")
-        .append("\n")
+        .append("}\n")
         .append("/** Test template.");
     if (soyDocParamNames != null) {
       for (String paramName : soyDocParamNames) {
@@ -140,8 +139,11 @@ public final class SharedTestUtils {
     }
     soyFileContentBuilder
         .append(" */\n")
-        .append("{template " + templateName + "}\n")
-        .append(soyCode + "\n")
+        .append("{template " + templateName)
+        .append(" stricthtml=\"" + (strictHtml ? "true" : "false") + "\"")
+        .append("}\n")
+        .append(soyCode)
+        .append("\n")
         .append("{/template}\n");
     return soyFileContentBuilder.toString();
   }

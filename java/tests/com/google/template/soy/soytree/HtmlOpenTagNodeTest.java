@@ -57,7 +57,9 @@ public final class HtmlOpenTagNodeTest {
   }
 
   private static HtmlOpenTagNode parseTag(String input) {
-    String soyFile = Joiner.on('\n').join("{namespace ns}", "{template .t}", input, "{/template}");
+    String soyFile =
+        Joiner.on('\n')
+            .join("{namespace ns}", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             .desugarHtmlNodes(false)

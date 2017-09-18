@@ -43,7 +43,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template.*/\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css('%AAA')}\">\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
@@ -58,7 +58,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo}\n\n"
                 + "/** Test template.  */\n"
                 + "{template .foo cssbase=\"some.test.package\"}\n"
-                + "  <div class=\"{css('%AAA')}\">\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
@@ -73,7 +73,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
                 + "/** Test template. */\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css('%AAA')}\">\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
@@ -88,7 +88,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template. */\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css('AAA')}\">\n"
+                + "  <p class=\"{css('AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
@@ -103,7 +103,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
             + "{template .foo}\n"
-            + "  <div class=\"{css('%AAA')}\">\n"
+            + "  <p class=\"{css('%AAA')}\">\n"
             + "{/template}\n",
         errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -119,7 +119,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             + "/** Test template. */\n"
             + "{template .foo}\n"
             + "  {@param goo: string}\n"
-            + "  <div class=\"{css($goo, '%AAA')}\">\n"
+            + "  <p class=\"{css($goo, '%AAA')}\">\n"
             + "{/template}\n",
         errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(2);

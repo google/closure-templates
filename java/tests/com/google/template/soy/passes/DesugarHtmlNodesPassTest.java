@@ -32,14 +32,14 @@ public final class DesugarHtmlNodesPassTest {
 
   @Test
   public void testNoOpRewrites() throws Exception {
-    assertNoOp("<div>");
-    assertNoOp("<div class>");
-    assertNoOp("<div class=foo></div>");
+    assertNoOp("<p>");
+    assertNoOp("<p class>");
+    assertNoOp("<p class=foo></p>");
     assertNoOp("{let $foo kind=\"attributes\"}class=foo{/let}");
-    assertNoOp("<div/>");
-    assertNoOp("<div class=foo/>");
+    assertNoOp("<hr/>");
+    assertNoOp("<hr class=foo/>");
     // we used to rewrite this as foo/>, which is wrong the trailing space is important.
-    assertNoOp("<div class=foo />");
+    assertNoOp("<hr class=foo />");
     // Html comment nodes should be no op.
     assertNoOp("<!--foo-->");
     assertNoOp("{let $foo : '' /}<!--{$foo}-->");
@@ -52,13 +52,13 @@ public final class DesugarHtmlNodesPassTest {
   // intentional
   @Test
   public void testRewrites() {
-    assertRewrite("<div     class='foo'>").isEqualTo("<div class='foo'>");
-    assertRewrite("<div {if true}class='foo'{/if} id='2'>")
-        .isEqualTo("<div{if true} class='foo'{/if} id='2'>");
+    assertRewrite("<p     class='foo'>").isEqualTo("<p class='foo'>");
+    assertRewrite("<p {if true}class='foo'{/if} id='2'>")
+        .isEqualTo("<p{if true} class='foo'{/if} id='2'>");
 
     // notice that the space moves inside the conditional
-    assertRewrite("<div {if true}class='foo'{else}style='baz'{/if}>")
-        .isEqualTo("<div{if true} class='foo'{else} style='baz'{/if}>");
+    assertRewrite("<p {if true}class='foo'{else}style='baz'{/if}>")
+        .isEqualTo("<p{if true} class='foo'{else} style='baz'{/if}>");
 
     assertRewrite("{let $foo kind=\"attributes\"}     class=foo    {/let}")
         .isEqualTo("{let $foo kind=\"attributes\"}class=foo{/let}");

@@ -264,7 +264,7 @@ public final class ResolveNamesVisitorTest {
     return ""
         + "{namespace ns}\n"
         + "/***/\n"
-        + "{template .aaa}\n"
+        + "{template .aaa stricthtml=\"false\"}\n"
         + "  "
         + Joiner.on("\n   ").join(body)
         + "\n"

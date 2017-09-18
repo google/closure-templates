@@ -293,7 +293,7 @@ public final class InferenceEngineTest {
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n{template .foo kind=\""
                     + Ascii.toLowerCase(kind.toString())
-                    + "\"}"
+                    + "\" stricthtml=\"false\"}"
                     + src
                     + "{/template}")
             .addSoyFunction(new AssertFunction())
