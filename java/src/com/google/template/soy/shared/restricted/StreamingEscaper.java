@@ -32,6 +32,7 @@ import java.io.IOException;
  * logic to untrusted content.
  */
 public abstract class StreamingEscaper extends LoggingAdvisingAppendable {
+  
   /**
    * Creates a streaming escaper, or returns the delegate if it is already escaping with the same
    * settings.
@@ -73,6 +74,10 @@ public abstract class StreamingEscaper extends LoggingAdvisingAppendable {
     this.delegate = checkNotNull(delegate);
     this.transform = checkNotNull(transform);
   }
+
+  // Note we never propagate calls to enter/exitSanitizedContent to the delegate.  This is because
+  // all content is being escaped and thus it is by definition compatible with the surrounding
+  // content.
 
   @Override
   public final LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
@@ -171,20 +176,11 @@ public abstract class StreamingEscaper extends LoggingAdvisingAppendable {
         throw new IllegalStateException("overflowed logging depth");
       }
       contentDepth = depth;
-      if (isNoOp()) {
-        // If we are in no-op mode then we should tell the underlying delegate that the given kind
-        // is coming.  However, if we are in escaping mode we shouldn't, otherwise we might get
-        // double escaped.
-        delegate.enterSanitizedContent(kind);
-      }
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
-      if (isNoOp()) {
-        delegate.exitSanitizedContent();
-      }
       int currentElementDepth = contentDepth - 1;
       if (currentElementDepth < 0) {
         throw new IllegalStateException("log statements are unbalanced!");

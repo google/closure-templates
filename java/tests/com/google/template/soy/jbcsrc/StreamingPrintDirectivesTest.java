@@ -31,7 +31,6 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -46,7 +45,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -55,7 +53,7 @@ import org.junit.runners.JUnit4;
 
 /** A test for the behavior of the compiler when streaming print directives are in use. */
 @RunWith(JUnit4.class)
-public final class StreamingPrintTest {
+public final class StreamingPrintDirectivesTest {
 
   @Test
   public void testStreaming() throws IOException {
@@ -115,7 +113,7 @@ public final class StreamingPrintTest {
     // but we actually rendered the first half of the param even though it went through a print
     // directive. all the content in parens went through our directive
     assertThat(output.getAndClearBuffer())
-        .isEqualTo("foo_prefix streamable_prefix (HTML: param_prefix )");
+        .isEqualTo("foo_prefix streamable_prefix (stream: param_prefix )");
 
     future1.set("future1");
     result = create.render(output, context);
@@ -125,7 +123,7 @@ public final class StreamingPrintTest {
     // streamable print directive
     assertThat(output.getAndClearBuffer())
         .isEqualTo(
-            "(HTML: future1)(HTML:  param_suffix) streamable_suffix interlude "
+            "(stream: future1)(stream:  param_suffix) streamable_suffix interlude "
                 + "unstreamable_prefix ");
 
     future2.set("future2");
@@ -169,7 +167,7 @@ public final class StreamingPrintTest {
         .getTemplateFactory("ns.streamable")
         .create(badParam, EMPTY_DICT)
         .render(output, context);
-    assertThat(output.getAndClearBuffer()).isEqualTo("(null: notAnInt)");
+    assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
     try {
       templates
@@ -206,6 +204,41 @@ public final class StreamingPrintTest {
     BufferingAppendable output = BufferingAppendable.buffering();
     templates.getTemplateFactory("ns.tag").create(EMPTY_DICT, EMPTY_DICT).render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
+  }
+
+  @Test
+  public void testStreamingCall() throws IOException {
+    // As of right now only a few directives support streaming, but this includes |escapeHtml and
+    // |escapeJsString, so we should be able to transitively stream through all of that.
+    CompiledTemplates templates =
+        compileFile(
+            "{namespace ns}",
+            "",
+            "{template .foo}",
+            "  {call .bar data=\"all\"/}",
+            "{/template}",
+            "",
+            "{template .bar}",
+            "  <script>var x=\"{call .baz data=\"all\" /}\";</script>",
+            "{/template}",
+            "",
+            "{template .baz kind=\"text\"}",
+            "  {@param future : ?}",
+            "  \"{$future}\" ",
+            "{/template}",
+            "");
+    RenderContext context = getDefaultContext(templates);
+    BufferingAppendable output = BufferingAppendable.buffering();
+    SettableFuture<String> future = SettableFuture.create();
+    CompiledTemplate template =
+        templates
+            .getTemplateFactory("ns.foo")
+            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("future", future), EMPTY_DICT);
+    template.render(output, context);
+    assertThat(output.getAndClearBuffer()).isEqualTo("<script>var x=\"\\x22");
+    future.set("hello");
+    template.render(output, context);
+    assertThat(output.getAndClearBuffer()).isEqualTo("hello\\x22\";</script>");
   }
 
   static CompiledTemplates compileFile(String... fileBody) {
@@ -275,25 +308,12 @@ public final class StreamingPrintTest {
     }
   }
 
-  /** An appendable which annotates each printed chunk with the current content kind. */
+  /** An appendable that annotates each printed chunk with {@code (stream: %s)}. */
   public static final class AnnotatingAppendable extends LoggingAdvisingAppendable {
     private final LoggingAdvisingAppendable delegate;
-    private final ArrayDeque<ContentKind> kindStack = new ArrayDeque<>();
 
     public AnnotatingAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
-      kindStack.push(kind);
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContent() {
-      kindStack.pop();
-      return this;
     }
 
     @Override
@@ -339,7 +359,7 @@ public final class StreamingPrintTest {
     }
 
     private LoggingAdvisingAppendable getDelegateForAppend() throws IOException {
-      return delegate.append('(').append(String.valueOf(kindStack.peek())).append(": ");
+      return delegate.append("(stream: ");
     }
   }
 }

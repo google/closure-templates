@@ -18,6 +18,9 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
+import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingPrintDirectives;
+import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
@@ -26,7 +29,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.restricted.Statement.NULL_STATEMENT;
 
 import com.google.auto.value.AutoValue;
@@ -34,7 +36,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
@@ -56,8 +57,8 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -541,15 +542,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return stmt;
   }
 
-  private boolean areAllPrintDirectivesStreamable(PrintNode node) {
-    for (PrintDirectiveNode directiveNode : node.getChildren()) {
-      if (!(directiveNode.getPrintDirective() instanceof SoyJbcSrcPrintDirective.Streamable)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private Statement visitLoggingFunction(
       PrintNode node, FunctionNode fn, LoggingFunction loggingFunction) {
     List<Expression> printDirectives = new ArrayList<>(node.numChildren());
@@ -643,7 +635,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label printDirectiveArgumentReattachPoint = new Label();
       appendable =
           applyStreamingPrintDirectives(
-              directives, appendable, printDirectiveArgumentReattachPoint);
+              directives,
+              appendable,
+              exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
+              parameterLookup.getRenderContext());
       FieldRef currentAppendable = variables.getCurrentAppendable();
       initAppendable =
           currentAppendable
@@ -665,33 +660,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 constant(false));
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
     return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
-  }
-
-  /**
-   * Applies all the streaming print directives to the appendable.
-   *
-   * @param directives The directives. All are guaranteed to be {@link
-   *     com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable streamable}
-   * @param appendable The appendable to wrap
-   * @param printDirectiveArgumentReattachPoint The point to resume execution if any of the argument
-   *     expressions detach.
-   * @return The wrapped appendable
-   */
-  private Expression applyStreamingPrintDirectives(
-      List<PrintDirectiveNode> directives,
-      Expression appendable,
-      Label printDirectiveArgumentReattachPoint) {
-    BasicExpressionCompiler basic =
-        exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint);
-    for (PrintDirectiveNode directive : directives) {
-      appendable =
-          ((SoyJbcSrcPrintDirective.Streamable) directive.getPrintDirective())
-              .applyForJbcSrcStreaming(
-                  parameterLookup.getRenderContext(),
-                  appendable,
-                  basic.compileToList(directive.getArgs()));
-    }
-    return appendable;
   }
 
   /**
@@ -755,7 +723,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     MsgNode msg = node.getMsg();
     MsgPartsAndIds idAndParts = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msg);
-    ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectiveNames();
+    ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectives();
     Statement renderDefault = getMsgCompiler().compileMessage(idAndParts, msg, escapingDirectives);
     // fallback groups have 1 or 2 children.  if there are 2 then the second is a fallback and we
     // need to check for presence.
@@ -819,20 +787,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 node.allowEmptyDefault(),
                 prepareParamsHelper(node, reattachPoint),
                 parameterLookup.getIjRecord());
-    if (!node.getEscapingDirectives().isEmpty()) {
-      Expression directives = getEscapingDirectivesList(node);
-      if (registry.hasDelTemplateDefinition(node.getDelCalleeName())) {
-        SanitizedContentKind kind = registry.getDelTemplateContentKind(node.getDelCalleeName());
-        calleeExpression =
-            MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
-                calleeExpression, constantSanitizedContentKindAsContentKind(kind), directives);
-      } else {
-        // only use dynamic resolution if we need to, to avoid runtime kind checks
-        calleeExpression =
-            MethodRef.RUNTIME_APPLY_ESCAPERS_DYNAMIC.invoke(calleeExpression, directives);
-      }
-    }
-    return visitCallNodeHelper(reattachPoint, calleeExpression);
+    return renderCallNode(reattachPoint, node, calleeExpression);
   }
 
   @Override
@@ -844,14 +799,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         callee
             .constructor()
             .construct(prepareParamsHelper(node, reattachPoint), parameterLookup.getIjRecord());
-    if (!node.getEscapingDirectives().isEmpty()) {
-      calleeExpression =
-          MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
-              calleeExpression,
-              constantSanitizedContentKindAsContentKind(callee.node().getContentKind()),
-              getEscapingDirectivesList(node));
-    }
-    return visitCallNodeHelper(reattachPoint, calleeExpression);
+    return renderCallNode(reattachPoint, node, calleeExpression);
   }
 
   @Override
@@ -884,31 +832,80 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .build());
   }
 
-  private Statement visitCallNodeHelper(Label reattachPoint, Expression calleeExpression) {
+  /**
+   * Renders a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate} incrementally.
+   *
+   * <p>Similar to {@link #renderIncrementally(Expression, List, Label)}, we need to:
+   *
+   * <ul>
+   *   <li>Stash the CompiledTemplate in a field {@code $currentCallee}, so that if we detach
+   *       halfway through rendering we don't lose the value. Note, we could use the scope/variable
+   *       system of {@link TemplateVariableManager} to manage this value, but we know there will
+   *       only ever be 1 live at a time, so we can just manage the single special field ourselves.
+   *   <li>Either apply all the streaming autoescapers to the current appendable and, stash it in
+   *       the {@code $currentAppendable} field for the same reasons as above, or call {@link
+   *       JbcSrcRuntime#applyEscapers} to apply non-streaming print directives.
+   *   <li>Invoke {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate#render} with the
+   *       standard detach logic.
+   *   <li>Clear the two fields once rendering is complete.
+   * </ul>
+   *
+   * @param parametersReattachPoint The label where execution should resume if we need to detach
+   *     while calculating parameters.
+   * @param node The call node
+   * @param calleeExpression The expression that resolves to a constructed instance of the template
+   * @return A statement rendering the template.
+   */
+  private Statement renderCallNode(
+      Label parametersReattachPoint, CallNode node, Expression calleeExpression) {
+    Statement initAppendable = Statement.NULL_STATEMENT;
+    Statement clearAppendable = Statement.NULL_STATEMENT;
+    Expression appendable;
     FieldRef currentCalleeField = variables.getCurrentCalleeField();
+    // TODO(lukes): for CallBasicNodes, we could take advantage of the ShortCircuitable interface to
+    // statically remove directives based on the callee kind.  Note, we can't do this for
+    // CallDelegateNodes because there is no guarantee that we can tell what the kind is.
+    if (!areAllPrintDirectivesStreamable(node)) {
+      calleeExpression =
+          MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
+              calleeExpression, getEscapingDirectivesList(node));
+      appendable = appendableExpression;
+    } else {
+      appendable =
+          applyStreamingEscapingDirectives(
+              node.getEscapingDirectives(),
+              appendableExpression,
+              parameterLookup.getRenderContext());
+      FieldRef currentAppendable = variables.getCurrentAppendable();
+      initAppendable = currentAppendable.putInstanceField(thisVar, appendable);
+      appendable = currentAppendable.accessor(thisVar);
+      clearAppendable =
+          currentAppendable.putInstanceField(
+              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+    }
     Statement initCallee =
-        currentCalleeField.putInstanceField(thisVar, calleeExpression).labelStart(reattachPoint);
-
+        currentCalleeField
+            .putInstanceField(thisVar, calleeExpression)
+            .labelStart(parametersReattachPoint);
     Expression callRender =
         currentCalleeField
             .accessor(thisVar)
             .invoke(
-                MethodRef.COMPILED_TEMPLATE_RENDER,
-                appendableExpression,
-                parameterLookup.getRenderContext());
+                MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext());
     Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee =
         currentCalleeField.putInstanceField(
             thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));
-    return Statement.concat(initCallee, callCallee, clearCallee);
+    return Statement.concat(initAppendable, initCallee, callCallee, clearCallee, clearAppendable);
   }
 
   private Expression getEscapingDirectivesList(CallNode node) {
-    List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectives().size());
-    for (SoyPrintDirective directive : node.getEscapingDirectives()) {
+    ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectives();
+    List<Expression> directiveExprs = new ArrayList<>(escapingDirectives.size());
+    for (SoyPrintDirective directive : escapingDirectives) {
       directiveExprs.add(parameterLookup.getRenderContext().getPrintDirective(directive.getName()));
     }
-    return BytecodeUtils.asList(directiveExprs);
+    return BytecodeUtils.asImmutableList(directiveExprs);
   }
 
   private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {

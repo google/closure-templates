@@ -283,16 +283,16 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (assistantForMsgs == null) {
       assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle);
     }
-    if (!node.getEscapingDirectiveNames().isEmpty()) {
+    if (!node.getEscapingDirectives().isEmpty()) {
       // The entire message needs to be escaped, so we need to render to a temporary buffer.
       // Fortunately, for most messages (in HTML context) this is unnecessary.
       pushOutputBuf(new StringBuilder());
     }
     assistantForMsgs.visitForUseByMaster(node);
-    if (!node.getEscapingDirectiveNames().isEmpty()) {
+    if (!node.getEscapingDirectives().isEmpty()) {
       // Escape the entire message with the required directives.
       SoyValue wholeMsg = StringData.forValue(popOutputBuf().toString());
-      for (SoyPrintDirective directive : node.getEscapingDirectiveNames()) {
+      for (SoyPrintDirective directive : node.getEscapingDirectives()) {
         wholeMsg = applyDirective(directive, wholeMsg, ImmutableList.<SoyValue>of(), node);
       }
       append(currOutputBuf, wholeMsg.stringValue());

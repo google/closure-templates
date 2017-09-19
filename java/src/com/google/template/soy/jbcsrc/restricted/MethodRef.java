@@ -186,16 +186,8 @@ public abstract class MethodRef {
   public static final MethodRef RENDER_RESULT_LIMITED =
       create(RenderResult.class, "limited").asCheap().asNonNullable();
 
-  public static final MethodRef RUNTIME_APPLY_ESCAPERS_DYNAMIC =
-      create(JbcSrcRuntime.class, "applyEscapersDynamic", CompiledTemplate.class, List.class);
-
   public static final MethodRef RUNTIME_APPLY_ESCAPERS =
-      create(
-          JbcSrcRuntime.class,
-          "applyEscapers",
-          CompiledTemplate.class,
-          ContentKind.class,
-          List.class);
+      create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
 
   public static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
       create(

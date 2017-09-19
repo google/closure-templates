@@ -47,6 +47,42 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     return new DelegatingToAppendable<>(appendable);
   }
 
+  /**
+   * An implementation that only delegates {@link #append} calls {@link #enterSanitizedContent} and
+   * {@link #exitSanitizedContent}. This has the effect of coercing the content to a string by
+   * dropping all the strict content directives.
+   */
+  public static LoggingAdvisingAppendable stringCoercing(LoggingAdvisingAppendable delegate) {
+    return new ForwardingLoggingAdvisingAppendable(delegate) {
+      @Override
+      public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitSanitizedContent() {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitLoggableElement() {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+          LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+          throws IOException {
+        return append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      }
+    };
+  }
+
   // covariant overrides
 
   @Override
@@ -71,6 +107,14 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * content of the given kind that has already been sanitized.
    *
    * <p>The default implementation does nothing.
+   *
+   * <p>NOTE: if you are implementing a transforming appendable that applies some sort of escaping
+   * logic you probably do not want to propagate these calls to your delegate. Doing so can create
+   * confusion about which bit of code is responsible for performing escaping. For example, consider
+   * a sequence of calls like {@code enterSanitizedContent(HTML)... append(XXX) ....
+   * exitSanitizedContent()}, if the escaper is {@code |escapeHtml} then the underlying appendable
+   * already expects that will receive all html content and thus the enter/exit calls are
+   * meaningless.
    *
    * @param kind The kind of content that we are entering.
    * @throws IOException

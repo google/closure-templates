@@ -18,9 +18,11 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -84,10 +86,17 @@ final class TextDirective
     return value;
   }
 
+  private static final class JbcSrcMethods {
+    static final MethodRef stringCoercing =
+        MethodRef.create(
+                LoggingAdvisingAppendable.class, "stringCoercing", LoggingAdvisingAppendable.class)
+            .asNonNullable();
+  }
+
   @Override
   public Expression applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return delegateAppendable;
+    return JbcSrcMethods.stringCoercing.invoke(delegateAppendable);
   }
 
   @Override

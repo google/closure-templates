@@ -621,7 +621,6 @@ public final class Sanitizers {
 
       @Override
       public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
-        super.enterSanitizedContent(kind);
         int depth = contentDepth;
         if (kind == ContentKind.TEXT && !isInText()) {
           logger.log(
@@ -645,7 +644,7 @@ public final class Sanitizers {
           firstTextDepth = -1;
         }
         contentDepth = currentElementDepth;
-        return super.exitSanitizedContent();
+        return this;
       }
 
       @Override
