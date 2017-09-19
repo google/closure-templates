@@ -369,7 +369,7 @@ public class SoyConformanceTest {
         config, "{namespace ns stricthtml=\"true\"}\n" + "{template .foo}\n" + "{/template}");
     assertViolation(
         config, "{namespace ns stricthtml=\"false\"}\n" + "{template .foo}\n" + "{/template}");
-    assertViolation(config, "{namespace ns}\n" + "{template .foo}\n" + "{/template}");
+    assertNoViolation(config, "{namespace ns}\n" + "{template .foo}\n" + "{/template}");
     assertViolation(
         config,
         "{namespace ns stricthtml=\"true\"}\n"

@@ -10736,6 +10736,7 @@ goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
       message: message,
       fileName: url,
       line: line,
+      lineNumber: line,
       col: opt_col,
       error: opt_error
     });

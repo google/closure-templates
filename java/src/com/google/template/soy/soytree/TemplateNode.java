@@ -251,17 +251,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
     this.soyDoc = nodeBuilder.getSoyDoc();
     this.soyDocDesc = nodeBuilder.getSoyDocDesc();
-    if (nodeBuilder.getStrictHtmlMode() != TriState.UNSET) {
-      // use the value that is explicitly set in template.
-      this.strictHtml = nodeBuilder.getStrictHtmlMode() == TriState.ENABLED;
-    } else if (soyFileHeaderInfo.strictHtmlMode != TriState.UNSET
-        && contentKind == SanitizedContentKind.HTML) {
-      // If the value is not set, HTML templates will inherit from namespace declaration.
-      this.strictHtml = soyFileHeaderInfo.strictHtmlMode == TriState.ENABLED;
-    } else {
-      // Default value is false.
-      this.strictHtml = false;
-    }
+    this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlMode());
     // Split out @inject params into a separate list because we don't want them
     // to be visible to code that looks at the template's calling signature.
     ImmutableList.Builder<TemplateParam> regularParams = ImmutableList.builder();
@@ -341,6 +331,23 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** Returns the mode of autoescaping. */
   public AutoescapeMode getAutoescapeMode() {
     return autoescapeMode;
+  }
+
+  private boolean computeStrictHtmlMode(TriState templateStrictHtmlMode) {
+    if (templateStrictHtmlMode != TriState.UNSET) {
+      // Use the value that is explicitly set in template.
+      return templateStrictHtmlMode == TriState.ENABLED;
+    } else if (contentKind != SanitizedContentKind.HTML
+        || autoescapeMode != AutoescapeMode.STRICT) {
+      // Non-HTML or non-strict-autoescaping templates couldn't be strictHtml.
+      return false;
+    } else if (soyFileHeaderInfo.strictHtmlMode != TriState.UNSET) {
+      // If the value is not set, HTML templates will inherit from namespace declaration.
+      return soyFileHeaderInfo.strictHtmlMode == TriState.ENABLED;
+    } else {
+      // Strict autoescaping HTML templates have strictHtml enabled by default.
+      return true;
+    }
   }
 
   /** Returns if this template is in strict html mode. */
