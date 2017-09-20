@@ -32,19 +32,13 @@ import java.io.IOException;
 public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingAppendable {
   /**
    * The current number of calls to {@link #enterLoggableElement(LogStatement)} without a matching
-   * {@link #exitLoggableElement()}
+   * {@link #exitLoggableElement()}, after a call with the {@link LogStatement#logOnly()} bit set.
    */
-  private int logElementDepth;
-
-  /**
-   * The {@link #logElementDepth} of the first {@link LogStatement#logOnly()} loggable element that
-   * is currently active, or {@code -1} if there isn't one active.
-   */
-  private int firstLogonlyNode = -1;
+  private int logOnlyDepth;
 
   /** Subclasses can call this to detect if they are in the logOnly state. */
   private boolean isLogOnly() {
-    return firstLogonlyNode != -1;
+    return logOnlyDepth > 0;
   }
 
   // covariant overrides
@@ -87,30 +81,28 @@ public abstract class AbstractLoggingAdvisingAppendable extends LoggingAdvisingA
 
   @Override
   public final AbstractLoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-    int depth = logElementDepth;
-    if (statement.logOnly() && !isLogOnly()) {
-      firstLogonlyNode = depth;
+    int depth = logOnlyDepth;
+    if (depth > 0) {
+      depth++;
+      if (depth < 0) {
+        throw new IllegalStateException("overflowed logging depth");
+      }
+      logOnlyDepth = depth;
+    } else if (statement.logOnly()) {
+      depth = 1;
+      logOnlyDepth = 1;
     }
-    depth++;
-    if (depth < 0) {
-      throw new IllegalStateException("overflowed logging depth");
-    }
-    logElementDepth = depth;
     doEnterLoggableElement(statement);
     return this;
   }
 
   @Override
   public final AbstractLoggingAdvisingAppendable exitLoggableElement() {
-    int currentElementDepth = logElementDepth - 1;
-    if (currentElementDepth < 0) {
-      throw new IllegalStateException("log statements are unbalanced!");
+    int depth = logOnlyDepth;
+    if (depth > 0) {
+      depth--;
+      logOnlyDepth = depth;
     }
-    // This means that we are exiting the node that first enabled logonly mode
-    if (currentElementDepth == firstLogonlyNode) {
-      firstLogonlyNode = -1;
-    }
-    logElementDepth = currentElementDepth;
     doExitLoggableElement();
     return this;
   }

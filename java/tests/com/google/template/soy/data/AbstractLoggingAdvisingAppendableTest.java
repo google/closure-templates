@@ -16,7 +16,6 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.fail;
 
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
@@ -100,18 +99,6 @@ public final class AbstractLoggingAdvisingAppendableTest {
     }
     buffering.append("c");
     assertThat(buffering.toString()).isEqualTo("ac");
-  }
-
-  @Test
-  public void testUnbalanced() {
-    // test against the buffering version since it is a simple concrete implementation.
-    BufferingAppendable buffering = LoggingAdvisingAppendable.buffering();
-    try {
-      buffering.exitLoggableElement();
-      fail();
-    } catch (IllegalStateException ise) {
-      assertThat(ise).hasMessageThat().contains("unbalanced");
-    }
   }
 
   @Test

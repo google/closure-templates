@@ -140,21 +140,16 @@ public abstract class StreamingEscaper extends LoggingAdvisingAppendable {
   private static final class ContextSensitiveStreamingEscaper extends StreamingEscaper {
     @LazyInit private Appendable escapedDelegate;
     private final ContentKind noOpForKind;
-    /**
-     * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
-     * #exitSanitizedContent()}
-     */
-    private int contentDepth;
 
     /**
-     * The {@link #contentDepth} of the first content kind which matches our 'noOpForKind', or
-     * {@code -1} if there isn't one active.
+     * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
+     * #exitSanitizedContent()} after a call with a content kind that matches {@link #noOpForKind}.
      */
-    private int firstMatchingNode = -1;
+    private int noOpDepth;
 
     /** Subclasses can call this to detect if they are in the logOnly state. */
     private boolean isNoOp() {
-      return firstMatchingNode != -1;
+      return noOpDepth > 0;
     }
 
     private ContextSensitiveStreamingEscaper(
@@ -167,29 +162,27 @@ public abstract class StreamingEscaper extends LoggingAdvisingAppendable {
 
     @Override
     public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
-      int depth = contentDepth;
-      if (kind == noOpForKind && !isNoOp()) {
-        firstMatchingNode = depth;
+      int depth = noOpDepth;
+      if (depth > 0) {
+        depth++;
+        if (depth < 0) {
+          throw new IllegalStateException("overflowed content kind depth");
+        }
+        noOpDepth = depth;
+      } else if (kind == noOpForKind) {
+        depth = 1;
+        noOpDepth = 1;
       }
-      depth++;
-      if (depth < 0) {
-        throw new IllegalStateException("overflowed logging depth");
-      }
-      contentDepth = depth;
       return this;
     }
 
     @Override
     public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
-      int currentElementDepth = contentDepth - 1;
-      if (currentElementDepth < 0) {
-        throw new IllegalStateException("log statements are unbalanced!");
+      int depth = noOpDepth;
+      if (depth > 0) {
+        depth--;
+        noOpDepth = depth;
       }
-      // This means that we are exiting the node that first enabled logonly mode
-      if (currentElementDepth == firstMatchingNode) {
-        firstMatchingNode = -1;
-      }
-      contentDepth = currentElementDepth;
       return this;
     }
 

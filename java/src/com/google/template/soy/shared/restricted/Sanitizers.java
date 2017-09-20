@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -43,7 +44,6 @@ import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -605,45 +605,41 @@ public final class Sanitizers {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
       /**
        * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
-       * #exitSanitizedContent()}
+       * #exitSanitizedContent()} after a call that enters {@link ContentKind#TEXT}.
        */
-      private int contentDepth;
-
-      /**
-       * The {@link #contentDepth} of the first {@link ContentKind#TEXT} block that is currently
-       * active, or {@code -1} if there isn't one active.
-       */
-      private int firstTextDepth = -1;
+      private int textDepth;
 
       private boolean isInText() {
-        return firstTextDepth != -1;
+        return textDepth > 0;
       }
 
       @Override
       public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
-        int depth = contentDepth;
-        if (kind == ContentKind.TEXT && !isInText()) {
+        int depth = textDepth;
+        if (depth > 0) {
+          depth++;
+          if (depth < 0) {
+            throw new IllegalStateException("overflowed content kind depth");
+          }
+          textDepth = depth;
+        } else if (kind == ContentKind.TEXT) {
+          depth = 1;
           logger.log(
               Level.WARNING, "|noAutoescape received value explicitly tagged as ContentKind.TEXT");
           // append directly to the delegate.
           delegate.append(EscapingConventions.INNOCUOUS_OUTPUT);
-          firstTextDepth = depth;
+          textDepth = 1;
         }
-        contentDepth = depth + 1;
         return this;
       }
 
       @Override
       public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
-        int currentElementDepth = contentDepth - 1;
-        if (currentElementDepth < 0) {
-          throw new IllegalStateException("enter/exitSanitizedContent statements are unbalanced!");
+        int depth = textDepth;
+        if (depth > 0) {
+          depth--;
+          textDepth = depth;
         }
-        // This means that we are exiting the node that first entered textual content
-        if (currentElementDepth == firstTextDepth) {
-          firstTextDepth = -1;
-        }
-        contentDepth = currentElementDepth;
         return this;
       }
 
@@ -758,7 +754,7 @@ public final class Sanitizers {
           String tagName = matcher.group(1);
           if (tagName != null) {
             // Use locale so that <I> works when the default locale is Turkish
-            tagName = tagName.toLowerCase(Locale.ENGLISH);
+            tagName = Ascii.toLowerCase(tagName);
             if (safeTags.isSafeTag(tagName)) {
               boolean isClose = value.charAt(start + 1) == '/';
               if (isClose) {
@@ -800,14 +796,14 @@ public final class Sanitizers {
                   while (attributeMatcher.find()) {
                     String attributeName = attributeMatcher.group(1);
                     if (!Strings.isNullOrEmpty(attributeName)
-                        && attributeName.toLowerCase(Locale.ENGLISH).equals("dir")) {
+                        && Ascii.equalsIgnoreCase(attributeName, "dir")) {
                       String dir = attributeMatcher.group(2);
                       if (!Strings.isNullOrEmpty(dir)) {
                         // Strip quotes if the attribute value was quoted.
                         if (dir.charAt(0) == '\'' || dir.charAt(0) == '"') {
                           dir = dir.substring(1, dir.length() - 1);
                         }
-                        dir = dir.toLowerCase(Locale.ENGLISH);
+                        dir = Ascii.toLowerCase(dir);
                         if ("ltr".equals(dir) || "rtl".equals(dir) || "auto".equals(dir)) {
                           out.append(" dir=\"").append(dir).append("\"");
                         }
