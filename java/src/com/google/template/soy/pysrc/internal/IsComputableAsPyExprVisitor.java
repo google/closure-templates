@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 
 /**
  * Visitor to determine whether the output string for the subtree rooted at a given node is
@@ -53,13 +52,11 @@ import javax.inject.Inject;
  * extent that they remain correct.)
  *
  */
-@ApiCallScope
 class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The memoized results of past visits to nodes. */
   private final Map<SoyNode, Boolean> memoizedResults;
 
-  @Inject
   IsComputableAsPyExprVisitor() {
     memoizedResults = new HashMap<>();
   }

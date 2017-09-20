@@ -16,10 +16,12 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
@@ -115,10 +117,23 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     SharedTestUtils.simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
+    final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
+    // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
+    // here we resolve it with a mutable field in a custom provider
+    class PyCallExprVisitorSupplier implements Supplier<GenPyCallExprVisitor> {
+      GenPyExprsVisitorFactory factory;
+
+      @Override
+      public GenPyCallExprVisitor get() {
+        return new GenPyCallExprVisitor(isComputableAsPyExprs, checkNotNull(factory));
+      }
+    }
+    PyCallExprVisitorSupplier provider = new PyCallExprVisitorSupplier();
+    GenPyExprsVisitorFactory genPyExprsFactory =
+        new GenPyExprsVisitorFactory(isComputableAsPyExprs, provider);
+    provider.factory = genPyExprsFactory;
     GenPyExprsVisitor genPyExprsVisitor =
-        injector
-            .getInstance(GenPyExprsVisitorFactory.class)
-            .create(localVarExprs, ErrorReporter.exploding());
+        genPyExprsFactory.create(localVarExprs, ErrorReporter.exploding());
     List<PyExpr> actualPyExprs = genPyExprsVisitor.exec(node);
 
     assertThat(actualPyExprs).hasSize(expectedPyExprs.size());

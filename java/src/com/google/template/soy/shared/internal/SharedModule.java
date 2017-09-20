@@ -19,7 +19,6 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
@@ -32,8 +31,6 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.types.SoyTypeProvider;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Set;
 import javax.inject.Singleton;
 
@@ -73,9 +70,6 @@ public final class SharedModule extends AbstractModule {
     bind(BidiGlobalDir.class)
         .toProvider(GuiceSimpleScope.<BidiGlobalDir>getUnscopedProvider())
         .in(ApiCallScope.class);
-
-    Multibinder.newSetBinder(binder(), SoyTypeProvider.class);
-    bind(SoyTypeRegistry.class).in(Singleton.class);
 
     bind(SoyValueConverter.class).in(Singleton.class);
   }

@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -67,7 +66,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import javax.inject.Inject;
 
 /**
  * Visitor for generating full Python code (i.e. statements) for parse tree nodes.
@@ -92,7 +90,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
-  private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
+  @VisibleForTesting final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
   @VisibleForTesting protected GenPyExprsVisitor genPyExprsVisitor;
 
@@ -101,10 +99,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** @see LocalVariableStack */
   @VisibleForTesting protected LocalVariableStack localVarExprs;
 
-  @Inject
   GenPyCodeVisitor(
       SoyPySrcOptions pySrcOptions,
-      @PyCurrentManifest ImmutableMap<String, String> currentManifest,
+      ImmutableMap<String, String> currentManifest,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor) {
@@ -432,7 +429,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // If a Switch with only a default is provided (no case statements), just execute the inner
       // code directly.
       if (node.getChildren().size() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
-        visitChildren((SwitchDefaultNode) node.getChild(0));
+        visitChildren(node.getChild(0));
         return;
       }
 

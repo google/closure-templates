@@ -17,6 +17,7 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
@@ -44,8 +45,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Visitor for generating Python expressions for parse tree nodes.
@@ -53,19 +52,18 @@ import javax.inject.Provider;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
+public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   /** Injectable factory for creating an instance of this class. */
   public static final class GenPyExprsVisitorFactory {
     private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
-    // inject a provider since there is a circular dependency between GenPyExprsVisitorFactory and
-    // GenPyCallExprVisitor
-    private final Provider<GenPyCallExprVisitor> genPyCallExprVisitor;
+    // depend on a Supplier since there is a circular dependency between GenPyExprsVisitorFactory
+    // and GenPyCallExprVisitor
+    private final Supplier<GenPyCallExprVisitor> genPyCallExprVisitor;
 
-    @Inject
     GenPyExprsVisitorFactory(
         IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
-        Provider<GenPyCallExprVisitor> genPyCallExprVisitor) {
+        Supplier<GenPyCallExprVisitor> genPyCallExprVisitor) {
       this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
       this.genPyCallExprVisitor = genPyCallExprVisitor;
     }

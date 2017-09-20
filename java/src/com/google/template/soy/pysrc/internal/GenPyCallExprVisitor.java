@@ -42,7 +42,6 @@ import com.google.template.soy.soytree.Visibility;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Functions for generating Python code for template calls and their parameters.
@@ -57,7 +56,6 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
   private LocalVariableStack localVarStack;
   private ErrorReporter errorReporter;
 
-  @Inject
   GenPyCallExprVisitor(
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory) {

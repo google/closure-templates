@@ -16,26 +16,26 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.inject.Key;
-import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
+import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -43,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import javax.inject.Inject;
 
 /**
  * Main entry point for the Python Src backend (output target).
@@ -56,26 +55,14 @@ public final class PySrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** Provider for getting an instance of GenPyCodeVisitor. */
-  private final Provider<GenPyCodeVisitor> genPyCodeVisitorProvider;
-
-  /**
-   * @param apiCallScope The scope object that manages the API call scope.
-   * @param genPyCodeVisitorProvider Provider for getting an instance of GenPyCodeVisitor.
-   */
-  @Inject
-  public PySrcMain(
-      @ApiCall GuiceSimpleScope apiCallScope,
-      Provider<GenPyCodeVisitor> genPyCodeVisitorProvider) {
+  public PySrcMain(GuiceSimpleScope apiCallScope) {
     this.apiCallScope = apiCallScope;
-    this.genPyCodeVisitorProvider = genPyCodeVisitorProvider;
   }
 
   /**
    * Generates Python source code given a Soy parse tree and an options object.
    *
    * @param soyTree The Soy parse tree to generate Python source code for.
-   * @param templateRegistry The template registry that contains all the template information.
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param currentManifest The namespace manifest for current sources.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
@@ -86,21 +73,16 @@ public final class PySrcMain {
    */
   public List<String> genPySrc(
       SoyFileSetNode soyTree,
-      TemplateRegistry templateRegistry,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
       ErrorReporter errorReporter) {
 
     try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
-      // Seed the scoped parameters.
-      inScope.seed(SoyPySrcOptions.class, pySrcOptions);
-      inScope.seed(
-          new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {}, currentManifest);
-
+      // Seed the scoped parameters, for plugins
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
       ApiCallScopeUtils.seedSharedParams(inScope, null, bidiGlobalDir);
-      return genPyCodeVisitorProvider.get().gen(soyTree, errorReporter);
+      return createVisitor(pySrcOptions, currentManifest).gen(soyTree, errorReporter);
     }
   }
 
@@ -109,7 +91,6 @@ public final class PySrcMain {
    * where to put the output files.
    *
    * @param soyTree The Soy parse tree to generate Python source code for.
-   * @param templateRegistry The template registry that contains all the template information.
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
@@ -120,7 +101,6 @@ public final class PySrcMain {
    */
   public void genPyFiles(
       SoyFileSetNode soyTree,
-      TemplateRegistry templateRegistry,
       SoyPySrcOptions pySrcOptions,
       String outputPathFormat,
       String inputPathsPrefix,
@@ -141,8 +121,7 @@ public final class PySrcMain {
     ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs);
 
     // Generate the Python source.
-    List<String> pyFileContents =
-        genPySrc(soyTree, templateRegistry, pySrcOptions, manifest, errorReporter);
+    List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest, errorReporter);
 
     if (srcsToCompile.size() != pyFileContents.size()) {
       throw new AssertionError(
@@ -197,5 +176,28 @@ public final class PySrcMain {
       namespaces.add(soyFile.getNamespace());
     }
     return namespaces;
+  }
+
+  @VisibleForTesting
+  static GenPyCodeVisitor createVisitor(
+      SoyPySrcOptions pySrcOptions, ImmutableMap<String, String> currentManifest) {
+    final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
+    // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
+    // here we resolve it with a mutable field in a custom provider
+    class PyCallExprVisitorSupplier implements Supplier<GenPyCallExprVisitor> {
+      GenPyExprsVisitorFactory factory;
+
+      @Override
+      public GenPyCallExprVisitor get() {
+        return new GenPyCallExprVisitor(isComputableAsPyExprs, checkNotNull(factory));
+      }
+    }
+    PyCallExprVisitorSupplier provider = new PyCallExprVisitorSupplier();
+    GenPyExprsVisitorFactory genPyExprsFactory =
+        new GenPyExprsVisitorFactory(isComputableAsPyExprs, provider);
+    provider.factory = genPyExprsFactory;
+
+    return new GenPyCodeVisitor(
+        pySrcOptions, currentManifest, isComputableAsPyExprs, genPyExprsFactory, provider.get());
   }
 }

@@ -25,7 +25,6 @@ import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
-import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -47,7 +46,6 @@ public final class SoyModule extends AbstractModule {
 
     // Install requisite modules.
     install(new JsSrcModule());
-    install(new PySrcModule());
     install(new IncrementalDomSrcModule());
 
     install(new SharedModule());

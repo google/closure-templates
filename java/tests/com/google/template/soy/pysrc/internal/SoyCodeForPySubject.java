@@ -32,8 +32,6 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -152,24 +150,11 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private GuiceSimpleScope.InScope enterScope() {
-    // Setup default configs.
-    SoyPySrcOptions pySrcOptions =
-        new SoyPySrcOptions(
-            RUNTIME_PATH,
-            environmentModulePath,
-            bidiIsRtlFn,
-            translationClass,
-            namespaceManifest,
-            false);
     GuiceSimpleScope apiCallScope1 =
         injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
 
     GuiceSimpleScope.InScope scope = apiCallScope1.enter();
     ApiCallScopeUtils.seedSharedParams(scope, null, BidiGlobalDir.LTR);
-    scope.seed(SoyPySrcOptions.class, pySrcOptions);
-    scope.seed(
-        new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {},
-        ImmutableMap.<String, String>of());
     return scope;
   }
 
@@ -177,7 +162,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
     try (GuiceSimpleScope.InScope inScope = enterScope()) {
       List<String> fileContents =
-          injector.getInstance(GenPyCodeVisitor.class).gen(node, ErrorReporter.exploding());
+          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of())
+              .gen(node, ErrorReporter.exploding());
       return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
     }
   }
@@ -193,16 +179,16 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     try (GuiceSimpleScope.InScope inScope = enterScope()) {
-      GenPyCodeVisitor genPyCodeVisitor = injector.getInstance(GenPyCodeVisitor.class);
+      GenPyCodeVisitor genPyCodeVisitor =
+          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of());
       genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
       genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
       genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
       genPyCodeVisitor.localVarExprs = new LocalVariableStack();
       genPyCodeVisitor.localVarExprs.pushFrame();
       genPyCodeVisitor.genPyExprsVisitor =
-          injector
-              .getInstance(GenPyExprsVisitorFactory.class)
-              .create(genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
+          genPyCodeVisitor.genPyExprsVisitorFactory.create(
+              genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
 
       genPyCodeVisitor.visitForTesting(node, ErrorReporter.exploding());
 
@@ -210,6 +196,16 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
+  private SoyPySrcOptions defaultOptions() {
+    // Setup default configs.
+    return new SoyPySrcOptions(
+        RUNTIME_PATH,
+        environmentModulePath,
+        bidiIsRtlFn,
+        translationClass,
+        namespaceManifest,
+        false);
+  }
   //-----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyCodeForPySubject test.
 
