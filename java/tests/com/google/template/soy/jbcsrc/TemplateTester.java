@@ -247,7 +247,7 @@ public final class TemplateTester {
       compile();
       try {
         factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
-        failureStrategy.fail(
+        failWithRawMessage(
             String.format(
                 "Expected %s to fail to render with a %s, but it rendered '%s'",
                 actual(), expected, ""));
@@ -276,7 +276,8 @@ public final class TemplateTester {
       try (SystemOutRestorer restorer = logOutput.enter()) {
         result = template.render(builder, context);
       } catch (Throwable e) {
-        failureStrategy.fail(String.format("Unexpected failure for %s", getDisplaySubject()), e);
+        failWithRawMessageAndCause(
+            String.format("Unexpected failure for %s", getDisplaySubject()), e);
         result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
