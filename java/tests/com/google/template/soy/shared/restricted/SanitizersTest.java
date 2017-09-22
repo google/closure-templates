@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -837,11 +838,20 @@ public class SanitizersTest {
     assertEquals("a[foo]>b", Sanitizers.embedCssIntoHtml("a[foo]>b"));
     assertEquals("/* <\\/style> */", Sanitizers.embedCssIntoHtml("/* </style> */"));
     assertEquals(
+        Strings.repeat("/* <\\/style> */", 100),
+        Sanitizers.embedCssIntoHtml(Strings.repeat("/* </style> */", 100)));
+    assertEquals(
         "content: '<\\/STYLE >'", // Semantically equivalent
         Sanitizers.embedCssIntoHtml("content: '</STYLE >'"));
     assertEquals(
         "background: url(<\\/style/>)", // Semantically equivalent
         Sanitizers.embedCssIntoHtml("background: url(</style/>)"));
+
+    // boundary conditions, replacements at the beginning and end of the string.
+    assertEquals("]]\\>", Sanitizers.embedCssIntoHtml("]]>"));
+    assertEquals("]]\\>]]\\>]]\\>", Sanitizers.embedCssIntoHtml("]]>]]>]]>"));
+    assertEquals("<\\/", Sanitizers.embedCssIntoHtml("</"));
+    assertEquals("<\\/<\\/<\\/", Sanitizers.embedCssIntoHtml("</</</"));
   }
   
 }

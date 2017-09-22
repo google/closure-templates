@@ -22,11 +22,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
+import com.google.common.primitives.Chars;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -922,14 +922,6 @@ public final class Sanitizers {
   private static final Escaper URI_ESCAPER_NO_PLUS =
       new PercentEscaper(SAFECHARS_URLENCODER, false);
 
-  private static final Pattern HTML_RAW_CONTENT_HAZARD_RE =
-      Pattern.compile(Pattern.quote("</") + "|" + Pattern.quote("]]>"));
-
-  private static final ImmutableMap<String, String> HTML_RAW_CONTENT_HAZARD_REPLACEMENT =
-      ImmutableMap.of(
-          "</", "<\\/",
-          "]]>", "]]\\>");
-
   /**
    * Make sure that tag boundaries are not broken by Safe CSS when embedded in a {@code <style>}
    * element.
@@ -954,17 +946,88 @@ public final class Sanitizers {
     // but the substring "]]>" cannot.
 
     // This should not affect how a CSS parser recovers from syntax errors.
-    Matcher m = HTML_RAW_CONTENT_HAZARD_RE.matcher(css);
-    if (!m.find()) {
-      return css;
+    int indexOfEndTag = css.indexOf("</");
+    int indexOfEndCData = css.indexOf("]]>");
+    if (indexOfEndTag != -1) {
+      if (indexOfEndCData != -1) {
+        return embedCssIntoHtmlSlow(
+            css,
+            Math.min(indexOfEndTag, indexOfEndCData),
+            /* searchForEndCData= */ true,
+            /* searchForEndTag= */ true);
+      }
+      return embedCssIntoHtmlSlow(
+          css, indexOfEndTag, /* searchForEndCData= */ false, /* searchForEndTag= */ true);
+    } else if (indexOfEndCData != -1) {
+      return embedCssIntoHtmlSlow(
+          css, indexOfEndCData, /* searchForEndCData= */ true, /* searchForEndTag= */ false);
     }
-    StringBuffer sb = new StringBuffer(css.length() + 16);
+    return css;
+  }
+
+  /**
+   * Called when we know we need to make a replacement.
+   *
+   * <p>At least one of {@code searchForEndCData} or {@code searchForEndTag} will be {@code true}.
+   *
+   * @param css The css string to modify
+   * @param nextReplacement The location of the first replacement
+   * @param searchForEndCData Whether there are any sequences of {@code ]]>}
+   * @param searchForEndTag Whether there are any sequences of {@code </}
+   * @return The modified string.
+   */
+  private static String embedCssIntoHtmlSlow(
+      String css, int nextReplacement, boolean searchForEndCData, boolean searchForEndTag) {
+    // use an array instead of a stringbuilder so we can take advantage of the bulk copying
+    // routine (String.getChars).  For some reason StringBuilder doesn't do this.
+    char[] buf = new char[css.length() + 16];
+    int endOfPreviousReplacement = 0;
+    int bufIndex = 0;
     do {
-      m.appendReplacement(sb, "");
-      sb.append(HTML_RAW_CONTENT_HAZARD_REPLACEMENT.get(m.group()));
-    } while (m.find());
-    m.appendTail(sb);
-    return sb.toString();
+      int charsToCopy = nextReplacement - endOfPreviousReplacement;
+      buf = Chars.ensureCapacity(buf, bufIndex + charsToCopy + 4, 16);
+      css.getChars(endOfPreviousReplacement, nextReplacement, buf, bufIndex);
+      bufIndex += charsToCopy;
+      char c = css.charAt(nextReplacement);
+      if (c == ']') {
+        buf[bufIndex++] = ']';
+        buf[bufIndex++] = ']';
+        buf[bufIndex++] = '\\';
+        buf[bufIndex++] = '>';
+        endOfPreviousReplacement = nextReplacement + 3;
+      } else if (c == '<') {
+        buf[bufIndex++] = '<';
+        buf[bufIndex++] = '\\';
+        buf[bufIndex++] = '/';
+        endOfPreviousReplacement = nextReplacement + 2;
+      } else {
+        throw new AssertionError();
+      }
+      nextReplacement = -1;
+      if (searchForEndTag) {
+        int indexOfEndTag = css.indexOf("</", endOfPreviousReplacement);
+        if (indexOfEndTag == -1) {
+          searchForEndTag = false;
+        } else {
+          nextReplacement = indexOfEndTag;
+        }
+      }
+      if (searchForEndCData) {
+        int indexOfEndCData = css.indexOf("]]>", endOfPreviousReplacement);
+        if (indexOfEndCData == -1) {
+          searchForEndCData = false;
+        } else {
+          nextReplacement =
+              nextReplacement == -1 ? indexOfEndCData : Math.min(nextReplacement, indexOfEndCData);
+        }
+      }
+    } while (nextReplacement != -1);
+    // copy tail
+    int charsToCopy = css.length() - endOfPreviousReplacement;
+    buf = Chars.ensureCapacity(buf, bufIndex + charsToCopy, 16);
+    css.getChars(endOfPreviousReplacement, css.length(), buf, bufIndex);
+    bufIndex += charsToCopy;
+    return new String(buf, 0, bufIndex);
   }
 
   /** A helper to normalize null->NullData. This allows tofu and jbcsrc compatibility. */

@@ -109,9 +109,7 @@ public final class SharedModuleTest {
             "|insertWordBreaks",
             "|truncate",
             "|escapeHtmlRcdata",
-            // TODO(b/18260376): this one should be fixable since it is just doing % encoding, but
-            // the current strategy relies on a guava class that doesn't support streaming.  May
-            // require completely reimplementing it :/
+            // This isn't worth doing.  uris should all be small.
             "|escapeUri",
             // These can't be made streaming because it would require a complex state machine or
             // they require knowing the full content to work.  For example all the filters, which
