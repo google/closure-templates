@@ -226,6 +226,40 @@ public final class HtmlRewritePassTest {
                 + "HTML_CLOSE_TAG_NODE\n"
                 + "  RAW_TEXT_NODE\n"
                 + "");
+
+    node = runPass("{let $t : 'x' /}<div {$t}={$t}>content</div>");
+    assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div {$t}={$t}>content</div>");
+    assertThatASTString(node)
+        .isEqualTo(
+            ""
+                + "LET_VALUE_NODE\n"
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    PRINT_NODE\n"
+                + "    HTML_ATTRIBUTE_VALUE_NODE\n"
+                + "      PRINT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+
+    node =
+        runPass(
+            "<div {call .name /}=x>content</div>{/template}" + "{template .name kind=\"text\"}foo");
+    assertThatASTString(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    CALL_BASIC_NODE\n"
+                + "    HTML_ATTRIBUTE_VALUE_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
   }
 
   @Test

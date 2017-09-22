@@ -128,7 +128,7 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     // In traditional JS codegen, we will not infer a meaningful ContentKind (other than text).  But
     // that does not matter, since ContextAutoesc has already added appropriate escaping directives.
     // At this point, ContentKind only matters for idom, which uses it to figure out how to emit the
-    // output (as itext, as parsed HTML or as attribute parameters).
+    // output (as text, as parsed HTML or as attribute parameters).
     LetContentNode letNode =
         LetContentNode.forVariable(
             nodeIdGen.genId(), msgFbGrpNode.getSourceLocation(), varName, kind);

@@ -16,13 +16,14 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Strings;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basicfunctions.VeLogFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -33,10 +34,11 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -44,15 +46,23 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
+import javax.annotation.Nullable;
 
-/** Instruments {velog} commands and adds necessary data attribute to the top-level DOM node. */
+/**
+ * Instruments {velog} commands and adds necessary data attributes to the top-level DOM node and
+ * tags with logging functions.
+ */
 final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   private final TemplateRegistry templateRegistry;
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
+
+  /** This counter is used for creating unique data attribute names for logging functions. */
+  private int counter;
 
   private static final String LOGGING_METADATA = "$$loggingMetaData";
   private static final InjectedParam LOGGING_METADATA_IJ = new InjectedParam(LOGGING_METADATA);
@@ -70,6 +80,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     new DesugarHtmlNodesPass().run(node, templateRegistry);
   }
 
+  /** Adds data-soylog attribute to the top-level DOM node in this {velog} block. */
   @Override
   protected void visitVeLogNode(VeLogNode node) {
     // VeLogValidationPass enforces that the first child is a open tag. We can safely cast it here.
@@ -97,17 +108,44 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             insertionLocation,
             /* isImplicit= */ true,
             /* expr= */ funcNode,
-            /* phname */ null,
+            /* phname= */ null,
             ErrorReporter.exploding());
     HtmlAttributeNode dataAttributeNode =
-        createHtmlAttribute("soylog", attributeValue, nodeIdGen, insertionLocation);
+        createHtmlAttribute("soylog", null, attributeValue, nodeIdGen, insertionLocation);
     ifCondNode.addChild(dataAttributeNode);
     tag.addChild(ifNode);
     visitChildren(node);
   }
 
   @Override
-  protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+  protected void visitTemplateNode(TemplateNode node) {
+    // Resets the counter whenever we visit a template node.
+    counter = 0;
+    // Allows the children to insert the nodes as its siblings.
+    visitChildrenAllowingConcurrentModification(node);
+  }
+
+  @Override
+  protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+    // Stores the original counter that might be useful for nested tags.
+    int oldCounter = counter;
+    counter = 0;
+    // Allows the children to insert the nodes as its siblings.
+    visitChildrenAllowingConcurrentModification(node);
+    counter = oldCounter;
+  }
+
+  /**
+   * For HtmlAttributeNode that has a logging function as its value, replace the logging function
+   * with its place holder, and append a new data attribute that contains all the desired
+   * information that are used later by the runtime library.
+   */
+  @Override
+  protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
+    // Skip attributes that do not have a value.
+    if (!node.hasValue()) {
+      return;
+    }
     SourceLocation insertionLocation = node.getSourceLocation();
     for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
       if (!(function.getSoyFunction() instanceof LoggingFunction)) {
@@ -115,17 +153,70 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
       IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
-      // TODO(user): The value should be the logging function.
-      ifCondNode.addChild(new RawTextNode(nodeIdGen.genId(), "foo", insertionLocation));
-      IfElseNode ifElseNode = new IfElseNode(nodeIdGen.genId(), insertionLocation);
-      ifElseNode.addChild(
+      FunctionNode funcNode =
+          new FunctionNode(VeLogJsSrcLoggingFunction.INSTANCE, insertionLocation);
+      funcNode.addChild(new StringNode(function.getFunctionName(), insertionLocation));
+      funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));
+      StandaloneNode attributeName = node.getChild(0);
+      if (attributeName instanceof RawTextNode) {
+        // If attribute name is a plain text, directly pass it as a function argument.
+        funcNode.addChild(
+            new StringNode(((RawTextNode) attributeName).getRawText(), insertionLocation));
+      } else {
+        // Otherwise wrap the print node or call node into a let block, and use the let variable
+        // as a function argument.
+        String varName = "soy_logging_function_attribute_" + counter;
+        LetContentNode letNode =
+            LetContentNode.forVariable(
+                nodeIdGen.genId(), attributeName.getSourceLocation(), varName, null);
+        // Adds a let var which references to the original attribute name, and move the name to
+        // the let block.
+        node.replaceChild(
+            attributeName,
+            new PrintNode(
+                nodeIdGen.genId(),
+                insertionLocation,
+                /* isImplicit= */ true,
+                /* expr= */ new VarRefNode(varName, insertionLocation, false, letNode.getVar()),
+                /* phname= */ null,
+                ErrorReporter.exploding()));
+        letNode.addChild(attributeName);
+        node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
+        funcNode.addChild(new VarRefNode(varName, insertionLocation, false, letNode.getVar()));
+      }
+      HtmlAttributeNode loggingFunctionAttribute =
+          createHtmlAttribute(
+              "soyloggingfunction-",
+              Integer.toString(counter++),
+              new PrintNode(
+                  nodeIdGen.genId(),
+                  insertionLocation,
+                  /* isImplicit= */ true,
+                  /* expr= */ funcNode,
+                  /* phname= */ null,
+                  ErrorReporter.exploding()),
+              nodeIdGen,
+              insertionLocation);
+      ifCondNode.addChild(loggingFunctionAttribute);
+      ifNode.addChild(ifCondNode);
+      // Append the if node at the end of the current tag.
+      HtmlOpenTagNode openTag = node.getNearestAncestor(HtmlOpenTagNode.class);
+      if (openTag != null) {
+        openTag.addChild(ifNode);
+      } else {
+        // If we cannot find a HTML open tag, we must be in a template with kind="attributes".
+        // In this case, append the if condition to the end of this template.
+        node.getNearestAncestor(TemplateNode.class).addChild(ifNode);
+      }
+      // Replace the original attribute value to the placeholder.
+      HtmlAttributeValueNode placeHolder =
+          new HtmlAttributeValueNode(nodeIdGen.genId(), insertionLocation, Quotes.DOUBLE);
+      placeHolder.addChild(
           new RawTextNode(
               nodeIdGen.genId(),
               ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
               insertionLocation));
-      ifNode.addChild(ifCondNode);
-      ifNode.addChild(ifElseNode);
-      node.replaceChild(0, ifNode);
+      node.replaceChild(node.getChild(1), placeHolder);
       // We can break here since VeLogValidationPass guarantees that there is exactly one
       // logging function in a html attribute value.
       break;
@@ -135,6 +226,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private HtmlAttributeNode createHtmlAttribute(
       String attributeName,
+      @Nullable String attributeSuffix,
       StandaloneNode attributeValue,
       IdGenerator nodeIdGen,
       SourceLocation insertionLocation) {
@@ -145,7 +237,14 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     plusOp.addChild(new StringNode("data-", insertionLocation));
     FunctionNode xidFunction = new FunctionNode(BuiltinFunction.XID, insertionLocation);
     xidFunction.addChild(new StringNode(attributeName, insertionLocation));
-    plusOp.addChild(xidFunction);
+    if (Strings.isNullOrEmpty(attributeSuffix)) {
+      plusOp.addChild(xidFunction);
+    } else {
+      PlusOpNode plusOpSuffix = new PlusOpNode(insertionLocation);
+      plusOpSuffix.addChild(xidFunction);
+      plusOpSuffix.addChild(new StringNode(attributeSuffix, insertionLocation));
+      plusOp.addChild(plusOpSuffix);
+    }
     PrintNode attributeNameNode =
         new PrintNode(
             nodeIdGen.genId(),

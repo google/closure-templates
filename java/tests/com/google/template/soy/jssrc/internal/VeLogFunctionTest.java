@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.basicfunctions;
+package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 

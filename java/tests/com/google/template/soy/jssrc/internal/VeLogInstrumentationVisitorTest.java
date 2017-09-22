@@ -156,16 +156,146 @@ public final class VeLogInstrumentationVisitorTest {
   }
 
   @Test
-  public void testLoggingFunction() throws Exception {
+  public void testLoggingFunctionSimple() throws Exception {
     assertThatSourceString(
             runPass("{velog Bar}<div><span data-ved={currentVed()}></span></div>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
                 + "<div{if $ij.$$loggingMetaData}"
                 + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
-                + "<span data-ved={if $ij.$$loggingMetaData}foo{else}placeholder{/if}></span>"
+                + "<span data-ved=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [], 'data-ved')}"
+                + "{/if}></span>"
                 + "</div>"
                 + "{/velog}");
+    assertThatSourceString(
+            runPass("{velog Bar}<div><span data-ved={currentVed(1)}></span></div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
+                + "<span data-ved=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [1], 'data-ved')}"
+                + "{/if}></span>"
+                + "</div>"
+                + "{/velog}");
+  }
+
+  @Test
+  public void testLoggingFunctionsInsertingLetBlocks() {
+    // Test for using print node as attribute name.
+    assertThatSourceString(
+            runPass(
+                "{let $foo : 'data-ved' /}"
+                    + "{velog Bar}<div><span {$foo}={currentVed()}></span></div>{/velog}"))
+        .isEqualTo(
+            "{let $foo : 'data-ved' /}{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
+                + "<span"
+                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_0}=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0)}"
+                + "{/if}></span>"
+                + "</div>"
+                + "{/velog}");
+    // Test for multiple logging functions.
+    assertThatSourceString(
+            runPass(
+                "{@param foo: string}{@param bar: string}"
+                    + "{velog Bar}<div>"
+                    + "<span {$foo}={currentVed()} {$bar}={currentVed(1)}></span>"
+                    + "</div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
+                + "<span"
+                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_0}=\"placeholder\""
+                + "{let $soy_logging_function_attribute_1}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_1}=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0)}"
+                + "{/if}"
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '1')}="
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_1)}"
+                + "{/if}>"
+                + "</span>"
+                + "</div>"
+                + "{/velog}");
+    // Test that counters work fine for nested tags.
+    assertThatSourceString(
+            runPass(
+                "{@param foo: string}{@param bar: string}"
+                    + "{velog Bar}<div>"
+                    + "<span "
+                    + "{$foo}={currentVed()} "
+                    + "{let $baz kind=\"html\"}<input>{/let} "
+                    + "{$bar}={currentVed(1)}"
+                    + "></span>"
+                    + "</div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
+                + "<span"
+                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_0}=\"placeholder\""
+                + "{let $baz kind=\"html\"}<input>{/let}"
+                + "{let $soy_logging_function_attribute_1}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_1}=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0)}"
+                + "{/if}"
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '1')}="
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_1)}"
+                + "{/if}>"
+                + "</span>"
+                + "</div>"
+                + "{/velog}");
+    // Test for calling another template.
+    SoyFileSetNode node =
+        runPass(
+            "{velog Bar}<div>"
+                + "<span {call .attr}{param foo : 'data-ved' /}{/call}></span>"
+                + "</div>{/velog}"
+                + "{/template}"
+                + ""
+                + "{template .attr kind=\"attributes\"}"
+                + "{@param foo : string}"
+                + "{$foo}={currentVed()}");
+    StringBuilder sb = new StringBuilder();
+    node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
+    assertThat(sb.toString())
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
+                + "<span {call .attr}{param foo : 'data-ved' /}{/call}>"
+                + "</span>"
+                + "</div>"
+                + "{/velog}");
+    sb = new StringBuilder();
+    node.getChild(0).getChild(1).appendSourceStringForChildren(sb);
+    assertThat(sb.toString())
+        .isEqualTo(
+            "{let $soy_logging_function_attribute_0}{$foo}{/let}"
+                + "{$soy_logging_function_attribute_0}=\"placeholder\""
+                + "{if $ij.$$loggingMetaData} "
+                + "{'data-' + (xid('soyloggingfunction-') + '0')}="
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0)}"
+                + "{/if}");
   }
 
   private static final class TestLoggingFunction implements LoggingFunction {
@@ -176,7 +306,7 @@ public final class VeLogInstrumentationVisitorTest {
 
     @Override
     public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0);
+      return ImmutableSet.of(0, 1);
     }
 
     @Override

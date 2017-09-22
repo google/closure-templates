@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.basicfunctions;
+package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -28,15 +28,14 @@ import java.util.Set;
  * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists for
  * client-side VE logging, and should not be used by Soy users.
  */
-public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
-
+public final class VeLogJsSrcLoggingFunction implements SoyLibraryAssistedJsSrcFunction {
   // $$ prefix ensures that the function cannot be used directly
-  public static final String NAME = "$$velog";
+  public static final String NAME = "$$loggingFunction";
 
-  public static final VeLogFunction INSTANCE = new VeLogFunction();
+  public static final VeLogJsSrcLoggingFunction INSTANCE = new VeLogJsSrcLoggingFunction();
 
   // Do not @Inject; should not be used externally.
-  private VeLogFunction() {}
+  private VeLogJsSrcLoggingFunction() {}
 
   @Override
   public String getName() {
@@ -45,22 +44,23 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2, 3);
+    return ImmutableSet.of(2);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
         String.format(
-            "soy.velog.$$log('%1$s', %2$s, %3$s, opt_ijData.$$loggingMetadata)",
+            "soy.velog.$$registerLoggingFunction(xid('%1$s'), %2$s, %3$s, %4$s)",
             args.get(0).getText(),
             args.get(1).getText(),
-            args.size() > 2 ? args.get(2).getText() : "false"),
+            args.get(2).getText(),
+            "opt_ijData.$$loggingMetadata"),
         Integer.MAX_VALUE);
   }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy.velog");
+    return ImmutableSet.of("soy.velog", "xid");
   }
 }
