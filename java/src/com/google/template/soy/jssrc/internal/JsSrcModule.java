@@ -34,7 +34,6 @@ public class JsSrcModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     bind(JsSrcMain.class);
     bind(GenJsCodeVisitor.class);
-    bind(OptimizeBidiCodeGenVisitor.class);
     bind(CanInitOutputVarVisitor.class);
     bind(IsComputableAsJsExprsVisitor.class);
     bind(JsExprTranslator.class);

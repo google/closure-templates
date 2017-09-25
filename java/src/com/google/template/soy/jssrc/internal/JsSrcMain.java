@@ -57,25 +57,19 @@ public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
-  private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenJsCodeVisitor> genJsCodeVisitorProvider;
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
-   *     OptimizeBidiCodeGenVisitor.
    * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
    */
   @Inject
   public JsSrcMain(
       @ApiCall GuiceSimpleScope apiCallScope,
-      Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
       Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
-    this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
   }
 
@@ -133,7 +127,6 @@ public class JsSrcMain {
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
       // Do the code generation.
-      optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
       return genJsCodeVisitorProvider.get().gen(soyTree, templateRegistry, errorReporter);
     }
   }

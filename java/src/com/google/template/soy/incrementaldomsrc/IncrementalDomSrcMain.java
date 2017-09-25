@@ -27,7 +27,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.OptimizeBidiCodeGenVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -54,26 +53,20 @@ public class IncrementalDomSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
-  private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider;
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
-   *     OptimizeBidiCodeGenVisitor.
    * @param genIncrementalDomCodeVisitorProvider Provider for getting an instance of
    *     GenIncrementalDomCodeVisitor.
    */
   @Inject
   public IncrementalDomSrcMain(
       @ApiCall GuiceSimpleScope apiCallScope,
-      Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
       Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
-    this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genIncrementalDomCodeVisitorProvider = genIncrementalDomCodeVisitorProvider;
   }
 
@@ -106,8 +99,6 @@ public class IncrementalDomSrcMain {
       ApiCallScopeUtils.seedSharedParams(inScope, null /* msgBundle */, bidiGlobalDir);
 
       // Do the code generation.
-
-      optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
 
       new HtmlContextVisitor(errorReporter).exec(soyTree);
       // If any errors are reported in {@code HtmlContextVisitor}, we should not continue.
