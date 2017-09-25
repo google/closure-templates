@@ -22,7 +22,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
-import javax.inject.Inject;
 
 /**
  * Translator of Soy expressions to their equivalent JS expressions.
@@ -36,8 +35,7 @@ public final class JsExprTranslator {
 
   private final TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory;
 
-  @Inject
-  JsExprTranslator(TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory) {
+  public JsExprTranslator(TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory) {
     this.translateExprNodeVisitorFactory = translateExprNodeVisitorFactory;
   }
 

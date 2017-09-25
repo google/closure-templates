@@ -46,7 +46,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -219,15 +218,11 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     @Override
     void generateCode() {
       ParseResult parseResult = super.parse();
-      try (GuiceSimpleScope.InScope inScope =
-          JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions)) {
         this.fileNode = parseResult.fileSet().getChild(0);
-        this.file =
-            INJECTOR
-                .getInstance(GenJsCodeVisitor.class)
-                .gen(parseResult.fileSet(), parseResult.registry(), errorReporter)
-                .get(0);
-      }
+      this.file =
+          JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class))
+              .gen(parseResult.fileSet(), parseResult.registry(), errorReporter)
+              .get(0);
     }
 
     StringSubject generatesTemplateThat() {

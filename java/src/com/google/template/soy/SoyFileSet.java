@@ -128,8 +128,6 @@ public final class SoyFileSet {
   static final class CoreDependencies {
     private final SoyValueConverter soyValueConverter;
     private final GuiceSimpleScope apiCallScope;
-    private final Provider<JsSrcMain> jsSrcMainProvider;
-    private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
@@ -139,16 +137,12 @@ public final class SoyFileSet {
     CoreDependencies(
         SoyValueConverter soyValueConverter,
         @ApiCall GuiceSimpleScope apiCallScope,
-        Provider<JsSrcMain> jsSrcMainProvider,
-        Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
         Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
       this.soyValueConverter = soyValueConverter;
       this.apiCallScope = apiCallScope;
-      this.jsSrcMainProvider = jsSrcMainProvider;
-      this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
@@ -238,8 +232,6 @@ public final class SoyFileSet {
       return new SoyFileSet(
           coreDependencies.apiCallScope,
           coreDependencies.soyValueConverter,
-          coreDependencies.jsSrcMainProvider,
-          coreDependencies.incrementalDomSrcMainProvider,
           localTypeRegistry == null ? coreDependencies.typeRegistry : localTypeRegistry,
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
@@ -631,9 +623,6 @@ public final class SoyFileSet {
   private final GuiceSimpleScope apiCallScopeProvider;
   private final SoyValueConverter soyValueConverter;
 
-  private final Provider<JsSrcMain> jsSrcMainProvider;
-  private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
-
   private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
 
@@ -659,8 +648,6 @@ public final class SoyFileSet {
   SoyFileSet(
       GuiceSimpleScope apiCallScopeProvider,
       SoyValueConverter soyValueConverter,
-      Provider<JsSrcMain> jsSrcMainProvider,
-      Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -673,8 +660,6 @@ public final class SoyFileSet {
       @Nullable Appendable warningSink) {
     this.apiCallScopeProvider = apiCallScopeProvider;
     this.soyValueConverter = soyValueConverter;
-    this.jsSrcMainProvider = jsSrcMainProvider;
-    this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
 
     Preconditions.checkArgument(
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
@@ -1041,14 +1026,8 @@ public final class SoyFileSet {
     TemplateRegistry registry = result.registry();
     SoyFileSetNode fileSet = result.fileSet();
     List<String> generatedSrcs =
-        jsSrcMainProvider
-            .get()
-            .genJsSrc(
-                fileSet,
-                registry,
-                jsSrcOptions,
-                msgBundle,
-                errorReporter);
+        new JsSrcMain(apiCallScopeProvider, typeRegistry)
+            .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
     throwIfErrorsPresent();
     reportWarnings();
     return generatedSrcs;
@@ -1081,8 +1060,7 @@ public final class SoyFileSet {
     TemplateRegistry registry = result.registry();
     if (locales.isEmpty()) {
       // Not generating localized JS.
-      jsSrcMainProvider
-          .get()
+      new JsSrcMain(apiCallScopeProvider, typeRegistry)
           .genJsFiles(
               soyTree,
               registry,
@@ -1114,8 +1092,7 @@ public final class SoyFileSet {
           }
         }
 
-        jsSrcMainProvider
-            .get()
+        new JsSrcMain(apiCallScopeProvider, typeRegistry)
             .genJsFiles(
                 soyTreeClone,
                 registry,
@@ -1162,13 +1139,8 @@ public final class SoyFileSet {
     resetErrorReporter();
     ParseResult result = preprocessIncrementalDOMResults();
     List<String> generatedSrcs =
-        incrementalDomSrcMainProvider
-            .get()
-            .genJsSrc(
-                result.fileSet(),
-                result.registry(),
-                jsSrcOptions,
-                errorReporter);
+        new IncrementalDomSrcMain(apiCallScopeProvider, typeRegistry)
+            .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
     throwIfErrorsPresent();
     reportWarnings();
     return generatedSrcs;
@@ -1190,14 +1162,9 @@ public final class SoyFileSet {
     disallowExternalCalls();
     ParseResult result = preprocessIncrementalDOMResults();
 
-    incrementalDomSrcMainProvider
-        .get()
+    new IncrementalDomSrcMain(apiCallScopeProvider, typeRegistry)
         .genJsFiles(
-            result.fileSet(),
-            result.registry(),
-            jsSrcOptions,
-            outputPathFormat,
-            errorReporter);
+            result.fileSet(), result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
 
     throwIfErrorsPresent();
     reportWarnings();

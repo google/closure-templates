@@ -30,9 +30,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -219,19 +219,18 @@ public final class GenCallCodeUtilsTest {
     callNode.setEscapingDirectives(
         escapingDirectives.stream().map(directives::get).collect(toImmutableList()));
 
-    try (GuiceSimpleScope.InScope inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR)) {
-      GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
-      UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-      CodeChunk call =
-          genCallCodeUtils.gen(
-              callNode,
-              AliasUtils.IDENTITY_ALIASES,
-              TranslationContext.of(
-                  SoyToJsVariableMappings.forNewTemplate(),
-                  CodeChunk.Generator.create(nameGenerator),
-                  nameGenerator),
-              ErrorReporter.exploding());
-      return call.getCode();
-    }
+    GenCallCodeUtils genCallCodeUtils =
+        JsSrcTestUtils.createGenCallCodeUtils(new SoyJsSrcOptions());
+    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+    CodeChunk call =
+        genCallCodeUtils.gen(
+            callNode,
+            AliasUtils.IDENTITY_ALIASES,
+            TranslationContext.of(
+                SoyToJsVariableMappings.forNewTemplate(),
+                CodeChunk.Generator.create(nameGenerator),
+                nameGenerator),
+            ErrorReporter.exploding());
+    return call.getCode();
   }
 }

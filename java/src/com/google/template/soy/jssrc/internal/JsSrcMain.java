@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -28,23 +29,23 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Main entry point for the JS Src backend (output target).
@@ -57,20 +58,12 @@ public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
+  private final SoyTypeRegistry typeRegistry;
 
-  /** Provider for getting an instance of GenJsCodeVisitor. */
-  private final Provider<GenJsCodeVisitor> genJsCodeVisitorProvider;
-
-  /**
-   * @param apiCallScope The scope object that manages the API call scope.
-   * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
-   */
-  @Inject
-  public JsSrcMain(
-      @ApiCall GuiceSimpleScope apiCallScope,
-      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
+  /** @param apiCallScope The scope object that manages the API call scope. */
+  public JsSrcMain(GuiceSimpleScope apiCallScope, SoyTypeRegistry typeRegistry) {
     this.apiCallScope = apiCallScope;
-    this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
+    this.typeRegistry = typeRegistry;
   }
 
   /**
@@ -106,7 +99,6 @@ public class JsSrcMain {
     new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
     try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      inScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
               jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
@@ -126,8 +118,8 @@ public class JsSrcMain {
       }
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
-      // Do the code generation.
-      return genJsCodeVisitorProvider.get().gen(soyTree, templateRegistry, errorReporter);
+      return createVisitor(jsSrcOptions, typeRegistry)
+          .gen(soyTree, templateRegistry, errorReporter);
     }
   }
 
@@ -196,5 +188,43 @@ public class JsSrcMain {
         out.close();
       }
     }
+  }
+
+  static GenJsCodeVisitor createVisitor(SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
+    final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
+    final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
+        new IsComputableAsJsExprsVisitor();
+    CanInitOutputVarVisitor canInitOutputVarVisitor =
+        new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
+    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
+        new TranslateExprNodeVisitorFactory(options);
+    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
+    // This supplier is used to break a circular dependency between GenCallCodeUtils and
+    // GenJsExprsVisitorFactory.  The reason this cycle exists is due complex, but could be
+    // eliminated if we got rid of the whole 'iscomputableasjsexprs' concept in this backend.
+    // TODO(lukes): fix the cycle by eliminating IsComputableAsJsExprsVisitor
+    class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
+      GenJsExprsVisitorFactory factory;
+
+      @Override
+      public GenCallCodeUtils get() {
+        return new GenCallCodeUtils(
+            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+      }
+    }
+    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
+    GenJsExprsVisitorFactory genJsExprsVisitorFactory =
+        new GenJsExprsVisitorFactory(jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+    supplier.factory = genJsExprsVisitorFactory;
+
+    return new GenJsCodeVisitor(
+        options,
+        jsExprTranslator,
+        delTemplateNamer,
+        supplier.get(),
+        isComputableAsJsExprsVisitor,
+        canInitOutputVarVisitor,
+        genJsExprsVisitorFactory,
+        typeRegistry);
   }
 }

@@ -47,7 +47,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import java.util.List;
-import javax.inject.Inject;
 
 /**
  * Generates JS code for {call}s and {delcall}s.
@@ -73,7 +72,6 @@ public class GenCallCodeUtils {
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    */
-  @Inject
   protected GenCallCodeUtils(
       JsExprTranslator jsExprTranslator,
       DelTemplateNamer delTemplateNamer,

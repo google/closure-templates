@@ -24,23 +24,18 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -54,7 +49,9 @@ public final class GenJsExprsVisitorTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
+  static {
+    Guice.createInjector(new SoyModule());
+  }
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
@@ -78,19 +75,6 @@ public final class GenJsExprsVisitorTest {
               "goo__index",
               id("gooIndex8"))
           .build();
-
-  private GuiceSimpleScope.InScope inScope;
-
-  @Before
-  public void setUp() {
-    SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
-  }
-
-  @After
-  public void tearDown() {
-    inScope.close();
-  }
 
   @Test
   public void testRawText() {
@@ -322,8 +306,7 @@ public final class GenJsExprsVisitorTest {
 
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     GenJsExprsVisitor visitor =
-        INJECTOR
-            .getInstance(GenJsExprsVisitorFactory.class)
+        JsSrcTestUtils.createGenJsExprsVisitorFactory(new SoyJsSrcOptions())
             .create(
                 TranslationContext.of(
                     SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),

@@ -91,16 +91,6 @@ public final class GuiceSimpleScope implements Scope {
       }
     }
 
-    /**
-     * Seeds a value in the current occurrence of this scope.
-     *
-     * @param clazz The class to seed.
-     * @param value The value for the key.
-     */
-    public <T> void seed(Class<T> clazz, T value) {
-      seed(Key.get(clazz), value);
-    }
-
     /** Exits the scope */
     @Override
     public void close() {

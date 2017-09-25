@@ -84,7 +84,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Generates a series of JavaScript control statements and function calls for rendering one or more
@@ -112,7 +111,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
   private static final String KEY_ATTRIBUTE_NAME = "key";
 
-  @Inject
   GenIncrementalDomCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
       JsExprTranslator jsExprTranslator,

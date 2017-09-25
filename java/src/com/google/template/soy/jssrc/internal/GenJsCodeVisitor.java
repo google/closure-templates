@@ -119,7 +119,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.
@@ -182,7 +181,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @VisibleForTesting protected TemplateAliases templateAliases;
 
-  @Inject
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
       JsExprTranslator jsExprTranslator,

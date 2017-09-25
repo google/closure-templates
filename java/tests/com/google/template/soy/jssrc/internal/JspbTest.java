@@ -30,7 +30,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
@@ -239,61 +238,58 @@ public final class JspbTest {
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
 
-    try (GuiceSimpleScope.InScope inScope =
-        JsSrcTestUtils.simulateNewApiCall(injector, jsSrcOptions)) {
+    GenJsCodeVisitor genJsCodeVisitor =
+        JsSrcMain.createVisitor(jsSrcOptions, injector.getInstance(SoyTypeRegistry.class));
+    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-      GenJsCodeVisitor genJsCodeVisitor = injector.getInstance(GenJsCodeVisitor.class);
-      genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
+    String testFileContent =
+        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** */\n"
+            + "{template .goo}\n"
+            + "  {@param moo : example.ExampleExtendable}\n"
+            + "  {$moo.someExtensionField}\n"
+            + "{/template}\n";
 
-      String testFileContent =
-          "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
-              + "\n"
-              + "/** */\n"
-              + "{template .goo}\n"
-              + "  {@param moo : example.ExampleExtendable}\n"
-              + "  {$moo.someExtensionField}\n"
-              + "{/template}\n";
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .typeRegistry(REGISTRY)
+            .parse();
 
-      ParseResult parseResult =
-          SoyFileSetParserBuilder.forFileContents(testFileContent)
-              .declaredSyntaxVersion(SyntaxVersion.V2_0)
-              .typeRegistry(REGISTRY)
-              .parse();
+    // Verify that the import symbol got required.
+    String expectedJsFileContentStart =
+        "// This file was automatically generated from no-path.\n"
+            + "// Please don't edit this file by hand.\n"
+            + "\n"
+            + "/**\n"
+            + " * @fileoverview Templates in namespace boo.foo.\n"
+            + " * @public\n"
+            + " */\n"
+            + "\n"
+            + "goog.provide('boo.foo');\n"
+            + "\n"
+            + "goog.require('proto.example.ExampleExtendable');\n"
+            + "goog.require('proto.example.SomeExtension');\n"
+            + "goog.require('soy.asserts');\n"
+            + "\n"
+            + "\n"
+            + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
+            + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  var $tmp = opt_data.moo.$jspbMessageInstance || opt_data.moo;\n"
+            + "  var moo = soy.asserts.assertType("
+            + "$tmp instanceof proto.example.ExampleExtendable, "
+            + "'moo', $tmp, 'proto.example.ExampleExtendable');\n"
+            + "  return '' + moo.getExtension(proto.example.SomeExtension.someExtensionField);\n"
+            + "};\n"
+            + "if (goog.DEBUG) {\n"
+            + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
+            + "}\n"
+            + "";
 
-      // Verify that the import symbol got required.
-      String expectedJsFileContentStart =
-          "// This file was automatically generated from no-path.\n"
-              + "// Please don't edit this file by hand.\n"
-              + "\n"
-              + "/**\n"
-              + " * @fileoverview Templates in namespace boo.foo.\n"
-              + " * @public\n"
-              + " */\n"
-              + "\n"
-              + "goog.provide('boo.foo');\n"
-              + "\n"
-              + "goog.require('proto.example.ExampleExtendable');\n"
-              + "goog.require('proto.example.SomeExtension');\n"
-              + "goog.require('soy.asserts');\n"
-              + "\n"
-              + "\n"
-              + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
-              + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-              + "  var $tmp = opt_data.moo.$jspbMessageInstance || opt_data.moo;\n"
-              + "  var moo = soy.asserts.assertType("
-              + "$tmp instanceof proto.example.ExampleExtendable, "
-              + "'moo', $tmp, 'proto.example.ExampleExtendable');\n"
-              + "  return '' + moo.getExtension(proto.example.SomeExtension.someExtensionField);\n"
-              + "};\n"
-              + "if (goog.DEBUG) {\n"
-              + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-              + "}\n"
-              + "";
-
-      List<String> jsFilesContents =
-          genJsCodeVisitor.gen(
-              parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
-      assertThat(jsFilesContents.get(0)).isEqualTo(expectedJsFileContentStart);
-    }
+    List<String> jsFilesContents =
+        genJsCodeVisitor.gen(
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
+    assertThat(jsFilesContents.get(0)).isEqualTo(expectedJsFileContentStart);
   }
 }

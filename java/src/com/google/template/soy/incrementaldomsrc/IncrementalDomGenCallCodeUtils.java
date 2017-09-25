@@ -21,7 +21,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.soytree.CallParamContentNode;
-import javax.inject.Inject;
 
 /**
  * Extends {@link GenCallCodeUtils} to not wrap function arguments as sanitized content, which is
@@ -30,7 +29,6 @@ import javax.inject.Inject;
  */
 final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
 
-  @Inject
   IncrementalDomGenCallCodeUtils(
       JsExprTranslator jsExprTranslator,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,

@@ -22,7 +22,6 @@ import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import javax.inject.Inject;
 
 /**
  * Overrides the JS code generation version of this visitor to not generate HTML/attribute params as
@@ -31,10 +30,6 @@ import javax.inject.Inject;
  */
 final class IsComputableAsIncrementalDomExprsVisitor extends IsComputableAsJsExprsVisitor {
 
-  @Inject
-  IsComputableAsIncrementalDomExprsVisitor() {
-    super();
-  }
 
   @Override
   protected Boolean visitCallParamContentNode(CallParamContentNode node) {

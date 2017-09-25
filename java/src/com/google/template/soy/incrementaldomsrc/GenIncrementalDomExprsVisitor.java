@@ -17,6 +17,7 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
@@ -27,8 +28,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /** Overrides the base class to provide the correct helpers classes. */
 public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
@@ -37,12 +36,11 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
   public static final class GenIncrementalDomExprsVisitorFactory extends GenJsExprsVisitorFactory {
 
     @SuppressWarnings("unchecked")
-    @Inject
     GenIncrementalDomExprsVisitorFactory(
         JsExprTranslator jsExprTranslator,
-        Provider<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
+        Supplier<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
         IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor) {
-      super(jsExprTranslator, (Provider) genCallCodeUtils, isComputableAsJsExprsVisitor);
+      super(jsExprTranslator, (Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
     }
 
     @Override

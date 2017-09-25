@@ -45,7 +45,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 
 /**
  * Visitor to determine whether the output string for the subtree rooted at a given node is
@@ -63,13 +62,11 @@ import javax.inject.Inject;
  * <p>TODO(user): This should no longer be necessary after CodeChunk migration. Rip it all out.
  *
  */
-@ApiCallScope
 public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The memoized results of past visits to nodes. */
   private final Map<SoyNode, Boolean> memoizedResults;
 
-  @Inject
   protected IsComputableAsJsExprsVisitor() {
     memoizedResults = new HashMap<>();
   }

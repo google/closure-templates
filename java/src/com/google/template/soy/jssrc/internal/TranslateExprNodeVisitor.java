@@ -96,7 +96,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Inject;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
@@ -168,8 +167,7 @@ public class TranslateExprNodeVisitor
   public static final class TranslateExprNodeVisitorFactory {
     private final SoyJsSrcOptions jsSrcOptions;
 
-    @Inject
-    TranslateExprNodeVisitorFactory(SoyJsSrcOptions jsSrcOptions) {
+    public TranslateExprNodeVisitorFactory(SoyJsSrcOptions jsSrcOptions) {
       this.jsSrcOptions = jsSrcOptions;
     }
 

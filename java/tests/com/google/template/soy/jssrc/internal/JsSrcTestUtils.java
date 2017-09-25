@@ -16,14 +16,10 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.inject.Injector;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.common.base.Supplier;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
+import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 
 /**
  * Utilities for unit tests in the Js Src backend.
@@ -33,49 +29,45 @@ final class JsSrcTestUtils {
 
   private JsSrcTestUtils() {}
 
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   */
-  @CheckReturnValue
-  public static GuiceSimpleScope.InScope simulateNewApiCall(Injector injector) {
-    return simulateNewApiCall(injector, new SoyJsSrcOptions());
+  static GenJsExprsVisitorFactory createGenJsExprsVisitorFactory(SoyJsSrcOptions options) {
+    return createObjects(options).factory;
   }
 
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   * @param jsSrcOptions The options for generating JS source code.
-   */
-  @CheckReturnValue
-  public static GuiceSimpleScope.InScope simulateNewApiCall(
-      Injector injector, SoyJsSrcOptions jsSrcOptions) {
-    return simulateNewApiCall(injector, jsSrcOptions, null, BidiGlobalDir.LTR);
+  static GenCallCodeUtils createGenCallCodeUtils(SoyJsSrcOptions options) {
+    return createObjects(options).utils.get();
   }
 
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   * @param jsSrcOptions The options for generating JS source code.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @param bidiGlobalDir The bidi global directionality
-   */
-  private static GuiceSimpleScope.InScope simulateNewApiCall(
-      Injector injector,
-      SoyJsSrcOptions jsSrcOptions,
-      @Nullable SoyMsgBundle msgBundle,
-      BidiGlobalDir bidiGlobalDir) {
+  private static Objects createObjects(SoyJsSrcOptions options) {
+    final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
+    final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
+        new IsComputableAsJsExprsVisitor();
+    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
+        new TranslateExprNodeVisitorFactory(options);
+    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
+    class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
+      GenJsExprsVisitorFactory factory;
 
-    GuiceSimpleScope.InScope apiCallScope =
-        SharedTestUtils.simulateNewApiCall(injector, msgBundle, bidiGlobalDir);
-    apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-    return apiCallScope;
+      @Override
+      public GenCallCodeUtils get() {
+        return new GenCallCodeUtils(
+            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+      }
+    }
+    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
+    GenJsExprsVisitorFactory genJsExprsVisitorFactory =
+        new GenJsExprsVisitorFactory(jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+    supplier.factory = genJsExprsVisitorFactory;
+
+    return new Objects(supplier, genJsExprsVisitorFactory);
+  }
+
+  private static final class Objects {
+    final Supplier<GenCallCodeUtils> utils;
+    final GenJsExprsVisitorFactory factory;
+
+    Objects(Supplier<GenCallCodeUtils> utils, GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
+      this.utils = utils;
+      this.factory = genJsExprsVisitorFactory;
+    }
   }
 }

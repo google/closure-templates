@@ -20,6 +20,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -45,8 +46,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Visitor for generating JS expressions for parse tree nodes.
@@ -61,13 +60,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     protected final JsExprTranslator jsExprTranslator;
     // We are using a provider to resolve a circular dependency between GenCallCodeUtils and this
     // factory.
-    protected final Provider<GenCallCodeUtils> genCallCodeUtils;
+    protected final Supplier<GenCallCodeUtils> genCallCodeUtils;
     protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
-    @Inject
     protected GenJsExprsVisitorFactory(
         JsExprTranslator jsExprTranslator,
-        Provider<GenCallCodeUtils> genCallCodeUtils,
+        Supplier<GenCallCodeUtils> genCallCodeUtils,
         IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
       this.jsExprTranslator = jsExprTranslator;
       this.genCallCodeUtils = genCallCodeUtils;

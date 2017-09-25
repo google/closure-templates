@@ -21,8 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
-import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -43,10 +41,6 @@ public final class SoyModule extends AbstractModule {
     // splitting SoyFileSet into a smaller number of objects and backend specific apis so this isn't
     // so monolithic (compiling JS shouldn't require Tofu and python backends).
     // eliminating injection points from the backends would help with this effort also.
-
-    // Install requisite modules.
-    install(new JsSrcModule());
-    install(new IncrementalDomSrcModule());
 
     install(new SharedModule());
 

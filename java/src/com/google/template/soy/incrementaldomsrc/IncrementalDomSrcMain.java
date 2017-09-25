@@ -18,15 +18,20 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
+import com.google.template.soy.jssrc.internal.JsExprTranslator;
+import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -35,13 +40,12 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Main entry point for the Incremental DOM JS Src backend (output target).
@@ -53,21 +57,12 @@ public class IncrementalDomSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
+  private final SoyTypeRegistry typeRegistry;
 
-  /** Provider for getting an instance of GenJsCodeVisitor. */
-  private final Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider;
-
-  /**
-   * @param apiCallScope The scope object that manages the API call scope.
-   * @param genIncrementalDomCodeVisitorProvider Provider for getting an instance of
-   *     GenIncrementalDomCodeVisitor.
-   */
-  @Inject
   public IncrementalDomSrcMain(
-      @ApiCall GuiceSimpleScope apiCallScope,
-      Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider) {
+      @ApiCall GuiceSimpleScope apiCallScope, SoyTypeRegistry typeRegistry) {
     this.apiCallScope = apiCallScope;
-    this.genIncrementalDomCodeVisitorProvider = genIncrementalDomCodeVisitorProvider;
+    this.typeRegistry = typeRegistry;
   }
 
   /**
@@ -91,7 +86,6 @@ public class IncrementalDomSrcMain {
 
     try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      inScope.seed(SoyJsSrcOptions.class, incrementalJSSrcOptions);
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
               incrementalJSSrcOptions.getBidiGlobalDir(),
@@ -113,7 +107,8 @@ public class IncrementalDomSrcMain {
       new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
       // some of the above passes may slice up raw text nodes, recombine them.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
-      return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
+      return createVisitor(incrementalJSSrcOptions, typeRegistry)
+          .gen(soyTree, registry, errorReporter);
     }
   }
 
@@ -177,5 +172,42 @@ public class IncrementalDomSrcMain {
         out.close();
       }
     }
+  }
+
+  static GenIncrementalDomCodeVisitor createVisitor(
+      SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
+    final IncrementalDomDelTemplateNamer delTemplateNamer = new IncrementalDomDelTemplateNamer();
+    final IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
+        new IsComputableAsIncrementalDomExprsVisitor();
+    CanInitOutputVarVisitor canInitOutputVarVisitor =
+        new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
+    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
+        new TranslateExprNodeVisitorFactory(options);
+    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
+    // TODO(lukes): eliminate this supplier.  See commend in JsSrcMain for more information.
+    class GenCallCodeUtilsSupplier implements Supplier<IncrementalDomGenCallCodeUtils> {
+      GenIncrementalDomExprsVisitorFactory factory;
+
+      @Override
+      public IncrementalDomGenCallCodeUtils get() {
+        return new IncrementalDomGenCallCodeUtils(
+            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+      }
+    }
+    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
+    GenIncrementalDomExprsVisitorFactory genJsExprsVisitorFactory =
+        new GenIncrementalDomExprsVisitorFactory(
+            jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+    supplier.factory = genJsExprsVisitorFactory;
+
+    return new GenIncrementalDomCodeVisitor(
+        options,
+        jsExprTranslator,
+        delTemplateNamer,
+        supplier.get(),
+        isComputableAsJsExprsVisitor,
+        canInitOutputVarVisitor,
+        genJsExprsVisitorFactory,
+        typeRegistry);
   }
 }
