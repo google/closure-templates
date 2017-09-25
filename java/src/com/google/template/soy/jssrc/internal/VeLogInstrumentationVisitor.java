@@ -66,6 +66,8 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final String LOGGING_METADATA = "$$loggingMetaData";
   private static final InjectedParam LOGGING_METADATA_IJ = new InjectedParam(LOGGING_METADATA);
+  /** A shared constant for referencing the logging metadata in Javascript. */
+  public static final String JS_REF_LOGGING_METADATA = "opt_ijData." + LOGGING_METADATA;
 
   VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
     this.templateRegistry = templateRegistry;

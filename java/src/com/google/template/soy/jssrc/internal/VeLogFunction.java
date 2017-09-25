@@ -52,10 +52,11 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
         String.format(
-            "soy.velog.$$log('%1$s', %2$s, %3$s, opt_ijData.$$loggingMetadata)",
+            "soy.velog.$$log('%1$s', %2$s, %3$s, %4$s)",
             args.get(0).getText(),
             args.get(1).getText(),
-            args.size() > 2 ? args.get(2).getText() : "false"),
+            args.size() > 2 ? args.get(2).getText() : "false",
+            VeLogInstrumentationVisitor.JS_REF_LOGGING_METADATA),
         Integer.MAX_VALUE);
   }
 

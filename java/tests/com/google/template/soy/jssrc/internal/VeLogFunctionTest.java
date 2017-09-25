@@ -35,7 +35,7 @@ public final class VeLogFunctionTest {
     assertThat(function.computeForJsSrc(ImmutableList.of(idExpr, dataExpr)))
         .isEqualTo(
             new JsExpr(
-                "soy.velog.$$log('1', null, false, opt_ijData.$$loggingMetadata)",
+                "soy.velog.$$log('1', null, false, opt_ijData.$$loggingMetaData)",
                 Integer.MAX_VALUE));
   }
 
@@ -48,7 +48,7 @@ public final class VeLogFunctionTest {
         .isEqualTo(
             new JsExpr(
                 "soy.velog.$$log('1', "
-                    + "new proto.soy.compiler.test.Foo(), false, opt_ijData.$$loggingMetadata)",
+                    + "new proto.soy.compiler.test.Foo(), false, opt_ijData.$$loggingMetaData)",
                 Integer.MAX_VALUE));
   }
 
@@ -62,7 +62,7 @@ public final class VeLogFunctionTest {
         .isEqualTo(
             new JsExpr(
                 "soy.velog.$$log('1', "
-                    + "new proto.soy.compiler.test.Foo(), true, opt_ijData.$$loggingMetadata)",
+                    + "new proto.soy.compiler.test.Foo(), true, opt_ijData.$$loggingMetaData)",
                 Integer.MAX_VALUE));
   }
 }

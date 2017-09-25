@@ -55,7 +55,7 @@ public final class VeLogJsSrcLoggingFunction implements SoyLibraryAssistedJsSrcF
             args.get(0).getText(),
             args.get(1).getText(),
             args.get(2).getText(),
-            "opt_ijData.$$loggingMetaData"),
+            VeLogInstrumentationVisitor.JS_REF_LOGGING_METADATA),
         Integer.MAX_VALUE);
   }
 
