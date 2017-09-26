@@ -78,6 +78,8 @@ public interface SoySauce {
      * Configures the {@link SoyLogger} to use.
      *
      * <p>This is an experimental feature, dark and full of terrors.
+     *
+     * <p>The default value is {@link SoyLogger#NO_OP}.
      */
     Renderer setSoyLogger(SoyLogger logger);
 

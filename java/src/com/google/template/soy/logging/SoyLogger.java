@@ -32,4 +32,18 @@ public interface SoyLogger {
 
   // called to format a logging function value.
   String evalLoggingFunction(LoggingFunctionInvocation value);
+
+  static final SoyLogger NO_OP =
+      new SoyLogger() {
+        @Override
+        public void enter(LogStatement statement) {}
+
+        @Override
+        public void exit() {}
+
+        @Override
+        public String evalLoggingFunction(LoggingFunctionInvocation value) {
+          return value.placeholderValue();
+        }
+      };
 }

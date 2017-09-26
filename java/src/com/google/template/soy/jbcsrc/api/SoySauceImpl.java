@@ -108,7 +108,7 @@ public final class SoySauceImpl implements SoySauce {
     private final Optional<ContentKind> contentKind;
     private Predicate<String> activeDelegatePackages = Predicates.alwaysFalse();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
-    private SoyLogger logger = OutputAppendable.NO_OP_LOGGER;
+    private SoyLogger logger = SoyLogger.NO_OP;
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder()
             .withCompiledTemplates(templates)

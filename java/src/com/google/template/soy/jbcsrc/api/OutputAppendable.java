@@ -31,19 +31,6 @@ import java.io.IOException;
  * <p>This object is for soy internal use only. Do not use.
  */
 public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
-  static final SoyLogger NO_OP_LOGGER =
-      new SoyLogger() {
-        @Override
-        public void enter(LogStatement statement) {}
-
-        @Override
-        public void exit() {}
-
-        @Override
-        public String evalLoggingFunction(LoggingFunctionInvocation value) {
-          return value.placeholderValue();
-        }
-      };
 
   public static OutputAppendable create(AdvisingAppendable outputAppendable, SoyLogger logger) {
     return new OutputAppendable(outputAppendable, logger);
