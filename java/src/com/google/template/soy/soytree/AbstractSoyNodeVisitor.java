@@ -417,6 +417,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
 
   /** @param node the visited node. */
   protected void visitSoyNode(SoyNode node) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("no implementation for: " + node);
   }
 }

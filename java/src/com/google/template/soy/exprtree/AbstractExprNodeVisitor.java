@@ -358,6 +358,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
 
   /** @param node The node being visited. */
   protected void visitExprNode(ExprNode node) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("no implementation for: " + node);
   }
 }

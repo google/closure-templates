@@ -317,6 +317,6 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
   /** @param node The node being visited. */
   protected R visitExprNode(ExprNode node) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("no implementation for: " + node);
   }
 }

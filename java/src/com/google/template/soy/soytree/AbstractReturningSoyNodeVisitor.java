@@ -342,6 +342,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
 
   /** @param node the visited node. */
   protected R visitSoyNode(SoyNode node) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("no implementation for: " + node);
   }
 }
