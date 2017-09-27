@@ -24784,7 +24784,7 @@ goog.string.StringBuffer.prototype.toString = function() {
  * <p>
  * This file contains utilities that should only be called by Soy-generated
  * JS code. Please do not use these functions directly from
- * your hand-writen code. Their names all start with '$$', or exist within the
+ * your hand-written code. Their names all start with '$$', or exist within the
  * soydata.VERY_UNSAFE namespace.
  *
  * <p>TODO(lukes): ensure that the above pattern is actually followed
