@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.base.Strings;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -41,6 +42,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -80,6 +82,16 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
     // Run the desugaring pass and combine raw text nodes after we instrument velog node.
     new DesugarHtmlNodesPass().run(node, templateRegistry);
+  }
+
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
+    // only instrument source files, deps haven't had the logging passes run so the logging ids
+    // aren't available.  Also, it is pointless.
+    if (node.getSoyFileKind() != SoyFileKind.SRC) {
+      return;
+    }
+    super.visitSoyFileNode(node);
   }
 
   /** Adds data-soylog attribute to the top-level DOM node in this {velog} block. */
