@@ -15,14 +15,20 @@
  */
 package com.google.template.soy.coredirectives;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.shared.restricted.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.restricted.EscapingConventions;
-import com.google.template.soy.shared.restricted.StreamingEscaper;
+import java.io.IOException;
 
 /** Runtime functions for implementing the directives in this package. */
 public final class CoreDirectivesRuntime {
@@ -47,7 +53,62 @@ public final class CoreDirectivesRuntime {
 
   public static LoggingAdvisingAppendable streamingEscapeHtml(
       final LoggingAdvisingAppendable delegate) {
-    return StreamingEscaper.create(
-        delegate, EscapingConventions.EscapeHtml.INSTANCE, SanitizedContent.ContentKind.HTML);
+    if (delegate instanceof StreamingHtmlEscaper) {
+      return delegate;
+    }
+    return new StreamingHtmlEscaper(delegate);
+  }
+
+  private static final class StreamingHtmlEscaper extends AbstractStreamingHtmlEscaper {
+    @LazyInit private Appendable escapedDelegate;
+
+    private StreamingHtmlEscaper(LoggingAdvisingAppendable delegate) {
+      super(delegate);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      } else {
+        getEscapedDelegate().append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      }
+      return this;
+    }
+
+    // TODO(lukes): We only pass these through if we are in HTML.  This is sort
+    // of confusing and may require revisiting in the future once we have more examples of how
+    // logging and print directives will interact.
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      if (isInHtml()) {
+        delegate.enterLoggableElement(statement);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      if (isInHtml()) {
+        delegate.exitLoggableElement();
+      }
+      return this;
+    }
+
+    @Override
+    protected Appendable getAppendable() {
+      return isInHtml() ? delegate : getEscapedDelegate();
+    }
+
+    Appendable getEscapedDelegate() {
+      Appendable local = escapedDelegate;
+      if (local == null) {
+        local = escapedDelegate = EscapingConventions.EscapeHtml.INSTANCE.escape(delegate);
+      }
+      return local;
+    }
   }
 }

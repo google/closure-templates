@@ -204,7 +204,7 @@ public abstract class BasicEscapeDirective
   /** Implements the |escapeHtmlRcdata directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class EscapeHtmlRcdata extends BasicEscapeDirective {
+  static final class EscapeHtmlRcdata extends BasicEscapeDirective implements Streamable {
 
     EscapeHtmlRcdata() {
       super("|escapeHtmlRcdata");

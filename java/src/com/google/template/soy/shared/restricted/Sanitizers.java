@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -159,6 +160,60 @@ public final class Sanitizers {
     }
 
     return escapeHtml(value.coerceToString());
+  }
+
+  /** Streaming version of {@code |escapeHtmlRcData}. */
+  public static LoggingAdvisingAppendable escapeHtmlRcdataStreaming(
+      LoggingAdvisingAppendable delegate) {
+    return new StreamingHtmlRcDataEscaper(delegate);
+  }
+
+  private static final class StreamingHtmlRcDataEscaper extends AbstractStreamingHtmlEscaper {
+    @LazyInit private Appendable htmlDelegate;
+    @LazyInit private Appendable nonHtmlDelegate;
+
+    private StreamingHtmlRcDataEscaper(LoggingAdvisingAppendable delegate) {
+      super(delegate);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      getAppendable().append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    protected Appendable getAppendable() {
+      return isInHtml() ? getHtmlDelegate() : getNonHtmlDelegate();
+    }
+
+    private Appendable getHtmlDelegate() {
+      Appendable local = htmlDelegate;
+      if (local == null) {
+        local = htmlDelegate = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
+      }
+      return local;
+    }
+
+    private Appendable getNonHtmlDelegate() {
+      Appendable local = nonHtmlDelegate;
+      if (local == null) {
+        local = nonHtmlDelegate = EscapingConventions.EscapeHtml.INSTANCE.escape(delegate);
+      }
+      return local;
+    }
   }
 
   /** Normalizes HTML to HTML making sure quotes and other specials are entity encoded. */

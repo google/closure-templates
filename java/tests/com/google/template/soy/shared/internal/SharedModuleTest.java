@@ -97,6 +97,7 @@ public final class SharedModuleTest {
             "|escapeCssString",
             "|normalizeHtml",
             "|escapeJsString",
+            "|escapeHtmlRcdata",
             "|escapeJsRegex",
             "|text",
             "|noAutoescape",
@@ -108,7 +109,6 @@ public final class SharedModuleTest {
             "|changeNewlineToBr",
             "|insertWordBreaks",
             "|truncate",
-            "|escapeHtmlRcdata",
             // This isn't worth doing.  uris should all be small.
             "|escapeUri",
             // These can't be made streaming because it would require a complex state machine or
