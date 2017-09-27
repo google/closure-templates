@@ -36,14 +36,12 @@ import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -259,8 +257,6 @@ public final class VeLoggingTest {
             .setLoggingConfig(config)
             .addSoyFunction(new DepthFunction())
             .runAutoescaper(true)
-            .options(
-                new SoyGeneralOptions().setExperimentalFeatures(Arrays.asList("logging_support")))
             .parse()
             .fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());

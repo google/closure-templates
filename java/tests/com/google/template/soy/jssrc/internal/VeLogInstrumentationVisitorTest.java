@@ -27,14 +27,12 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Set;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -53,12 +51,6 @@ public final class VeLogInstrumentationVisitorTest {
               .addElement(LoggableElement.newBuilder().setName("Bar").setId(2L).build())
               .addElement(LoggableElement.newBuilder().setName("Baz").setId(3L).build())
               .build());
-  private static final SoyGeneralOptions SOY_OPTIONS = new SoyGeneralOptions();
-
-  @Before
-  public void setUp() {
-    SOY_OPTIONS.setExperimentalFeatures(ImmutableSet.<String>of("logging_support"));
-  }
 
   @Test
   public void testVeLogInstrumentation() throws Exception {
@@ -332,7 +324,6 @@ public final class VeLogInstrumentationVisitorTest {
                             .buildNoFiles())))
             .setLoggingConfig(LOGGING_CONFIG)
             .addSoyFunction(new TestLoggingFunction())
-            .options(SOY_OPTIONS)
             .errorReporter(ErrorReporter.exploding())
             .parse();
     TemplateRegistry templateRegistry = result.registry();

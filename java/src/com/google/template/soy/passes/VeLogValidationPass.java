@@ -16,7 +16,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -53,8 +52,6 @@ import com.google.template.soy.types.proto.SoyProtoType;
  * </ul>
  */
 final class VeLogValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind LOGGING_IS_EXPERIMENTAL =
-      SoyErrorKind.of("The '{'velog ...'}' command is disabled in this configuration.");
   private static final SoyErrorKind NO_CONFIG_FOR_ELEMENT =
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
@@ -82,16 +79,13 @@ final class VeLogValidationPass extends CompilerFilePass {
               + "directives.");
 
   private final ErrorReporter reporter;
-  private final boolean enabled;
   private final ValidatedLoggingConfig loggingConfig;
 
   VeLogValidationPass(
       ErrorReporter reporter,
-      ImmutableSet<String> experimentalFeatures,
       ValidatedLoggingConfig loggingConfig) {
     this.reporter = reporter;
     this.loggingConfig = loggingConfig;
-    this.enabled = experimentalFeatures.contains("logging_support");
   }
 
   @Override
@@ -103,12 +97,10 @@ final class VeLogValidationPass extends CompilerFilePass {
     }
     for (TemplateNode template : file.getChildren()) {
       for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
-        if (!enabled) {
-          reporter.report(node.getSourceLocation(), LOGGING_IS_EXPERIMENTAL);
-        } else if (!template.isStrictHtml()) {
-          reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
-        } else {
+        if (template.isStrictHtml()) {
           validateNodeAgainstConfig(node);
+        } else {
+          reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
         }
       }
       // We need to validate logging functions.  The rules are

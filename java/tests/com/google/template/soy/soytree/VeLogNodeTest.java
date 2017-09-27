@@ -25,11 +25,9 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.AutoEscapingType;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
-import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -81,19 +79,11 @@ public final class VeLogNodeTest {
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
-  @Test
-  public void testExperimentEnforced() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
-    parseVeLog("{velog Bar}<div></div>{/velog}", false, reporter);
-    assertThat(reporter.getErrors().get(0).message())
-        .isEqualTo("The {velog ...} command is disabled in this configuration.");
-  }
-
   private VeLogNode parseVeLog(String fooLog) {
-    return parseVeLog(fooLog, true, ErrorReporter.exploding());
+    return parseVeLog(fooLog, ErrorReporter.exploding());
   }
 
-  private VeLogNode parseVeLog(String fooLog, boolean enabled, ErrorReporter reporter) {
+  private VeLogNode parseVeLog(String fooLog, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, fooLog)
@@ -113,10 +103,6 @@ public final class VeLogNodeTest {
                                     .setProtoType("soy.test.Foo")
                                     .build())
                             .build()))
-                .options(
-                    new SoyGeneralOptions()
-                        .setExperimentalFeatures(
-                            enabled ? Arrays.asList("logging_support") : ImmutableSet.<String>of()))
                 .errorReporter(reporter)
                 .parse()
                 .fileSet(),
