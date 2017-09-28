@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.ForNode;
@@ -39,6 +40,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -87,6 +89,16 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
     RewritingVisitor(IdGenerator idGenerator) {
       this.idGenerator = idGenerator;
+    }
+
+    @Override
+    protected void visitSoyFileNode(SoyFileNode node) {
+      // only desugar source files.  We don't generate code for deps so there is no need to
+      // desuagar.
+      if (node.getSoyFileKind() != SoyFileKind.SRC) {
+        return;
+      }
+      super.visitSoyFileNode(node);
     }
 
     @Override
