@@ -36,6 +36,7 @@ import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
@@ -327,7 +328,7 @@ public final class TemplateTester {
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
         // up until development time when we do a lot of AST cloning, so clone here to try to flush
         // them out.
-        fileSet = SoyTreeUtils.cloneNode(fileSet);
+        fileSet = fileSet.copy(new CopyState());
 
         Map<String, SoyJavaFunction> functions = new LinkedHashMap<>();
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {

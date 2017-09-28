@@ -40,6 +40,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.data.SoyValueConverter;
@@ -82,7 +83,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -1075,7 +1075,7 @@ public final class SoyFileSet {
       // Generating localized JS.
       for (String locale : locales) {
 
-        SoyFileSetNode soyTreeClone = SoyTreeUtils.cloneNode(soyTree);
+        SoyFileSetNode soyTreeClone = soyTree.copy(new CopyState());
 
         String msgFilePath =
             MainEntryPointUtils.buildFilePath(

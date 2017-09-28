@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -176,7 +177,7 @@ public final class SoyTreeUtilsTest {
             .parse()
             .fileSet();
 
-    SoyFileSetNode clone = SoyTreeUtils.cloneNode(soyTree);
+    SoyFileSetNode clone = soyTree.copy(new CopyState());
     assertEquals(1, clone.numChildren());
 
     assertEquals(clone.getChild(0).toSourceString(), soyTree.getChild(0).toSourceString());
@@ -270,7 +271,7 @@ public final class SoyTreeUtilsTest {
         SoyTreeUtils.getAllNodesOfType(soyFile, MsgHtmlTagNode.class);
 
     for (MsgHtmlTagNode origMsgHtmlTagNode : msgHtmlTagNodes) {
-      MsgHtmlTagNode clonedMsgHtmlTagNode = SoyTreeUtils.cloneNode(origMsgHtmlTagNode);
+      MsgHtmlTagNode clonedMsgHtmlTagNode = origMsgHtmlTagNode.copy(new CopyState());
 
       assertEquals(clonedMsgHtmlTagNode.numChildren(), origMsgHtmlTagNode.numChildren());
       assertEquals(clonedMsgHtmlTagNode.getId(), origMsgHtmlTagNode.getId());

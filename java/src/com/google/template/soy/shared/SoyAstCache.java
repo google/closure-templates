@@ -20,8 +20,8 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.concurrent.GuardedBy;
@@ -54,7 +54,7 @@ public final class SoyAstCache {
 
     /** Make a defensive copy. */
     private VersionedFile copy() {
-      return new AutoValue_SoyAstCache_VersionedFile(SoyTreeUtils.cloneNode(file()), version());
+      return new AutoValue_SoyAstCache_VersionedFile(file().copy(new CopyState()), version());
     }
   }
 

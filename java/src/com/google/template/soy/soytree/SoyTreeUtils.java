@@ -16,8 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -30,16 +28,11 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -119,9 +112,7 @@ public final class SoyTreeUtils {
             queue.addAll(((ParentNode<?>) current).getChildren());
           }
           if (current instanceof ExprHolderNode) {
-            for (ExprRootNode union : ((ExprHolderNode) current).getExprList()) {
-              queue.add(union);
-            }
+            queue.addAll(((ExprHolderNode) current).getExprList());
           }
           continue;
         case SKIP_CHILDREN:
@@ -194,7 +185,7 @@ public final class SoyTreeUtils {
     return sb;
   }
 
-  /** Similar to {@link buildAstString}, but also print the source string for debug usages. */
+  /** Similar to {@link #buildAstString}, but also print the source string for debug usages. */
   public static StringBuilder buildAstStringWithPreview(
       ParentSoyNode<?> node, int indent, StringBuilder sb) {
     for (SoyNode child : node.getChildren()) {
@@ -224,36 +215,22 @@ public final class SoyTreeUtils {
    * @param exprNodeVisitor The visitor to execute on all expressions.
    */
   public static <R> void execOnAllV2Exprs(
-      SoyNode node, AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
-    new VisitAllV2ExprsVisitor<R>(exprNodeVisitor).exec(node);
-  }
-
-  /**
-   * Private helper class for {@code visitAllExprs} and {@code visitAllExprsShortcircuitably}.
-   *
-   * @param <R> The ExprNode visitor's return type.
-   */
-  private static final class VisitAllV2ExprsVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
-
-    private final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor;
-
-    private VisitAllV2ExprsVisitor(AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
-      this.exprNodeVisitor = exprNodeVisitor;
-    }
-
-    @Override
-    protected void visit(SoyNode node) {
-
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-
-      if (node instanceof ExprHolderNode) {
-        for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
-          exprNodeVisitor.exec(expr);
-        }
-      }
-    }
+      SoyNode node, final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
+    visitAllNodes(
+        node,
+        new NodeVisitor<Node, VisitDirective>() {
+          @Override
+          public VisitDirective exec(Node node) {
+            if (node instanceof ExprHolderNode) {
+              for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
+                exprNodeVisitor.exec(expr);
+              }
+            } else if (node instanceof ExprNode) {
+              return VisitDirective.SKIP_CHILDREN;
+            }
+            return VisitDirective.CONTINUE;
+          }
+        });
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -279,7 +256,8 @@ public final class SoyTreeUtils {
   public static <T extends SoyNode> T cloneWithNewIds(T origNode, IdGenerator nodeIdGen) {
 
     // Clone the node.
-    T clone = cloneNode(origNode);
+    @SuppressWarnings("unchecked")
+    T clone = (T) origNode.copy(new CopyState());
 
     // Generate new ids.
     (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
@@ -310,50 +288,13 @@ public final class SoyTreeUtils {
     Preconditions.checkNotNull(origNodes);
     List<T> clones = new ArrayList<>(origNodes.size());
     for (T origNode : origNodes) {
-      T clone = cloneNode(origNode);
+      @SuppressWarnings("unchecked")
+      T clone = (T) origNode.copy(new CopyState());
       (new GenNewIdsVisitor(nodeIdGen)).exec(clone);
       clones.add(clone);
     }
 
     return clones;
-  }
-
-  /**
-   * Clones a SoyNode but unlike SoyNode.copy(copyState) keeps {@link VarRefNode#getDefnDecl()}
-   * pointing at the correct tree.
-   */
-  public static <T extends SoyNode> T cloneNode(T original) {
-    @SuppressWarnings("unchecked") // this holds for all SoyNode types
-    // TODO(lukes): eliminate this method once all logic has been moved into copy state
-    T cloned = (T) original.copy(new CopyState());
-
-    // TODO(lukes):  this is not efficient but it is the only way to work around the limitations
-    // of the Object.copy(copyState) interface.  A better solution would be to introduce our own
-    // clone method which could take a parameter.  For nodes in the AST object graph that are the
-    // back edges in cycles (e.g. LocalVar) we could maintain an identity map which could be used to
-    // efficiently reconstruct the cycles.  For now we just fix it up after the fact.
-
-    // All vardefns in varrefs have been invalidated.  Currently we only reassign vardefns for
-    // LocalVarNodes because those have links (via declaringNode()) back up the tree, so we need to
-    // make sure that the declaringNode() links are correctly defined to point at the new tree
-    // instead of the previous one.
-    List<LocalVarNode> originalLocalVarNodes = getAllNodesOfType(original, LocalVarNode.class);
-    List<LocalVarNode> newLocalVarNodes = getAllNodesOfType(cloned, LocalVarNode.class);
-    Map<VarDefn, VarDefn> replacementMap = new IdentityHashMap<>();
-    for (int i = 0; i < newLocalVarNodes.size(); i++) {
-      VarDefn oldDefn = originalLocalVarNodes.get(i).getVar();
-      VarDefn newDefn = newLocalVarNodes.get(i).getVar();
-      checkState(oldDefn.name().equals(newDefn.name())); // sanity check
-      replacementMap.put(oldDefn, newDefn);
-    }
-    // limiting this to just local vars would make sense.
-    for (VarRefNode varRef : getAllNodesOfType(cloned, VarRefNode.class)) {
-      VarDefn replacement = replacementMap.get(varRef.getDefnDecl());
-      if (replacement != null) {
-        varRef.setDefn(replacement);
-      }
-    }
-    return cloned;
   }
 
   /** Private helper for cloneWithNewIds() to set new ids on a cloned subtree. */

@@ -53,6 +53,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
   private ForeachNonemptyNode(ForeachNonemptyNode orig, CopyState copyState) {
     super(orig, copyState);
     this.var = new LoopVar(orig.var, this);
+    copyState.updateRefs(orig.var, this.var);
   }
 
   @Override

@@ -53,6 +53,7 @@ public abstract class LetNode extends AbstractCommandNode
   protected LetNode(LetNode orig, CopyState copyState) {
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
+    copyState.updateRefs(orig.var, this.var);
   }
 
   /** Return The local variable name (without the preceding '$'). */

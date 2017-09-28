@@ -160,6 +160,7 @@ public final class ForNode extends AbstractBlockCommandNode
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
     this.rangeArgs = orig.rangeArgs.copy(copyState);
+    copyState.updateRefs(orig.var, this.var);
   }
 
   @Override

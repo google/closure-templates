@@ -69,14 +69,19 @@ public final class VarRefNode extends AbstractExprNode {
     this.name = orig.name;
     this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
     this.subtituteType = orig.subtituteType;
-    // N.B. don't clone here.  If the tree is getting cloned then our defn will also need to be
-    // reset.  However, defns are problematic because they create non-tree edges in the AST.
-    // 1. all defns for the same variable should be the same (induces a dag structure).
-    // 2. local variables have declaringNode references (induces cycles).
-    // so calling copy() here could create an infinite loop and even if it didn't it would still be
-    // wrong.  So instead we just use the prior defn and rely on our caller to manually fix up the
-    // defn after cloning.  This should be handled by SoyTreeUtils.cloneNode.
+    // Maintain the original def in case only a subtree is getting cloned, but also register a
+    // listener so that if the defn is replaced we will get updated also.
     this.defn = orig.defn;
+    if (orig.defn != null) {
+      copyState.registerRefListener(
+          orig.defn,
+          new CopyState.Listener<VarDefn>() {
+            @Override
+            public void newVersion(VarDefn newObject) {
+              setDefn(newObject);
+            }
+          });
+    }
   }
 
   @Override

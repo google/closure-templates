@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -571,7 +572,7 @@ public final class HtmlRewritePassTest {
   }
 
   private static StringSubject assertThatSourceString(TemplateNode node) {
-    SoyFileNode parent = SoyTreeUtils.cloneNode(node.getParent());
+    SoyFileNode parent = node.getParent().copy(new CopyState());
     new DesugarHtmlNodesPass().run(parent, new IncrementingIdGenerator());
     StringBuilder sb = new StringBuilder();
     parent.getChild(0).appendSourceStringForChildren(sb);
@@ -579,7 +580,7 @@ public final class HtmlRewritePassTest {
   }
 
   private static StringSubject assertThatASTString(TemplateNode node) {
-    SoyFileNode parent = SoyTreeUtils.cloneNode(node.getParent());
+    SoyFileNode parent = node.getParent().copy(new CopyState());
     new CombineConsecutiveRawTextNodesPass().run(parent);
     return assertThat(
         SoyTreeUtils.buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
