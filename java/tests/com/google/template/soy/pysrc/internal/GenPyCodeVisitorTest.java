@@ -33,7 +33,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class GenPyCodeVisitorTest {
 
-  private static final String SOY_NAMESPACE = "{namespace boo.foo autoescape=\"strict\"}\n";
+  private static final String SOY_NAMESPACE = "{namespace boo.foo}\n";
   private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template .dummy}{/template}\n";
 
   private static final String EXPECTED_PYFILE_START =

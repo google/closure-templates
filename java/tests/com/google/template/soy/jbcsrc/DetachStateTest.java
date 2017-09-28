@@ -329,7 +329,7 @@ public final class DetachStateTest {
   public void testDetachOnParamTransclusion() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFile(
-            "{namespace ns autoescape=\"strict\"}",
+            "{namespace ns}",
             "",
             "/** */",
             "{template .caller}",

@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 public final class GenPyCallExprVisitorTest {
 
   private static final String SOY_BASE =
-      "{namespace boo.foo autoescape=\"strict\"}\n"
+      "{namespace boo.foo}\n"
           + "{template .goo}\n"
           + "  Hello\n"
           + "{/template}\n"

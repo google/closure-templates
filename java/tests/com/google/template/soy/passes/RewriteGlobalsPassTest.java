@@ -34,7 +34,7 @@ public final class RewriteGlobalsPassTest {
   public void testResolveAlias() {
     String template =
         ""
-            + "{namespace ns autoescape=\"strict\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "{alias foo.bar.baz as global}\n"
             + "{alias global.with.sugar}\n"

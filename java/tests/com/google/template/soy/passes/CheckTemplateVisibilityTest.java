@@ -38,7 +38,7 @@ public final class CheckTemplateVisibilityTest {
   @Test
   public void testCallPrivateTemplateFromSameFile() {
     SoyFileSetParserBuilder.forFileContents(
-            "{namespace ns autoescape=\"strict\"}\n"
+            "{namespace ns}\n"
                 + "/** Private template. */\n"
                 + "{template .foo visibility=\"private\"}\n"
                 + "oops!\n"
@@ -55,12 +55,12 @@ public final class CheckTemplateVisibilityTest {
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
-            "{namespace ns autoescape=\"strict\"}\n"
+            "{namespace ns}\n"
                 + "/** Private template. */\n"
                 + "{template .foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
-            "{namespace ns autoescape=\"strict\"}\n"
+            "{namespace ns}\n"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
                 + "{call .foo /}\n"
@@ -76,12 +76,12 @@ public final class CheckTemplateVisibilityTest {
   public void testCallPrivateTemplateDifferentFile() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
-            "{namespace ns autoescape=\"strict\"}\n"
+            "{namespace ns}\n"
                 + "/** Private template. */\n"
                 + "{template .foo visibility=\"private\"}\n"
                 + "oops!\n"
                 + "{/template}",
-            "{namespace ns2 autoescape=\"strict\"}\n"
+            "{namespace ns2}\n"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
                 + "{call ns.foo /}\n"
@@ -100,7 +100,7 @@ public final class CheckTemplateVisibilityTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
-                "{namespace ns autoescape=\"strict\"}\n"
+                "{namespace ns}\n"
                     + "/** Private template. */\n"
                     + "{template .foo visibility=\"private\"}\n"
                     + "oops!\n"
@@ -108,7 +108,7 @@ public final class CheckTemplateVisibilityTest {
                 SoyFileKind.SRC,
                 "foo/bar.soy"),
             SoyFileSupplier.Factory.create(
-                "{namespace ns2 autoescape=\"strict\"}\n"
+                "{namespace ns2}\n"
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
                     + "{call ns.foo /}\n"

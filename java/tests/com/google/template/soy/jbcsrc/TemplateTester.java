@@ -404,7 +404,7 @@ public final class TemplateTester {
 
   private static String toTemplate(String... body) {
     StringBuilder builder = new StringBuilder();
-    builder.append("{namespace ns autoescape=\"strict\"}\n").append("{template .foo}\n");
+    builder.append("{namespace ns}\n").append("{template .foo}\n");
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/template}\n");
     return builder.toString();
