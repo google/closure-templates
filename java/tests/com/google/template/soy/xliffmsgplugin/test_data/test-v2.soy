@@ -1,13 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 // Author: Kai Huang
 
-{namespace boo.foo autoescape="deprecated-noncontextual"}
+{namespace boo.foo}
 
 
 /**
  * Print information about cow and moose.
  */
-{template .mooseTemplate}
+{template .mooseTemplate autoescape="deprecated-noncontextual"}
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
