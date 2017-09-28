@@ -29,14 +29,14 @@ Closure Templates are precompiled into efficient JavaScript.
   You can put multiple templates in one source file.
 * **A tool, not a framework**. Works well in any web application environment
   in conjunction with any libraries, frameworks, or other tools.
-* **Battle-tested**. Closure Templates are used extensively in some of the largest
-  web applications in the world, including Gmail and Google Docs.
+* **Battle-tested**. Closure Templates are used extensively in some of the
+  largest web applications in the world, including Gmail and Google Docs.
 * **Secure**. Closure Templates are contextually autoescaped to reduce the risk
   of XSS.
 
 ## Getting Started
-* Download the latest [JavaScript compiler](http://dl.google.com/closure-templates/closure-templates-for-javascript-latest.zip)
-  or [Java compiler](http://dl.google.com/closure-templates/closure-templates-for-java-latest.zip).
+* Download the latest [JavaScript compiler](https://dl.google.com/closure-templates/closure-templates-for-javascript-latest.zip)
+  or [Java compiler](https://dl.google.com/closure-templates/closure-templates-for-java-latest.zip).
 * Work through [Hello World Using JavaScript](https://developers.google.com/closure/templates/docs/helloworld_js).
 * Work through [Hello World Using Java](https://developers.google.com/closure/templates/docs/helloworld_java).
 * Read the [Documentation](https://developers.google.com/closure/templates/docs/overview).
