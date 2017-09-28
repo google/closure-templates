@@ -25846,20 +25846,6 @@ soy.$$filterHtmlElementName = function(value) {
  * @param {*} value The value to escape. May not be a string, but the value
  *     will be coerced to a string.
  * @return {string} An escaped version of value.
- * @deprecated
- */
-soy.$$escapeJs = function(value) {
-  return soy.$$escapeJsString(value);
-};
-
-
-/**
- * Escapes characters in the value to make it valid content for a JS string
- * literal.
- *
- * @param {*} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} An escaped version of value.
  */
 soy.$$escapeJsString = function(value) {
   return soy.esc.$$escapeJsStringHelper(value);
