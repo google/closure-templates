@@ -103,9 +103,10 @@ final class ChangeNewlineToBrDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.CHANGE_NEWLINE_TO_BR_STREAMING.invoke(delegateAppendable);
+    return AppendableAndOptions.create(
+        JbcSrcMethods.CHANGE_NEWLINE_TO_BR_STREAMING.invoke(delegateAppendable));
   }
 
   @Override

@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.jbcsrc.restricted;
 
+import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.List;
@@ -62,15 +63,64 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
    */
   interface Streamable extends SoyJbcSrcPrintDirective {
     /**
+     * A simple object that represents an {@link Expression} for a {@link LoggingAdvisingAppendable}
+     * which will apply a given print directive, as well as additional options for the behavior of
+     * the print directive.
+     */
+    @AutoValue
+    abstract class AppendableAndOptions {
+      /**
+       * Creates an appendable that doesn't need to be closed.
+       *
+       * <p>This means the appendable cannot buffer any content, each {@link
+       * LoggingAdvisingAppendable#append} call must be handled immediately.
+       */
+      public static AppendableAndOptions create(Expression expression) {
+
+        return create(expression, /* closeable= */ false);
+      }
+
+      /**
+       * Creates an appendable that needs to be closed.
+       *
+       * <p>This means the appendable must implement {@link java.io.Closeable} and that the compiler
+       * will ensure that the {@link java.io.Closeable#close} method will be called when no more
+       * interactions will occur. Implementations can take advantage of this to implement print
+       * directives that use a temporary buffer.
+       */
+      public static AppendableAndOptions createCloseable(Expression expression) {
+        expression.checkAssignableTo(BytecodeUtils.CLOSEABLE_TYPE);
+        return create(expression, /* closeable= */ true);
+      }
+
+      private static AppendableAndOptions create(Expression expression, boolean closeable) {
+        expression.checkAssignableTo(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+        return new AutoValue_SoyJbcSrcPrintDirective_Streamable_AppendableAndOptions(
+            expression, /* closeable= */ closeable);
+      }
+
+      /**
+       * The {@link LoggingAdvisingAppendable} expression. Generates code to produce another {@link
+       * LoggingAdvisingAppendable} that when written to applies the directive logic.
+       */
+      public abstract Expression appendable();
+
+      /**
+       * Specifies whether the {@link #appendable()} implements {@link java.io.Closeable} and needs
+       * to have it's {@link java.io.Closeable#close()} method called to function correctly.
+       */
+      public abstract boolean closeable();
+    }
+
+    /**
      * Applies the directive to a {@link LoggingAdvisingAppendable} object.
      *
      * @param context The rendering context object.
      * @param delegateAppendable The delegate appendable
      * @param args The print directive arguments.
-     * @return An expression of type {@link LoggingAdvisingAppendable} that applies the print
-     *     directive logic.
+     * @return An {@link AppendableAndOptions} for the directive.
      */
-    Expression applyForJbcSrcStreaming(
+    AppendableAndOptions applyForJbcSrcStreaming(
         JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args);
   }
 }

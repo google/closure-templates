@@ -57,6 +57,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -633,21 +634,33 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Expression appendable = appendableExpression;
     if (!directives.isEmpty()) {
       Label printDirectiveArgumentReattachPoint = new Label();
-      appendable =
+      AppendableAndOptions wrappedAppendable =
           applyStreamingPrintDirectives(
               directives,
               appendable,
               exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
               parameterLookup.getRenderContext());
-      FieldRef currentAppendable = variables.getCurrentAppendable();
+      FieldRef currentAppendableField = variables.getCurrentAppendable();
       initAppendable =
-          currentAppendable
-              .putInstanceField(thisVar, appendable)
+          currentAppendableField
+              .putInstanceField(thisVar, wrappedAppendable.appendable())
               .labelStart(printDirectiveArgumentReattachPoint);
-      appendable = currentAppendable.accessor(thisVar);
+      appendable = currentAppendableField.accessor(thisVar);
       clearAppendable =
-          currentAppendable.putInstanceField(
+          currentAppendableField.putInstanceField(
               thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+      if (wrappedAppendable.closeable()) {
+        // make sure to call close before clearing
+        clearAppendable =
+            Statement.concat(
+                // We need to cast because the static type of the field is just plain old
+                // LoggingAdvisingAppendable
+                currentAppendableField
+                    .accessor(thisVar)
+                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
+                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                clearAppendable);
+      }
     }
     Expression callRenderAndResolve =
         currentRendereeField
@@ -871,17 +884,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               calleeExpression, getEscapingDirectivesList(node));
       appendable = appendableExpression;
     } else {
-      appendable =
+      AppendableAndOptions wrappedAppendable =
           applyStreamingEscapingDirectives(
               node.getEscapingDirectives(),
               appendableExpression,
               parameterLookup.getRenderContext());
-      FieldRef currentAppendable = variables.getCurrentAppendable();
-      initAppendable = currentAppendable.putInstanceField(thisVar, appendable);
-      appendable = currentAppendable.accessor(thisVar);
+      FieldRef currentAppendableField = variables.getCurrentAppendable();
+      initAppendable =
+          currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
+      appendable = currentAppendableField.accessor(thisVar);
       clearAppendable =
-          currentAppendable.putInstanceField(
+          currentAppendableField.putInstanceField(
               thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+      if (wrappedAppendable.closeable()) {
+        // make sure to call close before clearing
+        clearAppendable =
+            Statement.concat(
+                // We need to cast because the static type of the field is just plain old
+                // LoggingAdvisingAppendable
+                currentAppendableField
+                    .accessor(thisVar)
+                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
+                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                clearAppendable);
+      }
     }
     Statement initCallee =
         currentCalleeField

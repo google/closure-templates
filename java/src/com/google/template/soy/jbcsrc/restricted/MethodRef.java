@@ -53,6 +53,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.types.proto.SoyProtoValueImpl;
 import com.ibm.icu.util.ULocale;
+import java.io.Closeable;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -324,6 +325,8 @@ public abstract class MethodRef {
   public static final MethodRef LOG_STATEMENT_CREATE =
       create(LogStatement.class, "create", long.class, Message.class, boolean.class)
           .asNonNullable();
+
+  public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

@@ -24,9 +24,11 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -45,6 +47,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -265,12 +268,67 @@ public final class StreamingPrintDirectivesTest {
     assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
   }
 
+  @Test
+  public void testStreamingCloseable() throws IOException {
+    // Test to make sure the .close() is consistently called
+    // the |streamingCloseable directive buffers all data until close is called so if close isn't
+    // called it should print nothing.
+    CompiledTemplates templates =
+        compileFile(
+            "{namespace ns}",
+            "",
+            "{template .basic}",
+            "  {@param p : ?}",
+            "  {$p|streamingCloseable:' closed!'}",
+            "{/template}",
+            "",
+            "{template .nested kind=\"text\"}",
+            "  {@param p : ?}",
+            // escapeHtml is not closeable and it is streaming
+            "  {$p|escapeHtml|streamingCloseable:'(close)'}",
+            "{/template}",
+            "",
+            "{template .nestedDeeper kind=\"text\"}",
+            "  {@param p : ?}",
+            "  {$p|escapeHtml",
+            "     |streamingCloseable:'(c1)'",
+            "     |streamingCloseable:'(c2)'",
+            "     |escapeHtml",
+            "     |streamingCloseable:'(c3)'}",
+            "{/template}",
+            "");
+    RenderContext context = getDefaultContext(templates);
+    assertThat(renderToString("ns.basic", ImmutableMap.of("p", "hello"), templates, context))
+        .isEqualTo("hello closed!");
+    assertThat(renderToString("ns.nested", ImmutableMap.of("p", "hello"), templates, context))
+        .isEqualTo("hello(close)");
+    assertThat(renderToString("ns.nestedDeeper", ImmutableMap.of("p", "hello"), templates, context))
+        .isEqualTo("hello(c1)(c2)(c3)");
+  }
+
+  private static String renderToString(
+      String name,
+      ImmutableMap<String, Object> params,
+      CompiledTemplates templates,
+      RenderContext context)
+      throws IOException {
+    BufferingAppendable output = BufferingAppendable.buffering();
+    RenderResult result =
+        templates
+            .getTemplateFactory(name)
+            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDictFromMap(params), EMPTY_DICT)
+            .render(output, context);
+    assertThat(result.isDone()).isTrue();
+    return output.getAndClearBuffer();
+  }
+
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
             SoyFileSetParserBuilder.forFileContents(file)
                 .addPrintDirective(new StreamingDirective())
                 .addPrintDirective(new NonStreamingDirective())
+                .addPrintDirective(new StreamingCloseableDirective())
                 .runAutoescaper(true)
                 .parse()
                 .registry(),
@@ -278,7 +336,7 @@ public final class StreamingPrintDirectivesTest {
             ErrorReporter.exploding())
         .get();
   }
-  
+
   static final class StreamingDirective implements SoyJbcSrcPrintDirective.Streamable {
     @Override
     public SoyExpression applyForJbcSrc(
@@ -302,7 +360,7 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
-    public Expression applyForJbcSrcStreaming(
+    public AppendableAndOptions applyForJbcSrcStreaming(
         JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
       Expression wrapperText;
       if (!args.isEmpty()) {
@@ -310,9 +368,10 @@ public final class StreamingPrintDirectivesTest {
       } else {
         wrapperText = BytecodeUtils.constant("stream");
       }
-      return ConstructorRef.create(
-              AnnotatingAppendable.class, String.class, LoggingAdvisingAppendable.class)
-          .construct(wrapperText, delegateAppendable);
+      return AppendableAndOptions.create(
+          ConstructorRef.create(
+                  AnnotatingAppendable.class, String.class, LoggingAdvisingAppendable.class)
+              .construct(wrapperText, delegateAppendable));
     }
   }
 
@@ -393,6 +452,54 @@ public final class StreamingPrintDirectivesTest {
 
     private String wrap(CharSequence s) {
       return String.format("(%s: %s)", wrapperText, s);
+    }
+  }
+
+  static final class StreamingCloseableDirective implements SoyJbcSrcPrintDirective.Streamable {
+    @Override
+    public SoyExpression applyForJbcSrc(
+        JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+      throw new UnsupportedOperationException("shouldn't be called");
+    }
+
+    @Override
+    public String getName() {
+      return "|streamingCloseable";
+    }
+
+    @Override
+    public Set<Integer> getValidArgsSizes() {
+      return ImmutableSet.of(1);
+    }
+
+    @Override
+    public boolean shouldCancelAutoescape() {
+      return false;
+    }
+
+    @Override
+    public AppendableAndOptions applyForJbcSrcStreaming(
+        JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+      return AppendableAndOptions.createCloseable(
+          ConstructorRef.create(
+                  CloseableAppendable.class, LoggingAdvisingAppendable.class, String.class)
+              .construct(delegateAppendable, args.get(0).coerceToString()));
+    }
+  }
+
+  /** An appendable that buffers all content until a call to close. */
+  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable
+      implements Closeable {
+    final String suffix;
+
+    public CloseableAppendable(LoggingAdvisingAppendable delegate, String suffix) {
+      super(delegate);
+      this.suffix = suffix;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.append(suffix);
     }
   }
 }

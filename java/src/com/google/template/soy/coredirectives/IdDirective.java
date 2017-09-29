@@ -25,6 +25,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -83,9 +84,9 @@ public class IdDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.stringCoercing.invoke(delegateAppendable);
+    return AppendableAndOptions.create(JbcSrcMethods.stringCoercing.invoke(delegateAppendable));
   }
 
   @Override

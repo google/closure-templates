@@ -94,9 +94,9 @@ final class TextDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.stringCoercing.invoke(delegateAppendable);
+    return AppendableAndOptions.create(JbcSrcMethods.stringCoercing.invoke(delegateAppendable));
   }
 
   @Override

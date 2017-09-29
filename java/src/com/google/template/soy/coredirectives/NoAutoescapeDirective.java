@@ -24,6 +24,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
@@ -87,9 +88,10 @@ public class NoAutoescapeDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.FILTER_NO_AUTOESCAPE_STREAMING.invoke(delegateAppendable);
+    return AppendableAndOptions.create(
+        JbcSrcMethods.FILTER_NO_AUTOESCAPE_STREAMING.invoke(delegateAppendable));
   }
 
   @Override

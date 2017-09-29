@@ -99,9 +99,10 @@ public class EscapeHtmlDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.STREAMING_ESCAPE_HTML.invoke(delegateAppendable);
+    return AppendableAndOptions.create(
+        JbcSrcMethods.STREAMING_ESCAPE_HTML.invoke(delegateAppendable));
   }
 
   @Override

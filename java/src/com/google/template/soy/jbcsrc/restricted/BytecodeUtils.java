@@ -45,6 +45,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.types.proto.SoyProtoValueImpl;
+import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -74,6 +75,7 @@ public final class BytecodeUtils {
   public static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
+  public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);

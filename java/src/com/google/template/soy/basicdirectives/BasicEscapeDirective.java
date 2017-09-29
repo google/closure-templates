@@ -29,6 +29,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -133,7 +134,7 @@ public abstract class BasicEscapeDirective
    * <p>Subclasses can simply add {@code implements Streamable} if they have an implementation in
    * Sanitizers.<name>Streaming. If they don't, this method will throw while trying to find it.
    */
-  public final Expression applyForJbcSrcStreaming(
+  public final AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
     MethodRef sanitizerMethod = javaStreamingSanitizer;
     if (sanitizerMethod == null) {
@@ -147,7 +148,7 @@ public abstract class BasicEscapeDirective
       javaStreamingSanitizer = sanitizerMethod;
     }
     MethodRef streamingSanitizersMethod = sanitizerMethod;
-    return streamingSanitizersMethod.invoke(delegateAppendable);
+    return AppendableAndOptions.create(streamingSanitizersMethod.invoke(delegateAppendable));
   }
 
   // -----------------------------------------------------------------------------------------------

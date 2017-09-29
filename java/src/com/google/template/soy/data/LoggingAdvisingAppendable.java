@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -278,6 +279,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
     }
 
+    @VisibleForTesting
     public String getAndClearBuffer() {
       if (commands != null) {
         // NOTE: this ignores all the logging statements which is as it should be since they don't

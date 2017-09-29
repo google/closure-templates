@@ -27,12 +27,15 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -287,13 +290,32 @@ final class MsgCompiler {
     if (areAllPrintDirectivesStreamable(escapingDirectives)) {
       // No need to save/restore since rendering a message doesn't detach.  All detaching for data
       // should have already happened as part of constructing the placholder map.
+      AppendableAndOptions wrappedAppendable =
+          applyStreamingEscapingDirectives(
+              escapingDirectives, appendableExpression, parameterLookup.getRenderContext());
+      Statement initAppendable = Statement.NULL_STATEMENT;
+      Statement clearAppendable = Statement.NULL_STATEMENT;
+      Expression appendableExpression = wrappedAppendable.appendable();
+      if (wrappedAppendable.closeable()) {
+        Scope scope = variables.enterScope();
+        Variable appendableVar =
+            scope.createTemporary("msg_appendable", wrappedAppendable.appendable());
+        initAppendable = appendableVar.initializer();
+        appendableExpression = appendableVar.local();
+        clearAppendable =
+            Statement.concat(
+                appendableVar
+                    .local()
+                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
+                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                scope.exitScope());
+      }
       render =
-          MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
-              soyMsgParts,
-              locale,
-              placeholderMap,
-              applyStreamingEscapingDirectives(
-                  escapingDirectives, appendableExpression, parameterLookup.getRenderContext()));
+          Statement.concat(
+              initAppendable,
+              MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
+                  soyMsgParts, locale, placeholderMap, appendableExpression),
+              clearAppendable);
     } else {
       // render into the handy buffer we already have!
       Statement renderToBuffer =

@@ -101,10 +101,11 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
   }
 
   @Override
-  public Expression applyForJbcSrcStreaming(
+  public AppendableAndOptions applyForJbcSrcStreaming(
       JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-    return JbcSrcMethods.BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY_STREAMING.invoke(
-        delegateAppendable);
+    return AppendableAndOptions.create(
+        JbcSrcMethods.BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY_STREAMING.invoke(
+            delegateAppendable));
   }
 
   @Override
