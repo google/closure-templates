@@ -101,12 +101,12 @@ public final class SharedModuleTest {
             "|escapeJsRegex",
             "|text",
             "|noAutoescape",
-            "|normalizeUri");
+            "|normalizeUri",
+            "|changeNewlineToBr");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
             // These all make sense to be streaming, though it might make sense to just skip
             // some of the deprecated ones.
-            "|changeNewlineToBr",
             "|insertWordBreaks",
             "|truncate",
             // This isn't worth doing.  uris should all be small.

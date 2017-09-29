@@ -15,12 +15,15 @@
  */
 package com.google.template.soy.basicdirectives;
 
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
+import java.io.IOException;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -76,6 +79,76 @@ public final class BasicDirectivesRuntime {
       }
     }
     return StringData.forValue(result);
+  }
+
+  public static LoggingAdvisingAppendable changeNewlineToBrStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return new ForwardingLoggingAdvisingAppendable(appendable) {
+      private boolean lastCharWasCarriageReturn;
+
+      @Override
+      public LoggingAdvisingAppendable append(char c) throws IOException {
+        switch (c) {
+          case '\n':
+            if (!lastCharWasCarriageReturn) {
+              super.append("<br>");
+            }
+            lastCharWasCarriageReturn = false;
+            break;
+          case '\r':
+            super.append("<br>");
+            lastCharWasCarriageReturn = true;
+            break;
+          default:
+            super.append(c);
+            lastCharWasCarriageReturn = false;
+            break;
+        }
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+        return append(csq, 0, csq.length());
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+          throws IOException {
+        int appendedUpTo = start;
+        boolean carriageReturn = lastCharWasCarriageReturn;
+        for (int i = start; i < end; i++) {
+          switch (csq.charAt(i)) {
+            case '\n':
+              appendUpTo(csq, appendedUpTo, i);
+              if (!carriageReturn) {
+                super.append("<br>");
+              }
+              appendedUpTo = i + 1;
+              carriageReturn = false;
+              break;
+            case '\r':
+              appendUpTo(csq, appendedUpTo, i);
+              super.append("<br>");
+              appendedUpTo = i + 1;
+              carriageReturn = true;
+              break;
+            default:
+              carriageReturn = false;
+              break;
+          }
+        }
+        appendUpTo(csq, appendedUpTo, end);
+        lastCharWasCarriageReturn = carriageReturn;
+        return this;
+      }
+
+      private void appendUpTo(CharSequence csq, int start, int end) throws IOException {
+        if (start != end) {
+          super.append(csq, start, end);
+        }
+      }
+    };
   }
 
   public static SoyString insertWordBreaks(SoyValue value, int maxCharsBetweenWordBreaks) {

@@ -17,9 +17,11 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -48,7 +50,7 @@ final class ChangeNewlineToBrDirective
         SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   @Inject
   public ChangeNewlineToBrDirective() {}
@@ -85,6 +87,12 @@ final class ChangeNewlineToBrDirective
     static final MethodRef CHANGE_NEWLINE_TO_BR =
         MethodRef.create(BasicDirectivesRuntime.class, "changeNewlineToBr", SoyValue.class)
             .asNonNullable();
+    static final MethodRef CHANGE_NEWLINE_TO_BR_STREAMING =
+        MethodRef.create(
+                BasicDirectivesRuntime.class,
+                "changeNewlineToBrStreaming",
+                LoggingAdvisingAppendable.class)
+            .asNonNullable();
   }
 
   @Override
@@ -95,9 +103,16 @@ final class ChangeNewlineToBrDirective
   }
 
   @Override
+  public Expression applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return JbcSrcMethods.CHANGE_NEWLINE_TO_BR_STREAMING.invoke(delegateAppendable);
+  }
+
+  @Override
   public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$changeNewlineToBr(" + value.getText() + ")", Integer.MAX_VALUE);
   }
+
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
     return ImmutableSet.of("soy");
