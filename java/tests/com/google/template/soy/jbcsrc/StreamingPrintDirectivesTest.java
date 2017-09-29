@@ -36,6 +36,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -241,6 +242,29 @@ public final class StreamingPrintDirectivesTest {
     assertThat(output.getAndClearBuffer()).isEqualTo("hello\\x22\";</script>");
   }
 
+  // There was a bug that caused us to apply print directives in the wrong order when there were
+  // multiple streaming print directives.
+  @Test
+  public void testStreamingPrintOrdering() throws IOException {
+    CompiledTemplates templates =
+        compileFile(
+            "{namespace ns}",
+            "",
+            "{template .foo}",
+            "  {@param s : ?}",
+            "  {$s |streaming:'first' |streaming:'second'}",
+            "{/template}",
+            "");
+    RenderContext context = getDefaultContext(templates);
+    BufferingAppendable output = BufferingAppendable.buffering();
+    CompiledTemplate template =
+        templates
+            .getTemplateFactory("ns.foo")
+            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("s", "hello"), EMPTY_DICT);
+    template.render(output, context);
+    assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
+  }
+
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
@@ -254,7 +278,7 @@ public final class StreamingPrintDirectivesTest {
             ErrorReporter.exploding())
         .get();
   }
-
+  
   static final class StreamingDirective implements SoyJbcSrcPrintDirective.Streamable {
     @Override
     public SoyExpression applyForJbcSrc(
@@ -269,7 +293,7 @@ public final class StreamingPrintDirectivesTest {
 
     @Override
     public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0);
+      return ImmutableSet.of(0, 1);
     }
 
     @Override
@@ -280,8 +304,15 @@ public final class StreamingPrintDirectivesTest {
     @Override
     public Expression applyForJbcSrcStreaming(
         JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
-      return ConstructorRef.create(AnnotatingAppendable.class, LoggingAdvisingAppendable.class)
-          .construct(delegateAppendable);
+      Expression wrapperText;
+      if (!args.isEmpty()) {
+        wrapperText = args.get(0).coerceToString();
+      } else {
+        wrapperText = BytecodeUtils.constant("stream");
+      }
+      return ConstructorRef.create(
+              AnnotatingAppendable.class, String.class, LoggingAdvisingAppendable.class)
+          .construct(wrapperText, delegateAppendable);
     }
   }
 
@@ -308,12 +339,14 @@ public final class StreamingPrintDirectivesTest {
     }
   }
 
-  /** An appendable that annotates each printed chunk with {@code (stream: %s)}. */
+  /** An appendable that annotates each printed chunk with {@code (<wrapperText>: %s)}. */
   public static final class AnnotatingAppendable extends LoggingAdvisingAppendable {
     private final LoggingAdvisingAppendable delegate;
+    private final String wrapperText;
 
-    public AnnotatingAppendable(LoggingAdvisingAppendable delegate) {
+    public AnnotatingAppendable(String wrapperText, LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
+      this.wrapperText = wrapperText;
     }
 
     @Override
@@ -323,7 +356,7 @@ public final class StreamingPrintDirectivesTest {
 
     @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-      getDelegateForAppend().append(csq).append(")");
+      delegate.append(wrap(csq));
       return this;
     }
 
@@ -354,12 +387,12 @@ public final class StreamingPrintDirectivesTest {
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      getDelegateForAppend().appendLoggingFunctionInvocation(funCall, escapers).append(")");
+      delegate.appendLoggingFunctionInvocation(funCall, escapers);
       return this;
     }
 
-    private LoggingAdvisingAppendable getDelegateForAppend() throws IOException {
-      return delegate.append("(stream: ");
+    private String wrap(CharSequence s) {
+      return String.format("(%s: %s)", wrapperText, s);
     }
   }
 }

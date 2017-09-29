@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -68,7 +69,10 @@ final class PrintDirectives {
    */
   static Expression applyStreamingEscapingDirectives(
       List<SoyPrintDirective> directives, Expression appendable, JbcSrcPluginContext context) {
-    for (SoyPrintDirective directive : directives) {
+    // Apply the directives to the appendable in reverse
+    // since we are wrapping the directives around the appendable we need to wrap the underlying
+    // appendable with the last directive first. so iterate in reverse order.
+    for (SoyPrintDirective directive : Lists.reverse(directives)) {
       appendable =
           ((SoyJbcSrcPrintDirective.Streamable) directive)
               .applyForJbcSrcStreaming(context, appendable, ImmutableList.of());
@@ -91,7 +95,8 @@ final class PrintDirectives {
       Expression appendable,
       BasicExpressionCompiler basic,
       JbcSrcPluginContext renderContext) {
-    for (PrintDirectiveNode directive : directives) {
+    // See comment above for why we reverse the order here.
+    for (PrintDirectiveNode directive : Lists.reverse(directives)) {
       appendable =
           ((SoyJbcSrcPrintDirective.Streamable) directive.getPrintDirective())
               .applyForJbcSrcStreaming(
