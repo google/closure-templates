@@ -28,6 +28,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.Set;
@@ -48,6 +49,10 @@ public final class PluginResolver {
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind DEPRECATED_PLUGIN =
+      SoyErrorKind.of(
+          "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
       SoyErrorKind.of("{0} called with {1} arguments (expected {2}).");
@@ -107,6 +112,7 @@ public final class PluginResolver {
       soyPrintDirective = createPlaceholderPrintDirective(name, numArgs);
     }
     checkNumArgs("print directive", soyPrintDirective.getValidArgsSizes(), numArgs, location);
+    warnIfDeprecated(name, soyPrintDirective, location);
     return soyPrintDirective;
   }
 
@@ -134,6 +140,7 @@ public final class PluginResolver {
       soyFunction = createPlaceholderSoyFunction(name, numArgs);
     }
     checkNumArgs("function", soyFunction.getValidArgsSizes(), numArgs, location);
+    warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
   }
 
@@ -142,6 +149,13 @@ public final class PluginResolver {
     if (!arities.contains(actualNumArgs)) {
       reporter.report(
           location, INCORRECT_NUM_ARGS, pluginKind, actualNumArgs, Joiner.on(" or ").join(arities));
+    }
+  }
+
+  private void warnIfDeprecated(String name, Object plugin, SourceLocation location) {
+    SoyDeprecated deprecatedNotice = plugin.getClass().getAnnotation(SoyDeprecated.class);
+    if (deprecatedNotice != null) {
+      reporter.warn(location, DEPRECATED_PLUGIN, name, deprecatedNotice.value());
     }
   }
 
