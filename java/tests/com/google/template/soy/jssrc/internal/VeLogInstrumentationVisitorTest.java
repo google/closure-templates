@@ -310,8 +310,7 @@ public final class VeLogInstrumentationVisitorTest {
   /** Parses the given input as a template content. */
   private static SoyFileSetNode runPass(String input) {
     String soyFile =
-        Joiner.on('\n')
-            .join("{namespace ns stricthtml=\"true\"}", "", "{template .t}", input, "{/template}");
+        Joiner.on('\n').join("{namespace ns}", "", "{template .t}", input, "{/template}");
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             // Disable desguaring pass and manually run it later

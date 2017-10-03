@@ -140,7 +140,7 @@ public final class SharedTestUtils {
     soyFileContentBuilder
         .append(" */\n")
         .append("{template " + templateName)
-        .append(" stricthtml=\"" + (strictHtml ? "true" : "false") + "\"")
+        .append(strictHtml ? "" : " stricthtml=\"false\"")
         .append("}\n")
         .append(soyCode)
         .append("\n")

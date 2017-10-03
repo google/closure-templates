@@ -26,7 +26,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -102,7 +101,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     final Priority priority;
     @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
-    public final TriState strictHtmlMode;
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
@@ -113,7 +111,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
           delpackageName == null ? null : delpackageName.identifier(),
           namespaceDeclaration.getNamespace(),
           namespaceDeclaration.getDefaultAutoescapeMode(),
-          namespaceDeclaration.getStrictHtmlMode(),
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
           ImmutableList.copyOf(aliases));
     }
@@ -124,7 +121,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
           null,
           namespace,
           AutoescapeMode.NONCONTEXTUAL,
-          TriState.UNSET, // Don't use stricthtml mode for testing.
           ImmutableMap.<String, String>of(),
           ImmutableList.<AliasDeclaration>of());
     }
@@ -133,14 +129,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
         @Nullable String delPackageName,
         String namespace,
         AutoescapeMode defaultAutoescapeMode,
-        TriState strictHtmlMode,
         ImmutableMap<String, String> aliasToNamespaceMap,
         ImmutableList<AliasDeclaration> aliasDeclarations) {
       this.delPackageName = delPackageName;
       this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.defaultAutoescapeMode = defaultAutoescapeMode;
-      this.strictHtmlMode = strictHtmlMode;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
     }
@@ -251,7 +245,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
     this.soyDoc = nodeBuilder.getSoyDoc();
     this.soyDocDesc = nodeBuilder.getSoyDocDesc();
-    this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlMode());
+    this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlDisabled());
     // Split out @inject params into a separate list because we don't want them
     // to be visible to code that looks at the template's calling signature.
     ImmutableList.Builder<TemplateParam> regularParams = ImmutableList.builder();
@@ -333,17 +327,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     return autoescapeMode;
   }
 
-  private boolean computeStrictHtmlMode(TriState templateStrictHtmlMode) {
-    if (templateStrictHtmlMode != TriState.UNSET) {
+  private boolean computeStrictHtmlMode(boolean strictHtmlDisabled) {
+    if (strictHtmlDisabled) {
       // Use the value that is explicitly set in template.
-      return templateStrictHtmlMode == TriState.ENABLED;
+      return false;
     } else if (contentKind != SanitizedContentKind.HTML
         || autoescapeMode != AutoescapeMode.STRICT) {
       // Non-HTML or non-strict-autoescaping templates couldn't be strictHtml.
       return false;
-    } else if (soyFileHeaderInfo.strictHtmlMode != TriState.UNSET) {
-      // If the value is not set, HTML templates will inherit from namespace declaration.
-      return soyFileHeaderInfo.strictHtmlMode == TriState.ENABLED;
     } else {
       // Strict autoescaping HTML templates have strictHtml enabled by default.
       return true;

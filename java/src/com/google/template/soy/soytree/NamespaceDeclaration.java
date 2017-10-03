@@ -22,7 +22,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.error.ErrorReporter;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -38,8 +37,6 @@ public final class NamespaceDeclaration {
   @Nullable private final SourceLocation autoescapeModeLocation;
   private final ImmutableList<String> requiredCssNamespaces;
   private final String cssBaseNamespace;
-  private final TriState strictHtml;
-  @Nullable private final SourceLocation strictHtmlLocation;
 
   final ImmutableList<CommandTagAttribute> attrs;
 
@@ -49,8 +46,6 @@ public final class NamespaceDeclaration {
     SourceLocation autoescapeModeLocation = null;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
-    TriState strictHtml = TriState.UNSET;
-    SourceLocation strictHtmlLocation = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
         case "autoescape":
@@ -64,8 +59,8 @@ public final class NamespaceDeclaration {
           cssBaseNamespace = attr.getValue();
           break;
         case "stricthtml":
-          strictHtml = attr.valueAsTriState(errorReporter);
-          strictHtmlLocation = attr.getValueLocation();
+          errorReporter.report(
+              attr.getName().location(), CommandTagAttribute.NAMESPACE_STRICTHTML_ATTRIBUTE);
           break;
         default:
           errorReporter.report(
@@ -73,7 +68,7 @@ public final class NamespaceDeclaration {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("autoescape", "cssbase", "requirecss", "stricthtml"));
+              ImmutableList.of("autoescape", "cssbase", "requirecss"));
           break;
       }
     }
@@ -83,8 +78,6 @@ public final class NamespaceDeclaration {
     this.autoescapeModeLocation = autoescapeModeLocation;
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
-    this.strictHtml = strictHtml;
-    this.strictHtmlLocation = strictHtmlLocation;
     this.attrs = ImmutableList.copyOf(attrs);
   }
 
@@ -113,20 +106,6 @@ public final class NamespaceDeclaration {
   @Nullable
   String getCssBaseNamespace() {
     return cssBaseNamespace;
-  }
-
-  public TriState getStrictHtmlMode() {
-    return strictHtml;
-  }
-
-  /**
-   * Returns the location of {@code stricthtml} attribute.
-   *
-   * @throws IllegalStateException if there is no attribute.
-   */
-  public SourceLocation getStrictHtmlModeLocation() {
-    checkState(strictHtmlLocation != null, "there is no stricthtml attribute");
-    return strictHtmlLocation;
   }
 
   /** Returns an approximation of what the original source for this namespace looked like. */

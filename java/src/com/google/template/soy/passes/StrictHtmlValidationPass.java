@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -41,7 +40,6 @@ import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
-import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -94,16 +92,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    // First check namespace declarations, and return if there is any violation.
-    NamespaceDeclaration namespace = file.getNamespaceDeclaration();
-    if (namespace.getStrictHtmlMode() != TriState.UNSET) {
-      if (namespace.getDefaultAutoescapeMode() != AutoescapeMode.STRICT
-          && namespace.getStrictHtmlMode() == TriState.ENABLED) {
-        errorReporter.report(namespace.getAutoescapeModeLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);
-        return;
-      }
-    }
-    // Then check each template node.
     for (TemplateNode node : file.getChildren()) {
       checkTemplateNode(node);
     }

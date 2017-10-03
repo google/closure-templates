@@ -59,6 +59,8 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.");
   private static final SoyErrorKind EXPECTED_A_SINGLE_EXPRESSION =
       SoyErrorKind.of("Expected a single expression for a {0} attribute.");
+  static final SoyErrorKind NAMESPACE_STRICTHTML_ATTRIBUTE =
+      SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
@@ -170,6 +172,17 @@ public final class CommandTagAttribute {
           key.identifier(),
           ImmutableList.of("true", "false"));
       return TriState.UNSET;
+    }
+  }
+
+  boolean valueAsDisabled(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    if ("false".equals(value)) {
+      return true;
+    } else {
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "false");
+      return false;
     }
   }
 

@@ -365,16 +365,9 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}";
-    assertNoViolation(
-        config, "{namespace ns stricthtml=\"true\"}\n" + "{template .foo}\n" + "{/template}");
-    assertViolation(
-        config, "{namespace ns stricthtml=\"false\"}\n" + "{template .foo}\n" + "{/template}");
     assertNoViolation(config, "{namespace ns}\n" + "{template .foo}\n" + "{/template}");
     assertViolation(
-        config,
-        "{namespace ns stricthtml=\"true\"}\n"
-            + "{template .foo stricthtml=\"false\"}\n"
-            + "{/template}");
+        config, "{namespace ns}\n" + "{template .foo stricthtml=\"false\"}\n" + "{/template}");
     assertNoViolation(
         config, "{namespace ns}\n" + "{template .foo kind=\"text\"}\n" + "{/template}");
   }

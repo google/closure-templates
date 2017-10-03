@@ -192,7 +192,7 @@ public final class StreamingPrintDirectivesTest {
   public void testStreamingEscapeHtml() throws IOException {
     CompiledTemplates templates =
         compileFile(
-            "{namespace ns stricthtml=\"true\"}",
+            "{namespace ns}",
             "",
             "{template .tag}",
             "  {let $tag kind=\"html\"}",

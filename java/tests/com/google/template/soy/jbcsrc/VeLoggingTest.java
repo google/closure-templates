@@ -244,7 +244,7 @@ public final class VeLoggingTest {
       throws IOException {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns stricthtml=\"true\"}\n"
+                "{namespace ns}\n"
                     + "{template .foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
                     + "\n{/template}")

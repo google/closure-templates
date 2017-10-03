@@ -84,7 +84,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
           markDeprecatedV1(attribute.valueAsBoolean(errorReporter, false));
           break;
         case "stricthtml":
-          strictHtmlMode = attribute.valueAsTriState(errorReporter);
+          strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
           break;
         default:
           errorReporter.report(
