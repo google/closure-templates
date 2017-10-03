@@ -80,6 +80,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -589,6 +590,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(fn, args, node);
+    } else if (soyFunction instanceof LoggingFunction) {
+      return StringData.forValue(((LoggingFunction) soyFunction).getPlaceholder());
     } else {
       throw RenderException.create(
           "Failed to find Soy function with name '"

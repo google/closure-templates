@@ -40,6 +40,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
@@ -140,7 +141,9 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     if (node.getSoyFunction() instanceof BuiltinFunction) {
       return;
     }
-
+    if (node.getSoyFunction() instanceof LoggingFunction) {
+      return;
+    }
     // Default to fallback implementation.
     visitExprNode(node);
   }
