@@ -127,10 +127,10 @@ public final class GenJsCodeVisitorTest {
   public void testSoyFile() {
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call boo.woo.hoo data=\"all\" /}\n" // not defined in this file
             + "{/template}\n";
@@ -229,10 +229,10 @@ public final class GenJsCodeVisitorTest {
   public void testOnlyOneRequireStatementPerNamespace() {
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call boo.woo.aaa data=\"all\" /}\n"
             + "  {call boo.woo.aaa.bbb data=\"all\" /}\n"
             + "  {call boo.woo.bbb data=\"all\" /}\n"
@@ -267,10 +267,10 @@ public final class GenJsCodeVisitorTest {
   public void testOnlyOneRequireStatementPerPluginNamespace() {
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call for.function.aaa data=\"all\" /}\n"
             + "  {noopRequire()}\n"
             + "{/template}\n";
@@ -308,13 +308,13 @@ public final class GenJsCodeVisitorTest {
 
     String testFileContent =
         ""
-            + "{namespace boo.foo autoescape=\"deprecated-noncontextual\"\n"
+            + "{namespace boo.foo\n"
             + "    requirecss=\"\n"
             + "        ddd.eee.fff.ggg,\n"
             + "        aaa.bbb.ccc\"}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  blah\n"
             + "{/template}\n";
 
@@ -343,10 +343,10 @@ public final class GenJsCodeVisitorTest {
   public void testSoyFileInDelegatePackage() {
     String testFileContent =
         "{delpackage MySecretFeature}\n"
-            + "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"
-            + "{deltemplate myDelegates.goo}\n"
+            + "{deltemplate myDelegates.goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {delcall myDelegates.soo /}\n"
             + "{/deltemplate}\n";
 
@@ -392,10 +392,11 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testDelegateVariantProvideRequiresJsDocAnnotations() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"
-            + "{deltemplate myDelegates.goo variant=\"'googoo'\"}\n"
+            + "{deltemplate myDelegates.goo variant=\"'googoo'\""
+            + " autoescape=\"deprecated-noncontextual\"}\n"
             + "  {delcall myDelegates.moo variant=\"'moomoo'\" /}\n"
             + "{/deltemplate}\n";
 
@@ -440,10 +441,10 @@ public final class GenJsCodeVisitorTest {
   public void testTemplate() {
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 
@@ -473,10 +474,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testTemplateThatShouldEnsureDataIsDefined() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** @param? moo */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$moo}\n"
             + "{/template}\n";
 
@@ -504,10 +505,10 @@ public final class GenJsCodeVisitorTest {
 
     // ------ Should not generate extra statement for injected and local var data refs. ------
     testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {let $moo: 90 /}\n"
             + "  {$moo}{$ij.moo}\n"
             + "{/template}\n";
@@ -545,10 +546,10 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldGenerateJsdoc(true);
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 
@@ -588,10 +589,10 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldGenerateJsdoc(true);
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"strict\" kind=\"js\"}\n"
+            + "{template .goo kind=\"js\"}\n"
             + "  alert('Hello World');\n"
             + "{/template}\n";
 
@@ -631,10 +632,10 @@ public final class GenJsCodeVisitorTest {
     String testFileContent =
         ""
             + // note: no delpackage => priority 0
-            "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+            "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"
-            + "{deltemplate myDelegates.goo}\n"
+            + "{deltemplate myDelegates.goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  Blah\n"
             + "{/deltemplate}\n";
 
@@ -676,10 +677,11 @@ public final class GenJsCodeVisitorTest {
         ""
             + "{delpackage MySecretFeature}\n"
             + // note: delpackage => priority 1
-            "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+            "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template with variant. */\n"
-            + "{deltemplate myDelegates.goo variant=\"'moo'\"}\n"
+            + "{deltemplate myDelegates.goo variant=\"'moo'\""
+            + " autoescape=\"deprecated-noncontextual\"}\n"
             + "  Blah\n"
             + "{/deltemplate}\n";
 
@@ -1292,10 +1294,10 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode("{xid('some-id')}\n", "output += xid('some-id');\n");
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {xid('some-id')}\n"
             + "{/template}\n";
 
@@ -2169,10 +2171,10 @@ public final class GenJsCodeVisitorTest {
   public void testStrictMode() {
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"strict\" kind=\"html\"}\n"
+            + "{template .goo kind=\"html\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 
@@ -2205,10 +2207,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamsGeneratesJsRecordType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : string}\n"
             + "  {@param goo : string|null}\n"
             + "  {$moo}\n"
@@ -2243,7 +2245,7 @@ public final class GenJsCodeVisitorTest {
         getRequiredSymbols(
             "{namespace boo.foo}\n"
                 + "\n"
-                + "{template .goo}\n"
+                + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
                 + "  {@param moo : string}\n"
                 + "  {$moo}\n"
                 + "{/template}\n");
@@ -2258,7 +2260,7 @@ public final class GenJsCodeVisitorTest {
             getRequiredSymbols(
                 "{namespace boo.foo}\n"
                     + "\n"
-                    + "{template .goo}\n"
+                    + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
                     + "  {@param moo : list<html>}\n"
                     + "  {$moo}\n"
                     + "{/template}\n"))
@@ -2267,7 +2269,7 @@ public final class GenJsCodeVisitorTest {
             getRequiredSymbols(
                 "{namespace boo.foo}\n"
                     + "\n"
-                    + "{template .goo}\n"
+                    + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
                     + "  {@param moo : map<string, html>}\n"
                     + "  {$moo}\n"
                     + "{/template}\n"))
@@ -2276,7 +2278,7 @@ public final class GenJsCodeVisitorTest {
             getRequiredSymbols(
                 "{namespace boo.foo}\n"
                     + "\n"
-                    + "{template .goo}\n"
+                    + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
                     + "  {@param moo : html|css}\n"
                     + "  {$moo}\n"
                     + "{/template}\n"))
@@ -2286,10 +2288,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamIntType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : int}\n"
             + "  {$moo}\n"
             + "{/template}\n";
@@ -2321,10 +2323,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamStringType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : string}\n"
             + "  {$moo}\n"
             + "{/template}\n";
@@ -2356,10 +2358,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamBoolType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : bool}\n"
             + "  {@param? noo : bool}\n"
             + "  {$moo ? 1 : 0}{$noo ? 1 : 0}\n"
@@ -2427,10 +2429,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamUnionType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : string|list<int>}\n"
             + "  {$moo}\n"
             + "{/template}\n";
@@ -2462,10 +2464,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testHeaderParamReservedWord() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param export : int}\n"
             + "  {$export}\n"
             + "{/template}\n";
@@ -2497,10 +2499,10 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testInjectedHeaderParamStringType() {
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@inject moo : string}\n"
             + "  {$moo}\n"
             + "{/template}\n";
@@ -2536,10 +2538,10 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldGenerateJsdoc(true);
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo visibility=\"private\"}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\" visibility=\"private\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 

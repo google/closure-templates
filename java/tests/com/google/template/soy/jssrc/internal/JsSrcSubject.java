@@ -98,11 +98,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   static ForFile assertThatTemplateBody(String... lines) {
     String templateBody = JOINER.join(lines);
     return assertAbout(TEMPLATE_FACTORY)
-        .that(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-                + "{template .aaa}\n"
-                + templateBody
-                + "{/template}\n");
+        .that("{namespace ns}\n" + "{template .aaa}\n" + templateBody + "{/template}\n");
   }
 
   /**
@@ -147,10 +143,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       } else {
         templateBody = paramDecls.toString() + "{" + exprText + "}";
       }
-      return "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-          + "{template .aaa}\n"
-          + templateBody
-          + "\n{/template}";
+      return "{namespace ns}\n" + "{template .aaa}\n" + templateBody + "\n{/template}";
     }
   }
 

@@ -44,7 +44,7 @@ public final class FindIndirectParamsVisitorTest {
   public void testFindIndirectParams() {
 
     String fileContent1 =
-        "{namespace alpha autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace alpha}\n"
             + "\n"
             + "/** @param? a0 @param? b3 */\n"
             + // 'b3' listed by alpha.zero
@@ -100,7 +100,7 @@ public final class FindIndirectParamsVisitorTest {
             + "{/template}\n";
 
     String fileContent2 =
-        "{namespace beta autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace beta}\n"
             + "\n"
             + "/** @param? b0 */\n"
             + "{template .zero}\n"

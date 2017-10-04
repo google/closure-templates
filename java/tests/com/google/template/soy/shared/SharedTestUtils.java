@@ -127,11 +127,7 @@ public final class SharedTestUtils {
     String templateName = ".brittleTestTemplate";
 
     StringBuilder soyFileContentBuilder = new StringBuilder();
-    soyFileContentBuilder
-        .append("{namespace " + namespace)
-        .append(" autoescape=\"" + autoEscaping.getKey() + "\"")
-        .append("}\n")
-        .append("/** Test template.");
+    soyFileContentBuilder.append("{namespace " + namespace + "}\n").append("/** Test template.");
     if (soyDocParamNames != null) {
       for (String paramName : soyDocParamNames) {
         soyFileContentBuilder.append(" @param " + paramName);
@@ -141,6 +137,10 @@ public final class SharedTestUtils {
         .append(" */\n")
         .append("{template " + templateName)
         .append(strictHtml ? "" : " stricthtml=\"false\"")
+        .append(
+            autoEscaping != AutoEscapingType.STRICT
+                ? " autoescape=\"" + autoEscaping.getKey() + "\""
+                : "")
         .append("}\n")
         .append(soyCode)
         .append("\n")

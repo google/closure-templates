@@ -142,10 +142,10 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest {
   private static SoyFileSetNode parseTestPrintTagsHelper(String testPrintTags) {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** Foo template. */\n"
-            + "{template .foo}\n"
+            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
             + testPrintTags
             + "\n"
             + "{/template}\n";

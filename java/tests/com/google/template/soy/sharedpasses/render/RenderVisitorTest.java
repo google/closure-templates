@@ -883,10 +883,10 @@ public class RenderVisitorTest {
   @Test
   public void testRenderBasicCall() throws Exception {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "\n"
             + "/** @param boo @param foo @param goo */\n"
-            + "{template .callerTemplate}\n"
+            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -908,7 +908,7 @@ public class RenderVisitorTest {
             + " * @param boo\n"
             + " * @param goo\n"
             + " */\n"
-            + "{template .calleeTemplate}\n"
+            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$boo}\n"
             + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
             + "{/template}\n";
@@ -980,10 +980,10 @@ public class RenderVisitorTest {
           }
         };
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "\n"
             + "/** @param boo @param foo @param goo */\n"
-            + "{template .callerTemplate}\n"
+            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -1005,7 +1005,7 @@ public class RenderVisitorTest {
             + " * @param boo\n"
             + " * @param goo\n"
             + " */\n"
-            + "{template .calleeTemplate}\n"
+            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$boo}{$ij.future}\n"
             + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
             + "{/template}\n";
@@ -1057,7 +1057,7 @@ public class RenderVisitorTest {
   @Test
   public void testRenderDelegateCall() throws Exception {
     String soyFileContent1 =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
             + "{template .callerTemplate}\n"
@@ -1074,7 +1074,7 @@ public class RenderVisitorTest {
 
     String soyFileContent2 =
         "{delpackage SecretFeature}\n"
-            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns2}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1084,7 +1084,7 @@ public class RenderVisitorTest {
 
     String soyFileContent3 =
         "{delpackage AlternateSecretFeature}\n"
-            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns3}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1094,7 +1094,7 @@ public class RenderVisitorTest {
 
     String soyFileContent4 =
         "{delpackage AlternateSecretFeature}\n"
-            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns3}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{template .helper}\n"
@@ -1160,7 +1160,7 @@ public class RenderVisitorTest {
   public void testRenderDelegateVariantCall() throws Exception {
     String soyFileContent1 =
         ""
-            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns1}\n"
             + "\n"
             + "/** @param greekB */\n"
             + "{template .callerTemplate}\n"
@@ -1208,7 +1208,7 @@ public class RenderVisitorTest {
     String soyFileContent2 =
         ""
             + "{delpackage SecretFeature}\n"
-            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns2}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1236,7 +1236,7 @@ public class RenderVisitorTest {
     String soyFileContent3 =
         ""
             + "{delpackage AlternateSecretFeature}\n"
-            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns3}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1313,7 +1313,7 @@ public class RenderVisitorTest {
   @Test
   public void testRenderDelegateCallWithoutDefault() throws Exception {
     String soyFileContent1a =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
             + "{template .callerTemplate}\n"
@@ -1323,7 +1323,7 @@ public class RenderVisitorTest {
             + "{/template}\n";
 
     String soyFileContent1b =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
             + "{template .callerTemplate}\n"
@@ -1334,7 +1334,7 @@ public class RenderVisitorTest {
 
     String soyFileContent2 =
         "{delpackage SecretFeature}\n"
-            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns2}\n"
             + "\n"
             + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
@@ -1478,10 +1478,10 @@ public class RenderVisitorTest {
   @Test
   public void testRenderCallLazyParamContentNode() throws Exception {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "\n"
             + "/** */\n"
-            + "{template .callerTemplate}\n"
+            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .calleeTemplate}\n"
             + "    {param foo}\n"
             + "      param{log}param{/log}\n"
@@ -1492,7 +1492,7 @@ public class RenderVisitorTest {
             + "/**\n"
             + " * @param foo\n"
             + " */\n"
-            + "{template .calleeTemplate}\n"
+            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
             + "{/template}\n";
@@ -1544,7 +1544,7 @@ public class RenderVisitorTest {
   @Test
   public void testDelayedCheckingOfCachingProviders() {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "\n"
             + "{template .template}\n"
             + "  {@param foo: int}\n"
@@ -1580,7 +1580,7 @@ public class RenderVisitorTest {
   @Test
   public void testDelayedCheckingOfCachingProviders_typeCheckFailure() {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "\n"
             + "{template .template}\n"
             + "  {@param foo: int}\n"
@@ -1611,7 +1611,7 @@ public class RenderVisitorTest {
     String soyFileContent =
         Joiner.on("\n")
             .join(
-                "{namespace ns autoescape=\"deprecated-noncontextual\"}",
+                "{namespace ns}",
                 "",
                 "{template .callee}",
                 "  {@param body: html}",

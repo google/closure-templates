@@ -52,10 +52,10 @@ public final class BuildAllDependeesMapVisitorTest {
   public void testGetTopLevelRefsVisitor() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** Test template */\n"
-            + "{template .foo}\n"
+            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param a : ?}\n"
             + "  {@param b : ?}\n"
             + "  {@param e : ?}\n"

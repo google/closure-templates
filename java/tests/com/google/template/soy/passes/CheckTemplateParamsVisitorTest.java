@@ -99,7 +99,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testCalls() {
     String fileContent1 =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * @param? goo @param too @param woo @param? zoo\n"
@@ -110,7 +110,7 @@ public final class CheckTemplateParamsVisitorTest {
             " * @param transParam \n"
             + // okay (not required) because it's used in transitive callee
             " */\n"
-            + "{template .foo}\n"
+            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .fee data=\"$goo.moo\" /}\n"
             + "  {call .fee data=\"$too\"}\n"
             + "    {param gee : $woo.hoo /}\n"
@@ -124,22 +124,22 @@ public final class CheckTemplateParamsVisitorTest {
             + "{/template}\n"
             + "\n"
             + "/** @param gee @param mee */\n"
-            + "{template .fee}\n"
+            + "{template .fee autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$gee}{$mee}\n"
             + "{/template}\n"
             + "\n"
             + "/** */\n"
-            + "{template .transitive1}\n"
+            + "{template .transitive1 autoescape=\"deprecated-noncontextual\"}\n"
             + "  {call .transitive2 data=\"all\" /}\n"
             + "{/template}\n"
             + "\n"
             + "/** @param transParam */\n"
-            + "{template .transitive2}\n"
+            + "{template .transitive2 autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$transParam}\n"
             + "{/template}\n";
 
     String fileContent2 =
-        "{namespace baa autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace baa}\n"
             + "\n"
             + "/** @param gaa @param maa */\n"
             + "{template .faa}\n"
@@ -152,7 +152,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testCallWithMissingParam() {
     String fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** @param a */\n"
             + "{template .caller}\n"
@@ -194,7 +194,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testUnusedParamInCallWithAllData() {
     String fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * @param moo\n"
@@ -218,7 +218,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testWithExternalCallWithAllData() {
     String fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * @param zoo\n"
@@ -244,7 +244,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testUnusedParamInDelegateTemplate() {
     String fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * @param zoo\n"
@@ -261,7 +261,7 @@ public final class CheckTemplateParamsVisitorTest {
   public void testDelegateCallVariant() {
     String fileContent =
         ""
-            + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * @param variant\n"
@@ -276,7 +276,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testOnlyCheckFilesInV2() {
     String fileContent0 =
-        "{namespace boo0 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo0}\n"
             + "\n"
             + // template is tagged as v1
             "{template .foo0 deprecatedV1=\"true\"}\n"
@@ -284,7 +284,7 @@ public final class CheckTemplateParamsVisitorTest {
             + "{/template}\n";
 
     String fileContent1 =
-        "{namespace boo1 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo1}\n"
             + "\n"
             + "/** Template 1 */\n"
             + "{template .foo1 deprecatedV1=\"true\"}\n"
@@ -294,7 +294,7 @@ public final class CheckTemplateParamsVisitorTest {
             "{/template}\n";
 
     String fileContent2 =
-        "{namespace boo2 autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo2}\n"
             + "\n"
             + "/** Template 2 */\n"
             + "{template .foo2}\n"
@@ -309,7 +309,7 @@ public final class CheckTemplateParamsVisitorTest {
   @Test
   public void testWithHeaderParams() {
     String fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** */\n"
             + "{template .foo}\n"
@@ -322,7 +322,7 @@ public final class CheckTemplateParamsVisitorTest {
     assertThat(soyDocErrorsFor(fileContent)).isEmpty();
 
     fileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** */\n"
             + "{template .foo}\n"
@@ -339,7 +339,7 @@ public final class CheckTemplateParamsVisitorTest {
   private static ImmutableList<SoyError> soyDocErrorsForTemplate(
       String soyDoc, String templateBody) {
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** "
             + soyDoc

@@ -56,7 +56,7 @@ public final class InsertMsgsVisitorTest {
 
   private static final String BASIC_TEST_FILE_CONTENT =
       ""
-          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "{namespace boo}\n"
           + "\n"
           + "/** Test template. */\n"
           + "{template .foo}\n"
@@ -172,7 +172,7 @@ public final class InsertMsgsVisitorTest {
 
   private static final String PLRSEL_TEST_FILE_CONTENT =
       ""
-          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "{namespace boo}\n"
           + "\n"
           + "/** Test template with plural/select msgs. */\n"
           + "{template .foo}\n"
@@ -220,7 +220,7 @@ public final class InsertMsgsVisitorTest {
 
   private static final String FALLBACK_TEST_FILE_CONTENT =
       ""
-          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "{namespace boo}\n"
           + "\n"
           + "/** Test template. */\n"
           + "{template .foo}\n"

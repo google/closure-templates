@@ -82,9 +82,9 @@ public final class AddHtmlCommentsForDebugPassTest {
 
   @Test
   public void testNoOpForTemplatesWithoutAnyTags() throws Exception {
-    // Templates that explicitly set ContentKind and/or AutoescapeMode.
+    // Templates that explicitly set ContentKind or AutoescapeMode.
     assertTemplate("{template .t kind=\"html\"}{/template}").isEmpty();
-    assertTemplate("{template .t kind=\"html\" autoescape=\"strict\"}{/template}").isEmpty();
+    assertTemplate("{template .t autoescape=\"deprecated-contextual\"}{/template}").isEmpty();
     // Templates that does not contain any html tags.
     assertTemplate("{template .t}{/template}").isEmpty();
     assertTemplate("{template .t}foo{/template}").isEqualTo("foo");

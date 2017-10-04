@@ -38,7 +38,7 @@ public final class ClearSoyDocStringsVisitorTest {
   public void testClearSoyDocStrings() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/**\n"
             + " * blah blah blah\n"

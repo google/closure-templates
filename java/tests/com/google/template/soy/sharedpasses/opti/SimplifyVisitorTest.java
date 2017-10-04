@@ -75,7 +75,7 @@ public class SimplifyVisitorTest {
   public void testMsgBlockNodeChildrenAreNotReplaced() throws Exception {
 
     String soyFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "{template .foo}\n"
             + "\n"

@@ -36,14 +36,12 @@ public class SoyMsgExtractorTest {
   public void testOutputFileFlag() throws Exception {
     File soyFile1 = temp.newFile("temp.soy");
     Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
+        "{namespace ns}\n" + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
         soyFile1,
         UTF_8);
     File soyFile2 = temp.newFile("temp2.soy");
     Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
+        "{namespace ns}\n" + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
         soyFile2,
         UTF_8);
     File xmlFile = temp.newFile("temp.xml");

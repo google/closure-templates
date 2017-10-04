@@ -140,11 +140,11 @@ public final class ContextualAutoescaperTest {
     // a template with a call to another template in attribute value context
     String template =
         join(
-            "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
-            "{template .foo}\n",
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "<a href={call .uri data=\"all\" /}>\n",
             "{/template}\n",
-            "{template .uri}\n",
+            "{template .uri autoescape=\"deprecated-contextual\"}\n",
             "  {@param foo: ?}\n",
             "'{$foo}'\n",
             "{/template}");
@@ -977,7 +977,7 @@ public final class ContextualAutoescaperTest {
             + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "<a href=\"{$x}{$y}\">Test</a>\n",
@@ -994,7 +994,7 @@ public final class ContextualAutoescaperTest {
             + "or {$x}?foo=:{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"{$x}:foo()\">Test</a>\n",
             "{/template}"));
@@ -1010,7 +1010,7 @@ public final class ContextualAutoescaperTest {
             + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"foo{$x}\">Test</a>\n",
             "{/template}"));
@@ -1027,7 +1027,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:26, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javas{nil}cript:{$x}\"></a>\n",
             "{/template}"));
@@ -1035,7 +1035,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:29, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<style>url('javas{nil}cript:{$x}')</style>\n",
             "{/template}"));
@@ -1043,7 +1043,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:24, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<style>url(\"javascript:{$x}\")</style>\n",
             "{/template}"));
@@ -1051,7 +1051,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:30, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<style>url(\"javascript:alert({$x})\")</style>\n",
             "{/template}"));
@@ -1059,7 +1059,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:23, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<style>url(javascript:{$x})</style>\n",
             "{/template}"));
@@ -1068,7 +1068,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:17, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<style>url(data:{$x})</style>\n",
             "{/template}"));
@@ -1076,7 +1076,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:15, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"data:{$x}\"></a>\n",
             "{/template}"));
@@ -1084,7 +1084,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:15, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"blob:{$x}\"></a>\n",
             "{/template}"));
@@ -1092,7 +1092,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:5:21, template ns.foo: " + message,
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"filesystem:{$x}\"></a>\n",
             "{/template}"));
@@ -1100,51 +1100,51 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not-javascript:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not-javascript:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javascript-foo:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"javascript-foo:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not?javascript:{$x |escapeUri}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<a href=\"not?javascript:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "<a href=\"javascript:hardcoded()\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "<a href=\"javascript:hardcoded()\">Test</a>\n",
             "{/template}"));
   }
@@ -1823,7 +1823,7 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace ns}\n\n",
             // Strict templates never allow noAutoescape.
-            "{template .t autoescape=\"strict\"}\n",
+            "{template .t}\n",
             "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
             "<b>{$y |noAutoescape}</b>",
@@ -1835,10 +1835,9 @@ public final class ContextualAutoescaperTest {
             + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"js\" or SanitizedContent.",
         join(
-            // Throw in a red-herring namespace, just to check things.
-            "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
+            "{namespace ns}\n\n",
             // Strict templates never allow noAutoescape.
-            "{template .t autoescape=\"strict\"}\n",
+            "{template .t}\n",
             "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
             "<script>{$y |noAutoescape}</script>",
@@ -1978,7 +1977,7 @@ public final class ContextualAutoescaperTest {
             + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template .caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
             "  {@param y: ?}\n",
             "<div>",
             "{call .callee}",
@@ -1986,7 +1985,7 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" visibility=\"private\"}\n",
+            "{template .callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -1998,7 +1997,7 @@ public final class ContextualAutoescaperTest {
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
             "  {@param y: ?}\n",
             "<div>",
             "{call .callee}",
@@ -2006,7 +2005,7 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" visibility=\"private\"}\n",
+            "{template .callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -2018,7 +2017,7 @@ public final class ContextualAutoescaperTest {
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template .caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
             "  {@param x: ?}\n",
             "<div>",
             "{call .callee}",
@@ -2026,7 +2025,7 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" visibility=\"private\"}\n",
+            "{template .callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}\n\n",
@@ -2039,7 +2038,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
             "  {@param y: ?}\n",
             "<div>",
             "{call .callee}",
@@ -2047,13 +2046,13 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" visibility=\"private\"}\n",
+            "{template .callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
             "  {@param y: ?}\n",
             "<div>",
             "{call .callee}",
@@ -2061,7 +2060,7 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" visibility=\"private\"}\n",
+            "{template .callee visibility=\"private\"}\n",
             "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -2255,7 +2254,7 @@ public final class ContextualAutoescaperTest {
             + "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo|customEscapeDirective}</b>\n",
             "{/template}"));
@@ -2266,7 +2265,7 @@ public final class ContextualAutoescaperTest {
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo|noAutoescape}</b>\n",
             "{/template}"));
@@ -2277,7 +2276,7 @@ public final class ContextualAutoescaperTest {
             + "with kind=\"uri\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<a href=\"{$foo|noAutoescape}\">Test</a>\n",
             "{/template}"));
@@ -2288,7 +2287,7 @@ public final class ContextualAutoescaperTest {
             + "with kind=\"attributes\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<div {$foo|noAutoescape}>Test</div>\n",
             "{/template}"));
@@ -2299,7 +2298,7 @@ public final class ContextualAutoescaperTest {
             + "with kind=\"js\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<script>{$foo|noAutoescape}</script>\n",
             "{/template}"));
@@ -2311,7 +2310,7 @@ public final class ContextualAutoescaperTest {
             + "with appropriate kind=\"...\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<textarea>{$foo|noAutoescape}</textarea>\n",
             "{/template}"));
@@ -2325,7 +2324,7 @@ public final class ContextualAutoescaperTest {
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\" kind=\"html\" stricthtml=\"false\"}\n",
+            "{template .main kind=\"html\" stricthtml=\"false\"}\n",
             "<b>{call .bar data=\"all\"/}\n",
             "{/template}\n\n" + "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "Hello World\n",
@@ -2336,7 +2335,7 @@ public final class ContextualAutoescaperTest {
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "{delcall ns.foo}\n",
             "{param x: '' /}\n",
             "{/delcall}\n",
@@ -2372,7 +2371,7 @@ public final class ContextualAutoescaperTest {
             "{param x: '' /}\n",
             "{/call}\n",
             "{/template}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"text\"}\n",
+            "{template .foo kind=\"text\"}\n",
             "{@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/template}"));
@@ -2392,14 +2391,14 @@ public final class ContextualAutoescaperTest {
             "{delpackage dp1}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate ns.foo autoescape=\"strict\" kind=\"text\"}\n",
+            "{deltemplate ns.foo kind=\"text\"}\n",
             "<b>{$x}</b>\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp2}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate ns.foo autoescape=\"strict\" kind=\"text\"}\n",
+            "{deltemplate ns.foo kind=\"text\"}\n",
             "<i>{$x}</i>\n",
             "{/deltemplate}"));
   }
@@ -2409,13 +2408,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
+            "{template .main}\n",
             "  {@param foo: ?}\n",
             "<b>{$foo |customOtherDirective}</b>\n",
             "{/template}"));
@@ -2436,10 +2435,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:3:1, template ns.main: "
             + "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
             + "Likely cause is an unterminated or empty URI.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\" kind=\"uri\"}\n",
-            "{/template}"));
+        join("{namespace ns}\n\n", "{template .main kind=\"uri\"}\n", "{/template}"));
   }
 
   @Test
@@ -2454,7 +2450,7 @@ public final class ContextualAutoescaperTest {
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
+            "{template .bar kind=\"uri\"}\n",
             "  {@param x: ?}\n",
             "http://www.google.com/search?q={$x |escapeUri}",
             "\n{/template}"),
@@ -2463,7 +2459,7 @@ public final class ContextualAutoescaperTest {
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
+            "{template .bar kind=\"uri\"}\n",
             "  {@param x: ?}\n",
             "http://www.google.com/search?q={$x}",
             "\n{/template}"));
@@ -2474,7 +2470,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -2486,7 +2482,7 @@ public final class ContextualAutoescaperTest {
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "  {@param y: ?}\n",
             "  {@param z: ?}\n",
@@ -2507,13 +2503,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "onclick={$x}",
             "\n{/template}"));
@@ -2521,13 +2517,13 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "title={$x |escapeHtmlAttributeNospace}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "  {@param x: ?}\n",
             "title={$x}",
             "\n{/template}"));
@@ -2541,12 +2537,12 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "foo=bar checked",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "{template .foo kind=\"attributes\"}\n",
             "foo=bar checked",
             "\n{/template}"));
   }
@@ -2560,7 +2556,7 @@ public final class ContextualAutoescaperTest {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<script>",
             "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
@@ -2568,7 +2564,7 @@ public final class ContextualAutoescaperTest {
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\"}\n",
+            "{template .foo}\n",
             "  {@param x: ?}\n",
             "<script>",
             "{call .bar /}/{$x}+/{$x}/g",
@@ -2580,16 +2576,16 @@ public final class ContextualAutoescaperTest {
   public void testStrictModeEscapesCallSites() {
     String source =
         "{namespace ns}\n\n"
-            + "{template .main autoescape=\"strict\"}\n"
+            + "{template .main}\n"
             + "{call .htmltemplate /}"
             + "<script>var x={call .htmltemplate /};</script>\n"
             + "<script>var x={call .jstemplate /};</script>\n"
             + "{call .externtemplate /}"
             + "\n{/template}\n\n"
-            + "{template .htmltemplate autoescape=\"strict\"}\n"
+            + "{template .htmltemplate}\n"
             + "Hello World"
             + "\n{/template}\n\n"
-            + "{template .jstemplate autoescape=\"strict\" kind=\"js\"}\n"
+            + "{template .jstemplate kind=\"js\"}\n"
             + "foo()"
             + "\n{/template}";
 
@@ -2613,16 +2609,16 @@ public final class ContextualAutoescaperTest {
   public void testStrictModeOptimizesDelegates() {
     String source =
         "{namespace ns}\n\n"
-            + "{template .main autoescape=\"strict\"}\n"
+            + "{template .main}\n"
             + "{delcall ns.delegateHtml /}"
             + "{delcall ns.delegateText /}"
             + "\n{/template}\n\n"
             + "/** A delegate returning HTML. */\n"
-            + "{deltemplate ns.delegateHtml autoescape=\"strict\"}\n"
+            + "{deltemplate ns.delegateHtml}\n"
             + "Hello World"
             + "\n{/deltemplate}\n\n"
             + "/** A delegate returning JS. */\n"
-            + "{deltemplate ns.delegateText autoescape=\"strict\" kind=\"text\"}\n"
+            + "{deltemplate ns.delegateText kind=\"text\"}\n"
             + "Hello World"
             + "\n{/deltemplate}";
 

@@ -82,7 +82,7 @@ public class BytecodeCompilerTest {
     String soyFileContent1 =
         Joiner.on("\n")
             .join(
-                "{namespace ns1 autoescape=\"strict\"}",
+                "{namespace ns1}",
                 "",
                 "/***/",
                 "{template .callerTemplate}",
@@ -102,7 +102,7 @@ public class BytecodeCompilerTest {
         Joiner.on("\n")
             .join(
                 "{delpackage SecretFeature}",
-                "{namespace ns2 autoescape=\"strict\"}",
+                "{namespace ns2}",
                 "",
                 "/** */",
                 "{deltemplate myApp.myDelegate}", // implementation in SecretFeature
@@ -115,7 +115,7 @@ public class BytecodeCompilerTest {
         Joiner.on("\n")
             .join(
                 "{delpackage AlternateSecretFeature}",
-                "{namespace ns3 autoescape=\"strict\"}",
+                "{namespace ns3}",
                 "",
                 "/** */",
                 "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
@@ -127,7 +127,7 @@ public class BytecodeCompilerTest {
     String soyFileContent4 =
         Joiner.on("\n")
             .join(
-                "{namespace ns3 autoescape=\"strict\"}",
+                "{namespace ns3}",
                 "",
                 "/** */",
                 "{template .helper}",
@@ -223,7 +223,7 @@ public class BytecodeCompilerTest {
     String soyFileContent1 =
         Joiner.on("\n")
             .join(
-                "{namespace ns1 autoescape=\"strict\"}",
+                "{namespace ns1}",
                 "",
                 "/***/",
                 "{template .callerTemplate}",
@@ -276,7 +276,7 @@ public class BytecodeCompilerTest {
   public void testCallBasicNode() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFile(
-            "{namespace ns autoescape=\"strict\"}",
+            "{namespace ns}",
             "",
             "/** */",
             "{template .callerDataAll}",
@@ -651,7 +651,7 @@ public class BytecodeCompilerTest {
   @Test
   public void testParam_headerDocParam() {
     assertThatFile(
-            "{namespace ns autoescape=\"strict\"}",
+            "{namespace ns}",
             "/** ",
             " * @param foo A foo",
             "*/ ",
@@ -800,9 +800,9 @@ public class BytecodeCompilerTest {
   public void testContentKindNonStrict() {
     assertThat(
             TemplateTester.compileFile(
-                    "{namespace ns autoescape=\"deprecated-contextual\"}",
+                    "{namespace ns}",
                     "/** foo */",
-                    "{template .foo}",
+                    "{template .foo autoescape=\"deprecated-contextual\"}",
                     "{/template}")
                 .getTemplateFactory("ns.foo")
                 .getClass()

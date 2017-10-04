@@ -36,7 +36,7 @@ public final class SoySyntaxExceptionUtilsTest {
   public void testCreateWithNode() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** @param goo */\n"
             + "{template .foo}\n"
@@ -62,7 +62,7 @@ public final class SoySyntaxExceptionUtilsTest {
         LegacyInternalSyntaxException.createWithoutMetaInfo(message);
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** @param goo */\n"
             + "{template .foo}\n"

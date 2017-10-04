@@ -47,7 +47,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> {bbb, ccc}, bbb -> ddd.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -116,7 +116,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> {bbb, ccc}, ccc -> bbb.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -163,7 +163,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> bbb, bbb -> {bbb, ccc}, ccc -> bbb.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -212,7 +212,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> bbb, bbb -> ccc, ccc -> aaa.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -259,7 +259,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> {bbb, ccc}, bbb -> ddd, ccc -> ddd, ddd -> bbb.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -312,7 +312,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> {bbb, ccc}, bbb -> aaa, ccc -> bbb.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .aaa}\n"
@@ -357,7 +357,7 @@ public final class FindTransitiveDepTemplatesVisitorTest {
     // aaa -> {bbb, ccc}, bbb -> ddd.
     String fileContent =
         ""
-            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns}\n"
             + "\n"
             + "/***/\n"
             + "{template .bbb}\n"

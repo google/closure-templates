@@ -184,7 +184,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testInlineEventHandlersAndStyles() {
     assertInjected(
         join(
-            "{template .foo}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param height: int}\n",
             "<a href='#' style='",
             "height:{$height |filterCssValue |escapeHtmlAttribute}px;'",
@@ -209,7 +209,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             ">baz()</script>\n",
             "{/template}"),
         join(
-            "{template .foo}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param height: int}\n",
             "<a href='#' style='height:{$height}px;' onclick='foo() &amp;& bar(\"baz\")'>",
             "<a href='#' onmouseover=foo() style=color:red>",
@@ -278,7 +278,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
    * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
    */
   private void assertInjected(String expectedOutput, String input) {
-    String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
+    String namespace = "{namespace ns}\n\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(namespace + input)
             .runAutoescaper(true)

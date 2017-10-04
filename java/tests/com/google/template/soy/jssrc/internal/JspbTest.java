@@ -243,10 +243,10 @@ public final class JspbTest {
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
     String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo.foo}\n"
             + "\n"
             + "/** */\n"
-            + "{template .goo}\n"
+            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  {@param moo : example.ExampleExtendable}\n"
             + "  {$moo.someExtensionField}\n"
             + "{/template}\n";

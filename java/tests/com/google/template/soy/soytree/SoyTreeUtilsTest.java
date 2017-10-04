@@ -55,7 +55,7 @@ public final class SoyTreeUtilsTest {
   public void testVisitAllExprs() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace boo}\n"
             + "\n"
             + "/** @param items */\n"
             + "{template .foo}\n"
@@ -119,9 +119,9 @@ public final class SoyTreeUtilsTest {
   private static final String SOY_SOURCE_FOR_TESTING_CLONING =
       Joiner.on('\n')
           .join(
-              "{namespace ns autoescape=\"deprecated-noncontextual\"}",
+              "{namespace ns}",
               "/** example for cloning. */",
-              "{template .ex1 visibility=\"private\"}",
+              "{template .ex1 autoescape=\"deprecated-noncontextual\" visibility=\"private\"}",
               "  {@param a : ?}",
               "  {@param b : ?}",
               "  {@param c : ?}",

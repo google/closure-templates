@@ -1955,9 +1955,7 @@ public final class TemplateParserTest {
       SanitizedContentKind kind, String namespaceAttrs, String input) {
     StringBuilder soyFileContentBuilder = new StringBuilder();
     soyFileContentBuilder
-        .append("{namespace brittle.test.ns autoescape=\"")
-        .append(AutoEscapingType.STRICT.getKey())
-        .append("\" ")
+        .append("{namespace brittle.test.ns ")
         .append(namespaceAttrs)
         .append("}\n\n")
         .append("{template .brittleTestTemplate kind=\"")
