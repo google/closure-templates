@@ -51,7 +51,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import javax.annotation.Nullable;
 
 /**
@@ -65,11 +64,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** This counter is used for creating unique data attribute names for logging functions. */
   private int counter;
-
-  private static final String LOGGING_METADATA = "$$loggingMetaData";
-  private static final InjectedParam LOGGING_METADATA_IJ = new InjectedParam(LOGGING_METADATA);
-  /** A shared constant for referencing the logging metadata in Javascript. */
-  public static final String JS_REF_LOGGING_METADATA = "opt_ijData." + LOGGING_METADATA;
 
   VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
     this.templateRegistry = templateRegistry;
@@ -282,11 +276,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         nodeId,
         insertionLocation,
         "if",
-        new VarRefNode(
-            LOGGING_METADATA,
-            insertionLocation,
-            /*injected=*/ true,
-            /*defn=*/ LOGGING_METADATA_IJ));
+        new FunctionNode(HasMetadataFunction.INSTANCE, insertionLocation));
   }
 
   @Override

@@ -23,19 +23,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Soy special function for internal usages.
- *
- * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists for
- * client-side VE logging, and should not be used by Soy users.
+ * Soy special function for internal usages. This function is for checking if the global metadata
+ * exists during runtime.
  */
-public final class VeLogJsSrcLoggingFunction implements SoyLibraryAssistedJsSrcFunction {
+public final class HasMetadataFunction implements SoyLibraryAssistedJsSrcFunction {
   // $$ prefix ensures that the function cannot be used directly
-  public static final String NAME = "$$loggingFunction";
+  public static final String NAME = "$$hasMetadata";
+  public static final HasMetadataFunction INSTANCE = new HasMetadataFunction();
 
-  public static final VeLogJsSrcLoggingFunction INSTANCE = new VeLogJsSrcLoggingFunction();
-
-  // Do not @Inject; should not be used externally.
-  private VeLogJsSrcLoggingFunction() {}
+  private HasMetadataFunction() {}
 
   @Override
   public String getName() {
@@ -44,20 +40,16 @@ public final class VeLogJsSrcLoggingFunction implements SoyLibraryAssistedJsSrcF
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2);
+    return ImmutableSet.of(0);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
-    return new JsExpr(
-        String.format(
-            "soy.velog.$$registerLoggingFunction(xid(%1$s), %2$s, %3$s)",
-            args.get(0).getText(), args.get(1).getText(), args.get(2).getText()),
-        Integer.MAX_VALUE);
+    return new JsExpr("soy.velog.$$hasMetadata()", Integer.MAX_VALUE);
   }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy.velog", "xid");
+    return ImmutableSet.of("soy.velog");
   }
 }
