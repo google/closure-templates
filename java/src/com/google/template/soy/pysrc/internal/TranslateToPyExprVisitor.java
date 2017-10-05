@@ -46,6 +46,7 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -356,6 +357,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     } else if (soyFunction instanceof SoyPySrcFunction) {
       List<PyExpr> args = visitChildren(node);
       return ((SoyPySrcFunction) soyFunction).computeForPySrc(args);
+    } else if (soyFunction instanceof LoggingFunction) {
+      // trivial logging function support
+      return new PyStringExpr(((LoggingFunction) soyFunction).getPlaceholder());
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());

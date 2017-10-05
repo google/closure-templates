@@ -85,6 +85,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -629,6 +630,20 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitCallParamNode(CallParamNode node) {
     // In this visitor, we never directly visit a CallParamNode.
     throw new AssertionError();
+  }
+
+  @Override
+  protected void visitVeLogNode(VeLogNode node) {
+    ExprRootNode logonlyExpression = node.getLogonlyExpression();
+    if (logonlyExpression != null) {
+      if (eval(logonlyExpression, node).booleanValue()) {
+        throw RenderException.createWithSource(
+            "Cannot set logonly=\"true\" unless there is a logger configured, but tofu doesn't "
+                + "support loggers",
+            node);
+      }
+    }
+    visitChildren(node);
   }
 
   @Override

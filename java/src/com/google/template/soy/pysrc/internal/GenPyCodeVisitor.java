@@ -760,8 +760,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     @Override
     protected void visitVeLogNode(VeLogNode node) {
-      // TODO(lukes): stub implementation, fix!
-      pyCodeBuilder.appendLine("raise 'soy_py doesn't support velog yet'");
+      // TODO(lukes): expand implementation
+      visitChildren(node);
     }
 
     @Override
@@ -778,6 +778,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.popOutputVar();
       pyCodeBuilder.appendLine("print " + outputVarName);
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // Fallback implementation.

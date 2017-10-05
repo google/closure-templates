@@ -85,6 +85,7 @@ import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyType;
@@ -611,6 +612,8 @@ public class TranslateExprNodeVisitor
         default:
           throw new AssertionError();
       }
+    } else if (soyFunction instanceof LoggingFunction) {
+      return stringLiteral(((LoggingFunction) soyFunction).getPlaceholder());
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         // No SoyJsSrcFunction found. This is either a non-JS function or a v1 experssion.
