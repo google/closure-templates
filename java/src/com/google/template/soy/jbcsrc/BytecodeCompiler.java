@@ -76,7 +76,6 @@ public final class BytecodeCompiler {
       final TemplateRegistry registry, boolean developmentMode, ErrorReporter reporter) {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    checkForUnsupportedFeatures(registry, reporter);
     if (reporter.errorsSince(checkpoint)) {
       return Optional.absent();
     }
@@ -157,7 +156,6 @@ public final class BytecodeCompiler {
   public static void compileToJar(TemplateRegistry registry, ErrorReporter reporter, ByteSink sink)
       throws IOException {
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    checkForUnsupportedFeatures(registry, reporter);
     if (reporter.errorsSince(checkpoint)) {
       return;
     }
@@ -208,14 +206,6 @@ public final class BytecodeCompiler {
               files.get(file.getFilePath()).asCharSource().asByteSource(UTF_8));
         }
       }
-    }
-  }
-
-  private static void checkForUnsupportedFeatures(
-      TemplateRegistry registry, ErrorReporter errorReporter) {
-    UnsupportedFeatureReporter reporter = new UnsupportedFeatureReporter(errorReporter);
-    for (TemplateNode node : registry.getAllTemplates()) {
-      reporter.check(node);
     }
   }
 
