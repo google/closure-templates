@@ -639,7 +639,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               directives,
               appendable,
               exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
-              parameterLookup.getRenderContext());
+              parameterLookup.getRenderContext(),
+              variables);
       FieldRef currentAppendableField = variables.getCurrentAppendable();
       initAppendable =
           currentAppendableField
@@ -888,7 +889,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           applyStreamingEscapingDirectives(
               node.getEscapingDirectives(),
               appendableExpression,
-              parameterLookup.getRenderContext());
+              parameterLookup.getRenderContext(),
+              variables);
       FieldRef currentAppendableField = variables.getCurrentAppendable();
       initAppendable =
           currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());

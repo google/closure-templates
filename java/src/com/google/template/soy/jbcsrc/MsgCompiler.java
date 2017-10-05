@@ -292,7 +292,10 @@ final class MsgCompiler {
       // should have already happened as part of constructing the placholder map.
       AppendableAndOptions wrappedAppendable =
           applyStreamingEscapingDirectives(
-              escapingDirectives, appendableExpression, parameterLookup.getRenderContext());
+              escapingDirectives,
+              appendableExpression,
+              parameterLookup.getRenderContext(),
+              variables);
       Statement initAppendable = Statement.NULL_STATEMENT;
       Statement clearAppendable = Statement.NULL_STATEMENT;
       Expression appendableExpression = wrappedAppendable.appendable();

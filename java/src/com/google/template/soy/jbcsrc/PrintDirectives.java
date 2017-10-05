@@ -17,16 +17,22 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
@@ -80,16 +86,20 @@ final class PrintDirectives {
    *     com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable streamable}
    * @param appendable The appendable to wrap
    * @param context The render context for the plugins
+   * @param variables The local variable manager
    * @return The wrapped appendable
    */
   static AppendableAndOptions applyStreamingEscapingDirectives(
-      List<SoyPrintDirective> directives, Expression appendable, JbcSrcPluginContext context) {
+      List<SoyPrintDirective> directives,
+      Expression appendable,
+      JbcSrcPluginContext context,
+      TemplateVariableManager variables) {
     List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (SoyPrintDirective directive : directives) {
       directivesToApply.add(
           DirectiveWithArgs.create((SoyJbcSrcPrintDirective.Streamable) directive));
     }
-    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, context);
+    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, context, variables);
   }
 
   /**
@@ -100,13 +110,15 @@ final class PrintDirectives {
    * @param appendable The appendable to wrap
    * @param basic The expression compiler to use for compiling the arguments
    * @param renderContext The render context for the plugins
+   * @param variables The local variable manager
    * @return The wrapped appendable
    */
   static AppendableAndOptions applyStreamingPrintDirectives(
       List<PrintDirectiveNode> directives,
       Expression appendable,
       BasicExpressionCompiler basic,
-      JbcSrcPluginContext renderContext) {
+      JbcSrcPluginContext renderContext,
+      TemplateVariableManager variables) {
     List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (PrintDirectiveNode directive : directives) {
       directivesToApply.add(
@@ -114,41 +126,76 @@ final class PrintDirectives {
               (SoyJbcSrcPrintDirective.Streamable) directive.getPrintDirective(),
               basic.compileToList(directive.getArgs())));
     }
-    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, renderContext);
+    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, renderContext, variables);
   }
 
-  private static <T> AppendableAndOptions applyStreamingPrintDirectivesTo(
+  private static AppendableAndOptions applyStreamingPrintDirectivesTo(
       List<DirectiveWithArgs> directivesToApply,
       Expression appendable,
-      JbcSrcPluginContext context) {
+      JbcSrcPluginContext context,
+      TemplateVariableManager variableManager) {
+    final List<LocalVariable> closeables = new ArrayList<>();
+    final List<Variable> appendableVars = new ArrayList<>();
+    Scope scope = variableManager.enterScope();
+
     AppendableAndOptions prev = AppendableAndOptions.create(appendable);
-    List<Expression> closeables = new ArrayList<>();
+    Variable prevVar = scope.createTemporary("tmp_appendable", appendable);
+    appendableVars.add(prevVar);
+
     // Apply the directives to the appendable in reverse
     // since we are wrapping the directives around the appendable we need to wrap the underlying
     // appendable with the last directive first. so iterate in reverse order.
     for (DirectiveWithArgs directiveToApply : Lists.reverse(directivesToApply)) {
-      AppendableAndOptions curr = directiveToApply.apply(context, prev.appendable());
+      AppendableAndOptions curr = directiveToApply.apply(context, prevVar.local());
+      Variable currVar = scope.createTemporary("tmp_appendable", curr.appendable());
+      appendableVars.add(currVar);
       if (curr.closeable()) {
-        closeables.add(curr.appendable());
+        closeables.add(currVar.local());
       }
       prev = curr;
+      prevVar = currVar;
     }
+
     // Check if we need to apply a wrapper to make sure close propagates to all the right places
     // this is necessary if there are multiple closeable wrappers.
+    final Expression appendableExpression;
+    final boolean closeable;
     if (closeables.isEmpty()) {
-      return prev;
+      appendableExpression = prev.appendable();
+      closeable = false;
+    } else if (closeables.size() == 1 && prev.closeable()) {
+      // there is exactly one closeable and it is first, we don't need a wrapper
+      appendableExpression = prev.appendable();
+      closeable = true;
+    } else {
+      // there is either more than one closeable, or it is not the first one, so we need a wrapper
+      // We need to reverse the list of closeables so that we close them in the correct order. for
+      // example, given '|foo|bar' we will first wrap the delegate with bar and then with foo but we
+      // need to close foo first.
+      appendableExpression =
+          RUNTIME_PROPAGATE_CLOSE.invoke(
+              Iterables.getLast(appendableVars).local(),
+              BytecodeUtils.asImmutableList(Lists.reverse(closeables)));
+      closeable = true;
     }
-    // there is exactly one closeable and it is closeable, we don't need a wrapper
-    if (closeables.size() == 1 && prev.appendable() == closeables.get(0)) {
-      return prev;
+
+    final Statement exitScope = scope.exitScope();
+    Expression result =
+        new Expression(appendableExpression.resultType()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            for (Variable var : appendableVars) {
+              var.initializer().gen(adapter);
+            }
+            appendableExpression.gen(adapter);
+            exitScope.gen(adapter);
+          }
+        };
+    if (closeable) {
+      return AppendableAndOptions.createCloseable(result);
+    } else {
+      return AppendableAndOptions.create(result);
     }
-    // there is either more than one closeable, or it is not the first one, so we need a wrapper
-    // We need to reverse the list of closeables so that we close them in the correct order.
-    // for example, given '|foo|bar'  we will first wrap the delegate with bar and then with foo but
-    // we need to close foo first.
-    return AppendableAndOptions.createCloseable(
-        RUNTIME_PROPAGATE_CLOSE.invoke(
-            prev.appendable(), BytecodeUtils.asImmutableList(Lists.reverse(closeables))));
   }
 
   @AutoValue

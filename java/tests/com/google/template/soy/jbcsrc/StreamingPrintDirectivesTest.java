@@ -490,7 +490,8 @@ public final class StreamingPrintDirectivesTest {
   /** An appendable that buffers all content until a call to close. */
   public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable
       implements Closeable {
-    final String suffix;
+    private final String suffix;
+    private boolean appendCalled;
 
     public CloseableAppendable(LoggingAdvisingAppendable delegate, String suffix) {
       super(delegate);
@@ -498,8 +499,29 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      appendCalled = true;
+      return super.append(c);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      appendCalled = true;
+      return super.append(csq);
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      appendCalled = true;
+      return super.append(csq, start, end);
+    }
+
+    @Override
     public void close() throws IOException {
-      delegate.append(suffix);
+      if (appendCalled) {
+        delegate.append(suffix);
+      }
     }
   }
 }
