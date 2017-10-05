@@ -237,6 +237,7 @@ public final class JspbTest {
 
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
+    jsSrcOptions.setShouldGenerateJsdoc(false);
 
     GenJsCodeVisitor genJsCodeVisitor =
         JsSrcMain.createVisitor(jsSrcOptions, injector.getInstance(SoyTypeRegistry.class));

@@ -69,7 +69,7 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
-    shouldGenerateJsdoc = false;
+    shouldGenerateJsdoc = true;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
     shouldProvideBothSoyNamespacesAndJsFunctions = false;

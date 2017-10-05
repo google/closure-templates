@@ -115,6 +115,8 @@ public final class GenJsCodeVisitorTest {
   @Before
   public void setUp() {
     jsSrcOptions = new SoyJsSrcOptions();
+    // Disable JsDoc in most of these tests since it will be annoying.
+    jsSrcOptions.setShouldGenerateJsdoc(false);
     genJsCodeVisitor = createVisitor(jsSrcOptions);
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
   }

@@ -70,7 +70,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             + " Note the generated JSDoc does not have description text, only types for the"
             + " benefit of the Closure Compiler."
   )
-  private boolean shouldGenerateJsdoc = false;
+  private boolean shouldGenerateJsdoc = true;
 
   @Option(
     name = "--shouldProvideRequireSoyNamespaces",

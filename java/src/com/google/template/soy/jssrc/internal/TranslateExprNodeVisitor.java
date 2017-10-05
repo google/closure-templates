@@ -271,8 +271,7 @@ public class TranslateExprNodeVisitor
     // any unquoted map literal keys are string literals, since Closure Compiler can rename unquoted
     // map keys and we want everything to be renamed at the same time.
     boolean isProbablyUsingClosureCompiler =
-        jsSrcOptions.shouldGenerateJsdoc()
-            || jsSrcOptions.shouldProvideRequireSoyNamespaces()
+        jsSrcOptions.shouldProvideRequireSoyNamespaces()
             || jsSrcOptions.shouldProvideRequireJsFunctions();
 
     // We will divide the map literal contents into two categories.

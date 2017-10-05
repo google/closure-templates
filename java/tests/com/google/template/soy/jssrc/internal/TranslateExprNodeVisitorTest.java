@@ -102,8 +102,10 @@ public final class TranslateExprNodeVisitorTest {
             "Keys in map literals cannot be constants (found constant '1').");
 
     SoyJsSrcOptions noCompiler = new SoyJsSrcOptions();
+    noCompiler.setShouldGenerateJsdoc(false);
     SoyJsSrcOptions withCompiler = new SoyJsSrcOptions();
-    withCompiler.setShouldGenerateJsdoc(true);
+    withCompiler.setShouldGenerateJsdoc(false);
+    withCompiler.setShouldProvideRequireSoyNamespaces(true);
 
     // Non-identifier key without quoteKeysIfJs() is error only when using Closure Compiler.
     assertThatSoyExpr("['0': 123, '1': $foo]")
@@ -277,6 +279,13 @@ public final class TranslateExprNodeVisitorTest {
             + "{/template}";
     String expectedJs =
         ""
+            + "/**\n"
+            + " * @param {Object<string, *>=} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {!goog.soy.data.SanitizedHtml}\n"
+            + " * @suppress {checkTypes}\n"
+            + " */\n"
             + "ns.foo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(opt_data.goo.length());\n"
