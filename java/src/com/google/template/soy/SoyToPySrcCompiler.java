@@ -110,9 +110,10 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   @Option(
     name = "--outputNamespaceManifest",
     usage =
-        "Output a manifest file containing a map of all soy namespaces to their Python" + " paths."
+        "The name fo the manifest file containing a map of all soy namespaces to their Python paths"
+            + " to write. Default is to not write this file."
   )
-  private boolean outputNamespaceManifest = false;
+  private String outputNamespaceManifest = null;
 
   /**
    * Compiles a set of Soy files into corresponding Python source files.
@@ -151,7 +152,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
     SoyFileSet sfs = sfsBuilder.build();
     // Load the manifest if available.
     ImmutableMap<String, String> manifest = loadNamespaceManifest(namespaceManifestPaths);
-    if (!manifest.isEmpty() && !outputNamespaceManifest) {
+    if (!manifest.isEmpty() && outputNamespaceManifest == null) {
       exitWithError("Namespace manifests provided without outputting a new manifest.");
     }
 

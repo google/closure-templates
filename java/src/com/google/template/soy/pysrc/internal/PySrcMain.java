@@ -140,10 +140,9 @@ public final class PySrcMain {
     }
 
     // Write out the manifest file.
-    if (pySrcOptions.doesOutputNamespaceManifest()) {
-      String manifestFormat = outputPathFormat.replace(".py", ".MF");
-      String manifestPath = MainEntryPointUtils.buildFilePath(manifestFormat, null, "manifest", "");
-      try (Writer out = Files.newWriter(new File(manifestPath), StandardCharsets.UTF_8)) {
+    if (pySrcOptions.namespaceManifestFile() != null) {
+      try (Writer out =
+          Files.newWriter(new File(pySrcOptions.namespaceManifestFile()), StandardCharsets.UTF_8)) {
         Properties prop = new Properties();
         for (String namespace : manifest.keySet()) {
           prop.put(namespace, manifest.get(namespace));

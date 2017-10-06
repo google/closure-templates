@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Compilation options for the Python backend.
@@ -39,8 +40,8 @@ public final class SoyPySrcOptions implements Cloneable {
   /** A namespace manifest mapping soy namespaces to their python path. */
   private final ImmutableMap<String, String> namespaceManifest;
 
-  /** Whether a namespace manifest should be generated. */
-  private final boolean outputNamespaceManifest;
+  /** The name of a manifest file to generate, or null. */
+  @Nullable private final String namespaceManifestFile;
 
   public SoyPySrcOptions(
       String runtimePath,
@@ -48,13 +49,13 @@ public final class SoyPySrcOptions implements Cloneable {
       String bidiIsRtlFn,
       String translationClass,
       ImmutableMap<String, String> namespaceManifest,
-      boolean outputNamespaceManifest) {
+      String namespaceManifestFile) {
     this.runtimePath = runtimePath;
     this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
     this.namespaceManifest = namespaceManifest;
-    this.outputNamespaceManifest = outputNamespaceManifest;
+    this.namespaceManifestFile = namespaceManifestFile;
   }
 
   private SoyPySrcOptions(SoyPySrcOptions orig) {
@@ -63,7 +64,7 @@ public final class SoyPySrcOptions implements Cloneable {
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
     this.namespaceManifest = orig.namespaceManifest;
-    this.outputNamespaceManifest = orig.outputNamespaceManifest;
+    this.namespaceManifestFile = orig.namespaceManifestFile;
   }
 
   public String getBidiIsRtlFn() {
@@ -86,8 +87,9 @@ public final class SoyPySrcOptions implements Cloneable {
     return namespaceManifest;
   }
 
-  public boolean doesOutputNamespaceManifest() {
-    return outputNamespaceManifest;
+  @Nullable
+  public String namespaceManifestFile() {
+    return namespaceManifestFile;
   }
 
   @Override

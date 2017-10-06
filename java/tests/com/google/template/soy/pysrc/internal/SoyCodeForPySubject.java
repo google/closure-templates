@@ -204,7 +204,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
         bidiIsRtlFn,
         translationClass,
         namespaceManifest,
-        false);
+        null);
   }
   //-----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyCodeForPySubject test.
