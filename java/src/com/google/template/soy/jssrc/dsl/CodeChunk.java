@@ -259,6 +259,11 @@ public abstract class CodeChunk {
     return Return.create(returnValue);
   }
 
+  /** Creates a code chunk that represents a throw statement. */
+  public static CodeChunk throw_(CodeChunk.WithValue throwValue) {
+    return Throw.create(throwValue);
+  }
+
   /**
    * Wraps a {@link JsExpr} that could have incorrect precedence in parens.
    *
