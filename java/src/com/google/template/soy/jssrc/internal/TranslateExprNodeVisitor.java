@@ -190,7 +190,7 @@ public class TranslateExprNodeVisitor
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
 
-  TranslateExprNodeVisitor(
+  public TranslateExprNodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
       TranslationContext translationContext,
       ErrorReporter errorReporter) {

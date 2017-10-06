@@ -284,7 +284,7 @@ public final class TranslateExprNodeVisitorTest {
             + " * @param {Object<string, *>=} opt_ijData\n"
             + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
             + " * @return {!goog.soy.data.SanitizedHtml}\n"
-            + " * @suppress {checkTypes}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
             + " */\n"
             + "ns.foo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"

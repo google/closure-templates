@@ -735,7 +735,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData_deprecated\n");
       String returnType = getTemplateReturnType(node);
       jsDocBuilder.append(" * @return {").append(returnType).append("}\n");
-      jsDocBuilder.append(" * @suppress {").append("checkTypes").append("}\n");
+      // Sometimes we will throw an error in the middle and the following code is not reachable.
+      jsDocBuilder.append(" * @suppress {").append("checkTypes|uselessCode").append("}\n");
       if (node.getVisibility() == Visibility.PRIVATE) {
         jsDocBuilder.append(" * @private\n");
       }

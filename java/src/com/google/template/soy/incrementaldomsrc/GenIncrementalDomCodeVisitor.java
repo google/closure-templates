@@ -57,6 +57,7 @@ import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
+import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -79,6 +80,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -653,6 +655,26 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         super.visitPrintNode(node);
         break;
     }
+  }
+
+  @Override
+  protected void visitVeLogNode(VeLogNode node) {
+    if (node.getLogonlyExpression() != null) {
+      TranslateExprNodeVisitor visitor =
+          new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter);
+      CodeChunk.WithValue isLogOnly = visitor.exec(node.getLogonlyExpression());
+      CodeChunk.WithValue errorMessage =
+          CodeChunk.stringLiteral(
+              "Cannot set logonly=\"true\" unless there is a logger "
+                  + "configured, but incrementaldom doesn't support loggers");
+      getJsCodeBuilder()
+          .append(
+              CodeChunk.ifStatement(
+                      isLogOnly,
+                      CodeChunk.throw_(CodeChunk.new_(CodeChunk.id("Error").call(errorMessage))))
+                  .build());
+    }
+    visitChildren(node);
   }
 
   private enum GenerateFunctionCallResult {
