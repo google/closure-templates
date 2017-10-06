@@ -161,11 +161,11 @@ public class TemplateNodeTest {
   @Test
   public void testCommandTextErrors() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template autoescape=\"strict\"}{/template}", errorReporter);
+    parse("{namespace ns}\n{template requirecss=\"strict\"}{/template}", errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(2);
     assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo(
-            "Template name 'autoescape' must be relative to the file namespace, i.e. a dot "
+            "Template name 'requirecss' must be relative to the file namespace, i.e. a dot "
                 + "followed by an identifier.");
 
     assertThat(errorReporter.getErrors().get(1).message())
@@ -181,35 +181,16 @@ public class TemplateNodeTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Invalid value for attribute 'autoescape', expected one of "
-                + "[deprecated-contextual, deprecated-noncontextual, strict].");
+                + "[deprecated-contextual, deprecated-noncontextual].");
 
     // assertion inside no-arg templateBasicNode() is that there is no exception.
-    parse("{namespace ns}\n{template .foo autoescape=\n\t\r \"strict\"}{/template}");
+    parse("{namespace ns}\n{template .foo autoescape=\n\t\r \"deprecated-contextual\"}{/template}");
   }
 
   @Test
   public void testValidStrictTemplates() {
-    TemplateNode node;
-
-    node =
-        parse(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-                + "{template .boo kind=\"text\" autoescape=\"strict\"}{/template}");
-    assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
-    assertEquals(SanitizedContentKind.TEXT, node.getContentKind());
-
-    node =
-        parse(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-                + "{template .boo kind=\"html\" autoescape=\"strict\"}{/template}");
-    assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
-    assertEquals(SanitizedContentKind.HTML, node.getContentKind());
-
     // "kind" is optional, defaults to HTML
-    node =
-        parse(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-                + "{template .boo autoescape=\"strict\"}{/template}");
+    TemplateNode node = parse("{namespace ns}\n" + "{template .boo}{/template}");
     assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
     assertEquals(SanitizedContentKind.HTML, node.getContentKind());
   }
@@ -218,8 +199,8 @@ public class TemplateNodeTest {
   public void testInvalidStrictTemplates() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .boo kind=\"text\"}{/template}",
+        "{namespace ns}\n"
+            + "{template .boo autoescape=\"deprecated-noncontextual\" kind=\"text\"}{/template}",
         errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("kind=\"...\" attribute is only valid with autoescape=\"strict\".");

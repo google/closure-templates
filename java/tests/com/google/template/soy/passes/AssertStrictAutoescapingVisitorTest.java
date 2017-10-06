@@ -35,14 +35,6 @@ public final class AssertStrictAutoescapingVisitorTest {
   @Test
   public void testStrictTemplate() {
     String soyCode =
-        "{namespace foo.bar autoescape=\"strict\"}\n"
-            + "{template .foo autoescape=\"strict\"}\n"
-            + "{@param boo : ?}\n"
-            + "  {$boo}\n"
-            + "{/template}\n";
-    doesntCauseStrictException(soyCode);
-
-    soyCode =
         "{namespace foo.bar}\n"
             + "{template .foo}\n"
             + "{@param boo : ?}\n"
@@ -52,32 +44,10 @@ public final class AssertStrictAutoescapingVisitorTest {
   }
 
   @Test
-  public void testNonStrictNamespace() {
-    String soyCode =
-        "{namespace foo.bar autoescape=\"deprecated-contextual\"}\n"
-            + "{template .foo autoescape=\"strict\"}\n"
-            + "{@param boo : ?}\n"
-            + "  {$boo}\n"
-            + "{/template}\n";
-    causesStrictException(soyCode);
-  }
-
-  @Test
   public void testNonStrictTemplate() {
     String soyCode =
-        "{namespace foo.bar autoescape=\"strict\"}\n"
+        "{namespace foo.bar}\n"
             + "{template .foo autoescape=\"deprecated-contextual\"}\n"
-            + "{@param boo : ?}\n"
-            + "  {$boo}\n"
-            + "{/template}\n";
-    causesStrictException(soyCode);
-  }
-
-  @Test
-  public void testNonDeclaredTemplate() {
-    String soyCode =
-        "{namespace foo.bar autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .foo}\n"
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";

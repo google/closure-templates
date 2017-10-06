@@ -61,6 +61,10 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("Expected a single expression for a {0} attribute.");
   static final SoyErrorKind NAMESPACE_STRICTHTML_ATTRIBUTE =
       SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
+  static final SoyErrorKind NAMESPACE_AUTOESCAPE_ATTRIBUTE =
+      SoyErrorKind.of("''autoescape'' can only be set on individual templates.");
+  static final SoyErrorKind AUTOESCAPE_STRICT =
+      SoyErrorKind.of("''autoescape=\"strict\"'' is the default, no need to set it.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
@@ -204,13 +208,17 @@ public final class CommandTagAttribute {
     checkState(valueExprList == null);
 
     AutoescapeMode mode = AutoescapeMode.forAttributeValue(value);
-    if (mode == null) {
+    if (mode == AutoescapeMode.STRICT) {
+      errorReporter.report(valueLocation, AUTOESCAPE_STRICT);
+    } else if (mode == null) {
       mode = AutoescapeMode.STRICT; // default for unparsed
       errorReporter.report(
           valueLocation,
           INVALID_ATTRIBUTE_LIST,
           key.identifier(),
-          ImmutableList.copyOf(AutoescapeMode.getAttributeValues()));
+          ImmutableList.of(
+              AutoescapeMode.CONTEXTUAL.getAttributeValue(),
+              AutoescapeMode.NONCONTEXTUAL.getAttributeValue()));
     }
     return mode;
   }

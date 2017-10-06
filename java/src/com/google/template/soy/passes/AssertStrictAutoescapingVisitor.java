@@ -21,7 +21,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
-import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -53,13 +52,6 @@ final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void>
 
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
-    NamespaceDeclaration namespaceDeclaration = node.getNamespaceDeclaration();
-    if (namespaceDeclaration.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
-      errorReporter.report(namespaceDeclaration.getAutoescapeModeLocation(), INVALID_AUTOESCAPING);
-      // If the file isn't strict, skip children to avoid spamming errors.
-      return;
-    }
-
     visitChildren(node);
   }
 

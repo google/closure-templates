@@ -160,9 +160,8 @@ import javax.annotation.Nullable;
  *    + The file must contain exactly one namespace declaration.
  *    + It must appear before any templates.
  *    + It must appear on its own line and start at the start of a line.
- *    Examples:
+ *    Example:
  *    {namespace boo.foo}
- *    {namespace boo.foo autoescape="..."}
  *
  * 3. Alias:
  *    + Alias declarations must appear after the namespace declaration.

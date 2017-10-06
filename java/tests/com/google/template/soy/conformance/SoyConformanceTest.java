@@ -52,7 +52,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .foo}\n"
             + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
             + "{/template}");
@@ -67,7 +67,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .quoteKeysIfJs}\n"
             + "This should be allowed.\n"
             + "{/template}");
@@ -82,8 +82,8 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .foo}\n"
+        "{namespace ns}\n"
+            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
             + "{print 'blah' |noAutoescape}\n"
             + "{/template}");
   }
@@ -97,7 +97,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .noAutoescape}\n"
             + "This should be allowed.\n"
             + "{/template}");
@@ -112,7 +112,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .foo}\n"
             + "{css('goog-inline-block')}\n"
             + "{/template}\n");
@@ -127,7 +127,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .foo}\n"
             + "{print 'goog-inline-block'}\n"
             + "{/template}\n");
@@ -142,7 +142,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "/** @param foo */\n"
             + "{template .bar}\n"
             + "  {$foo}\n"
@@ -158,7 +158,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        "{namespace ns}\n"
             + "{template .bar}\n"
             + "  {@param foo: string}\n"
             + "  {$foo}\n"
@@ -177,7 +177,7 @@ public class SoyConformanceTest {
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
-                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+                "{namespace ns}\n"
                     + "{template .foo}\n"
                     + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
                     + "{/template}"),
@@ -197,7 +197,7 @@ public class SoyConformanceTest {
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
-                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+                "{namespace ns}\n"
                     + "{template .foo}\n"
                     + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
                     + "{/template}"),
@@ -217,7 +217,7 @@ public class SoyConformanceTest {
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
-                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+                "{namespace ns}\n"
                     + "{template .foo}\n"
                     + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
                     + "{/template}"),
@@ -235,7 +235,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n" + "{template .bar}\n" + "foo\n" + "{/template}");
+        "{namespace ns}\n" + "{template .bar}\n" + "foo\n" + "{/template}");
   }
 
   @Test
@@ -247,7 +247,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n" + "{template .foo}\n" + "bar\n" + "{/template}");
+        "{namespace ns}\n" + "{template .foo}\n" + "bar\n" + "{/template}");
   }
 
   @Test
@@ -259,10 +259,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
-            + "{template .bar}\n"
-            + "  <div>test</div>\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .bar}\n" + "  <div>test</div>\n" + "{/template}");
   }
 
   @Test
@@ -275,7 +272,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
+        "{namespace ns}\n"
             + "{template .bar}\n"
             // Tag name is case insensitive.
             + "  <DIV>test</div>\n"
@@ -294,7 +291,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
+        "{namespace ns}\n"
             + "{template .bar}\n"
             + "<iframe src='#'>test</iframe>\n"
             + "{/template}");
@@ -310,7 +307,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
+        "{namespace ns}\n"
             + "{template .bar}\n"
             + "<iframe src='foo.js'>test</iframe>\n"
             + "{/template}");
@@ -324,10 +321,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
-            + "{template .bar}\n"
-            + "<div><p></p></div>\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .bar}\n" + "<div><p></p></div>\n" + "{/template}");
   }
 
   @Test
@@ -339,10 +333,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
-            + "{template .foo}\n"
-            + "<div onclick='bar'></div>\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .foo}\n" + "<div onclick='bar'></div>\n" + "{/template}");
     assertViolation(
         "requirement: {\n"
             + "  custom: {\n"
@@ -350,10 +341,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
-            + "{template .foo}\n"
-            + "<div ONCLICK='bar'></div>\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .foo}\n" + "<div ONCLICK='bar'></div>\n" + "{/template}");
   }
 
   @Test
@@ -464,10 +452,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + " "
             + "}",
-        "{namespace ns autoescape=\"strict\"}\n"
-            + "{template .foo}\n"
-            + "<div foo='bar'></div>\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .foo}\n" + "<div foo='bar'></div>\n" + "{/template}");
   }
 
   @Test
@@ -507,13 +492,6 @@ public class SoyConformanceTest {
             + " "
             + "}",
         "{namespace ns}\n" + "{template .foo}{/template}\n");
-    assertViolation(
-        "requirement: {\n"
-            + "  require_strict_autoescaping: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns autoescape=\"deprecated-contextual\"}\n" + "{template .foo}{/template}\n");
     assertViolation(
         "requirement: {\n"
             + "  require_strict_autoescaping: {}\n"
