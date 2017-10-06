@@ -179,6 +179,17 @@ public final class CommandTagAttribute {
     }
   }
 
+  boolean valueAsEnabled(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    if ("true".equals(value)) {
+      return true;
+    } else {
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "true");
+      return false;
+    }
+  }
+
   boolean valueAsDisabled(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 
