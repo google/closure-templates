@@ -174,6 +174,7 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public Renderer setSoyLogger(SoyLogger logger) {
       this.logger = checkNotNull(logger);
+      this.contextBuilder.hasLogger(true);
       return this;
     }
 

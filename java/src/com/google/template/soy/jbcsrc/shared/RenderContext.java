@@ -78,6 +78,7 @@ public final class RenderContext {
   private final SoyMsgBundle msgBundle;
 
   private final boolean debugSoyTemplateInfo;
+  private final boolean hasLogger;
 
   private RenderContext(Builder builder) {
     this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
@@ -88,6 +89,7 @@ public final class RenderContext {
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
     this.msgBundle = builder.msgBundle;
     this.debugSoyTemplateInfo = builder.debugSoyTemplateInfo;
+    this.hasLogger = builder.hasLogger;
   }
 
   @Nullable
@@ -156,6 +158,11 @@ public final class RenderContext {
     return debugSoyTemplateInfo;
   }
 
+  /** Returns a boolean indicating whether or not there is a logger configured. */
+  public boolean hasLogger() {
+    return hasLogger;
+  }
+
   public CompiledTemplate getDelTemplate(
       String calleeName, String variant, boolean allowEmpty, SoyRecord params, SoyRecord ij) {
     CompiledTemplate.Factory callee =
@@ -165,9 +172,10 @@ public final class RenderContext {
         return EMPTY_TEMPLATE;
       }
       throw new IllegalArgumentException(
-          "Found no active impl for delegate call to '"
+          "Found no active impl for delegate call to \""
               + calleeName
-              + "' (and no attribute allowemptydefault=\"true\").");
+              + (variant.isEmpty() ? "" : ":" + variant)
+              + "\" (and not allowemptydefault=\"true\").");
     }
     return callee.create(params, ij);
   }
@@ -201,7 +209,8 @@ public final class RenderContext {
         .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
-        .withMessageBundle(msgBundle);
+        .withMessageBundle(msgBundle)
+        .withCompiledTemplates(templates);
   }
 
   /** A builder for configuring the context. */
@@ -214,6 +223,7 @@ public final class RenderContext {
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
     private boolean debugSoyTemplateInfo = false;
+    private boolean hasLogger;
 
     public Builder withCompiledTemplates(CompiledTemplates templates) {
       this.templates = checkNotNull(templates);
@@ -255,8 +265,14 @@ public final class RenderContext {
       return this;
     }
 
+    public Builder hasLogger(boolean hasLogger) {
+      this.hasLogger = hasLogger;
+      return this;
+    }
+
     public RenderContext build() {
       return new RenderContext(this);
     }
+
   }
 }

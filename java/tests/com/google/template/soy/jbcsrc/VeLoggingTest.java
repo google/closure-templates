@@ -262,7 +262,8 @@ public final class VeLoggingTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
-    RenderContext ctx = TemplateTester.getDefaultContext(templates);
+    RenderContext ctx =
+        TemplateTester.getDefaultContext(templates).toBuilder().hasLogger(true).build();
     RenderResult result =
         templates
             .getTemplateFactory("ns.foo")

@@ -30,6 +30,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoy
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.restricted.Statement.NULL_STATEMENT;
+import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
@@ -818,8 +819,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
-    Label restartPoint = new Label();
-    Statement enterStatement =
+
+    final Label restartPoint = new Label();
+    final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
+    final boolean hasLogonlyExpression = node.getLogonlyExpression() != null;
+    final Expression logonlyExpression =
+        hasLogonlyExpression
+            ? exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAs(boolean.class)
+            : BytecodeUtils.constant(false);
+    final Statement enterStatement =
         appendableExpression
             .enterLoggableElement(
                 MethodRef.LOG_STATEMENT_CREATE.invoke(
@@ -829,21 +837,39 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                         : exprCompiler
                             .compile(node.getConfigExpression(), restartPoint)
                             .unboxAs(Message.class),
-                    node.getLogonlyExpression() == null
-                        ? BytecodeUtils.constant(false)
-                        : exprCompiler
-                            .compile(node.getLogonlyExpression(), restartPoint)
-                            .unboxAs(boolean.class)))
-            .labelStart(restartPoint)
+                    logonlyExpression))
             .toStatement();
-    List<Statement> body = visitChildren(node);
-    Statement exitStatement = appendableExpression.exitLoggableElement().toStatement();
-    return Statement.concat(
-        ImmutableList.<Statement>builder()
-            .add(enterStatement)
-            .addAll(body)
-            .add(exitStatement)
-            .build());
+    final Statement body = Statement.concat(visitChildren(node));
+    final Statement exitStatement = appendableExpression.exitLoggableElement().toStatement();
+    return new Statement() {
+      @Override
+      protected void doGen(CodeBuilder cb) {
+        Label noLogger = new Label();
+        hasLogger.gen(cb);
+        cb.ifZCmp(EQ, noLogger);
+        enterStatement.gen(cb);
+        if (hasLogonlyExpression) {
+          Label bodyLabel = new Label();
+          cb.goTo(bodyLabel);
+          cb.mark(noLogger);
+          // if we get here then we have a logonly expression and no logger.
+          logonlyExpression.gen(cb);
+          cb.ifZCmp(EQ, bodyLabel);
+          cb.throwException(
+              BytecodeUtils.ILLEGAL_STATE_EXCEPTION_TYPE,
+              "Cannot set logonly=\"true\" unless there is a logger configured");
+          cb.mark(bodyLabel);
+        } else {
+          cb.mark(noLogger);
+        }
+        body.gen(cb);
+        Label end = new Label();
+        hasLogger.gen(cb);
+        cb.ifZCmp(EQ, end);
+        exitStatement.gen(cb);
+        cb.mark(end);
+      }
+    }.labelStart(restartPoint);
   }
 
   /**

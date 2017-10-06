@@ -92,6 +92,7 @@ public final class BytecodeUtils {
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
+  public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");

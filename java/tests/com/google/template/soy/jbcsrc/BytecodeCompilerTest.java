@@ -908,8 +908,8 @@ public class BytecodeCompilerTest {
       assertThat(iae)
           .hasMessageThat()
           .isEqualTo(
-              "Found no active impl for delegate call to 'myApp.myDelegate' "
-                  + "(and no attribute allowemptydefault=\"true\").");
+              "Found no active impl for delegate call to \"myApp.myDelegate\" "
+                  + "(and not allowemptydefault=\"true\").");
     }
     String soyFileContent2 =
         Joiner.on("\n")

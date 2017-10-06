@@ -72,6 +72,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
+  private static final MethodRef HAS_LOGGER =
+      MethodRef.create(RenderContext.class, "hasLogger").asCheap();
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -160,5 +163,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   Expression usePrimaryMsg(long msgId, long fallbackId) {
     return delegate.invoke(USE_PRIMARY_MSG, constant(msgId), constant(fallbackId));
+  }
+
+  public Expression hasLogger() {
+    return delegate.invoke(HAS_LOGGER);
   }
 }
