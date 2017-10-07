@@ -22,13 +22,15 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.xml.sax.SAXException;
 
 /**
  * Message plugin for XLIFF format.
  *
  */
-public final class XliffMsgPlugin implements SoyMsgPlugin {
+@Singleton
+public class XliffMsgPlugin implements SoyMsgPlugin {
 
   @Inject
   public XliffMsgPlugin() {}

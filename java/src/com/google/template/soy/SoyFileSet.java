@@ -16,7 +16,6 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -32,6 +31,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -61,7 +61,6 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -132,6 +131,7 @@ public final class SoyFileSet {
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
+    private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
 
     @Inject
     CoreDependencies(
@@ -139,12 +139,14 @@ public final class SoyFileSet {
         @ApiCall GuiceSimpleScope apiCallScope,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
+        Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
       this.soyValueConverter = soyValueConverter;
       this.apiCallScope = apiCallScope;
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
+      this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     }
   }
 
@@ -236,6 +238,7 @@ public final class SoyFileSet {
           filesBuilder.build(),
           getGeneralOptions(),
           cache,
+          coreDependencies.msgBundleHandlerProvider,
           conformanceConfig,
           loggingConfig,
           warningSink);
@@ -614,6 +617,9 @@ public final class SoyFileSet {
     }
   }
 
+  /** Provider for getting an instance of SoyMsgBundleHandler. */
+  private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
+
   private final GuiceSimpleScope apiCallScopeProvider;
   private final SoyValueConverter soyValueConverter;
 
@@ -648,6 +654,7 @@ public final class SoyFileSet {
       ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
+      Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
       ValidatedConformanceConfig conformanceConfig,
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
@@ -662,6 +669,7 @@ public final class SoyFileSet {
     this.generalOptions = generalOptions.clone();
     this.soyFunctionMap = soyFunctionMap;
     this.printDirectives = printDirectives;
+    this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     this.conformanceConfig = checkNotNull(conformanceConfig);
     this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
@@ -1033,7 +1041,6 @@ public final class SoyFileSet {
    * @param inputFilePathPrefix The prefix prepended to all input file paths (can be empty string).
    * @param jsSrcOptions The compilation options for the JS Src output target.
    * @param locales The list of locales. Can be an empty list if not applicable.
-   * @param msgPlugin The {@link SoyMsgPlugin} to use, or null if not applicable
    * @param messageFilePathFormat The message file path format, or null if not applicable.
    * @throws SoyCompilationException If compilation fails.
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
@@ -1045,7 +1052,6 @@ public final class SoyFileSet {
       String inputFilePathPrefix,
       SoyJsSrcOptions jsSrcOptions,
       List<String> locales,
-      @Nullable SoyMsgPlugin msgPlugin,
       @Nullable String messageFilePathFormat)
       throws IOException {
     ParseResult result = preprocessJsSrcResults(jsSrcOptions);
@@ -1066,11 +1072,6 @@ public final class SoyFileSet {
               errorReporter);
 
     } else {
-      checkArgument(
-          msgPlugin != null, "a message plugin must be provided when generating localized sources");
-      checkArgument(
-          messageFilePathFormat != null,
-          "a messageFilePathFormat must be provided when generating localized sources");
       // Generating localized JS.
       for (String locale : locales) {
 
@@ -1081,7 +1082,7 @@ public final class SoyFileSet {
                 messageFilePathFormat, locale, null, inputFilePathPrefix);
 
         SoyMsgBundle msgBundle =
-            new SoyMsgBundleHandler(msgPlugin).createFromFile(new File(msgFilePath));
+            msgBundleHandlerProvider.get().createFromFile(new File(msgFilePath));
         if (msgBundle.getLocaleString() == null) {
           // TODO: Remove this check (but make sure no projects depend on this behavior).
           // There was an error reading the message file. We continue processing only if the locale

@@ -22,9 +22,7 @@ import com.google.template.soy.msgs.SoyMsgPlugin;
 /**
  * Guice module to bind the XliffMsgPlugin.
  *
- * @deprecated There is no reason to install this
  */
-@Deprecated
 public class XliffMsgPluginModule extends AbstractModule {
 
   @Override

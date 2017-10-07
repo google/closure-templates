@@ -16,6 +16,7 @@
 package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
@@ -28,6 +29,7 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -161,7 +163,7 @@ abstract class AbstractSoyCompiler {
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
-  final ClassLoader pluginClassLoader;
+  private final ClassLoader pluginClassLoader;
 
   AbstractSoyCompiler(ClassLoader pluginClassLoader) {
     this.pluginClassLoader = pluginClassLoader;
@@ -226,6 +228,7 @@ abstract class AbstractSoyCompiler {
     List<Module> modules = new ArrayList<>();
     modules.add(new SoyModule());
     modules.addAll(pluginModules);
+    modules.addAll(msgPluginModule().asSet());
     // TODO(lukes): Stage.PRODUCTION?
     Injector injector = Guice.createInjector(modules);
     SoyFileSet.Builder sfsBuilder =
@@ -305,6 +308,15 @@ abstract class AbstractSoyCompiler {
   @ForOverride
   boolean acceptsSourcesAsArguments() {
     return true;
+  }
+
+  /**
+   * Returns an additional plugin module to support the {@link SoyMsgPlugin}. This is only neccesary
+   * if the compiler needs to perform msg extraction.
+   */
+  @ForOverride
+  Optional<Module> msgPluginModule() {
+    return Optional.absent();
   }
 
   /**

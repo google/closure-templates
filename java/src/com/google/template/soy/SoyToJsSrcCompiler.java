@@ -16,10 +16,11 @@
 
 package com.google.template.soy;
 
+import com.google.common.base.Optional;
+import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.msgs.SoyMsgPlugin;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -171,18 +172,14 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   private boolean useGoogIsRtlForBidiGlobalDir = false;
 
   @Option(
-    name = "--messagePlugin",
-    usage =
-        "Specifies the full class name of a SoyMsgPlugin. If not specified, the default is"
-            + " com.google.template.soy.xliffmsgplugin.XliffMsgPlugin. "
-  )
-  private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
-
-  @Option(
     name = "--messagePluginModule",
-    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
+    usage =
+        "Specifies the full class name of a Guice module that binds a SoyMsgPlugin."
+            + " If not specified, the default is"
+            + " com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule, which binds"
+            + " the XliffMsgPlugin."
   )
-  private String messagePluginModule = null;
+  private Module messagePluginModule = new XliffMsgPluginModule();
 
   SoyToJsSrcCompiler(ClassLoader loader) {
     super(loader);
@@ -209,6 +206,11 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
+  Optional<Module> msgPluginModule() {
+    return Optional.of(messagePluginModule);
+  }
+
+  @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     if (!syntaxVersion.isEmpty()) {
       sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
@@ -231,14 +233,9 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     boolean generateLocalizedJs = !locales.isEmpty();
     if (generateLocalizedJs) {
       sfs.compileToJsSrcFiles(
-          outputPathFormat,
-          inputPrefix,
-          jsSrcOptions,
-          locales,
-          SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule),
-          messageFilePathFormat);
+          outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat);
     } else {
-      sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null, null);
+      sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
     }
   }
 }

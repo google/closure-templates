@@ -16,12 +16,13 @@
 
 package com.google.template.soy;
 
+import com.google.common.base.Optional;
 import com.google.common.io.Files;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-import com.google.template.soy.msgs.SoyMsgPlugin;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 import java.io.File;
 import java.io.IOException;
 import org.kohsuke.args4j.Option;
@@ -72,18 +73,14 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   private String targetLocaleString = "";
 
   @Option(
-    name = "--messagePlugin",
-    usage =
-        "Specifies the full class name of a SoyMsgPlugin.  If not specified, the default is "
-            + "com.google.template.soy.xliffmsgplugin.XliffMsgPlugin."
-  )
-  private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
-
-  @Option(
     name = "--messagePluginModule",
-    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
+    usage =
+        "Specifies the full class name of a Guice module that binds a SoyMsgPlugin."
+            + " If not specified, the default is"
+            + " com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule, which binds"
+            + " the XliffMsgPlugin."
   )
-  private String messagePluginModule = null;
+  private Module messagePluginModule = new XliffMsgPluginModule();
 
   /**
    * Extracts messages from a set of Soy files into an output messages file.
@@ -103,6 +100,11 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   SoyMsgExtractor() {}
 
   @Override
+  Optional<Module> msgPluginModule() {
+    return Optional.of(messagePluginModule);
+  }
+
+  @Override
   void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
@@ -113,8 +115,6 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
       options.setTargetLocaleString(targetLocaleString);
     }
     sfs.extractAndWriteMsgs(
-        new SoyMsgBundleHandler(SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule)),
-        options,
-        Files.asByteSink(outputFile));
+        injector.getInstance(SoyMsgBundleHandler.class), options, Files.asByteSink(outputFile));
   }
 }
