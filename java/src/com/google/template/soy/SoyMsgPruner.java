@@ -16,13 +16,12 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Optional;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
+import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,13 +61,16 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   private List<File> outputMsgFiles = new ArrayList<>();
 
   @Option(
-    name = "--messagePluginModule",
-    usage =
-        "Specifies the full class name of a Guice module that binds a"
-            + " BidirectionalSoyMsgPlugin."
+    name = "--messagePlugin",
+    usage = "Specifies the full class name of a  BidirectionalSoyMsgPlugin."
   )
-  private Module msgPluginModule;
+  private SoyMsgPlugin messagePlugin;
 
+  @Option(
+    name = "--messagePluginModule",
+    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
+  )
+  private String messagePluginModule = null;
   /**
    * Prunes messages from XTB files, given a set of Soy files as reference for which messages to
    * keep.
@@ -93,16 +95,16 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   }
 
   @Override
-  Optional<Module> msgPluginModule() {
-    return Optional.fromNullable(msgPluginModule);
-  }
-
-  @Override
   void validateFlags() {
     if (inputMsgFiles.size() != outputMsgFiles.size()) {
       exitWithError("Must provide exactly one input file for every output file.");
     }
-
+    if (messagePlugin == null && messagePluginModule == null) {
+      exitWithError("Must specify a --messagePlugin.");
+    }
+    if (messagePlugin != null && messagePluginModule != null) {
+      exitWithError("Cannot specify --messagePluginModule if you also specify --messagePlugin.");
+    }
     for (File f : inputMsgFiles) {
       if (!f.exists()) {
         exitWithError("FileNotFound: " + f);
@@ -114,7 +116,8 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
-    SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
+    SoyMsgBundleHandler msgBundleHandler =
+        new SoyMsgBundleHandler(SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule));
 
     // Main loop.
     for (int i = 0; i < inputMsgFiles.size(); i++) {

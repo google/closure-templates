@@ -17,7 +17,9 @@
 package com.google.template.soy;
 
 import com.google.inject.Module;
+import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
+import javax.annotation.Nullable;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.NamedOptionDef;
@@ -33,6 +35,7 @@ final class SoyCmdLineParser extends CmdLineParser {
     // overwrite the built in boolean handler
     CmdLineParser.registerHandler(Boolean.class, BooleanOptionHandler.class);
     CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
+    CmdLineParser.registerHandler(SoyMsgPlugin.class, MsgPluginOptionHandler.class);
   }
 
   private final ClassLoader pluginLoader;
@@ -155,8 +158,12 @@ final class SoyCmdLineParser extends CmdLineParser {
 
     @Override
     Module parseItem(String item) {
-      return instantiatePluginModule(
-          ((NamedOptionDef) option).name(), ((SoyCmdLineParser) this.owner).pluginLoader, item);
+      return instantiateObject(
+          ((NamedOptionDef) option).name(),
+          "plugin module",
+          Module.class,
+          ((SoyCmdLineParser) this.owner).pluginLoader,
+          item);
     }
   }
 
@@ -194,8 +201,45 @@ final class SoyCmdLineParser extends CmdLineParser {
         setter.addValue(null);
       } else {
         setter.addValue(
-            instantiatePluginModule(
+            instantiateObject(
                 ((NamedOptionDef) option).name(),
+                "plugin module",
+                Module.class,
+                ((SoyCmdLineParser) this.owner).pluginLoader,
+                parameter));
+      }
+      return 1;
+    }
+
+    @Override
+    public String getDefaultMetaVariable() {
+      return "com.foo.bar.BazModule";
+    }
+  }
+
+  /**
+   * OptionHandler for args4j that handles a comma-delimited list of strings referencing guice
+   * module names.
+   */
+  public static final class MsgPluginOptionHandler extends OptionHandler<SoyMsgPlugin> {
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public MsgPluginOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SoyMsgPlugin> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
+      String parameter = params.getParameter(0);
+      // An empty string should be null
+      if (parameter.isEmpty()) {
+        setter.addValue(null);
+      } else {
+        setter.addValue(
+            instantiateObject(
+                ((NamedOptionDef) option).name(),
+                "msg plugin",
+                SoyMsgPlugin.class,
                 ((SoyCmdLineParser) this.owner).pluginLoader,
                 parameter));
       }
@@ -214,20 +258,43 @@ final class SoyCmdLineParser extends CmdLineParser {
    * @param moduleName The name of the plugin module to instantiate.
    * @return A new instance of the specified plugin module.
    */
-  private static Module instantiatePluginModule(
-      String moduleFlagName, ClassLoader loader, String moduleName) {
+  private static <T> T instantiateObject(
+      String moduleFlagName,
+      String objectType,
+      Class<T> clazz,
+      ClassLoader loader,
+      String moduleName) {
     try {
-      return (Module) Class.forName(moduleName, true, loader).getConstructor().newInstance();
+      return Class.forName(moduleName, true, loader)
+          .asSubclass(clazz)
+          .getConstructor()
+          .newInstance();
 
     } catch (ReflectiveOperationException e) {
       throw new CommandLineError(
-          "Cannot instantiate plugin module \""
-              + moduleName
-              + "\", registered with flag --"
-              + moduleFlagName
-              + ".  Please make sure that the module exists and is on the compiler classpath."
-              + "\nCaused by "
-              + e);
+          String.format(
+              "Cannot instantiate %s \"%s\" registered with flag --%s.  Please make "
+                  + "sure that the %s exists and is on the compiler classpath.\nCaused by: %s",
+              objectType, moduleName, moduleFlagName, objectType, e));
     }
+  }
+
+  /**
+   * Temporary helper method to aid in the migration from {@code --messagePluginModule} to {@code
+   * --messagePlugin}
+   */
+  static SoyMsgPlugin getMsgPlugin(
+      SoyMsgPlugin plugin, @Nullable String oldMessagePluginModuleFlag) {
+    if (oldMessagePluginModuleFlag != null) {
+      switch (oldMessagePluginModuleFlag) {
+        case "com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule":
+          return new com.google.template.soy.xliffmsgplugin.XliffMsgPlugin();
+        default:
+          throw new CommandLineError(
+              "Please switch to using the --messagePlugin flag, temporary backwards compatibility "
+                  + "for --messagePluginModule is only available for recognized plugins");
+      }
+    }
+    return plugin;
   }
 }
