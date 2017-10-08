@@ -760,6 +760,17 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     @Override
     protected void visitVeLogNode(VeLogNode node) {
+      if (node.getLogonlyExpression() != null) {
+        TranslateToPyExprVisitor translator =
+            new TranslateToPyExprVisitor(localVarExprs, errorReporter);
+        PyExpr isLogonly = translator.exec(node.getLogonlyExpression());
+        pyCodeBuilder.appendLine("if ", isLogonly.getText(), ":");
+        pyCodeBuilder.increaseIndent();
+        pyCodeBuilder.appendLine(
+            "raise Exception('Cannot set logonly=\"true\" unless there is a "
+                + "logger configured, but pysrc doesn\\'t support loggers')");
+        pyCodeBuilder.decreaseIndent();
+      }
       // TODO(lukes): expand implementation
       visitChildren(node);
     }
