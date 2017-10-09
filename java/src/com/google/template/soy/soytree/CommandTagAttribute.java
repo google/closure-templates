@@ -63,8 +63,8 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
   static final SoyErrorKind NAMESPACE_AUTOESCAPE_ATTRIBUTE =
       SoyErrorKind.of("''autoescape'' can only be set on individual templates.");
-  static final SoyErrorKind AUTOESCAPE_STRICT =
-      SoyErrorKind.of("''autoescape=\"strict\"'' is the default, no need to set it.");
+  static final SoyErrorKind EXPLICIT_DEFAULT_ATTRIBUTE =
+      SoyErrorKind.of("''{0}=\"{1}\"'' is the default, no need to set it.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
@@ -184,10 +184,12 @@ public final class CommandTagAttribute {
 
     if ("true".equals(value)) {
       return true;
+    } else if ("false".equals(value)) {
+      errorReporter.report(valueLocation, EXPLICIT_DEFAULT_ATTRIBUTE, key.identifier(), "false");
     } else {
       errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "true");
-      return false;
     }
+    return false;
   }
 
   boolean valueAsDisabled(ErrorReporter errorReporter) {
@@ -195,10 +197,12 @@ public final class CommandTagAttribute {
 
     if ("false".equals(value)) {
       return true;
+    } else if ("true".equals(value)) {
+      errorReporter.report(valueLocation, EXPLICIT_DEFAULT_ATTRIBUTE, key.identifier(), "true");
     } else {
       errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "false");
-      return false;
     }
+    return false;
   }
 
   ImmutableList<String> valueAsRequireCss(ErrorReporter errorReporter) {
@@ -220,7 +224,7 @@ public final class CommandTagAttribute {
 
     AutoescapeMode mode = AutoescapeMode.forAttributeValue(value);
     if (mode == AutoescapeMode.STRICT) {
-      errorReporter.report(valueLocation, AUTOESCAPE_STRICT);
+      errorReporter.report(valueLocation, EXPLICIT_DEFAULT_ATTRIBUTE, "autoescape", "strict");
     } else if (mode == null) {
       mode = AutoescapeMode.STRICT; // default for unparsed
       errorReporter.report(

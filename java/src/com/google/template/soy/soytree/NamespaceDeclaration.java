@@ -20,7 +20,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -40,11 +39,16 @@ public final class NamespaceDeclaration {
       switch (attr.getName().identifier()) {
         case "autoescape":
           AutoescapeMode mode = AutoescapeMode.forAttributeValue(attr.getValue());
-          SoyErrorKind error =
-              mode == AutoescapeMode.STRICT
-                  ? CommandTagAttribute.AUTOESCAPE_STRICT
-                  : CommandTagAttribute.NAMESPACE_AUTOESCAPE_ATTRIBUTE;
-          errorReporter.report(attr.getName().location(), error);
+          if (mode == AutoescapeMode.STRICT) {
+            errorReporter.report(
+                attr.getName().location(),
+                CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
+                "autoescape",
+                "strict");
+          } else {
+            errorReporter.report(
+                attr.getName().location(), CommandTagAttribute.NAMESPACE_AUTOESCAPE_ATTRIBUTE);
+          }
           break;
         case "requirecss":
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
