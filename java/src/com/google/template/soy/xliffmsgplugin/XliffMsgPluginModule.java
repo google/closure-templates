@@ -22,7 +22,10 @@ import com.google.template.soy.msgs.SoyMsgPlugin;
 /**
  * Guice module to bind the XliffMsgPlugin.
  *
+ * @deprecated There is no reason to install this. If you need access to a SoyMsgPlugin or a
+ *     SoyMsgBundleHandler you should just invoke their constructors.
  */
+@Deprecated
 public class XliffMsgPluginModule extends AbstractModule {
 
   @Override

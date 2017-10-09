@@ -51,6 +51,8 @@ public final class SoyModule extends AbstractModule {
     OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);
   }
 
+  // TODO(b/19252021): remove this binding, or move it into users injectors, it is no longer used by
+  // soy.
   @Provides
   SoyMsgBundleHandler provideHandler(Optional<SoyMsgPlugin> plugin) {
     if (plugin.isPresent()) {

@@ -57,7 +57,6 @@ import com.google.template.soy.examples.FeaturesSoyInfo.DemoPrintSoyTemplateInfo
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.tofu.SoyTofu;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 import java.io.IOException;
 import java.net.URL;
 import org.kohsuke.args4j.CmdLineException;
@@ -116,7 +115,7 @@ public class FeaturesUsage {
       System.exit(1);
     }
 
-    Injector injector = Guice.createInjector(new SoyModule(), new XliffMsgPluginModule());
+    Injector injector = Guice.createInjector(new SoyModule());
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     SoyFileSet sfs =
