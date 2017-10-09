@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -107,7 +106,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   private final String desc;
 
   /** Whether the message should be added as 'hidden' in the TC. */
-  private final TriState isHidden;
+  private final boolean isHidden;
 
   /** The string representation of genderExprs, for debugging. */
   @Nullable private final String genderExprsString;
@@ -125,7 +124,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     String meaning = null;
     String desc = null;
-    TriState hidden = TriState.UNSET;
+    boolean hidden = false;
     ImmutableList<ExprRootNode> genders = null;
 
     for (CommandTagAttribute attr : attributes) {
@@ -143,7 +142,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           desc = LINE_BOUNDARY_PATTERN.matcher(desc).replaceAll(" ");
           break;
         case "hidden":
-          hidden = attr.valueAsTriState(errorReporter);
+          hidden = attr.valueAsEnabled(errorReporter);
           break;
         case "genders":
           genders = ExprRootNode.wrap(attr.valueAsExprList());
@@ -241,8 +240,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /** Returns whether the message should be added as 'hidden' in the TC. */
   public boolean isHidden() {
-    // Default is false.
-    return isHidden == TriState.ENABLED;
+    return isHidden;
   }
 
   /** Returns the content type for the TC. */
@@ -379,8 +377,8 @@ public final class MsgNode extends AbstractBlockCommandNode
     if (desc != null) {
       commandText.append(" desc=\"").append(desc).append('"');
     }
-    if (isHidden != TriState.UNSET) {
-      commandText.append(" hidden=\"").append(isHidden == TriState.ENABLED).append('"');
+    if (isHidden) {
+      commandText.append(" hidden=\"").append(isHidden).append('"');
     }
     if (genderExprsString != null) {
       commandText.append(" genders=\"").append(genderExprsString).append('"');
