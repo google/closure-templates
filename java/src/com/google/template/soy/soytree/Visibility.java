@@ -32,7 +32,7 @@ import java.util.Set;
 public enum Visibility {
   // {template .foo visibility="private"}
   PRIVATE("private"),
-  // {template .foo visibility="public"} or just {template .foo}
+  // {template .foo}
   PUBLIC("public");
 
   private final String attributeValue;

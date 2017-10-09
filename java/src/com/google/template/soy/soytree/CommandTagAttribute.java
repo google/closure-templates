@@ -226,12 +226,18 @@ public final class CommandTagAttribute {
     checkState(valueExprList == null);
 
     Visibility visibility = Visibility.forAttributeValue(value);
-    if (visibility == null) {
+    if (visibility == Visibility.PUBLIC) {
       errorReporter.report(
           valueLocation,
-          INVALID_ATTRIBUTE_LIST,
+          EXPLICIT_DEFAULT_ATTRIBUTE,
           key.identifier(),
-          ImmutableList.copyOf(Visibility.getAttributeValues()));
+          Visibility.PUBLIC.getAttributeValue());
+    } else if (visibility == null) {
+      errorReporter.report(
+          valueLocation,
+          INVALID_ATTRIBUTE,
+          key.identifier(),
+          Visibility.PRIVATE.getAttributeValue());
     }
     return visibility;
   }
