@@ -106,7 +106,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
           break;
         case "deprecatedV1":
-          markDeprecatedV1(attribute.valueAsBoolean(errorReporter, false));
+          markDeprecatedV1(attribute.valueAsEnabled(errorReporter));
           break;
         case "stricthtml":
           strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);

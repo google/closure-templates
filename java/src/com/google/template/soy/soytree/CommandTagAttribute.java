@@ -134,23 +134,6 @@ public final class CommandTagAttribute {
     return valueLocation;
   }
 
-  boolean valueAsBoolean(ErrorReporter errorReporter, boolean defaultValue) {
-    checkState(valueExprList == null);
-
-    if ("true".equals(value)) {
-      return true;
-    } else if ("false".equals(value)) {
-      return false;
-    } else {
-      errorReporter.report(
-          valueLocation,
-          INVALID_ATTRIBUTE_LIST,
-          key.identifier(),
-          ImmutableList.of("true", "false"));
-      return defaultValue;
-    }
-  }
-
   public int valueAsInteger(ErrorReporter errorReporter, int defaultValue) {
     checkState(valueExprList == null);
 
