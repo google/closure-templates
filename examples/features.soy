@@ -106,8 +106,7 @@
  */
 {template .demoAutoescapeTrue}
   {@param italicHtml: ?}  /** A string surrounded by HTML italics tags. */
-  // Note: We explicitly list autoescape="strict" in the 'template' tag for demonstration. Usually
-  // it's omitted because "strict" is the attribute's default value.
+  // Note: autoescape="strict" is the default.
 
   {$italicHtml}<br>  // autoescape causes HTML tags to appear literally
 {/template}
