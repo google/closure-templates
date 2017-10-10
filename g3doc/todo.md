@@ -99,8 +99,6 @@ most of expressions. Here are the major incompatibilities.
 
 ## Eliminate legacy compiler options
 
-*   --shouldGenerateJsdoc eliminate the flag, there is no reason not to always
-    do this.
 *   --isUsingIjData flip to true, delete flag
 *   --codeStyle remove flag, it is dead
 *   --shouldProvideRequireSoyNamespaces and
