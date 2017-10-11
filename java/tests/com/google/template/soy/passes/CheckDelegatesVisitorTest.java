@@ -359,7 +359,7 @@ public final class CheckDelegatesVisitorTest {
             + "{delpackage dp2}\n"
             + "{namespace ns}\n\n"
             + "/** @param x */\n"
-            + "{deltemplate foo kind=\"html\" stricthtml=\"false\"}\n"
+            + "{deltemplate foo stricthtml=\"false\"}\n"
             + "<i>{$x}</i>\n"
             + "{/deltemplate}");
 
@@ -379,7 +379,7 @@ public final class CheckDelegatesVisitorTest {
         ""
             + "{namespace ns.default}\n\n"
             + "/** @param x */\n"
-            + "{deltemplate foo kind=\"html\" stricthtml=\"false\"}\n"
+            + "{deltemplate foo stricthtml=\"false\"}\n"
             + "<b>{$x}</b>\n"
             + "{/deltemplate}",
         ""

@@ -2324,7 +2324,7 @@ public final class ContextualAutoescaperTest {
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template .main kind=\"html\" stricthtml=\"false\"}\n",
+            "{template .main stricthtml=\"false\"}\n",
             "<b>{call .bar data=\"all\"/}\n",
             "{/template}\n\n" + "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "Hello World\n",

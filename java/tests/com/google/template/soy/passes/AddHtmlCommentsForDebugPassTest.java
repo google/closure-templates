@@ -63,7 +63,7 @@ public final class AddHtmlCommentsForDebugPassTest {
     result =
         runPass(
             "{template .t kind=\"text\"}{call .t2 /}{/template}\n"
-                + "{template .t2 kind=\"html\"}<div>foo</div>{/template}");
+                + "{template .t2}<div>foo</div>{/template}");
     // ns.t should not be rewritten since it has kind="text"
     assertThat(result.get("ns.t")).isEqualTo("{call .t2 /}");
     // ns.t2 should still be rewritten
@@ -83,7 +83,7 @@ public final class AddHtmlCommentsForDebugPassTest {
   @Test
   public void testNoOpForTemplatesWithoutAnyTags() throws Exception {
     // Templates that explicitly set ContentKind or AutoescapeMode.
-    assertTemplate("{template .t kind=\"html\"}{/template}").isEmpty();
+    assertTemplate("{template .t kind=\"js\"}{/template}").isEmpty();
     assertTemplate("{template .t autoescape=\"deprecated-contextual\"}{/template}").isEmpty();
     // Templates that does not contain any html tags.
     assertTemplate("{template .t}{/template}").isEmpty();
@@ -251,8 +251,7 @@ public final class AddHtmlCommentsForDebugPassTest {
 
   @Test
   public void testFilePathIsEscaped() {
-    ImmutableMap<String, String> result =
-        runPass("{template .t kind=\"html\"}<p>{/template}", "-->.soy");
+    ImmutableMap<String, String> result = runPass("{template .t}<p>{/template}", "-->.soy");
     assertThat(result.get("ns.t"))
         .isEqualTo(
             "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, --&gt;.soy, 1)-->{/if}"

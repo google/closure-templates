@@ -2177,7 +2177,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo kind=\"html\"}\n"
+            + "{template .goo}\n"
             + "  Blah\n"
             + "{/template}\n";
 

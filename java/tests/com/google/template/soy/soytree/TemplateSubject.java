@@ -117,11 +117,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private ErrorReporter doParse() {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
-            "{namespace test}\n"
-                + "{template .foo kind=\"html\"}\n"
-                + actual()
-                + "\n"
-                + "{/template}",
+            "{namespace test}\n" + "{template .foo}\n" + actual() + "\n" + "{/template}",
             SoyFileKind.SRC,
             "example.soy");
     ErrorReporter errorReporter =
