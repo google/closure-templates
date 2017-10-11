@@ -29,10 +29,14 @@ final class RequireStrictAutoescaping extends Rule<SoyFileNode> {
 
   @Override
   protected void doCheckConformance(SoyFileNode node, ErrorReporter errorReporter) {
-    // Make sure none of the children have overridden the default.
-    for (TemplateNode template : node.getChildren()) {
-      if (template.getAutoescapeMode() != AutoescapeMode.STRICT) {
-        errorReporter.report(template.getSourceLocation(), error);
+    if (node.getNamespaceDeclaration().getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
+      errorReporter.report(node.getNamespaceDeclaration().getAutoescapeModeLocation(), error);
+    } else {
+      // make sure none of the children have overridden it
+      for (TemplateNode template : node.getChildren()) {
+        if (template.getAutoescapeMode() != AutoescapeMode.STRICT) {
+          errorReporter.report(template.getSourceLocation(), error);
+        }
       }
     }
   }

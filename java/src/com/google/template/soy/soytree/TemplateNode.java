@@ -110,7 +110,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       this(
           delpackageName == null ? null : delpackageName.identifier(),
           namespaceDeclaration.getNamespace(),
-          AutoescapeMode.STRICT,
+          namespaceDeclaration.getDefaultAutoescapeMode(),
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
           ImmutableList.copyOf(aliases));
     }

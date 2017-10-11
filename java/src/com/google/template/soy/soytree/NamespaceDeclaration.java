@@ -16,8 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import java.util.List;
@@ -25,7 +28,13 @@ import javax.annotation.Nullable;
 
 /** A {@code {namespace ..}} declaration. */
 public final class NamespaceDeclaration {
+  /** The default autoescape mode if none is specified in the command text. */
+  private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE =
+      AutoescapeMode.STRICT;
+
   private final Identifier namespace;
+  @Nullable private final AutoescapeMode autoescapeMode;
+  @Nullable private final SourceLocation autoescapeModeLocation;
   private final ImmutableList<String> requiredCssNamespaces;
   private final String cssBaseNamespace;
 
@@ -33,22 +42,15 @@ public final class NamespaceDeclaration {
 
   public NamespaceDeclaration(
       Identifier namespace, List<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
+    AutoescapeMode autoescapeMode = null;
+    SourceLocation autoescapeModeLocation = null;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
         case "autoescape":
-          AutoescapeMode mode = AutoescapeMode.forAttributeValue(attr.getValue());
-          if (mode == AutoescapeMode.STRICT) {
-            errorReporter.report(
-                attr.getName().location(),
-                CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
-                "autoescape",
-                "strict");
-          } else {
-            errorReporter.report(
-                attr.getName().location(), CommandTagAttribute.NAMESPACE_AUTOESCAPE_ATTRIBUTE);
-          }
+          autoescapeMode = attr.valueAsAutoescapeMode(errorReporter);
+          autoescapeModeLocation = attr.getValueLocation();
           break;
         case "requirecss":
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
@@ -66,15 +68,31 @@ public final class NamespaceDeclaration {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("cssbase", "requirecss"));
+              ImmutableList.of("autoescape", "cssbase", "requirecss"));
           break;
       }
     }
 
     this.namespace = namespace;
+    this.autoescapeMode = autoescapeMode;
+    this.autoescapeModeLocation = autoescapeModeLocation;
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
     this.attrs = ImmutableList.copyOf(attrs);
+  }
+
+  public AutoescapeMode getDefaultAutoescapeMode() {
+    return autoescapeMode == null ? DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE : autoescapeMode;
+  }
+
+  /**
+   * Returns the location of {@code autoescape} attribute.
+   *
+   * @throws IllegalStateException if there is no autoescape attribute.
+   */
+  public SourceLocation getAutoescapeModeLocation() {
+    checkState(autoescapeModeLocation != null, "there is no autoescape attribute");
+    return autoescapeModeLocation;
   }
 
   public String getNamespace() {

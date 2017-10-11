@@ -188,17 +188,13 @@ public final class CommandTagAttribute {
     checkState(valueExprList == null);
 
     AutoescapeMode mode = AutoescapeMode.forAttributeValue(value);
-    if (mode == AutoescapeMode.STRICT) {
-      errorReporter.report(valueLocation, EXPLICIT_DEFAULT_ATTRIBUTE, "autoescape", "strict");
-    } else if (mode == null) {
+    if (mode == null) {
       mode = AutoescapeMode.STRICT; // default for unparsed
       errorReporter.report(
           valueLocation,
           INVALID_ATTRIBUTE_LIST,
           key.identifier(),
-          ImmutableList.of(
-              AutoescapeMode.CONTEXTUAL.getAttributeValue(),
-              AutoescapeMode.NONCONTEXTUAL.getAttributeValue()));
+          ImmutableList.copyOf(AutoescapeMode.getAttributeValues()));
     }
     return mode;
   }
