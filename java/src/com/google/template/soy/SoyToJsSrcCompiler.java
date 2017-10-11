@@ -178,12 +178,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
-  @Option(
-    name = "--messagePluginModule",
-    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
-  )
-  private String messagePluginModule = null;
-
   SoyToJsSrcCompiler(ClassLoader loader) {
     super(loader);
   }
@@ -235,7 +229,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
           inputPrefix,
           jsSrcOptions,
           locales,
-          SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule),
+          messagePlugin,
           messageFilePathFormat);
     } else {
       sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null, null);

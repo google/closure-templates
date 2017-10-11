@@ -79,12 +79,6 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   )
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
-  @Option(
-    name = "--messagePluginModule",
-    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
-  )
-  private String messagePluginModule = null;
-
   /**
    * Extracts messages from a set of Soy files into an output messages file.
    *
@@ -113,8 +107,6 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
       options.setTargetLocaleString(targetLocaleString);
     }
     sfs.extractAndWriteMsgs(
-        new SoyMsgBundleHandler(SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule)),
-        options,
-        Files.asByteSink(outputFile));
+        new SoyMsgBundleHandler(messagePlugin), options, Files.asByteSink(outputFile));
   }
 }

@@ -19,7 +19,6 @@ package com.google.template.soy;
 import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
-import javax.annotation.Nullable;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.NamedOptionDef;
@@ -277,24 +276,5 @@ final class SoyCmdLineParser extends CmdLineParser {
                   + "sure that the %s exists and is on the compiler classpath.\nCaused by: %s",
               objectType, moduleName, moduleFlagName, objectType, e));
     }
-  }
-
-  /**
-   * Temporary helper method to aid in the migration from {@code --messagePluginModule} to {@code
-   * --messagePlugin}
-   */
-  static SoyMsgPlugin getMsgPlugin(
-      SoyMsgPlugin plugin, @Nullable String oldMessagePluginModuleFlag) {
-    if (oldMessagePluginModuleFlag != null) {
-      switch (oldMessagePluginModuleFlag) {
-        case "com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule":
-          return new com.google.template.soy.xliffmsgplugin.XliffMsgPlugin();
-        default:
-          throw new CommandLineError(
-              "Please switch to using the --messagePlugin flag, temporary backwards compatibility "
-                  + "for --messagePluginModule is only available for recognized plugins");
-      }
-    }
-    return plugin;
   }
 }

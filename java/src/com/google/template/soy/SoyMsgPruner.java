@@ -66,11 +66,6 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   )
   private SoyMsgPlugin messagePlugin;
 
-  @Option(
-    name = "--messagePluginModule",
-    usage = "Temporary flag for backwards compatibility reasons, please switch to --messagePlugin."
-  )
-  private String messagePluginModule = null;
   /**
    * Prunes messages from XTB files, given a set of Soy files as reference for which messages to
    * keep.
@@ -99,11 +94,8 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
     if (inputMsgFiles.size() != outputMsgFiles.size()) {
       exitWithError("Must provide exactly one input file for every output file.");
     }
-    if (messagePlugin == null && messagePluginModule == null) {
+    if (messagePlugin == null) {
       exitWithError("Must specify a --messagePlugin.");
-    }
-    if (messagePlugin != null && messagePluginModule != null) {
-      exitWithError("Cannot specify --messagePluginModule if you also specify --messagePlugin.");
     }
     for (File f : inputMsgFiles) {
       if (!f.exists()) {
@@ -116,8 +108,7 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
-    SoyMsgBundleHandler msgBundleHandler =
-        new SoyMsgBundleHandler(SoyCmdLineParser.getMsgPlugin(messagePlugin, messagePluginModule));
+    SoyMsgBundleHandler msgBundleHandler = new SoyMsgBundleHandler(messagePlugin);
 
     // Main loop.
     for (int i = 0; i < inputMsgFiles.size(); i++) {
