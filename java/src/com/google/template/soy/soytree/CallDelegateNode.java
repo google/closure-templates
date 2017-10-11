@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -65,10 +64,8 @@ public final class CallDelegateNode extends CallNode {
   /**
    * User-specified attribute to determine whether this delegate call defaults to empty string if
    * there is no active implementation. Default is false.
-   *
-   * <p>TriState.UNSET if attribute is not specified.
    */
-  private final TriState allowEmptyDefault;
+  private final boolean allowEmptyDefault;
 
   /**
    * The list of params that need to be type checked when this node is run on a per delegate basis.
@@ -93,7 +90,7 @@ public final class CallDelegateNode extends CallNode {
     this.delCalleeName = delCalleeName;
 
     ExprRootNode variantExpr = null;
-    TriState allowEmptyDefault = TriState.UNSET;
+    boolean allowEmptyDefault = false;
 
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
@@ -119,7 +116,7 @@ public final class CallDelegateNode extends CallNode {
           variantExpr = new ExprRootNode(value);
           break;
         case "allowemptydefault":
-          allowEmptyDefault = attr.valueAsTriState(errorReporter);
+          allowEmptyDefault = attr.valueAsEnabled(errorReporter);
           break;
         default:
           errorReporter.report(
@@ -192,8 +189,7 @@ public final class CallDelegateNode extends CallNode {
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
   public boolean allowEmptyDefault() {
-    // Default to 'false' if not specified.
-    return allowEmptyDefault == TriState.ENABLED;
+    return allowEmptyDefault;
   }
 
   @Override
@@ -211,11 +207,8 @@ public final class CallDelegateNode extends CallNode {
     if (variantExpr != null) {
       commandText.append(" variant=\"").append(variantExpr.toSourceString()).append('"');
     }
-    if (allowEmptyDefault.isSet()) {
-      commandText
-          .append(" allowemptydefault=\"")
-          .append(allowEmptyDefault == TriState.ENABLED)
-          .append('"');
+    if (allowEmptyDefault) {
+      commandText.append(" allowemptydefault=\"true\"");
     }
 
     return commandText.toString();

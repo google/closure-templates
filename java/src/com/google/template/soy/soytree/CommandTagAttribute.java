@@ -29,7 +29,6 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -142,23 +141,6 @@ public final class CommandTagAttribute {
     } catch (NumberFormatException e) {
       errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "an integer");
       return defaultValue;
-    }
-  }
-
-  TriState valueAsTriState(ErrorReporter errorReporter) {
-    checkState(valueExprList == null);
-
-    if ("true".equals(value)) {
-      return TriState.ENABLED;
-    } else if ("false".equals(value)) {
-      return TriState.DISABLED;
-    } else {
-      errorReporter.report(
-          valueLocation,
-          INVALID_ATTRIBUTE_LIST,
-          key.identifier(),
-          ImmutableList.of("true", "false"));
-      return TriState.UNSET;
     }
   }
 

@@ -1327,7 +1327,7 @@ public class RenderVisitorTest {
             + "\n"
             + "/***/\n"
             + "{template .callerTemplate}\n"
-            + "  {delcall myApp.myDelegate allowemptydefault=\"false\"}\n"
+            + "  {delcall myApp.myDelegate}\n"
             + "    {param boo: 'aaaaaah' /}\n"
             + "  {/delcall}\n"
             + "{/template}\n";
