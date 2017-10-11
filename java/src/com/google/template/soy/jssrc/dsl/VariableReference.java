@@ -38,6 +38,11 @@ abstract class VariableReference extends CodeChunk.WithValue {
   }
 
   @Override
+  public boolean isCheap() {
+    return true;
+  }
+
+  @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(declaration().varName());
   }

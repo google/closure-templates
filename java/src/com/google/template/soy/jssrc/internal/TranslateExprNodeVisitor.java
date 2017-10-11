@@ -508,19 +508,12 @@ public class TranslateExprNodeVisitor
     List<CodeChunk.WithValue> operands = visitChildren(node);
     CodeChunk.WithValue consequent = operands.get(0);
     CodeChunk.WithValue alternate = operands.get(1);
-    // TODO(user): use the CodeChunk DSL to get variable initialization for free:
-    //  return codeGenerator
-    //      .newChunk()
-    //      .assign((CodeChunk.WithValue) consequent)
-    //      .if_(
-    //          codeGenerator.expr(CodeChunk.THIS, " == null"),
-    //          codeGenerator.expr(CodeChunk.THIS, " = ", alternate, ";"))
-    //      .endif()
-    //      .build();
-    // We can't do this yet because that chunk is never representable as a single expression.
-
-    return CodeChunk.ifExpression(id("$$temp").assign(consequent).doubleEqualsNull(), alternate)
-        .else_(id("$$temp"))
+    // if the consequent isn't trivial we should store the intermediate result in a new temporary
+    if (!consequent.isCheap()) {
+      consequent = codeGenerator.declarationBuilder().setRhs(consequent).build().ref();
+    }
+    return CodeChunk.ifExpression(consequent.doubleNotEquals(CodeChunk.LITERAL_NULL), consequent)
+        .else_(alternate)
         .build(codeGenerator);
   }
 

@@ -53,7 +53,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -749,12 +748,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         CodeChunk.assign(
             "opt_ijData",
             CodeChunk.id("opt_ijData_deprecated").or(CodeChunk.id("opt_ijData"), codeGenerator)));
-    // If there are any null coalescing operators or switch nodes then we need to generate an
-    // additional temporary variable.
-    if (!SoyTreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()
-        || !SoyTreeUtils.getAllNodesOfType(node, SwitchNode.class).isEmpty()) {
-      bodyStatements.add(VariableDeclaration.builder("$$temp").build());
-    }
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {

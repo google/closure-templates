@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
-import static com.google.template.soy.exprtree.Operator.NULL_COALESCING;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
@@ -173,53 +172,71 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1);").withPrecedence(PLUS);
 
     assertThatSoyExpr("$foo ?: 0")
-        .generatesCode("($$temp = opt_data.foo) == null ? 0 : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+        .generatesCode("var $tmp = opt_data.foo;", "$tmp != null ? $tmp : 0;");
   }
 
   @Test
   public void testNullCoalescingNested() {
     assertThatSoyExpr("$boo ?: -1")
-        .generatesCode("($$temp = opt_data.boo) == null ? -1 : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+        .generatesCode("var $tmp = opt_data.boo;", "$tmp != null ? $tmp : -1;");
 
     assertThatSoyExpr("$a ?: $b ?: $c")
         .generatesCode(
-            "($$temp = opt_data.a) == null "
-                + "? (($$temp = opt_data.b) == null ? opt_data.c : $$temp) : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp$$2;",
+            "var $tmp$$1 = opt_data.a;",
+            "if ($tmp$$1 != null) {",
+            "  $tmp$$2 = $tmp$$1;",
+            "} else {",
+            "  var $tmp = opt_data.b;",
+            "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
+            "}");
 
     assertThatSoyExpr("$a ?: $b ? $c : $d")
         .generatesCode(
-            "($$temp = opt_data.a) == null ? (opt_data.b ? opt_data.c : opt_data.d) : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp = opt_data.a;",
+            "$tmp != null ? $tmp : opt_data.b ? opt_data.c : opt_data.d;");
 
     assertThatSoyExpr("$a ? $b ?: $c : $d")
         .generatesCode(
-            "opt_data.a ? (($$temp = opt_data.b) == null " + "? opt_data.c : $$temp) : opt_data.d;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp$$1;",
+            "if (opt_data.a) {",
+            "  var $tmp = opt_data.b;",
+            "  $tmp$$1 = $tmp != null ? $tmp : opt_data.c;",
+            "} else {",
+            "  $tmp$$1 = opt_data.d;",
+            "}");
 
     assertThatSoyExpr("$a ? $b : $c ?: $d")
         .generatesCode(
-            "opt_data.a ? opt_data.b : ($$temp = opt_data.c) == null ? opt_data.d : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp$$1;",
+            "if (opt_data.a) {",
+            "  $tmp$$1 = opt_data.b;",
+            "} else {",
+            "  var $tmp = opt_data.c;",
+            "  $tmp$$1 = $tmp != null ? $tmp : opt_data.d;",
+            "}");
 
     assertThatSoyExpr("($a ?: $b) ?: $c")
         .generatesCode(
-            "($$temp = ($$temp = opt_data.a) == null ? opt_data.b : $$temp) == null "
-                + "? opt_data.c : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp = opt_data.a;",
+            "var $tmp$$1 = $tmp != null ? $tmp : opt_data.b;",
+            "$tmp$$1 != null ? $tmp$$1 : opt_data.c;");
 
     assertThatSoyExpr("$a ?: ($b ?: $c)")
         .generatesCode(
-            "($$temp = opt_data.a) == null "
-                + "? (($$temp = opt_data.b) == null ? opt_data.c : $$temp) : $$temp;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp$$2;",
+            "var $tmp$$1 = opt_data.a;",
+            "if ($tmp$$1 != null) {",
+            "  $tmp$$2 = $tmp$$1;",
+            "} else {",
+            "  var $tmp = opt_data.b;",
+            "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
+            "}");
 
     assertThatSoyExpr("($a ?: $b) ? $c : $d")
         .generatesCode(
-            "(($$temp = opt_data.a) == null ? opt_data.b : $$temp) " + "? opt_data.c : opt_data.d;")
-        .withPrecedence(NULL_COALESCING);
+            "var $tmp = opt_data.a;",
+            "($tmp != null ? $tmp : opt_data.b) ? opt_data.c : opt_data.d;");
   }
 
   @Test

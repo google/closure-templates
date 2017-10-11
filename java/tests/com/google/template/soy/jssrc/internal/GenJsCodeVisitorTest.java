@@ -1092,8 +1092,9 @@ public final class GenJsCodeVisitorTest {
             + "    Bluh\n"
             + "{/switch}\n";
     String expectedJsCode =
-        "var $tmp = ($$temp = opt_data.alpha) == null ? opt_data.beta : $$temp;\n"
-            + "switch (goog.isObject($tmp) ? $tmp.toString() : $tmp) {\n"
+        "var $tmp = opt_data.alpha;\n"
+            + "var $tmp$$1 = $tmp != null ? $tmp : opt_data.beta;\n"
+            + "switch (goog.isObject($tmp$$1) ? $tmp$$1.toString() : $tmp$$1) {\n"
             + "  case 1:\n"
             + "    output += 'Blah';\n"
             + "    break;\n"

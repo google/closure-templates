@@ -42,6 +42,11 @@ public abstract class Composite extends CodeChunk.WithValue {
         value);
   }
 
+  @Override
+  public final boolean isCheap() {
+    return value().isCheap();
+  }
+
   /**
    * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
    * expression. When a composite is the only chunk being serialized, and its value is a variable
