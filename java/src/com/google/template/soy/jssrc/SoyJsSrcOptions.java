@@ -28,9 +28,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   /** Whether to allow deprecated syntax (semi backwards compatible mode). */
   private boolean shouldAllowDeprecatedSyntax;
 
-  /** Whether we should generate JSDoc with type info for the Closure Compiler. */
-  private boolean shouldGenerateJsdoc;
-
   /** Whether we should generate code to provide/require Soy namespaces. */
   private boolean shouldProvideRequireSoyNamespaces;
 
@@ -69,7 +66,6 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
-    shouldGenerateJsdoc = true;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
     shouldProvideBothSoyNamespacesAndJsFunctions = false;
@@ -83,7 +79,6 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
     this.shouldAllowDeprecatedSyntax = orig.shouldAllowDeprecatedSyntax;
-    this.shouldGenerateJsdoc = orig.shouldGenerateJsdoc;
     this.shouldProvideRequireSoyNamespaces = orig.shouldProvideRequireSoyNamespaces;
     this.shouldProvideRequireJsFunctions = orig.shouldProvideRequireJsFunctions;
     this.shouldProvideBothSoyNamespacesAndJsFunctions =
@@ -114,20 +109,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   @Deprecated
   public boolean shouldAllowDeprecatedSyntax() {
     return shouldAllowDeprecatedSyntax;
-  }
-
-  /**
-   * Sets whether we should generate JSDoc with type info for the Closure Compiler.
-   *
-   * @param shouldGenerateJsdoc The value to set.
-   */
-  public void setShouldGenerateJsdoc(boolean shouldGenerateJsdoc) {
-    this.shouldGenerateJsdoc = shouldGenerateJsdoc;
-  }
-
-  /** Returns whether we should generate JSDoc with type info for the Closure Compiler. */
-  public boolean shouldGenerateJsdoc() {
-    return shouldGenerateJsdoc;
   }
 
   /**
@@ -364,7 +345,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   public final String toString() {
     return MoreObjects.toStringHelper(this)
         .add("shouldAllowDeprecatedSyntax", shouldAllowDeprecatedSyntax)
-        .add("shouldGenerateJsdoc", shouldGenerateJsdoc)
         .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces)
         .add("shouldProvideRequireJsFunctions", shouldProvideRequireJsFunctions)
         .add(

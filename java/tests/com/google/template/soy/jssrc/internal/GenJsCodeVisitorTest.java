@@ -64,24 +64,10 @@ public final class GenJsCodeVisitorTest {
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put(
-              "goo",
-              id("gooData8"))
-          .put(
-              "goo__isFirst",
-              id("gooIndex8")
-                  .doubleEquals(
-                      number(0)))
-          .put(
-              "goo__isLast",
-              id("gooIndex8")
-                  .doubleEquals(
-                      id("gooListLen8")
-                          .minus(
-                              number(1))))
-          .put(
-              "goo__index",
-              id("gooIndex8"))
+          .put("goo", id("gooData8"))
+          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
+          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
+          .put("goo__index", id("gooIndex8"))
           .build();
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;
@@ -115,14 +101,9 @@ public final class GenJsCodeVisitorTest {
   @Before
   public void setUp() {
     jsSrcOptions = new SoyJsSrcOptions();
-    // Disable JsDoc in most of these tests since it will be annoying.
-    jsSrcOptions.setShouldGenerateJsdoc(false);
-    genJsCodeVisitor = createVisitor(jsSrcOptions);
+    genJsCodeVisitor =
+        JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class));
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
-  }
-
-  static GenJsCodeVisitor createVisitor(SoyJsSrcOptions options) {
-    return JsSrcMain.createVisitor(options, INJECTOR.getInstance(SoyTypeRegistry.class));
   }
 
   @Test
@@ -372,6 +353,13 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
+            + "/**\n"
+            + " * @param {Object<string, *>=} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {string}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
+            + " */\n"
             + "boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_ = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
@@ -420,6 +408,13 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
+            + "/**\n"
+            + " * @param {Object<string, *>=} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {string}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
+            + " */\n"
             + "boo.foo.__deltemplate__myDelegates_goo_googoo = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
@@ -450,11 +445,6 @@ public final class GenJsCodeVisitorTest {
             + "  Blah\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     // ------ Code style 'concat' ------
     String expectedJsCode =
         ""
@@ -464,13 +454,14 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -483,11 +474,6 @@ public final class GenJsCodeVisitorTest {
             + "  {$moo}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
@@ -497,13 +483,14 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
 
     // ------ Should not generate extra statement for injected and local var data refs. ------
     testFileContent =
@@ -514,11 +501,6 @@ public final class GenJsCodeVisitorTest {
             + "  {let $moo: 90 /}\n"
             + "  {$moo}{$ij.moo}\n"
             + "{/template}\n";
-
-    template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
 
     expectedJsCode =
         ""
@@ -531,22 +513,18 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor = createVisitor(jsSrcOptions);
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-    genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
   public void testTemplateWithShouldGenerateJsdoc() {
-
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-
     String testFileContent =
         "{namespace boo.foo}\n"
             + "\n"
@@ -554,11 +532,6 @@ public final class GenJsCodeVisitorTest {
             + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
             + "  Blah\n"
             + "{/template}\n";
-
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
 
     // ------ Code style 'concat' with shouldGenerateJsdoc ------
     String expectedJsCode =
@@ -580,16 +553,14 @@ public final class GenJsCodeVisitorTest {
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
   @Test
   public void testStrictTemplateShouldGenerateSanitizedContentReturnValue() {
-
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-
     String testFileContent =
         "{namespace boo.foo}\n"
             + "\n"
@@ -597,11 +568,6 @@ public final class GenJsCodeVisitorTest {
             + "{template .goo kind=\"js\"}\n"
             + "  alert('Hello World');\n"
             + "{/template}\n";
-
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
 
     // ------ Code style 'concat' with shouldGenerateJsdoc ------
     String expectedJsCode =
@@ -623,8 +589,9 @@ public final class GenJsCodeVisitorTest {
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -651,6 +618,13 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
+            + "/**\n"
+            + " * @param {Object<string, *>=} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {string}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
+            + " */\n"
             + "boo.foo.__deltemplate__myDelegates_goo_ = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
@@ -687,11 +661,6 @@ public final class GenJsCodeVisitorTest {
             + "  Blah\n"
             + "{/deltemplate}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     // ------ Code style 'concat'. ------
     String expectedJsCode =
         ""
@@ -706,24 +675,21 @@ public final class GenJsCodeVisitorTest {
             + "}\n"
             + "soy.$$registerDelegateFn("
             + "soy.$$getDelTemplateId('myDelegates.goo'), 'moo', 1,"
-            + " boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo);\n";
+            + " boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo);";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
   public void testRawText() {
-    assertGeneratedJsCode(
-        "I'm feeling lucky!\n",
-        "output += 'I\\'m feeling lucky!';\n");
+    assertGeneratedJsCode("I'm feeling lucky!\n", "output += 'I\\'m feeling lucky!';\n");
 
-    assertGeneratedJsCode(
-        "{lb}^_^{rb}{sp}{\\n}\n",
-        "output += '{^_^} \\n';\n");
+    assertGeneratedJsCode("{lb}^_^{rb}{sp}{\\n}\n", "output += '{^_^} \\n';\n");
   }
 
   @Test
@@ -735,9 +701,7 @@ public final class GenJsCodeVisitorTest {
     // global, all caps, underbars between words.  Placeholder should
     // be lower-case camel case version
     String soyCode =
-        "{msg desc=\"\"}\n"
-            + "Unable to reach {PRODUCT_NAME_HTML}. Eeeek!\n"
-            + "{/msg}\n";
+        "{msg desc=\"\"}\n" + "Unable to reach {PRODUCT_NAME_HTML}. Eeeek!\n" + "{/msg}\n";
     String expectedJsCode =
         ""
             + "/** @desc  */\n"
@@ -987,13 +951,8 @@ public final class GenJsCodeVisitorTest {
     String soyNodeCode;
     String expectedJsCode;
 
-    soyNodeCode = JOINER.join(
-        "{@param boo : ?}",
-        "{if $boo}",
-        "  Blah",
-        "{else}",
-        "  Bluh",
-        "{/if}");
+    soyNodeCode =
+        JOINER.join("{@param boo : ?}", "{if $boo}", "  Blah", "{else}", "  Bluh", "{/if}");
     expectedJsCode = "output += opt_data.boo ? 'Blah' : 'Bluh';\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1193,14 +1152,12 @@ public final class GenJsCodeVisitorTest {
   public void testBasicCall() {
 
     assertGeneratedJsCode(
-        "{call some.func data=\"all\" /}\n",
-        "output += some.func(opt_data, null, opt_ijData);\n");
+        "{call some.func data=\"all\" /}\n", "output += some.func(opt_data, null, opt_ijData);\n");
 
     String soyNodeCode =
         "{@param moo : ?}\n" + "{call some.func}\n" + "  {param goo : $moo /}\n" + "{/call}\n";
     assertGeneratedJsCode(
-        soyNodeCode,
-        "output += some.func({goo: opt_data.moo}, null, opt_ijData);\n");
+        soyNodeCode, "output += some.func({goo: opt_data.moo}, null, opt_ijData);\n");
 
     soyNodeCode =
         "{@param boo : ?}\n"
@@ -2062,7 +2019,6 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
-
   @Test
   public void testMsgWithPlrselHtml() {
 
@@ -2181,11 +2137,6 @@ public final class GenJsCodeVisitorTest {
             + "  Blah\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     // ------ Code style 'concat' ------
     String expectedJsCode =
         ""
@@ -2195,13 +2146,14 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -2223,7 +2175,6 @@ public final class GenJsCodeVisitorTest {
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsSrcOptions.setShouldGenerateJsdoc(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
@@ -2299,28 +2250,26 @@ public final class GenJsCodeVisitorTest {
             + "  {$moo}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var moo = soy.asserts.assertType(goog.isNumber(opt_data.moo), 'moo', opt_data.moo, 'number');\n"
             + "  return '' + moo;\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2334,28 +2283,26 @@ public final class GenJsCodeVisitorTest {
             + "  {$moo}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var moo = soy.asserts.assertType(goog.isString(opt_data.moo) || opt_data.moo instanceof goog.soy.data.SanitizedContent, 'moo', opt_data.moo, '!goog.soy.data.SanitizedContent|string');\n"
             + "  return '' + moo;\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2370,29 +2317,28 @@ public final class GenJsCodeVisitorTest {
             + "  {$moo ? 1 : 0}{$noo ? 1 : 0}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var moo = soy.asserts.assertType(goog.isBoolean(opt_data.moo) || opt_data.moo === 1 || opt_data.moo === 0, 'moo', opt_data.moo, 'boolean');\n"
+            + "  \n"
             + "  var noo = soy.asserts.assertType(opt_data.noo == null || (goog.isBoolean(opt_data.noo) || opt_data.noo === 1 || opt_data.noo === 0), 'noo', opt_data.noo, 'boolean|null|undefined');\n"
             + "  return '' + (moo ? 1 : 0) + (noo ? 1 : 0);\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2405,28 +2351,26 @@ public final class GenJsCodeVisitorTest {
             + "  {$html}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var html = soy.asserts.assertType(goog.soy.data.SanitizedHtml.isCompatibleWith(opt_data.html), 'html', opt_data.html, '!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml|!goog.soy.data.UnsanitizedText|string');\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(html);\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2439,29 +2383,28 @@ public final class GenJsCodeVisitorTest {
             + "  {@param moo : string|list<int>}\n"
             + "  {$moo}\n"
             + "{/template}\n";
-
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
 
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var moo = soy.asserts.assertType(goog.isArray(opt_data.moo) || (goog.isString(opt_data.moo) || opt_data.moo instanceof goog.soy.data.SanitizedContent), 'moo', opt_data.moo, '!Array<number>|!goog.soy.data.SanitizedContent|string');\n"
             + "  return '' + moo;\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2475,28 +2418,26 @@ public final class GenJsCodeVisitorTest {
             + "  {$export}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var param$export = soy.asserts.assertType(goog.isNumber(opt_data.export), 'export', opt_data.export, 'number');\n"
             + "  return '' + param$export;\n"
             + "};\n"
+            + "\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2510,36 +2451,28 @@ public final class GenJsCodeVisitorTest {
             + "  {$moo}\n"
             + "{/template}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
     String expectedJsCode =
         ""
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
+            + "  \n"
             + "  var moo = soy.asserts.assertType(goog.isString(opt_ijData.moo) || opt_ijData.moo instanceof goog.soy.data.SanitizedContent, 'moo', opt_ijData.moo, '!goog.soy.data.SanitizedContent|string');\n"
             + "  return '' + moo;\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor = createVisitor(jsSrcOptions);
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-    genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
+    assertThat(removeComments(genJsCodeVisitor.jsCodeBuilder.getCode())).isEqualTo(expectedJsCode);
   }
 
   @Test
   public void testPrivateTemplateHasPrivateJsDocAnnotationInGencode() {
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-
     String testFileContent =
         "{namespace boo.foo}\n"
             + "\n"
@@ -2547,11 +2480,6 @@ public final class GenJsCodeVisitorTest {
             + "{template .goo autoescape=\"deprecated-noncontextual\" visibility=\"private\"}\n"
             + "  Blah\n"
             + "{/template}\n";
-
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
 
     String expectedJsCode =
         ""
@@ -2573,8 +2501,9 @@ public final class GenJsCodeVisitorTest {
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(parseResult.fileSet());
+    genJsCodeVisitor.visitForTesting(template, parseResult.registry(), ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2611,6 +2540,13 @@ public final class GenJsCodeVisitorTest {
             + "var $templateAlias2 = $import1.two;\n"
             + "\n"
             + "\n"
+            + "/**\n"
+            + " * @param {Object<string, *>=} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {!goog.soy.data.SanitizedHtml}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
+            + " */\n"
             + "var $goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml("
@@ -2706,7 +2642,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.assistantForMsgs = null; // will be created when used
 
     for (SoyNode child : templateNode.getChildren()) {
-      genJsCodeVisitor.visitForTesting(child, errorReporter);
+      genJsCodeVisitor.visitForTesting(child, parseResult.registry(), errorReporter);
     }
 
     return genJsCodeVisitor.jsCodeBuilder.getCode();
@@ -2716,7 +2652,6 @@ public final class GenJsCodeVisitorTest {
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(soyFile).parse();
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsSrcOptions.setShouldGenerateJsdoc(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
@@ -2729,5 +2664,10 @@ public final class GenJsCodeVisitorTest {
       }
     }
     return requires.build();
+  }
+
+  /** Private method for stripping all the JsDoc comments. */
+  private String removeComments(String sourceCode) {
+    return sourceCode.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", "").trim();
   }
 }

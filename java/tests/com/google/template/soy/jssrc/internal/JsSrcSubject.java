@@ -203,6 +203,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
     private String file;
     private SoyFileNode fileNode;
+    private final GenJsCodeVisitor visitor =
+        JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class));
 
     private ForFile(FailureStrategy fs, String expr) {
       super(fs, expr);
@@ -211,11 +213,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     @Override
     void generateCode() {
       ParseResult parseResult = super.parse();
-        this.fileNode = parseResult.fileSet().getChild(0);
-      this.file =
-          JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class))
-              .gen(parseResult.fileSet(), parseResult.registry(), errorReporter)
-              .get(0);
+      this.fileNode = parseResult.fileSet().getChild(0);
+      this.file = visitor.gen(parseResult.fileSet(), parseResult.registry(), errorReporter).get(0);
     }
 
     StringSubject generatesTemplateThat() {
@@ -227,7 +226,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       // we know that 'file' contains exactly one template.  so find it.
       int functionIndex = file.indexOf("function(");
       int startOfFunction = file.substring(0, functionIndex).lastIndexOf('\n') + 1;
-      int endOfFunction = file.lastIndexOf("}\n") + 2; //+2 to capture the \n
+      int endOfFunction = file.lastIndexOf("}\n") + 2; // +2 to capture the \n
 
       // if it is a delegate function we want to include the registration code which is a single
       // statement after the end of the template
@@ -236,12 +235,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       }
       // if we are generating jsdoc we want to capture that too
       String templateBody;
-      if (jsSrcOptions.shouldGenerateJsdoc()) {
         int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
         templateBody = file.substring(startOfJsDoc, endOfFunction);
-      } else {
-        templateBody = file.substring(startOfFunction, endOfFunction);
-      }
       return check()
           .withMessage("Unexpected template body generated for %s:", actual())
           .that(templateBody);

@@ -63,15 +63,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   private String syntaxVersion = "";
 
   @Option(
-    name = "--shouldGenerateJsdoc",
-    usage =
-        "Whether we should generate JSDoc with type info for the Closure Compiler."
-            + " Note the generated JSDoc does not have description text, only types for the"
-            + " benefit of the Closure Compiler."
-  )
-  private boolean shouldGenerateJsdoc = true;
-
-  @Option(
     name = "--shouldProvideRequireSoyNamespaces",
     usage =
         "When this option is used, each generated JS file will contain (a) one single"
@@ -213,7 +204,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);

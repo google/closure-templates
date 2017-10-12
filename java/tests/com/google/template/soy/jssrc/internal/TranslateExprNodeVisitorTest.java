@@ -101,9 +101,7 @@ public final class TranslateExprNodeVisitorTest {
             "Keys in map literals cannot be constants (found constant '1').");
 
     SoyJsSrcOptions noCompiler = new SoyJsSrcOptions();
-    noCompiler.setShouldGenerateJsdoc(false);
     SoyJsSrcOptions withCompiler = new SoyJsSrcOptions();
-    withCompiler.setShouldGenerateJsdoc(false);
     withCompiler.setShouldProvideRequireSoyNamespaces(true);
 
     // Non-identifier key without quoteKeysIfJs() is error only when using Closure Compiler.

@@ -237,7 +237,6 @@ public final class JspbTest {
 
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsSrcOptions.setShouldGenerateJsdoc(false);
 
     GenJsCodeVisitor genJsCodeVisitor =
         JsSrcMain.createVisitor(jsSrcOptions, injector.getInstance(SoyTypeRegistry.class));
@@ -275,14 +274,28 @@ public final class JspbTest {
             + "goog.require('soy.asserts');\n"
             + "\n"
             + "\n"
+            + "/**\n"
+            + " * @param {boo.foo.goo.Params} opt_data\n"
+            + " * @param {Object<string, *>=} opt_ijData\n"
+            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
+            + " * @return {string}\n"
+            + " * @suppress {checkTypes|uselessCode}\n"
+            + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  var $tmp = opt_data.moo.$jspbMessageInstance || opt_data.moo;\n"
+            + "  /** @type {proto.example.ExampleExtendable} */\n"
             + "  var moo = soy.asserts.assertType("
             + "$tmp instanceof proto.example.ExampleExtendable, "
             + "'moo', $tmp, 'proto.example.ExampleExtendable');\n"
             + "  return '' + moo.getExtension(proto.example.SomeExtension.someExtensionField);\n"
             + "};\n"
+            + "/**\n"
+            + " * @typedef {{\n"
+            + " *  moo: proto.example.ExampleExtendable,\n"
+            + " * }}\n"
+            + " */\n"
+            + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n"

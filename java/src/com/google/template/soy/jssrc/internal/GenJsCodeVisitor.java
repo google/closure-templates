@@ -233,14 +233,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** TODO: tests should use {@link #gen} instead. */
   @VisibleForTesting
-  void visitForTesting(
-      SoyNode node, ErrorReporter errorReporter) {
+  void visitForTesting(SoyNode node, TemplateRegistry registry, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+    this.templateRegistry = registry;
     visit(node);
   }
 
-
-  @Override protected void visitChildren(ParentSoyNode<?> node) {
+  @Override
+  protected void visitChildren(ParentSoyNode<?> node) {
 
     // If the block is empty or if the first child cannot initialize the output var, we must
     // initialize the output var.
@@ -279,15 +279,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+  @Override
+  protected void visitSoyFileSetNode(SoyFileSetNode node) {
     for (SoyFileNode soyFile : node.getChildren()) {
       visit(soyFile);
     }
   }
 
-  /**
-   * @return A new CodeBuilder to create the contents of a file with.
-   */
+  /** @return A new CodeBuilder to create the contents of a file with. */
   protected JsCodeBuilder createCodeBuilder() {
     return new JsCodeBuilder();
   }
@@ -361,6 +360,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    * // This file was automatically generated from my-templates.soy.
    * // Please don't edit this file by hand.
@@ -371,10 +371,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * ...
    * </pre>
    */
-  @Override protected void visitSoyFileNode(SoyFileNode node) {
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
 
     if (node.getSoyFileKind() != SoyFileKind.SRC) {
-      return;  // don't generate code for deps
+      return; // don't generate code for deps
     }
 
     StringBuilder file = new StringBuilder();
@@ -620,6 +621,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require Soy namespaces.
+   *
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
@@ -642,6 +644,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require template JS functions.
+   *
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
@@ -667,6 +670,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * template name.
    *
    * <p>If aliasing is not performed (which is always the case for V1 templates), this looks like:
+   *
    * <pre>
    * my.namespace.func = function(opt_data, opt_sb) {
    *   ...
@@ -677,6 +681,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    *
    * <p>If aliasing is performed, this looks like:
+   *
    * <pre>
    * function $func(opt_data, opt_sb) {
    *   ...
@@ -689,7 +694,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * JavaScript identifier.
    * </pre>
    */
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     // TODO(lukes): why don't we always do this?  even for old style params this would be useful
     boolean useStrongTyping = hasStrictParams(node);
 
@@ -719,29 +725,27 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String paramsRecordType = null;
     String jsDoc = null;
     // ------ Generate JS Doc. ------
-    if (jsSrcOptions.shouldGenerateJsdoc()) {
-      StringBuilder jsDocBuilder = new StringBuilder();
-      jsDocBuilder.append("/**\n");
-      jsDocBuilder.append(" * @param {");
-      if (useStrongTyping) {
-        paramsRecordType = genParamsRecordType(node);
-        jsDocBuilder.append(alias).append(".Params");
-      } else {
-        jsDocBuilder.append("Object<string, *>=");
-      }
-      jsDocBuilder.append("} opt_data\n");
-      jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData\n");
-      jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData_deprecated\n");
-      String returnType = getTemplateReturnType(node);
-      jsDocBuilder.append(" * @return {").append(returnType).append("}\n");
-      // Sometimes we will throw an error in the middle and the following code is not reachable.
-      jsDocBuilder.append(" * @suppress {").append("checkTypes|uselessCode").append("}\n");
-      if (node.getVisibility() == Visibility.PRIVATE) {
-        jsDocBuilder.append(" * @private\n");
-      }
-      jsDocBuilder.append(" */\n");
-      jsDoc = jsDocBuilder.toString();
+    StringBuilder jsDocBuilder = new StringBuilder();
+    jsDocBuilder.append("/**\n");
+    jsDocBuilder.append(" * @param {");
+    if (useStrongTyping) {
+      paramsRecordType = genParamsRecordType(node);
+      jsDocBuilder.append(alias).append(".Params");
+    } else {
+      jsDocBuilder.append("Object<string, *>=");
     }
+    jsDocBuilder.append("} opt_data\n");
+    jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData\n");
+    jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData_deprecated\n");
+    String returnType = getTemplateReturnType(node);
+    jsDocBuilder.append(" * @return {").append(returnType).append("}\n");
+    // Sometimes we will throw an error in the middle and the following code is not reachable.
+    jsDocBuilder.append(" * @suppress {").append("checkTypes|uselessCode").append("}\n");
+    if (node.getVisibility() == Visibility.PRIVATE) {
+      jsDocBuilder.append(" * @private\n");
+    }
+    jsDocBuilder.append(" */\n");
+    jsDoc = jsDocBuilder.toString();
 
     ImmutableList.Builder<CodeChunk> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
@@ -887,29 +891,36 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return assistantForMsgs;
   }
 
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     throw new AssertionError("Inconceivable! LetContentNode should catch this directly.");
   }
 
-  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  @Override
+  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     throw new AssertionError();
   }
 
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
     jsCodeBuilder.addChunksToOutputVar(genJsExprsVisitor.exec(node));
   }
 
   /**
    * Example:
+   *
    * <pre>
    *   {let $boo: $foo.goo[$moo] /}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   var boo35 = opt_data.foo.goo[opt_data.moo];
    * </pre>
    */
-  @Override protected void visitLetValueNode(LetValueNode node) {
+  @Override
+  protected void visitLetValueNode(LetValueNode node) {
 
     String generatedVarName = node.getUniqueVarName();
 
@@ -922,24 +933,26 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Add a mapping for generating future references to this local var.
     templateTranslationContext
         .soyToJsVariableMappings()
-        .put(
-            node.getVarName(),
-            id(generatedVarName));
+        .put(node.getVarName(), id(generatedVarName));
   }
 
   /**
    * Example:
+   *
    * <pre>
    *   {let $boo}
    *     Hello {$name}
    *   {/let}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   var boo35 = 'Hello ' + opt_data.name;
    * </pre>
    */
-  @Override protected void visitLetContentNode(LetContentNode node) {
+  @Override
+  protected void visitLetContentNode(LetContentNode node) {
     // Optimization: {msg} nodes emit statements and result in a JsExpr with a single variable.  Use
     // that variable (typically the MSG_* from getMsg) as-is instead of wrapping a new var around it
     if (node.getChildren().size() == 1 && node.getChild(0) instanceof MsgFallbackGroupNode) {
@@ -979,19 +992,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {if $boo.foo &gt; 0}
    *     ...
    *   {/if}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   if (opt_data.boo.foo &gt; 0) {
    *     ...
    *   }
    * </pre>
    */
-  @Override protected void visitIfNode(IfNode node) {
+  @Override
+  protected void visitIfNode(IfNode node) {
 
     if (isComputableAsJsExprsVisitor.exec(node)) {
       jsCodeBuilder.addChunksToOutputVar(genJsExprsVisitor.exec(node));
@@ -1041,6 +1058,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {switch $boo}
    *     {case 0}
@@ -1051,7 +1069,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *       ...
    *   {/switch}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   switch (opt_data.boo) {
    *     case 0:
@@ -1066,7 +1086,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *   }
    * </pre>
    */
-  @Override protected void visitSwitchNode(SwitchNode node) {
+  @Override
+  protected void visitSwitchNode(SwitchNode node) {
 
     CodeChunk.WithValue switchOn = coerceTypeForSwitchComparison(node.getExpr());
     SwitchBuilder switchBuilder = switch_(switchOn);
@@ -1295,6 +1316,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {call some.func data="all" /}
    *   {call some.func data="$boo.foo" /}
@@ -1307,7 +1329,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *     {/param}
    *   {/call}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   output += some.func(opt_data);
    *   output += some.func(opt_data.boo.foo);
@@ -1315,7 +1339,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *   output += some.func(soy.$$assignDefaults({goo: 'Hello ' + opt_data.name}, opt_data.boo);
    * </pre>
    */
-  @Override protected void visitCallNode(CallNode node) {
+  @Override
+  protected void visitCallNode(CallNode node) {
 
     // If this node has any CallParamContentNode children those contents are not computable as JS
     // expressions, visit them to generate code to define their respective 'param<n>' variables.
@@ -1331,7 +1356,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.addChunkToOutputVar(call);
   }
 
-  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+  @Override
+  protected void visitCallParamContentNode(CallParamContentNode node) {
 
     // This node should only be visited when it's not computable as JS expressions, because this
     // method just generates the code to define the temporary 'param<n>' variable.
@@ -1349,22 +1375,27 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {log}Blah {$boo}.{/log}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
    *   window.console.log('Blah ' + opt_data.boo + '.');
    * </pre>
    *
-   * <p> If the log msg is not computable as JS exprs, then it will be built in a local var
+   * <p>If the log msg is not computable as JS exprs, then it will be built in a local var
    * logMsg_s##, e.g.
+   *
    * <pre>
    *   var logMsg_s14 = ...
    *   window.console.log(logMsg_s14);
    * </pre>
    */
-  @Override protected void visitLogNode(LogNode node) {
+  @Override
+  protected void visitLogNode(LogNode node) {
 
     if (isComputableAsJsExprsVisitor.execOnChildren(node)) {
       List<CodeChunk.WithValue> logMsgChunks = genJsExprsVisitor.execOnChildren(node);
@@ -1385,22 +1416,27 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {debugger}
    * </pre>
+   *
    * generates
+   *
    * <pre>
    *   debugger;
    * </pre>
    */
-  @Override protected void visitDebuggerNode(DebuggerNode node) {
+  @Override
+  protected void visitDebuggerNode(DebuggerNode node) {
     jsCodeBuilder.appendLine("debugger;");
   }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     // TODO(lukes): this method is suspicious...delete? always throw unsupportedoperationexception?
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
@@ -1420,9 +1456,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   // -----------------------------------------------------------------------------------------------
   // Helpers
 
-  /**
-   * Generate the JSDoc for the opt_data parameter.
-   */
+  /** Generate the JSDoc for the opt_data parameter. */
   private String genParamsRecordType(TemplateNode node) {
     Set<String> paramNames = new HashSet<>();
 
@@ -1497,8 +1531,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
       CodeChunk.WithValue paramChunk =
-          TranslateExprNodeVisitor.genCodeForParamAccess(
-              paramName, param.isInjected());
+          TranslateExprNodeVisitor.genCodeForParamAccess(paramName, param.isInjected());
       JsType jsType = getJsType(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);
@@ -1526,9 +1559,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           VariableDeclaration.builder(paramAlias)
               .setRhs(value)
               .setGoogRequires(jsType.getGoogRequires());
-      if (jsSrcOptions.shouldGenerateJsdoc()) {
-        declarationBuilder.setJsDoc("/** @type {" + jsType.typeExpr() + "} */");
-      }
+      declarationBuilder.setJsDoc("/** @type {" + jsType.typeExpr() + "} */");
       VariableDeclaration declaration = declarationBuilder.build();
       declarations.add(declaration);
 
@@ -1547,17 +1578,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Generate a name for the local variable which will store the value of a
-   * parameter, avoiding collision with JavaScript reserved words.
+   * Generate a name for the local variable which will store the value of a parameter, avoiding
+   * collision with JavaScript reserved words.
    */
   private String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
   }
 
-
-  /**
-   * Return true if the template has at least one strict param.
-   */
+  /** Return true if the template has at least one strict param. */
   private boolean hasStrictParams(TemplateNode template) {
     for (TemplateParam param : template.getParams()) {
       if (param.declLoc() == TemplateParam.DeclLoc.HEADER) {
