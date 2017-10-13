@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 /** A {@code {namespace ..}} declaration. */
 public final class NamespaceDeclaration {
   private final Identifier namespace;
-  private final AutoescapeMode autoescapeMode;
   private final ImmutableList<String> requiredCssNamespaces;
   private final String cssBaseNamespace;
 
@@ -34,7 +33,6 @@ public final class NamespaceDeclaration {
 
   public NamespaceDeclaration(
       Identifier namespace, List<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
-    AutoescapeMode autoescapeMode = AutoescapeMode.STRICT;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
     for (CommandTagAttribute attr : attrs) {
@@ -47,9 +45,6 @@ public final class NamespaceDeclaration {
                 CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
                 "autoescape",
                 "strict");
-          } else if (mode != null && namespace.identifier().equals("infowindow")) {
-            // TODO(jakubvrana): Delete this block once infowindow is fixed.
-            autoescapeMode = mode;
           } else {
             errorReporter.report(
                 attr.getName().location(), CommandTagAttribute.NAMESPACE_AUTOESCAPE_ATTRIBUTE);
@@ -77,14 +72,9 @@ public final class NamespaceDeclaration {
     }
 
     this.namespace = namespace;
-    this.autoescapeMode = autoescapeMode;
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
     this.attrs = ImmutableList.copyOf(attrs);
-  }
-
-  public AutoescapeMode getDefaultAutoescapeMode() {
-    return autoescapeMode;
   }
 
   public String getNamespace() {
