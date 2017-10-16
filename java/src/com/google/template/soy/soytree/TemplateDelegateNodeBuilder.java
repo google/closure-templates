@@ -83,34 +83,16 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   public TemplateNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
+    setCommonCommandValues(attrs);
 
     this.delTemplateName = templateName.identifier();
-    AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
-    SanitizedContentKind kind = null;
-    SourceLocation kindLocation = null;
     this.delTemplateVariant = "";
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
+      if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
+        continue;
+      }
       switch (name.identifier()) {
-        case "autoescape":
-          autoescapeMode = attribute.valueAsAutoescapeMode(errorReporter);
-          break;
-        case "kind":
-          kind = attribute.valueAsContentKind(errorReporter);
-          kindLocation = attribute.getValueLocation();
-          break;
-        case "requirecss":
-          setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
-          break;
-        case "cssbase":
-          setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
-          break;
-        case "deprecatedV1":
-          markDeprecatedV1(attribute.valueAsEnabled(errorReporter));
-          break;
-        case "stricthtml":
-          strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
-          break;
         case "variant":
           // need to get variant parsing out of this.  maybe we can expose some sort of limited
           // primitiveOrGlobal parsing solution?
@@ -138,14 +120,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               name.identifier(),
               "deltemplate",
-              ImmutableList.of(
-                  "autoescape",
-                  "kind",
-                  "requirecss",
-                  "deprecatedV1",
-                  "cssbase",
-                  "stricthtml",
-                  "variant"));
+              ImmutableList.builder().addAll(COMMON_ATTRIBUTE_NAMES).add("variant").build());
       }
     }
 
@@ -156,7 +131,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       this.templateNameForUserMsgs = delTemplateKey.toString();
     }
 
-    setAutoescapeInfo(autoescapeMode, kind, kindLocation);
     this.delPriority = soyFileHeaderInfo.priority;
     genInternalTemplateNameHelper(templateName.location());
     return this;

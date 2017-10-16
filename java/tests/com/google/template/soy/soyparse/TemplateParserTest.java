@@ -22,6 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -1958,9 +1959,12 @@ public final class TemplateParserTest {
         .append("{namespace brittle.test.ns ")
         .append(namespaceAttrs)
         .append("}\n\n")
-        .append("{template .brittleTestTemplate kind=\"")
-        .append(kind.toString().toLowerCase())
-        .append("\"}\n")
+        .append("{template .brittleTestTemplate")
+        .append(
+            kind == SanitizedContentKind.HTML
+                ? ""
+                : " kind=\"" + Ascii.toLowerCase(kind.toString()) + '"')
+        .append("}\n")
         .append(input)
         .append("\n{/template}\n");
     return SoyFileSetParserBuilder.forFileContents(soyFileContentBuilder.toString())

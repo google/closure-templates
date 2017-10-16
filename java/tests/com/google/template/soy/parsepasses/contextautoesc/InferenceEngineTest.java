@@ -291,9 +291,11 @@ public final class InferenceEngineTest {
   private static void assertTransitions(SanitizedContentKind kind, String src) {
     TemplateNode template =
         SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns}\n{template .foo kind=\""
-                    + Ascii.toLowerCase(kind.toString())
-                    + "\" stricthtml=\"false\"}"
+                "{namespace ns}\n{template .foo"
+                    + (kind == SanitizedContentKind.HTML
+                        ? ""
+                        : " kind=\"" + Ascii.toLowerCase(kind.toString()) + '"')
+                    + " stricthtml=\"false\"}"
                     + src
                     + "{/template}")
             .addSoyFunction(new AssertFunction())

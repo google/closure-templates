@@ -57,34 +57,17 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
   public TemplateNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
-    AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
-    SanitizedContentKind kind = null;
-    SourceLocation kindLocation = null;
+    setCommonCommandValues(attrs);
+
     visibility = Visibility.PUBLIC;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
+      if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
+        continue;
+      }
       switch (name.identifier()) {
         case "visibility":
           visibility = attribute.valueAsVisibility(errorReporter);
-          break;
-        case "autoescape":
-          autoescapeMode = attribute.valueAsAutoescapeMode(errorReporter);
-          break;
-        case "kind":
-          kind = attribute.valueAsContentKind(errorReporter);
-          kindLocation = attribute.getValueLocation();
-          break;
-        case "requirecss":
-          setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
-          break;
-        case "cssbase":
-          setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
-          break;
-        case "deprecatedV1":
-          markDeprecatedV1(attribute.valueAsEnabled(errorReporter));
-          break;
-        case "stricthtml":
-          strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
           break;
         default:
           errorReporter.report(
@@ -92,18 +75,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               name.identifier(),
               "template",
-              ImmutableList.of(
-                  "visibility",
-                  "autoescape",
-                  "kind",
-                  "requirecss",
-                  "cssbase",
-                  "deprecatedV1",
-                  "stricthtml"));
+              ImmutableList.builder().add("visibility").addAll(COMMON_ATTRIBUTE_NAMES).build());
       }
     }
-
-    setAutoescapeInfo(autoescapeMode, kind, kindLocation);
 
     setTemplateNames(
         soyFileHeaderInfo.namespace + templateName.identifier(),

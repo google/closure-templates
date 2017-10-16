@@ -24,6 +24,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -175,6 +176,46 @@ public abstract class TemplateNodeBuilder {
   public abstract TemplateNodeBuilder setCommandValues(
       Identifier name, List<CommandTagAttribute> attrs);
 
+  protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
+      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "deprecatedV1", "stricthtml");
+
+  protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
+    AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
+    SanitizedContentKind kind = null;
+    SourceLocation kindLocation = null;
+    for (CommandTagAttribute attribute : attrs) {
+      Identifier name = attribute.getName();
+      switch (name.identifier()) {
+        case "autoescape":
+          autoescapeMode = attribute.valueAsAutoescapeMode(errorReporter);
+          break;
+        case "kind":
+          kind = attribute.valueAsContentKind(errorReporter);
+          kindLocation = attribute.getValueLocation();
+          if (kind == SanitizedContentKind.HTML) {
+            errorReporter.report(
+                kindLocation, CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE, "kind", "html");
+          }
+          break;
+        case "requirecss":
+          setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
+          break;
+        case "cssbase":
+          setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
+          break;
+        case "deprecatedV1":
+          markDeprecatedV1(attribute.valueAsEnabled(errorReporter));
+          break;
+        case "stricthtml":
+          strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
+          break;
+        default:
+          break;
+      }
+    }
+    setAutoescapeInfo(autoescapeMode, kind, kindLocation);
+  }
+
   /**
    * Returns a template name suitable for display in user msgs.
    *
@@ -273,7 +314,6 @@ public abstract class TemplateNodeBuilder {
       // Default mode is HTML.
       contentKind = SanitizedContentKind.HTML;
     } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
-      // TODO: Perhaps this could imply strict escaping?
       errorReporter.report(kindLocation, KIND_BUT_NOT_STRICT);
     }
     this.contentKind = contentKind;
