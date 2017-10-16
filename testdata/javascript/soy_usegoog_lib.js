@@ -2924,6 +2924,7 @@ goog.createRequiresTranspilation_ = function() {
   return requiresTranspilation;
 };
 
+
 //javascript/closure/transitionalforwarddeclarations.js
 // Copyright 2017 The Closure Library Authors. All Rights Reserved.
 //
