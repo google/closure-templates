@@ -16,17 +16,12 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Optional;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.msgs.SoyMsgBundleHandler;
-import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import javax.inject.Singleton;
 
 /**
@@ -46,20 +41,6 @@ public final class SoyModule extends AbstractModule {
 
     Multibinder.newSetBinder(binder(), SoyTypeProvider.class);
     bind(SoyTypeRegistry.class).in(Singleton.class);
-
-    // optionally depend on a user supplied msg plugin
-    OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);
-  }
-
-  // TODO(b/19252021): remove this binding, or move it into users injectors, it is no longer used by
-  // soy.
-  @Provides
-  SoyMsgBundleHandler provideHandler(Optional<SoyMsgPlugin> plugin) {
-    if (plugin.isPresent()) {
-      return new SoyMsgBundleHandler(plugin.get());
-    }
-    // default
-    return new SoyMsgBundleHandler(new XliffMsgPlugin());
   }
 
   // N.B. we provide the builder here instead of having an @Inject constructor to get guice to

@@ -31,6 +31,6 @@ public class XliffMsgPluginModule extends AbstractModule {
   @Override
   protected void configure() {
 
-    bind(SoyMsgPlugin.class).to(XliffMsgPlugin.class);
+    bind(SoyMsgPlugin.class).toInstance(new XliffMsgPlugin());
   }
 }
