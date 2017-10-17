@@ -23747,8 +23747,9 @@ soy.$$getDelegateFn = function(
     return soy.$$EMPTY_TEMPLATE_FN_;
   } else {
     throw Error(
-        'Found no active impl for delegate call to "' + delTemplateId + ':' +
-            delTemplateVariant + '" (and not allowemptydefault="true").');
+        'Found no active impl for delegate call to "' + delTemplateId +
+        (delTemplateVariant ? ':' + delTemplateVariant : '') +
+        '" (and delcall does not set allowemptydefault="true").');
   }
 };
 

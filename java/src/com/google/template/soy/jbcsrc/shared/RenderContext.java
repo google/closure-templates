@@ -175,7 +175,7 @@ public final class RenderContext {
           "Found no active impl for delegate call to \""
               + calleeName
               + (variant.isEmpty() ? "" : ":" + variant)
-              + "\" (and not allowemptydefault=\"true\").");
+              + "\" (and delcall does not set allowemptydefault=\"true\").");
     }
     return callee.create(params, ij);
   }

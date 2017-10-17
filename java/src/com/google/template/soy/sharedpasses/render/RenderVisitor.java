@@ -516,9 +516,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     } else {
       throw RenderException.createWithSource(
-          "Found no active impl for delegate call to '"
+          "Found no active impl for delegate call to \""
               + node.getDelCalleeName()
-              + "' (and no attribute allowemptydefault=\"true\").",
+              + (variant.isEmpty() ? "" : ":" + variant)
+              + "\" (and delcall does not set allowemptydefault=\"true\").",
           node);
     }
   }

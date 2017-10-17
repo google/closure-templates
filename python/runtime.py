@@ -163,9 +163,9 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   elif allow_empty_default:
     return _empty_template_function
   else:
-    msg = ('Found no active impl for delegate call to "%s:%s"'
-           '(and not allow_empty_default="true").')
-    raise RuntimeError(msg % (template_id, variant))
+    msg = ('Found no active impl for delegate call to "%s%s" '
+           '(and delcall does not set allowemptydefault="true").')
+    raise RuntimeError(msg % (template_id, ':' + variant if variant else ''))
 
 
 def merge_into_dict(original, secondary):
