@@ -22,7 +22,6 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import org.junit.Test;
@@ -46,46 +45,24 @@ public final class V1JsExprTranslatorTest {
 
   @Test
   public void testDataRef() {
-    runTestHelper("$boo",
-                  new JsExpr("opt_data.boo", Integer.MAX_VALUE));
-    runTestHelper("$boo.goo",
-                  new JsExpr("opt_data.boo.goo", Integer.MAX_VALUE));
-    runTestHelper("$goo",
-                  new JsExpr("gooData8", Integer.MAX_VALUE));
-    runTestHelper("$goo.boo",
-                  new JsExpr("gooData8.boo", Integer.MAX_VALUE));
-    runTestHelper("$boo.0.1.foo.2",
-                  new JsExpr("opt_data.boo[0][1].foo[2]", Integer.MAX_VALUE));
-    runTestHelper("$boo[$foo][$goo+1]",
-                  new JsExpr("opt_data.boo[opt_data.foo][gooData8+1]", Integer.MAX_VALUE),
-                  true /* lenient */);
+    runTestHelper("$boo", "opt_data.boo");
+    runTestHelper("$boo.goo", "opt_data.boo.goo");
+    runTestHelper("$goo", "gooData8");
+    runTestHelper("$goo.boo", "gooData8.boo");
+    // We used to have special support for turning .<Number> into bracket access, but such syntax is
+    // no longer supported as this test demonstrates
+    runTestHelper("$boo.0.1.foo.2", "opt_data.boo.0.1.foo.2");
+    runTestHelper("$boo[$foo][$goo+1]", "opt_data.boo[opt_data.foo][gooData8+1]");
   }
 
-  @Test
-  public void testOperators() {
-    runTestHelper("not $boo or true and $goo",
-                  new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
-    runTestHelper("( (8-4) + (2-1) )",
-                  new JsExpr("( (8-4) + (2-1) )", Operator.PLUS.getPrecedence()));
-  }
-
-  private static void runTestHelper(String soyExpr, JsExpr expectedJsExpr) {
-    runTestHelper(soyExpr, expectedJsExpr, false);
-  }
-
-  private static void runTestHelper(
-      String soyExpr, JsExpr expectedJsExpr, boolean shouldBeLenient) {
+  private static void runTestHelper(String soyExpr, String expectedJsExpr) {
     JsExpr actualJsExpr =
         V1JsExprTranslator.translateToJsExpr(
             soyExpr,
             SourceLocation.UNKNOWN,
             SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
             ErrorReporter.exploding());
-    assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
-    if (shouldBeLenient) {
-      assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();
-    } else {
-      assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
-    }
+    assertThat(actualJsExpr.getText()).isEqualTo("(" + expectedJsExpr + ")");
+    assertThat(actualJsExpr.getPrecedence()).isEqualTo(Integer.MAX_VALUE);
   }
 }

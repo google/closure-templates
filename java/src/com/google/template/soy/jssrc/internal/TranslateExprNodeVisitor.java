@@ -674,10 +674,10 @@ public class TranslateExprNodeVisitor
   }
 
   private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {
-    String exprText = ((StringNode) node.getChild(0)).getValue();
+    StringNode expr = (StringNode) node.getChild(0);
     JsExpr jsExpr =
         V1JsExprTranslator.translateToJsExpr(
-            exprText, node.getSourceLocation(), variableMappings, errorReporter);
+            expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
     return CodeChunk.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
   }
 

@@ -303,7 +303,7 @@ public final class TranslateExprNodeVisitorTest {
             + " */\n"
             + "ns.foo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(opt_data.goo.length());\n"
+            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml((opt_data.goo.length()));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  ns.foo.soyTemplateName = 'ns.foo';\n"

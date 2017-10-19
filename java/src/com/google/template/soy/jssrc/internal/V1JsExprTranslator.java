@@ -17,13 +17,10 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.regex.Matcher;
@@ -39,18 +36,24 @@ import javax.annotation.Nullable;
  */
 final class V1JsExprTranslator {
 
-  private static final SoyErrorKind UNSUPPORTED_FUNTION =
+  private static final SoyErrorKind UNSUPPORTED_FUNCTION =
       SoyErrorKind.of(
           "''v1Expression'' no longer supports the ''index'', ''isFirst'' or ''isLast'' functions. "
               + "Migrate to a v2 expression to access this functionality.");
 
+  private static final SoyErrorKind UNSUPPORTED_OPERATOR =
+      SoyErrorKind.of(
+          "''v1Expression'' no longer supports the ''and'', ''or'' or ''and'' operators. "
+              + "Move the operator outside of the ''v1Expression'' or migrate to a v2 expression "
+              + "to access this functionality.");
+
   /** Regex for a template variable or data reference. */
   // 2 capturing groups: first part (excluding '$'), rest
   // Example:  $boo.foo.goo  ==>  group(1) == "boo",  group(2) == ".foo.goo"
-  public static final String VAR_OR_REF_RE = "\\$([a-zA-Z0-9_]+)((?:\\.[a-zA-Z0-9_]+)*)";
+  private static final String VAR_RE = "\\$([a-zA-Z_][a-zA-Z0-9_]*)";
 
   /** Regex pattern for a template variable or data reference. */
-  public static final Pattern VAR_OR_REF = Pattern.compile(VAR_OR_REF_RE);
+  private static final Pattern VAR = Pattern.compile(VAR_RE);
 
   /** Regex for a special function ({@code isFirst()}, {@code isLast()}, or {@code index()}). */
   // 2 capturing groups: function name, variable name (excluding '$').
@@ -61,15 +64,8 @@ final class V1JsExprTranslator {
   private static final Pattern BOOL_OP_RE = Pattern.compile("\\b(not|and|or)\\b");
 
   /** Regex pattern for a data reference or a Soy function. */
-  private static final Pattern VAR_OR_REF_OR_BOOL_OP_OR_SOY_FUNCTION =
-      Pattern.compile(VAR_OR_REF_RE + "|" + BOOL_OP_RE + "|" + SOY_FUNCTION_RE);
-
-  /** Regex pattern for a number. */
-  private static final Pattern NUMBER = Pattern.compile("[0-9]+");
-
-  /** Regex pattern for chars that appear in operator tokens (some appear in multiple tokens). */
-  private static final Pattern OP_TOKEN_CHAR = Pattern.compile("[-?|&=!<>+*/%]");
-
+  private static final Pattern VAR_OR_BOOL_OP_OR_SOY_FUNCTION =
+      Pattern.compile(VAR_RE + "|" + BOOL_OP_RE + "|" + SOY_FUNCTION_RE);
 
   /**
    * Helper function to generate code for a JS expression found in a Soy tag.
@@ -96,25 +92,19 @@ final class V1JsExprTranslator {
       SoyToJsVariableMappings variableMappings,
       ErrorReporter errorReporter) {
 
-    soyExpr = CharMatcher.whitespace().collapseFrom(soyExpr, ' ');
-
     StringBuffer jsExprTextSb = new StringBuffer();
 
-    Matcher matcher = VAR_OR_REF_OR_BOOL_OP_OR_SOY_FUNCTION.matcher(soyExpr);
+    Matcher matcher = VAR_OR_BOOL_OP_OR_SOY_FUNCTION.matcher(soyExpr);
     while (matcher.find()) {
       String group = matcher.group();
-      Matcher varOrRef = VAR_OR_REF.matcher(group);
-      if (varOrRef.matches()) {
+      Matcher var = VAR.matcher(group);
+      if (var.matches()) {
         matcher.appendReplacement(
-            jsExprTextSb,
-            Matcher.quoteReplacement(
-                translateVarOrRef(variableMappings, varOrRef)));
+            jsExprTextSb, Matcher.quoteReplacement(translateVar(variableMappings, var)));
       } else if (BOOL_OP_RE.matcher(group).matches()) {
-        matcher.appendReplacement(
-            jsExprTextSb,
-            Matcher.quoteReplacement(translateBoolOp(group)));
+        errorReporter.report(matcherLocation(matcher, sourceLocation), UNSUPPORTED_OPERATOR);
       } else {
-        errorReporter.report(sourceLocation, UNSUPPORTED_FUNTION);
+        errorReporter.report(matcherLocation(matcher, sourceLocation), UNSUPPORTED_FUNCTION);
       }
     }
     matcher.appendTail(jsExprTextSb);
@@ -125,33 +115,36 @@ final class V1JsExprTranslator {
     // (Unicode category "Cf") to be escaped in JS strings. Therefore, we call
     // JsSrcUtils.escapeUnicodeFormatChars() on the expression text in case it contains JS strings.
     jsExprText = JsSrcUtils.escapeUnicodeFormatChars(jsExprText);
-    int jsExprPrec = guessJsExprPrecedence(jsExprText);
-    return new JsExpr(jsExprText, jsExprPrec);
+    // Use a high precedence to ensure that everything with the v1Expression is grouped together
+    return new JsExpr('(' + jsExprText + ')', /* precedence= */ Integer.MAX_VALUE);
   }
 
+  private static SourceLocation matcherLocation(Matcher matcher, SourceLocation textLocation) {
+    // We add 1 to the indexes to account for the quote character at the beginning of the string
+    // literal
+    return textLocation
+        .getBeginLocation()
+        .offsetEndCol(matcher.end() + 1)
+        .offsetStartCol(matcher.start() + 1);
+  }
 
   /**
    * Helper function to translate a variable or data reference.
    *
-   * Examples:
+   * <p>Examples:
+   *
    * <pre>
-   * $boo.foo    -->  opt_data.boo.foo      (data ref)
-   * $boo.3.foo  -->  opt_data.boo[3].foo   (data ref)
-   * $boo        -->  booData2              (data ref with foreach var)
-   * $boo.foo    -->  booData2.Foo          (data ref with foreach var)
-   * $i          -->  i3                    (for var)
+   * $boo    -->  opt_data.boo      (var ref)
    * </pre>
    *
-   * @param variableMappings The current replacement JS expressions for the local variables
-   *     (and foreach-loop special functions) current in scope.
+   * @param variableMappings The current replacement JS expressions for the local variables (and
+   *     foreach-loop special functions) current in scope.
    * @param matcher Matcher formed from {@link V1JsExprTranslator#VAR_OR_REF}.
    * @return Generated translation for the variable or data reference.
    */
-  private static String translateVarOrRef(
-      SoyToJsVariableMappings variableMappings, Matcher matcher) {
+  private static String translateVar(SoyToJsVariableMappings variableMappings, Matcher matcher) {
     Preconditions.checkArgument(matcher.matches());
     String firstPart = matcher.group(1);
-    String rest = matcher.group(2);
 
     StringBuilder exprTextSb = new StringBuilder();
 
@@ -165,102 +158,8 @@ final class V1JsExprTranslator {
       exprTextSb.append("opt_data.").append(firstPart);
     }
 
-    // ------ Translate the rest of the keys, if any ------
-    if (rest != null && rest.length() > 0) {
-      for (String part : Splitter.on('.').split(rest.substring(1))) {
-        if (NUMBER.matcher(part).matches()) {
-          exprTextSb.append("[").append(part).append("]");
-        } else {
-          exprTextSb.append(".").append(part);
-        }
-      }
-    }
-
     return exprTextSb.toString();
   }
-
-
-  /**
-   * Helper function to translate a boolean operator from Soy to JS.
-   * @param boolOp The Soy boolean operator.
-   * @return The translated string.
-   */
-  private static String translateBoolOp(String boolOp) {
-    switch (boolOp) {
-      case "not":
-        return "!";
-      case "and":
-        return "&&";
-      case "or":
-        return "||";
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  // We guess the precedence of the expression by searching for characters that appear in
-  // operator tokens. This is of course far from accurate, but it's a reasonable effort.
-  private static int guessJsExprPrecedence(String jsExprText) {
-
-    // We guess the precedence of the expression by searching for characters that appear in
-    // operator tokens. This is of course far from accurate, but it's a reasonable effort.
-
-    int prec = Integer.MAX_VALUE;  // to be adjusted below
-
-    Matcher matcher = OP_TOKEN_CHAR.matcher(jsExprText);
-    while (matcher.find()) {
-      switch(matcher.group().charAt(0)) {
-        case '?':
-          prec = Math.min(prec, Operator.CONDITIONAL.getPrecedence());
-          break;
-        case '|':
-          prec = Math.min(prec, Operator.OR.getPrecedence());
-          break;
-        case '&':
-          prec = Math.min(prec, Operator.AND.getPrecedence());
-          break;
-        case '=':
-          // Could be any of "==", "!=", "<=", ">=". Instead of wasting time checking, we simply
-          // set the precedence to the lowest possible value.
-          prec = Math.min(prec, Operator.EQUAL.getPrecedence());
-          break;
-        case '!':
-          if (jsExprText.contains("!=")) {
-            prec = Math.min(prec, Operator.NOT_EQUAL.getPrecedence());
-          } else {  // must be "!"
-            prec = Math.min(prec, Operator.NOT.getPrecedence());
-          }
-          break;
-        case '<':
-        case '>':
-          prec = Math.min(prec, Operator.LESS_THAN.getPrecedence());
-          break;
-        case '+':
-          prec = Math.min(prec, Operator.PLUS.getPrecedence());
-          break;
-        case '-':
-          if (matcher.start() == 0) {
-            // Matched at beginning of expression, so it must be the unary "-"
-            prec = Math.min(prec, Operator.NEGATIVE.getPrecedence());
-          } else {
-            // Could be binary or unary "-". Since we're not sure, set the precedence to the lowest
-            // possible value.
-            prec = Math.min(prec, Operator.MINUS.getPrecedence());
-          }
-          break;
-        case '*':
-        case '/':
-        case '%':
-          prec = Math.min(prec, Operator.TIMES.getPrecedence());
-          break;
-        default:
-          throw new AssertionError();
-      }
-    }
-
-    return prec;
-  }
-
 
   /**
    * Gets the translated expression for an in-scope local variable (or special "variable" derived
