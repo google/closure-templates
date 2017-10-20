@@ -89,7 +89,7 @@ public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
        * directives that use a temporary buffer.
        */
       public static AppendableAndOptions createCloseable(Expression expression) {
-        expression.checkAssignableTo(BytecodeUtils.CLOSEABLE_TYPE);
+        expression.checkAssignableTo(BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
         return create(expression, /* closeable= */ true);
       }
 
