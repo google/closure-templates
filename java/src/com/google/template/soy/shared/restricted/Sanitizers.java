@@ -659,8 +659,8 @@ public final class Sanitizers {
       LoggingAdvisingAppendable appendable) {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
       /**
-       * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
-       * #exitSanitizedContent()} after a call that enters {@link ContentKind#TEXT}.
+       * The current number of calls to {@link #enterSanitizedContentKind} without a matching {@link
+       * #exitSanitizedContentKind()} after a call that enters {@link ContentKind#TEXT}.
        */
       private int textDepth;
 
@@ -669,7 +669,8 @@ public final class Sanitizers {
       }
 
       @Override
-      public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
+      public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
+          throws IOException {
         int depth = textDepth;
         if (depth > 0) {
           depth++;
@@ -689,7 +690,7 @@ public final class Sanitizers {
       }
 
       @Override
-      public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
+      public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
         int depth = textDepth;
         if (depth > 0) {
           depth--;
@@ -747,6 +748,23 @@ public final class Sanitizers {
           return this;
         }
         return super.exitLoggableElement();
+      }
+
+      @Override
+      public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+          throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.enterSanitizedContentDirectionality(contentDir);
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+        if (isInText()) {
+          return this;
+        }
+        return super.exitSanitizedContentDirectionality();
       }
     };
   }

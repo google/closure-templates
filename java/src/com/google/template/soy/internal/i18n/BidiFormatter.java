@@ -16,6 +16,7 @@
 
 package com.google.template.soy.internal.i18n;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.html.HtmlEscapers;
 import com.google.template.soy.data.Dir;
@@ -171,6 +172,20 @@ public class BidiFormatter {
       }
       return new BidiFormatter(contextDir, flags);
     }
+  }
+
+  /** The text used to bidi wrap a string. */
+  @AutoValue
+  public abstract static class BidiWrappingText {
+    static BidiWrappingText create(String beforeText, String afterText) {
+      return new AutoValue_BidiFormatter_BidiWrappingText(beforeText, afterText);
+    }
+
+    /** The text to go before the string to wrap. */
+    public abstract String beforeText();
+
+    /** The text to go after the string to wrap. */
+    public abstract String afterText();
   }
 
   private static final int FLAG_ALWAYS_SPAN = 1;
@@ -419,32 +434,60 @@ public class BidiFormatter {
    */
   public String spanWrapWithKnownDir(
       @Nullable Dir dir, String str, boolean isHtml, boolean isolate) {
-    if (dir == null) {
-      dir = estimateDirection(str, isHtml);
-    }
-    String origStr = str;
+    BidiWrappingText wrappingText = spanWrappingTextWithKnownDir(dir, str, isHtml, isolate);
     if (!isHtml) {
       str = HtmlEscapers.htmlEscaper().escape(str);
     }
+    return wrappingText.beforeText() + str + wrappingText.afterText();
+  }
 
-    StringBuilder result = new StringBuilder();
+  /**
+   * Operates like {@link #spanWrapWithKnownDir(Dir, String, boolean, boolean)} but only returns the
+   * text that would be prepended and appended to {@code str}.
+   *
+   * @param dir {@code str}'s directionality. If null, i.e. unknown, it is estimated.
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   * @param isolate Whether to directionally isolate the string to prevent it from garbling the
+   *     content around it
+   */
+  public BidiWrappingText spanWrappingTextWithKnownDir(
+      @Nullable Dir dir, String str, boolean isHtml, boolean isolate) {
+    if (dir == null) {
+      dir = estimateDirection(str, isHtml);
+    }
+
+    StringBuilder beforeText = new StringBuilder();
+    StringBuilder afterText = new StringBuilder();
     if (getStereoReset() && isolate) {
-      result.append(markBeforeKnownDir(dir, origStr, isHtml));
+      beforeText.append(markBeforeKnownDir(dir, str, isHtml));
     }
     boolean dirCondition = (dir != Dir.NEUTRAL && dir != contextDir);
     if (getAlwaysSpan() || dirCondition) {
-      result.append("<span");
+      beforeText.append("<span");
       if (dirCondition) {
-        result.append(' ').append(dir == Dir.RTL ? "dir=\"rtl\"" : "dir=\"ltr\"");
+        beforeText.append(' ').append(dir == Dir.RTL ? "dir=\"rtl\"" : "dir=\"ltr\"");
       }
-      result.append('>').append(str).append("</span>");
-    } else {
-      result.append(str);
+      beforeText.append('>');
+      afterText.append("</span>");
     }
     if (isolate) {
-      result.append(markAfterKnownDir(dir, origStr, isHtml));
+      afterText.append(markAfterKnownDir(dir, str, isHtml));
     }
-    return result.toString();
+    return BidiWrappingText.create(beforeText.toString(), afterText.toString());
+  }
+
+  /**
+   * Operates like {@link #spanWrappingTextWithKnownDir(Dir, String, boolean, boolean)}, but assumes
+   * {@code isolated} is true.
+   *
+   * @param dir {@code str}'s directionality
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   */
+  public BidiWrappingText spanWrappingTextWithKnownDir(
+      @Nullable Dir dir, String str, boolean isHtml) {
+    return spanWrappingTextWithKnownDir(dir, str, isHtml, true);
   }
 
   /**

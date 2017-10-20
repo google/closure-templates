@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -395,6 +396,10 @@ public class BidiFormatterTest {
         LRM + EN_TAG + HE + EN,
         LTR_STEREO_RESET_FMT.spanWrapWithKnownDir(LTR, EN_TAG + HE + EN, true));
     assertEquals(
+        "entry dir opposite to LTR context, stereo reset, HTML",
+        BidiWrappingText.create(LRM, ""),
+        LTR_STEREO_RESET_FMT.spanWrappingTextWithKnownDir(LTR, EN_TAG + HE + EN, true));
+    assertEquals(
         "entry dir opposite to LTR context, no isolation",
         HE + EN,
         LTR_FMT.spanWrapWithKnownDir(LTR, HE + EN, false, false));
@@ -516,6 +521,10 @@ public class BidiFormatterTest {
         "overall dir (but not entry or exit dir) opposite to RTL context, no isolation",
         "<span dir=\"ltr\">" + HE + EN + HE + "</span>",
         RTL_FMT.spanWrapWithKnownDir(LTR, HE + EN + HE, false, false));
+    assertEquals(
+        "overall dir (but not entry or exit dir) opposite to RTL context, no isolation",
+        BidiWrappingText.create("<span dir=\"ltr\">", "</span>"),
+        RTL_FMT.spanWrappingTextWithKnownDir(LTR, HE + EN + HE, false, false));
   }
 
   @Test

@@ -29,7 +29,7 @@ public final class LazySanitizedContents {
 
   /** Creates a SanitizedContent that wraps the given thunk. */
   public static SanitizedContent forThunk(RenderableThunk value, ContentKind kind) {
-    return SanitizedContent.createLazy(value, kind, SanitizedContents.getDefaultDir(kind));
+    return SanitizedContent.createLazy(value, kind, kind.getDefaultDir());
   }
 
   private LazySanitizedContents() {}

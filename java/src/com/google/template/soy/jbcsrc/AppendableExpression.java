@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -71,13 +72,25 @@ final class AppendableExpression extends Expression {
               LoggingFunctionInvocation.class, "create", String.class, String.class, List.class)
           .asNonNullable();
 
-  private static final MethodRef ENTER_SANITIZED_CONTENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "enterSanitizedContent", ContentKind.class)
+  private static final MethodRef ENTER_SANITIZED_CONTENT_KIND =
+      MethodRef.create(
+              LoggingAdvisingAppendable.class, "enterSanitizedContentKind", ContentKind.class)
           .asNonNullable()
           .asCheap();
 
-  private static final MethodRef EXIT_SANITIZED_CONTENT =
-      MethodRef.create(LoggingAdvisingAppendable.class, "exitSanitizedContent")
+  private static final MethodRef EXIT_SANITIZED_CONTENT_KIND =
+      MethodRef.create(LoggingAdvisingAppendable.class, "exitSanitizedContentKind")
+          .asNonNullable()
+          .asCheap();
+
+  private static final MethodRef ENTER_SANITIZED_CONTENT_DIRECTIONALITY =
+      MethodRef.create(
+              LoggingAdvisingAppendable.class, "enterSanitizedContentDirectionality", Dir.class)
+          .asNonNullable()
+          .asCheap();
+
+  private static final MethodRef EXIT_SANITIZED_CONTENT_DIRECTIONALITY =
+      MethodRef.create(LoggingAdvisingAppendable.class, "exitSanitizedContentDirectionality")
           .asNonNullable()
           .asCheap();
 
@@ -180,19 +193,35 @@ final class AppendableExpression extends Expression {
         true);
   }
 
-  /**
-   * Invokes {@link LoggingAdvisingAppendable#enterSanitizedContent(ContentKind)} on the appendable.
-   */
-  AppendableExpression enterSanitizedContent(SanitizedContentKind kind) {
+  /** Invokes {@link LoggingAdvisingAppendable#enterSanitizedContentKind} on the appendable. */
+  AppendableExpression enterSanitizedContentKind(SanitizedContentKind kind) {
     return withNewDelegate(
         delegate.invoke(
-            ENTER_SANITIZED_CONTENT, BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)),
+            ENTER_SANITIZED_CONTENT_KIND,
+            BytecodeUtils.constantSanitizedContentKindAsContentKind(kind)),
         true);
   }
 
-  /** Invokes {@link LoggingAdvisingAppendable#exitSanitizedContent()} on the appendable. */
-  AppendableExpression exitSanitizedContent() {
-    return withNewDelegate(delegate.invoke(EXIT_SANITIZED_CONTENT), true);
+  /** Invokes {@link LoggingAdvisingAppendable#exitSanitizedContentKind()} on the appendable. */
+  AppendableExpression exitSanitizedContentKind() {
+    return withNewDelegate(delegate.invoke(EXIT_SANITIZED_CONTENT_KIND), true);
+  }
+
+  /**
+   * Invokes {@link LoggingAdvisingAppendable#enterSanitizedContentDirectionality} on the
+   * appendable.
+   */
+  AppendableExpression enterSanitizedContentDirectionality(Dir contentDir) {
+    return withNewDelegate(
+        delegate.invoke(ENTER_SANITIZED_CONTENT_DIRECTIONALITY, BytecodeUtils.constant(contentDir)),
+        true);
+  }
+
+  /**
+   * Invokes {@link LoggingAdvisingAppendable#exitSanitizedContentDirectionality} on the appendable.
+   */
+  AppendableExpression exitSanitizedContentDirectionality() {
+    return withNewDelegate(delegate.invoke(EXIT_SANITIZED_CONTENT_DIRECTIONALITY), true);
   }
 
   @Override

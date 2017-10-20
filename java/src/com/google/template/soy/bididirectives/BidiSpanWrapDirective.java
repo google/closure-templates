@@ -17,11 +17,13 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -50,7 +52,7 @@ final class BidiSpanWrapDirective
         SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -94,6 +96,13 @@ final class BidiSpanWrapDirective
         MethodRef.create(
                 BidiDirectivesRuntime.class, "bidiSpanWrap", BidiGlobalDir.class, SoyValue.class)
             .asNonNullable();
+    static final MethodRef BIDI_SPAN_WRAP_STREAMING =
+        MethodRef.create(
+                BidiDirectivesRuntime.class,
+                "bidiSpanWrapStreaming",
+                LoggingAdvisingAppendable.class,
+                BidiGlobalDir.class)
+            .asNonNullable();
   }
 
   @Override
@@ -101,6 +110,14 @@ final class BidiSpanWrapDirective
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forString(
         JbcSrcMethods.BIDI_SPAN_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.createCloseable(
+        JbcSrcMethods.BIDI_SPAN_WRAP_STREAMING.invoke(
+            delegateAppendable, context.getBidiGlobalDir()));
   }
 
   @Override

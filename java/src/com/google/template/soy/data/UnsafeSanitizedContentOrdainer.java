@@ -58,7 +58,7 @@ public final class UnsafeSanitizedContentOrdainer {
    * constants in your code.
    */
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind) {
-    return ordainAsSafe(value, kind, SanitizedContents.getDefaultDir(kind));
+    return ordainAsSafe(value, kind, kind.getDefaultDir());
   }
 
   /**

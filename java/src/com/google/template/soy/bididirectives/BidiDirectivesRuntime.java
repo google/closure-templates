@@ -16,6 +16,10 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
+import com.google.template.soy.data.LogStatement;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -24,8 +28,12 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiFormatter;
+import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import java.io.Closeable;
+import java.io.IOException;
+import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */
 public final class BidiDirectivesRuntime {
@@ -99,5 +107,124 @@ public final class BidiDirectivesRuntime {
     // after the escaping (if any) has already been done, and thus there is no need for it to
     // produce actual SanitizedContent.
     return wrappedValue;
+  }
+
+  public static LoggingAdvisingAppendable bidiSpanWrapStreaming(
+      LoggingAdvisingAppendable delegateAppendable, BidiGlobalDir dir) {
+    return new BidiSpanWrapAppendable(delegateAppendable, dir);
+  }
+
+  private static final class BidiSpanWrapAppendable extends ForwardingLoggingAdvisingAppendable
+      implements Closeable {
+    private final BidiGlobalDir globalDir;
+    private final StringBuilder buffer;
+    private final BufferingAppendable commandBuffer;
+    private final EnumTracker<Dir> dirTracker;
+
+    BidiSpanWrapAppendable(LoggingAdvisingAppendable delegate, BidiGlobalDir globalDir) {
+      super(delegate);
+      this.globalDir = globalDir;
+      buffer = new StringBuilder();
+      commandBuffer = LoggingAdvisingAppendable.buffering();
+      dirTracker = new EnumTracker<>();
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
+        throws IOException {
+      commandBuffer.enterSanitizedContentKind(kind);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
+      commandBuffer.exitSanitizedContentKind();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+        throws IOException {
+      dirTracker.trackEnter(contentDir);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      commandBuffer.enterLoggableElement(statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      commandBuffer.exitLoggableElement();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      buffer.append(c);
+      commandBuffer.append(c);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      buffer.append(csq);
+      commandBuffer.append(csq);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      buffer.append(csq, start, end);
+      commandBuffer.append(csq, start, end);
+      return this;
+    }
+
+    @Override
+    public void close() throws IOException {
+      BidiWrappingText wrappingText =
+          SoyBidiUtils.getBidiFormatter(globalDir.getStaticValue())
+              .spanWrappingTextWithKnownDir(dirTracker.get(), buffer.toString(), true /* isHtml */);
+      delegate.append(wrappingText.beforeText());
+      commandBuffer.replayOn(delegate);
+      delegate.append(wrappingText.afterText());
+    }
+  }
+
+  /**
+   * Tracks a value of an enum over SanitizedContent enter calls. If the same enum value is set for
+   * all enter calls, then {@link #get} will return that, otherwise it will return null.
+   */
+  private static final class EnumTracker<E extends Enum<E>> {
+
+    /** The overall enum value so far. Each new value gets merged into this on an enter call. */
+    private E value;
+    /**
+     * Whether enter has been called yet. This is used to differentiate a null {@link #value}
+     * meaning enter hasn't been called yet vs. enter has been called for multiple enum values (so
+     * the overall enum value is unknown).
+     */
+    private boolean enterCalled;
+
+    void trackEnter(E e) {
+      if (!enterCalled) {
+        value = e;
+        enterCalled = true;
+      } else if (value != e) {
+        value = null;
+      }
+    }
+
+    E get() {
+      return value;
+    }
   }
 }

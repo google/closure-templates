@@ -37,6 +37,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
@@ -201,9 +202,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getContentKind() != null) {
       templateBody =
           Statement.concat(
-              appendableExpression.enterSanitizedContent(node.getContentKind()).toStatement(),
+              appendableExpression.enterSanitizedContentKind(node.getContentKind()).toStatement(),
+              appendableExpression
+                  .enterSanitizedContentDirectionality(
+                      ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
+                  .toStatement(),
               templateBody,
-              appendableExpression.exitSanitizedContent().toStatement());
+              appendableExpression.exitSanitizedContentDirectionality().toStatement(),
+              appendableExpression.exitSanitizedContentKind().toStatement());
     }
     Statement jumpTable = detachState.generateReattachTable();
     return CompiledMethodBody.create(

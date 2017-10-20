@@ -178,13 +178,13 @@ public class SanitizedContentsTest {
 
   @Test
   public void testGetDefaultDir() {
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.JS)).isEqualTo(Dir.LTR);
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.CSS)).isEqualTo(Dir.LTR);
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.ATTRIBUTES)).isEqualTo(Dir.LTR);
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.URI)).isEqualTo(Dir.LTR);
+    assertThat(ContentKind.JS.getDefaultDir()).isEqualTo(Dir.LTR);
+    assertThat(ContentKind.CSS.getDefaultDir()).isEqualTo(Dir.LTR);
+    assertThat(ContentKind.ATTRIBUTES.getDefaultDir()).isEqualTo(Dir.LTR);
+    assertThat(ContentKind.URI.getDefaultDir()).isEqualTo(Dir.LTR);
 
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.TEXT)).isNull();
-    assertThat(SanitizedContents.getDefaultDir(ContentKind.HTML)).isNull();
+    assertThat(ContentKind.TEXT.getDefaultDir()).isNull();
+    assertThat(ContentKind.HTML.getDefaultDir()).isNull();
   }
 
   @Test
@@ -193,8 +193,7 @@ public class SanitizedContentsTest {
     SanitizedContent uri = SanitizedContents.constantUri("itms://blahblah");
     assertThat(uri.getContent()).isEqualTo("itms://blahblah");
     assertThat(uri.getContentKind()).isEqualTo(ContentKind.URI);
-    assertThat(uri.getContentDirection())
-        .isEqualTo(SanitizedContents.getDefaultDir(ContentKind.URI));
+    assertThat(uri.getContentDirection()).isEqualTo(ContentKind.URI.getDefaultDir());
   }
 
   @Test

@@ -143,7 +143,7 @@ public final class SanitizedContents {
         // - We do not know the locale direction here.
         // - Some messages do not get translated.
         // - This method currently can't be used for text resources (see pretendValidateResource()).
-        getDefaultDir(kind));
+        kind.getDefaultDir());
   }
 
   /**
@@ -170,7 +170,7 @@ public final class SanitizedContents {
         // - We do not know the locale direction here.
         // - Some messages do not get translated.
         // - This method currently can't be used for text resources (see pretendValidateResource()).
-        getDefaultDir(kind));
+        kind.getDefaultDir());
   }
 
   /**
@@ -303,23 +303,6 @@ public final class SanitizedContents {
         break;
       default:
         throw new IllegalArgumentException("Don't know how to validate resources of kind " + kind);
-    }
-  }
-
-  /*
-   * Returns the default direction per content kind: LTR for JS, URI, ATTRIBUTES, and CSS content,
-   * and otherwise unknown.
-   */
-  static Dir getDefaultDir(ContentKind kind) {
-    switch (kind) {
-      case JS:
-      case URI:
-      case ATTRIBUTES:
-      case CSS:
-      case TRUSTED_RESOURCE_URI:
-        return Dir.LTR;
-      default:
-        return null;
     }
   }
 }

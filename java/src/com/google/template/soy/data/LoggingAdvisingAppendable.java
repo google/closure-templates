@@ -26,6 +26,7 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * An {@link AdvisingAppendable} that can also process log statements.
@@ -49,19 +50,29 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   }
 
   /**
-   * An implementation that only delegates {@link #append} calls {@link #enterSanitizedContent} and
-   * {@link #exitSanitizedContent}. This has the effect of coercing the content to a string by
-   * dropping all the strict content directives.
+   * An implementation that only delegates {@link #append} calls. This has the effect of coercing
+   * the content to a string by dropping all the strict content directives.
    */
   public static LoggingAdvisingAppendable stringCoercing(LoggingAdvisingAppendable delegate) {
     return new ForwardingLoggingAdvisingAppendable(delegate) {
       @Override
-      public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) {
+      public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind) {
         return this;
       }
 
       @Override
-      public LoggingAdvisingAppendable exitSanitizedContent() {
+      public LoggingAdvisingAppendable exitSanitizedContentKind() {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable enterSanitizedContentDirectionality(
+          @Nullable Dir contentDir) {
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable exitSanitizedContentDirectionality() {
         return this;
       }
 
@@ -103,9 +114,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
   /**
-   * Marks the beginning of a sequence of sanitized content in the appendable. All the {@link
-   * #append} commands until a matching {@link #exitSanitizedContent()} should be considered to be
-   * content of the given kind that has already been sanitized.
+   * Marks the beginning of a sequence of sanitized content with the given kind in the appendable.
+   * All the {@link #append} commands until a matching {@link #exitSanitizedContentKind()} should be
+   * considered to be content of the given kind that has already been sanitized.
    *
    * <p>The default implementation does nothing.
    *
@@ -120,18 +131,50 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * @param kind The kind of content that we are entering.
    * @throws IOException
    */
-  public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
+  public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind) throws IOException {
     return this;
   }
 
   /**
-   * Marks the end of a sequence of sanitized content.
+   * Marks the end of a sequence of sanitized content kind.
    *
    * <p>The default implementation does nothing.
    *
    * @throws IOException
    */
-  public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
+  public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
+    return this;
+  }
+
+  /**
+   * Marks the beginning of a sequence of santized content with the given text directionality (i.e.
+   * LTR, RTL) in the appendable. All the {@link #append} commands until a matching {@link
+   * #exitSanitizedContentDirectionality()} should be considered to be content of the given
+   * directionality that has already been sanitized. This exists to maintain parity with {@link
+   * SanitizedContent#getContentDirection} and to support bi-directional text directives.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * <p>NOTE: In most cases, you probably want to propagate these calls to your delegate. The
+   * exception to this is appendables that change the overall directionality of text (like the
+   * {@link BidiSpanWrapDirective} and {@link BidiUnicodeWrapDirective}).
+   *
+   * @param contentDir The directionality of this content, or null if it's unknown.
+   * @throws IOException
+   */
+  public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+      throws IOException {
+    return this;
+  }
+
+  /**
+   * Marks the end of a sequence of sanitized content directionality.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * @throws IOException
+   */
+  public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
     return this;
   }
 
@@ -195,15 +238,22 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
   public static final class BufferingAppendable extends DelegatingToAppendable<StringBuilder> {
     private static final Object EXIT_LOG_STATEMENT_MARKER = new Object();
-    private static final Object EXIT_SANITIZED_CONTENT_MARKER = new Object();
-    // lazily allocated list that contains one of 6 types of objects, each which corresponds to one
+    private static final Object EXIT_SANITIZED_CONTENT_KIND_MARKER = new Object();
+    private static final Object ENTER_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER = new Object();
+    private static final Object EXIT_SANITIZED_CONTENT_DIRECTIONALITY_MARKER = new Object();
+    // lazily allocated list that contains one of 9 types of objects, each which corresponds to one
     // of the callback methods.
     // - String literal string content -> corresponds to a contiguous sequence of append calls
     // - LogStatement -> corresponds to enterLoggableElement
     // - EXIT_LOG_STATEMENT_MARKER -> corresponds to exitLoggableElement
-    // - ContentKind -> corresponds to enterSanitizedContent
-    // - EXIT_SANITIZED_CONTENT_MARKER -> corresponds to exitSanitizedContent call
+    // - ContentKind -> corresponds to enterSanitizedContentKind
+    // - EXIT_SANITIZED_CONTENT_KIND_MARKER -> corresponds to exitSanitizedContentKind call
     // - LoggingFunctionInvocation -> corresponds to appendLoggingFunctionInvocation
+    // - Dir -> corresponds to enterSanitizedContentDirectionality
+    // - ENTER_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER -> corresponds to
+    //   enterSanitizedContentDirectionality with a null parameter
+    // - EXIT_SANITIZED_CONTENT_DIRECTIONALITY_MARKER -> corresponds to
+    //   exitSanitizedContentDirectionality
     private List<Object> commands;
 
     BufferingAppendable() {
@@ -225,14 +275,33 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
+    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
+        throws IOException {
       getCommandsAndAddPendingStringData().add(kind);
       return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
-      getCommandsAndAddPendingStringData().add(EXIT_SANITIZED_CONTENT_MARKER);
+    public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
+      getCommandsAndAddPendingStringData().add(EXIT_SANITIZED_CONTENT_KIND_MARKER);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+        throws IOException {
+      if (contentDir == null) {
+        getCommandsAndAddPendingStringData()
+            .add(ENTER_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER);
+      } else {
+        getCommandsAndAddPendingStringData().add(contentDir);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+      getCommandsAndAddPendingStringData().add(EXIT_SANITIZED_CONTENT_DIRECTIONALITY_MARKER);
       return this;
     }
 
@@ -264,12 +333,18 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
             ((LoggingFunctionCommand) o).replayOn(appendable);
           } else if (o == EXIT_LOG_STATEMENT_MARKER) {
             appendable.exitLoggableElement();
-          } else if (o == EXIT_SANITIZED_CONTENT_MARKER) {
-            appendable.exitSanitizedContent();
+          } else if (o == EXIT_SANITIZED_CONTENT_KIND_MARKER) {
+            appendable.exitSanitizedContentKind();
+          } else if (o == EXIT_SANITIZED_CONTENT_DIRECTIONALITY_MARKER) {
+            appendable.exitSanitizedContentDirectionality();
           } else if (o instanceof LogStatement) {
             appendable.enterLoggableElement((LogStatement) o);
           } else if (o instanceof ContentKind) {
-            appendable.enterSanitizedContent((ContentKind) o);
+            appendable.enterSanitizedContentKind((ContentKind) o);
+          } else if (o instanceof Dir) {
+            appendable.enterSanitizedContentDirectionality((Dir) o);
+          } else if (o == ENTER_SANITIZED_CONTENT_DIRECTIONALITY_NULL_MARKER) {
+            appendable.enterSanitizedContentDirectionality(null);
           } else {
             throw new AssertionError("unexpected command object: " + o);
           }

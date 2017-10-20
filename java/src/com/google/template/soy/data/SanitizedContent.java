@@ -124,6 +124,24 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
      * <p>In the soy type system, {@code TEXT} is equivalent to the string type.
      */
     TEXT;
+
+    /*
+     * Returns the default direction for this content kind: LTR for JS, URI, ATTRIBUTES, and CSS
+     * content, and otherwise unknown (null).
+     */
+    @Nullable
+    public Dir getDefaultDir() {
+      switch (this) {
+        case JS:
+        case URI:
+        case ATTRIBUTES:
+        case CSS:
+        case TRUSTED_RESOURCE_URI:
+          return Dir.LTR;
+        default:
+          return null;
+      }
+    }
   }
 
   private final ContentKind contentKind;
@@ -354,7 +372,12 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
     @Override
     public void render(LoggingAdvisingAppendable appendable) throws IOException {
-      appendable.enterSanitizedContent(getContentKind()).append(content).exitSanitizedContent();
+      appendable
+          .enterSanitizedContentKind(getContentKind())
+          .enterSanitizedContentDirectionality(getContentDirection())
+          .append(content)
+          .exitSanitizedContentDirectionality()
+          .exitSanitizedContentKind();
     }
 
     @Override
@@ -376,9 +399,11 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
     @Override
     public void render(LoggingAdvisingAppendable appendable) throws IOException {
-      appendable.enterSanitizedContent(getContentKind());
+      appendable
+          .enterSanitizedContentKind(getContentKind())
+          .enterSanitizedContentDirectionality(getContentDirection());
       thunk.render(appendable);
-      appendable.exitSanitizedContent();
+      appendable.exitSanitizedContentDirectionality().exitSanitizedContentKind();
     }
 
     @Override

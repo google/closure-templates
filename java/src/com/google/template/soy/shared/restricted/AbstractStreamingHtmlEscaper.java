@@ -17,9 +17,11 @@ package com.google.template.soy.shared.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /**
  * A delegating {@link LoggingAdvisingAppendable} that can detect when the appendable is in an html
@@ -28,8 +30,8 @@ import java.io.IOException;
 public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppendable {
 
   /**
-   * The current number of calls to {@link #enterSanitizedContent} without a matching {@link
-   * #exitSanitizedContent()} after a call with a content kind that matches {@link
+   * The current number of calls to {@link #enterSanitizedContentKind} without a matching {@link
+   * #exitSanitizedContentKind()} after a call with a content kind that matches {@link
    * ContentKind#HTML}.
    */
   private int htmlDepth;
@@ -41,7 +43,7 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   }
 
   @Override
-  public final LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind)
+  public final LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
       throws IOException {
     int depth = htmlDepth;
     if (depth > 0) {
@@ -58,7 +60,7 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   }
 
   @Override
-  public final LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
+  public final LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
     int depth = htmlDepth;
     if (depth > 0) {
       depth--;
@@ -89,6 +91,19 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   @Override
   public final boolean softLimitReached() {
     return delegate.softLimitReached();
+  }
+
+  @Override
+  public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+      throws IOException {
+    delegate.enterSanitizedContentDirectionality(contentDir);
+    return this;
+  }
+
+  @Override
+  public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+    delegate.exitSanitizedContentDirectionality();
+    return this;
   }
 
   protected final boolean isInHtml() {

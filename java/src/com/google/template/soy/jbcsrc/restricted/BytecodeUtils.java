@@ -29,6 +29,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -76,6 +77,7 @@ public final class BytecodeUtils {
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
+  public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
@@ -362,6 +364,13 @@ public final class BytecodeUtils {
     return (kind == null)
         ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
         : FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
+  }
+
+  /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
+  public static Expression constant(@Nullable Dir dir) {
+    return (dir == null)
+        ? BytecodeUtils.constantNull(DIR_TYPE)
+        : FieldRef.enumReference(dir).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */

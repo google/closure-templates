@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -153,16 +154,32 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContent(ContentKind kind) throws IOException {
-      delegate.enterSanitizedContent(kind);
-      buffer.enterSanitizedContent(kind);
+    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
+        throws IOException {
+      delegate.enterSanitizedContentKind(kind);
+      buffer.enterSanitizedContentKind(kind);
       return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable exitSanitizedContent() throws IOException {
-      delegate.exitSanitizedContent();
-      buffer.exitSanitizedContent();
+    public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
+      delegate.exitSanitizedContentKind();
+      buffer.exitSanitizedContentKind();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+        throws IOException {
+      delegate.enterSanitizedContentDirectionality(contentDir);
+      buffer.enterSanitizedContentDirectionality(contentDir);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+      delegate.exitSanitizedContentDirectionality();
+      buffer.exitSanitizedContentDirectionality();
       return this;
     }
 

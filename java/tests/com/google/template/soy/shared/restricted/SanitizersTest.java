@@ -366,7 +366,7 @@ public class SanitizersTest {
     assertFalse(
         Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);").contains("javascript\uff1a"));
 
-    // Tests of filtering heirarchy within uri path (/.. etc )
+    // Tests of filtering hierarchy within uri path (/.. etc )
     assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
     assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("/..?"));
     assertEquals(
@@ -817,16 +817,16 @@ public class SanitizersTest {
     LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
     escapingBuffer.append("foo");
     assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-    escapingBuffer.enterSanitizedContent(ContentKind.HTML);
+    escapingBuffer.enterSanitizedContentKind(ContentKind.HTML);
     escapingBuffer.append("foo");
     assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-    escapingBuffer.enterSanitizedContent(ContentKind.TEXT);
+    escapingBuffer.enterSanitizedContentKind(ContentKind.TEXT);
     assertThat(buffer.getAndClearBuffer()).isEqualTo("zSoyz");
     escapingBuffer.append("foo");
-    escapingBuffer.enterSanitizedContent(ContentKind.HTML);
+    escapingBuffer.enterSanitizedContentKind(ContentKind.HTML);
     escapingBuffer.append("foo");
-    escapingBuffer.exitSanitizedContent();
-    escapingBuffer.exitSanitizedContent(); // exits the text call
+    escapingBuffer.exitSanitizedContentKind();
+    escapingBuffer.exitSanitizedContentKind(); // exits the text call
     // nothing was rendered between the calls
     assertThat(buffer.getAndClearBuffer()).isEqualTo("");
   }
