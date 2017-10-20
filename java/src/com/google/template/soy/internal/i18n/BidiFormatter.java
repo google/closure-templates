@@ -162,19 +162,30 @@ public class BidiFormatter {
    * @return Input string after applying the above processing.
    */
   public String unicodeWrap(@Nullable Dir dir, String str, boolean isHtml) {
+    BidiWrappingText wrappingText = unicodeWrappingText(dir, str, isHtml);
+    return wrappingText.beforeText() + str + wrappingText.afterText();
+  }
+
+  /**
+   * Operates like {@link #unicodeWrap(Dir, String, boolean)} but only returns the text that would
+   * be prepended and appended to {@code str}.
+   *
+   * @param dir {@code str}'s directionality. If null, i.e. unknown, it is estimated.
+   * @param str The input string
+   * @param isHtml Whether {@code str} is HTML / HTML-escaped
+   */
+  public BidiWrappingText unicodeWrappingText(@Nullable Dir dir, String str, boolean isHtml) {
     if (dir == null) {
       dir = estimateDirection(str, isHtml);
     }
-    StringBuilder result = new StringBuilder();
+    StringBuilder beforeText = new StringBuilder();
+    StringBuilder afterText = new StringBuilder();
     if (dir != Dir.NEUTRAL && dir != contextDir) {
-      result.append(dir == Dir.RTL ? BidiUtils.Format.RLE : BidiUtils.Format.LRE);
-      result.append(str);
-      result.append(BidiUtils.Format.PDF);
-    } else {
-      result.append(str);
+      beforeText.append(dir == Dir.RTL ? BidiUtils.Format.RLE : BidiUtils.Format.LRE);
+      afterText.append(BidiUtils.Format.PDF);
     }
-    result.append(markAfter(dir, str, isHtml));
-    return result.toString();
+    afterText.append(markAfter(dir, str, isHtml));
+    return BidiWrappingText.create(beforeText.toString(), afterText.toString());
   }
 
   /**

@@ -343,6 +343,10 @@ public class BidiFormatterTest {
         "entry and exit dir opposite to RTL context, HTML",
         HE_TAG + EN + HE + EN + HE_TAG + RLM,
         RTL_FMT.unicodeWrap(RTL, HE_TAG + EN + HE + EN + HE_TAG, true));
+    assertEquals(
+        "entry and exit dir opposite to RTL context, HTML",
+        BidiWrappingText.create("", RLM),
+        RTL_FMT.unicodeWrappingText(RTL, HE_TAG + EN + HE + EN + HE_TAG, true));
 
     // Entry and exit directionality matching context, but with opposite overall directionality.
     assertEquals(
@@ -354,6 +358,10 @@ public class BidiFormatterTest {
         "overall dir (but not entry or exit dir) opposite to RTL context",
         LRE + HE + EN + HE + PDF + RLM,
         RTL_FMT.unicodeWrap(LTR, HE + EN + HE, false));
+    assertEquals(
+        "overall dir (but not entry or exit dir) opposite to RTL context",
+        BidiWrappingText.create(LRE, PDF + RLM),
+        RTL_FMT.unicodeWrappingText(LTR, HE + EN + HE, false));
   }
 
   @Test

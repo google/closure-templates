@@ -17,8 +17,10 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -47,7 +49,7 @@ final class BidiUnicodeWrapDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
@@ -83,6 +85,13 @@ final class BidiUnicodeWrapDirective
         MethodRef.create(
                 BidiDirectivesRuntime.class, "bidiUnicodeWrap", BidiGlobalDir.class, SoyValue.class)
             .asNonNullable();
+    static final MethodRef BIDI_UNICODE_WRAP_STREAMING =
+        MethodRef.create(
+                BidiDirectivesRuntime.class,
+                "bidiUnicodeWrapStreaming",
+                LoggingAdvisingAppendable.class,
+                BidiGlobalDir.class)
+            .asNonNullable();
   }
 
   @Override
@@ -91,6 +100,14 @@ final class BidiUnicodeWrapDirective
     return SoyExpression.forSoyValue(
         StringType.getInstance(),
         JbcSrcMethods.BIDI_UNICODE_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.createCloseable(
+        JbcSrcMethods.BIDI_UNICODE_WRAP_STREAMING.invoke(
+            delegateAppendable, context.getBidiGlobalDir()));
   }
 
   @Override

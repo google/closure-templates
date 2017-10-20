@@ -103,7 +103,8 @@ public final class SharedModuleTest {
             "|noAutoescape",
             "|normalizeUri",
             "|changeNewlineToBr",
-            "|bidiSpanWrap");
+            "|bidiSpanWrap",
+            "|bidiUnicodeWrap");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
             // These all make sense to be streaming, though it might make sense to just skip
@@ -136,7 +137,6 @@ public final class SharedModuleTest {
             // the commands and preserves them.  This way logging directives could be preserved
             // through the print directive.
             "|cleanHtml",
-            "|bidiUnicodeWrap",
             "|formatNum");
   }
 }

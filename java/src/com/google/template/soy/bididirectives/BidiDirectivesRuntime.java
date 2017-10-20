@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.bididirectives;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -81,6 +82,11 @@ public final class BidiDirectivesRuntime {
     return StringData.forValue(wrappedValue);
   }
 
+  public static LoggingAdvisingAppendable bidiUnicodeWrapStreaming(
+      LoggingAdvisingAppendable delegateAppendable, BidiGlobalDir dir) {
+    return new BidiWrapAppendable(delegateAppendable, dir, WrapType.UNICODE);
+  }
+
   public static String bidiSpanWrap(BidiGlobalDir dir, SoyValue value) {
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
@@ -108,27 +114,38 @@ public final class BidiDirectivesRuntime {
 
   public static LoggingAdvisingAppendable bidiSpanWrapStreaming(
       LoggingAdvisingAppendable delegateAppendable, BidiGlobalDir dir) {
-    return new BidiSpanWrapAppendable(delegateAppendable, dir);
+    return new BidiWrapAppendable(delegateAppendable, dir, WrapType.SPAN);
   }
 
-  private static final class BidiSpanWrapAppendable extends ForwardingLoggingAdvisingAppendable
+  private enum WrapType {
+    SPAN,
+    UNICODE
+  }
+
+  private static final class BidiWrapAppendable extends ForwardingLoggingAdvisingAppendable
       implements Closeable {
     private final BidiGlobalDir globalDir;
+    private final WrapType wrapType;
     private final StringBuilder buffer;
     private final BufferingAppendable commandBuffer;
     private final EnumTracker<Dir> dirTracker;
+    private final EnumTracker<ContentKind> kindTracker;
 
-    BidiSpanWrapAppendable(LoggingAdvisingAppendable delegate, BidiGlobalDir globalDir) {
+    BidiWrapAppendable(
+        LoggingAdvisingAppendable delegate, BidiGlobalDir globalDir, WrapType wrapType) {
       super(delegate);
       this.globalDir = globalDir;
+      this.wrapType = Preconditions.checkNotNull(wrapType);
       buffer = new StringBuilder();
       commandBuffer = LoggingAdvisingAppendable.buffering();
       dirTracker = new EnumTracker<>();
+      kindTracker = new EnumTracker<>();
     }
 
     @Override
     public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
         throws IOException {
+      kindTracker.trackEnter(kind);
       commandBuffer.enterSanitizedContentKind(kind);
       return this;
     }
@@ -187,9 +204,21 @@ public final class BidiDirectivesRuntime {
 
     @Override
     public void close() throws IOException {
-      BidiWrappingText wrappingText =
-          BidiFormatter.getInstance(globalDir.toDir())
-              .spanWrappingText(dirTracker.get(), buffer.toString(), true /* isHtml */);
+      BidiFormatter formatter = BidiFormatter.getInstance(globalDir.toDir());
+      BidiWrappingText wrappingText;
+      switch (wrapType) {
+        case SPAN:
+          wrappingText =
+              formatter.spanWrappingText(dirTracker.get(), buffer.toString(), true /* isHtml */);
+          break;
+        case UNICODE:
+          wrappingText =
+              formatter.unicodeWrappingText(
+                  dirTracker.get(), buffer.toString(), kindTracker.get() == ContentKind.HTML);
+          break;
+        default:
+          throw new IllegalArgumentException("invalid wrap type: " + wrapType);
+      }
       delegate.append(wrappingText.beforeText());
       commandBuffer.replayOn(delegate);
       delegate.append(wrappingText.afterText());
