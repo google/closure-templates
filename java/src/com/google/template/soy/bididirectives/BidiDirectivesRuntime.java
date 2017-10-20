@@ -30,7 +30,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -50,7 +49,7 @@ public final class BidiDirectivesRuntime {
       valueKind = sanitizedContent.getContentKind();
       valueDir = sanitizedContent.getContentDirection();
     }
-    BidiFormatter bidiFormatter = SoyBidiUtils.getBidiFormatter(dir.getStaticValue());
+    BidiFormatter bidiFormatter = BidiFormatter.getInstance(dir.toDir());
 
     // We treat the value as HTML if and only if it says it's HTML, even though in legacy usage, we
     // sometimes have an HTML string (not SanitizedContent) that is passed to an autoescape="false"
@@ -58,18 +57,16 @@ public final class BidiDirectivesRuntime {
     // escaping. We simply have no way of knowing if this is what is happening when we get
     // non-SanitizedContent input, and most of the time it isn't.
     boolean isHtml = valueKind == ContentKind.HTML;
-    String wrappedValue =
-        bidiFormatter.unicodeWrapWithKnownDir(valueDir, value.coerceToString(), isHtml);
-
-    // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
-    // anything, we will indicate this known direction in the output SanitizedContent, even though
-    // the intended consumer of that information - a bidi wrapping directive - has already been run.
-    Dir wrappedValueDir = bidiFormatter.getContextDir();
+    String wrappedValue = bidiFormatter.unicodeWrap(valueDir, value.coerceToString(), isHtml);
 
     // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
     // Unicode-wrapping safe HTML.
     if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML) {
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, wrappedValueDir);
+      // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
+      // anything, we will indicate this known direction in the output SanitizedContent, even though
+      // the intended consumer of that information - a bidi wrapping directive - has already been
+      // run.
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, dir.toDir());
     }
 
     // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
@@ -89,7 +86,7 @@ public final class BidiDirectivesRuntime {
     if (value instanceof SanitizedContent) {
       valueDir = ((SanitizedContent) value).getContentDirection();
     }
-    BidiFormatter bidiFormatter = SoyBidiUtils.getBidiFormatter(dir.getStaticValue());
+    BidiFormatter bidiFormatter = BidiFormatter.getInstance(dir.toDir());
 
     // We always treat the value as HTML, because span-wrapping is only useful when its output will
     // be treated as HTML (without escaping), and because |bidiSpanWrap is not itself specified to
@@ -101,7 +98,7 @@ public final class BidiDirectivesRuntime {
     // treated as HTML, the input had better be safe HTML/HTML-escaped (even if it isn't HTML
     // SanitizedData), or we have an XSS opportunity and a much bigger problem than bidi garbling.
     String wrappedValue =
-        bidiFormatter.spanWrapWithKnownDir(valueDir, value.coerceToString(), true /* isHtml */);
+        bidiFormatter.spanWrap(valueDir, value.coerceToString(), true /* isHtml */);
 
     // Like other directives implementing SanitizedContentOperator, BidiSpanWrapDirective is called
     // after the escaping (if any) has already been done, and thus there is no need for it to
@@ -191,8 +188,8 @@ public final class BidiDirectivesRuntime {
     @Override
     public void close() throws IOException {
       BidiWrappingText wrappingText =
-          SoyBidiUtils.getBidiFormatter(globalDir.getStaticValue())
-              .spanWrappingTextWithKnownDir(dirTracker.get(), buffer.toString(), true /* isHtml */);
+          BidiFormatter.getInstance(globalDir.toDir())
+              .spanWrappingText(dirTracker.get(), buffer.toString(), true /* isHtml */);
       delegate.append(wrappingText.beforeText());
       commandBuffer.replayOn(delegate);
       delegate.append(wrappingText.afterText());

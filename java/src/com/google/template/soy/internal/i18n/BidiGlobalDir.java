@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoyBackendKind;
+import com.google.template.soy.data.Dir;
 import javax.annotation.Nullable;
 
 /**
@@ -153,5 +154,18 @@ public final class BidiGlobalDir {
 
   public Optional<String> getNamespace() {
     return Optional.fromNullable(namespace);
+  }
+
+  /** Converts this into a {@link Dir} if it represents LTR or RTL. */
+  public Dir toDir() {
+    switch (staticValue) {
+      case -1:
+        return Dir.RTL;
+      case 1:
+        return Dir.LTR;
+      default:
+        throw new IllegalArgumentException(
+            "invalid BidiGlobalDir for conversion to Dir: " + staticValue);
+    }
   }
 }

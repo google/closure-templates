@@ -60,15 +60,6 @@ public class SoyBidiUtilsTest {
   }
 
   @Test
-  public void testGetBidiFormatter() {
-    assertEquals(1, SoyBidiUtils.getBidiFormatter(1).getContextDir().ord);
-    assertEquals(-1, SoyBidiUtils.getBidiFormatter(-1).getContextDir().ord);
-    assertTrue(SoyBidiUtils.getBidiFormatter(1) == SoyBidiUtils.getBidiFormatter(100));
-    assertTrue(SoyBidiUtils.getBidiFormatter(-1) == SoyBidiUtils.getBidiFormatter(-5));
-    assertTrue(SoyBidiUtils.getBidiFormatter(-1) != SoyBidiUtils.getBidiFormatter(1));
-  }
-
-  @Test
   public void testDecodeBidiGlobalDirFromJsOptions() {
     assertNull(SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, false));
 

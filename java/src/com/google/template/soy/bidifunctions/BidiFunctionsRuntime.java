@@ -22,7 +22,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.BidiUtils;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
 
 /** Contains static functions that implement the java versions of the bidifunctions. */
 public final class BidiFunctionsRuntime {
@@ -43,7 +42,7 @@ public final class BidiFunctionsRuntime {
       valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
     }
 
-    BidiFormatter bidiFormatter = SoyBidiUtils.getBidiFormatter(dir.getStaticValue());
+    BidiFormatter bidiFormatter = BidiFormatter.getInstance(dir.toDir());
     return bidiFormatter.knownDirAttr(valueDir);
   }
 
@@ -64,8 +63,8 @@ public final class BidiFunctionsRuntime {
     }
 
     String markAfterKnownDir =
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDir.getStaticValue())
-            .markAfterKnownDir(valueDir, value.coerceToString(), isHtml);
+        BidiFormatter.getInstance(bidiGlobalDir.toDir())
+            .markAfter(valueDir, value.coerceToString(), isHtml);
     return markAfterKnownDir;
   }
 

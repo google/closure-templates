@@ -23,7 +23,6 @@ import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.util.ULocale;
 
-/** Utility functions for performing common Bidi tests on strings. */
 public class BidiUtils {
 
   /** Not instantiable. */
@@ -51,38 +50,16 @@ public class BidiUtils {
     public static final String RLM_STRING = Character.toString(RLM);
   }
 
-  /** Returns the directionality of a locale. */
-  public static Dir languageDir(ULocale locale) {
-    return isRtlLanguage(locale) ? Dir.RTL : Dir.LTR;
-  }
-
-  /** Returns the directionality of a locale, given as a string in the ICU syntax. */
-  public static Dir languageDir(String locale) {
-    return isRtlLanguage(locale) ? Dir.RTL : Dir.LTR;
-  }
-
-  /** Returns whether a locale is RTL. */
-  @SuppressWarnings("deprecation")
-  public static boolean isRtlLanguage(ULocale locale) {
+  /** Returns whether a locale, given as a string in the ICU syntax, is RTL. */
+  public static boolean isRtlLanguage(String locale) {
     try {
       return UScript.isRightToLeft(
           UCharacter.getPropertyValueEnum(
-              UProperty.SCRIPT, ULocale.addLikelySubtags(locale).getScript()));
+              UProperty.SCRIPT, ULocale.addLikelySubtags(new ULocale(locale)).getScript()));
     } catch (IllegalArgumentException e) {
       return false;
     }
   }
-
-  /** Returns whether a locale, given as a string in the ICU syntax, is RTL. */
-  public static boolean isRtlLanguage(String locale) {
-    return isRtlLanguage(new ULocale(locale));
-  }
-
-  /** "right" string constant. */
-  public static final String RIGHT = "right";
-
-  /** "left" string constant. */
-  public static final String LEFT = "left";
 
   /** An object that estimates the directionality of a given string by various methods. */
   @VisibleForTesting
@@ -254,198 +231,6 @@ public class BidiUtils {
     }
 
     /**
-     * Checks if the (whole) string has any LTR characters in it.
-     *
-     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
-     * @return Whether any LTR characters were encountered.
-     */
-    boolean hasAnyLtr(boolean countEmbedding) {
-      charIndex = 0;
-      int embeddingLevel = 0;
-      while (charIndex < length) {
-        switch (dirTypeForward()) {
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT:
-            if (embeddingLevel == 0) {
-              return true;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
-            if (countEmbedding && embeddingLevel++ == 0) {
-              return true;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-            if (countEmbedding) {
-              ++embeddingLevel;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
-            if (countEmbedding) {
-              --embeddingLevel;
-            }
-            break;
-        }
-      }
-      return false;
-    }
-
-    /**
-     * Checks if the (whole) string has any RTL characters in it.
-     *
-     * @param countEmbedding Whether LRE/RLE/LRO/RLO/PDF characters should be taken into account.
-     * @return Whether any RTL characters were encountered.
-     */
-    boolean hasAnyRtl(boolean countEmbedding) {
-      charIndex = 0;
-      int embeddingLevel = 0;
-      while (charIndex < length) {
-        switch (dirTypeForward()) {
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
-            if (embeddingLevel == 0) {
-              return true;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-            if (countEmbedding && embeddingLevel++ == 0) {
-              return true;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
-            if (countEmbedding) {
-              ++embeddingLevel;
-            }
-            break;
-          case UCharacter.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
-            if (countEmbedding) {
-              --embeddingLevel;
-            }
-            break;
-        }
-      }
-      return false;
-    }
-
-    /**
-     * Returns the directionality of the first character with strong directionality (going forward
-     * from the start of the string), or Dir.NEUTRAL if none was encountered. Ignores
-     * LRE/RLE/LRO/RLO/PDF characters.
-     */
-    Dir getUnicodeDir() {
-      charIndex = 0;
-      while (charIndex < length) {
-        switch (dirTypeForward()) {
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT:
-            return Dir.LTR;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
-            return Dir.RTL;
-        }
-      }
-      return Dir.NEUTRAL;
-    }
-
-    /**
-     * Returns the directionality of the first character with strong directionality in the string,
-     * or Dir.NEUTRAL if none was encountered. Treats a non-BN character between an LRE/RLE/LRO/RLO
-     * and its matching PDF as a strong character, LTR after LRE/LRO, and RTL after RLE/RLO. The
-     * results are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF characters.
-     */
-    Dir getEntryDir() {
-      // The reason for this method name, as opposed to getFirstStrongDir(), is that "first strong"
-      // is a commonly used description of Unicode's estimation algorithm (getUnicodeDir() above),
-      // but the two must treat formatting characters quite differently. Thus, we are staying away
-      // from both "first" and "last" in these method names to avoid confusion.
-      charIndex = 0;
-      int embeddingLevel = 0;
-      Dir embeddingLevelDir = null;
-      int firstNonEmptyEmbeddingLevel = 0;
-      while (charIndex < length && firstNonEmptyEmbeddingLevel == 0) {
-        switch (dirTypeForward()) {
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
-            ++embeddingLevel;
-            embeddingLevelDir = Dir.LTR;
-            break;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-            ++embeddingLevel;
-            embeddingLevelDir = Dir.RTL;
-            break;
-          case UCharacter.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
-            --embeddingLevel;
-            // To restore embeddingLevelDir to its previous value, we would need a stack, which we
-            // want to avoid. Thus, at this point we do not know the current embedding's
-            // directionality.
-            embeddingLevelDir = null;
-            break;
-          case UCharacter.BOUNDARY_NEUTRAL:
-            break;
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT:
-            if (embeddingLevel == 0) {
-              return Dir.LTR;
-            }
-            firstNonEmptyEmbeddingLevel = embeddingLevel;
-            break;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
-            if (embeddingLevel == 0) {
-              return Dir.RTL;
-            }
-            firstNonEmptyEmbeddingLevel = embeddingLevel;
-            break;
-          default:
-            firstNonEmptyEmbeddingLevel = embeddingLevel;
-            break;
-        }
-      }
-
-      // We have either found a non-empty embedding or scanned the entire string finding neither a
-      // non-empty embedding nor a strong character outside of an embedding.
-      if (firstNonEmptyEmbeddingLevel == 0) {
-        // We have not found a non-empty embedding. Thus, the string contains neither a non-empty
-        // embedding nor a strong character outside of an embedding.
-        return Dir.NEUTRAL;
-      }
-
-      // We have found a non-empty embedding.
-      if (embeddingLevelDir != null) {
-        // We know the directionality of the non-empty embedding.
-        return embeddingLevelDir;
-      }
-
-      // We do not remember the directionality of the non-empty embedding we found. So, we go
-      // backwards to find the start of the non-empty embedding and get its directionality.
-      while (charIndex > 0) {
-        switch (dirTypeBackward()) {
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
-            if (firstNonEmptyEmbeddingLevel == embeddingLevel) {
-              return Dir.LTR;
-            }
-            --embeddingLevel;
-            break;
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
-          case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-            if (firstNonEmptyEmbeddingLevel == embeddingLevel) {
-              return Dir.RTL;
-            }
-            --embeddingLevel;
-            break;
-          case UCharacter.DIRECTIONALITY_POP_DIRECTIONAL_FORMAT:
-            ++embeddingLevel;
-            break;
-        }
-      }
-      // We should never get here.
-      return Dir.NEUTRAL;
-    }
-
-    /**
      * Returns the directionality of the last character with strong directionality in the string, or
      * Dir.NEUTRAL if none was encountered. For efficiency, actually scans backwards from the end of
      * the string. Treats a non-BN character between an LRE/RLE/LRO/RLO and its matching PDF as a
@@ -511,7 +296,7 @@ public class BidiUtils {
 
     /**
      * Estimates the directionality of the (whole) string based on relative word counts. See {@link
-     * #estimateDirection(String str)} for full description.
+     * #estimateDirection(String, boolean)} for full description.
      *
      * @return the string's directionality
      */
@@ -980,97 +765,6 @@ public class BidiUtils {
   }
 
   /**
-   * Checks if the given string has any LTR characters in it. Note that LRE/RLE/LRO/RLO/PDF
-   * characters are ignored.
-   *
-   * @param str the string to be tested
-   * @param isHtml whether str is HTML / HTML-escaped
-   * @return whether the string contains any LTR characters
-   */
-  public static boolean hasAnyLtr(String str, boolean isHtml) {
-    return new DirectionalityEstimator(str, isHtml).hasAnyLtr(false /* countEmbedding */);
-  }
-
-  /**
-   * Like {@link #hasAnyLtr(String, boolean)}, but assumes {@code str} is not HTML / HTML-escaped.
-   *
-   * @param str the string to be tested
-   * @return whether the string contains any LTR characters
-   */
-  public static boolean hasAnyLtr(String str) {
-    return hasAnyLtr(str, false /* isHtml */);
-  }
-
-  /**
-   * Checks if the given string has any RTL characters in it. Note that LRE/RLE/LRO/RLO/PDF
-   * characters are ignored.
-   *
-   * @param str the string to be tested
-   * @param isHtml whether str is HTML / HTML-escaped
-   * @return whether the string contains any RTL characters
-   */
-  public static boolean hasAnyRtl(String str, boolean isHtml) {
-    return new DirectionalityEstimator(str, isHtml).hasAnyRtl(false /* countEmbedding */);
-  }
-
-  /**
-   * Like {@link #hasAnyRtl(String, boolean)}, but assumes {@code str} is not HTML / HTML-escaped.
-   *
-   * @param str the string to be tested
-   * @return whether the string contains any RTL characters
-   */
-  public static boolean hasAnyRtl(String str) {
-    return hasAnyRtl(str, false /* isHtml */);
-  }
-
-  /**
-   * Returns the directionality of a string as defined by the UBA's rules P2 and P3, i.e. the
-   * directionality of its first strong (L, R, or AL) character (with LRE/RLE/LRO/RLO/PDF having no
-   * effect). However returns Dir.NEUTRAL if no strong characters were encountered (which P3 says
-   * should be treated as LTR).
-   *
-   * @param str the string to check
-   * @param isHtml whether str is HTML / HTML-escaped
-   */
-  public static Dir getUnicodeDir(String str, boolean isHtml) {
-    return new DirectionalityEstimator(str, isHtml).getUnicodeDir();
-  }
-
-  /**
-   * Like {@link #getUnicodeDir(String, boolean)}, but assumes {@code str} is not HTML or
-   * HTML-escaped.
-   */
-  public static Dir getUnicodeDir(String str) {
-    return getUnicodeDir(str, false /* isHtml */);
-  }
-
-  /**
-   * Returns the directionality of the first character with strong directionality in the string, or
-   * Dir.NEUTRAL if none was encountered. Treats a non-BN character between an LRE/RLE/LRO/RLO and
-   * its matching PDF as a strong character, LTR after LRE/LRO, and RTL after RLE/RLO. The results
-   * are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF characters. The intended
-   * use is to check whether a logically separate item that ends with a character of the string's
-   * entry directionality and precedes the string inline (not counting any neutral characters in
-   * between) would "stick" to it in an opposite-directionality context, thus being displayed in an
-   * incorrect position. An LRM or RLM character (the one of the context's directionality) between
-   * the two will prevent such sticking.
-   *
-   * @param str the string to check
-   * @param isHtml whether str is HTML / HTML-escaped
-   */
-  public static Dir getEntryDir(String str, boolean isHtml) {
-    return new DirectionalityEstimator(str, isHtml).getEntryDir();
-  }
-
-  /**
-   * Like {@link #getEntryDir(String, boolean)}, but assumes {@code str} is not HTML or
-   * HTML-escaped.
-   */
-  public static Dir getEntryDir(String str) {
-    return getEntryDir(str, false /* isHtml */);
-  }
-
-  /**
    * Returns the directionality of the last character with strong directionality in the string, or
    * Dir.NEUTRAL if none was encountered. For efficiency, actually scans backwards from the end of
    * the string. Treats a non-BN character between an LRE/RLE/LRO/RLO and its matching PDF as a
@@ -1087,13 +781,6 @@ public class BidiUtils {
    */
   public static Dir getExitDir(String str, boolean isHtml) {
     return new DirectionalityEstimator(str, isHtml).getExitDir();
-  }
-
-  /**
-   * Like {@link #getExitDir(String, boolean)}, but assumes {@code str} is not HTML or HTML-escaped.
-   */
-  public static Dir getExitDir(String str) {
-    return getExitDir(str, false /* isHtml */);
   }
 
   /**
@@ -1165,19 +852,12 @@ public class BidiUtils {
    * misspelled) in "Arabic" digits with non-CS separators. But it is quite clear that we do not
    * want to force it to LTR.
    *
-   * @param str the string to check
-   * @return the string's directionality
-   */
-  public static Dir estimateDirection(String str) {
-    return estimateDirection(str, false /* isHtml */);
-  }
-
-  /**
-   * Like {@link #estimateDirection(String)}, but can treat {@code str} as HTML, ignoring HTML tags
-   * and escapes that would otherwise be mistaken for LTR text.
+   * <p>If {@code isHtml} is true, treats {@code str} as HTML, ignoring HTML tags and escapes that
+   * would otherwise be mistaken for LTR text.
    *
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
+   * @return the string's directionality
    */
   public static Dir estimateDirection(String str, boolean isHtml) {
     return new DirectionalityEstimator(str, isHtml).estimateDirectionByWordCount();

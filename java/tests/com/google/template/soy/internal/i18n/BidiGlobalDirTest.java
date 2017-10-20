@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.template.soy.base.SoyBackendKind;
+import com.google.template.soy.data.Dir;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -75,6 +76,26 @@ public class BidiGlobalDirTest {
       fail();
     } catch (RuntimeException e) {
       // Test passes.
+    }
+  }
+
+  @Test
+  public void testToDirRTL() {
+    assertEquals(Dir.RTL, BidiGlobalDir.RTL.toDir());
+  }
+
+  @Test
+  public void testToDirLTR() {
+    assertEquals(Dir.LTR, BidiGlobalDir.LTR.toDir());
+  }
+
+  @Test
+  public void testToDirNonStatic() {
+    BidiGlobalDir dir = BidiGlobalDir.forIsRtlCodeSnippet("snippet", null, SoyBackendKind.JS_SRC);
+    try {
+      dir.toDir();
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
     }
   }
 }

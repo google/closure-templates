@@ -18,11 +18,13 @@ package com.google.template.soy.internal.i18n;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.data.Dir;
 import java.util.regex.Pattern;
 
 /**
  * Bidi utilities for Soy code.
+ *
+ * <p>This is separate from {@link BidiUtils} for ease of unforking the latter, if we ever decide to
+ * do so.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -116,15 +118,4 @@ public class SoyBidiUtils {
    */
   private static final Pattern FAKE_RTL_LOCALES_PATTERN =
       Pattern.compile("qbi|.*[-_]psrtl", Pattern.CASE_INSENSITIVE);
-
-  /**
-   * Get a bidi formatter.
-   *
-   * @param dir The directionality as an integer (ltr=1, rtl=-1).
-   * @return The BidiFormatter.
-   */
-  public static BidiFormatter getBidiFormatter(int dir) {
-    Preconditions.checkArgument(dir != 0);
-    return BidiFormatter.getInstance(dir < 0 ? Dir.RTL : Dir.LTR);
-  }
 }

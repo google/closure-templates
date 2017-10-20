@@ -17,8 +17,7 @@
 package com.google.template.soy.internal.i18n;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Strings;
 import com.google.template.soy.data.Dir;
@@ -53,28 +52,6 @@ public class BidiUtilsTest {
   private static final Dir NEUTRAL = Dir.NEUTRAL;
 
   @Test
-  public void testLanguageDir() {
-    assertEquals(RTL, BidiUtils.languageDir("he"));
-    assertEquals(RTL, BidiUtils.languageDir("iw"));
-    assertEquals(RTL, BidiUtils.languageDir("ar"));
-    assertEquals(RTL, BidiUtils.languageDir("fa"));
-    assertEquals(RTL, BidiUtils.languageDir("FA"));
-    assertEquals(RTL, BidiUtils.languageDir("ar-EG"));
-    assertEquals(RTL, BidiUtils.languageDir("Ar-eg"));
-    assertEquals(RTL, BidiUtils.languageDir("az-Arab"));
-    assertEquals(RTL, BidiUtils.languageDir("az-Arab-IR"));
-    assertEquals(RTL, BidiUtils.languageDir("az-ARAB-IR"));
-    assertEquals(RTL, BidiUtils.languageDir("az_arab_IR"));
-    assertEquals(LTR, BidiUtils.languageDir("es"));
-    assertEquals(LTR, BidiUtils.languageDir("zh-CN"));
-    assertEquals(LTR, BidiUtils.languageDir("fil"));
-    assertEquals(LTR, BidiUtils.languageDir("az"));
-    assertEquals(LTR, BidiUtils.languageDir("iw-Latn"));
-    assertEquals(LTR, BidiUtils.languageDir("iw-LATN"));
-    assertEquals(LTR, BidiUtils.languageDir("iw-latn"));
-  }
-
-  @Test
   public void testDirectionalityEstimator_dirTypeOps() {
     BidiUtils.DirectionalityEstimator de =
         new BidiUtils.DirectionalityEstimator("my my \uD835\uDFCE\uD840\uDC00!", false);
@@ -89,8 +66,8 @@ public class BidiUtilsTest {
     assertEquals(UCharacter.DIRECTIONALITY_OTHER_NEUTRALS, de.dirTypeForward());
     try {
       de.dirTypeForward(); // Should throw.
-      assertTrue(false);
-    } catch (IndexOutOfBoundsException e) {
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
     }
 
     assertEquals(UCharacter.DIRECTIONALITY_OTHER_NEUTRALS, de.dirTypeBackward());
@@ -104,8 +81,8 @@ public class BidiUtilsTest {
     assertEquals(UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT, de.dirTypeBackward());
     try {
       de.dirTypeBackward(); // Should throw.
-      assertTrue(false);
-    } catch (IndexOutOfBoundsException e) {
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
     }
   }
 
@@ -125,8 +102,8 @@ public class BidiUtilsTest {
     assertEquals(UCharacter.DIRECTIONALITY_OTHER_NEUTRALS, de.dirTypeForward());
     try {
       de.dirTypeForward(); // Should throw.
-      assertTrue(false);
-    } catch (IndexOutOfBoundsException e) {
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
     }
 
     assertEquals(UCharacter.DIRECTIONALITY_OTHER_NEUTRALS, de.dirTypeBackward());
@@ -140,331 +117,95 @@ public class BidiUtilsTest {
     assertEquals(UCharacter.DIRECTIONALITY_BOUNDARY_NEUTRAL, de.dirTypeBackward());
     try {
       de.dirTypeBackward(); // Should throw.
-      assertTrue(false);
-    } catch (IndexOutOfBoundsException e) {
+      fail();
+    } catch (IndexOutOfBoundsException expected) {
     }
   }
 
   @Test
-  public void testHasAnyLtr() {
-    assertFalse(BidiUtils.hasAnyLtr(""));
-    assertFalse(BidiUtils.hasAnyLtr("123\t... \n"));
-    assertFalse(BidiUtils.hasAnyLtr(HE + HE + HE));
-    assertTrue(BidiUtils.hasAnyLtr(HE + "z" + HE + HE));
-
-    // LRE/RLE/LRO/RLO/PDF are ignored.
-    assertFalse(BidiUtils.hasAnyLtr(LRE + PDF));
-    assertFalse(BidiUtils.hasAnyLtr(LRE + HE + PDF));
-    assertFalse(BidiUtils.hasAnyLtr(LRE + RLE + HE + PDF + PDF));
-    assertFalse(BidiUtils.hasAnyLtr(LRO + PDF));
-    assertFalse(BidiUtils.hasAnyLtr(LRO + HE + PDF));
-    assertFalse(BidiUtils.hasAnyLtr(LRO + RLE + HE + PDF + PDF));
-    assertTrue(BidiUtils.hasAnyLtr(RLE + "x" + PDF));
-    assertTrue(BidiUtils.hasAnyLtr(RLE + LRE + "x" + PDF + PDF));
-    assertTrue(BidiUtils.hasAnyLtr(RLO + "x" + PDF));
-    assertTrue(BidiUtils.hasAnyLtr(RLO + LRE + "x" + PDF + PDF));
-
-    assertTrue(BidiUtils.hasAnyLtr(RLE + HE + PDF + "x"));
-    assertTrue(BidiUtils.hasAnyLtr(RLE + RLE + HE + PDF + PDF + "x"));
-    assertTrue(BidiUtils.hasAnyLtr(RLO + HE + PDF + "x"));
-    assertTrue(BidiUtils.hasAnyLtr(RLO + RLO + HE + PDF + PDF + "x"));
-
-    assertTrue(BidiUtils.hasAnyLtr("<nasty title='a'>" + HE, false));
-    assertFalse(BidiUtils.hasAnyLtr("<nasty title='a'>" + HE, true));
-  }
-
-  @Test
-  public void testHasAnyRtl() {
-    assertFalse(BidiUtils.hasAnyRtl(""));
-    assertFalse(BidiUtils.hasAnyRtl("123\t... \n"));
-    assertFalse(BidiUtils.hasAnyRtl("abc"));
-    assertTrue(BidiUtils.hasAnyRtl("ab" + HE + "c"));
-
-    // LRE/RLE/LRO/RLO/PDF are ignored.
-    assertFalse(BidiUtils.hasAnyRtl(RLE + PDF));
-    assertFalse(BidiUtils.hasAnyRtl(RLE + "x" + PDF));
-    assertFalse(BidiUtils.hasAnyRtl(RLE + LRE + "x" + PDF + PDF));
-    assertFalse(BidiUtils.hasAnyRtl(RLO + PDF));
-    assertFalse(BidiUtils.hasAnyRtl(RLO + "x" + PDF));
-    assertFalse(BidiUtils.hasAnyRtl(RLO + LRE + "x" + PDF + PDF));
-    assertTrue(BidiUtils.hasAnyRtl(LRE + HE + PDF));
-    assertTrue(BidiUtils.hasAnyRtl(LRE + RLE + HE + PDF + PDF));
-    assertTrue(BidiUtils.hasAnyRtl(LRO + HE + PDF));
-    assertTrue(BidiUtils.hasAnyRtl(LRO + RLE + HE + PDF + PDF));
-
-    assertTrue(BidiUtils.hasAnyRtl(LRE + "x" + PDF + HE));
-    assertTrue(BidiUtils.hasAnyRtl(LRE + LRE + "x" + PDF + PDF + HE));
-    assertTrue(BidiUtils.hasAnyRtl(LRO + "x" + PDF + HE));
-    assertTrue(BidiUtils.hasAnyRtl(LRO + LRO + "x" + PDF + PDF + HE));
-
-    assertTrue(BidiUtils.hasAnyRtl("<nasty title='" + HE + "'>a", false));
-    assertFalse(BidiUtils.hasAnyRtl("<nasty title='" + HE + "'>a", true));
-  }
-
-  @Test
-  public void testGetUnicodeDir_NeutralText() {
-    assertEquals(NEUTRAL, BidiUtils.getUnicodeDir(""));
-    assertEquals(NEUTRAL, BidiUtils.getUnicodeDir("\t   \r\n"));
-    assertEquals(NEUTRAL, BidiUtils.getUnicodeDir("123"));
-    assertEquals(NEUTRAL, BidiUtils.getUnicodeDir(" 123-()"));
-  }
-
-  @Test
-  public void testGetUnicodeDir_LtrFirst() {
-    assertEquals(LTR, BidiUtils.getUnicodeDir("\t   a"));
-    assertEquals(LTR, BidiUtils.getUnicodeDir("\t   a " + HE));
-  }
-
-  @Test
-  public void testGetUnicodeDir_RtlFirst() {
-    assertEquals(RTL, BidiUtils.getUnicodeDir("\t   " + HE));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("\t   " + HE + " a"));
-  }
-
-  @Test
-  public void testGetUnicodeDir_IgnoreEmbeddings() {
-    assertEquals(LTR, BidiUtils.getUnicodeDir(RLE + PDF + "x"));
-    assertEquals(RTL, BidiUtils.getUnicodeDir(LRE + HE + PDF + "x"));
-    assertEquals(LTR, BidiUtils.getUnicodeDir(RLO + PDF + "x"));
-    assertEquals(RTL, BidiUtils.getUnicodeDir(LRO + HE + PDF + "x"));
-
-    assertEquals(RTL, BidiUtils.getUnicodeDir(LRE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getUnicodeDir(RLE + "x" + PDF + HE));
-    assertEquals(RTL, BidiUtils.getUnicodeDir(LRO + PDF + HE));
-    assertEquals(LTR, BidiUtils.getUnicodeDir(RLO + "x" + PDF + HE));
-  }
-
-  @Test
-  public void testGetUnicodeDirOfHtml_MarkupSkipped() {
-    assertEquals(LTR, BidiUtils.getUnicodeDir("<a tag>" + HE));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("<a tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("<a x=\"y>\" tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("<a x=\"<y>\" tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("<a x='<y>' tag>" + HE, true));
-    assertEquals(LTR, BidiUtils.getUnicodeDir("<a x=\"<y>\" tag>a" + HE, true));
-    assertEquals(RTL, BidiUtils.getUnicodeDir("<a x=\"<y>\" tag><b>" + HE, true));
-
-    assertEquals(LTR, BidiUtils.getUnicodeDir("<notatag", true));
-  }
-
-  @Test
-  public void testGetUnicodeDirOfHtml_EntitySkipped() {
-    assertEquals(NEUTRAL, BidiUtils.getUnicodeDir("&nbsp;", true));
-
-    // TODO: Uncomment these lines and rename test to ...Parsed() when we start to map entities to
-    // the characters for which they stand.
-    // assertEquals(RTL, BidiUtils.getUnicodeDir("&nbsp;&rlm;", true));
-    // assertEquals(LTR, BidiUtils.getUnicodeDir("&nbsp;a&rlm;", true));
-    // assertEquals(LTR, BidiUtils.getUnicodeDir("&rlm;"));
-    // assertEquals(RTL, BidiUtils.getUnicodeDir("&rlm;", true));
-    // assertEquals(LTR, BidiUtils.getUnicodeDir("&nosuchentity;", true));
-  }
-
-  @Test
-  public void testGetEntryDir_NeutralText() {
-    assertEquals(NEUTRAL, BidiUtils.getEntryDir(""));
-    assertEquals(NEUTRAL, BidiUtils.getEntryDir("\t   \r\n"));
-    assertEquals(NEUTRAL, BidiUtils.getEntryDir("123"));
-    assertEquals(NEUTRAL, BidiUtils.getEntryDir(" 123-()"));
-  }
-
-  @Test
-  public void testGetEntryDir_LtrFirst() {
-    assertEquals(LTR, BidiUtils.getEntryDir("a"));
-    assertEquals(LTR, BidiUtils.getEntryDir("\t   a"));
-    assertEquals(LTR, BidiUtils.getEntryDir("\t   abc"));
-    assertEquals(LTR, BidiUtils.getEntryDir("\t   a " + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir("\t   a" + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir("\t   a " + HE + " " + HE + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir("http://www.google.com " + HE));
-  }
-
-  @Test
-  public void testGetEntryDir_RtlFirst() {
-    assertEquals(RTL, BidiUtils.getEntryDir(HE));
-    assertEquals(RTL, BidiUtils.getEntryDir("\t   " + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir("\t   " + HE + HE + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir("\t   " + HE + " a"));
-    assertEquals(RTL, BidiUtils.getEntryDir("\t   " + HE + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir("\t   " + HE + " a abc"));
-  }
-
-  @Test
-  public void testGetEntryDir_EmptyEmbeddingIgnored() {
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + PDF + "a"));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + BN + PDF + "a"));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLO + PDF + "a"));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLO + BN + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + PDF + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + BN + PDF + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRO + PDF + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRO + BN + PDF + HE));
-  }
-
-  @Test
-  public void testGetEntryDir_NonEmptyLtrEmbeddingFirst() {
-    assertEquals(LTR, BidiUtils.getEntryDir(LRE + "." + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRE + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + PDF + LRE + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRE + RLE + PDF + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRE + HE + RLE + HE + PDF + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + LRE + HE + PDF + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + LRE + RLE + PDF + HE + PDF + HE + PDF + HE));
-    assertEquals(
-        LTR,
-        BidiUtils.getEntryDir(
-            RLE + LRE + RLE + BN + RLO + BN + PDF + BN + PDF + RLE + PDF + RLE + PDF + HE + PDF + HE
-                + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRO + "." + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRO + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + PDF + LRO + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRO + RLE + PDF + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(LRO + HE + RLE + HE + PDF + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + LRO + HE + PDF + HE + PDF + HE));
-    assertEquals(LTR, BidiUtils.getEntryDir(RLE + LRO + RLE + PDF + HE + PDF + HE + PDF + HE));
-    assertEquals(
-        LTR,
-        BidiUtils.getEntryDir(
-            RLE + LRO + RLE + BN + RLO + BN + PDF + BN + PDF + RLE + PDF + RLE + PDF + HE + PDF + HE
-                + PDF + HE));
-  }
-
-  @Test
-  public void testGetEntryDir_NonEmptyRtlEmbeddingFirst() {
-    assertEquals(RTL, BidiUtils.getEntryDir(RLE + "." + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLE + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + PDF + RLE + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLE + LRE + PDF + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLE + "a" + LRE + "a" + PDF + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + RLE + "a" + PDF + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + RLE + LRE + PDF + "a" + PDF + "a" + PDF + "a"));
-    assertEquals(
-        RTL,
-        BidiUtils.getEntryDir(
-            LRE + RLE + LRE + BN + LRO + BN + PDF + BN + PDF + LRE + PDF + LRE + PDF + "a" + PDF
-                + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLO + "." + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLO + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + PDF + RLO + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLO + LRE + PDF + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(RLO + "a" + LRE + "a" + PDF + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + RLO + "a" + PDF + "a" + PDF + "a"));
-    assertEquals(RTL, BidiUtils.getEntryDir(LRE + RLO + LRE + PDF + "a" + PDF + "a" + PDF + "a"));
-    assertEquals(
-        RTL,
-        BidiUtils.getEntryDir(
-            LRE + RLO + LRE + BN + LRO + BN + PDF + BN + PDF + LRE + PDF + LRE + PDF + "a" + PDF
-                + "a" + PDF + "a"));
-  }
-
-  @Test
-  public void testGetEntryDirOfHtml_MarkupSkipped() {
-    assertEquals(LTR, BidiUtils.getEntryDir("<a tag>" + HE));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a x=y tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a x=\"y>\" tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a x=\"<y>\" tag>" + HE, true));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a x='<y>' tag>" + HE, true));
-    assertEquals(LTR, BidiUtils.getEntryDir("<a x=\"<y>\" tag>a" + HE, true));
-    assertEquals(RTL, BidiUtils.getEntryDir("<a x=\"<y>\" tag><b>" + HE, true));
-
-    assertEquals(LTR, BidiUtils.getEntryDir("<notatag", true));
-  }
-
-  @Test
-  public void testGetEntryDirOfHtml_EntitySkipped() {
-    assertEquals(NEUTRAL, BidiUtils.getEntryDir("&nbsp;", true));
-
-    // TODO: Uncomment these lines and rename test to ...Parsed() when we start to map entities to
-    // the characters for which they stand.
-    // assertEquals(LTR, BidiUtils.getEntryDir("&rlm;"));
-    // assertEquals(RTL, BidiUtils.getEntryDir("&rlm;", true));
-    // assertEquals(RTL, BidiUtils.getEntryDir("!!!!&rlm;hello", true));
-    // assertEquals(RTL, BidiUtils.getEntryDir("&nbsp;&rlm;", true));
-    // assertEquals(LTR, BidiUtils.getEntryDir("&nbsp;a&rlm;", true));
-    // assertEquals(LTR, BidiUtils.getEntryDir("&nosuchentity;", true));
-  }
-
-  @Test
   public void testGetExitDir_NeutralText() {
-    assertEquals(NEUTRAL, BidiUtils.getExitDir(""));
-    assertEquals(NEUTRAL, BidiUtils.getExitDir("\t   \r\n"));
-    assertEquals(NEUTRAL, BidiUtils.getExitDir("123"));
-    assertEquals(NEUTRAL, BidiUtils.getExitDir(" 123-()"));
+    assertEquals(NEUTRAL, BidiUtils.getExitDir("", false));
+    assertEquals(NEUTRAL, BidiUtils.getExitDir("\t   \r\n", false));
+    assertEquals(NEUTRAL, BidiUtils.getExitDir("123", false));
+    assertEquals(NEUTRAL, BidiUtils.getExitDir(" 123-()", false));
   }
 
   @Test
   public void testGetExitDir_LtrLast() {
-    assertEquals(LTR, BidiUtils.getExitDir("a"));
-    assertEquals(LTR, BidiUtils.getExitDir("a   \t"));
-    assertEquals(LTR, BidiUtils.getExitDir("abc   \t"));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + " a   \t"));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + "a   \t"));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + HE + " " + HE + " a   \t"));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + " http://www.google.com"));
+    assertEquals(LTR, BidiUtils.getExitDir("a", false));
+    assertEquals(LTR, BidiUtils.getExitDir("a   \t", false));
+    assertEquals(LTR, BidiUtils.getExitDir("abc   \t", false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + " a   \t", false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + "a   \t", false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + HE + " " + HE + " a   \t", false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + " http://www.google.com", false));
   }
 
   @Test
   public void testGetExitDir_RtlLast() {
-    assertEquals(RTL, BidiUtils.getExitDir(HE));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + "   \t"));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + HE + HE + "   \t"));
-    assertEquals(RTL, BidiUtils.getExitDir("a " + HE + "   \t"));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + HE + "   \t"));
-    assertEquals(RTL, BidiUtils.getExitDir("abc a " + HE + "   \t"));
+    assertEquals(RTL, BidiUtils.getExitDir(HE, false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + "   \t", false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + HE + HE + "   \t", false));
+    assertEquals(RTL, BidiUtils.getExitDir("a " + HE + "   \t", false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + HE + "   \t", false));
+    assertEquals(RTL, BidiUtils.getExitDir("abc a " + HE + "   \t", false));
   }
 
   @Test
   public void testGetExitDir_EmptyEmbeddingIgnored() {
-    assertEquals(LTR, BidiUtils.getExitDir("a" + RLE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir("a" + RLE + BN + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir("a" + RLO + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir("a" + RLO + BN + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + LRE + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + LRE + BN + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + LRO + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir(HE + LRO + BN + PDF));
+    assertEquals(LTR, BidiUtils.getExitDir("a" + RLE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir("a" + RLE + BN + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir("a" + RLO + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir("a" + RLO + BN + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + LRE + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + LRE + BN + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + LRO + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir(HE + LRO + BN + PDF, false));
   }
 
   @Test
   public void testGetExitDir_NonEmptyLtrEmbeddingLast() {
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + "." + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + PDF + RLE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + RLE + PDF + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + RLE + HE + PDF + HE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRE + HE + PDF + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRE + HE + RLE + PDF + PDF + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + "." + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + PDF + RLE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + RLE + PDF + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + RLE + HE + PDF + HE + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRO + HE + PDF + PDF));
-    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRO + HE + RLE + PDF + PDF + PDF));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + "." + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + PDF + RLE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + HE + RLE + PDF + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRE + RLE + HE + PDF + HE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRE + HE + PDF + PDF, false));
+    assertEquals(
+        LTR, BidiUtils.getExitDir(HE + RLE + HE + LRE + HE + RLE + PDF + PDF + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + "." + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + PDF + RLE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + HE + RLE + PDF + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + LRO + RLE + HE + PDF + HE + PDF, false));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + RLE + HE + LRO + HE + PDF + PDF, false));
+    assertEquals(
+        LTR, BidiUtils.getExitDir(HE + RLE + HE + LRO + HE + RLE + PDF + PDF + PDF, false));
   }
 
   @Test
   public void testGetExitDir_NonEmptyRtlEmbeddingLast() {
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "." + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + PDF + LRE + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + LRE + PDF + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + LRE + "a" + PDF + "a" + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLE + "a" + PDF + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLE + "a" + LRE + PDF + PDF + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "." + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + PDF + LRE + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + LRE + PDF + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + LRE + "a" + PDF + "a" + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLO + "a" + PDF + PDF));
-    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLO + "a" + LRE + PDF + PDF + PDF));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "." + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + PDF + LRE + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + "a" + LRE + PDF + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLE + LRE + "a" + PDF + "a" + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLE + "a" + PDF + PDF, false));
+    assertEquals(
+        RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLE + "a" + LRE + PDF + PDF + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "." + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + PDF + LRE + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + "a" + LRE + PDF + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + RLO + LRE + "a" + PDF + "a" + PDF, false));
+    assertEquals(RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLO + "a" + PDF + PDF, false));
+    assertEquals(
+        RTL, BidiUtils.getExitDir("a" + LRE + "a" + RLO + "a" + LRE + PDF + PDF + PDF, false));
   }
 
   @Test
   public void testGetExitDirOfHtml_MarkupSkipped() {
-    assertEquals(LTR, BidiUtils.getExitDir(HE + "<a tag>"));
+    assertEquals(LTR, BidiUtils.getExitDir(HE + "<a tag>", false));
     assertEquals(RTL, BidiUtils.getExitDir(HE + "<a tag>", true));
     assertEquals(RTL, BidiUtils.getExitDir(HE + "<a x=y tag>", true));
     assertEquals(RTL, BidiUtils.getExitDir(HE + "<a x=\"y>\" tag>", true));
