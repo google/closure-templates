@@ -152,18 +152,88 @@ public final class BasicDirectivesRuntime {
   }
 
   public static SoyString insertWordBreaks(SoyValue value, int maxCharsBetweenWordBreaks) {
-    String str = coerceToString(value);
+    String result =
+        new InsertWordBreaks(maxCharsBetweenWordBreaks).processString(coerceToString(value));
 
-    StringBuilder result = new StringBuilder();
+    // Make sure to transmit the known direction, if any, to any downstream directive that may need
+    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
+    // and the transformation we make is only valid in HTML, we only transmit the direction when we
+    // get HTML SanitizedContent.
+    // TODO(user): Consider always returning HTML SanitizedContent.
+    if (value instanceof SanitizedContent) {
+      SanitizedContent sanitizedContent = (SanitizedContent) value;
+      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
+        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+            result, ContentKind.HTML, sanitizedContent.getContentDirection());
+      }
+    }
 
-    // These variables keep track of important state while looping through the string below.
-    boolean isInTag = false; // whether we're inside an HTML tag
-    boolean isMaybeInEntity = false; // whether we might be inside an HTML entity
-    int numCharsWithoutBreak = 0; // number of characters since the last word break
+    return StringData.forValue(result);
+  }
 
-    for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
-      codePoint = str.codePointAt(i);
+  public static LoggingAdvisingAppendable insertWordBreaksStreaming(
+      LoggingAdvisingAppendable appendable, final int maxCharsBetweenWordBreaks) {
+    return new ForwardingLoggingAdvisingAppendable(appendable) {
+      private final InsertWordBreaks insertWordBreaks =
+          new InsertWordBreaks(maxCharsBetweenWordBreaks);
 
+      @Override
+      public LoggingAdvisingAppendable append(char c) throws IOException {
+        delegate.append(insertWordBreaks.processChar(c));
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+        delegate.append(insertWordBreaks.processString(csq.toString()));
+        return this;
+      }
+
+      @Override
+      public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+          throws IOException {
+        delegate.append(insertWordBreaks.processString(csq.subSequence(start, end).toString()));
+        return this;
+      }
+    };
+  }
+
+  private static final class InsertWordBreaks {
+    private final int maxCharsBetweenWordBreaks;
+    private final StringBuilder result;
+
+    /** Whether we're inside an HTML tag. */
+    private boolean isInTag;
+    /** Whether we might be inside an HTML entity. */
+    private boolean isMaybeInEntity;
+    /** The number of characters since the last word break. */
+    private int numCharsWithoutBreak;
+
+    InsertWordBreaks(int maxCharsBetweenWordBreaks) {
+      this.maxCharsBetweenWordBreaks = maxCharsBetweenWordBreaks;
+      result = new StringBuilder();
+    }
+
+    String processString(String str) {
+      for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
+        codePoint = str.codePointAt(i);
+        processOneCodePoint(codePoint);
+      }
+      return getAndReset();
+    }
+
+    String processChar(char c) {
+      processOneCodePoint(c);
+      return getAndReset();
+    }
+
+    private String getAndReset() {
+      String resultStr = result.toString();
+      result.setLength(0);
+      return resultStr;
+    }
+
+    private void processOneCodePoint(int codePoint) {
       // If hit maxCharsBetweenWordBreaks, and next char is not a space, then add <wbr>.
       if (numCharsWithoutBreak >= maxCharsBetweenWordBreaks && codePoint != ' ') {
         result.append("<wbr>");
@@ -223,21 +293,6 @@ public final class BasicDirectivesRuntime {
       // In addition to adding <wbr>s, we still have to add the original characters.
       result.appendCodePoint(codePoint);
     }
-
-    // Make sure to transmit the known direction, if any, to any downstream directive that may need
-    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
-    // and the transformation we make is only valid in HTML, we only transmit the direction when we
-    // get HTML SanitizedContent.
-    // TODO(user): Consider always returning HTML SanitizedContent.
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
-        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            result.toString(), ContentKind.HTML, sanitizedContent.getContentDirection());
-      }
-    }
-
-    return StringData.forValue(result.toString());
   }
 
   private static String coerceToString(@Nullable SoyValue v) {
