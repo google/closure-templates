@@ -29,8 +29,9 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link AbstractLoggingAdvisingAppendable} */
 @RunWith(JUnit4.class)
 public final class AbstractLoggingAdvisingAppendableTest {
-  private static final LogStatement LOGONLY = LogStatement.create(1, null, /* logonly=*/ true);
-  private static final LogStatement NOT_LOGONLY = LogStatement.create(1, null, /* logonly=*/ false);
+  private static final LogStatement LOGONLY = LogStatement.create(1, null, /* logOnly= */ true);
+  private static final LogStatement NOT_LOGONLY =
+      LogStatement.create(1, null, /* logOnly= */ false);
 
   @Test
   public void testLogonly_logonly_above_regular() throws IOException {

@@ -60,7 +60,7 @@ final class PrerenderVisitor extends RenderVisitor {
         templateRegistry,
         SoyValueConverter.EMPTY_DICT,
         /* ijData= */ null,
-        /* activeDelPackageNames= */ null,
+        /* activeDelPackageSelector= */ null,
         /* msgBundle= */ null,
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,
