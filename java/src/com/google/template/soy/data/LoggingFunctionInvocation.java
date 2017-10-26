@@ -18,12 +18,7 @@ package com.google.template.soy.data;
 import com.google.auto.value.AutoValue;
 import java.util.List;
 
-/**
- * The result of executing the logging function.
- *
- * <p>TODO(b/63700178): This is mostly a placeholder since the loggingfunction support has not been
- * designed yet.
- */
+/** The result of executing the logging function. */
 @AutoValue
 public abstract class LoggingFunctionInvocation {
   public static LoggingFunctionInvocation create(
@@ -35,7 +30,8 @@ public abstract class LoggingFunctionInvocation {
    * Returns the name of the function being executed. As defined by {@code SoyFunction#getName()}.
    */
   public abstract String functionName();
-  /** Returns the placeholder value. As defined by TODO(b/63700178): define the LoggingFunction. */
+
+  /** Returns the placeholder value. As defined by {@code LoggingFunction#getPlaceholder()}. */
   public abstract String placeholderValue();
 
   /**
