@@ -20,14 +20,24 @@ import com.ibm.icu.text.CompactDecimalFormat;
 import com.ibm.icu.text.CompactDecimalFormat.CompactStyle;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.ULocale;
+import javax.annotation.Nullable;
 
 /** Java implementations of the i18n directives. */
 public final class I18NDirectivesRuntime {
 
   private I18NDirectivesRuntime() {}
 
+  /**
+   * Formats a number using ICU4J. Note: If min or max fraction digits is null, the param will be
+   * ignored.
+   */
   public static String formatNum(
-      ULocale uLocale, double number, String formatType, String numbersKeyword) {
+      ULocale uLocale,
+      double number,
+      String formatType,
+      String numbersKeyword,
+      @Nullable Integer minFractionDigits,
+      @Nullable Integer maxFractionDigits) {
     uLocale = uLocale.setKeywordValue("numbers", numbersKeyword);
     NumberFormat numberFormat;
     switch (formatType) {
@@ -66,6 +76,12 @@ public final class I18NDirectivesRuntime {
                 + "'compact_short', or 'compact_long'.");
     }
 
+    if (minFractionDigits != null) {
+      numberFormat.setMinimumFractionDigits(minFractionDigits);
+    }
+    if (maxFractionDigits != null) {
+      numberFormat.setMaximumFractionDigits(maxFractionDigits);
+    }
     return numberFormat.format(number);
   }
 }
