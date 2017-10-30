@@ -537,13 +537,23 @@ public final class SoyFileSet {
       return this;
     }
 
-    /** Add all proto descriptors found in the file to the type registry. */
+    /**
+     * Add all proto descriptors found in the file to the type registry.
+     *
+     * @param descriptorFile A file containing FileDescriptorSet binary protos. These typically end
+     *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
+     */
     public Builder addProtoDescriptorsFromFile(File descriptorFile) {
       protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
       return this;
     }
 
-    /** Add all proto descriptors found in all files to the type registry. */
+    /**
+     * Add all proto descriptors found in all files to the type registry.
+     *
+     * @param descriptorFiles files containing FileDescriptorSet binary protos. These typically end
+     *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
+     */
     public Builder addProtoDescriptorsFromFiles(Iterable<File> descriptorFiles) {
       for (File descriptorFile : descriptorFiles) {
         protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
