@@ -364,7 +364,7 @@ public final class GenJsCodeVisitorTest {
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'), "
-            + "'', false)(null, null, opt_ijData);\n"
+            + "'', false)(null, opt_ijData);\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName = "
@@ -419,7 +419,7 @@ public final class GenJsCodeVisitorTest {
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'), "
-            + "'moomoo', false)(null, null, opt_ijData);\n"
+            + "'moomoo', false)(null, opt_ijData);\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName = "
@@ -1152,12 +1152,11 @@ public final class GenJsCodeVisitorTest {
   public void testBasicCall() {
 
     assertGeneratedJsCode(
-        "{call some.func data=\"all\" /}\n", "output += some.func(opt_data, null, opt_ijData);\n");
+        "{call some.func data=\"all\" /}\n", "output += some.func(opt_data, opt_ijData);\n");
 
     String soyNodeCode =
         "{@param moo : ?}\n" + "{call some.func}\n" + "  {param goo : $moo /}\n" + "{/call}\n";
-    assertGeneratedJsCode(
-        soyNodeCode, "output += some.func({goo: opt_data.moo}, null, opt_ijData);\n");
+    assertGeneratedJsCode(soyNodeCode, "output += some.func({goo: opt_data.moo}, opt_ijData);\n");
 
     soyNodeCode =
         "{@param boo : ?}\n"
@@ -1174,7 +1173,7 @@ public final class GenJsCodeVisitorTest {
             + "for (var i6 = 0; i6 < 7; i6++) {\n"
             + "  param11 += i6;\n"
             + "}\n"
-            + "output += some.func(soy.$$assignDefaults({goo: param11}, opt_data.boo), null, "
+            + "output += some.func(soy.$$assignDefaults({goo: param11}, opt_data.boo), "
             + "opt_ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -1185,7 +1184,7 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(
         "{@param boo : ?}\n" + "{delcall my.delegate data=\"$boo.foo\" /}\n",
         "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', false)"
-            + "(opt_data.boo.foo, null, opt_ijData);\n");
+            + "(opt_data.boo.foo, opt_ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
@@ -1193,13 +1192,13 @@ public final class GenJsCodeVisitorTest {
             + "{delcall my.delegate variant=\"$voo\" data=\"$boo.foo\" /}\n",
         "output += soy.$$getDelegateFn("
             + "soy.$$getDelTemplateId('my.delegate'), opt_data.voo, false)"
-            + "(opt_data.boo.foo, null, opt_ijData);\n");
+            + "(opt_data.boo.foo, opt_ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
         "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
-            + "(opt_data.boo.foo, null, opt_ijData);\n");
+            + "(opt_data.boo.foo, opt_ijData);\n");
   }
 
   @Test
@@ -2550,8 +2549,8 @@ public final class GenJsCodeVisitorTest {
             + "var $goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml("
-            + "$templateAlias1(null, null, opt_ijData) + "
-            + "$templateAlias2(null, null, opt_ijData));\n"
+            + "$templateAlias1(null, opt_ijData) + "
+            + "$templateAlias2(null, opt_ijData));\n"
             + "};\n"
             + "exports.goo = $goo;\n"
             + "if (goog.DEBUG) {\n"

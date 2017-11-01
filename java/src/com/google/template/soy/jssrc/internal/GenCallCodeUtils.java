@@ -168,7 +168,7 @@ public class GenCallCodeUtils {
         genObjToPass(callNode, templateAliases, translationContext, errorReporter);
 
     // Generate the main call expression.
-    CodeChunk.WithValue call = callee.call(objToPass, LITERAL_NULL, JsRuntime.OPT_IJ_DATA);
+    CodeChunk.WithValue call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
