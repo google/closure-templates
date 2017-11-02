@@ -359,7 +359,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return ((SoyPySrcFunction) soyFunction).computeForPySrc(args);
     } else if (soyFunction instanceof LoggingFunction) {
       // trivial logging function support
-      return new PyStringExpr(((LoggingFunction) soyFunction).getPlaceholder());
+      return new PyStringExpr("'" + ((LoggingFunction) soyFunction).getPlaceholder() + "'");
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());

@@ -15,20 +15,30 @@
  */
 package com.google.template.soy.basicdirectives;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /** Static methods implementing the basic directives in this package. */
 public final class BasicDirectivesRuntime {
+
+  private static final Logger logger = Logger.getLogger(BasicDirectivesRuntime.class.getName());
 
   private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
 
@@ -61,6 +71,96 @@ public final class BasicDirectivesRuntime {
     }
 
     return str;
+  }
+
+  public static LoggingAdvisingAppendable truncateStreaming(
+      LoggingAdvisingAppendable appendable, int maxLength, boolean addEllipsis) {
+    return new TruncateAppendable(appendable, maxLength, addEllipsis);
+  }
+
+  private static final class TruncateAppendable extends LoggingAdvisingAppendable
+      implements Closeable {
+    private final StringBuilder buffer;
+    private final LoggingAdvisingAppendable delegate;
+    private final int maxLength;
+    private final boolean addEllipsis;
+
+    TruncateAppendable(LoggingAdvisingAppendable delegate, int maxLength, boolean addEllipsis) {
+      buffer = new StringBuilder();
+      this.delegate = delegate;
+      this.maxLength = maxLength;
+      this.addEllipsis = addEllipsis;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) {
+      buffer.append(csq);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) {
+      buffer.append(csq, start, end);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) {
+      buffer.append(c);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      logger.log(
+          Level.WARNING,
+          "Visual element logging behavior is undefined when used with the |truncate directive. "
+              + "This logging call has been dropped: {0}",
+          statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind) {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentKind() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(Dir contentDir) {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+      buffer.append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      return this;
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return false;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.append(truncate(buffer.toString(), maxLength, addEllipsis));
+    }
   }
 
   public static SoyString changeNewlineToBr(SoyValue value) {

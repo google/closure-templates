@@ -105,12 +105,10 @@ public final class SharedModuleTest {
             "|changeNewlineToBr",
             "|bidiSpanWrap",
             "|bidiUnicodeWrap",
-            "|insertWordBreaks");
+            "|insertWordBreaks",
+            "|truncate");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
-            // These all make sense to be streaming, though it might make sense to just skip
-            // some of the deprecated ones.
-            "|truncate",
             // This isn't worth doing.  uris should all be small.
             "|escapeUri",
             // These can't be made streaming because it would require a complex state machine or

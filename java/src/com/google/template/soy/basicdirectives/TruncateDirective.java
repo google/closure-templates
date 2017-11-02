@@ -17,14 +17,17 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -49,7 +52,7 @@ final class TruncateDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   @Inject
   public TruncateDirective() {}
@@ -102,6 +105,13 @@ final class TruncateDirective
         MethodRef.create(
                 BasicDirectivesRuntime.class, "truncate", String.class, int.class, boolean.class)
             .asNonNullable();
+    static final MethodRef TRUNCATE_STREAMING =
+        MethodRef.create(
+            BasicDirectivesRuntime.class,
+            "truncateStreaming",
+            LoggingAdvisingAppendable.class,
+            int.class,
+            boolean.class);
   }
 
   @Override
@@ -110,6 +120,16 @@ final class TruncateDirective
     return SoyExpression.forString(
         JbcSrcMethods.TRUNCATE.invoke(
             value.coerceToString(),
+            BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE),
+            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(true)));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.createCloseable(
+        JbcSrcMethods.TRUNCATE_STREAMING.invoke(
+            delegateAppendable,
             BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE),
             args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(true)));
   }
