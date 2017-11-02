@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -253,7 +254,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
         new CallerFrame(null, ImmutableSet.<TemplateNode>of(), ImmutableSet.<String>of()));
     indirectParams = Maps.newHashMap();
     paramKeyToCalleesMultimap = HashMultimap.create();
-    indirectParamTypes = HashMultimap.create();
+    indirectParamTypes = LinkedHashMultimap.create();
     mayHaveIndirectParamsInExternalCalls = false;
     mayHaveIndirectParamsInExternalDelCalls = false;
 
