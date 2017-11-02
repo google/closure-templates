@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.base.Strings;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -26,19 +25,15 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
-import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.passes.DesugarHtmlNodesPass;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -51,7 +46,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
-import javax.annotation.Nullable;
 
 /**
  * Instruments {velog} commands and adds necessary data attributes to the top-level DOM node and
@@ -98,9 +92,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             .getEndPoint()
             .offset(0, tag.isSelfClosing() ? -2 : -1)
             .asLocation(tag.getSourceLocation().getFilePath());
-    IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
-    IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
-    ifNode.addChild(ifCondNode);
     FunctionNode funcNode = new FunctionNode(VeLogFunction.INSTANCE, insertionLocation);
     funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
     funcNode.addChild(
@@ -110,7 +101,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     if (node.getLogonlyExpression() != null) {
       funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
     }
-    PrintNode attributeValue =
+    PrintNode attributeNode =
         new PrintNode(
             nodeIdGen.genId(),
             insertionLocation,
@@ -118,10 +109,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             /* expr= */ funcNode,
             /* phname= */ null,
             ErrorReporter.exploding());
-    HtmlAttributeNode dataAttributeNode =
-        createHtmlAttribute("soylog", null, attributeValue, nodeIdGen, insertionLocation);
-    ifCondNode.addChild(dataAttributeNode);
-    tag.addChild(ifNode);
+    tag.addChild(attributeNode);
     visitChildren(node);
   }
 
@@ -159,8 +147,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       if (!(function.getSoyFunction() instanceof LoggingFunction)) {
         continue;
       }
-      IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
-      IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
       FunctionNode funcNode =
           new FunctionNode(VeLogJsSrcLoggingFunction.INSTANCE, insertionLocation);
       funcNode.addChild(new StringNode(function.getFunctionName(), insertionLocation));
@@ -192,30 +178,18 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
         funcNode.addChild(new VarRefNode(varName, insertionLocation, false, letNode.getVar()));
       }
-      HtmlAttributeNode loggingFunctionAttribute =
-          createHtmlAttribute(
-              "soyloggingfunction-",
-              Integer.toString(counter++),
-              new PrintNode(
-                  nodeIdGen.genId(),
-                  insertionLocation,
-                  /* isImplicit= */ true,
-                  /* expr= */ funcNode,
-                  /* phname= */ null,
-                  ErrorReporter.exploding()),
-              nodeIdGen,
-              insertionLocation);
-      ifCondNode.addChild(loggingFunctionAttribute);
-      ifNode.addChild(ifCondNode);
-      // Append the if node at the end of the current tag.
-      HtmlOpenTagNode openTag = node.getNearestAncestor(HtmlOpenTagNode.class);
-      if (openTag != null) {
-        openTag.addChild(ifNode);
-      } else {
-        // If we cannot find a HTML open tag, we must be in a template with kind="attributes".
-        // In this case, append the if condition to the end of this template.
-        node.getNearestAncestor(TemplateNode.class).addChild(ifNode);
-      }
+      funcNode.addChild(new IntegerNode(counter++, insertionLocation));
+      PrintNode loggingFunctionAttribute =
+          new PrintNode(
+              nodeIdGen.genId(),
+              insertionLocation,
+              /* isImplicit= */ true,
+              /* expr= */ funcNode,
+              /* phname= */ null,
+              ErrorReporter.exploding());
+      // Append the logging function attribute to its parent
+      int appendIndex = node.getParent().getChildIndex(node) + 1;
+      node.getParent().addChild(appendIndex, loggingFunctionAttribute);
       // Replace the original attribute value to the placeholder.
       HtmlAttributeValueNode placeHolder =
           new HtmlAttributeValueNode(nodeIdGen.genId(), insertionLocation, Quotes.DOUBLE);
@@ -230,53 +204,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       break;
     }
     visitChildren(node);
-  }
-
-  private HtmlAttributeNode createHtmlAttribute(
-      String attributeName,
-      @Nullable String attributeSuffix,
-      StandaloneNode attributeValue,
-      IdGenerator nodeIdGen,
-      SourceLocation insertionLocation) {
-    HtmlAttributeNode dataAttributeNode =
-        new HtmlAttributeNode(
-            nodeIdGen.genId(), insertionLocation, insertionLocation.getBeginPoint());
-    PlusOpNode plusOp = new PlusOpNode(insertionLocation);
-    plusOp.addChild(new StringNode("data-", insertionLocation));
-    FunctionNode xidFunction = new FunctionNode(BuiltinFunction.XID, insertionLocation);
-    xidFunction.addChild(new StringNode(attributeName, insertionLocation));
-    if (Strings.isNullOrEmpty(attributeSuffix)) {
-      plusOp.addChild(xidFunction);
-    } else {
-      PlusOpNode plusOpSuffix = new PlusOpNode(insertionLocation);
-      plusOpSuffix.addChild(xidFunction);
-      plusOpSuffix.addChild(new StringNode(attributeSuffix, insertionLocation));
-      plusOp.addChild(plusOpSuffix);
-    }
-    PrintNode attributeNameNode =
-        new PrintNode(
-            nodeIdGen.genId(),
-            insertionLocation,
-            /* isImplicit= */ true,
-            /* expr= */ plusOp,
-            /* phname */ null,
-            ErrorReporter.exploding());
-    dataAttributeNode.addChild(attributeNameNode);
-    HtmlAttributeValueNode attributeValueNode =
-        new HtmlAttributeValueNode(
-            nodeIdGen.genId(), insertionLocation, HtmlAttributeValueNode.Quotes.NONE);
-    attributeValueNode.addChild(attributeValue);
-    dataAttributeNode.addChild(attributeValueNode);
-    return dataAttributeNode;
-  }
-
-  private static IfCondNode createIfCondForLoggingFunction(
-      int nodeId, SourceLocation insertionLocation) {
-    return new IfCondNode(
-        nodeId,
-        insertionLocation,
-        "if",
-        new FunctionNode(HasMetadataFunction.INSTANCE, insertionLocation));
   }
 
   @Override
