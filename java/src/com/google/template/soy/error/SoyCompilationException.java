@@ -17,7 +17,6 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.template.soy.base.SoySyntaxException;
@@ -29,17 +28,9 @@ import com.google.template.soy.base.SoySyntaxException;
 public final class SoyCompilationException extends SoySyntaxException {
   private final ImmutableList<SoyError> errors;
 
-  public SoyCompilationException(Iterable<SoyError> specificErrors) {
-    super();
-    this.errors = Ordering.natural().immutableSortedCopy(specificErrors);
-    boolean hasError = false;
-    for (SoyError error : this.errors) {
-      if (!error.isWarning()) {
-        hasError = true;
-        break;
-      }
-    }
-    checkArgument(hasError, "Cannot construct a compilation exception with no errors");
+  public SoyCompilationException(Iterable<SoyError> errors) {
+    this.errors = Ordering.natural().immutableSortedCopy(errors);
+    checkArgument(!this.errors.isEmpty());
   }
 
   /** Returns the list of errors in sorted order. */
@@ -49,28 +40,6 @@ public final class SoyCompilationException extends SoySyntaxException {
 
   @Override
   public String getMessage() {
-    StringBuilder sb = new StringBuilder("errors during Soy compilation\n");
-    Joiner.on('\n').appendTo(sb, errors);
-    int numErrors = 0;
-    int numWarnings = 0;
-    for (SoyError error : errors) {
-      if (error.isWarning()) {
-        numWarnings++;
-      } else {
-        numErrors++;
-      }
-    }
-    formatNumber(numErrors, "error", sb);
-    if (numWarnings > 0) {
-      sb.append(' ');
-      formatNumber(numWarnings, "warning", sb);
-    }
-    return sb.append('\n').toString();
-  }
-
-  // hacky localization
-  private static void formatNumber(int n, String type, StringBuilder to) {
-    checkArgument(n > 0);
-    to.append(n).append(' ').append(type).append(n == 1 ? "" : "s");
+    return SoyErrors.formatErrors(errors);
   }
 }

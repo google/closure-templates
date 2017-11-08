@@ -47,6 +47,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
@@ -601,8 +602,7 @@ public final class SoyFileSet {
      * <p>For compilation failures warnings are reported along with the errors, by throwing an
      * exception. The default is to report warnings to the logger for SoyFileSet.
      */
-    @VisibleForTesting
-    public Builder setWarningSink(Appendable warningSink) {
+    Builder setWarningSink(Appendable warningSink) {
       this.warningSink = checkNotNull(warningSink);
       return this;
     }
@@ -1300,20 +1300,21 @@ public final class SoyFileSet {
     if (warnings.isEmpty()) {
       return;
     }
-    StringBuilder formattedWarnings = new StringBuilder();
-    formattedWarnings.append("Warnings during Soy Compilation\n");
-    for (SoyError error : errorReporter.getWarnings()) {
-      formattedWarnings.append(error.toString()).append('\n');
+    // this is a custom feature used by the integration test suite.
+    if (generalOptions.getExperimentalFeatures().contains("testonly_throw_on_warnings")) {
+      errorReporter = null;
+      throw new SoyCompilationException(warnings);
     }
+    String formatted = SoyErrors.formatErrors(warnings);
     if (warningSink != null) {
       try {
-        warningSink.append(formattedWarnings);
+        warningSink.append(formatted);
       } catch (IOException ioe) {
         System.err.println("error while printing warnings");
         ioe.printStackTrace();
       }
     } else {
-      logger.warning(formattedWarnings.toString());
+      logger.warning(formatted);
     }
   }
 }

@@ -16,8 +16,11 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 
@@ -139,5 +142,41 @@ public final class SoyErrors {
     }
     // The best answer is the last slot in v0 (due to the swap on the last iteration)
     return v0[t.length()];
+  }
+
+  /** Formats the errors in a standard way for displaying to a user. */
+  public static String formatErrors(Iterable<SoyError> errors) {
+    int numErrors = 0;
+    int numWarnings = 0;
+    for (SoyError error : errors) {
+      if (error.isWarning()) {
+        numWarnings++;
+      } else {
+        numErrors++;
+      }
+    }
+    if (numErrors + numWarnings == 0) {
+      throw new IllegalArgumentException("cannot format 0 errors");
+    }
+    StringBuilder sb =
+        new StringBuilder(numErrors == 0 ? "warnings" : "errors")
+            .append(" during Soy compilation\n");
+    Joiner.on('\n').appendTo(sb, errors);
+    if (numErrors > 0) {
+      formatNumber(numErrors, "error", sb);
+    }
+    if (numWarnings > 0) {
+      if (numErrors > 0) {
+        sb.append(' ');
+      }
+      formatNumber(numWarnings, "warning", sb);
+    }
+    return sb.append('\n').toString();
+  }
+
+  // hacky localization
+  private static void formatNumber(int n, String type, StringBuilder to) {
+    checkArgument(n > 0);
+    to.append(n).append(' ').append(type).append(n == 1 ? "" : "s");
   }
 }
