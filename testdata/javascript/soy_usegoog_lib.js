@@ -23322,6 +23322,7 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
  * @author Aharon Lanin
  */
 goog.provide('soy');
+goog.provide('soy.Map');
 goog.provide('soy.asserts');
 goog.provide('soy.esc');
 goog.provide('soydata');
@@ -25130,6 +25131,32 @@ soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   }
   return param;
 };
+
+/**
+ * Structural interface for representing Soy {@code map}s in JavaScript.
+ *
+ * <p>The Soy {@code map} type was originally represented in JavaScript by plain
+ * objects ({@code Object<K,V>}). However, plain object access syntax
+ * ({@code obj['key']}) is incompatible with the ES6 Map and jspb.Map APIs,
+ * both of which use {@code map.get('key')}. In order to allow the Soy {@code
+ * map} type to interoperate with ES6 Maps and proto maps, Soy now uses this
+ * interface to represent the {@code map} type. (The Soy {@code
+ * legacy_object_literal_map} type continues to use plain objects for backwards
+ * compatibility.)
+ *
+ * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
+ * implement it without declaring that they do.
+ *
+ * @record
+ * @template K, V
+ */
+soy.Map = function() {};
+
+/**
+ * @param {K} k
+ * @return {V}
+ */
+soy.Map.prototype.get = function(k) {};
 
 // -----------------------------------------------------------------------------
 // Used for inspecting Soy template information from rendered pages.
