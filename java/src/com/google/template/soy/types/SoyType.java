@@ -68,6 +68,7 @@ public interface SoyType {
    *         <li>LIST: Sequence of items indexed by integer.
    *         <li>RECORD: Open-ended record type.
    *         <li>LEGACY_OBJECT_LITERAL_MAP: Deprecated map type.
+   *         <li>MAP: Map type that supports proto map (and ES6 map in JS backend).
    *         <li>PROTO: Protobuf object.
    *         <li>PROTO_ENUM: Protobuf enum object.
    *         <li>UNION: Used to indicate a parameter that can accept multiple alternatives, e.g.
@@ -97,6 +98,7 @@ public interface SoyType {
     LIST,
     RECORD,
     LEGACY_OBJECT_LITERAL_MAP,
+    MAP,
     PROTO,
     PROTO_ENUM,
     UNION,
@@ -114,7 +116,12 @@ public interface SoyType {
 
     private static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
         Sets.immutableEnumSet(
-            Kind.BOOL, Kind.LIST, Kind.LEGACY_OBJECT_LITERAL_MAP, Kind.RECORD, Kind.RECORD);
+            Kind.BOOL,
+            Kind.LIST,
+            Kind.LEGACY_OBJECT_LITERAL_MAP,
+            Kind.MAP,
+            Kind.RECORD,
+            Kind.RECORD);
 
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {
