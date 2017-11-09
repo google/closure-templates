@@ -85,7 +85,7 @@ public final class LegacyObjectMapType implements SoyType {
 
   @Override
   public String toString() {
-    // TODO(b/69046843): string representation should be old_map
+    // TODO(b/69046843): string representation should be legacy_object_map
     return "map<" + keyType + "," + valueType + ">";
   }
 

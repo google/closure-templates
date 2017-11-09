@@ -237,7 +237,7 @@ public final class SoyTypeRegistry {
               return registry.getOrCreateListType(types.get(0));
             }
           },
-          "legacy_object_literal_map",
+          "legacy_object_map",
           new GenericTypeInfo(2) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
