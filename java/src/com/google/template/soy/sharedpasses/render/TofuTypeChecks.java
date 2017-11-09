@@ -69,7 +69,7 @@ final class TofuTypeChecks {
         return isSanitizedofKind(value, ContentKind.JS);
       case LIST:
         return value instanceof SoyList;
-      case LEGACY_OBJECT_LITERAL_MAP:
+      case LEGACY_OBJECT_MAP:
         return value instanceof SoyMap;
       case NULL:
         return value == NullData.INSTANCE || value == UndefinedData.INSTANCE;

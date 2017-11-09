@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -113,7 +113,7 @@ public class TypeParserTest {
     assertTypeEquals(ListType.of(StringType.getInstance()), "list<string>");
     assertTypeEquals(ListType.of(StringType.getInstance()), "list < string > ");
     assertTypeEquals(
-        LegacyObjectLiteralMap.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
+        LegacyObjectMapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
   }
 
   // -----------------------------------------------------------------------------------------------

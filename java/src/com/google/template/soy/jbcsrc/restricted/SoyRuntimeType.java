@@ -107,7 +107,7 @@ public abstract class SoyRuntimeType {
     switch (soyType.getKind()) {
       case LIST:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_LIST_TYPE);
-      case LEGACY_OBJECT_LITERAL_MAP:
+      case LEGACY_OBJECT_MAP:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
       case RECORD:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_RECORD_TYPE);
@@ -161,7 +161,7 @@ public abstract class SoyRuntimeType {
       case LIST:
         // We have some minor support for unboxed lists
         return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE, BytecodeUtils.SOY_LIST_TYPE);
-      case LEGACY_OBJECT_LITERAL_MAP:
+      case LEGACY_OBJECT_MAP:
       case RECORD:
         // no unboxed representation at all.  We could add something for these, but there is
         // currently not much point.
@@ -291,7 +291,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownMap() {
-    return soyType.getKind() == Kind.LEGACY_OBJECT_LITERAL_MAP;
+    return soyType.getKind() == Kind.LEGACY_OBJECT_MAP;
   }
 
   public final boolean isKnownRecord() {

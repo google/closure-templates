@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -200,9 +200,9 @@ public class SoyTypesTest {
   // Test that map types are covariant over their key types.
   @Test
   public void testMapKeyCovariance() {
-    LegacyObjectLiteralMap mapOfAnyToAny = LegacyObjectLiteralMap.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfStringToAny = LegacyObjectLiteralMap.of(STRING_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfIntToAny = LegacyObjectLiteralMap.of(INT_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfStringToAny = LegacyObjectMapType.of(STRING_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfIntToAny = LegacyObjectMapType.of(INT_TYPE, ANY_TYPE);
 
     // Legal to assign Map<X, Y> to Map<X, Y>
     assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
@@ -223,9 +223,9 @@ public class SoyTypesTest {
   // Test that map types are covariant over their value types.
   @Test
   public void testMapValueCovariance() {
-    LegacyObjectLiteralMap mapOfAnyToAny = LegacyObjectLiteralMap.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfAnyToString = LegacyObjectLiteralMap.of(ANY_TYPE, STRING_TYPE);
-    LegacyObjectLiteralMap mapOfAnyToInt = LegacyObjectLiteralMap.of(ANY_TYPE, INT_TYPE);
+    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
+    LegacyObjectMapType mapOfAnyToInt = LegacyObjectMapType.of(ANY_TYPE, INT_TYPE);
 
     // Legal to assign Map<X, Y> to Map<X, Y>
     assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
@@ -245,10 +245,10 @@ public class SoyTypesTest {
 
   @Test
   public void testMapTypeEquality() {
-    LegacyObjectLiteralMap mapOfAnyToAny = LegacyObjectLiteralMap.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfAnyToAny2 = LegacyObjectLiteralMap.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfStringToAny = LegacyObjectLiteralMap.of(STRING_TYPE, ANY_TYPE);
-    LegacyObjectLiteralMap mapOfAnyToString = LegacyObjectLiteralMap.of(ANY_TYPE, STRING_TYPE);
+    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfAnyToAny2 = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfStringToAny = LegacyObjectMapType.of(STRING_TYPE, ANY_TYPE);
+    LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
 
     assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
     assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
@@ -357,7 +357,7 @@ public class SoyTypesTest {
         .isAbsent();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                LegacyObjectLiteralMap.of(INT_TYPE, STRING_TYPE), INT_TYPE))
+                LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), INT_TYPE))
         .isAbsent();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
@@ -365,7 +365,7 @@ public class SoyTypesTest {
         .isAbsent();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
-                UnionType.of(LegacyObjectLiteralMap.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE),
+                UnionType.of(LegacyObjectMapType.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE),
                 FLOAT_TYPE))
         .isAbsent();
     assertThat(
@@ -452,7 +452,7 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectLiteralMap.of(INT_TYPE, STRING_TYPE), plusOp))
+                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
@@ -545,7 +545,7 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectLiteralMap.of(INT_TYPE, STRING_TYPE), plusOp))
+                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), plusOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
@@ -614,7 +614,7 @@ public class SoyTypesTest {
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                INT_TYPE, LegacyObjectLiteralMap.of(INT_TYPE, STRING_TYPE), equalOp))
+                INT_TYPE, LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), equalOp))
         .isNull();
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
@@ -644,7 +644,7 @@ public class SoyTypesTest {
     // If any of these combinations are incompatible, we should return null.
     assertThat(
             SoyTypes.getSoyTypeForBinaryOperator(
-                LegacyObjectLiteralMap.of(INT_TYPE, STRING_TYPE),
+                LegacyObjectMapType.of(INT_TYPE, STRING_TYPE),
                 UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE),
                 equalOp))
         .isNull();

@@ -19,7 +19,7 @@ package com.google.template.soy.types;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.FloatType;
@@ -67,13 +67,13 @@ public class SoyTypeRegistryTest {
 
   @Test
   public void testCreateMapType() {
-    LegacyObjectLiteralMap mapOfIntToString =
+    LegacyObjectMapType mapOfIntToString =
         typeRegistry.getOrCreateMapType(IntType.getInstance(), StringType.getInstance());
-    LegacyObjectLiteralMap mapOfIntToString2 =
+    LegacyObjectMapType mapOfIntToString2 =
         typeRegistry.getOrCreateMapType(IntType.getInstance(), StringType.getInstance());
-    LegacyObjectLiteralMap mapOfIntToInt =
+    LegacyObjectMapType mapOfIntToInt =
         typeRegistry.getOrCreateMapType(IntType.getInstance(), IntType.getInstance());
-    LegacyObjectLiteralMap mapOfStringToString =
+    LegacyObjectMapType mapOfStringToString =
         typeRegistry.getOrCreateMapType(StringType.getInstance(), StringType.getInstance());
 
     assertThat(mapOfIntToString2).isSameAs(mapOfIntToString);

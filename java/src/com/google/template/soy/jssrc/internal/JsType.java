@@ -45,7 +45,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -246,8 +246,8 @@ final class JsType {
             .setPredicate(GOOG_IS_ARRAY)
             .build();
 
-      case LEGACY_OBJECT_LITERAL_MAP:
-        LegacyObjectLiteralMap mapType = (LegacyObjectLiteralMap) soyType;
+      case LEGACY_OBJECT_MAP:
+        LegacyObjectMapType mapType = (LegacyObjectMapType) soyType;
 
         if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
             && mapType.getValueType().getKind() == SoyType.Kind.ANY) {

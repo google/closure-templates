@@ -35,7 +35,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -116,16 +116,16 @@ public final class AugmentMapFunction
     Expression first = arg0.checkedCast(SoyDict.class);
     Expression second = arg1.checkedCast(SoyDict.class);
     // TODO(lukes): this logic should move into the ResolveExpressionTypesVisitor
-    LegacyObjectLiteralMap mapType =
-        LegacyObjectLiteralMap.of(
+    LegacyObjectMapType mapType =
+        LegacyObjectMapType.of(
             StringType.getInstance(),
             UnionType.of(getMapValueType(arg0.soyType()), getMapValueType(arg1.soyType())));
     return SoyExpression.forSoyValue(mapType, JbcSrcMethods.AUGMENT_MAP_FN.invoke(first, second));
   }
 
   private SoyType getMapValueType(SoyType type) {
-    if (type.getKind() == Kind.LEGACY_OBJECT_LITERAL_MAP) {
-      return ((LegacyObjectLiteralMap) type).getValueType();
+    if (type.getKind() == Kind.LEGACY_OBJECT_MAP) {
+      return ((LegacyObjectMapType) type).getValueType();
     }
     return UnknownType.getInstance();
   }
