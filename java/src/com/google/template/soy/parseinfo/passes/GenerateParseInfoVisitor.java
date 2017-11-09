@@ -59,8 +59,8 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.proto.ProtoUtils;
@@ -764,9 +764,9 @@ public final class GenerateParseInfoVisitor
             break;
           }
 
-        case MAP:
+        case LEGACY_OBJECT_LITERAL_MAP:
           {
-            MapType mapType = (MapType) type;
+            LegacyObjectLiteralMap mapType = (LegacyObjectLiteralMap) type;
             findProtoTypesRecurse(mapType.getKeyType(), protoTypes);
             findProtoTypesRecurse(mapType.getValueType(), protoTypes);
             break;

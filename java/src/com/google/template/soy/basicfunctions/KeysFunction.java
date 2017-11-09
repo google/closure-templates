@@ -32,8 +32,9 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
@@ -114,9 +115,9 @@ public final class KeysFunction
     SoyType argType = soyExpression.soyType();
     // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
     SoyType listElementType;
-    if (argType.getKind() == SoyType.Kind.MAP) {
-      listElementType = ((MapType) argType).getKeyType(); // pretty much just string
-    } else if (argType.getKind() == SoyType.Kind.LIST) {
+    if (argType.getKind() == Kind.LEGACY_OBJECT_LITERAL_MAP) {
+      listElementType = ((LegacyObjectLiteralMap) argType).getKeyType(); // pretty much just string
+    } else if (argType.getKind() == Kind.LIST) {
       listElementType = IntType.getInstance();
     } else {
       listElementType = UnknownType.getInstance();

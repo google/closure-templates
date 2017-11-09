@@ -227,7 +227,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             ItemAccessNode itemAccess = (ItemAccessNode) node;
             Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
             PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-            if (baseKind == Kind.MAP || baseKind == Kind.RECORD) {
+            if (baseKind == Kind.LEGACY_OBJECT_LITERAL_MAP || baseKind == Kind.RECORD) {
               return genCodeForKeyAccess(refText, keyPyExpr.getText());
             } else {
               return new PyFunctionExprBuilder("runtime.key_safe_data_access")

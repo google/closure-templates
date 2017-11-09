@@ -29,8 +29,8 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -121,7 +121,7 @@ public final class SoyTypeRegistry {
 
   private final ImmutableSet<SoyTypeProvider> typeProviders;
   private final Interner<ListType> listTypes = Interners.newStrongInterner();
-  private final Interner<MapType> mapTypes = Interners.newStrongInterner();
+  private final Interner<LegacyObjectLiteralMap> mapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
 
@@ -177,8 +177,8 @@ public final class SoyTypeRegistry {
    * @param valueType The value type of the map.
    * @return The map type.
    */
-  public MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
-    return mapTypes.intern(MapType.of(keyType, valueType));
+  public LegacyObjectLiteralMap getOrCreateMapType(SoyType keyType, SoyType valueType) {
+    return mapTypes.intern(LegacyObjectLiteralMap.of(keyType, valueType));
   }
 
   /**

@@ -80,8 +80,8 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.BoolType;
@@ -459,7 +459,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
 
       if (numChildren == 0) {
-        node.setType(MapType.EMPTY_MAP);
+        node.setType(LegacyObjectLiteralMap.EMPTY_MAP);
         return;
       }
 
@@ -945,7 +945,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             }
           }
 
-        case MAP:
+        case LEGACY_OBJECT_LITERAL_MAP:
           {
             errorReporter.report(
                 sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
@@ -1016,9 +1016,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           }
           return listType.getElementType();
 
-        case MAP:
-          MapType mapType = (MapType) baseType;
-          if (mapType.equals(MapType.EMPTY_MAP)) {
+        case LEGACY_OBJECT_LITERAL_MAP:
+          LegacyObjectLiteralMap mapType = (LegacyObjectLiteralMap) baseType;
+          if (mapType.equals(LegacyObjectLiteralMap.EMPTY_MAP)) {
             errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
             return ErrorType.getInstance();
           }

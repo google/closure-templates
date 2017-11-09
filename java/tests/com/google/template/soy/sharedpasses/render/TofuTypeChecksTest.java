@@ -31,8 +31,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.BoolType;
@@ -340,7 +340,8 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testMapTypeIsInstance() {
-    MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
+    LegacyObjectLiteralMap mapOfStringToAny =
+        LegacyObjectLiteralMap.of(StringType.getInstance(), AnyType.getInstance());
     assertIsInstance(mapOfStringToAny, MAP_DATA, LIST_DATA);
     assertIsNotInstance(
         mapOfStringToAny,
@@ -359,7 +360,8 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testRecordTypeIsInstance() {
-    MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
+    LegacyObjectLiteralMap mapOfStringToAny =
+        LegacyObjectLiteralMap.of(StringType.getInstance(), AnyType.getInstance());
     assertIsInstance(mapOfStringToAny, MAP_DATA, DICT_DATA);
     assertIsNotInstance(
         mapOfStringToAny,

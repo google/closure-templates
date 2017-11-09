@@ -67,8 +67,8 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.aggregate.LegacyObjectLiteralMap;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -551,7 +551,7 @@ public class ExpressionCompilerTest {
     variables.put(
         "nullMap",
         SoyExpression.forSoyValue(
-            MapType.of(StringType.getInstance(), IntType.getInstance()),
+            LegacyObjectLiteralMap.of(StringType.getInstance(), IntType.getInstance()),
             BytecodeUtils.constantNull(Type.getType(SoyMap.class))));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
     assertExpression("$nullMap?['a']").evaluatesTo(null);

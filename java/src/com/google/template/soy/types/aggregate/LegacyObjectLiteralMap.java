@@ -23,12 +23,16 @@ import java.util.Objects;
 /**
  * Map type - generalized mapping type with key and value type arguments.
  *
+ * <p>Note: This map type does not interoperate with proto maps or ES6 Maps. We are introducing a
+ * second map type to handle these cases. We intend to migrate everyone to the new map type and
+ * eventually delete LegacyObjectLiteralMap. See b/69046114.
+ *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MapType implements SoyType {
+public final class LegacyObjectLiteralMap implements SoyType {
 
-  public static final MapType EMPTY_MAP = new MapType(null, null);
+  public static final LegacyObjectLiteralMap EMPTY_MAP = new LegacyObjectLiteralMap(null, null);
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
@@ -36,20 +40,20 @@ public final class MapType implements SoyType {
   /** The declared type of item values in this map. */
   private final SoyType valueType;
 
-  private MapType(SoyType keyType, SoyType valueType) {
+  private LegacyObjectLiteralMap(SoyType keyType, SoyType valueType) {
     this.keyType = keyType;
     this.valueType = valueType;
   }
 
-  public static MapType of(SoyType keyType, SoyType valueType) {
+  public static LegacyObjectLiteralMap of(SoyType keyType, SoyType valueType) {
     Preconditions.checkNotNull(keyType);
     Preconditions.checkNotNull(valueType);
-    return new MapType(keyType, valueType);
+    return new LegacyObjectLiteralMap(keyType, valueType);
   }
 
   @Override
   public Kind getKind() {
-    return Kind.MAP;
+    return Kind.LEGACY_OBJECT_LITERAL_MAP;
   }
 
   /** Returns the type for keys of this map. */
@@ -64,8 +68,8 @@ public final class MapType implements SoyType {
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    if (srcType.getKind() == Kind.MAP) {
-      MapType srcMapType = (MapType) srcType;
+    if (srcType.getKind() == Kind.LEGACY_OBJECT_LITERAL_MAP) {
+      LegacyObjectLiteralMap srcMapType = (LegacyObjectLiteralMap) srcType;
       if (srcMapType == EMPTY_MAP) {
         return true;
       } else if (this == EMPTY_MAP) {
@@ -81,13 +85,14 @@ public final class MapType implements SoyType {
 
   @Override
   public String toString() {
+    // TODO(b/69046843): string representation should be old_map
     return "map<" + keyType + "," + valueType + ">";
   }
 
   @Override
   public boolean equals(Object other) {
     if (other != null && other.getClass() == this.getClass()) {
-      MapType otherMap = (MapType) other;
+      LegacyObjectLiteralMap otherMap = (LegacyObjectLiteralMap) other;
       return Objects.equals(otherMap.keyType, keyType)
           && Objects.equals(otherMap.valueType, valueType);
     }
