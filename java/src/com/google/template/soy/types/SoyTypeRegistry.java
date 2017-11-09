@@ -237,9 +237,15 @@ public final class SoyTypeRegistry {
               return registry.getOrCreateListType(types.get(0));
             }
           },
+          "old_map",
+          new GenericTypeInfo(2) {
+            @Override
+            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
+              return registry.getOrCreateMapType(types.get(0), types.get(1));
+            }
+          },
           "map",
           new GenericTypeInfo(2) {
-
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
               return registry.getOrCreateMapType(types.get(0), types.get(1));
