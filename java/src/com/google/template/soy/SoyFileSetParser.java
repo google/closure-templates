@@ -16,8 +16,6 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -43,7 +41,8 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SoyFileSetParser {
+@AutoValue
+public abstract class SoyFileSetParser {
   /** A simple tuple for the result of a parse operation. */
   @AutoValue
   public abstract static class ParseResult {
@@ -56,36 +55,41 @@ public final class SoyFileSetParser {
     public abstract TemplateRegistry registry();
   }
 
+  public static Builder newBuilder() {
+    return new AutoValue_SoyFileSetParser.Builder();
+  }
+
   /** Optional file cache. */
-  @Nullable private final SoyAstCache cache;
+  @Nullable
+  abstract SoyAstCache cache();
+  /** Files to parse. Each must have a unique file name. */
+  abstract ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers();
 
-  /** Files to parse. */
-  private final ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers;
+  abstract PassManager passManager();
 
-  private final PassManager passManager;
+  abstract ErrorReporter errorReporter();
 
-  private final ErrorReporter errorReporter;
+  abstract SoyTypeRegistry typeRegistry();
 
-  private final SoyTypeRegistry typeRegistry;
-  private final PluginResolver pluginResolver;
+  abstract PluginResolver pluginResolver();
 
-  /**
-   * @param astCache The AST cache to use, if any.
-   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
-   */
-  public SoyFileSetParser(
-      @Nullable SoyAstCache astCache,
-      ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers,
-      SoyTypeRegistry typeRegistry,
-      PluginResolver pluginResolver,
-      PassManager passManager,
-      ErrorReporter errorReporter) {
-    this.cache = astCache;
-    this.soyFileSuppliers = checkNotNull(soyFileSuppliers);
-    this.errorReporter = checkNotNull(errorReporter);
-    this.passManager = checkNotNull(passManager);
-    this.typeRegistry = checkNotNull(typeRegistry);
-    this.pluginResolver = checkNotNull(pluginResolver);
+  /** Builder for {@link SoyFileSetParser}. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+    public abstract Builder setCache(SoyAstCache cache);
+
+    public abstract Builder setSoyFileSuppliers(
+        ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers);
+
+    public abstract Builder setPassManager(PassManager passManager);
+
+    public abstract Builder setErrorReporter(ErrorReporter errorReporter);
+
+    public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
+
+    public abstract Builder setPluginResolver(PluginResolver pluginResolver);
+
+    public abstract SoyFileSetParser build();
   }
 
   /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
@@ -105,19 +109,19 @@ public final class SoyFileSetParser {
    */
   private ParseResult parseWithVersions() throws IOException {
     IdGenerator nodeIdGen =
-        (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
+        (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     boolean filesWereSkipped = false;
     // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
     // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
     synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
-      for (SoyFileSupplier fileSupplier : soyFileSuppliers.values()) {
+      for (SoyFileSupplier fileSupplier : soyFileSuppliers().values()) {
         SoyFileSupplier.Version version = fileSupplier.getVersion();
         VersionedFile cachedFile =
-            cache != null ? cache.get(fileSupplier.getFilePath(), version) : null;
+            cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
         SoyFileNode node;
         if (cachedFile == null) {
-          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry);
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry());
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
@@ -126,10 +130,10 @@ public final class SoyFileSetParser {
             continue;
           }
           // Run passes that are considered part of initial parsing.
-          passManager.runSingleFilePasses(node, nodeIdGen);
+          passManager().runSingleFilePasses(node, nodeIdGen);
           // Run passes that check the tree.
-          if (cache != null) {
-            cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
+          if (cache() != null) {
+            cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
           }
         } else {
           node = cachedFile.file();
@@ -140,9 +144,9 @@ public final class SoyFileSetParser {
       TemplateRegistry registry;
       // Run passes that check the tree iff we successfully parsed every file.
       if (!filesWereSkipped) {
-        registry = passManager.runWholeFilesetPasses(soyTree);
+        registry = passManager().runWholeFilesetPasses(soyTree);
       } else {
-        registry = new TemplateRegistry(soyTree, errorReporter);
+        registry = new TemplateRegistry(soyTree, errorReporter());
       }
       return ParseResult.create(soyTree, registry);
     }
@@ -167,12 +171,12 @@ public final class SoyFileSetParser {
       }
       return new SoyFileParser(
               typeRegistry,
-              pluginResolver,
+              pluginResolver(),
               nodeIdGen,
               soyFileReader,
               soyFileSupplier.getSoyFileKind(),
               filePath,
-              errorReporter)
+              errorReporter())
           .parseSoyFile();
     }
   }

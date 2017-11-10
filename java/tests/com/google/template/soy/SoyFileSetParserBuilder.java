@@ -262,17 +262,19 @@ public final class SoyFileSetParserBuilder {
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
-    return new SoyFileSetParser(
-            astCache,
-            soyFileSuppliers,
-            typeRegistry,
+    return SoyFileSetParser.newBuilder()
+        .setCache(astCache)
+        .setSoyFileSuppliers(soyFileSuppliers)
+        .setTypeRegistry(typeRegistry)
+        .setPluginResolver(
             new PluginResolver(
                 PluginResolver.Mode.REQUIRE_DEFINITIONS,
                 soyPrintDirectiveMap,
                 soyFunctionMap,
-                errorReporter),
-            passManager.build(),
-            errorReporter)
+                errorReporter))
+        .setPassManager(passManager.build())
+        .setErrorReporter(errorReporter)
+        .build()
         .parse();
   }
 }

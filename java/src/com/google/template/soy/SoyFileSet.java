@@ -1257,13 +1257,14 @@ public final class SoyFileSet {
 
   private ParseResult parse(
       PassManager.Builder builder, SoyTypeRegistry typeRegistry, PluginResolver resolver) {
-    return new SoyFileSetParser(
-            cache,
-            soyFileSuppliers,
-            typeRegistry,
-            resolver,
-            builder.setTypeRegistry(typeRegistry).build(),
-            errorReporter)
+    return SoyFileSetParser.newBuilder()
+        .setCache(cache)
+        .setSoyFileSuppliers(soyFileSuppliers)
+        .setTypeRegistry(typeRegistry)
+        .setPluginResolver(resolver)
+        .setPassManager(builder.setTypeRegistry(typeRegistry).build())
+        .setErrorReporter(errorReporter)
+        .build()
         .parse();
   }
 
