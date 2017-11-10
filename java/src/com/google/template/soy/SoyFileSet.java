@@ -1264,6 +1264,7 @@ public final class SoyFileSet {
         .setPluginResolver(resolver)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
+        .setGeneralOptions(generalOptions)
         .build()
         .parse();
   }

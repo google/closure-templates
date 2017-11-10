@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -25,6 +26,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -73,6 +75,9 @@ public abstract class SoyFileSetParser {
 
   abstract PluginResolver pluginResolver();
 
+  @Nullable
+  abstract SoyGeneralOptions generalOptions();
+
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
   public abstract static class Builder {
@@ -88,6 +93,8 @@ public abstract class SoyFileSetParser {
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
 
     public abstract Builder setPluginResolver(PluginResolver pluginResolver);
+
+    public abstract Builder setGeneralOptions(SoyGeneralOptions generalOptions);
 
     public abstract SoyFileSetParser build();
   }
@@ -176,7 +183,10 @@ public abstract class SoyFileSetParser {
               soyFileReader,
               soyFileSupplier.getSoyFileKind(),
               filePath,
-              errorReporter())
+              errorReporter(),
+              generalOptions() == null
+                  ? ImmutableSet.of()
+                  : generalOptions().getExperimentalFeatures())
           .parseSoyFile();
     }
   }

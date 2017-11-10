@@ -505,6 +505,9 @@ public class SoyFileParser {
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
+  /** Experimental features for this compilation, if any. */
+  private ImmutableSet<String> experimentalFeatures;
+
   /**
    * Constructor that takes a reader object providing the input.
    *
@@ -522,7 +525,8 @@ public class SoyFileParser {
       Reader input,
       SoyFileKind soyFileKind,
       String filePath,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      ImmutableSet<String> experimentalFeatures) {
     this(input);
     this.typeRegistry = checkNotNull(typeRegistry);
     this.pluginResolver = checkNotNull(pluginResolver);
@@ -530,6 +534,7 @@ public class SoyFileParser {
     this.soyFileKind = checkNotNull(soyFileKind);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
+    this.experimentalFeatures = checkNotNull(experimentalFeatures);
   }
 
   /** Constructor for use by parseExpression() only. */
