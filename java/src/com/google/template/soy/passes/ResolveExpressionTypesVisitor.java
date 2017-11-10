@@ -151,6 +151,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind PROTO_MAP_FIELDS_DONT_WORK =
+      SoyErrorKind.of(
+          "Field ''{0}'' on proto ''{1}'' is a map field. Proto map fields are broken in Soy. "
+              + "While we are fixing them, you can''t use them. See go/soy-proto-map.");
   private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
       SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
@@ -930,6 +934,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             SoyProtoType protoType = (SoyProtoType) baseType;
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
+              if (protoType.getFieldDescriptor(fieldName).isMapField()) {
+                errorReporter.report(
+                    sourceLocation, PROTO_MAP_FIELDS_DONT_WORK, fieldName, baseType);
+                return ErrorType.getInstance();
+              }
               return fieldType;
             } else {
               String extraErrorMessage =
