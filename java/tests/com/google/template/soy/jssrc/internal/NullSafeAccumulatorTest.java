@@ -16,9 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -138,13 +137,8 @@ public final class NullSafeAccumulatorTest {
         .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
   }
 
-  private static final SubjectFactory<AccumulatorSubject, NullSafeAccumulator> FACTORY =
-      new SubjectFactory<AccumulatorSubject, NullSafeAccumulator>() {
-        @Override
-        public AccumulatorSubject getSubject(FailureStrategy fs, NullSafeAccumulator that) {
-          return new AccumulatorSubject(fs, that);
-        }
-      };
+  private static final Subject.Factory<AccumulatorSubject, NullSafeAccumulator> FACTORY =
+      AccumulatorSubject::new;
 
   private static AccumulatorSubject assertThat(NullSafeAccumulator accumulator) {
     return Truth.assertAbout(FACTORY).that(accumulator);
@@ -153,8 +147,8 @@ public final class NullSafeAccumulatorTest {
   private static final class AccumulatorSubject
       extends Subject<AccumulatorSubject, NullSafeAccumulator> {
 
-    AccumulatorSubject(FailureStrategy failureStrategy, NullSafeAccumulator actual) {
-      super(failureStrategy, actual);
+    AccumulatorSubject(FailureMetadata failureMetadata, NullSafeAccumulator actual) {
+      super(failureMetadata, actual);
     }
 
     void generates(String expectedCode) {

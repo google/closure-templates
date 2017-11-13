@@ -17,9 +17,8 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -145,8 +144,8 @@ public final class SimplifyExprVisitorTest {
       INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
 
   private static final class SimplifySubject extends Subject<SimplifySubject, String> {
-    private SimplifySubject(FailureStrategy failureStrategy, String s) {
-      super(failureStrategy, s);
+    private SimplifySubject(FailureMetadata failureMetadata, String s) {
+      super(failureMetadata, s);
     }
 
     private void simplifiesTo(String expected) {
@@ -165,13 +164,7 @@ public final class SimplifyExprVisitorTest {
     }
   }
 
-  private static final SubjectFactory<SimplifySubject, String> FACTORY =
-      new SubjectFactory<SimplifySubject, String>() {
-        @Override
-        public SimplifySubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new SimplifySubject(failureStrategy, s);
-        }
-      };
+  private static final Subject.Factory<SimplifySubject, String> FACTORY = SimplifySubject::new;
 
   private static SimplifySubject assertThat(String input) {
     return Truth.assertAbout(FACTORY).that(input);

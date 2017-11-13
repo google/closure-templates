@@ -21,9 +21,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
@@ -95,8 +94,8 @@ public final class ExpressionTester {
     private ClassData compiledClass;
     private Invoker invoker;
 
-    private ExpressionSubject(FailureStrategy strategy, Expression subject) {
-      super(strategy, subject);
+    private ExpressionSubject(FailureMetadata failureMetadata, Expression subject) {
+      super(failureMetadata, subject);
     }
 
     public ExpressionSubject evaluatesTo(int expected) {
@@ -258,13 +257,8 @@ public final class ExpressionTester {
     }
   }
 
-  private static final SubjectFactory<ExpressionSubject, Expression> FACTORY =
-      new SubjectFactory<ExpressionSubject, Expression>() {
-        @Override
-        public ExpressionSubject getSubject(FailureStrategy fs, Expression that) {
-          return new ExpressionSubject(fs, that);
-        }
-      };
+  private static final Subject.Factory<ExpressionSubject, Expression> FACTORY =
+      ExpressionSubject::new;
 
   public static <T> T createInvoker(Class<T> clazz, Expression expr) {
     Class<? extends Invoker> expected = invokerForType(expr.resultType());

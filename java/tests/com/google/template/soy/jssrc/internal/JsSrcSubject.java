@@ -23,10 +23,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
@@ -64,21 +63,9 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   private static final Joiner JOINER = Joiner.on('\n');
 
-  private static final SubjectFactory<ForFile, String> TEMPLATE_FACTORY =
-      new SubjectFactory<ForFile, String>() {
-        @Override
-        public ForFile getSubject(FailureStrategy fs, String that) {
-          return new ForFile(fs, that);
-        }
-      };
+  private static final Subject.Factory<ForFile, String> TEMPLATE_FACTORY = ForFile::new;
 
-  private static final SubjectFactory<ForExprs, String> EXPR_FACTORY =
-      new SubjectFactory<ForExprs, String>() {
-        @Override
-        public ForExprs getSubject(FailureStrategy fs, String that) {
-          return new ForExprs(fs, that);
-        }
-      };
+  private static final Subject.Factory<ForExprs, String> EXPR_FACTORY = ForExprs::new;
 
   private SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
@@ -87,8 +74,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   private final List<SoyFunction> soyFunctions = new ArrayList<>();
   private SyntaxVersion syntaxVersion = SyntaxVersion.V2_0;
 
-  private JsSrcSubject(FailureStrategy failureStrategy, @Nullable String s) {
-    super(failureStrategy, s);
+  private JsSrcSubject(FailureMetadata failureMetadata, @Nullable String s) {
+    super(failureMetadata, s);
   }
 
   static ForFile assertThatSoyFile(String... lines) {
@@ -206,8 +193,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     private final GenJsCodeVisitor visitor =
         JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class));
 
-    private ForFile(FailureStrategy fs, String expr) {
-      super(fs, expr);
+    private ForFile(FailureMetadata failureMetadata, String expr) {
+      super(failureMetadata, expr);
     }
 
     @Override
@@ -253,8 +240,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     private CodeChunk.WithValue chunk;
     private ImmutableMap<String, WithValue> initialLocalVarTranslations = ImmutableMap.of();
 
-    private ForExprs(FailureStrategy fs, String templateThatContainsOneExpression) {
-      super(fs, templateThatContainsOneExpression);
+    private ForExprs(FailureMetadata failureMetadata, String templateThatContainsOneExpression) {
+      super(failureMetadata, templateThatContainsOneExpression);
     }
 
     @Override

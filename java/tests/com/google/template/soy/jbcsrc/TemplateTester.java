@@ -25,9 +25,8 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -133,13 +132,8 @@ public final class TemplateTester {
         templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ true);
   }
 
-  private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
-      new SubjectFactory<CompiledTemplateSubject, String>() {
-        @Override
-        public CompiledTemplateSubject getSubject(FailureStrategy fs, String that) {
-          return new CompiledTemplateSubject(fs, that);
-        }
-      };
+  private static final Subject.Factory<CompiledTemplateSubject, String> FACTORY =
+      CompiledTemplateSubject::new;
 
   /**
    * Returns a truth subject that can be used to assert on an template given the template body.
@@ -178,8 +172,8 @@ public final class TemplateTester {
     private SoyGeneralOptions generalOptions = new SoyGeneralOptions();
     private RenderContext defaultContext;
 
-    private CompiledTemplateSubject(FailureStrategy failureStrategy, String subject) {
-      super(failureStrategy, subject);
+    private CompiledTemplateSubject(FailureMetadata failureMetadata, String subject) {
+      super(failureMetadata, subject);
     }
 
     CompiledTemplateSubject withTypeRegistry(SoyTypeRegistry typeRegistry) {

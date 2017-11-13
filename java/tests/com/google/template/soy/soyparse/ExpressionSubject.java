@@ -19,9 +19,8 @@ package com.google.template.soy.soyparse;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -38,18 +37,18 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   private final ErrorReporter errorReporter;
 
-  private static final SubjectFactory<ExpressionSubject, String> FACTORY =
-      new SubjectFactory<ExpressionSubject, String>() {
+  private static final Subject.Factory<ExpressionSubject, String> FACTORY =
+      new Subject.Factory<ExpressionSubject, String>() {
         @Override
-        public ExpressionSubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new ExpressionSubject(failureStrategy, s, ErrorReporter.createForTest());
+        public ExpressionSubject createSubject(FailureMetadata failureMetadata, String s) {
+          return new ExpressionSubject(failureMetadata, s, ErrorReporter.createForTest());
         }
       };
 
   private final ImmutableMap.Builder<String, String> aliasesBuilder = ImmutableMap.builder();
 
-  public ExpressionSubject(FailureStrategy failureStrategy, String s, ErrorReporter errorReporter) {
-    super(failureStrategy, s);
+  public ExpressionSubject(FailureMetadata failureMetadata, String s, ErrorReporter errorReporter) {
+    super(failureMetadata, s);
     this.errorReporter = errorReporter;
   }
 

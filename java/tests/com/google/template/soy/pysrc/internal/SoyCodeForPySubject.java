@@ -20,9 +20,8 @@ import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -71,8 +70,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
    * @param code The input Soy code to be compiled and tested.
    * @param isFile Whether the provided code represents a full file.
    */
-  SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
-    super(failureStrategy, code);
+  SoyCodeForPySubject(FailureMetadata failureMetadata, String code, boolean isFile) {
+    super(failureMetadata, code);
     this.isFile = isFile;
     this.injector = Guice.createInjector(new SoyModule());
   }
@@ -206,22 +205,22 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
         namespaceManifest,
         null);
   }
-  //-----------------------------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyCodeForPySubject test.
 
-  private static final SubjectFactory<SoyCodeForPySubject, String> SOYCODE =
-      new SubjectFactory<SoyCodeForPySubject, String>() {
+  private static final Subject.Factory<SoyCodeForPySubject, String> SOYCODE =
+      new Subject.Factory<SoyCodeForPySubject, String>() {
         @Override
-        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String code) {
-          return new SoyCodeForPySubject(failureStrategy, code, false);
+        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String code) {
+          return new SoyCodeForPySubject(failureMetadata, code, false);
         }
       };
 
-  private static final SubjectFactory<SoyCodeForPySubject, String> SOYFILE =
-      new SubjectFactory<SoyCodeForPySubject, String>() {
+  private static final Subject.Factory<SoyCodeForPySubject, String> SOYFILE =
+      new Subject.Factory<SoyCodeForPySubject, String>() {
         @Override
-        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String file) {
-          return new SoyCodeForPySubject(failureStrategy, file, true);
+        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String file) {
+          return new SoyCodeForPySubject(failureMetadata, file, true);
         }
       };
 

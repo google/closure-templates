@@ -20,9 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
@@ -43,16 +42,10 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private SourceLocation actualSourceLocation;
   private SoyFileNode fileNode;
 
-  private static final SubjectFactory<TemplateSubject, String> FACTORY =
-      new SubjectFactory<TemplateSubject, String>() {
-        @Override
-        public TemplateSubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new TemplateSubject(failureStrategy, s);
-        }
-      };
+  private static final Subject.Factory<TemplateSubject, String> FACTORY = TemplateSubject::new;
 
-  TemplateSubject(FailureStrategy failureStrategy, String s) {
-    super(failureStrategy, s);
+  TemplateSubject(FailureMetadata failureMetadata, String s) {
+    super(failureMetadata, s);
   }
 
   public static TemplateSubject assertThatTemplateContent(String input) {

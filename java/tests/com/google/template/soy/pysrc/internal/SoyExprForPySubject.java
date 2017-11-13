@@ -24,9 +24,8 @@ import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBody
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -61,8 +60,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
 
   private final Injector injector;
 
-  private SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
-    super(failureStrategy, expr);
+  private SoyExprForPySubject(FailureMetadata failureMetadata, String expr) {
+    super(failureMetadata, expr);
     localVarExprs = new LocalVariableStack();
     injector = Guice.createInjector(new SoyModule());
   }
@@ -190,16 +189,11 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     }
   }
 
-  //-----------------------------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyExprForPySubject test.
 
-  private static final SubjectFactory<SoyExprForPySubject, String> SOYEXPR =
-      new SubjectFactory<SoyExprForPySubject, String>() {
-        @Override
-        public SoyExprForPySubject getSubject(FailureStrategy failureStrategy, String expr) {
-          return new SoyExprForPySubject(failureStrategy, expr);
-        }
-      };
+  private static final Subject.Factory<SoyExprForPySubject, String> SOYEXPR =
+      SoyExprForPySubject::new;
 
   public static SoyExprForPySubject assertThatSoyExpr(String expr) {
     return assertAbout(SOYEXPR).that(expr);
