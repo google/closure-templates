@@ -83,7 +83,8 @@ public final class MapType implements SoyType {
 
   @Override
   public String toString() {
-    return "map<" + keyType + "," + valueType + ">";
+    // TODO(b/69050588): rename to map.
+    return "experimental_map<" + keyType + "," + valueType + ">";
   }
 
   @Override

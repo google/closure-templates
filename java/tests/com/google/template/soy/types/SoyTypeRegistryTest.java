@@ -66,15 +66,18 @@ public class SoyTypeRegistryTest {
   }
 
   @Test
-  public void testCreateMapType() {
+  public void testCreateLegacyObjectMapType() {
     LegacyObjectMapType mapOfIntToString =
-        typeRegistry.getOrCreateMapType(IntType.getInstance(), StringType.getInstance());
+        typeRegistry.getOrCreateLegacyObjectMapType(
+            IntType.getInstance(), StringType.getInstance());
     LegacyObjectMapType mapOfIntToString2 =
-        typeRegistry.getOrCreateMapType(IntType.getInstance(), StringType.getInstance());
+        typeRegistry.getOrCreateLegacyObjectMapType(
+            IntType.getInstance(), StringType.getInstance());
     LegacyObjectMapType mapOfIntToInt =
-        typeRegistry.getOrCreateMapType(IntType.getInstance(), IntType.getInstance());
+        typeRegistry.getOrCreateLegacyObjectMapType(IntType.getInstance(), IntType.getInstance());
     LegacyObjectMapType mapOfStringToString =
-        typeRegistry.getOrCreateMapType(StringType.getInstance(), StringType.getInstance());
+        typeRegistry.getOrCreateLegacyObjectMapType(
+            StringType.getInstance(), StringType.getInstance());
 
     assertThat(mapOfIntToString2).isSameAs(mapOfIntToString);
     assertThat(mapOfIntToInt).isNotSameAs(mapOfIntToString);

@@ -401,6 +401,8 @@ import javax.annotation.Nullable;
 public class SoyFileParser {
 
   // Template errors:
+  private static final SoyErrorKind EXPERIMENTAL_MAP_NOT_ALLOWED =
+      SoyErrorKind.of("The experimental_map type is not available for general use.");
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
   private static final SoyErrorKind INVALID_CALLEE_NAME =
@@ -3856,6 +3858,10 @@ private TypeNode NamedType() :
     ]
     close = <T_RANGLE>
     {
+      if ("experimental_map".equals(ident)
+        && !experimentalFeatures.contains("experimental_map")) {
+         errorReporter.report(fullLocation.extend(createSrcLoc(close)), EXPERIMENTAL_MAP_NOT_ALLOWED);
+      }
       return GenericTypeNode.create(
           fullLocation.extend(createSrcLoc(close)),
           ident,

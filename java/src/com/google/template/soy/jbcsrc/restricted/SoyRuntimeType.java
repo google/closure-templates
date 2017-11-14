@@ -109,6 +109,9 @@ public abstract class SoyRuntimeType {
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_LIST_TYPE);
       case LEGACY_OBJECT_MAP:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
+      case MAP:
+        // TODO(b/69064671): need to fork SOY_MAP_TYPE
+        return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
       case RECORD:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_RECORD_TYPE);
       case UNION:
@@ -162,6 +165,7 @@ public abstract class SoyRuntimeType {
         // We have some minor support for unboxed lists
         return new PrimitiveSoyType(soyType, BytecodeUtils.LIST_TYPE, BytecodeUtils.SOY_LIST_TYPE);
       case LEGACY_OBJECT_MAP:
+      case MAP:
       case RECORD:
         // no unboxed representation at all.  We could add something for these, but there is
         // currently not much point.

@@ -129,7 +129,8 @@ abstract class FieldInterpreter {
 
       @Override
       public SoyType type(SoyTypeRegistry registry) {
-        return registry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type(registry));
+        return registry.getOrCreateLegacyObjectMapType(
+            StringType.getInstance(), scalarImpl.type(registry));
       }
 
       @Override

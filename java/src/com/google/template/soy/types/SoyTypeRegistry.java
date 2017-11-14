@@ -31,6 +31,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -121,7 +122,8 @@ public final class SoyTypeRegistry {
 
   private final ImmutableSet<SoyTypeProvider> typeProviders;
   private final Interner<ListType> listTypes = Interners.newStrongInterner();
-  private final Interner<LegacyObjectMapType> mapTypes = Interners.newStrongInterner();
+  private final Interner<MapType> mapTypes = Interners.newStrongInterner();
+  private final Interner<LegacyObjectMapType> legacyObjectMapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
 
@@ -169,6 +171,19 @@ public final class SoyTypeRegistry {
   }
 
   /**
+   * Factory function which creates a legacy object map type, given a key and value type. This folds
+   * map types with identical key/value types together, so asking for the same key/value type twice
+   * will return a pointer to the same type object.
+   *
+   * @param keyType The key type of the map.
+   * @param valueType The value type of the map.
+   * @return The map type.
+   */
+  public LegacyObjectMapType getOrCreateLegacyObjectMapType(SoyType keyType, SoyType valueType) {
+    return legacyObjectMapTypes.intern(LegacyObjectMapType.of(keyType, valueType));
+  }
+
+  /**
    * Factory function which creates a map type, given a key and value type. This folds map types
    * with identical key/value types together, so asking for the same key/value type twice will
    * return a pointer to the same type object.
@@ -177,8 +192,8 @@ public final class SoyTypeRegistry {
    * @param valueType The value type of the map.
    * @return The map type.
    */
-  public LegacyObjectMapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
-    return mapTypes.intern(LegacyObjectMapType.of(keyType, valueType));
+  public MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
+    return mapTypes.intern(MapType.of(keyType, valueType));
   }
 
   /**
@@ -241,10 +256,24 @@ public final class SoyTypeRegistry {
           new GenericTypeInfo(2) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateMapType(types.get(0), types.get(1));
+              return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
             }
           },
           "map",
+          new GenericTypeInfo(2) {
+            @Override
+            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
+              return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
+            }
+          },
+          // Experimental syntax allowing Soy integration tests to represent the new SoyMap type
+          // without making it generally available. This is a parse error unless you run the
+          // compiler with the experimental_map feature.
+          // TODO(b/69050588): The Soy `map` keyword is currently an alias for `legacy_object_map`;
+          // both create LegacyObjectMapTypes. Once all users of `map` are switched to
+          // `legacy_object_map`, we can change `map` to create MapTypes. `experimental_map`
+          // will no longer be necessary.
+          "experimental_map",
           new GenericTypeInfo(2) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
