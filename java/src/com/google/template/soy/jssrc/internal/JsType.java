@@ -45,9 +45,8 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.aggregate.LegacyObjectMapType;
+import com.google.template.soy.types.aggregate.AbstractMapType;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.SanitizedType;
@@ -254,37 +253,32 @@ final class JsType {
             .build();
 
       case LEGACY_OBJECT_MAP:
+      case MAP:
         {
-          LegacyObjectMapType mapType = (LegacyObjectMapType) soyType;
+          AbstractMapType mapType = (AbstractMapType) soyType;
 
           if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
               && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
-            return RAW_OBJECT_TYPE;
+            return soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? RAW_OBJECT_TYPE : RAW_MAP_TYPE;
           }
+          String jsTypeName = soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? "Object" : "soy.Map";
           JsType keyTypeName = forSoyType(mapType.getKeyType(), isIncrementalDom);
           JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom);
-          return builder()
-              .addType("!Object<" + keyTypeName.typeExpr() + "," + valueTypeName.typeExpr() + ">")
-              .addRequires(keyTypeName.getGoogRequires())
-              .addRequires(valueTypeName.getGoogRequires())
-              .setPredicate(GOOG_IS_OBJECT)
-              .build();
-        }
-      case MAP:
-        {
-          MapType mapType = (MapType) soyType;
-          if (mapType.getKeyType().getKind() == Kind.ANY
-              && mapType.getValueType().getKind() == Kind.ANY) {
-            return RAW_MAP_TYPE;
+          Builder builder =
+              builder()
+                  .addType(
+                      String.format(
+                          "!%s<%s,%s>",
+                          jsTypeName, keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+                  .addRequires(keyTypeName.getGoogRequires())
+                  .addRequires(valueTypeName.getGoogRequires());
+          if (soyType.getKind() == Kind.LEGACY_OBJECT_MAP) {
+            builder.setPredicate(GOOG_IS_OBJECT);
+          } else {
+            // TODO(b/69049599): need actual type predicate
+            builder.setPredicate(TypePredicate.NO_OP);
           }
-          JsType keyTypeName = forSoyType(mapType.getKeyType(), isIncrementalDom);
-          JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom);
-          return builder()
-              .addType("!soy.Map<" + keyTypeName.typeExpr() + "," + valueTypeName.typeExpr() + ">")
-              .addRequires(keyTypeName.getGoogRequires())
-              .addRequires(valueTypeName.getGoogRequires())
-              .setPredicate(TypePredicate.NO_OP) // TODO(b/69049599): need actual type predicate
-              .build();
+          return builder.build();
         }
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;

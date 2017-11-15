@@ -80,6 +80,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.aggregate.AbstractMapType;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -1027,26 +1028,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           return listType.getElementType();
 
         case LEGACY_OBJECT_MAP:
-          {
-            LegacyObjectMapType mapType = (LegacyObjectMapType) baseType;
-            if (mapType.equals(LegacyObjectMapType.EMPTY_MAP)) {
-              errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
-              return ErrorType.getInstance();
-            }
-
-            // For maps, the key type must either be unknown or assignable to the declared key type.
-            if (keyType.getKind() != SoyType.Kind.UNKNOWN
-                && !mapType.getKeyType().isAssignableFrom(keyType)) {
-              errorReporter.report(keyLocation, BAD_KEY_TYPE, keyType, baseType);
-              // fall through and report the value type.  This will allow more later type checks to
-              // be evaluated.
-            }
-            return mapType.getValueType();
-          }
         case MAP:
           {
-            MapType mapType = (MapType) baseType;
-            if (mapType.equals(MapType.EMPTY_MAP)) {
+            AbstractMapType mapType = (AbstractMapType) baseType;
+            if (mapType.equals(LegacyObjectMapType.EMPTY_MAP)
+                || mapType.equals(MapType.EMPTY_MAP)) {
               errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
               return ErrorType.getInstance();
             }

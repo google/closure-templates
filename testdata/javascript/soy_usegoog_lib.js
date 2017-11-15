@@ -4498,8 +4498,8 @@ goog.array.clone = goog.array.toArray;
  * a; // [0, 1, 2]
  *
  * @param {Array<VALUE>} arr1  The array to modify.
- * @param {...(Array<VALUE>|VALUE)} var_args The elements or arrays of elements
- *     to add to arr1.
+ * @param {...(IArrayLike<VALUE>|VALUE)} var_args The elements or arrays of
+ *     elements to add to arr1.
  * @template VALUE
  */
 goog.array.extend = function(arr1, var_args) {
@@ -4844,7 +4844,7 @@ goog.array.sortObjectsByKey = function(arr, key, opt_compareFn) {
 
 /**
  * Tells if the array is sorted.
- * @param {!Array<T>} arr The array.
+ * @param {!IArrayLike<T>} arr The array.
  * @param {?function(T,T):number=} opt_compareFn Function to compare the
  *     array elements.
  *     Should take 2 arguments to compare, and return a negative number, zero,
@@ -5008,11 +5008,11 @@ goog.array.binaryRemove = function(array, value, opt_compareFn) {
 
 /**
  * Splits an array into disjoint buckets according to a splitting function.
- * @param {Array<T>} array The array.
- * @param {function(this:S, T, number, !Array<T>):?} sorter Function to call for
- *     every element.  This takes 3 arguments (the element, the index and the
- *     array) and must return a valid object key (a string, number, etc), or
- *     undefined, if that object should not be placed in a bucket.
+ * @param {IArrayLike<T>} array The array.
+ * @param {function(this:S, T, number, !IArrayLike<T>):?} sorter Function to
+ *     call for every element.  This takes 3 arguments (the element, the index
+ *     and the array) and must return a valid object key (a string, number,
+ *     etc), or undefined, if that object should not be placed in a bucket.
  * @param {S=} opt_obj The object to be used as the value of 'this' within
  *     sorter.
  * @return {!Object<!Array<T>>} An object, with keys being all of the unique
@@ -5276,8 +5276,8 @@ goog.array.shuffle = function(arr, opt_randFn) {
  * provided by index_arr. For example, the result of index copying
  * ['a', 'b', 'c'] with index_arr [1,0,0,2] is ['b', 'a', 'a', 'c'].
  *
- * @param {!Array<T>} arr The array to get a indexed copy from.
- * @param {!Array<number>} index_arr An array of indexes to get from arr.
+ * @param {!IArrayLike<T>} arr The array to get a indexed copy from.
+ * @param {!IArrayLike<number>} index_arr An array of indexes to get from arr.
  * @return {!Array<T>} A new array of elements from arr in index_arr order.
  * @template T
  */
@@ -14141,8 +14141,12 @@ goog.html.SafeUrl.fromConstant = function(url) {
  * @private
  */
 goog.html.SAFE_MIME_TYPE_PATTERN_ = new RegExp(
+    // Note: Due to content-sniffing concerns, only add MIME types for
+    // media formats.
     '^(?:audio/(?:3gpp|3gpp2|aac|midi|mp4|mpeg|ogg|x-m4a|x-wav|webm)|' +
         'image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|' +
+        // TODO(b/68188949): Due to content-sniffing concerns, text/csv should
+        // be removed from the whitelist.
         'text/csv|' +
         'video/(?:mpeg|mp4|ogg|webm))$',
     'i');

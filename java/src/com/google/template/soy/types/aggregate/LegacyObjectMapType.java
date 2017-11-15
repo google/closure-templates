@@ -30,7 +30,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class LegacyObjectMapType implements SoyType {
+public final class LegacyObjectMapType extends AbstractMapType {
 
   public static final LegacyObjectMapType EMPTY_MAP = new LegacyObjectMapType(null, null);
 
@@ -56,12 +56,12 @@ public final class LegacyObjectMapType implements SoyType {
     return Kind.LEGACY_OBJECT_MAP;
   }
 
-  /** Returns the type for keys of this map. */
+  @Override
   public SoyType getKeyType() {
     return keyType;
   }
 
-  /** Returns the type for values in this map. */
+  @Override
   public SoyType getValueType() {
     return valueType;
   }

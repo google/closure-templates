@@ -28,7 +28,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MapType implements SoyType {
+public final class MapType extends AbstractMapType {
 
   public static final MapType EMPTY_MAP = new MapType(null, null);
 
@@ -54,12 +54,12 @@ public final class MapType implements SoyType {
     return Kind.MAP;
   }
 
-  /** Returns the type for keys of this map. */
+  @Override
   public SoyType getKeyType() {
     return keyType;
   }
 
-  /** Returns the type for values in this map. */
+  @Override
   public SoyType getValueType() {
     return valueType;
   }
