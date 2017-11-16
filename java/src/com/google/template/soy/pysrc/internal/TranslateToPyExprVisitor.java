@@ -32,8 +32,8 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
@@ -144,7 +144,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   @Override
-  protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
+  protected PyExpr visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
 
@@ -377,7 +377,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitForEachFunction(node, "__index");
       case QUOTE_KEYS_IF_JS:
         // 'quoteKeysIfJs' is ignored in Python.
-        return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+        return visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node.getChild(0));
       case CHECK_NOT_NULL:
         return visitCheckNotNullFunction(node);
       case CSS:

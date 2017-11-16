@@ -77,7 +77,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         }
 
         @Override
-        protected Integer visitMapLiteralNode(MapLiteralNode node) {
+        protected Integer visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
           return hashChildren(node);
         }
 
@@ -182,7 +182,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     }
 
     @Override
-    protected Boolean visitMapLiteralNode(MapLiteralNode node) {
+    protected Boolean visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
       return compareChildren(node);
     }
 

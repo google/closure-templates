@@ -70,7 +70,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -3501,7 +3501,7 @@ private ExprNode CollectionLiteral() :
     // empty map
     <COLON>
     end = <RBRACKET>
-    { return new MapLiteralNode(items, createSrcLoc(begin, end)); }
+    { return new LegacyObjectMapLiteralNode(items, createSrcLoc(begin, end)); }
   |
     // empty list
     end = <RBRACKET>
@@ -3541,7 +3541,7 @@ private ExprNode CollectionLiteral() :
       )*
       [ <COMMA> ]  // trailing comma
       end = <RBRACKET>
-      { return new MapLiteralNode(items, createSrcLoc(begin, end)); }
+      { return new LegacyObjectMapLiteralNode(items, createSrcLoc(begin, end)); }
     )
   )
 }

@@ -34,8 +34,8 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
@@ -78,7 +78,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   }
 
   @Override
-  protected void visitMapLiteralNode(MapLiteralNode node) {
+  protected void visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
     // Visit children only. We cannot simplify the map literal itself.
     visitChildren(node);
   }

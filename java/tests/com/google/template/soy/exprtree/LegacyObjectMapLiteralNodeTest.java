@@ -25,11 +25,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for MapLiteralNode.
+ * Unit tests for LegacyObjectMapLiteralNode.
  *
  */
 @RunWith(JUnit4.class)
-public final class MapLiteralNodeTest {
+public final class LegacyObjectMapLiteralNodeTest {
 
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
@@ -38,8 +38,8 @@ public final class MapLiteralNodeTest {
     VarRefNode booDataRef = new VarRefNode("boo", X, false, null);
     VarRefNode fooDataRef = new VarRefNode("foo", X, false, null);
 
-    MapLiteralNode mapLit =
-        new MapLiteralNode(
+    LegacyObjectMapLiteralNode mapLit =
+        new LegacyObjectMapLiteralNode(
             ImmutableList.<ExprNode>of(
                 new StringNode("aaa", X),
                 new StringNode("blah", X),
@@ -50,7 +50,8 @@ public final class MapLiteralNodeTest {
             X);
     assertEquals("['aaa': 'blah', 'bbb': 123, $boo: $foo]", mapLit.toSourceString());
 
-    MapLiteralNode emptyMapLit = new MapLiteralNode(ImmutableList.<ExprNode>of(), X);
+    LegacyObjectMapLiteralNode emptyMapLit =
+        new LegacyObjectMapLiteralNode(ImmutableList.<ExprNode>of(), X);
     assertEquals("[:]", emptyMapLit.toSourceString());
   }
 }

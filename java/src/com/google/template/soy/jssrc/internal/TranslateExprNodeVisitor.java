@@ -66,8 +66,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -255,12 +255,15 @@ public class TranslateExprNodeVisitor
   }
 
   @Override
-  protected CodeChunk.WithValue visitMapLiteralNode(MapLiteralNode node) {
+  protected CodeChunk.WithValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
     return visitMapLiteralNodeHelper(node, false);
   }
 
-  /** Helper to visit a MapLiteralNode, with the extra option of whether to quote keys. */
-  private CodeChunk.WithValue visitMapLiteralNodeHelper(MapLiteralNode node, boolean doQuoteKeys) {
+  /**
+   * Helper to visit a LegacyObjectMapLiteralNode, with the extra option of whether to quote keys.
+   */
+  private CodeChunk.WithValue visitMapLiteralNodeHelper(
+      LegacyObjectMapLiteralNode node, boolean doQuoteKeys) {
 
     // If there are only string keys, then the expression will be
     //     {aa: 11, bb: 22}    or    {'aa': 11, 'bb': 22}
@@ -593,7 +596,7 @@ public class TranslateExprNodeVisitor
         case INDEX:
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
-          return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
+          return visitMapLiteralNodeHelper((LegacyObjectMapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:

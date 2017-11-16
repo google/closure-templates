@@ -21,15 +21,22 @@ import com.google.template.soy.basetree.CopyState;
 import java.util.List;
 
 /**
- * A node representing a map literal (with keys and values as alternating children).
+ * A node representing a legacy object map literal (with keys and values as alternating children).
+ *
+ * <p>Note: This map literal does not interoperate with proto maps, ES6 Maps, or {@link
+ * com.google.template.soy.types.aggregate.MapType}. We are introducing a second map type to handle
+ * proto maps and ES6 Maps, and a second map literal syntax to create MapType values. We intend to
+ * migrate everyone to the new map literal syntax and eventually delete LegacyObjectMapLiteralNode.
+ * See b/69046114.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MapLiteralNode extends AbstractParentExprNode {
+public final class LegacyObjectMapLiteralNode extends AbstractParentExprNode {
 
   /** @param alternatingKeysAndValues The keys and values (alternating) in this map. */
-  public MapLiteralNode(List<ExprNode> alternatingKeysAndValues, SourceLocation sourceLocation) {
+  public LegacyObjectMapLiteralNode(
+      List<ExprNode> alternatingKeysAndValues, SourceLocation sourceLocation) {
     super(sourceLocation);
     addChildren(alternatingKeysAndValues);
   }
@@ -39,13 +46,13 @@ public final class MapLiteralNode extends AbstractParentExprNode {
    *
    * @param orig The node to copy.
    */
-  private MapLiteralNode(MapLiteralNode orig, CopyState copyState) {
+  private LegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
   @Override
   public Kind getKind() {
-    return Kind.MAP_LITERAL_NODE;
+    return Kind.LEGACY_OBJECT_MAP_LITERAL_NODE;
   }
 
   @Override
@@ -73,7 +80,7 @@ public final class MapLiteralNode extends AbstractParentExprNode {
   }
 
   @Override
-  public MapLiteralNode copy(CopyState copyState) {
-    return new MapLiteralNode(this, copyState);
+  public LegacyObjectMapLiteralNode copy(CopyState copyState) {
+    return new LegacyObjectMapLiteralNode(this, copyState);
   }
 }

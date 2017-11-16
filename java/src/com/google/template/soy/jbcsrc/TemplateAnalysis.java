@@ -32,8 +32,8 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -667,7 +667,7 @@ final class TemplateAnalysis {
     }
 
     @Override
-    protected void visitMapLiteralNode(MapLiteralNode node) {
+    protected void visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
       visitChildren(node);
     }
 

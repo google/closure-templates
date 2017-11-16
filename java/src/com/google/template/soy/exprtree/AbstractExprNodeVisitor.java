@@ -94,8 +94,8 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case LIST_LITERAL_NODE:
         visitListLiteralNode((ListLiteralNode) node);
         break;
-      case MAP_LITERAL_NODE:
-        visitMapLiteralNode((MapLiteralNode) node);
+      case LEGACY_OBJECT_MAP_LITERAL_NODE:
+        visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node);
         break;
 
       case VAR_REF_NODE:
@@ -240,7 +240,7 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
     visitExprNode(node);
   }
 
-  protected void visitMapLiteralNode(MapLiteralNode node) {
+  protected void visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
     visitExprNode(node);
   }
 

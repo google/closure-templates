@@ -40,8 +40,8 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -452,13 +452,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     @Override
-    protected void visitMapLiteralNode(MapLiteralNode node) {
+    protected void visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
       visitChildren(node);
       setMapLiteralNodeType(node);
       tryApplySubstitution(node);
     }
 
-    private void setMapLiteralNodeType(MapLiteralNode node) {
+    private void setMapLiteralNodeType(LegacyObjectMapLiteralNode node) {
       int numChildren = node.numChildren();
       if (numChildren % 2 != 0) {
         throw new AssertionError();

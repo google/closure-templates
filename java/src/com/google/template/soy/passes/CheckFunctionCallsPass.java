@@ -26,7 +26,7 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -109,7 +109,7 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
           requireLoopVariableInScope(node, arg1);
           break;
         case QUOTE_KEYS_IF_JS:
-          if (!(arg1 instanceof MapLiteralNode)) {
+          if (!(arg1 instanceof LegacyObjectMapLiteralNode)) {
             errorReporter.report(
                 arg1.getSourceLocation(),
                 INCORRECT_ARG_TYPE,

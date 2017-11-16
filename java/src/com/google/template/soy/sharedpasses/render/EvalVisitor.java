@@ -57,8 +57,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -210,7 +210,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   @Override
-  protected SoyValue visitMapLiteralNode(MapLiteralNode node) {
+  protected SoyValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
 
     int numItems = node.numChildren() / 2;
 
@@ -572,7 +572,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case INDEX:
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
-          return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+          return visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node.getChild(0));
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
         case CSS:

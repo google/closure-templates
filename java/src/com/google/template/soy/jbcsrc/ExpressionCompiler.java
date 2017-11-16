@@ -44,8 +44,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -305,13 +305,14 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
-      // anyway and could additionally delay detach generation.  Ditto for MapLiteralNode.
+      // anyway and could additionally delay detach generation.  Ditto for
+      // LegacyObjectMapLiteralNode.
       return SoyExpression.forList(
           (ListType) node.getType(), SoyExpression.asBoxedList(visitChildren(node)));
     }
 
     @Override
-    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+    protected final SoyExpression visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
       // map literals are either records (if all the strings are literals) or maps if they aren't
       // constants.
       final int numItems = node.numChildren() / 2;

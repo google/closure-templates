@@ -32,8 +32,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -417,15 +417,15 @@ public final class ParseExpressionTest {
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
 
     expr = assertThatExpression("[:]").isValidExpression();
-    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(0);
+    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("['aa': 55]").isValidExpression();
-    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(2);
+    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(2);
+    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
-    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(6);
+    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(6);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
-    assertThat(((MapLiteralNode) expr).numChildren()).isEqualTo(6);
+    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(6);
   }
 
   @Test
