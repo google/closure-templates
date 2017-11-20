@@ -16,6 +16,10 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.exprtree.ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE;
+import static com.google.template.soy.exprtree.ExprNode.Kind.MAP_LITERAL_NODE;
+
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -33,6 +37,7 @@ import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -42,6 +47,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -127,9 +133,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Type {0} does not support dot access.");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
-  private static final SoyErrorKind DUPLICATE_KEY_IN_RECORD_LITERAL =
-      SoyErrorKind.of(
-          "Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
+  private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL =
+      SoyErrorKind.of("{0} literals with duplicate keys are not allowed.  Duplicate key: ''{1}''");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
@@ -328,7 +333,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void visitExpressions(ExprHolderNode node) {
-    ResolveTypesExprVisitor exprVisitor = new ResolveTypesExprVisitor(node);
+    ResolveTypesExprVisitor exprVisitor = new ResolveTypesExprVisitor();
     for (ExprRootNode expr : node.getExprList()) {
       exprVisitor.exec(expr);
     }
@@ -402,18 +407,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           }
         };
 
-    /** SoyNode owning the expression; Used for error reporting. */
-    private final ExprHolderNode owningSoyNode;
-
-    /**
-     * Construct a new ResolveNamesExprVisitor.
-     *
-     * @param owningSoyNode The current error context, in other words the SoyNode owning the
-     *     expression being scanned.
-     */
-    ResolveTypesExprVisitor(ExprHolderNode owningSoyNode) {
-      this.owningSoyNode = owningSoyNode;
-    }
 
     @Override
     public Void exec(ExprNode node) {
@@ -463,14 +456,21 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       tryApplySubstitution(node);
     }
 
-    private void setMapLiteralNodeType(LegacyObjectMapLiteralNode node) {
-      int numChildren = node.numChildren();
-      if (numChildren % 2 != 0) {
-        throw new AssertionError();
-      }
+    @Override
+    protected void visitMapLiteralNode(MapLiteralNode node) {
+      visitChildren(node);
+      setMapLiteralNodeType(node);
+      tryApplySubstitution(node);
+    }
 
+    private void setMapLiteralNodeType(AbstractParentExprNode node) {
+      Kind nodeKind = node.getKind();
+      checkState(nodeKind == MAP_LITERAL_NODE || nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE);
+      int numChildren = node.numChildren();
+      checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        node.setType(LegacyObjectMapType.EMPTY_MAP);
+        node.setType(
+            nodeKind == MAP_LITERAL_NODE ? MapType.EMPTY_MAP : LegacyObjectMapType.EMPTY_MAP);
         return;
       }
 
@@ -481,12 +481,20 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       for (int i = 0; i < numChildren; i += 2) {
         ExprNode key = node.getChild(i);
         ExprNode value = node.getChild(i + 1);
+        // TODO: consider using ExprEquivalence to detect duplicate keys
         if (key.getKind() == ExprNode.Kind.STRING_NODE) {
           String fieldName = ((StringNode) key).getValue();
           SoyType prev = recordFieldTypes.put(fieldName, value.getType());
           if (prev != null && duplicateKeyErrors.add(fieldName)) {
             errorReporter.report(
-                owningSoyNode.getSourceLocation(), DUPLICATE_KEY_IN_RECORD_LITERAL, fieldName);
+                key.getSourceLocation(),
+                DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL,
+                nodeKind == MAP_LITERAL_NODE
+                    ? "Map"
+                    // TODO: because LegacyObjectMapLiteralNodes are also used to represent record
+                    // literals, this message incorrectly says "Record" for legacy object maps.
+                    : "Record",
+                fieldName);
           }
         }
         keyTypes.add(key.getType());
@@ -495,9 +503,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyType commonKeyType = SoyTypes.computeLowestCommonType(typeRegistry, keyTypes);
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
 
-      if (StringType.getInstance().isAssignableFrom(commonKeyType)
+      // The legacy literal syntax [k1:v1, k2:v2, ...] creates either a legacy object map (a value
+      // of type LegacyObjectMapType) or a record (a value of type RecordType).
+      // A heuristic is used to decide which one: if all the keys are typed as strings,
+      // the literal creates a record; otherwise, it creates map.
+      if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE
+          && StringType.getInstance().isAssignableFrom(commonKeyType)
           && recordFieldTypes.size() == numChildren / 2) {
-        // Case 1: Keys are all strings (or unknown). We should be creating a record for the user.
         Map<String, SoyType> leastCommonFieldTypes =
             Maps.newHashMapWithExpectedSize(recordFieldTypes.size());
         for (String fieldName : recordFieldTypes.keySet()) {
@@ -505,8 +517,14 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         }
         node.setType(typeRegistry.getOrCreateRecordType(leastCommonFieldTypes));
       } else {
-        // Case 2: Keys are not all strings. We should be creating a map for the user.
-        node.setType(typeRegistry.getOrCreateLegacyObjectMapType(commonKeyType, commonValueType));
+        node.setType(
+            nodeKind == MAP_LITERAL_NODE
+                // The new literal syntax map(k1: v1, k2: v2, ...) always creates a value of type
+                // MapType.
+                ? typeRegistry.getOrCreateMapType(commonKeyType, commonValueType)
+                // The legacy literal syntax [k1:v1, k2:v2, ...] creates a value of type
+                // LegacyObjectMapType when not all the keys are strings. (See comment above.)
+                : typeRegistry.getOrCreateLegacyObjectMapType(commonKeyType, commonValueType));
       }
     }
 

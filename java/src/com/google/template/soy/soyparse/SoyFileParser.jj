@@ -47,6 +47,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -71,6 +72,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -137,6 +139,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -367,7 +370,7 @@ import javax.annotation.Nullable;
  *       + Delimited by brackets.
  *       Examples:   []   ['blah', 123, $foo]
  *
- *    9. Map literal:
+ *    9. Legacy object map literal:
  *       + Delimited by brackets.
  *       + Empty map has a single colon within the brackets (to distinguish from empty list).
  *       + Keys must be strings (or expressions that will evaluate to strings).
@@ -403,6 +406,8 @@ public class SoyFileParser {
   // Template errors:
   private static final SoyErrorKind EXPERIMENTAL_MAP_NOT_ALLOWED =
       SoyErrorKind.of("The experimental_map type is not available for general use.");
+  private static final SoyErrorKind EXPERIMENTAL_MAP_LITERAL_NOT_ALLOWED =
+      SoyErrorKind.of("The map() syntax is not available for general use.");
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
   private static final SoyErrorKind INVALID_CALLEE_NAME =
@@ -1064,7 +1069,7 @@ TOKEN_MGR_DECLS: {
 | < NOT: "not" >    // Precedence 8 as a unary operator (along with MINUS)
 | < DOT: "." >      // Precedence 9 operators
 | < QDOT: "?." >
-| < LBRACKET: "[" > // Precedence 9 data access operators and part of map literal syntax
+| < LBRACKET: "[" > // Precedence 9 data access operators and part of legacy map literal syntax
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
 | < COMMA: "," >    // Not actually an operator, part of map/list literal syntax
@@ -3310,7 +3315,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunction | CollectionLiteral | Primitive
+ * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunctionOrMapLiteral | CollectionLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3326,10 +3331,10 @@ private ExprNode Primary() :
   |
     primary = VarRef()
   |
-    primary = GlobalOrFunction()
+    primary = GlobalOrFunctionOrMapLiteral()
   |
-    // This matches both map and list literals.  They have been 'left-factored' in to the same
-    // production because they start with the same token.
+    // This matches both legacy map literals and list literals. They have been 'left-factored' in to
+    // the same production because they start with the same token.
     primary = CollectionLiteral()
   |
     primary = Primitive()
@@ -3375,45 +3380,85 @@ private VarRefNode VarRef() :
 
 
 /**
- * Parses a global, a function call, or a proto init call.
+ * Parses a global, a function call, a proto init call, or a map literal.
  * These share a production because they share a common prefix.
  *
- * GlobalOrFunction -> Identifier
- *                     [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
+ * GlobalOrFunctionOrMapLiteral ->
+ *     Identifier [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
+ *     | "map(" [ Expr ":" Expr ("," Expr ":" Expr)* ] ")"
  */
-private ExprNode GlobalOrFunction() :
+private ExprNode GlobalOrFunctionOrMapLiteral() :
 {
   Identifier ident;
   Token openParen = null, closeParen = null, paramName;
-  ExprNode first, expr;
+  ExprNode key, val;
   List<ExprNode> params = new ArrayList<ExprNode>();
+  ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
   LinkedHashSet<String> paramNames;
 }
 {
   ident = Identifier()
+
   [
     openParen = <LPAREN>
-
-    [
-      // this can be any expr, for a function call; for proto init, must be a single-ident global
-      first = Expr()
-
+   // A simple approach to parsing map literals would be to parse a sequence of comma-delimited
+   // Expr <COLON> Exprs. At the end, if ident is "map", it's a map literal, otherwise it's a proto
+   // init literal. Proto init literals require simple identifiers as keys, while map literals
+   // allow any expression. Parsing them using the same rules makes the error messages
+   // for malformed proto init literals confusing. So use a lookahead to parse the map literals
+   // separately.
+   (LOOKAHEAD({ident.identifier().equals("map")} )
+    ((
+      key = Expr()
+      <COLON>
+      val = Expr()
+      {
+        kvPairs.put(key, val);
+      })?
       (
-        // parens contain a list of ident : expr pairs - this is a proto init call
-        <COLON>
-        expr = Expr()
-        {
-          if (!(first instanceof GlobalNode)
-              || !BaseUtils.isIdentifier(((GlobalNode) first).getName())) {
-            errorReporter.report(
-                first.getSourceLocation(), INVALID_PARAM_NAME, first.toSourceString());
-            first = GlobalNode.error(first.getSourceLocation());
-          }
+      <COMMA>
+      key = Expr()
+      <COLON>
+      val = Expr()
+      {kvPairs.put(key, val);}
+    )*
+    (<COMMA>)? // optional trailing comma
+    )
+    closeParen = <RPAREN>
+    {
+      // Note: the case where there are no keys or values is ambiguous.
+      // It could be a 0-arg function call to a function called "map".
+      // (Function calls and map literals are usually distinguished by their parameter syntax
+      // (positional vs. named), but that's not helpful when there are no params.)
+      // TODO(b/69433057): ban functions named "map".
+       SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
+       if (!experimentalFeatures.contains("experimental_map")) {
+         errorReporter.report(srcLoc, EXPERIMENTAL_MAP_LITERAL_NOT_ALLOWED);
+       }
+       return new MapLiteralNode(kvPairs.build(), srcLoc);
+    }
+    |
+
+        [
+          // this can be any expr, for a function call; for proto init, must be a single-ident global
+          key = Expr()
+
+          (
+            // parens contain a list of ident : expr pairs - this is a proto init call
+            <COLON>
+            val = Expr()
+            {
+              if (!(key instanceof GlobalNode)
+                  || !BaseUtils.isIdentifier(((GlobalNode) key).getName())) {
+                errorReporter.report(
+                    key.getSourceLocation(), INVALID_PARAM_NAME, key.toSourceString());
+                key = GlobalNode.error(key.getSourceLocation());
+              }
 
           paramNames = new LinkedHashSet<String>();
 
-          paramNames.add(((GlobalNode) first).getName());
-          params.add(expr);
+          paramNames.add(((GlobalNode) key).getName());
+          params.add(val);
         }
 
         (
@@ -3426,8 +3471,8 @@ private ExprNode GlobalOrFunction() :
             }
           }
           <COLON>
-          expr = Expr()
-          { params.add(expr); }
+          val = Expr()
+          { params.add(val); }
         )*
 
         closeParen = <RPAREN>
@@ -3441,12 +3486,12 @@ private ExprNode GlobalOrFunction() :
         }
       |
         // parens contain a list of exprs - this is a function
-        { params.add(first); }
+        { params.add(key); }
 
         (
           <COMMA>
-          expr = Expr()
-          { params.add(expr); }
+          val = Expr()
+          { params.add(val); }
         )*
 
         closeParen = <RPAREN>
@@ -3462,7 +3507,7 @@ private ExprNode GlobalOrFunction() :
         }
       )
     ]
-
+    )
     closeParen = <RPAREN>
   ]
 
@@ -3484,7 +3529,8 @@ private ExprNode GlobalOrFunction() :
 }
 
 /**
- * Parses map and list literals.  Both are primary expressions that start with "[".
+ * Parses legacy object map literals and list literals.  Both are primary expressions that start
+ * with "[".
  *
  * CollectionLiteral -> "[" ( "]" | ":" "]"
  *                      | Expr ( ( ("," Expr)* | ( ":" Expr ( "," Expr ":" Expr )* ) ) [","] "]" ) )

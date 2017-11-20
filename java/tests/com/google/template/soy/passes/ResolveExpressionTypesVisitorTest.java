@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -75,6 +76,8 @@ public final class ResolveExpressionTypesVisitorTest {
 
   private static final SoyTypeRegistry TYPE_REGISTRY =
       new SoyTypeRegistry(ImmutableSet.of(TYPE_PROVIDER));
+  private static final SoyGeneralOptions EXPERIMENTAL_MAP_OPTIONS =
+      new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("experimental_map"));
 
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
@@ -377,6 +380,24 @@ public final class ResolveExpressionTypesVisitorTest {
                 constructTemplateSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
+                    "{let $map: map(1: $pi, 2:$pf)/}",
+                    "{assertType('experimental_map<int,float|int>', $map)}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .typeRegistry(TYPE_REGISTRY)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .options(EXPERIMENTAL_MAP_OPTIONS)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testLegacyObjectMapLiteral() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pi: int}",
+                    "{@param pf: float}",
                     "{let $map: [1: $pi, 2:$pf]/}",
                     "{assertType('map<int,float|int>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
@@ -395,6 +416,25 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param v1: int}",
                     "{@param v2: string}",
                     "{@param k1: string}",
+                    "{let $map: map($k1: $v1, 'b': $v2) /}",
+                    "{assertType('experimental_map<string,int|string>', $map)}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .typeRegistry(TYPE_REGISTRY)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .options(EXPERIMENTAL_MAP_OPTIONS)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testLegacyObjectMapLiteralWithStringKeysAsMap() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param v1: int}",
+                    "{@param v2: string}",
+                    "{@param k1: string}",
                     "{let $map: [$k1: $v1, 'b': $v2] /}",
                     "{assertType('map<string,int|string>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
@@ -406,7 +446,26 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
-  public void testMapLiteralAsRecord() {
+  public void testMapLiteralWithStringLiteralKeysDoesNotCreateRecord() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    // With the old map syntax, this would create a record type (see next test)
+                    "{let $map: map('a': $pi, 'b':$pf)/}",
+                    "{assertType('experimental_map<string,float|int>', $map)}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .typeRegistry(TYPE_REGISTRY)
+            .options(EXPERIMENTAL_MAP_OPTIONS)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testLegacyObjectMapLiteralAsRecord() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
@@ -423,7 +482,22 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
-  public void testMapLiteralAsRecord_duplicateKeys() {
+  public void testMapLiteral_duplicateKeys() {
+    ErrorReporter reporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(
+            constructTemplateSource("{let $map: map('a': 1, 'a': 2)/}"))
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .errorReporter(reporter)
+        .typeRegistry(TYPE_REGISTRY)
+        .options(EXPERIMENTAL_MAP_OPTIONS)
+        .parse()
+        .fileSet();
+    assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
+        .isEqualTo("Map literals with duplicate keys are not allowed.  Duplicate key: 'a'");
+  }
+
+  @Test
+  public void testLegacyObjectMapLiteralAsRecord_duplicateKeys() {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))

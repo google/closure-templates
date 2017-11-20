@@ -274,6 +274,7 @@ public final class SoyFileSetParserBuilder {
                 errorReporter))
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
+        .setGeneralOptions(options)
         .build()
         .parse();
   }
