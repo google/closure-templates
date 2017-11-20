@@ -27,6 +27,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -78,7 +79,7 @@ public final class ResolveExpressionTypesVisitorTest {
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveExpressionTypesVisitor(
-        TYPE_REGISTRY, declaredSyntaxVersion, ErrorReporter.exploding());
+        TYPE_REGISTRY, declaredSyntaxVersion, new SoyGeneralOptions(), ErrorReporter.exploding());
   }
 
   @Test

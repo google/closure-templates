@@ -117,12 +117,10 @@ class NormalField extends Field {
   }
 
   private static String fieldSuffix(FieldDescriptor field) {
-    // TODO(user): check if the field is a map field and emit "Map" suffix
-    if (field.isRepeated()) {
-      if (ProtoUtils.hasJsMapKey(field)) {
-        return "Map";
-      }
-      return "List";
+    if (field.isMapField()) {
+      return "Map";
+    } else if (field.isRepeated()) {
+      return ProtoUtils.hasJsMapKey(field) ? "Map" : "List";
     } else {
       return "";
     }

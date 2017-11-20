@@ -417,7 +417,10 @@ public class TranslateExprNodeVisitor
           ItemAccessNode itemAccess = (ItemAccessNode) node;
           NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
           CodeChunk.WithValue key = visit(itemAccess.getKeyExprChild());
-          return base.bracketAccess(key, itemAccess.isNullSafe());
+          SoyType.Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
+          return baseKind == SoyType.Kind.MAP
+              ? base.dotAccess(FieldAccess.call("get", key), itemAccess.isNullSafe()) // jspb.Map
+              : base.bracketAccess(key, itemAccess.isNullSafe()); // vanilla bracket access
         }
 
       default:
@@ -477,7 +480,9 @@ public class TranslateExprNodeVisitor
               .getter("getExtension")
               .arg(extensionField(desc))
               .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
-              .isRepeated(desc.isRepeated())
+              // proto map fields are represented as repeated in the descriptor even though map
+              // fields cannot have a "repeated" qualifier in the proto language. Annoying.
+              .isRepeated(desc.isRepeated() && !desc.isMapField())
               .build()
           : FieldAccess.call("getExtension", extensionField(desc));
     }
@@ -487,7 +492,10 @@ public class TranslateExprNodeVisitor
         ? FieldAccess.callAndUnpack()
             .getter(getter)
             .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
-            .isRepeated(desc.isRepeated())
+            // proto map fields are represented as repeated in the descriptor even though map fields
+            // cannot have a "repeated" qualifier in the proto language. Annoying.
+            // TODO(b/69461136): support SafeHtmlProtos as values in proto maps
+            .isRepeated(desc.isRepeated() && !desc.isMapField())
             .build()
         : FieldAccess.call(getter);
   }

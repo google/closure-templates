@@ -58,14 +58,15 @@ abstract class FieldInterpreter {
   /** Creates a {@link FieldInterpreter} for the given field. */
   static FieldInterpreter create(FieldDescriptor fieldDescriptor) {
     FieldInterpreter field = getScalarType(fieldDescriptor);
-    if (fieldDescriptor.isRepeated()) {
-      if (ProtoUtils.hasJsMapKey(fieldDescriptor)) {
-        return getMapType(field, fieldDescriptor);
-      } else {
-        return getListType(field);
-      }
+    if (fieldDescriptor.isMapField()) {
+      return getMapType(field, fieldDescriptor);
+    } else if (fieldDescriptor.isRepeated()) {
+      return ProtoUtils.hasJsMapKey(fieldDescriptor)
+          ? getJspbMapType(field, fieldDescriptor)
+          : getListType(field);
+    } else {
+      return field;
     }
-    return field;
   }
 
   private static FieldInterpreter getListType(final FieldInterpreter local) {
@@ -99,8 +100,32 @@ abstract class FieldInterpreter {
   }
 
   private static FieldInterpreter getMapType(
-      final FieldInterpreter scalarImpl,
-      FieldDescriptor fieldDescriptor) {
+      final FieldInterpreter scalarImpl, FieldDescriptor fieldDescriptor) {
+    return new FieldInterpreter() {
+      @Override
+      SoyType type(SoyTypeRegistry registry) {
+        return registry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type(registry));
+      }
+
+      @Override
+      SoyValueProvider soyFromProto(Object field) {
+        throw new UnsupportedOperationException("TODO(b/69064671)");
+      }
+
+      @Override
+      Object protoFromSoy(SoyValue field) {
+        throw new UnsupportedOperationException("TODO(b/69064671)");
+      }
+    };
+  }
+
+  /**
+   * Proto {@code map} fields are handled by {@link #getMapType}. But before protos had a map type,
+   * JSPB had a {@code map_key} field annotation that simulated map behavior at runtime. They're
+   * still out there, somewhere, so we have to support them.
+   */
+  private static FieldInterpreter getJspbMapType(
+      final FieldInterpreter scalarImpl, FieldDescriptor fieldDescriptor) {
     String keyFieldName = ProtoUtils.getJsMapKeyFieldName(fieldDescriptor);
     final FieldDescriptor keyDescriptor =
         fieldDescriptor.getMessageType().findFieldByName(keyFieldName);
@@ -498,7 +523,7 @@ abstract class FieldInterpreter {
   /** Returns the SoyType of the field. */
   abstract SoyType type(SoyTypeRegistry registry);
 
-  /** Returns the SoyValueProvider for the ToFu representation of the given field. */
+  /** Returns the SoyValueProvider for the Tofu representation of the given field. */
   abstract SoyValueProvider soyFromProto(Object field);
 
   /**

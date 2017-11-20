@@ -427,7 +427,8 @@ public final class PassManager {
       // Needs the syntax version to decide
       // 1. whether the type of boolean operators is bool
       // 2. whether to allow printing bools
-      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
+      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, options, errorReporter)
+          .exec(file);
     }
   }
 
