@@ -19,6 +19,8 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -38,7 +40,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind CALL_TO_UNDEFINED_TEMPLATE =
-      SoyErrorKind.of("Undefined template ''{0}''.");
+      SoyErrorKind.of("Undefined template ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(
           "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency.");
@@ -68,8 +70,14 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
     TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
 
     if (callee == null) {
+      String extraErrorMessage =
+          SoyErrors.getDidYouMeanMessage(
+              templateRegistry.getBasicTemplatesMap().keySet(), node.getCalleeName());
       errorReporter.report(
-          node.getSourceLocation(), CALL_TO_UNDEFINED_TEMPLATE, node.getCalleeName());
+          node.getSourceLocation(),
+          CALL_TO_UNDEFINED_TEMPLATE,
+          node.getCalleeName(),
+          extraErrorMessage);
     } else {
       SoyFileKind callerKind = node.getNearestAncestor(SoyFileNode.class).getSoyFileKind();
       SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
