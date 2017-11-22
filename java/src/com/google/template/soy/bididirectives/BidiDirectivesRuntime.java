@@ -20,7 +20,6 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -222,35 +221,6 @@ public final class BidiDirectivesRuntime {
       delegate.append(wrappingText.beforeText());
       commandBuffer.replayOn(delegate);
       delegate.append(wrappingText.afterText());
-    }
-  }
-
-  /**
-   * Tracks a value of an enum over SanitizedContent enter calls. If the same enum value is set for
-   * all enter calls, then {@link #get} will return that, otherwise it will return null.
-   */
-  private static final class EnumTracker<E extends Enum<E>> {
-
-    /** The overall enum value so far. Each new value gets merged into this on an enter call. */
-    private E value;
-    /**
-     * Whether enter has been called yet. This is used to differentiate a null {@link #value}
-     * meaning enter hasn't been called yet vs. enter has been called for multiple enum values (so
-     * the overall enum value is unknown).
-     */
-    private boolean enterCalled;
-
-    void trackEnter(E e) {
-      if (!enterCalled) {
-        value = e;
-        enterCalled = true;
-      } else if (value != e) {
-        value = null;
-      }
-    }
-
-    E get() {
-      return value;
     }
   }
 }

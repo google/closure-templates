@@ -28,6 +28,7 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.bididirectives.EnumTracker;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -42,6 +43,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -109,6 +111,133 @@ public final class Sanitizers {
       valueDir = sanitizedContent.getContentDirection();
     }
     return cleanHtml(value.coerceToString(), valueDir, optionalSafeTags);
+  }
+
+  /** Streaming version of {@code |cleanHtml}. */
+  public static LoggingAdvisingAppendable cleanHtmlStreaming(
+      LoggingAdvisingAppendable delegate, Collection<? extends OptionalSafeTag> optionalSafeTags) {
+    return new CleanHtmlAppendable(delegate, optionalSafeTags);
+  }
+
+  private static final class CleanHtmlAppendable extends IsInHtmlAppendable implements Closeable {
+    private final LoggingAdvisingAppendable delegate;
+    private final Collection<? extends OptionalSafeTag> optionalSafeTags;
+    private final StringBuilder buffer;
+    private final EnumTracker<Dir> dirTracker;
+
+    CleanHtmlAppendable(
+        LoggingAdvisingAppendable delegate,
+        Collection<? extends OptionalSafeTag> optionalSafeTags) {
+      this.delegate = delegate;
+      this.optionalSafeTags = optionalSafeTags;
+      this.buffer = new StringBuilder();
+      this.dirTracker = new EnumTracker<>();
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      if (isInHtml()) {
+        delegate.append(csq);
+      } else {
+        buffer.append(csq);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      append(csq.subSequence(start, end));
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      append("" + c);
+      return this;
+    }
+
+    @Override
+    protected void doEnterSanitizedContentKind(ContentKind kind) throws IOException {
+      if (isInHtml()) {
+        maybeProcessBuffer();
+        delegate.enterSanitizedContentKind(kind);
+      }
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.enterSanitizedContentDirectionality(contentDir);
+      } else {
+        dirTracker.trackEnter(contentDir);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
+      if (isInHtml()) {
+        delegate.exitSanitizedContentDirectionality();
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      if (isInHtml()) {
+        delegate.enterLoggableElement(statement);
+      } else {
+        throw new AssertionError(
+            "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      if (isInHtml()) {
+        delegate.exitLoggableElement();
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      } else {
+        throw new AssertionError(
+            "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return delegate.softLimitReached();
+    }
+
+    @Override
+    public void close() throws IOException {
+      maybeProcessBuffer();
+    }
+
+    private void maybeProcessBuffer() throws IOException {
+      if (buffer.length() > 0) {
+        SanitizedContent content = cleanHtml(buffer.toString(), dirTracker.get(), optionalSafeTags);
+        delegate
+            .enterSanitizedContentKind(content.getContentKind())
+            .enterSanitizedContentDirectionality(content.getContentDirection())
+            .append(content.getContent())
+            .exitSanitizedContentDirectionality()
+            .exitSanitizedContentKind();
+        buffer.setLength(0);
+      }
+    }
   }
 
   /**

@@ -106,7 +106,8 @@ public final class SharedModuleTest {
             "|bidiSpanWrap",
             "|bidiUnicodeWrap",
             "|insertWordBreaks",
-            "|truncate");
+            "|truncate",
+            "|cleanHtml");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
             // This isn't worth doing.  uris should all be small.
@@ -134,7 +135,6 @@ public final class SharedModuleTest {
             // Or we could possibly add a version of 'streaming' which actually just buffers all
             // the commands and preserves them.  This way logging directives could be preserved
             // through the print directive.
-            "|cleanHtml",
             "|formatNum");
   }
 }

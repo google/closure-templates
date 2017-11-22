@@ -24,6 +24,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -32,6 +33,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -64,7 +66,7 @@ final class CleanHtmlDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
-        SoyJbcSrcPrintDirective {
+        SoyJbcSrcPrintDirective.Streamable {
 
   private static final Joiner ARG_JOINER = Joiner.on(", ");
 
@@ -109,6 +111,13 @@ final class CleanHtmlDirective
     static final MethodRef CLEAN_HTML =
         MethodRef.create(Sanitizers.class, "cleanHtml", SoyValue.class, Collection.class)
             .asNonNullable();
+    static final MethodRef CLEAN_HTML_STREAMING =
+        MethodRef.create(
+                Sanitizers.class,
+                "cleanHtmlStreaming",
+                LoggingAdvisingAppendable.class,
+                Collection.class)
+            .asNonNullable();
     static final MethodRef FROM_TAG_NAME =
         MethodRef.create(OptionalSafeTag.class, "fromTagName", String.class).asNonNullable();
   }
@@ -116,13 +125,24 @@ final class CleanHtmlDirective
   @Override
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SanitizedType.HtmlType.getInstance(),
+        JbcSrcMethods.CLEAN_HTML.invoke(value.box(), fromTagNameList(args)));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.createCloseable(
+        JbcSrcMethods.CLEAN_HTML_STREAMING.invoke(delegateAppendable, fromTagNameList(args)));
+  }
+
+  private Expression fromTagNameList(List<SoyExpression> args) {
     List<Expression> optionalSafeTags = new ArrayList<>();
     for (SoyExpression arg : args) {
       optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAs(String.class)));
     }
-    return SoyExpression.forSoyValue(
-        SanitizedType.HtmlType.getInstance(),
-        JbcSrcMethods.CLEAN_HTML.invoke(value.box(), BytecodeUtils.asList(optionalSafeTags)));
+    return BytecodeUtils.asList(optionalSafeTags);
   }
 
   @Override
