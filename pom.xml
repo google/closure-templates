@@ -75,7 +75,7 @@
     <java.version>1.8</java.version>
     <guice.version>4.1.0</guice.version>
     <guava.version>21.0</guava.version>
-    <asm.version>5.0.3</asm.version>
+    <asm.version>6.0</asm.version>
     <autovalue.version>1.4</autovalue.version>
     <proto.version>3.3.0</proto.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
@@ -465,14 +465,17 @@
                     <file>${project.build.directory}/soy-${project.version}-jssrc_js.jar</file>
                   </files>
                 </requireFilesExist>
-                <!--
+                <!-- fences-maven-enforcer-rule doesn't support Java 9 yet, see
+                     https://github.com/mikesamuel/fences-maven-enforcer-rule/pull/12
+                <!- -
                   See http://mikesamuel.github.io/fences-maven-enforcer-rule/getting_started.html
-                -->
+                - ->
                 <fences implementation="com.google.security.fences.FencesMavenEnforcerRule">
-                  <!-- The compiled JAR should not violate the policy it itself exports
-                      (see fences.xml). -->
+                  <!- - The compiled JAR should not violate the policy it itself exports
+                      (see fences.xml). - ->
                   <import>com.google.template:soy</import>
                 </fences>
+                -->
               </rules>
               <fail>true</fail>
             </configuration>
@@ -488,6 +491,8 @@
                     <!-- present in both junit and hamcrest-core -->
                     <ignoreClass>org.hamcrest.*</ignoreClass>
                     <ignoreClass>org.hamcrest.core.*</ignoreClass>
+                    <!-- see https://issues.apache.org/jira/browse/MENFORCER-283 -->
+                    <ignoreClass>module-info</ignoreClass>
                   </ignoreClasses>
                 </banDuplicateClasses>
               </rules>
