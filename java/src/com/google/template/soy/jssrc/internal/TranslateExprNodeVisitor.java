@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
@@ -68,6 +69,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -89,6 +91,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.proto.ProtoUtils;
 import com.google.template.soy.types.proto.SoyProtoType;
@@ -256,13 +259,13 @@ public class TranslateExprNodeVisitor
 
   @Override
   protected CodeChunk.WithValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-    return visitMapLiteralNodeHelper(node, false);
+    return visitLegacyObjectMapLiteralNode(node, false);
   }
 
   /**
    * Helper to visit a LegacyObjectMapLiteralNode, with the extra option of whether to quote keys.
    */
-  private CodeChunk.WithValue visitMapLiteralNodeHelper(
+  private CodeChunk.WithValue visitLegacyObjectMapLiteralNode(
       LegacyObjectMapLiteralNode node, boolean doQuoteKeys) {
 
     // If there are only string keys, then the expression will be
@@ -368,6 +371,22 @@ public class TranslateExprNodeVisitor
     return mapVar.withInitialStatements(initialStatements.build());
   }
 
+  @Override
+  protected WithValue visitMapLiteralNode(MapLiteralNode node) {
+    // Map literal nodes are much simpler to translate than legacy object map literal nodes.
+    // Because they are implemented by ES6 Maps, there is no possibility that JSCompiler
+    // will mistakenly rename (or not rename) its keys, and no need to ever quote a key.
+    CodeChunk.WithValue map =
+        codeGenerator.declarationBuilder().setRhs(CodeChunk.new_(id("Map")).call()).build().ref();
+    ImmutableList.Builder<CodeChunk> setCalls = ImmutableList.builder();
+    for (int i = 0; i < node.numChildren(); i += 2) {
+      CodeChunk.WithValue key = visit(node.getChild(i));
+      CodeChunk.WithValue value = visit(node.getChild(i + 1));
+      setCalls.add(map.dotAccess("set").call(key.plus(LITERAL_EMPTY_STRING), value));
+    }
+    return map.withInitialStatements(setCalls.build());
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for data references.
 
@@ -417,9 +436,24 @@ public class TranslateExprNodeVisitor
           ItemAccessNode itemAccess = (ItemAccessNode) node;
           NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
           CodeChunk.WithValue key = visit(itemAccess.getKeyExprChild());
-          SoyType.Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
-          return baseKind == SoyType.Kind.MAP
-              ? base.dotAccess(FieldAccess.call("get", key), itemAccess.isNullSafe()) // jspb.Map
+          SoyType baseType = itemAccess.getBaseExprChild().getType();
+          SoyType.Kind baseKind = baseType.getKind();
+          boolean shouldUseGetter =
+              baseKind == Kind.MAP
+                  || (baseKind == Kind.UNION
+                      && ((UnionType) baseType).removeNullability().getKind() == Kind.MAP);
+          return shouldUseGetter
+              ? base.dotAccess(
+                  FieldAccess.call(
+                      "get",
+                      // Soy strings can be represented by SanitizedContent objects at runtime,
+                      // so care needs to be taken when indexing into a map with a Soy "string".
+                      // For pre-ES6 object maps, this isn't a problem, since bracket access
+                      // implicitly calls toString() on the key, and SanitizedContent overrides
+                      // toString appropriately. But ES6 Maps and jspb.Maps don't do this
+                      // automatically, so we need to set it up.
+                      key.plus(WithValue.LITERAL_EMPTY_STRING)),
+                  itemAccess.isNullSafe()) // jspb.Map
               : base.bracketAccess(key, itemAccess.isNullSafe()); // vanilla bracket access
         }
 
@@ -604,7 +638,8 @@ public class TranslateExprNodeVisitor
         case INDEX:
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
-          return visitMapLiteralNodeHelper((LegacyObjectMapLiteralNode) node.getChild(0), true);
+          return visitLegacyObjectMapLiteralNode(
+              (LegacyObjectMapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:

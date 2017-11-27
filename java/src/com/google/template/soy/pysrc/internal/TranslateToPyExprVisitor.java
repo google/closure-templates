@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -34,6 +35,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
@@ -145,6 +147,18 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+  }
+
+  @Override
+  protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
+    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+  }
+
+  private PyExpr visitLegacyObjectMapLiteralOrMapLiteralNode(AbstractParentExprNode node) {
+    Preconditions.checkState(
+        node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+            || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
 
@@ -154,6 +168,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       dict.put(visit(keyNode), visit(valueNode));
     }
 
+    // TODO(b/69064788): OrderedDict is being used to represent both legacy object map literals
+    // and map literals, but we know here which one is intended. Add OrderedDict APIs to tell it
+    // which kind of map it "really" is, so it can throw a runtime exception if a template tries
+    // to index into the map with the wrong convention.
     return PyExprUtils.convertMapToOrderedDict(dict);
   }
 

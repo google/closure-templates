@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
@@ -32,6 +33,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -46,6 +48,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -82,7 +85,6 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -313,28 +315,42 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-      // map literals are either records (if all the strings are literals) or maps if they aren't
-      // constants.
+      return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+    }
+
+    @Override
+    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+      return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+    }
+
+    private SoyExpression visitLegacyObjectMapLiteralOrMapLiteralNode(AbstractParentExprNode node) {
+      checkState(
+          node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+              || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
       final int numItems = node.numChildren() / 2;
       if (numItems == 0) {
         return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor());
       }
-      boolean isRecord = node.getType().getKind() == Kind.RECORD;
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings and values are boxed SoyValues
-        // Note: The soy grammar and type system both allow for maps to have arbitrary keys for
-        // types but none of the implementations support this.  So we don't support it either.
+        // Keys are strings (for legacy object map literals) or boxed SoyValues (for map literals).
+        // Values are boxed SoyValues.
+        // Note: The soy grammar and type system both allow for legacy object maps to have arbitrary
+        // keys for types but none of the implementations support this.  So we don't support it
+        // either.
         // b/20468013
-        keys.add(visit(node.getChild(2 * i)).unboxAs(String.class));
+        // TODO(b/69794482): support non-string keys in map literals
+        SoyExpression key = visit(node.getChild(2 * i));
+        keys.add(key.unboxAs(String.class));
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression soyDict =
           MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newLinkedHashMap(keys, values));
-      if (isRecord) {
-        return SoyExpression.forSoyValue(node.getType(), soyDict);
-      }
+      // TODO(b/69064671): DictImpl is being used to represent both legacy object map literals
+      // and map literals, but we know here which one is intended. Add DictImpl APIs to tell it
+      // which kind of map it "really" is, so it can throw a runtime exception if a template tries
+      // to index into the map with the wrong convention.
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 

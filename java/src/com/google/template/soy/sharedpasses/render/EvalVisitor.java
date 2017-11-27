@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -46,6 +47,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -59,6 +61,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -211,6 +214,18 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+  }
+
+  @Override
+  protected SoyValue visitMapLiteralNode(MapLiteralNode node) {
+    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+  }
+
+  private SoyValue visitLegacyObjectMapLiteralOrMapLiteralNode(AbstractParentExprNode node) {
+    checkState(
+        node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+            || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
 
     int numItems = node.numChildren() / 2;
 
@@ -235,6 +250,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       for (int i = 0; i < numItems; i++) {
         map.put(keys.get(i).stringValue(), values.get(i));
       }
+      // TODO(b/69064671): DictImpl is being used to represent both legacy object map literals
+      // and map literals, but we know here which one is intended. Add DictImpl APIs to tell it
+      // which kind of map it "really" is, so it can throw a runtime exception if a template tries
+      // to index into the map with the wrong convention.
       return DictImpl.forProviderMap(map);
     } else {
       // TODO: Support map literals with nonstring keys.

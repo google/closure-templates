@@ -89,6 +89,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
       case LIST_LITERAL_NODE:
         return visitListLiteralNode((ListLiteralNode) node);
+      case MAP_LITERAL_NODE:
+        return visitMapLiteralNode((MapLiteralNode) node);
       case LEGACY_OBJECT_MAP_LITERAL_NODE:
         return visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node);
 
@@ -200,6 +202,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+    return visitExprNode(node);
+  }
+
+  protected R visitMapLiteralNode(MapLiteralNode node) {
     return visitExprNode(node);
   }
 
