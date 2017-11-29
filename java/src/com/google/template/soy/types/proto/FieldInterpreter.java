@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types.proto;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
@@ -59,7 +61,11 @@ abstract class FieldInterpreter {
   static FieldInterpreter create(FieldDescriptor fieldDescriptor) {
     FieldInterpreter field = getScalarType(fieldDescriptor);
     if (fieldDescriptor.isMapField()) {
-      return getMapType(field, fieldDescriptor);
+      List<FieldDescriptor> mapFields = fieldDescriptor.getMessageType().getFields();
+      checkState(mapFields.size() == 2, "proto representation of map fields changed");
+      FieldInterpreter keyField = getScalarType(mapFields.get(0));
+      FieldInterpreter valueField = getScalarType(mapFields.get(1));
+      return getMapType(keyField, valueField, fieldDescriptor);
     } else if (fieldDescriptor.isRepeated()) {
       return ProtoUtils.hasJsMapKey(fieldDescriptor)
           ? getJspbMapType(field, fieldDescriptor)
@@ -100,11 +106,13 @@ abstract class FieldInterpreter {
   }
 
   private static FieldInterpreter getMapType(
-      final FieldInterpreter scalarImpl, FieldDescriptor fieldDescriptor) {
+      final FieldInterpreter keyField,
+      final FieldInterpreter valueField,
+      FieldDescriptor fieldDescriptor) {
     return new FieldInterpreter() {
       @Override
       SoyType type(SoyTypeRegistry registry) {
-        return registry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type(registry));
+        return registry.getOrCreateMapType(keyField.type(registry), valueField.type(registry));
       }
 
       @Override
