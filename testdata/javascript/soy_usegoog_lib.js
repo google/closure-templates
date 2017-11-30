@@ -23365,6 +23365,7 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
  * @author Aharon Lanin
  */
 goog.provide('soy');
+goog.provide('soy.Map');
 goog.provide('soy.asserts');
 goog.provide('soy.esc');
 goog.provide('soydata');
@@ -25174,6 +25175,31 @@ soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   return param;
 };
 
+/**
+ * Structural interface for representing Soy {@code map}s in JavaScript.
+ *
+ * <p>The Soy {@code map} type was originally represented in JavaScript by plain
+ * objects ({@code Object<K,V>}). However, plain object access syntax
+ * ({@code obj['key']}) is incompatible with the ES6 Map and jspb.Map APIs,
+ * both of which use {@code map.get('key')}. In order to allow the Soy {@code
+ * map} type to interoperate with ES6 Maps and proto maps, Soy now uses this
+ * interface to represent the {@code map} type. (The Soy {@code
+ * legacy_object_literal_map} type continues to use plain objects for backwards
+ * compatibility.)
+ *
+ * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
+ * implement it without declaring that they do.
+ *
+ * @record
+ * @template K, V
+ */
+soy.Map = function() {};
+
+/**
+ * @param {K} k
+ * @return {V}
+ */
+soy.Map.prototype.get = function(k) {};
 
 // -----------------------------------------------------------------------------
 // Used for inspecting Soy template information from rendered pages.
@@ -25733,113 +25759,4 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
-
-//javascript/template/soy/soyutils_map.js
-goog.loadModule(function(exports) {'use strict';/*
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * @fileoverview Interfaces and helper functions for Soy maps/proto maps/ES6
- *     maps.
- * MOE:begin_strip
- * See go/soy-proto-map.
- * MOE:end_strip
- */
-goog.module('soy.map');
-goog.module.declareLegacyNamespace();
-
-/**
- * Structural interface for representing Soy {@code map}s in JavaScript.
- *
- * <p>The Soy {@code map} type was originally represented in JavaScript by plain
- * objects ({@code Object<K,V>}). However, plain object access syntax
- * ({@code obj['key']}) is incompatible with the ES6 Map and jspb.Map APIs,
- * both of which use {@code map.get('key')}. In order to allow the Soy {@code
- * map} type to interoperate with ES6 Maps and proto maps, Soy now uses this
- * interface to represent the {@code map} type. (The Soy {@code
- * legacy_object_literal_map} type continues to use plain objects for backwards
- * compatibility.)
- *
- * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
- * implement it without declaring that they do.
- *
- * @record
- * @template K, V
- */
-class SoyMap {
-  /**
-   * @param {K} k
-   * @return {V}
-   */
-  get(k) {}
-
-  /**
-   * Returns an iterator over the [key, value] pair entries of this map.
-   *
-   * TODO(b/69049599): structural interfaces defeat property renaming.
-   * This could cause anything in the compilation unit that has get() and
-   * entries() methods to no longer rename entries(). If that increases code
-   * size too much, we could use the keys() method instead in
-   * $$mapToLegacyObjectMap. Not renaming "keys" is presumably ~43% less bad
-   * than not renaming "entries".
-   *
-   * @return {!Iterator<!Array<K|V>>}
-   */
-  entries() {}
-}
-
-/**
- * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
- * N.B.: although ES6 Maps and jspb.Maps allow many values to serve as map keys,
- * legacy object maps allow only string keys.
- * @param {!SoyMap<string, V>} map
- * @return {!Object<V>}
- * @template V
- */
-function $$mapToLegacyObjectMap(map) {
-  const obj = {};
-  for (const [k, v] of map.entries()) {
-    obj[goog.asserts.assertString(k)] = v;
-  }
-  return obj;
-}
-
-/**
- * Converts a legacy object map with string keys into an equivalent SoyMap.
- * @param {!Object<V>} obj
- * @return {!SoyMap<string, V>}
- * @template V
- */
-function $$legacyObjectMapToMap(obj) {
-  const map = new Map();
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      map.set(key, obj[key]);
-    }
-  }
-  return map;
-}
-
-exports = {
-  $$legacyObjectMapToMap,
-  $$mapToLegacyObjectMap,
-  // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
-  // is used by $$legacyObjectMapToMap. But the external name can still be Map.
-  Map: SoyMap,
-};
-
-;return exports;});
 
