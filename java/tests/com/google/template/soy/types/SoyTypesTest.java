@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.AnyType;
@@ -222,7 +223,7 @@ public class SoyTypesTest {
 
   // Test that map types are covariant over their value types.
   @Test
-  public void testMapValueCovariance() {
+  public void testLegacyObjectMapValueCovariance() {
     LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
     LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
     LegacyObjectMapType mapOfAnyToInt = LegacyObjectMapType.of(ANY_TYPE, INT_TYPE);
@@ -243,12 +244,53 @@ public class SoyTypesTest {
     assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
   }
 
+  // Test that map types are covariant over their value types.
   @Test
-  public void testMapTypeEquality() {
+  public void testMapValueCovariance() {
+    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
+    MapType mapOfAnyToInt = MapType.of(ANY_TYPE, INT_TYPE);
+
+    // Legal to assign Map<X, Y> to Map<X, Y>
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToString)).isTrue();
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToInt)).isTrue();
+
+    // Legal to assign Map<X, Y> to Map<X, Z> where Z <: Y
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToString)).isTrue();
+    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToInt)).isTrue();
+
+    // Not legal to assign Map<X, Y> to Map<X, Z> where !(Z <: Y)
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToString)).isFalse();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToInt)).isFalse();
+    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
+  }
+
+  @Test
+  public void testMapTypeAssignability() {
+    assertThat(MapType.of(ANY_TYPE, ANY_TYPE).isAssignableFrom(UNKNOWN_TYPE)).isFalse();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(MapType.of(ANY_TYPE, ANY_TYPE))).isFalse();
+  }
+
+  @Test
+  public void testLegacyObjectMapTypeEquality() {
     LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
     LegacyObjectMapType mapOfAnyToAny2 = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
     LegacyObjectMapType mapOfStringToAny = LegacyObjectMapType.of(STRING_TYPE, ANY_TYPE);
     LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
+
+    assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
+    assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
+    assertThat(mapOfAnyToAny.equals(mapOfAnyToString)).isFalse();
+  }
+
+  @Test
+  public void testMapTypeEquality() {
+    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfAnyToAny2 = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfStringToAny = MapType.of(STRING_TYPE, ANY_TYPE);
+    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
 
     assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
     assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();

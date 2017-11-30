@@ -17,6 +17,7 @@
 package com.google.template.soy.types.primitive;
 
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.MapType;
 
 /**
  * The "unknown" type is used to indicate that the type was unspecified or could not be inferred.
@@ -37,7 +38,12 @@ public final class UnknownType extends PrimitiveType {
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    return true;
+    // Allow assigning from all types except the new map type.
+    // Bracket access on "?"-typed values generates JS bracket access, which works
+    // whether the actual value is a an array or an object. But this doesn't work for ES6 Maps
+    // or jspb.Maps. Flag this at compile time so people upgrading from legacy_object_map
+    // aren't surprised at runtime.
+    return !(srcType instanceof MapType);
   }
 
   @Override
