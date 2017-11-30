@@ -152,7 +152,7 @@ final class JsType {
 
   private static final JsType RAW_MAP_TYPE =
       builder()
-          .addType("!soy.Map")
+          .addType("!soy.map.Map")
           .setPredicate(TypePredicate.NO_OP) // TODO(b/69049599): need real type predicate
           .build();
 
@@ -261,7 +261,8 @@ final class JsType {
               && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
             return soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? RAW_OBJECT_TYPE : RAW_MAP_TYPE;
           }
-          String jsTypeName = soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? "Object" : "soy.Map";
+          String jsTypeName =
+              soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? "Object" : "soy.map.Map";
           JsType keyTypeName = forSoyType(mapType.getKeyType(), isIncrementalDom);
           JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom);
           Builder builder =
