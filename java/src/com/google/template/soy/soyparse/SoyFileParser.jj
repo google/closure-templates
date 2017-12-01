@@ -551,6 +551,9 @@ public class SoyFileParser {
     this.filePath = "expression parser";
     this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
+    // This ctor is for testing only, and it is okay to enable experimental_map.
+    // Without setting this, NPE will be thrown for tests that only run parseExpression().
+    this.experimentalFeatures = ImmutableSet.of("experimental_map");
   }
 
   /** Attempts to parse the given input as a Soy file. Returns null if parsing fails. */

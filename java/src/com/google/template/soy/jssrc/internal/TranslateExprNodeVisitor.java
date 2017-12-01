@@ -37,6 +37,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
@@ -613,6 +614,15 @@ public class TranslateExprNodeVisitor
       if (fieldDesc.isExtension()) {
         CodeChunk.WithValue extInfo = extensionField(fieldDesc);
         initialStatements.add(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
+      } else if (fieldDesc.isMapField()) {
+        // Protocol buffer in JS does not generate setters for map fields. To construct a proto map
+        // field, we first save a reference to the empty instance using the getter,  and then load
+        // it with the contents of the SoyMap.
+        String getFn = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        CodeChunk.WithValue protoMap = protoVar.dotAccess(getFn).call();
+        CodeChunk.WithValue protoMapVar =
+            codeGenerator.declarationBuilder().setRhs(protoMap).build().ref();
+        initialStatements.add(SOY_MAP_POPULATE.call(protoMapVar, fieldValue));
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
         initialStatements.add(protoVar.dotAccess(setFn).call(fieldValue));

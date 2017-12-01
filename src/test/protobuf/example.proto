@@ -91,3 +91,11 @@ message KvMap {
 
   optional int32 serialized_size = 3;
 }
+
+message Map {
+  message InnerMessage {
+    optional int32 field = 1;
+  }
+  map<string, string> map_field = 1;
+  map<int32, InnerMessage> map_message_field = 2;
+}

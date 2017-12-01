@@ -67,7 +67,10 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   private static final Subject.Factory<ForExprs, String> EXPR_FACTORY = ForExprs::new;
 
-  private SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
+  private final SoyGeneralOptions generalOptions =
+      new SoyGeneralOptions()
+          .disableOptimizer()
+          .setExperimentalFeatures(ImmutableList.of("experimental_map"));
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   ErrorReporter errorReporter = ErrorReporter.exploding();

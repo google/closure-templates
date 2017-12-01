@@ -93,6 +93,8 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
 
+  public static final CodeChunk.WithValue SOY_MAP_POPULATE = SOY.dotAccess("$$populateMap");
+
   public static final CodeChunk.WithValue SOY_REGISTER_DELEGATE_FN =
       SOY.dotAccess("$$registerDelegateFn");
 
