@@ -36,7 +36,9 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(IsNonnullFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNullFunction.class);
     soyFunctionsSetBinder.addBinding().to(KeysFunction.class);
+    soyFunctionsSetBinder.addBinding().to(LegacyObjectMapToMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(LengthFunction.class);
+    soyFunctionsSetBinder.addBinding().to(MapToLegacyObjectMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(MaxFunction.class);
     soyFunctionsSetBinder.addBinding().to(MinFunction.class);
     soyFunctionsSetBinder.addBinding().to(ParseFloatFunction.class);

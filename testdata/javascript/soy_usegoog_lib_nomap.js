@@ -3077,40 +3077,6 @@ if (goog.DEPENDENCIES_ENABLED) {
   })();
 }
 
-//javascript/closure/transitionalforwarddeclarations.js
-// Copyright 2017 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview The forward declarations in this file are here to faciliate
- * the removal of "deps.js" from the "base" rule.  These types are
- * included in various extern files.  These rules should be cleaned up
- * so that these declarations aren't necessary.
- * @suppress {extraRequire}
- */
-
-goog.forwardDeclare('goog.Promise');
-goog.forwardDeclare('goog.date.DateLike');
-goog.forwardDeclare('goog.date.DateTime');
-goog.forwardDeclare('goog.events.EventId');
-goog.forwardDeclare('goog.events.Key');
-goog.forwardDeclare('goog.events.KeyCodes');
-goog.forwardDeclare('goog.i18n.TimeZone');
-goog.forwardDeclare('goog.math.Range');
-goog.forwardDeclare('goog.math.Size');
-goog.forwardDeclare('goog.structs.Map');
-
 //javascript/closure/debug/error.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
 //
@@ -9952,6 +9918,660 @@ goog.debug.freeze = function(arg) {
   }.valueOf();
 };
 
+//javascript/closure/dom/htmlelement.js
+// Copyright 2017 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+goog.provide('goog.dom.HtmlElement');
+
+
+
+/**
+ * This subclass of HTMLElement is used when only a HTMLElement is possible and
+ * not any of its subclasses. Normally, a type can refer to an instance of
+ * itself or an instance of any subtype. More concretely, if HTMLElement is used
+ * then the compiler must assume that it might still be e.g. HTMLScriptElement.
+ * With this, the type check knows that it couldn't be any special element.
+ *
+ * @constructor
+ * @extends {HTMLElement}
+ */
+goog.dom.HtmlElement = function() {};
+
+//javascript/closure/dom/tagname.js
+// Copyright 2007 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Defines the goog.dom.TagName class. Its constants enumerate
+ * all HTML tag names specified in either the the W3C HTML 4.01 index of
+ * elements or the HTML5.1 specification.
+ *
+ * References:
+ * https://www.w3.org/TR/html401/index/elements.html
+ * https://www.w3.org/TR/html51/dom.html#elements
+ */
+goog.provide('goog.dom.TagName');
+
+goog.require('goog.dom.HtmlElement');
+
+
+/**
+ * A tag name with the type of the element stored in the generic.
+ * @param {string} tagName
+ * @constructor
+ * @template T
+ */
+goog.dom.TagName = function(tagName) {
+  /** @private {string} */
+  this.tagName_ = tagName;
+};
+
+
+/**
+ * Returns the tag name.
+ * @return {string}
+ * @override
+ */
+goog.dom.TagName.prototype.toString = function() {
+  return this.tagName_;
+};
+
+
+// Closure Compiler unconditionally converts the following constants to their
+// string value (goog.dom.TagName.A -> 'A'). These are the consequences:
+// 1. Don't add any members or static members to goog.dom.TagName as they
+//    couldn't be accessed after this optimization.
+// 2. Keep the constant name and its string value the same:
+//    goog.dom.TagName.X = new goog.dom.TagName('Y');
+//    is converted to 'X', not 'Y'.
+
+
+/** @type {!goog.dom.TagName<!HTMLAnchorElement>} */
+goog.dom.TagName.A = new goog.dom.TagName('A');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ABBR = new goog.dom.TagName('ABBR');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ACRONYM = new goog.dom.TagName('ACRONYM');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ADDRESS = new goog.dom.TagName('ADDRESS');
+
+
+/** @type {!goog.dom.TagName<!HTMLAppletElement>} */
+goog.dom.TagName.APPLET = new goog.dom.TagName('APPLET');
+
+
+/** @type {!goog.dom.TagName<!HTMLAreaElement>} */
+goog.dom.TagName.AREA = new goog.dom.TagName('AREA');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ARTICLE = new goog.dom.TagName('ARTICLE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ASIDE = new goog.dom.TagName('ASIDE');
+
+
+/** @type {!goog.dom.TagName<!HTMLAudioElement>} */
+goog.dom.TagName.AUDIO = new goog.dom.TagName('AUDIO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.B = new goog.dom.TagName('B');
+
+
+/** @type {!goog.dom.TagName<!HTMLBaseElement>} */
+goog.dom.TagName.BASE = new goog.dom.TagName('BASE');
+
+
+/** @type {!goog.dom.TagName<!HTMLBaseFontElement>} */
+goog.dom.TagName.BASEFONT = new goog.dom.TagName('BASEFONT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BDI = new goog.dom.TagName('BDI');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BDO = new goog.dom.TagName('BDO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BIG = new goog.dom.TagName('BIG');
+
+
+/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
+goog.dom.TagName.BLOCKQUOTE = new goog.dom.TagName('BLOCKQUOTE');
+
+
+/** @type {!goog.dom.TagName<!HTMLBodyElement>} */
+goog.dom.TagName.BODY = new goog.dom.TagName('BODY');
+
+
+/** @type {!goog.dom.TagName<!HTMLBRElement>} */
+goog.dom.TagName.BR = new goog.dom.TagName('BR');
+
+
+/** @type {!goog.dom.TagName<!HTMLButtonElement>} */
+goog.dom.TagName.BUTTON = new goog.dom.TagName('BUTTON');
+
+
+/** @type {!goog.dom.TagName<!HTMLCanvasElement>} */
+goog.dom.TagName.CANVAS = new goog.dom.TagName('CANVAS');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCaptionElement>} */
+goog.dom.TagName.CAPTION = new goog.dom.TagName('CAPTION');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CENTER = new goog.dom.TagName('CENTER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CITE = new goog.dom.TagName('CITE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CODE = new goog.dom.TagName('CODE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
+goog.dom.TagName.COL = new goog.dom.TagName('COL');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
+goog.dom.TagName.COLGROUP = new goog.dom.TagName('COLGROUP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.COMMAND = new goog.dom.TagName('COMMAND');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DATA = new goog.dom.TagName('DATA');
+
+
+/** @type {!goog.dom.TagName<!HTMLDataListElement>} */
+goog.dom.TagName.DATALIST = new goog.dom.TagName('DATALIST');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DD = new goog.dom.TagName('DD');
+
+
+/** @type {!goog.dom.TagName<!HTMLModElement>} */
+goog.dom.TagName.DEL = new goog.dom.TagName('DEL');
+
+
+/** @type {!goog.dom.TagName<!HTMLDetailsElement>} */
+goog.dom.TagName.DETAILS = new goog.dom.TagName('DETAILS');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DFN = new goog.dom.TagName('DFN');
+
+
+/** @type {!goog.dom.TagName<!HTMLDialogElement>} */
+goog.dom.TagName.DIALOG = new goog.dom.TagName('DIALOG');
+
+
+/** @type {!goog.dom.TagName<!HTMLDirectoryElement>} */
+goog.dom.TagName.DIR = new goog.dom.TagName('DIR');
+
+
+/** @type {!goog.dom.TagName<!HTMLDivElement>} */
+goog.dom.TagName.DIV = new goog.dom.TagName('DIV');
+
+
+/** @type {!goog.dom.TagName<!HTMLDListElement>} */
+goog.dom.TagName.DL = new goog.dom.TagName('DL');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DT = new goog.dom.TagName('DT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.EM = new goog.dom.TagName('EM');
+
+
+/** @type {!goog.dom.TagName<!HTMLEmbedElement>} */
+goog.dom.TagName.EMBED = new goog.dom.TagName('EMBED');
+
+
+/** @type {!goog.dom.TagName<!HTMLFieldSetElement>} */
+goog.dom.TagName.FIELDSET = new goog.dom.TagName('FIELDSET');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FIGCAPTION = new goog.dom.TagName('FIGCAPTION');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FIGURE = new goog.dom.TagName('FIGURE');
+
+
+/** @type {!goog.dom.TagName<!HTMLFontElement>} */
+goog.dom.TagName.FONT = new goog.dom.TagName('FONT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FOOTER = new goog.dom.TagName('FOOTER');
+
+
+/** @type {!goog.dom.TagName<!HTMLFormElement>} */
+goog.dom.TagName.FORM = new goog.dom.TagName('FORM');
+
+
+/** @type {!goog.dom.TagName<!HTMLFrameElement>} */
+goog.dom.TagName.FRAME = new goog.dom.TagName('FRAME');
+
+
+/** @type {!goog.dom.TagName<!HTMLFrameSetElement>} */
+goog.dom.TagName.FRAMESET = new goog.dom.TagName('FRAMESET');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H1 = new goog.dom.TagName('H1');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H2 = new goog.dom.TagName('H2');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H3 = new goog.dom.TagName('H3');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H4 = new goog.dom.TagName('H4');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H5 = new goog.dom.TagName('H5');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H6 = new goog.dom.TagName('H6');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadElement>} */
+goog.dom.TagName.HEAD = new goog.dom.TagName('HEAD');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.HEADER = new goog.dom.TagName('HEADER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.HGROUP = new goog.dom.TagName('HGROUP');
+
+
+/** @type {!goog.dom.TagName<!HTMLHRElement>} */
+goog.dom.TagName.HR = new goog.dom.TagName('HR');
+
+
+/** @type {!goog.dom.TagName<!HTMLHtmlElement>} */
+goog.dom.TagName.HTML = new goog.dom.TagName('HTML');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.I = new goog.dom.TagName('I');
+
+
+/** @type {!goog.dom.TagName<!HTMLIFrameElement>} */
+goog.dom.TagName.IFRAME = new goog.dom.TagName('IFRAME');
+
+
+/** @type {!goog.dom.TagName<!HTMLImageElement>} */
+goog.dom.TagName.IMG = new goog.dom.TagName('IMG');
+
+
+/** @type {!goog.dom.TagName<!HTMLInputElement>} */
+goog.dom.TagName.INPUT = new goog.dom.TagName('INPUT');
+
+
+/** @type {!goog.dom.TagName<!HTMLModElement>} */
+goog.dom.TagName.INS = new goog.dom.TagName('INS');
+
+
+/** @type {!goog.dom.TagName<!HTMLIsIndexElement>} */
+goog.dom.TagName.ISINDEX = new goog.dom.TagName('ISINDEX');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.KBD = new goog.dom.TagName('KBD');
+
+
+// HTMLKeygenElement is deprecated.
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.KEYGEN = new goog.dom.TagName('KEYGEN');
+
+
+/** @type {!goog.dom.TagName<!HTMLLabelElement>} */
+goog.dom.TagName.LABEL = new goog.dom.TagName('LABEL');
+
+
+/** @type {!goog.dom.TagName<!HTMLLegendElement>} */
+goog.dom.TagName.LEGEND = new goog.dom.TagName('LEGEND');
+
+
+/** @type {!goog.dom.TagName<!HTMLLIElement>} */
+goog.dom.TagName.LI = new goog.dom.TagName('LI');
+
+
+/** @type {!goog.dom.TagName<!HTMLLinkElement>} */
+goog.dom.TagName.LINK = new goog.dom.TagName('LINK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MAIN = new goog.dom.TagName('MAIN');
+
+
+/** @type {!goog.dom.TagName<!HTMLMapElement>} */
+goog.dom.TagName.MAP = new goog.dom.TagName('MAP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MARK = new goog.dom.TagName('MARK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MATH = new goog.dom.TagName('MATH');
+
+
+/** @type {!goog.dom.TagName<!HTMLMenuElement>} */
+goog.dom.TagName.MENU = new goog.dom.TagName('MENU');
+
+
+/** @type {!goog.dom.TagName<!HTMLMenuItemElement>} */
+goog.dom.TagName.MENUITEM = new goog.dom.TagName('MENUITEM');
+
+
+/** @type {!goog.dom.TagName<!HTMLMetaElement>} */
+goog.dom.TagName.META = new goog.dom.TagName('META');
+
+
+/** @type {!goog.dom.TagName<!HTMLMeterElement>} */
+goog.dom.TagName.METER = new goog.dom.TagName('METER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NAV = new goog.dom.TagName('NAV');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NOFRAMES = new goog.dom.TagName('NOFRAMES');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NOSCRIPT = new goog.dom.TagName('NOSCRIPT');
+
+
+/** @type {!goog.dom.TagName<!HTMLObjectElement>} */
+goog.dom.TagName.OBJECT = new goog.dom.TagName('OBJECT');
+
+
+/** @type {!goog.dom.TagName<!HTMLOListElement>} */
+goog.dom.TagName.OL = new goog.dom.TagName('OL');
+
+
+/** @type {!goog.dom.TagName<!HTMLOptGroupElement>} */
+goog.dom.TagName.OPTGROUP = new goog.dom.TagName('OPTGROUP');
+
+
+/** @type {!goog.dom.TagName<!HTMLOptionElement>} */
+goog.dom.TagName.OPTION = new goog.dom.TagName('OPTION');
+
+
+/** @type {!goog.dom.TagName<!HTMLOutputElement>} */
+goog.dom.TagName.OUTPUT = new goog.dom.TagName('OUTPUT');
+
+
+/** @type {!goog.dom.TagName<!HTMLParagraphElement>} */
+goog.dom.TagName.P = new goog.dom.TagName('P');
+
+
+/** @type {!goog.dom.TagName<!HTMLParamElement>} */
+goog.dom.TagName.PARAM = new goog.dom.TagName('PARAM');
+
+
+/** @type {!goog.dom.TagName<!HTMLPictureElement>} */
+goog.dom.TagName.PICTURE = new goog.dom.TagName('PICTURE');
+
+
+/** @type {!goog.dom.TagName<!HTMLPreElement>} */
+goog.dom.TagName.PRE = new goog.dom.TagName('PRE');
+
+
+/** @type {!goog.dom.TagName<!HTMLProgressElement>} */
+goog.dom.TagName.PROGRESS = new goog.dom.TagName('PROGRESS');
+
+
+/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
+goog.dom.TagName.Q = new goog.dom.TagName('Q');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RP = new goog.dom.TagName('RP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RT = new goog.dom.TagName('RT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RTC = new goog.dom.TagName('RTC');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RUBY = new goog.dom.TagName('RUBY');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.S = new goog.dom.TagName('S');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SAMP = new goog.dom.TagName('SAMP');
+
+
+/** @type {!goog.dom.TagName<!HTMLScriptElement>} */
+goog.dom.TagName.SCRIPT = new goog.dom.TagName('SCRIPT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SECTION = new goog.dom.TagName('SECTION');
+
+
+/** @type {!goog.dom.TagName<!HTMLSelectElement>} */
+goog.dom.TagName.SELECT = new goog.dom.TagName('SELECT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SMALL = new goog.dom.TagName('SMALL');
+
+
+/** @type {!goog.dom.TagName<!HTMLSourceElement>} */
+goog.dom.TagName.SOURCE = new goog.dom.TagName('SOURCE');
+
+
+/** @type {!goog.dom.TagName<!HTMLSpanElement>} */
+goog.dom.TagName.SPAN = new goog.dom.TagName('SPAN');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.STRIKE = new goog.dom.TagName('STRIKE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.STRONG = new goog.dom.TagName('STRONG');
+
+
+/** @type {!goog.dom.TagName<!HTMLStyleElement>} */
+goog.dom.TagName.STYLE = new goog.dom.TagName('STYLE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUB = new goog.dom.TagName('SUB');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUMMARY = new goog.dom.TagName('SUMMARY');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUP = new goog.dom.TagName('SUP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SVG = new goog.dom.TagName('SVG');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableElement>} */
+goog.dom.TagName.TABLE = new goog.dom.TagName('TABLE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.TBODY = new goog.dom.TagName('TBODY');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
+goog.dom.TagName.TD = new goog.dom.TagName('TD');
+
+
+/** @type {!goog.dom.TagName<!HTMLTemplateElement>} */
+goog.dom.TagName.TEMPLATE = new goog.dom.TagName('TEMPLATE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTextAreaElement>} */
+goog.dom.TagName.TEXTAREA = new goog.dom.TagName('TEXTAREA');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.TFOOT = new goog.dom.TagName('TFOOT');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
+goog.dom.TagName.TH = new goog.dom.TagName('TH');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.THEAD = new goog.dom.TagName('THEAD');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.TIME = new goog.dom.TagName('TIME');
+
+
+/** @type {!goog.dom.TagName<!HTMLTitleElement>} */
+goog.dom.TagName.TITLE = new goog.dom.TagName('TITLE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableRowElement>} */
+goog.dom.TagName.TR = new goog.dom.TagName('TR');
+
+
+/** @type {!goog.dom.TagName<!HTMLTrackElement>} */
+goog.dom.TagName.TRACK = new goog.dom.TagName('TRACK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.TT = new goog.dom.TagName('TT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.U = new goog.dom.TagName('U');
+
+
+/** @type {!goog.dom.TagName<!HTMLUListElement>} */
+goog.dom.TagName.UL = new goog.dom.TagName('UL');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.VAR = new goog.dom.TagName('VAR');
+
+
+/** @type {!goog.dom.TagName<!HTMLVideoElement>} */
+goog.dom.TagName.VIDEO = new goog.dom.TagName('VIDEO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.WBR = new goog.dom.TagName('WBR');
+
+//javascript/closure/dom/tags.js
+// Copyright 2014 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Utilities for HTML element tag names.
+ */
+goog.provide('goog.dom.tags');
+
+goog.require('goog.object');
+
+
+/**
+ * The void elements specified by
+ * http://www.w3.org/TR/html-markup/syntax.html#void-elements.
+ * @const @private {!Object<string, boolean>}
+ */
+goog.dom.tags.VOID_TAGS_ = goog.object.createSet(
+    'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input',
+    'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr');
+
+
+/**
+ * Checks whether the tag is void (with no contents allowed and no legal end
+ * tag), for example 'br'.
+ * @param {string} tagName The tag name in lower case.
+ * @return {boolean}
+ */
+goog.dom.tags.isVoidTag = function(tagName) {
+  return goog.dom.tags.VOID_TAGS_[tagName] === true;
+};
+
 //javascript/closure/i18n/uchar.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
 //
@@ -11359,660 +11979,6 @@ goog.format.WbrToken_ = {
   SPACE: 32        // ' '.charCodeAt(0)
 };
 
-//javascript/closure/dom/htmlelement.js
-// Copyright 2017 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-goog.provide('goog.dom.HtmlElement');
-
-
-
-/**
- * This subclass of HTMLElement is used when only a HTMLElement is possible and
- * not any of its subclasses. Normally, a type can refer to an instance of
- * itself or an instance of any subtype. More concretely, if HTMLElement is used
- * then the compiler must assume that it might still be e.g. HTMLScriptElement.
- * With this, the type check knows that it couldn't be any special element.
- *
- * @constructor
- * @extends {HTMLElement}
- */
-goog.dom.HtmlElement = function() {};
-
-//javascript/closure/dom/tagname.js
-// Copyright 2007 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Defines the goog.dom.TagName class. Its constants enumerate
- * all HTML tag names specified in either the the W3C HTML 4.01 index of
- * elements or the HTML5.1 specification.
- *
- * References:
- * https://www.w3.org/TR/html401/index/elements.html
- * https://www.w3.org/TR/html51/dom.html#elements
- */
-goog.provide('goog.dom.TagName');
-
-goog.require('goog.dom.HtmlElement');
-
-
-/**
- * A tag name with the type of the element stored in the generic.
- * @param {string} tagName
- * @constructor
- * @template T
- */
-goog.dom.TagName = function(tagName) {
-  /** @private {string} */
-  this.tagName_ = tagName;
-};
-
-
-/**
- * Returns the tag name.
- * @return {string}
- * @override
- */
-goog.dom.TagName.prototype.toString = function() {
-  return this.tagName_;
-};
-
-
-// Closure Compiler unconditionally converts the following constants to their
-// string value (goog.dom.TagName.A -> 'A'). These are the consequences:
-// 1. Don't add any members or static members to goog.dom.TagName as they
-//    couldn't be accessed after this optimization.
-// 2. Keep the constant name and its string value the same:
-//    goog.dom.TagName.X = new goog.dom.TagName('Y');
-//    is converted to 'X', not 'Y'.
-
-
-/** @type {!goog.dom.TagName<!HTMLAnchorElement>} */
-goog.dom.TagName.A = new goog.dom.TagName('A');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ABBR = new goog.dom.TagName('ABBR');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ACRONYM = new goog.dom.TagName('ACRONYM');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ADDRESS = new goog.dom.TagName('ADDRESS');
-
-
-/** @type {!goog.dom.TagName<!HTMLAppletElement>} */
-goog.dom.TagName.APPLET = new goog.dom.TagName('APPLET');
-
-
-/** @type {!goog.dom.TagName<!HTMLAreaElement>} */
-goog.dom.TagName.AREA = new goog.dom.TagName('AREA');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ARTICLE = new goog.dom.TagName('ARTICLE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ASIDE = new goog.dom.TagName('ASIDE');
-
-
-/** @type {!goog.dom.TagName<!HTMLAudioElement>} */
-goog.dom.TagName.AUDIO = new goog.dom.TagName('AUDIO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.B = new goog.dom.TagName('B');
-
-
-/** @type {!goog.dom.TagName<!HTMLBaseElement>} */
-goog.dom.TagName.BASE = new goog.dom.TagName('BASE');
-
-
-/** @type {!goog.dom.TagName<!HTMLBaseFontElement>} */
-goog.dom.TagName.BASEFONT = new goog.dom.TagName('BASEFONT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BDI = new goog.dom.TagName('BDI');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BDO = new goog.dom.TagName('BDO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BIG = new goog.dom.TagName('BIG');
-
-
-/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
-goog.dom.TagName.BLOCKQUOTE = new goog.dom.TagName('BLOCKQUOTE');
-
-
-/** @type {!goog.dom.TagName<!HTMLBodyElement>} */
-goog.dom.TagName.BODY = new goog.dom.TagName('BODY');
-
-
-/** @type {!goog.dom.TagName<!HTMLBRElement>} */
-goog.dom.TagName.BR = new goog.dom.TagName('BR');
-
-
-/** @type {!goog.dom.TagName<!HTMLButtonElement>} */
-goog.dom.TagName.BUTTON = new goog.dom.TagName('BUTTON');
-
-
-/** @type {!goog.dom.TagName<!HTMLCanvasElement>} */
-goog.dom.TagName.CANVAS = new goog.dom.TagName('CANVAS');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCaptionElement>} */
-goog.dom.TagName.CAPTION = new goog.dom.TagName('CAPTION');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CENTER = new goog.dom.TagName('CENTER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CITE = new goog.dom.TagName('CITE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CODE = new goog.dom.TagName('CODE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
-goog.dom.TagName.COL = new goog.dom.TagName('COL');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
-goog.dom.TagName.COLGROUP = new goog.dom.TagName('COLGROUP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.COMMAND = new goog.dom.TagName('COMMAND');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DATA = new goog.dom.TagName('DATA');
-
-
-/** @type {!goog.dom.TagName<!HTMLDataListElement>} */
-goog.dom.TagName.DATALIST = new goog.dom.TagName('DATALIST');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DD = new goog.dom.TagName('DD');
-
-
-/** @type {!goog.dom.TagName<!HTMLModElement>} */
-goog.dom.TagName.DEL = new goog.dom.TagName('DEL');
-
-
-/** @type {!goog.dom.TagName<!HTMLDetailsElement>} */
-goog.dom.TagName.DETAILS = new goog.dom.TagName('DETAILS');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DFN = new goog.dom.TagName('DFN');
-
-
-/** @type {!goog.dom.TagName<!HTMLDialogElement>} */
-goog.dom.TagName.DIALOG = new goog.dom.TagName('DIALOG');
-
-
-/** @type {!goog.dom.TagName<!HTMLDirectoryElement>} */
-goog.dom.TagName.DIR = new goog.dom.TagName('DIR');
-
-
-/** @type {!goog.dom.TagName<!HTMLDivElement>} */
-goog.dom.TagName.DIV = new goog.dom.TagName('DIV');
-
-
-/** @type {!goog.dom.TagName<!HTMLDListElement>} */
-goog.dom.TagName.DL = new goog.dom.TagName('DL');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DT = new goog.dom.TagName('DT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.EM = new goog.dom.TagName('EM');
-
-
-/** @type {!goog.dom.TagName<!HTMLEmbedElement>} */
-goog.dom.TagName.EMBED = new goog.dom.TagName('EMBED');
-
-
-/** @type {!goog.dom.TagName<!HTMLFieldSetElement>} */
-goog.dom.TagName.FIELDSET = new goog.dom.TagName('FIELDSET');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FIGCAPTION = new goog.dom.TagName('FIGCAPTION');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FIGURE = new goog.dom.TagName('FIGURE');
-
-
-/** @type {!goog.dom.TagName<!HTMLFontElement>} */
-goog.dom.TagName.FONT = new goog.dom.TagName('FONT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FOOTER = new goog.dom.TagName('FOOTER');
-
-
-/** @type {!goog.dom.TagName<!HTMLFormElement>} */
-goog.dom.TagName.FORM = new goog.dom.TagName('FORM');
-
-
-/** @type {!goog.dom.TagName<!HTMLFrameElement>} */
-goog.dom.TagName.FRAME = new goog.dom.TagName('FRAME');
-
-
-/** @type {!goog.dom.TagName<!HTMLFrameSetElement>} */
-goog.dom.TagName.FRAMESET = new goog.dom.TagName('FRAMESET');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H1 = new goog.dom.TagName('H1');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H2 = new goog.dom.TagName('H2');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H3 = new goog.dom.TagName('H3');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H4 = new goog.dom.TagName('H4');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H5 = new goog.dom.TagName('H5');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H6 = new goog.dom.TagName('H6');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadElement>} */
-goog.dom.TagName.HEAD = new goog.dom.TagName('HEAD');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.HEADER = new goog.dom.TagName('HEADER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.HGROUP = new goog.dom.TagName('HGROUP');
-
-
-/** @type {!goog.dom.TagName<!HTMLHRElement>} */
-goog.dom.TagName.HR = new goog.dom.TagName('HR');
-
-
-/** @type {!goog.dom.TagName<!HTMLHtmlElement>} */
-goog.dom.TagName.HTML = new goog.dom.TagName('HTML');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.I = new goog.dom.TagName('I');
-
-
-/** @type {!goog.dom.TagName<!HTMLIFrameElement>} */
-goog.dom.TagName.IFRAME = new goog.dom.TagName('IFRAME');
-
-
-/** @type {!goog.dom.TagName<!HTMLImageElement>} */
-goog.dom.TagName.IMG = new goog.dom.TagName('IMG');
-
-
-/** @type {!goog.dom.TagName<!HTMLInputElement>} */
-goog.dom.TagName.INPUT = new goog.dom.TagName('INPUT');
-
-
-/** @type {!goog.dom.TagName<!HTMLModElement>} */
-goog.dom.TagName.INS = new goog.dom.TagName('INS');
-
-
-/** @type {!goog.dom.TagName<!HTMLIsIndexElement>} */
-goog.dom.TagName.ISINDEX = new goog.dom.TagName('ISINDEX');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.KBD = new goog.dom.TagName('KBD');
-
-
-// HTMLKeygenElement is deprecated.
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.KEYGEN = new goog.dom.TagName('KEYGEN');
-
-
-/** @type {!goog.dom.TagName<!HTMLLabelElement>} */
-goog.dom.TagName.LABEL = new goog.dom.TagName('LABEL');
-
-
-/** @type {!goog.dom.TagName<!HTMLLegendElement>} */
-goog.dom.TagName.LEGEND = new goog.dom.TagName('LEGEND');
-
-
-/** @type {!goog.dom.TagName<!HTMLLIElement>} */
-goog.dom.TagName.LI = new goog.dom.TagName('LI');
-
-
-/** @type {!goog.dom.TagName<!HTMLLinkElement>} */
-goog.dom.TagName.LINK = new goog.dom.TagName('LINK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MAIN = new goog.dom.TagName('MAIN');
-
-
-/** @type {!goog.dom.TagName<!HTMLMapElement>} */
-goog.dom.TagName.MAP = new goog.dom.TagName('MAP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MARK = new goog.dom.TagName('MARK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MATH = new goog.dom.TagName('MATH');
-
-
-/** @type {!goog.dom.TagName<!HTMLMenuElement>} */
-goog.dom.TagName.MENU = new goog.dom.TagName('MENU');
-
-
-/** @type {!goog.dom.TagName<!HTMLMenuItemElement>} */
-goog.dom.TagName.MENUITEM = new goog.dom.TagName('MENUITEM');
-
-
-/** @type {!goog.dom.TagName<!HTMLMetaElement>} */
-goog.dom.TagName.META = new goog.dom.TagName('META');
-
-
-/** @type {!goog.dom.TagName<!HTMLMeterElement>} */
-goog.dom.TagName.METER = new goog.dom.TagName('METER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NAV = new goog.dom.TagName('NAV');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NOFRAMES = new goog.dom.TagName('NOFRAMES');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NOSCRIPT = new goog.dom.TagName('NOSCRIPT');
-
-
-/** @type {!goog.dom.TagName<!HTMLObjectElement>} */
-goog.dom.TagName.OBJECT = new goog.dom.TagName('OBJECT');
-
-
-/** @type {!goog.dom.TagName<!HTMLOListElement>} */
-goog.dom.TagName.OL = new goog.dom.TagName('OL');
-
-
-/** @type {!goog.dom.TagName<!HTMLOptGroupElement>} */
-goog.dom.TagName.OPTGROUP = new goog.dom.TagName('OPTGROUP');
-
-
-/** @type {!goog.dom.TagName<!HTMLOptionElement>} */
-goog.dom.TagName.OPTION = new goog.dom.TagName('OPTION');
-
-
-/** @type {!goog.dom.TagName<!HTMLOutputElement>} */
-goog.dom.TagName.OUTPUT = new goog.dom.TagName('OUTPUT');
-
-
-/** @type {!goog.dom.TagName<!HTMLParagraphElement>} */
-goog.dom.TagName.P = new goog.dom.TagName('P');
-
-
-/** @type {!goog.dom.TagName<!HTMLParamElement>} */
-goog.dom.TagName.PARAM = new goog.dom.TagName('PARAM');
-
-
-/** @type {!goog.dom.TagName<!HTMLPictureElement>} */
-goog.dom.TagName.PICTURE = new goog.dom.TagName('PICTURE');
-
-
-/** @type {!goog.dom.TagName<!HTMLPreElement>} */
-goog.dom.TagName.PRE = new goog.dom.TagName('PRE');
-
-
-/** @type {!goog.dom.TagName<!HTMLProgressElement>} */
-goog.dom.TagName.PROGRESS = new goog.dom.TagName('PROGRESS');
-
-
-/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
-goog.dom.TagName.Q = new goog.dom.TagName('Q');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RP = new goog.dom.TagName('RP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RT = new goog.dom.TagName('RT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RTC = new goog.dom.TagName('RTC');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RUBY = new goog.dom.TagName('RUBY');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.S = new goog.dom.TagName('S');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SAMP = new goog.dom.TagName('SAMP');
-
-
-/** @type {!goog.dom.TagName<!HTMLScriptElement>} */
-goog.dom.TagName.SCRIPT = new goog.dom.TagName('SCRIPT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SECTION = new goog.dom.TagName('SECTION');
-
-
-/** @type {!goog.dom.TagName<!HTMLSelectElement>} */
-goog.dom.TagName.SELECT = new goog.dom.TagName('SELECT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SMALL = new goog.dom.TagName('SMALL');
-
-
-/** @type {!goog.dom.TagName<!HTMLSourceElement>} */
-goog.dom.TagName.SOURCE = new goog.dom.TagName('SOURCE');
-
-
-/** @type {!goog.dom.TagName<!HTMLSpanElement>} */
-goog.dom.TagName.SPAN = new goog.dom.TagName('SPAN');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.STRIKE = new goog.dom.TagName('STRIKE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.STRONG = new goog.dom.TagName('STRONG');
-
-
-/** @type {!goog.dom.TagName<!HTMLStyleElement>} */
-goog.dom.TagName.STYLE = new goog.dom.TagName('STYLE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUB = new goog.dom.TagName('SUB');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUMMARY = new goog.dom.TagName('SUMMARY');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUP = new goog.dom.TagName('SUP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SVG = new goog.dom.TagName('SVG');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableElement>} */
-goog.dom.TagName.TABLE = new goog.dom.TagName('TABLE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.TBODY = new goog.dom.TagName('TBODY');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
-goog.dom.TagName.TD = new goog.dom.TagName('TD');
-
-
-/** @type {!goog.dom.TagName<!HTMLTemplateElement>} */
-goog.dom.TagName.TEMPLATE = new goog.dom.TagName('TEMPLATE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTextAreaElement>} */
-goog.dom.TagName.TEXTAREA = new goog.dom.TagName('TEXTAREA');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.TFOOT = new goog.dom.TagName('TFOOT');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
-goog.dom.TagName.TH = new goog.dom.TagName('TH');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.THEAD = new goog.dom.TagName('THEAD');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.TIME = new goog.dom.TagName('TIME');
-
-
-/** @type {!goog.dom.TagName<!HTMLTitleElement>} */
-goog.dom.TagName.TITLE = new goog.dom.TagName('TITLE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableRowElement>} */
-goog.dom.TagName.TR = new goog.dom.TagName('TR');
-
-
-/** @type {!goog.dom.TagName<!HTMLTrackElement>} */
-goog.dom.TagName.TRACK = new goog.dom.TagName('TRACK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.TT = new goog.dom.TagName('TT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.U = new goog.dom.TagName('U');
-
-
-/** @type {!goog.dom.TagName<!HTMLUListElement>} */
-goog.dom.TagName.UL = new goog.dom.TagName('UL');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.VAR = new goog.dom.TagName('VAR');
-
-
-/** @type {!goog.dom.TagName<!HTMLVideoElement>} */
-goog.dom.TagName.VIDEO = new goog.dom.TagName('VIDEO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.WBR = new goog.dom.TagName('WBR');
-
-//javascript/closure/dom/tags.js
-// Copyright 2014 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities for HTML element tag names.
- */
-goog.provide('goog.dom.tags');
-
-goog.require('goog.object');
-
-
-/**
- * The void elements specified by
- * http://www.w3.org/TR/html-markup/syntax.html#void-elements.
- * @const @private {!Object<string, boolean>}
- */
-goog.dom.tags.VOID_TAGS_ = goog.object.createSet(
-    'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input',
-    'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr');
-
-
-/**
- * Checks whether the tag is void (with no contents allowed and no legal end
- * tag), for example 'br'.
- * @param {string} tagName The tag name in lower case.
- * @return {boolean}
- */
-goog.dom.tags.isVoidTag = function(tagName) {
-  return goog.dom.tags.VOID_TAGS_[tagName] === true;
-};
-
 //javascript/closure/fs/url.js
 // Copyright 2015 The Closure Library Authors. All Rights Reserved.
 //
@@ -12119,6 +12085,502 @@ goog.fs.url.findUrlObject_ = function() {
  */
 goog.fs.url.browserSupportsObjectUrls = function() {
   return goog.fs.url.findUrlObject_() != null;
+};
+
+//javascript/closure/functions/functions.js
+// Copyright 2008 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Utilities for creating functions. Loosely inspired by the
+ * java classes: http://goo.gl/GM0Hmu and http://goo.gl/6k7nI8.
+ *
+ * @author nicksantos@google.com (Nick Santos)
+ */
+
+
+goog.provide('goog.functions');
+
+
+/**
+ * Creates a function that always returns the same value.
+ * @param {T} retValue The value to return.
+ * @return {function():T} The new function.
+ * @template T
+ */
+goog.functions.constant = function(retValue) {
+  return function() { return retValue; };
+};
+
+
+/**
+ * Always returns false.
+ * @type {function(...): boolean}
+ */
+goog.functions.FALSE = goog.functions.constant(false);
+
+
+/**
+ * Always returns true.
+ * @type {function(...): boolean}
+ */
+goog.functions.TRUE = goog.functions.constant(true);
+
+
+/**
+ * Always returns NULL.
+ * @type {function(...): null}
+ */
+goog.functions.NULL = goog.functions.constant(null);
+
+
+/**
+ * A simple function that returns the first argument of whatever is passed
+ * into it.
+ * @param {T=} opt_returnValue The single value that will be returned.
+ * @param {...*} var_args Optional trailing arguments. These are ignored.
+ * @return {T} The first argument passed in, or undefined if nothing was passed.
+ * @template T
+ */
+goog.functions.identity = function(opt_returnValue, var_args) {
+  return opt_returnValue;
+};
+
+
+/**
+ * Creates a function that always throws an error with the given message.
+ * @param {string} message The error message.
+ * @return {!Function} The error-throwing function.
+ */
+goog.functions.error = function(message) {
+  return function() {
+    throw new Error(message);
+  };
+};
+
+
+/**
+ * Creates a function that throws the given object.
+ * @param {*} err An object to be thrown.
+ * @return {!Function} The error-throwing function.
+ */
+goog.functions.fail = function(err) {
+  return function() { throw err; };
+};
+
+
+/**
+ * Given a function, create a function that keeps opt_numArgs arguments and
+ * silently discards all additional arguments.
+ * @param {Function} f The original function.
+ * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
+ * @return {!Function} A version of f that only keeps the first opt_numArgs
+ *     arguments.
+ */
+goog.functions.lock = function(f, opt_numArgs) {
+  opt_numArgs = opt_numArgs || 0;
+  return function() {
+    var self = /** @type {*} */ (this);
+    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
+  };
+};
+
+
+/**
+ * Creates a function that returns its nth argument.
+ * @param {number} n The position of the return argument.
+ * @return {!Function} A new function.
+ */
+goog.functions.nth = function(n) {
+  return function() { return arguments[n]; };
+};
+
+
+/**
+ * Like goog.partial(), except that arguments are added after arguments to the
+ * returned function.
+ *
+ * Usage:
+ * function f(arg1, arg2, arg3, arg4) { ... }
+ * var g = goog.functions.partialRight(f, arg3, arg4);
+ * g(arg1, arg2);
+ *
+ * @param {!Function} fn A function to partially apply.
+ * @param {...*} var_args Additional arguments that are partially applied to fn
+ *     at the end.
+ * @return {!Function} A partially-applied form of the function goog.partial()
+ *     was invoked as a method of.
+ */
+goog.functions.partialRight = function(fn, var_args) {
+  var rightArgs = Array.prototype.slice.call(arguments, 1);
+  return function() {
+    var self = /** @type {*} */ (this);
+    var newArgs = Array.prototype.slice.call(arguments);
+    newArgs.push.apply(newArgs, rightArgs);
+    return fn.apply(self, newArgs);
+  };
+};
+
+
+/**
+ * Given a function, create a new function that swallows its return value
+ * and replaces it with a new one.
+ * @param {Function} f A function.
+ * @param {T} retValue A new return value.
+ * @return {function(...?):T} A new function.
+ * @template T
+ */
+goog.functions.withReturnValue = function(f, retValue) {
+  return goog.functions.sequence(f, goog.functions.constant(retValue));
+};
+
+
+/**
+ * Creates a function that returns whether its argument equals the given value.
+ *
+ * Example:
+ * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
+ *
+ * @param {*} value The value to compare to.
+ * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
+ *     comparison rather than a strict (===) one. Defaults to false.
+ * @return {function(*):boolean} The new function.
+ */
+goog.functions.equalTo = function(value, opt_useLooseComparison) {
+  return function(other) {
+    return opt_useLooseComparison ? (value == other) : (value === other);
+  };
+};
+
+
+/**
+ * Creates the composition of the functions passed in.
+ * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
+ * @param {function(...?):T} fn The final function.
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):T} The composition of all inputs.
+ * @template T
+ */
+goog.functions.compose = function(fn, var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    var result;
+    if (length) {
+      result = functions[length - 1].apply(self, arguments);
+    }
+
+    for (var i = length - 2; i >= 0; i--) {
+      result = functions[i].call(self, result);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that calls the functions passed in in sequence, and
+ * returns the value of the last function. For example,
+ * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {!Function} A function that calls all inputs in sequence.
+ */
+goog.functions.sequence = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    var result;
+    for (var i = 0; i < length; i++) {
+      result = functions[i].apply(self, arguments);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if each of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns false.
+ * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ANDs its component
+ *      functions.
+ */
+goog.functions.and = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    for (var i = 0; i < length; i++) {
+      if (!functions[i].apply(self, arguments)) {
+        return false;
+      }
+    }
+    return true;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if any of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns true.
+ * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ORs its component
+ *    functions.
+ */
+goog.functions.or = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    for (var i = 0; i < length; i++) {
+      if (functions[i].apply(self, arguments)) {
+        return true;
+      }
+    }
+    return false;
+  };
+};
+
+
+/**
+ * Creates a function that returns the Boolean opposite of a provided function.
+ * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
+ * @param {!Function} f The original function.
+ * @return {function(...?):boolean} A function that delegates to f and returns
+ * opposite.
+ */
+goog.functions.not = function(f) {
+  return function() {
+    var self = /** @type {*} */ (this);
+    return !f.apply(self, arguments);
+  };
+};
+
+
+/**
+ * Generic factory function to construct an object given the constructor
+ * and the arguments. Intended to be bound to create object factories.
+ *
+ * Example:
+ *
+ * var factory = goog.partial(goog.functions.create, Class);
+ *
+ * @param {function(new:T, ...)} constructor The constructor for the Object.
+ * @param {...*} var_args The arguments to be passed to the constructor.
+ * @return {T} A new instance of the class given in {@code constructor}.
+ * @template T
+ */
+goog.functions.create = function(constructor, var_args) {
+  /**
+   * @constructor
+   * @final
+   */
+  var temp = function() {};
+  temp.prototype = constructor.prototype;
+
+  // obj will have constructor's prototype in its chain and
+  // 'obj instanceof constructor' will be true.
+  var obj = new temp();
+
+  // obj is initialized by constructor.
+  // arguments is only array-like so lacks shift(), but can be used with
+  // the Array prototype function.
+  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
+  return obj;
+};
+
+
+/**
+ * @define {boolean} Whether the return value cache should be used.
+ *    This should only be used to disable caches when testing.
+ */
+goog.define('goog.functions.CACHE_RETURN_VALUE', true);
+
+
+/**
+ * Gives a wrapper function that caches the return value of a parameterless
+ * function when first called.
+ *
+ * When called for the first time, the given function is called and its
+ * return value is cached (thus this is only appropriate for idempotent
+ * functions).  Subsequent calls will return the cached return value. This
+ * allows the evaluation of expensive functions to be delayed until first used.
+ *
+ * To cache the return values of functions with parameters, see goog.memoize.
+ *
+ * @param {function():T} fn A function to lazily evaluate.
+ * @return {function():T} A wrapped version the function.
+ * @template T
+ */
+goog.functions.cacheReturnValue = function(fn) {
+  var called = false;
+  var value;
+
+  return function() {
+    if (!goog.functions.CACHE_RETURN_VALUE) {
+      return fn();
+    }
+
+    if (!called) {
+      value = fn();
+      called = true;
+    }
+
+    return value;
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once. All
+ * additional calls are no-ops.
+ *
+ * This is particularly useful for initialization functions
+ * that should be called, at most, once.
+ *
+ * @param {function():*} f Function to call.
+ * @return {function():undefined} Wrapped function.
+ */
+goog.functions.once = function(f) {
+  // Keep a reference to the function that we null out when we're done with
+  // it -- that way, the function can be GC'd when we're done with it.
+  var inner = f;
+  return function() {
+    if (inner) {
+      var tmp = inner;
+      inner = null;
+      tmp();
+    }
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the Nth call will go through.
+ *
+ * This is particularly useful for batching up repeated actions where the
+ * last action should win. This can be used, for example, for refreshing an
+ * autocomplete pop-up every so often rather than updating with every keystroke,
+ * since the final text typed by the user is the one that should produce the
+ * final autocomplete results. For more stateful debouncing with support for
+ * pausing, resuming, and canceling debounced actions, use {@code
+ * goog.async.Debouncer}.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to debounce. The function will
+ *     only be called after the full interval has elapsed since the last call.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.debounce = function(f, interval, opt_scope) {
+  var timeout = 0;
+  return /** @type {function(...?)} */ (function(var_args) {
+    goog.global.clearTimeout(timeout);
+    var args = arguments;
+    timeout = goog.global.setTimeout(function() {
+      f.apply(opt_scope, args);
+    }, interval);
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times in
+ * that interval, both the 1st and the Nth calls will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * the last action should win, but you also don't want to wait until the end of
+ * the interval before sending a request out, as it leads to a perception of
+ * slowness for the user.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to throttle. The function can
+ *     only be called once per interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.throttle = function(f, interval, opt_scope) {
+  var timeout = 0;
+  var shouldFire = false;
+  var args = [];
+
+  var handleTimeout = function() {
+    timeout = 0;
+    if (shouldFire) {
+      shouldFire = false;
+      fire();
+    }
+  };
+
+  var fire = function() {
+    timeout = goog.global.setTimeout(handleTimeout, interval);
+    f.apply(opt_scope, args);
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    args = arguments;
+    if (!timeout) {
+      fire();
+    } else {
+      shouldFire = true;
+    }
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the 1st call will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * first request is guaranteed to have all the data required to perform the
+ * final action, so there's no need to wait until the end of the interval before
+ * sending the request out.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to rate-limit. The function will
+ *     only be called once per interval, and ignored for the remainer of the
+ *     interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.rateLimit = function(f, interval, opt_scope) {
+  var timeout = 0;
+
+  var handleTimeout = function() {
+    timeout = 0;
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    if (!timeout) {
+      timeout = goog.global.setTimeout(handleTimeout, interval);
+      f.apply(opt_scope, arguments);
+    }
+  });
 };
 
 //javascript/closure/string/typedstring.js
@@ -17066,502 +17528,6 @@ goog.i18n.BidiFormatter.prototype.startEdge = function() {
 goog.i18n.BidiFormatter.prototype.endEdge = function() {
   return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
                                                       goog.i18n.bidi.RIGHT;
-};
-
-//javascript/closure/functions/functions.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities for creating functions. Loosely inspired by the
- * java classes: http://goo.gl/GM0Hmu and http://goo.gl/6k7nI8.
- *
- * @author nicksantos@google.com (Nick Santos)
- */
-
-
-goog.provide('goog.functions');
-
-
-/**
- * Creates a function that always returns the same value.
- * @param {T} retValue The value to return.
- * @return {function():T} The new function.
- * @template T
- */
-goog.functions.constant = function(retValue) {
-  return function() { return retValue; };
-};
-
-
-/**
- * Always returns false.
- * @type {function(...): boolean}
- */
-goog.functions.FALSE = goog.functions.constant(false);
-
-
-/**
- * Always returns true.
- * @type {function(...): boolean}
- */
-goog.functions.TRUE = goog.functions.constant(true);
-
-
-/**
- * Always returns NULL.
- * @type {function(...): null}
- */
-goog.functions.NULL = goog.functions.constant(null);
-
-
-/**
- * A simple function that returns the first argument of whatever is passed
- * into it.
- * @param {T=} opt_returnValue The single value that will be returned.
- * @param {...*} var_args Optional trailing arguments. These are ignored.
- * @return {T} The first argument passed in, or undefined if nothing was passed.
- * @template T
- */
-goog.functions.identity = function(opt_returnValue, var_args) {
-  return opt_returnValue;
-};
-
-
-/**
- * Creates a function that always throws an error with the given message.
- * @param {string} message The error message.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.error = function(message) {
-  return function() {
-    throw new Error(message);
-  };
-};
-
-
-/**
- * Creates a function that throws the given object.
- * @param {*} err An object to be thrown.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.fail = function(err) {
-  return function() { throw err; };
-};
-
-
-/**
- * Given a function, create a function that keeps opt_numArgs arguments and
- * silently discards all additional arguments.
- * @param {Function} f The original function.
- * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
- * @return {!Function} A version of f that only keeps the first opt_numArgs
- *     arguments.
- */
-goog.functions.lock = function(f, opt_numArgs) {
-  opt_numArgs = opt_numArgs || 0;
-  return function() {
-    var self = /** @type {*} */ (this);
-    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
-  };
-};
-
-
-/**
- * Creates a function that returns its nth argument.
- * @param {number} n The position of the return argument.
- * @return {!Function} A new function.
- */
-goog.functions.nth = function(n) {
-  return function() { return arguments[n]; };
-};
-
-
-/**
- * Like goog.partial(), except that arguments are added after arguments to the
- * returned function.
- *
- * Usage:
- * function f(arg1, arg2, arg3, arg4) { ... }
- * var g = goog.functions.partialRight(f, arg3, arg4);
- * g(arg1, arg2);
- *
- * @param {!Function} fn A function to partially apply.
- * @param {...*} var_args Additional arguments that are partially applied to fn
- *     at the end.
- * @return {!Function} A partially-applied form of the function goog.partial()
- *     was invoked as a method of.
- */
-goog.functions.partialRight = function(fn, var_args) {
-  var rightArgs = Array.prototype.slice.call(arguments, 1);
-  return function() {
-    var self = /** @type {*} */ (this);
-    var newArgs = Array.prototype.slice.call(arguments);
-    newArgs.push.apply(newArgs, rightArgs);
-    return fn.apply(self, newArgs);
-  };
-};
-
-
-/**
- * Given a function, create a new function that swallows its return value
- * and replaces it with a new one.
- * @param {Function} f A function.
- * @param {T} retValue A new return value.
- * @return {function(...?):T} A new function.
- * @template T
- */
-goog.functions.withReturnValue = function(f, retValue) {
-  return goog.functions.sequence(f, goog.functions.constant(retValue));
-};
-
-
-/**
- * Creates a function that returns whether its argument equals the given value.
- *
- * Example:
- * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
- *
- * @param {*} value The value to compare to.
- * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
- *     comparison rather than a strict (===) one. Defaults to false.
- * @return {function(*):boolean} The new function.
- */
-goog.functions.equalTo = function(value, opt_useLooseComparison) {
-  return function(other) {
-    return opt_useLooseComparison ? (value == other) : (value === other);
-  };
-};
-
-
-/**
- * Creates the composition of the functions passed in.
- * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
- * @param {function(...?):T} fn The final function.
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):T} The composition of all inputs.
- * @template T
- */
-goog.functions.compose = function(fn, var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    var result;
-    if (length) {
-      result = functions[length - 1].apply(self, arguments);
-    }
-
-    for (var i = length - 2; i >= 0; i--) {
-      result = functions[i].call(self, result);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that calls the functions passed in in sequence, and
- * returns the value of the last function. For example,
- * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
- * @param {...Function} var_args A list of functions.
- * @return {!Function} A function that calls all inputs in sequence.
- */
-goog.functions.sequence = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    var result;
-    for (var i = 0; i < length; i++) {
-      result = functions[i].apply(self, arguments);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that returns true if each of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns false.
- * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ANDs its component
- *      functions.
- */
-goog.functions.and = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
-      if (!functions[i].apply(self, arguments)) {
-        return false;
-      }
-    }
-    return true;
-  };
-};
-
-
-/**
- * Creates a function that returns true if any of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns true.
- * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ORs its component
- *    functions.
- */
-goog.functions.or = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
-      if (functions[i].apply(self, arguments)) {
-        return true;
-      }
-    }
-    return false;
-  };
-};
-
-
-/**
- * Creates a function that returns the Boolean opposite of a provided function.
- * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
- * @param {!Function} f The original function.
- * @return {function(...?):boolean} A function that delegates to f and returns
- * opposite.
- */
-goog.functions.not = function(f) {
-  return function() {
-    var self = /** @type {*} */ (this);
-    return !f.apply(self, arguments);
-  };
-};
-
-
-/**
- * Generic factory function to construct an object given the constructor
- * and the arguments. Intended to be bound to create object factories.
- *
- * Example:
- *
- * var factory = goog.partial(goog.functions.create, Class);
- *
- * @param {function(new:T, ...)} constructor The constructor for the Object.
- * @param {...*} var_args The arguments to be passed to the constructor.
- * @return {T} A new instance of the class given in {@code constructor}.
- * @template T
- */
-goog.functions.create = function(constructor, var_args) {
-  /**
-   * @constructor
-   * @final
-   */
-  var temp = function() {};
-  temp.prototype = constructor.prototype;
-
-  // obj will have constructor's prototype in its chain and
-  // 'obj instanceof constructor' will be true.
-  var obj = new temp();
-
-  // obj is initialized by constructor.
-  // arguments is only array-like so lacks shift(), but can be used with
-  // the Array prototype function.
-  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
-  return obj;
-};
-
-
-/**
- * @define {boolean} Whether the return value cache should be used.
- *    This should only be used to disable caches when testing.
- */
-goog.define('goog.functions.CACHE_RETURN_VALUE', true);
-
-
-/**
- * Gives a wrapper function that caches the return value of a parameterless
- * function when first called.
- *
- * When called for the first time, the given function is called and its
- * return value is cached (thus this is only appropriate for idempotent
- * functions).  Subsequent calls will return the cached return value. This
- * allows the evaluation of expensive functions to be delayed until first used.
- *
- * To cache the return values of functions with parameters, see goog.memoize.
- *
- * @param {function():T} fn A function to lazily evaluate.
- * @return {function():T} A wrapped version the function.
- * @template T
- */
-goog.functions.cacheReturnValue = function(fn) {
-  var called = false;
-  var value;
-
-  return function() {
-    if (!goog.functions.CACHE_RETURN_VALUE) {
-      return fn();
-    }
-
-    if (!called) {
-      value = fn();
-      called = true;
-    }
-
-    return value;
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once. All
- * additional calls are no-ops.
- *
- * This is particularly useful for initialization functions
- * that should be called, at most, once.
- *
- * @param {function():*} f Function to call.
- * @return {function():undefined} Wrapped function.
- */
-goog.functions.once = function(f) {
-  // Keep a reference to the function that we null out when we're done with
-  // it -- that way, the function can be GC'd when we're done with it.
-  var inner = f;
-  return function() {
-    if (inner) {
-      var tmp = inner;
-      inner = null;
-      tmp();
-    }
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the Nth call will go through.
- *
- * This is particularly useful for batching up repeated actions where the
- * last action should win. This can be used, for example, for refreshing an
- * autocomplete pop-up every so often rather than updating with every keystroke,
- * since the final text typed by the user is the one that should produce the
- * final autocomplete results. For more stateful debouncing with support for
- * pausing, resuming, and canceling debounced actions, use {@code
- * goog.async.Debouncer}.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to debounce. The function will
- *     only be called after the full interval has elapsed since the last call.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.debounce = function(f, interval, opt_scope) {
-  var timeout = 0;
-  return /** @type {function(...?)} */ (function(var_args) {
-    goog.global.clearTimeout(timeout);
-    var args = arguments;
-    timeout = goog.global.setTimeout(function() {
-      f.apply(opt_scope, args);
-    }, interval);
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times in
- * that interval, both the 1st and the Nth calls will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * the last action should win, but you also don't want to wait until the end of
- * the interval before sending a request out, as it leads to a perception of
- * slowness for the user.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to throttle. The function can
- *     only be called once per interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.throttle = function(f, interval, opt_scope) {
-  var timeout = 0;
-  var shouldFire = false;
-  var args = [];
-
-  var handleTimeout = function() {
-    timeout = 0;
-    if (shouldFire) {
-      shouldFire = false;
-      fire();
-    }
-  };
-
-  var fire = function() {
-    timeout = goog.global.setTimeout(handleTimeout, interval);
-    f.apply(opt_scope, args);
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    args = arguments;
-    if (!timeout) {
-      fire();
-    } else {
-      shouldFire = true;
-    }
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the 1st call will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * first request is guaranteed to have all the data required to perform the
- * final action, so there's no need to wait until the end of the interval before
- * sending the request out.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to rate-limit. The function will
- *     only be called once per interval, and ignored for the remainer of the
- *     interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.rateLimit = function(f, interval, opt_scope) {
-  var timeout = 0;
-
-  var handleTimeout = function() {
-    timeout = 0;
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    if (!timeout) {
-      timeout = goog.global.setTimeout(handleTimeout, interval);
-      f.apply(opt_scope, arguments);
-    }
-  });
 };
 
 //javascript/closure/math/math.js
@@ -25733,115 +25699,4 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
-
-//javascript/template/soy/soyutils_map.js
-goog.loadModule(function(exports) {'use strict';/*
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * @fileoverview Interfaces and helper functions for Soy maps/proto maps/ES6
- *     maps.
- * MOE:begin_strip
- * See go/soy-proto-map.
- * MOE:end_strip
- */
-goog.module('soy.map');
-goog.module.declareLegacyNamespace();
-
-const {assertString} = goog.require('goog.asserts');
-
-/**
- * Structural interface for representing Soy {@code map}s in JavaScript.
- *
- * <p>The Soy {@code map} type was originally represented in JavaScript by plain
- * objects ({@code Object<K,V>}). However, plain object access syntax
- * ({@code obj['key']}) is incompatible with the ES6 Map and jspb.Map APIs,
- * both of which use {@code map.get('key')}. In order to allow the Soy {@code
- * map} type to interoperate with ES6 Maps and proto maps, Soy now uses this
- * interface to represent the {@code map} type. (The Soy {@code
- * legacy_object_literal_map} type continues to use plain objects for backwards
- * compatibility.)
- *
- * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
- * implement it without declaring that they do.
- *
- * @record
- * @template K, V
- */
-class SoyMap {
-  /**
-   * @param {K} k
-   * @return {V}
-   */
-  get(k) {}
-
-  /**
-   * Returns an iterator over the [key, value] pair entries of this map.
-   *
-   * TODO(b/69049599): structural interfaces defeat property renaming.
-   * This could cause anything in the compilation unit that has get() and
-   * entries() methods to no longer rename entries(). If that increases code
-   * size too much, we could use the keys() method instead in
-   * $$mapToLegacyObjectMap. Not renaming "keys" is presumably ~43% less bad
-   * than not renaming "entries".
-   *
-   * @return {!Iterator<!Array<K|V>>}
-   */
-  entries() {}
-}
-
-/**
- * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
- * N.B.: although ES6 Maps and jspb.Maps allow many values to serve as map keys,
- * legacy object maps allow only string keys.
- * @param {!SoyMap<string, V>} map
- * @return {!Object<V>}
- * @template V
- */
-function $$mapToLegacyObjectMap(map) {
-  const obj = {};
-  for (const [k, v] of map.entries()) {
-    obj[assertString(k)] = v;
-  }
-  return obj;
-}
-
-/**
- * Converts a legacy object map with string keys into an equivalent SoyMap.
- * @param {!Object<V>} obj
- * @return {!SoyMap<string, V>}
- * @template V
- */
-function $$legacyObjectMapToMap(obj) {
-  const map = new Map();
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      map.set(key, obj[key]);
-    }
-  }
-  return map;
-}
-
-exports = {
-  $$legacyObjectMapToMap,
-  $$mapToLegacyObjectMap,
-  // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
-  // is used by $$legacyObjectMapToMap. But the external name can still be Map.
-  Map: SoyMap,
-};
-
-;return exports;});
 
