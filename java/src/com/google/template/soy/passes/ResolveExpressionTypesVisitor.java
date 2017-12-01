@@ -26,8 +26,6 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
-import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
-import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
@@ -143,8 +141,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Cannot iterate over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
-  private static final SoyErrorKind EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED =
-      SoyErrorKind.of("Function ''{0}'' is not allowed for general use yet.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
       SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
   private static final SoyErrorKind LIST_LENGTH_ERROR =
@@ -806,10 +802,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         node.setType(SoyTypes.makeNullable(IntType.getInstance()));
       } else if (knownFunction instanceof ParseFloatFunction) {
         node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
-      } else if (knownFunction instanceof LegacyObjectMapToMapFunction) {
-        visitLegacyObjectMapToMapFunction(node);
-      } else if (knownFunction instanceof MapToLegacyObjectMapFunction) {
-        visitMapToLegacyObjectMapFunction(node);
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.
@@ -818,66 +810,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         node.setType(UnknownType.getInstance());
       }
       tryApplySubstitution(node);
-    }
-
-    private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
-      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-        errorReporter.report(
-            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "legacyObjectMapToMap");
-      }
-      ExprNode arg = node.getChild(0);
-      SoyType argType = arg.getType();
-
-      // Allow the type of the arg to be unknown.
-      // This is mostly for integration tests: legacy_object_map literals will string-literal keys
-      // are interpreted as *record* literals, unless surrounded by quoteKeysIfJs. But quoteKeysIfJs
-      // hard-codes its return type to be unknown. So allow unknown type arg for now.
-      // The only good thing about this situation is that quoteKeysIfJs is rarely used and should
-      // go away.
-      if (argType.isAssignableFrom(UnknownType.getInstance())) {
-        node.setType(
-            typeRegistry.getOrCreateMapType(UnknownType.getInstance(), UnknownType.getInstance()));
-        return;
-      }
-
-      if (argType.getKind() != SoyType.Kind.LEGACY_OBJECT_MAP) {
-        errorReporter.report(
-            arg.getSourceLocation(),
-            INVALID_TYPE_SUBSTITUTION,
-            // TODO(b/69046843): string representation should be legacy_object_map
-            "map<?,?>",
-            argType);
-        node.setType(UnknownType.getInstance());
-        return;
-      }
-
-      LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
-      node.setType(
-          typeRegistry.getOrCreateMapType(
-              actualArgType.getKeyType(), actualArgType.getValueType()));
-    }
-
-    private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
-      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-        errorReporter.report(
-            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "mapToLegacyObjectMap");
-      }
-      ExprNode arg = node.getChild(0);
-      SoyType argType = arg.getType();
-      if (argType.getKind() != SoyType.Kind.MAP) {
-        errorReporter.report(
-            arg.getSourceLocation(),
-            INVALID_TYPE_SUBSTITUTION,
-            // TODO(b/69046843): string representation should be legacy_object_map
-            "experimental_map<?,?>",
-            argType);
-        node.setType(UnknownType.getInstance());
-        return;
-      }
-      MapType actualArgType = (MapType) argType;
-      node.setType(
-          typeRegistry.getOrCreateLegacyObjectMapType(
-              actualArgType.getKeyType(), actualArgType.getValueType()));
     }
 
     @Override
