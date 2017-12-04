@@ -27,8 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
-import com.google.errorprone.annotations.concurrent.LazyInit;
-import com.google.template.soy.bididirectives.EnumTracker;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -119,69 +117,30 @@ public final class Sanitizers {
     return new CleanHtmlAppendable(delegate, optionalSafeTags);
   }
 
-  private static final class CleanHtmlAppendable extends IsInHtmlAppendable implements Closeable {
-    private final LoggingAdvisingAppendable delegate;
+  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper
+      implements Closeable {
     private final Collection<? extends OptionalSafeTag> optionalSafeTags;
-    private final StringBuilder buffer;
-    private final EnumTracker<Dir> dirTracker;
 
     CleanHtmlAppendable(
         LoggingAdvisingAppendable delegate,
         Collection<? extends OptionalSafeTag> optionalSafeTags) {
-      this.delegate = delegate;
+      super(delegate, new StringBuilder());
       this.optionalSafeTags = optionalSafeTags;
-      this.buffer = new StringBuilder();
-      this.dirTracker = new EnumTracker<>();
     }
 
     @Override
-    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+    protected void notifyContentKind(ContentKind kind) throws IOException {
       if (isInHtml()) {
-        delegate.append(csq);
-      } else {
-        buffer.append(csq);
-      }
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
-        throws IOException {
-      append(csq.subSequence(start, end));
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable append(char c) throws IOException {
-      append("" + c);
-      return this;
-    }
-
-    @Override
-    protected void doEnterSanitizedContentKind(ContentKind kind) throws IOException {
-      if (isInHtml()) {
-        maybeProcessBuffer();
-        delegate.enterSanitizedContentKind(kind);
+        activeAppendable = delegate;
+        delegate.setSanitizedContentKind(kind);
       }
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
-        throws IOException {
+    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
       if (isInHtml()) {
-        delegate.enterSanitizedContentDirectionality(contentDir);
-      } else {
-        dirTracker.trackEnter(contentDir);
+        delegate.setSanitizedContentDirectionality(contentDir);
       }
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
-      if (isInHtml()) {
-        delegate.exitSanitizedContentDirectionality();
-      }
-      return this;
     }
 
     @Override
@@ -217,25 +176,18 @@ public final class Sanitizers {
     }
 
     @Override
-    public boolean softLimitReached() {
-      return delegate.softLimitReached();
-    }
-
-    @Override
     public void close() throws IOException {
-      maybeProcessBuffer();
-    }
-
-    private void maybeProcessBuffer() throws IOException {
-      if (buffer.length() > 0) {
-        SanitizedContent content = cleanHtml(buffer.toString(), dirTracker.get(), optionalSafeTags);
-        delegate
-            .enterSanitizedContentKind(content.getContentKind())
-            .enterSanitizedContentDirectionality(content.getContentDirection())
-            .append(content.getContent())
-            .exitSanitizedContentDirectionality()
-            .exitSanitizedContentKind();
-        buffer.setLength(0);
+      if (!isInHtml()) {
+        StringBuilder buffer = (StringBuilder) activeAppendable;
+        if (buffer.length() > 0) {
+          SanitizedContent content =
+              cleanHtml(buffer.toString(), getSanitizedContentDirectionality(), optionalSafeTags);
+          delegate
+              .setSanitizedContentKind(content.getContentKind())
+              .setSanitizedContentDirectionality(content.getContentDirection())
+              .append(content.getContent());
+          buffer.setLength(0);
+        }
       }
     }
   }
@@ -298,18 +250,22 @@ public final class Sanitizers {
   }
 
   private static final class StreamingHtmlRcDataEscaper extends AbstractStreamingHtmlEscaper {
-    @LazyInit private Appendable htmlDelegate;
-    @LazyInit private Appendable nonHtmlDelegate;
-
     private StreamingHtmlRcDataEscaper(LoggingAdvisingAppendable delegate) {
-      super(delegate);
+      super(delegate, EscapingConventions.EscapeHtml.INSTANCE.escape(delegate));
+    }
+
+    @Override
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      if (isInHtml()) {
+        activeAppendable = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
+      }
     }
 
     @Override
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      getAppendable().append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      activeAppendable.append(escapePlaceholder(funCall.placeholderValue(), escapers));
       return this;
     }
 
@@ -321,27 +277,6 @@ public final class Sanitizers {
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       return this;
-    }
-
-    @Override
-    protected Appendable getAppendable() {
-      return isInHtml() ? getHtmlDelegate() : getNonHtmlDelegate();
-    }
-
-    private Appendable getHtmlDelegate() {
-      Appendable local = htmlDelegate;
-      if (local == null) {
-        local = htmlDelegate = EscapingConventions.NormalizeHtml.INSTANCE.escape(delegate);
-      }
-      return local;
-    }
-
-    private Appendable getNonHtmlDelegate() {
-      Appendable local = nonHtmlDelegate;
-      if (local == null) {
-        local = nonHtmlDelegate = EscapingConventions.EscapeHtml.INSTANCE.escape(delegate);
-      }
-      return local;
     }
   }
 
@@ -787,45 +722,19 @@ public final class Sanitizers {
   public static LoggingAdvisingAppendable filterNoAutoescapeStreaming(
       LoggingAdvisingAppendable appendable) {
     return new ForwardingLoggingAdvisingAppendable(appendable) {
-      /**
-       * The current number of calls to {@link #enterSanitizedContentKind} without a matching {@link
-       * #exitSanitizedContentKind()} after a call that enters {@link ContentKind#TEXT}.
-       */
-      private int textDepth;
 
       private boolean isInText() {
-        return textDepth > 0;
+        return getSantizedContentKind() == ContentKind.TEXT;
       }
 
       @Override
-      public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
-          throws IOException {
-        int depth = textDepth;
-        if (depth > 0) {
-          depth++;
-          if (depth < 0) {
-            throw new IllegalStateException("overflowed content kind depth");
-          }
-          textDepth = depth;
-        } else if (kind == ContentKind.TEXT) {
-          depth = 1;
+      protected void notifyContentKind(ContentKind kind) throws IOException {
+        if (isInText()) {
           logger.log(
               Level.WARNING, "|noAutoescape received value explicitly tagged as ContentKind.TEXT");
           // append directly to the delegate.
           delegate.append(EscapingConventions.INNOCUOUS_OUTPUT);
-          textDepth = 1;
         }
-        return this;
-      }
-
-      @Override
-      public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
-        int depth = textDepth;
-        if (depth > 0) {
-          depth--;
-          textDepth = depth;
-        }
-        return this;
       }
 
       @Override
@@ -877,23 +786,6 @@ public final class Sanitizers {
           return this;
         }
         return super.exitLoggableElement();
-      }
-
-      @Override
-      public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
-          throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.enterSanitizedContentDirectionality(contentDir);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.exitSanitizedContentDirectionality();
       }
     };
   }

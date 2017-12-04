@@ -55,7 +55,7 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
     this.escapedAppendable = transform.escape(delegate);
   }
 
-  // Note we never propagate calls to enter/exitSanitizedContent to the delegate.  This is because
+  // Note we never propagate calls to setSanitizedContentKind to the delegate.  This is because
   // all content is being escaped and thus it is by definition compatible with the surrounding
   // content.
 

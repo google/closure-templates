@@ -17,12 +17,12 @@ package com.google.template.soy.coredirectives;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
@@ -53,17 +53,19 @@ public final class CoreDirectivesRuntime {
 
   public static LoggingAdvisingAppendable streamingEscapeHtml(
       final LoggingAdvisingAppendable delegate) {
-    if (delegate instanceof StreamingHtmlEscaper) {
-      return delegate;
-    }
     return new StreamingHtmlEscaper(delegate);
   }
 
   private static final class StreamingHtmlEscaper extends AbstractStreamingHtmlEscaper {
-    @LazyInit private Appendable escapedDelegate;
-
     private StreamingHtmlEscaper(LoggingAdvisingAppendable delegate) {
-      super(delegate);
+      super(delegate, EscapingConventions.EscapeHtml.INSTANCE.escape(delegate));
+    }
+
+    @Override
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      if (isInHtml()) {
+        activeAppendable = delegate;
+      }
     }
 
     @Override
@@ -73,7 +75,7 @@ public final class CoreDirectivesRuntime {
       if (isInHtml()) {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
       } else {
-        getEscapedDelegate().append(escapePlaceholder(funCall.placeholderValue(), escapers));
+        activeAppendable.append(escapePlaceholder(funCall.placeholderValue(), escapers));
       }
       return this;
     }
@@ -96,19 +98,6 @@ public final class CoreDirectivesRuntime {
         delegate.exitLoggableElement();
       }
       return this;
-    }
-
-    @Override
-    protected Appendable getAppendable() {
-      return isInHtml() ? delegate : getEscapedDelegate();
-    }
-
-    Appendable getEscapedDelegate() {
-      Appendable local = escapedDelegate;
-      if (local == null) {
-        local = escapedDelegate = EscapingConventions.EscapeHtml.INSTANCE.escape(delegate);
-      }
-      return local;
     }
   }
 }

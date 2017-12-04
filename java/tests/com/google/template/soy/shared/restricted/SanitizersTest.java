@@ -812,22 +812,29 @@ public class SanitizersTest {
   }
 
   @Test
-  public void testFilterNoAutoescapeStreaming() throws IOException {
+  public void testFilterNoAutoescapeStreamingNoContentKind() throws IOException {
     BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
     LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
     escapingBuffer.append("foo");
     assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-    escapingBuffer.enterSanitizedContentKind(ContentKind.HTML);
+  }
+
+  @Test
+  public void testFilterNoAutoescapeStreamingHtml() throws IOException {
+    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
+    escapingBuffer.setSanitizedContentKind(ContentKind.HTML);
     escapingBuffer.append("foo");
     assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-    escapingBuffer.enterSanitizedContentKind(ContentKind.TEXT);
+  }
+
+  @Test
+  public void testFilterNoAutoescapeStreamingText() throws IOException {
+    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
+    escapingBuffer.setSanitizedContentKind(ContentKind.TEXT);
     assertThat(buffer.getAndClearBuffer()).isEqualTo("zSoyz");
     escapingBuffer.append("foo");
-    escapingBuffer.enterSanitizedContentKind(ContentKind.HTML);
-    escapingBuffer.append("foo");
-    escapingBuffer.exitSanitizedContentKind();
-    escapingBuffer.exitSanitizedContentKind(); // exits the text call
-    // nothing was rendered between the calls
     assertThat(buffer.getAndClearBuffer()).isEqualTo("");
   }
 

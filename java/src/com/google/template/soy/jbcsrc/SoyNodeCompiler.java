@@ -202,14 +202,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getContentKind() != null) {
       templateBody =
           Statement.concat(
-              appendableExpression.enterSanitizedContentKind(node.getContentKind()).toStatement(),
+              appendableExpression.setSanitizedContentKind(node.getContentKind()).toStatement(),
               appendableExpression
-                  .enterSanitizedContentDirectionality(
+                  .setSanitizedContentDirectionality(
                       ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
                   .toStatement(),
-              templateBody,
-              appendableExpression.exitSanitizedContentDirectionality().toStatement(),
-              appendableExpression.exitSanitizedContentKind().toStatement());
+              templateBody);
     }
     Statement jumpTable = detachState.generateReattachTable();
     return CompiledMethodBody.create(

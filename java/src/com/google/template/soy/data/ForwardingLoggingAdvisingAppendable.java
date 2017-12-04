@@ -67,28 +67,13 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
   }
 
   @Override
-  public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind) throws IOException {
-    delegate.enterSanitizedContentKind(kind);
-    return this;
+  protected void notifyContentKind(ContentKind kind) throws IOException {
+    delegate.setSanitizedContentKind(kind);
   }
 
   @Override
-  public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
-    delegate.exitSanitizedContentKind();
-    return this;
-  }
-
-  @Override
-  public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
-      throws IOException {
-    delegate.enterSanitizedContentDirectionality(contentDir);
-    return this;
-  }
-
-  @Override
-  public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
-    delegate.exitSanitizedContentDirectionality();
-    return this;
+  protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
+    delegate.setSanitizedContentDirectionality(contentDir);
   }
 
   @Override

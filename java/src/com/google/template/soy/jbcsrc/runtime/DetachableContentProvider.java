@@ -154,33 +154,15 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
-        throws IOException {
-      delegate.enterSanitizedContentKind(kind);
-      buffer.enterSanitizedContentKind(kind);
-      return this;
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      delegate.setSanitizedContentKind(kind);
+      buffer.setSanitizedContentKind(kind);
     }
 
     @Override
-    public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
-      delegate.exitSanitizedContentKind();
-      buffer.exitSanitizedContentKind();
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
-        throws IOException {
-      delegate.enterSanitizedContentDirectionality(contentDir);
-      buffer.enterSanitizedContentDirectionality(contentDir);
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
-      delegate.exitSanitizedContentDirectionality();
-      buffer.exitSanitizedContentDirectionality();
-      return this;
+    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
+      delegate.setSanitizedContentDirectionality(contentDir);
+      buffer.setSanitizedContentDirectionality(contentDir);
     }
 
     @Override

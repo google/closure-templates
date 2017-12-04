@@ -17,7 +17,6 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -126,23 +125,11 @@ public final class BasicDirectivesRuntime {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind) {
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentKind() {
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(Dir contentDir) {
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() {
-      return this;
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      // |truncate converts all input to TEXT, so label the output appendable as such. This isn't
+      // strictly necessary, as the autoescaper will have already made sure the output is properly
+      // escaped, but it helps make the intent clear.
+      delegate.setSanitizedContentKind(ContentKind.TEXT);
     }
 
     @Override

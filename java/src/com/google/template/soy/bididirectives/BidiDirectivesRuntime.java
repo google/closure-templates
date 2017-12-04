@@ -32,7 +32,6 @@ import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import java.io.Closeable;
 import java.io.IOException;
-import javax.annotation.Nullable;
 
 /** Java implementations of the bididirectives. */
 public final class BidiDirectivesRuntime {
@@ -127,8 +126,6 @@ public final class BidiDirectivesRuntime {
     private final WrapType wrapType;
     private final StringBuilder buffer;
     private final BufferingAppendable commandBuffer;
-    private final EnumTracker<Dir> dirTracker;
-    private final EnumTracker<ContentKind> kindTracker;
 
     BidiWrapAppendable(
         LoggingAdvisingAppendable delegate, BidiGlobalDir globalDir, WrapType wrapType) {
@@ -137,34 +134,11 @@ public final class BidiDirectivesRuntime {
       this.wrapType = Preconditions.checkNotNull(wrapType);
       buffer = new StringBuilder();
       commandBuffer = LoggingAdvisingAppendable.buffering();
-      dirTracker = new EnumTracker<>();
-      kindTracker = new EnumTracker<>();
     }
 
     @Override
-    public LoggingAdvisingAppendable enterSanitizedContentKind(ContentKind kind)
-        throws IOException {
-      kindTracker.trackEnter(kind);
-      commandBuffer.enterSanitizedContentKind(kind);
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentKind() throws IOException {
-      commandBuffer.exitSanitizedContentKind();
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable enterSanitizedContentDirectionality(@Nullable Dir contentDir)
-        throws IOException {
-      dirTracker.trackEnter(contentDir);
-      return this;
-    }
-
-    @Override
-    public LoggingAdvisingAppendable exitSanitizedContentDirectionality() throws IOException {
-      return this;
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      commandBuffer.setSanitizedContentKind(kind);
     }
 
     @Override
@@ -208,12 +182,15 @@ public final class BidiDirectivesRuntime {
       switch (wrapType) {
         case SPAN:
           wrappingText =
-              formatter.spanWrappingText(dirTracker.get(), buffer.toString(), true /* isHtml */);
+              formatter.spanWrappingText(
+                  getSanitizedContentDirectionality(), buffer.toString(), true /* isHtml */);
           break;
         case UNICODE:
           wrappingText =
               formatter.unicodeWrappingText(
-                  dirTracker.get(), buffer.toString(), kindTracker.get() == ContentKind.HTML);
+                  getSanitizedContentDirectionality(),
+                  buffer.toString(),
+                  getSantizedContentKind() == ContentKind.HTML);
           break;
         default:
           throw new IllegalArgumentException("invalid wrap type: " + wrapType);
