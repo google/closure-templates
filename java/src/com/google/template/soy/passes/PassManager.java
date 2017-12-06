@@ -485,10 +485,6 @@ public final class PassManager {
   private final class OptimizationPass extends CompilerFileSetPass {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      // this option is set by gwtsoy
-      if (!options.getExperimentalFeatures().contains("disable_change_calls_to_pass_all_data")) {
-        new ChangeCallsToPassAllDataVisitor().exec(fileSet);
-      }
       if (simplifyVisitor != null) { // it will be null when disabled
         simplifyVisitor.simplify(fileSet, registry);
       }

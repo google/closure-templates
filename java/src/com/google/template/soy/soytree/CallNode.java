@@ -134,13 +134,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return dataExpr;
   }
 
-  /** Sets this CallNode to pass data="all". */
-  // TODO(user): Remove once ChangeCallsToPassAllDataVisitor is gone.
-  public void setDataAll() {
-    this.isPassingAllData = true;
-    this.dataExpr = null;
-  }
-
   public boolean getIsPcData() {
     return isPcData;
   }
