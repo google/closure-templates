@@ -851,6 +851,6 @@ public class EscapingConventionsTest {
   }
 
   private static String getSoyUtilsUseGoogPath() {
-    return "testdata/javascript/soy_usegoog_lib_nomap.js";
+    return "testdata/javascript/soy_usegoog_lib.js";
   }
 }
