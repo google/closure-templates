@@ -41,30 +41,6 @@ import org.junit.runners.JUnit4;
 public final class RewriteGenderMsgsVisitorTest {
 
   @Test
-  public void testCannotMixGendersAndSelect() {
-    String soyCode =
-        ""
-            + "{@param userGender : ?}\n"
-            + "{@param targetGender : ?}\n"
-            + "{$userGender}\n"
-            + "{msg genders=\"$userGender\" desc=\"Button text.\"}\n"
-            + "  {select $targetGender}\n"
-            + "    {case 'female'}Reply to her\n"
-            + "    {case 'male'}Reply to him\n"
-            + "    {default}Reply to them\n"
-            + "  {/select}\n"
-            + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(errorReporter)
-        .parse()
-        .fileSet();
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .contains("Cannot mix 'genders' attribute with 'select' command in the same message.");
-  }
-
-  @Test
   public void testErrorIfCannotGenNoncollidingBaseNames() {
     String soyCode =
         ""
@@ -112,6 +88,58 @@ public final class RewriteGenderMsgsVisitorTest {
   }
 
   @Test
+  public void testMaxThreeGendersWithNestedSelect() {
+    String soyCode =
+        ""
+            + "{@param userGender : ?}\n"
+            + "{@param targetGender1 : ?}\n"
+            + "{@param targetGender2 : ?}\n"
+            + "{@param groupOwnerGender : ?}\n"
+            + "{@param targetName1 : ?}\n"
+            + "{@param targetName2 : ?}\n"
+            + "{@param groupOwnerName : ?}\n"
+            + "{msg genders=\"$userGender, $targetGender2\" desc=\"...\"}\n"
+            + "  {select $groupOwnerGender}\n"
+            + "    {case 'female'}\n"
+            + "      {select $targetGender1}\n"
+            + "        {case 'female'}\n"
+            + "          {$targetName1} has asked to join {$groupOwnerName}'s group. If you accept,"
+            + "          {sp}{$groupOwnerName} will receive an email in her inbox, and{sp}"
+            + "          {$targetName1} will receive a notification on her account. {$targetName2}"
+            + "          {sp}and other members will not receive a notification.\n"
+            + "        {default}\n"
+            + "          {$targetName1} has asked to join {$groupOwnerName}'s group. If you accept,"
+            + "          {sp}{$groupOwnerName} will receive an email in her inbox, and{sp}"
+            + "          {$targetName1} will receive a notification on their account."
+            + "          {$targetName2} and other members will not receive a notification.\n"
+            + "      {/select}\n"
+            + "    {default}\n"
+            + "      {select $targetGender1}\n"
+            + "        {case 'female'}\n"
+            + "          {$targetName1} has asked to join {$groupOwnerName}'s group. If you accept,"
+            + "          {sp}{$groupOwnerName} will receive an email in their inbox, and{sp}"
+            + "          {$targetName1} will receive a notification on her account. {$targetName2}"
+            + "          {sp}and other members will not receive a notification.\n"
+            + "        {default}\n"
+            + "          {$targetName1} has asked to join {$groupOwnerName}'s group. If you accept,"
+            + "          {sp}{$groupOwnerName} will receive an email in their inbox, and{sp}"
+            + "          {$targetName1} will receive a notification on their account."
+            + "          {$targetName2} and other members will not receive a notification.\n"
+            + "      {/select}\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(errorReporter)
+        .parse()
+        .fileSet();
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo(
+            "A message can only contain at most 3 genders between the 'genders' attribute and "
+                + "'select' command.");
+  }
+
+  @Test
   public void testMaxTwoGendersWithPlural() {
     String soyCode =
         ""
@@ -134,9 +162,44 @@ public final class RewriteGenderMsgsVisitorTest {
         .fileSet();
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
-            "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions"
-                + " (otherwise, combinatorial explosion would cause a gigantic generated"
-                + " message).");
+            "A msg with 'plural' can contain at most 2 gender expressions between the "
+                + "'genders' attribute and 'select' command (otherwise, combinatorial explosion "
+                + "would cause a gigantic generated message).");
+  }
+
+  @Test
+  public void testMaxTwoGendersWithGenderPluralSelect() {
+    String soyCode =
+        ""
+            + "{@param userGender : ?}\n"
+            + "{@param gender1 : ?}\n"
+            + "{@param gender2 : ?}\n"
+            + "{@param name2 : ?}\n"
+            + "{@param numPhotos : ?}\n"
+            + "{msg genders=\"$userGender, $gender2\" desc=\"\"}\n"
+            + "  {select $gender1}\n"
+            + "    {case 'female'}\n"
+            + "      {plural $numPhotos}\n"
+            + "        {case 1}Find her face in {$name2}'s photo\n"
+            + "        {default}Find her face in {$name2}'s photos\n"
+            + "      {/plural}\n"
+            + "    {default}\n"
+            + "      {plural $numPhotos}\n"
+            + "        {case 1}Find their face in {$name2}'s photo\n"
+            + "        {default}Find their face in {$name2}'s photos\n"
+            + "      {/plural}\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode)
+        .errorReporter(errorReporter)
+        .parse()
+        .fileSet();
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo(
+            "A msg with 'plural' can contain at most 2 gender expressions between the "
+                + "'genders' attribute and 'select' command (otherwise, combinatorial explosion "
+                + "would cause a gigantic generated message).");
   }
 
   @Test
@@ -181,6 +244,35 @@ public final class RewriteGenderMsgsVisitorTest {
   }
 
   @Test
+  public void testRewriteWithGenderAndSelect() {
+    String soyCode =
+        ""
+            + "{@param userGender : ?}\n"
+            + "{@param targetGender : ?}\n"
+            + "{msg genders=\"$userGender\" desc=\"Button text.\"}\n"
+            + "  {select $targetGender}\n"
+            + "    {case 'female'}Reply to her\n"
+            + "    {case 'male'}Reply to him\n"
+            + "    {default}Reply to them\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+    String expandedSoyCode =
+        "{msg desc=\"Button text.\" genders=\"$userGender\"}{select $userGender}"
+            + "{case 'female'}{select $targetGender}{case 'female'}Reply to her"
+            + "{case 'male'}Reply to him{default}Reply to them{/select}"
+            + "{case 'male'}{select $targetGender}{case 'female'}Reply to her"
+            + "{case 'male'}Reply to him{default}Reply to them{/select}"
+            + "{default}{select $targetGender}{case 'female'}Reply to her"
+            + "{case 'male'}Reply to him{default}Reply to them{/select}{/select}";
+    ErrorReporter boom = ErrorReporter.exploding();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
+    // After.
+    MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
+    assertEquals(expandedSoyCode, msgAfterRewrite.toSourceString());
+  }
+
+  @Test
   public void testRewriteWithPlural() {
 
     String soyCode =
@@ -217,6 +309,81 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    {case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}\n"
             + "    {case 'male'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}\n"
             + "    {default}{plural $num}{case 1}Send it{default}Send {$num}{/plural}\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+    SoyFileSetNode soyTreeUsingSelect =
+        SoyFileSetParserBuilder.forTemplateContents(soyCodeUsingSelect).parse().fileSet();
+    MsgNode msgUsingSelect = (MsgNode) SharedTestUtils.getNode(soyTreeUsingSelect, 0, 0);
+    assertThat(MsgUtils.computeMsgIdForDualFormat(msgAfterRewrite))
+        .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
+  }
+
+  @Test
+  public void testRewriteWithGenderSelectPlural() {
+    String soyCode =
+        ""
+            + "{@param n : ?}\n"
+            + "{@param userGender : ?}\n"
+            + "{@param targetGender : ?}\n"
+            + "{msg genders=\"$userGender\" desc=\"...\"}\n"
+            + "  {select $targetGender}\n"
+            + "    {case 'female'}\n"
+            + "      {plural $n}{case 1}Send it to her{default}Send {$n} to her{/plural}\n"
+            + "    {default}\n"
+            + "      {plural $n}{case 1}Send it to them{default}Send {$n} to them{/plural}\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+
+    // Note: Still has genders="..." in command text.
+    String expandedSoyCode =
+        "{msg desc=\"...\" genders=\"$userGender\"}{select $userGender}{case 'female'}"
+            + "{select $targetGender}{case 'female'}{plural $n}{case 1}Send it to her{default}"
+            + "Send {$n} to her{/plural}{default}{plural $n}{case 1}Send it to them{default}"
+            + "Send {$n} to them{/plural}{/select}{case 'male'}"
+            + "{select $targetGender}{case 'female'}{plural $n}{case 1}Send it to her{default}"
+            + "Send {$n} to her{/plural}{default}{plural $n}{case 1}Send it to them{default}"
+            + "Send {$n} to them{/plural}{/select}{default}"
+            + "{select $targetGender}{case 'female'}{plural $n}{case 1}Send it to her{default}"
+            + "Send {$n} to her{/plural}{default}{plural $n}{case 1}Send it to them{default}"
+            + "Send {$n} to them{/plural}{/select}{/select}";
+
+    ErrorReporter boom = ErrorReporter.exploding();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
+    // After.
+    MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
+    assertEquals(expandedSoyCode, msgAfterRewrite.toSourceString());
+
+    // ------ Test that it has same msg id as equivalent msg using 'select'. ------
+
+    String soyCodeUsingSelect =
+        ""
+            + "{@param n : ?}\n"
+            + "{@param userGender : ?}\n"
+            + "{@param targetGender : ?}\n"
+            + "{msg desc=\"...\"}\n"
+            + "  {select $userGender}\n"
+            + "    {case 'female'}\n"
+            + "      {select $targetGender}\n"
+            + "        {case 'female'}\n"
+            + "          {plural $n}{case 1}Send it to her{default}Send {$n} to her{/plural}\n"
+            + "        {default}\n"
+            + "          {plural $n}{case 1}Send it to them{default}Send {$n} to them{/plural}\n"
+            + "      {/select}\n"
+            + "    {case 'male'}\n"
+            + "      {select $targetGender}\n"
+            + "        {case 'female'}\n"
+            + "          {plural $n}{case 1}Send it to her{default}Send {$n} to her{/plural}\n"
+            + "        {default}\n"
+            + "          {plural $n}{case 1}Send it to them{default}Send {$n} to them{/plural}\n"
+            + "      {/select}\n"
+            + "    {default}\n"
+            + "      {select $targetGender}\n"
+            + "        {case 'female'}\n"
+            + "          {plural $n}{case 1}Send it to her{default}Send {$n} to her{/plural}\n"
+            + "        {default}\n"
+            + "          {plural $n}{case 1}Send it to them{default}Send {$n} to them{/plural}\n"
+            + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
     SoyFileSetNode soyTreeUsingSelect =

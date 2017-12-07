@@ -45,13 +45,16 @@ import javax.annotation.Nullable;
  */
 final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyErrorKind GENDER_AND_SELECT_NOT_ALLOWED =
+  private static final SoyErrorKind MORE_THAN_THREE_TOTAL_GENDERS =
       SoyErrorKind.of(
-          "Cannot mix ''genders'' attribute with ''select'' command in the same message.");
-  private static final SoyErrorKind MORE_THAN_TWO_GENDER_EXPRS =
+          "A message can only contain at most 3 genders between the ''genders'' attribute and "
+              + "''select'' command.");
+
+  private static final SoyErrorKind MORE_THAN_TWO_GENDER_EXPRS_WITH_PLURAL =
       SoyErrorKind.of(
-          "In a msg with ''plural'', the ''genders'' attribute can contain at most 2 expressions "
-              + "(otherwise, combinatorial explosion would cause a gigantic generated message).");
+          "A msg with ''plural'' can contain at most 2 gender expressions between the "
+              + "''genders'' attribute and ''select'' command (otherwise, combinatorial explosion "
+              + "would cause a gigantic generated message).");
 
   /** Fallback base select var name. */
   private static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";
@@ -81,16 +84,6 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     List<ExprRootNode> genderExprs = msg.getAndRemoveGenderExprs();
     if (genderExprs == null) {
       return;  // not a msg that this pass should rewrite
-    }
-    StandaloneNode first = msg.numChildren() > 0 ? msg.getChild(0) : null;
-    // Check that 'genders' attribute and 'select' command are not used together.
-    if (first instanceof MsgSelectNode) {
-      errorReporter.report(first.getSourceLocation(), GENDER_AND_SELECT_NOT_ALLOWED);
-    }
-
-    // If plural msg, check that there are max 2 genders.
-    if (first instanceof MsgPluralNode && genderExprs.size() > 2) {
-      errorReporter.report(msg.getSourceLocation(), MORE_THAN_TWO_GENDER_EXPRS);
     }
 
     // ------ Do the rewrite. ------
@@ -123,6 +116,10 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
       splitMsgForGender(msg, genderExpr, baseSelectVarName);
     }
+
+    // ------ Verify from the re-written msg that gender restrictions are followed. ------
+
+    checkExceedsMaxGenders((MsgSelectNode) msg.getChild(0), 1);
   }
 
 
@@ -161,6 +158,39 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     msg.addChild(selectNode);
   }
 
+  /**
+   * Helper to verify that a rewritten soy msg tree does not exceed the restriction on number of
+   * total genders allowed (2 if includes plural, 3 otherwise).
+   *
+   * @param selectNode The select node to start searching from.
+   * @param depth The current depth of the select node.
+   * @return Whether the tree is valid.
+   */
+  private boolean checkExceedsMaxGenders(MsgSelectNode selectNode, int depth) {
+    for (int caseNum = 0; caseNum < selectNode.numChildren(); caseNum++) {
+      if (selectNode.getChild(caseNum).numChildren() > 0) {
+        StandaloneNode caseNodeChild = selectNode.getChild(caseNum).getChild(0);
+        // Plural cannot contain plurals or selects, so no need to recurse further.
+        if (caseNodeChild instanceof MsgPluralNode && depth >= 3) {
+          errorReporter.report(
+              selectNode.getSourceLocation(), MORE_THAN_TWO_GENDER_EXPRS_WITH_PLURAL);
+          return false;
+        }
+        if (caseNodeChild instanceof MsgSelectNode) {
+          if (depth >= 3) {
+            errorReporter.report(selectNode.getSourceLocation(), MORE_THAN_THREE_TOTAL_GENDERS);
+            return false;
+          } else {
+            boolean validSubtree = checkExceedsMaxGenders((MsgSelectNode) caseNodeChild, depth + 1);
+            if (!validSubtree) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
