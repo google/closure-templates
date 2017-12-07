@@ -221,36 +221,6 @@ public final class VeLoggingTest {
   }
 
   @Test
-  public void testLogging_loggingFunction_let() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    TestLogger testLogger = new TestLogger();
-    renderTemplate(
-        OutputAppendable.create(sb, testLogger),
-        ""
-            + "{let $letAttribute kind=\"attributes\"}\n"
-            + "  data-depth-1={depth()}\n"
-            + "{/let}\n"
-            + "{velog Foo}\n"
-            + "  <div data-depth={depth()}>\n"
-            + "    {let $letAttribute2 kind=\"attributes\"}\n"
-            + "      data-depth-2={depth()}\n"
-            + "    {/let}\n"
-            + "    {velog Bar}\n"
-            + "      <div {$letAttribute} {$letAttribute2}>\n"
-            + "      </div>\n"
-            + "    {/velog}\n"
-            + "  </div>\n"
-            + "{/velog}");
-    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}\n  velog{id=2}");
-    // TODO(b/18260376): filterHtmlAttributes print directive is preventing the logging functions
-    // to be evaluated. Making it streamable should fix these depth_placeholder.
-    assertThat(sb.toString())
-        .isEqualTo(
-            "<div data-depth=1><div data-depth-1=depth_placeholder "
-                + " data-depth-2=depth_placeholder ></div></div>");
-  }
-
-  @Test
   public void testLogging_loggingFunction_usesPlaceholders() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();

@@ -107,11 +107,14 @@ public final class SharedModuleTest {
             "|bidiUnicodeWrap",
             "|insertWordBreaks",
             "|truncate",
-            "|cleanHtml");
+            "|cleanHtml",
+            "|filterHtmlAttributes");
     assertThat(nonStreamingPrintDirectives.build())
         .containsExactly(
-            // This isn't worth doing.  uris should all be small.
+            // These aren't worth doing. The values should be small and unlikely to have logging
+            // statements.
             "|escapeUri",
+            "|formatNum",
             // These can't be made streaming because it would require a complex state machine or
             // they require knowing the full content to work.  For example all the filters, which
             // generally validate via a regular expression.
@@ -120,7 +123,6 @@ public final class SharedModuleTest {
             "|filterHtmlElementName",
             "|filterCssValue",
             "|escapeJsValue",
-            "|filterHtmlAttributes",
             "|filterNormalizeUri",
             "|filterNormalizeMediaUri",
             "|filterTrustedResourceUri",
@@ -129,12 +131,6 @@ public final class SharedModuleTest {
             // These two could be made streaming, it would require some refactoring of the
             // Sanitizers.stripHtmlTags method but it is probably a good idea.
             "|escapeHtmlAttribute",
-            "|escapeHtmlAttributeNospace",
-            // These one could possibly be made streaming, but it would require a lot of work.
-            // We might want to add a warning if log directives are lost due to this.
-            // Or we could possibly add a version of 'streaming' which actually just buffers all
-            // the commands and preserves them.  This way logging directives could be preserved
-            // through the print directive.
-            "|formatNum");
+            "|escapeHtmlAttributeNospace");
   }
 }

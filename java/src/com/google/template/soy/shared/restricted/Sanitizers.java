@@ -658,14 +658,17 @@ public final class Sanitizers {
       // adjacent print statements in attribute context at compile time.
       String content = value.coerceToString();
       if (content.length() > 0) {
-        char lastChar = content.charAt(content.length() - 1);
-        if (lastChar != '"' && lastChar != '\'' && !Character.isWhitespace(lastChar)) {
+        if (shouldAppendSpace(content.charAt(content.length() - 1))) {
           content += ' ';
         }
       }
       return content;
     }
     return filterHtmlAttributes(value.coerceToString());
+  }
+
+  private static boolean shouldAppendSpace(char lastChar) {
+    return lastChar != '"' && lastChar != '\'' && !Character.isWhitespace(lastChar);
   }
 
   /**
@@ -677,6 +680,105 @@ public final class Sanitizers {
     }
     logger.log(Level.WARNING, "|filterHtmlAttributes received bad value ''{0}''", value);
     return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
+  }
+
+  public static LoggingAdvisingAppendable filterHtmlAttributesStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return new FilterHtmlAttributesAppendable(appendable);
+  }
+
+  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable
+      implements Closeable {
+    private final LoggingAdvisingAppendable delegate;
+    private Appendable activeAppendable;
+    private char lastChar;
+
+    FilterHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
+      this.delegate = delegate;
+      activeAppendable = new StringBuilder();
+    }
+
+    @Override
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      if (kind == ContentKind.ATTRIBUTES) {
+        activeAppendable = delegate;
+      }
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+      activeAppendable.append(csq);
+      if (csq.length() > 0) {
+        lastChar = csq.charAt(csq.length() - 1);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
+        throws IOException {
+      activeAppendable.append(csq, start, end);
+      if (end - start > 0) {
+        lastChar = csq.charAt(end - 1);
+      }
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable append(char c) throws IOException {
+      activeAppendable.append(c);
+      lastChar = c;
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      logger.log(
+          Level.WARNING,
+          "Visual element logging behavior is undefined when used with the |filterHtmlAttributes "
+              + "directive. This logging call has been dropped: {0}",
+          statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSantizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendLoggingFunctionInvocation(funCall, escapers);
+        // Reset lastChar to a dummy character so that we add a space after.
+        lastChar = 'a';
+      } else {
+        String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
+        activeAppendable.append(placeholder);
+        if (placeholder.length() > 0) {
+          lastChar = placeholder.charAt(placeholder.length() - 1);
+        }
+      }
+      return this;
+    }
+
+    @Override
+    public boolean softLimitReached() {
+      return delegate.softLimitReached();
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (getSantizedContentKind() == ContentKind.ATTRIBUTES) {
+        if (lastChar != 0 && shouldAppendSpace(lastChar)) {
+          delegate.append(' ');
+        }
+      } else {
+        delegate.append(filterHtmlAttributes(activeAppendable.toString()));
+      }
+    }
   }
 
   /** Checks that the input is part of the name of an innocuous element. */

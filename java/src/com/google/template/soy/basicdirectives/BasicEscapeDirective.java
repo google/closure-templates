@@ -90,6 +90,15 @@ public abstract class BasicEscapeDirective
     return true;
   }
 
+  /**
+   * Returns whether or not the streaming version of this directive is closeable.
+   *
+   * <p>The default is {@code false}, override this to change it to {@code true};
+   */
+  protected boolean isCloseable() {
+    return false;
+  }
+
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return StringData.forValue(escape(value));
@@ -147,8 +156,12 @@ public abstract class BasicEscapeDirective
               .asNonNullable();
       javaStreamingSanitizer = sanitizerMethod;
     }
-    MethodRef streamingSanitizersMethod = sanitizerMethod;
-    return AppendableAndOptions.create(streamingSanitizersMethod.invoke(delegateAppendable));
+    Expression streamingSanitizersExpr = sanitizerMethod.invoke(delegateAppendable);
+    if (isCloseable()) {
+      return AppendableAndOptions.createCloseable(streamingSanitizersExpr);
+    } else {
+      return AppendableAndOptions.create(streamingSanitizersExpr);
+    }
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -250,7 +263,7 @@ public abstract class BasicEscapeDirective
   /** Implements the |filterHtmlAttributes directive. */
   @Singleton
   @SoyPurePrintDirective
-  static final class FilterHtmlAttributes extends BasicEscapeDirective {
+  static final class FilterHtmlAttributes extends BasicEscapeDirective implements Streamable {
 
     FilterHtmlAttributes() {
       super("|filterHtmlAttributes");
@@ -259,6 +272,11 @@ public abstract class BasicEscapeDirective
     @Override
     protected String escape(SoyValue value) {
       return Sanitizers.filterHtmlAttributes(value);
+    }
+
+    @Override
+    protected boolean isCloseable() {
+      return true;
     }
   }
 
