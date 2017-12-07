@@ -2513,7 +2513,7 @@ if (goog.DEPENDENCIES_ENABLED) {
       var loader = this;
 
       /** @param {string} path */
-      function visitNode(path) {
+      var visitNode = function(path) {
         if (path in deps.written) {
           return;
         }
@@ -2544,7 +2544,7 @@ if (goog.DEPENDENCIES_ENABLED) {
           seenScript[path] = true;
           scripts.push(path);
         }
-      }
+      };
 
       visitNode(pathToLoad);
 
