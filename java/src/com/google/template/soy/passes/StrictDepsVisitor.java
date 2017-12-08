@@ -43,7 +43,9 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Undefined template ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(
-          "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency.");
+          "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency."
+          ,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind CALL_FROM_DEP_TO_SRC =
       SoyErrorKind.of(
           "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
@@ -81,11 +83,13 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
     } else {
       SoyFileKind callerKind = node.getNearestAncestor(SoyFileNode.class).getSoyFileKind();
       SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
+      String callerFilePath = node.getSourceLocation().getFilePath();
+      String calleeFilePath = callee.getSourceLocation().getFilePath();
       if (calleeKind == SoyFileKind.INDIRECT_DEP && callerKind == SoyFileKind.SRC) {
         errorReporter.report(
             node.getSourceLocation(),
             CALL_TO_INDIRECT_DEPENDENCY,
-            callee.getSourceLocation().getFilePath());
+            calleeFilePath);
       }
 
       // Double check if a dep calls a source. We shouldn't usually see this since the dependency
@@ -95,8 +99,8 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
             node.getSourceLocation(),
             CALL_FROM_DEP_TO_SRC,
             callee.getTemplateNameForUserMsgs(),
-            callee.getSourceLocation().getFilePath(),
-            node.getSourceLocation().getFilePath());
+            calleeFilePath,
+            callerFilePath);
       }
     }
 
