@@ -366,7 +366,7 @@ public final class GenJsCodeVisitorTest {
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'), "
             + "'', false)(null, opt_ijData);\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName = "
             + "'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_';\n"
             + "}\n"
@@ -421,7 +421,7 @@ public final class GenJsCodeVisitorTest {
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'), "
             + "'moomoo', false)(null, opt_ijData);\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName = "
             + "'boo.foo.__deltemplate__myDelegates_goo_googoo';\n"
             + "}\n"
@@ -452,7 +452,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -481,7 +481,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_data = opt_data || {};\n"
             + "  return '' + opt_data.moo;\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -511,7 +511,7 @@ public final class GenJsCodeVisitorTest {
             + "  output += moo__soy4 + opt_ijData.moo;\n"
             + "  return output;\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -547,7 +547,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
@@ -583,7 +583,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedJs('alert(\\'Hello World\\');');\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
@@ -630,7 +630,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_.soyTemplateName = "
             + "'boo.foo.__deltemplate__myDelegates_goo_';\n"
             + "}\n"
@@ -669,7 +669,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo.soyTemplateName = "
             + "'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo';\n"
             + "}\n"
@@ -2143,7 +2143,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2259,7 +2259,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2292,7 +2292,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2328,7 +2328,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2360,7 +2360,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2395,7 +2395,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2427,7 +2427,7 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2458,7 +2458,7 @@ public final class GenJsCodeVisitorTest {
             + "  var moo = soy.asserts.assertType(goog.isString(opt_ijData.moo) || opt_ijData.moo instanceof goog.soy.data.SanitizedContent, 'moo', opt_ijData.moo, '!goog.soy.data.SanitizedContent|string');\n"
             + "  return '' + moo;\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}";
 
@@ -2494,7 +2494,7 @@ public final class GenJsCodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
@@ -2553,7 +2553,7 @@ public final class GenJsCodeVisitorTest {
             + "$templateAlias2(null, opt_ijData));\n"
             + "};\n"
             + "exports.goo = $goo;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  $goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 

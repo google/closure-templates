@@ -23833,6 +23833,13 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
 
 
 /**
+ * @define {boolean} Whether to include the soyTemplateName field on each
+ * template.
+ */
+goog.define('soy.$$INCLUDE_TEMPLATE_NAME', goog.DEBUG);
+
+
+/**
  * Whether the locale is right-to-left.
  *
  * @type {boolean}

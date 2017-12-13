@@ -296,7 +296,7 @@ public final class JspbTest {
             + " * }}\n"
             + " */\n"
             + "boo.foo.goo.Params;\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n"
             + "";

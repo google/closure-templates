@@ -306,7 +306,7 @@ public final class TranslateExprNodeVisitorTest {
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml((opt_data.goo.length()));\n"
             + "};\n"
-            + "if (goog.DEBUG) {\n"
+            + "if (soy.$$INCLUDE_TEMPLATE_NAME) {\n"
             + "  ns.foo.soyTemplateName = 'ns.foo';\n"
             + "}\n";
 
