@@ -188,7 +188,7 @@ abstract class AbstractSoyCompiler {
     } catch (CommandLineError e) {
       err.println(e.getMessage());
       return 1;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       err.println(
           "INTERNAL SOY ERROR.\n"
               + "Please open an issue at "
