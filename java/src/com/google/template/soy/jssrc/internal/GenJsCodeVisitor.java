@@ -27,6 +27,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.switch_;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -132,10 +133,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
-
-  /** A reference to the soy.$$INCLUDE_TEMPLATE_NAME @define. */
-  private static final CodeChunk.WithValue INCLUDE_TEMPLATE_NAME =
-      CodeChunk.dottedIdNoRequire("soy.$$INCLUDE_TEMPLATE_NAME");
 
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
@@ -795,9 +792,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
     declarations.add(
-        ifStatement(
-                INCLUDE_TEMPLATE_NAME,
-                assign(alias + ".soyTemplateName", stringLiteral(templateName)))
+        ifStatement(GOOG_DEBUG, assign(alias + ".soyTemplateName", stringLiteral(templateName)))
             .build());
 
     // ------ If delegate template, generate a statement to register it. ------

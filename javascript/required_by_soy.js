@@ -70,7 +70,6 @@ goog.exportSymbol('goog.asserts.ENABLE_ASSERTS', goog.asserts.ENABLE_ASSERTS);
 goog.exportSymbol('goog.asserts.assert', goog.asserts.assert);
 goog.exportSymbol('goog.asserts.fail', goog.asserts.fail);
 goog.exportSymbol('goog.debug.runtimeType', goog.debug.runtimeType);
-goog.exportSymbol('goog.define', goog.define);
 goog.exportSymbol('goog.dom.DomHelper', goog.dom.DomHelper);
 goog.exportSymbol('goog.format.insertWordBreaks', goog.format.insertWordBreaks);
 goog.exportSymbol('goog.getCssName', goog.getCssName);
