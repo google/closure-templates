@@ -1812,7 +1812,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
           return didYouForgetToCloseThe("<style> block");
         case RCDATA_TEXTAREA:
-          return didYouForgetToCloseThe("<textare> block");
+          return didYouForgetToCloseThe("<textarea> block");
         case RCDATA_TITLE:
           return didYouForgetToCloseThe("<title> block");
         case RCDATA_XMP:
