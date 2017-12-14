@@ -47,14 +47,14 @@ public class SoyValueConverterTest {
 
   @Test
   public void testDictCreation() {
-    SoyDict dict1 = CONVERTER.newDict();
+    SoyDict dict1 = SoyValueConverterUtility.newDict();
     assertThat(dict1.getItemCnt()).isEqualTo(0);
 
-    SoyDict dict2 = CONVERTER.newDict("foo", 3.14, "too", true);
+    SoyDict dict2 = SoyValueConverterUtility.newDict("foo", 3.14, "too", true);
     assertThat(dict2.getField("foo").floatValue()).isWithin(0.0).of(3.14);
     assertThat(dict2.getField("too").booleanValue()).isTrue();
 
-    SoyDict dict3 = CONVERTER.newDict("boo", 111, "foo.goo", 222);
+    SoyDict dict3 = SoyValueConverterUtility.newDict("boo", 111, "foo.goo", 222);
     assertThat(dict3.getField("boo").integerValue()).isEqualTo(111);
     assertThat(((SoyDict) dict3.getField("foo")).getField("goo").integerValue()).isEqualTo(222);
 
@@ -65,11 +65,11 @@ public class SoyValueConverterTest {
 
   @Test
   public void testListCreation() {
-    SoyList list2 = CONVERTER.newList(3.14, true);
+    SoyList list2 = SoyValueConverterUtility.newList(3.14, true);
     assertThat(list2.get(0).floatValue()).isWithin(0.0).of(3.14);
     assertThat(list2.get(1).booleanValue()).isTrue();
 
-    SoyList list4 = CONVERTER.newList(3.14, true);
+    SoyList list4 = SoyValueConverterUtility.newList(3.14, true);
     assertThat(list4.get(0).floatValue()).isWithin(0.0).of(3.14);
     assertThat(list4.get(1).booleanValue()).isTrue();
   }

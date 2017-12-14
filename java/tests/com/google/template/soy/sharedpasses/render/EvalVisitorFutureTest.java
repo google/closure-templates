@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.render;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValueConverterUtility;
 
 /**
  * Unit tests for EvalVisitor.
@@ -27,8 +28,8 @@ import com.google.template.soy.data.SoyRecord;
 public class EvalVisitorFutureTest extends EvalVisitorTest {
   @Override
   protected SoyRecord createTestData() {
-    SoyList tri = CONVERTER.newList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
-    return CONVERTER.newDict(
+    SoyList tri = SoyValueConverterUtility.newList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
+    return SoyValueConverterUtility.newDict(
         "boo", Futures.immediateFuture(8),
         "foo.bar", Futures.immediateFuture("baz"),
         "foo.goo2", Futures.immediateFuture(tri),
@@ -37,8 +38,8 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "t", Futures.immediateFuture(true),
         "f", Futures.immediateFuture(false),
         "n", Futures.immediateFuture(null),
-        "map0", Futures.immediateFuture(CONVERTER.newDict()),
-        "list0", Futures.immediateFuture(CONVERTER.newList()),
+        "map0", Futures.immediateFuture(SoyValueConverterUtility.newDict()),
+        "list0", Futures.immediateFuture(SoyValueConverterUtility.newList()),
         "longNumber", Futures.immediateFuture(1000000000000000001L),
         "floatNumber", Futures.immediateFuture(1.5D));
   }

@@ -16,8 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -37,7 +35,6 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -60,10 +57,10 @@ public final class SoyValueConverter {
   public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
 
   /** An immutable empty dict. */
-  public static final SoyDict EMPTY_DICT = UNCUSTOMIZED_INSTANCE.newDict();
+  public static final SoyDict EMPTY_DICT = DictImpl.forProviderMap(ImmutableMap.of());
 
   /** An immutable empty list. */
-  public static final SoyList EMPTY_LIST = UNCUSTOMIZED_INSTANCE.newList();
+  public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
 
   /** An immutable empty map. */
   public static final SoyMapImpl EMPTY_MAP = SoyMapImpl.forProviderMap(ImmutableMap.of());
@@ -78,27 +75,6 @@ public final class SoyValueConverter {
 
   // -----------------------------------------------------------------------------------------------
   // Creating.
-
-  /**
-   * Creates a new {@code SoyDict} initialized from the given keys and values. Values are converted
-   * eagerly. Recognizes dotted-name syntax: adding {@code ("foo.goo", value)} will automatically
-   * create {@code ['foo': ['goo': value]]}.
-   *
-   * @param alternatingKeysAndValues An alternating list of keys and values.
-   * @return A new {@code SoyDict} initialized from the given keys and values.
-   */
-  @VisibleForTesting
-  public SoyDict newDict(Object... alternatingKeysAndValues) {
-    Preconditions.checkArgument(alternatingKeysAndValues.length % 2 == 0);
-
-    Map<String, Object> map = new HashMap<>();
-    for (int i = 0, n = alternatingKeysAndValues.length / 2; i < n; i++) {
-      String key = (String) alternatingKeysAndValues[2 * i];
-      SoyValueProvider value = convert(alternatingKeysAndValues[2 * i + 1]); // convert eagerly
-      insertIntoNestedMap(map, key, value);
-    }
-    return newDictFromMap(map);
-  }
 
   /**
    * Creates a Soy dictionary from a Java string map. While this is O(N) with the map's shallow
@@ -119,49 +95,6 @@ public final class SoyValueConverter {
   }
 
   /**
-   * Private helper to create nested maps based off of a given string of dot-separated field names,
-   * then insert the value into the innermost map.
-   *
-   * <p>For example, {@code insertIntoNestedMap(new HashMap<>(), "foo.bar.baz", val)} will return a
-   * map of {@code {"foo": {"bar": {"baz": val}}}}.
-   *
-   * @param map Top-level map to insert into
-   * @param dottedName One or more field names, dot-separated.
-   * @param value Value to insert
-   */
-  private static void insertIntoNestedMap(
-      Map<String, Object> map, String dottedName, SoyValueProvider value) {
-
-    String[] names = dottedName.split("[.]");
-    int n = names.length;
-
-    String lastName = names[n - 1];
-
-    Map<String, Object> lastMap;
-    if (n == 1) {
-      lastMap = map;
-    } else {
-      lastMap = map;
-      for (int i = 0; i <= n - 2; i++) {
-        Object o = lastMap.get(names[i]);
-        if (o instanceof Map) {
-          @SuppressWarnings("unchecked")
-          Map<String, Object> m = (Map<String, Object>) o;
-          lastMap = m;
-        } else if (o == null) {
-          Map<String, Object> newMap = new HashMap<>();
-          lastMap.put(names[i], newMap);
-          lastMap = newMap;
-        } else {
-          throw new AssertionError("should not happen");
-        }
-      }
-    }
-
-    lastMap.put(lastName, value);
-  }
-
-  /**
    * IMPORTANT: Do not use this method. Consider it internal to Soy.
    *
    * <p>Creates a new SoyEasyList initialized from a SoyList.
@@ -176,23 +109,6 @@ public final class SoyValueConverter {
       result.add(provider);
     }
     return result;
-  }
-
-  /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
-   * <p>Creates a new SoyList initialized from the given values. Values are converted eagerly.
-   *
-   * @param items A list of values.
-   * @return A new SoyEasyList initialized from the given values.
-   */
-  @VisibleForTesting
-  public SoyList newList(Object... items) {
-    ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
-    for (Object o : items) {
-      builder.add(convert(o));
-    }
-    return ListImpl.forProviderList(builder.build());
   }
 
   /**

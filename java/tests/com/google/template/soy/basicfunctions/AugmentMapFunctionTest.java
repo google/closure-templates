@@ -24,6 +24,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -44,8 +45,11 @@ public class AugmentMapFunctionTest {
   public void testComputeForJava() {
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     SoyMap origMap =
-        CONVERTER.newDict("aaa", "blah", "bbb", "bleh", "ccc", CONVERTER.newDict("xxx", 2));
-    SoyMap additionalMap = CONVERTER.newDict("aaa", "bluh", "ccc", CONVERTER.newDict("yyy", 5));
+        SoyValueConverterUtility.newDict(
+            "aaa", "blah", "bbb", "bleh", "ccc", SoyValueConverterUtility.newDict("xxx", 2));
+    SoyMap additionalMap =
+        SoyValueConverterUtility.newDict(
+            "aaa", "bluh", "ccc", SoyValueConverterUtility.newDict("yyy", 5));
     SoyDict augmentedDict =
         (SoyDict)
             augmentMapFunction.computeForJava(ImmutableList.<SoyValue>of(origMap, additionalMap));

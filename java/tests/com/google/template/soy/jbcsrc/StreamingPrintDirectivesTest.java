@@ -35,6 +35,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -107,7 +108,7 @@ public final class StreamingPrintDirectivesTest {
     SettableFuture<String> future2 = SettableFuture.create();
     CompiledTemplate create =
         factory.create(
-            SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("future1", future1, "future2", future2),
+            SoyValueConverterUtility.newDict("future1", future1, "future2", future2),
             SoyValueConverter.EMPTY_DICT);
 
     RenderResult result = create.render(output, context);
@@ -165,7 +166,7 @@ public final class StreamingPrintDirectivesTest {
             "  {$i |nonstreaming}",
             "{/template}");
     RenderContext context = getDefaultContext(templates);
-    SoyDict badParam = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("i", "notAnInt");
+    SoyDict badParam = SoyValueConverterUtility.newDict("i", "notAnInt");
     BufferingAppendable output = BufferingAppendable.buffering();
     templates
         .getTemplateFactory("ns.streamable")
@@ -237,7 +238,7 @@ public final class StreamingPrintDirectivesTest {
     CompiledTemplate template =
         templates
             .getTemplateFactory("ns.foo")
-            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("future", future), EMPTY_DICT);
+            .create(SoyValueConverterUtility.newDict("future", future), EMPTY_DICT);
     template.render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<script>var x=\"\\x22");
     future.set("hello");
@@ -263,7 +264,7 @@ public final class StreamingPrintDirectivesTest {
     CompiledTemplate template =
         templates
             .getTemplateFactory("ns.foo")
-            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("s", "hello"), EMPTY_DICT);
+            .create(SoyValueConverterUtility.newDict("s", "hello"), EMPTY_DICT);
     template.render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
   }

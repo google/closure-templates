@@ -46,6 +46,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -688,8 +689,7 @@ public class BytecodeCompilerTest {
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
-    SoyDict params =
-        SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", IntegerData.forValue(1));
+    SoyDict params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
     singleParam.create(params, EMPTY_DICT).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
 
@@ -700,11 +700,11 @@ public class BytecodeCompilerTest {
     CompiledTemplate.Factory singleIj = templates.getTemplateFactory("ns.foo");
     context = getDefaultContext(templates);
 
-    params = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", IntegerData.forValue(1));
+    params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
     singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
 
-    params = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict();
+    params = SoyValueConverterUtility.newDict();
     singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("null", builder.getAndClearBuffer());
   }
@@ -719,7 +719,7 @@ public class BytecodeCompilerTest {
                 "{$foo + $baz + $bar}")
             .getTemplateFactory("ns.foo");
     SoyDict params =
-        SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict(
+        SoyValueConverterUtility.newDict(
             "foo", StringData.forValue("foo"),
             "bar", StringData.forValue("bar"),
             "baz", StringData.forValue("baz"));

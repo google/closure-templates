@@ -32,6 +32,7 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.tofu.SoyTofu;
@@ -89,7 +90,7 @@ public final class TofuExceptionsTest {
 
   @Test
   public void testExceptions_undefined() throws Exception {
-    SoyDict data = CONVERTER.newDict("foo.boo", 42);
+    SoyDict data = SoyValueConverterUtility.newDict("foo.boo", 42);
     // This is an exception that occurs during expression evaluation
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -106,7 +107,7 @@ public final class TofuExceptionsTest {
 
   @Test
   public void testExceptions_badType() throws Exception {
-    SoyDict data = CONVERTER.newDict("foo", "not a record");
+    SoyDict data = SoyValueConverterUtility.newDict("foo", "not a record");
     // This is an exception that occurs during template calling due to a type checkin
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -126,7 +127,8 @@ public final class TofuExceptionsTest {
   @Test
   public void testExceptions_failedFuture() {
     Exception futureFailureCause = new Exception("boom");
-    SoyDict data = CONVERTER.newDict("foo", immediateFailedFuture(futureFailureCause));
+    SoyDict data =
+        SoyValueConverterUtility.newDict("foo", immediateFailedFuture(futureFailureCause));
     // This error occurs due to a failed future.
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -145,7 +147,7 @@ public final class TofuExceptionsTest {
 
   @Test
   public void testExceptions_wrongTypeFuture() {
-    SoyDict data = CONVERTER.newDict("foo", Futures.immediateFuture("not a record"));
+    SoyDict data = SoyValueConverterUtility.newDict("foo", Futures.immediateFuture("not a record"));
     // This error occurs due to data of the wrong type, hidden behind a future.
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -166,7 +168,7 @@ public final class TofuExceptionsTest {
 
   @Test
   public void testExceptions_transclusion_wrongTypeFuture() {
-    SoyDict data = CONVERTER.newDict("foo", Futures.immediateFuture("not an int"));
+    SoyDict data = SoyValueConverterUtility.newDict("foo", Futures.immediateFuture("not an int"));
     try {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
@@ -187,7 +189,8 @@ public final class TofuExceptionsTest {
   @Test
   public void testExceptions_transclusion_failedFuture() {
     Exception futureFailureCause = new Exception("boom");
-    SoyDict data = CONVERTER.newDict("foo", immediateFailedFuture(futureFailureCause));
+    SoyDict data =
+        SoyValueConverterUtility.newDict("foo", immediateFailedFuture(futureFailureCause));
     try {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();

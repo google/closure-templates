@@ -28,7 +28,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyEasyList;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
@@ -52,7 +52,7 @@ public class EasyListImplTest {
     SoyValue val2 = new EasyListImpl();
     assertFalse(val1.equals(val2)); // EasyListImpl uses object identity.
 
-    SoyValue val3 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newList(111, true);
+    SoyValue val3 = SoyValueConverterUtility.newList(111, true);
     assertTrue(val3.coerceToBoolean());
     assertEquals("[111, true]", val3.coerceToString());
   }
@@ -86,7 +86,7 @@ public class EasyListImplTest {
   @Test
   public void testMapMethods() {
 
-    SoyList list = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newList(3.14, true);
+    SoyList list = SoyValueConverterUtility.newList(3.14, true);
     assertEquals(2, list.getItemCnt());
     assertEquals(ImmutableList.of(IntegerData.ZERO, IntegerData.ONE), list.getItemKeys());
     assertTrue(list.hasItem(IntegerData.ONE));

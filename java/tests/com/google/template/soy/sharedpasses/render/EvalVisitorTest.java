@@ -32,6 +32,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
@@ -65,7 +66,7 @@ public class EvalVisitorTest {
       INJECTOR.getInstance(SoyValueConverter.class);
 
   private static final SoyRecord TEST_IJ_DATA =
-      CONVERTER.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      SoyValueConverterUtility.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
   private static final ImmutableMap<String, SoyValueProvider> LOCALS =
       ImmutableMap.<String, SoyValueProvider>of(
@@ -99,8 +100,8 @@ public class EvalVisitorTest {
   }
 
   protected SoyRecord createTestData() {
-    SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
-    return CONVERTER.newDict(
+    SoyList tri = SoyValueConverterUtility.newList(1, 3, 6, 10, 15, 21);
+    return SoyValueConverterUtility.newDict(
         "boo",
         8,
         "foo.bar",
@@ -118,9 +119,9 @@ public class EvalVisitorTest {
         "n",
         null,
         "map0",
-        CONVERTER.newDict(),
+        SoyValueConverterUtility.newDict(),
         "list0",
-        CONVERTER.newList(),
+        SoyValueConverterUtility.newList(),
         "longNumber",
         1000000000000000001L,
         "floatNumber",

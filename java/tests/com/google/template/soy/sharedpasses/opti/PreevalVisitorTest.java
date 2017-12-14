@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -124,7 +124,7 @@ public final class PreevalVisitorTest {
     ExprRootNode expr = code.getExpr();
     Environment env =
         TestingEnvironment.createForTest(
-            SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
+            SoyValueConverterUtility.newDict("boo", 8),
             ImmutableMap.<String, SoyValueProvider>of());
 
     return new PreevalVisitor(env).exec(expr);

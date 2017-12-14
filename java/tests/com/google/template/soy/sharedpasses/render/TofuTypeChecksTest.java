@@ -23,7 +23,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -67,9 +67,9 @@ public class TofuTypeChecksTest {
           "trusted_resource_uri", SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
   private static final SanitizedContent JS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
-  private static final SoyList LIST_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newList();
-  private static final SoyMap MAP_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict();
-  private static final SoyDict DICT_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict();
+  private static final SoyList LIST_DATA = SoyValueConverterUtility.newList();
+  private static final SoyMap MAP_DATA = SoyValueConverterUtility.newDict();
+  private static final SoyDict DICT_DATA = SoyValueConverterUtility.newDict();
 
   @Test
   public void testAnyTypeIsInstance() {

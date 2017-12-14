@@ -41,6 +41,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -91,9 +92,9 @@ public class RenderVisitorTest {
   private static final SoyRecord TEST_DATA;
 
   static {
-    SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
+    SoyList tri = SoyValueConverterUtility.newList(1, 3, 6, 10, 15, 21);
     TEST_DATA =
-        CONVERTER.newDict(
+        SoyValueConverterUtility.newDict(
             "boo",
             8,
             "foo.bar",
@@ -109,11 +110,11 @@ public class RenderVisitorTest {
             "f",
             false,
             "map0",
-            CONVERTER.newDict(),
+            SoyValueConverterUtility.newDict(),
             "list0",
-            CONVERTER.newList(),
+            SoyValueConverterUtility.newList(),
             "list1",
-            CONVERTER.newList(1, 2, 3),
+            SoyValueConverterUtility.newList(1, 2, 3),
             "component",
             "comp",
             "plainText",
@@ -130,7 +131,7 @@ public class RenderVisitorTest {
   }
 
   private static final SoyRecord TEST_IJ_DATA =
-      CONVERTER.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      SoyValueConverterUtility.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
   private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
       new SoyIdRenamingMap() {
@@ -468,10 +469,10 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("person", "The president", "gender", "female");
+    SoyDict data = SoyValueConverterUtility.newDict("person", "The president", "gender", "female");
     assertRenderWithData(templateBody, data, "The president shared her photos.");
 
-    data = CONVERTER.newDict("person", "The president", "gender", "male");
+    data = SoyValueConverterUtility.newDict("person", "The president", "gender", "male");
     assertRenderWithData(templateBody, data, "The president shared his photos.");
   }
 
@@ -488,13 +489,13 @@ public class RenderVisitorTest {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("person", "Bob", "n_people", 0);
+    SoyDict data = SoyValueConverterUtility.newDict("person", "Bob", "n_people", 0);
     assertRenderWithData(templateBody, data, "Nobody shared photos.");
 
-    data = CONVERTER.newDict("person", "Bob", "n_people", 1);
+    data = SoyValueConverterUtility.newDict("person", "Bob", "n_people", 1);
     assertRenderWithData(templateBody, data, "Only Bob shared photos.");
 
-    data = CONVERTER.newDict("person", "Bob", "n_people", 10);
+    data = SoyValueConverterUtility.newDict("person", "Bob", "n_people", 10);
     assertRenderWithData(templateBody, data, "Bob and 9 others shared photos.");
   }
 
@@ -525,23 +526,23 @@ public class RenderVisitorTest {
             + "  {/msg}\n";
 
     SoyDict data =
-        CONVERTER.newDict(
+        SoyValueConverterUtility.newDict(
             "person1", "Alice", "gender1", "female", "person2", "Lara", "gender2", "female");
     assertRenderWithData(templateBody, data, "Alice shared her photos with Lara and her friends.");
 
     data =
-        CONVERTER.newDict(
+        SoyValueConverterUtility.newDict(
             "person1", "Alice", "gender1", "female", "person2", "Mark", "gender2", "male");
     assertRenderWithData(templateBody, data, "Alice shared her photos with Mark and his friends.");
 
     data =
-        CONVERTER.newDict(
+        SoyValueConverterUtility.newDict(
             "person1", "Bob", "gender1", "male", "person2", "Mark", "gender2", "male");
     assertRenderWithData(
         templateBody, data, "              Bob shared his photos with Mark and his friends.");
 
     data =
-        CONVERTER.newDict(
+        SoyValueConverterUtility.newDict(
             "person1", "Bob", "gender1", "male", "person2", "Lara", "gender2", "female");
     assertRenderWithData(
         templateBody, data, "              Bob shared his photos with Lara and her friends.");
@@ -570,16 +571,17 @@ public class RenderVisitorTest {
             + "   {/select}\n"
             + "  {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 0);
+    SoyDict data =
+        SoyValueConverterUtility.newDict("person", "Alice", "gender", "female", "n_people", 0);
     assertRenderWithData(templateBody, data, "Alice added nobody to her circle.");
 
-    data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 1);
+    data = SoyValueConverterUtility.newDict("person", "Alice", "gender", "female", "n_people", 1);
     assertRenderWithData(templateBody, data, "Alice added one person to her circle.");
 
-    data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 10);
+    data = SoyValueConverterUtility.newDict("person", "Alice", "gender", "female", "n_people", 10);
     assertRenderWithData(templateBody, data, "Alice added 10 people to her circle.");
 
-    data = CONVERTER.newDict("person", "Bob", "gender", "male", "n_people", 10);
+    data = SoyValueConverterUtility.newDict("person", "Bob", "gender", "male", "n_people", 10);
     assertRenderWithData(templateBody, data, "Bob added 10 people to his circle.");
   }
 
@@ -608,15 +610,15 @@ public class RenderVisitorTest {
             + "  {/msg}\n";
 
     SoyDict data =
-        CONVERTER.newDict(
-            "person", CONVERTER.newDict("name", "Alice", "gender", "female"),
-            "invitees", CONVERTER.newList("Anna", "Brent", "Chris", "Darin"));
+        SoyValueConverterUtility.newDict(
+            "person", SoyValueConverterUtility.newDict("name", "Alice", "gender", "female"),
+            "invitees", SoyValueConverterUtility.newList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Alice added Anna and 3 others to her circle.");
 
     data =
-        CONVERTER.newDict(
-            "person", CONVERTER.newDict("name", "Bob", "gender", "male"),
-            "invitees", CONVERTER.newList("Anna", "Brent", "Chris", "Darin"));
+        SoyValueConverterUtility.newDict(
+            "person", SoyValueConverterUtility.newDict("name", "Bob", "gender", "male"),
+            "invitees", SoyValueConverterUtility.newList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Bob added Anna and 3 others to his circle.");
   }
 
@@ -645,13 +647,13 @@ public class RenderVisitorTest {
             + "   {/plural}\n"
             + " {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("num", 1);
+    SoyDict data = SoyValueConverterUtility.newDict("num", 1);
     assertRenderWithData(
         templateBody,
         data,
         "Notify <span class=\"sharebox-id-email-number\">1</span> person via email &rsaquo;");
 
-    data = CONVERTER.newDict("num", 10);
+    data = SoyValueConverterUtility.newDict("num", 10);
     assertRenderWithData(
         templateBody,
         data,
@@ -670,7 +672,7 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("person", "The president", "gender", 100);
+    SoyDict data = SoyValueConverterUtility.newDict("person", "The president", "gender", 100);
     assertRenderExceptionWithData(
         templateBody, data, "Select expression \"$gender\" doesn't evaluate to string.");
   }
@@ -688,7 +690,7 @@ public class RenderVisitorTest {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyDict data = CONVERTER.newDict("person", "Bob", "n_people", "nobody");
+    SoyDict data = SoyValueConverterUtility.newDict("person", "Bob", "n_people", "nobody");
     assertRenderExceptionWithData(
         templateBody, data, "Plural expression \"$n_people\" doesn't evaluate to number.");
   }
@@ -808,7 +810,9 @@ public class RenderVisitorTest {
             + "    {/if}\n"
             + "  {/foreach}\n";
 
-    SoyDict data = CONVERTER.newDict("myMap", CONVERTER.newDict("aaa", "Blah", "bbb", 17));
+    SoyDict data =
+        SoyValueConverterUtility.newDict(
+            "myMap", SoyValueConverterUtility.newDict("aaa", "Blah", "bbb", 17));
     String output = renderWithData(templateBody, data);
     assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]")).contains(output);
   }
@@ -913,8 +917,12 @@ public class RenderVisitorTest {
             + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
             + "{/template}\n";
 
-    SoyDict foo = CONVERTER.newDict("boo", "foo", "goo", CONVERTER.newList(3, 2, 1));
-    SoyDict data = CONVERTER.newDict("boo", "boo", "foo", foo, "goo", CONVERTER.newList(1, 2, 3));
+    SoyDict foo =
+        SoyValueConverterUtility.newDict(
+            "boo", "foo", "goo", SoyValueConverterUtility.newList(3, 2, 1));
+    SoyDict data =
+        SoyValueConverterUtility.newDict(
+            "boo", "boo", "foo", foo, "goo", SoyValueConverterUtility.newList(1, 2, 3));
 
     String expectedOutput =
         "boo 1 2 3\n"
@@ -1017,13 +1025,21 @@ public class RenderVisitorTest {
             .registry();
 
     SoyDict foo =
-        CONVERTER.newDict(
-            "boo", new TestFuture("foo", progress), "goo", CONVERTER.newList(3, 2, 1));
+        SoyValueConverterUtility.newDict(
+            "boo",
+            new TestFuture("foo", progress),
+            "goo",
+            SoyValueConverterUtility.newList(3, 2, 1));
     SoyDict data =
-        CONVERTER.newDict(
-            "boo", new TestFuture("boo", progress), "foo", foo, "goo", CONVERTER.newList(1, 2, 3));
+        SoyValueConverterUtility.newDict(
+            "boo",
+            new TestFuture("boo", progress),
+            "foo",
+            foo,
+            "goo",
+            SoyValueConverterUtility.newList(1, 2, 3));
 
-    SoyRecord testIj = CONVERTER.newDict("future", new TestFuture("ij", progress));
+    SoyRecord testIj = SoyValueConverterUtility.newDict("future", new TestFuture("ij", progress));
 
     StringBuilder outputSb = new StringBuilder();
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);
@@ -1106,7 +1122,7 @@ public class RenderVisitorTest {
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .errorReporter(FAIL)
             .parse();
-    final SoyRecord data = CONVERTER.newDict();
+    final SoyRecord data = SoyValueConverterUtility.newDict();
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
     assertThat(
@@ -1342,7 +1358,7 @@ public class RenderVisitorTest {
             "  111 {$boo}\n"
             + "{/deltemplate}\n";
 
-    SoyRecord data = CONVERTER.newDict();
+    SoyRecord data = SoyValueConverterUtility.newDict();
     ParseResult parseResult;
 
     // ------ Test with only file 1a in bundle. ------
@@ -1504,7 +1520,7 @@ public class RenderVisitorTest {
             renderTemplateInFile(
                 soyFileContent,
                 "ns.callerTemplate",
-                CONVERTER.newDict(),
+                SoyValueConverterUtility.newDict(),
                 null,
                 Predicates.<String>alwaysFalse()))
         .isEqualTo("callee param param");
@@ -1564,7 +1580,7 @@ public class RenderVisitorTest {
             return super.get();
           }
         };
-    SoyRecord data = CONVERTER.newDict("foo", fooFuture);
+    SoyRecord data = SoyValueConverterUtility.newDict("foo", fooFuture);
     assertThat(
             renderTemplateInFile(
                 SoyFileSetParserBuilder.forFileContents(soyFileContent).parse(),
@@ -1591,7 +1607,7 @@ public class RenderVisitorTest {
       renderTemplateInFile(
           SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
           "ns.template",
-          CONVERTER.newDict("foo", Futures.immediateFuture("hello world")),
+          SoyValueConverterUtility.newDict("foo", Futures.immediateFuture("hello world")),
           TEST_IJ_DATA,
           Predicates.<String>alwaysFalse(),
           outputSb);
@@ -1643,7 +1659,7 @@ public class RenderVisitorTest {
             return super.get();
           }
         };
-    SoyRecord data = CONVERTER.newDict("future", future);
+    SoyRecord data = SoyValueConverterUtility.newDict("future", future);
     assertThat(
             renderTemplateInFile(
                 SoyFileSetParserBuilder.forFileContents(soyFileContent).parse(),

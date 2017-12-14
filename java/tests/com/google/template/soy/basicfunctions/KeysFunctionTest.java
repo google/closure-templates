@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -55,7 +56,9 @@ public class KeysFunctionTest {
   public void testComputeForJava() {
     KeysFunction keysFunction = new KeysFunction();
 
-    SoyValue map = CONVERTER.newDict("boo", "bar", "foo", 2, "goo", CONVERTER.newDict("moo", 4));
+    SoyValue map =
+        SoyValueConverterUtility.newDict(
+            "boo", "bar", "foo", 2, "goo", SoyValueConverterUtility.newDict("moo", 4));
     SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
 
     assertTrue(result instanceof SoyList);
