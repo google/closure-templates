@@ -18,8 +18,11 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -27,6 +30,10 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
+import com.google.template.soy.types.aggregate.MapType;
+import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -67,11 +74,33 @@ public final class LegacyObjectMapToMapFunction
     return ImmutableSet.of("soy.map");
   }
 
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef LEGACY_OBJECT_MAP_TO_MAP =
+        MethodRef.create(BasicFunctionsRuntime.class, "legacyObjectMapToMap", SoyDict.class);
+  }
+
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    // TODO(b/69064671): This is wrong. The runtime representations of legacy_object_map and
-    // experimental_map need to be different in every backend, just as they are different in JS.
-    return Iterables.getOnlyElement(args);
+    SoyExpression soyExpression = Iterables.getOnlyElement(args);
+    SoyType originalType = soyExpression.soyRuntimeType().soyType();
+    MapType newType;
+    if (originalType instanceof LegacyObjectMapType) {
+      newType =
+          MapType.of(
+              ((LegacyObjectMapType) originalType).getKeyType(),
+              ((LegacyObjectMapType) originalType).getValueType());
+    } else if (originalType instanceof UnknownType) {
+      newType = MapType.of(UnknownType.getInstance(), UnknownType.getInstance());
+    } else {
+      throw new IllegalArgumentException(
+          "legacyObjectMapToMap() expects input to be LEGACY_OBJECT_MAP, get "
+              + originalType.getKind());
+    }
+    return SoyExpression.forMap(
+        newType,
+        JbcSrcMethods.LEGACY_OBJECT_MAP_TO_MAP.invoke(
+            soyExpression.box().checkedCast(SoyDict.class)));
   }
 
   @Override
@@ -95,8 +124,7 @@ public final class LegacyObjectMapToMapFunction
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    // TODO(b/69064671): This is wrong. The runtime representations of legacy_object_map and
-    // experimental_map need to be different in every backend, just as they are different in JS.
-    return Iterables.getOnlyElement(args);
+    DictImpl map = (DictImpl) Iterables.getOnlyElement(args);
+    return BasicFunctionsRuntime.legacyObjectMapToMap(map);
   }
 }

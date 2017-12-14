@@ -20,8 +20,10 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -44,9 +46,13 @@ public final class LegacyObjectMapToMapFunctionTest {
   @Test
   public void computeForJava() {
     SoyMap legacyObjectMap = CONVERTER.newDict("x", "y", "z", CONVERTER.newDict("xx", 2));
-    SoyMap map =
-        (SoyMap) LEGACY_OBJECT_MAP_TO_MAP.computeForJava(ImmutableList.of(legacyObjectMap));
-    assertThat(map).isEqualTo(legacyObjectMap); // TODO(b/69064671): fix
+    SoyMapImpl map =
+        SoyMapImpl.forProviderMap(
+            ImmutableSortedMap.of("x", CONVERTER.convert("y"), "z", CONVERTER.newDict("xx", 2)));
+    SoyMapImpl convertedMap =
+        (SoyMapImpl) LEGACY_OBJECT_MAP_TO_MAP.computeForJava(ImmutableList.of(legacyObjectMap));
+    // maps use instance equality to match Javascript behavior
+    assertThat(convertedMap.toString()).isEqualTo(map.toString());
   }
 
   @Test
@@ -78,6 +84,6 @@ public final class LegacyObjectMapToMapFunctionTest {
                                 ImmutableList.of(
                                     FieldRef.NULL_PROVIDER.accessor(),
                                     FieldRef.NULL_PROVIDER.accessor())))))))
-        .evaluatesToInstanceOf(SoyMap.class); // TODO(b/69064671): fix
+        .evaluatesToInstanceOf(SoyMapImpl.class);
   }
 }

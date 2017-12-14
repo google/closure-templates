@@ -33,6 +33,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -327,9 +328,12 @@ final class ExpressionCompiler {
       checkState(
           node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
               || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
+      final boolean useLegacyMap = node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE;
       final int numItems = node.numChildren() / 2;
       if (numItems == 0) {
-        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor());
+        return useLegacyMap
+            ? SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor())
+            : SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
       }
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
@@ -346,11 +350,11 @@ final class ExpressionCompiler {
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression soyDict =
-          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newLinkedHashMap(keys, values));
-      // TODO(b/69064671): DictImpl is being used to represent both legacy object map literals
-      // and map literals, but we know here which one is intended. Add DictImpl APIs to tell it
-      // which kind of map it "really" is, so it can throw a runtime exception if a template tries
-      // to index into the map with the wrong convention.
+          useLegacyMap
+              ? MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+                  BytecodeUtils.newLinkedHashMap(keys, values))
+              : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
+                  BytecodeUtils.newLinkedHashMap(keys, values));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
@@ -1052,10 +1056,15 @@ final class ExpressionCompiler {
           soyValueProvider =
               MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
                   baseExpr.unboxAs(List.class), keyExpr.unboxAs(long.class));
-        } else {
+        } else if (baseExpr.soyRuntimeType().isKnownMap()) {
           // Box and do a map style lookup.
           soyValueProvider =
               MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
+                  baseExpr.box().checkedCast(SoyMapImpl.class), keyExpr.box());
+        } else {
+          // Box and do a map style lookup.
+          soyValueProvider =
+              MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
                   baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
         }
         Expression soyValue =

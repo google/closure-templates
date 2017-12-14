@@ -30,7 +30,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -81,6 +83,14 @@ public final class SoyExpression extends Expression {
 
   public static SoyExpression forList(ListType listType, Expression delegate) {
     return new SoyExpression(getUnboxedType(listType), delegate);
+  }
+
+  public static SoyExpression forLegacyObjectMap(LegacyObjectMapType mapType, Expression delegate) {
+    return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
+  }
+
+  public static SoyExpression forMap(MapType mapType, Expression delegate) {
+    return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
   }
 
   public static SoyExpression forProto(SoyRuntimeType type, Expression delegate) {
@@ -286,8 +296,10 @@ public final class SoyExpression extends Expression {
       MethodRef.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
     } else if (type.isKnownList()) {
       MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
-    } else if (type.isKnownMap()) {
+    } else if (type.isKnownLegacyObjectMap()) {
       MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
+    } else if (type.isKnownMap()) {
+      MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownProto()) {
       MethodRef.SOY_PROTO_VALUE_IMPL_CREATE.invokeUnchecked(adapter);
     } else {

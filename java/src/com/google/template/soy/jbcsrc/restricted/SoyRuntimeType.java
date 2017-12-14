@@ -108,9 +108,8 @@ public abstract class SoyRuntimeType {
       case LIST:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_LIST_TYPE);
       case LEGACY_OBJECT_MAP:
-        return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
+        return new BoxedSoyType(soyType, BytecodeUtils.SOY_LEGACY_OBJECT_MAP_TYPE);
       case MAP:
-        // TODO(b/69064671): need to fork SOY_MAP_TYPE
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_MAP_TYPE);
       case RECORD:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_RECORD_TYPE);
@@ -294,8 +293,12 @@ public abstract class SoyRuntimeType {
     return soyType.getKind() == Kind.LIST;
   }
 
-  public final boolean isKnownMap() {
+  public final boolean isKnownLegacyObjectMap() {
     return soyType.getKind() == Kind.LEGACY_OBJECT_MAP;
+  }
+
+  public final boolean isKnownMap() {
+    return soyType.getKind() == Kind.MAP;
   }
 
   public final boolean isKnownRecord() {

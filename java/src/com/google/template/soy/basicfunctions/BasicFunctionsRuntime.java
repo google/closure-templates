@@ -26,6 +26,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -77,6 +78,14 @@ public final class BasicFunctionsRuntime {
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
     Iterables.addAll(list, map.getItemKeys());
     return list;
+  }
+
+  public static SoyMapImpl legacyObjectMapToMap(SoyDict map) {
+    return SoyMapImpl.forProviderMap(map.asJavaStringMap());
+  }
+
+  public static SoyDict mapToLegacyObjectMap(SoyMapImpl map) {
+    return DictImpl.forProviderMap(map.asJavaStringMap());
   }
 
   /** Returns the numeric maximum of the two arguments. */

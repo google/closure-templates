@@ -131,6 +131,8 @@ abstract class FieldInterpreter {
    * Proto {@code map} fields are handled by {@link #getMapType}. But before protos had a map type,
    * JSPB had a {@code map_key} field annotation that simulated map behavior at runtime. They're
    * still out there, somewhere, so we have to support them.
+   *
+   * <p>TODO(b/70671325): Investigate if we can drop support for this.
    */
   private static FieldInterpreter getJspbMapType(
       final FieldInterpreter scalarImpl, FieldDescriptor fieldDescriptor) {

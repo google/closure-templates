@@ -37,6 +37,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -89,6 +90,9 @@ public abstract class MethodRef {
 
   public static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
       create(DictImpl.class, "forProviderMap", Map.class).asNonNullable();
+
+  public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP =
+      create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();
 
   public static final MethodRef DOUBLE_TO_STRING =
       create(Double.class, "toString", double.class).asNonNullable();
@@ -223,8 +227,11 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_GET_LIST_STATUS =
       create(JbcSrcRuntime.class, "getListStatus", List.class);
 
+  public static final MethodRef RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM =
+      create(JbcSrcRuntime.class, "getSoyLegacyObjectMapItem", SoyMap.class, SoyValue.class);
+
   public static final MethodRef RUNTIME_GET_MAP_ITEM =
-      create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
+      create(JbcSrcRuntime.class, "getSoyMapItem", SoyMapImpl.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
@@ -266,6 +273,12 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();
+
+  public static final MethodRef SOY_DICT_IMPL_AS_JAVA_MAP =
+      create(DictImpl.class, "asJavaStringMap").asNonNullable();
+
+  public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP =
+      create(SoyMapImpl.class, "asJavaStringMap").asNonNullable();
 
   public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();

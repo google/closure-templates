@@ -29,6 +29,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -64,6 +65,9 @@ public final class SoyValueConverter {
   /** An immutable empty list. */
   public static final SoyList EMPTY_LIST = UNCUSTOMIZED_INSTANCE.newList();
 
+  /** An immutable empty map. */
+  public static final SoyMapImpl EMPTY_MAP = SoyMapImpl.forProviderMap(ImmutableMap.of());
+
   /** List of user-provided custom value converters. */
   // Note: Using field injection instead of constructor injection because we want optional = true.
   @Inject(optional = true)
@@ -76,12 +80,12 @@ public final class SoyValueConverter {
   // Creating.
 
   /**
-   * Creates a new SoyDict initialized from the given keys and values. Values are converted eagerly.
-   * Recognizes dotted-name syntax: adding {@code ("foo.goo", value)} will automatically create
-   * {@code ['foo': ['goo': value]]}.
+   * Creates a new {@code SoyDict} initialized from the given keys and values. Values are converted
+   * eagerly. Recognizes dotted-name syntax: adding {@code ("foo.goo", value)} will automatically
+   * create {@code ['foo': ['goo': value]]}.
    *
    * @param alternatingKeysAndValues An alternating list of keys and values.
-   * @return A new SoyDict initialized from the given keys and values.
+   * @return A new {@code SoyDict} initialized from the given keys and values.
    */
   @VisibleForTesting
   public SoyDict newDict(Object... alternatingKeysAndValues) {
@@ -212,7 +216,6 @@ public final class SoyValueConverter {
 
   // -----------------------------------------------------------------------------------------------
   // Converting from existing data.
-
   /**
    * Converts a Java object into an equivalent SoyValueProvider.
    *
@@ -231,6 +234,7 @@ public final class SoyValueConverter {
       // converters have a chance at converting the map.
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
+      // TODO(b/69064671): Change this to use runtime type detection.
       return newDictFromMap(objCast);
     } else if (obj instanceof Collection<?> || obj instanceof FluentIterable<?>) {
       // NOTE: We don't trap Iterable itself, because many types extend from Iterable but are not

@@ -40,6 +40,8 @@ public abstract class FieldRef {
       staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER");
   public static final FieldRef EMPTY_DICT =
       staticFieldReference(SoyValueConverter.class, "EMPTY_DICT");
+  public static final FieldRef EMPTY_MAP =
+      staticFieldReference(SoyValueConverter.class, "EMPTY_MAP");
 
   public static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
     return createFinalField(owner, name, Type.getType(type));

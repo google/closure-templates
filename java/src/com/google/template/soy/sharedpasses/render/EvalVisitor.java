@@ -41,6 +41,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -250,11 +251,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       for (int i = 0; i < numItems; i++) {
         map.put(keys.get(i).stringValue(), values.get(i));
       }
-      // TODO(b/69064671): DictImpl is being used to represent both legacy object map literals
-      // and map literals, but we know here which one is intended. Add DictImpl APIs to tell it
-      // which kind of map it "really" is, so it can throw a runtime exception if a template tries
-      // to index into the map with the wrong convention.
-      return DictImpl.forProviderMap(map);
+      return node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+          ? DictImpl.forProviderMap(map)
+          : SoyMapImpl.forProviderMap(map);
     } else {
       // TODO: Support map literals with nonstring keys.
       throw RenderException.create(
