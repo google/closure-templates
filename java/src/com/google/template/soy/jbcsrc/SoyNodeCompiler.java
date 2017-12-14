@@ -451,6 +451,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitForeachNode(ForeachNode node) {
+    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
+    // allocating the list altogether.
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
     SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAs(List.class);
     Scope scope = variables.enterScope();

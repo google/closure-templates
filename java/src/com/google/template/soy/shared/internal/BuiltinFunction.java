@@ -43,7 +43,6 @@ public enum BuiltinFunction implements SoyFunction {
   CSS("css"),
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
-  RANGE("range"),
   REMAINDER("remainder"),
   ;
 
@@ -89,8 +88,6 @@ public enum BuiltinFunction implements SoyFunction {
     switch (this) {
       case CSS:
         return ImmutableSet.of(1, 2);
-      case RANGE:
-        return ImmutableSet.of(1, 2, 3);
       default:
         return ImmutableSet.of(1);
     }

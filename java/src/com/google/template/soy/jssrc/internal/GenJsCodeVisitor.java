@@ -1160,7 +1160,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitForeachNode(ForeachNode node) {
-
     boolean hasIfempty = (node.numChildren() == 2);
 
     // Build some local variable names.
@@ -1219,6 +1218,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
+    // allocating the list.
 
     // Build some local variable names.
     String varName = node.getVarName();

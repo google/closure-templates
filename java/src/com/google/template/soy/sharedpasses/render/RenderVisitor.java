@@ -394,7 +394,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitForeachNode(ForeachNode node) {
-
+    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
+    // allocating the list altogether.
     SoyValue dataRefValue = eval(node.getExpr(), node);
     if (!(dataRefValue instanceof SoyList)) {
       throw RenderException.createWithSource(

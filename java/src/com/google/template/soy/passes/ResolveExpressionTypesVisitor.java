@@ -30,6 +30,7 @@ import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
+import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -810,6 +811,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         visitLegacyObjectMapToMapFunction(node);
       } else if (knownFunction instanceof MapToLegacyObjectMapFunction) {
         visitMapToLegacyObjectMapFunction(node);
+      } else if (knownFunction instanceof RangeFunction) {
+        node.setType(typeRegistry.getOrCreateListType(IntType.getInstance()));
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.

@@ -78,7 +78,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -2696,7 +2695,7 @@ private ForNode ForStmt() :
     {
       // Same as above, we do not want to make "range" a token.
       if (!(rangeExpr instanceof FunctionNode)
-          || ((FunctionNode) rangeExpr).getSoyFunction() != BuiltinFunction.RANGE) {
+          || !((FunctionNode) rangeExpr).getSoyFunction().getName().equals("range")) {
         errorReporter.report(
             rangeExpr.getSourceLocation(), PARSER_ERROR, rangeExpr.toSourceString(), "range(...)");
       } else {

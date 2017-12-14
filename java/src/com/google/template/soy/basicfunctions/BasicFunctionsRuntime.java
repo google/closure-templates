@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
@@ -137,5 +138,37 @@ public final class BasicFunctionsRuntime {
     } else {
       return Math.round(value.numberValue());
     }
+  }
+
+  public static List<IntegerData> range(int end) {
+    return range(0, end, 1);
+  }
+
+  public static List<IntegerData> range(int start, int end) {
+    return range(start, end, 1);
+  }
+
+  public static List<IntegerData> range(int start, int end, int step) {
+    if (step == 0) {
+      throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
+    }
+    int length = end - start;
+    if ((length ^ step) < 0) {
+      // sign mismatch, step will never cause start to reach end
+      return ImmutableList.of();
+    }
+    // if step does not evenly divide length add +1 to account for the fact that we always add start
+    int size = length / step + (length % step == 0 ? 0 : 1);
+    List<IntegerData> list = new ArrayList<>(size);
+    if (step > 0) {
+      for (int i = start; i < end; i += step) {
+        list.add(IntegerData.forValue(i));
+      }
+    } else {
+      for (int i = start; i > end; i += step) {
+        list.add(IntegerData.forValue(i));
+      }
+    }
+    return list;
   }
 }

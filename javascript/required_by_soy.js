@@ -66,6 +66,7 @@ goog.require('xid');
 goog.exportSymbol('goog.DEBUG', goog.DEBUG);
 goog.exportSymbol('goog.Uri', goog.Uri);
 goog.exportSymbol('goog.array', goog.array);
+goog.exportSymbol('goog.array.range', goog.array.range);
 goog.exportSymbol('goog.asserts.ENABLE_ASSERTS', goog.asserts.ENABLE_ASSERTS);
 goog.exportSymbol('goog.asserts.assert', goog.asserts.assert);
 goog.exportSymbol('goog.asserts.fail', goog.asserts.fail);
