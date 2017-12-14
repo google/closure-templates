@@ -205,11 +205,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
-  /** The params from template header or SoyDoc. Null if no decls and no SoyDoc. */
-  @Nullable private ImmutableList<TemplateParam> params;
+  /** The params from template header or SoyDoc. */
+  private ImmutableList<TemplateParam> params;
 
-  /** The injected params from template header. Null if no decls. */
-  @Nullable private ImmutableList<TemplateParam> injectedParams;
+  /** The injected params from template header. */
+  private ImmutableList<TemplateParam> injectedParams;
 
   private int maxLocalVariableTableSize = -1;
 
@@ -259,7 +259,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
         }
       }
     }
-    // Note: These used to be nullable, but now return an empty list.
     this.params = regularParams.build();
     this.injectedParams = injectedParams.build();
     this.commandText = nodeBuilder.getCmdText().trim();
@@ -391,7 +390,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     soyDoc = null;
     soyDocDesc = null;
 
-    assert params != null; // prevent warnings
     List<TemplateParam> newParams = Lists.newArrayListWithCapacity(params.size());
     for (TemplateParam origParam : params) {
       newParams.add(origParam.copyEssential());
@@ -450,26 +448,20 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     sb.append(getTagString()).append("\n");
 
     // Header.
-    if (params != null) {
-      for (TemplateParam param : params) {
-        if (param.declLoc() != DeclLoc.HEADER) {
-          continue;
-        }
-        HeaderParam headerParam = (HeaderParam) param;
-        sb.append("  {@param");
-        if (!headerParam.isRequired()) {
-          sb.append('?');
-        }
-        sb.append(' ')
-            .append(headerParam.name())
-            .append(": ")
-            .append(headerParam.type())
-            .append("}");
-        if (headerParam.desc() != null) {
-          sb.append("  /** ").append(headerParam.desc()).append(" */");
-        }
-        sb.append("\n");
+    for (TemplateParam param : params) {
+      if (param.declLoc() != DeclLoc.HEADER) {
+        continue;
       }
+      HeaderParam headerParam = (HeaderParam) param;
+      sb.append("  {@param");
+      if (!headerParam.isRequired()) {
+        sb.append('?');
+      }
+      sb.append(' ').append(headerParam.name()).append(": ").append(headerParam.type()).append("}");
+      if (headerParam.desc() != null) {
+        sb.append("  /** ").append(headerParam.desc()).append(" */");
+      }
+      sb.append("\n");
     }
 
     // Body.

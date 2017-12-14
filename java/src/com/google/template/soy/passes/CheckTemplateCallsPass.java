@@ -239,7 +239,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       // If the caller is passing data via data="all" then we look for matching static param
       // declarations in the callers template and see if there are type errors there.
       if (call.isPassingData()) {
-        if (call.isPassingAllData() && callerTemplate.getParams() != null) {
+        if (call.isPassingAllData()) {
           // Check indirect params that are passed via data="all".
           // We only need to check explicit params of calling template here.
           for (TemplateParam callerParam : callerTemplate.getParams()) {
@@ -404,14 +404,12 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         paramTypes = new TemplateParamTypes();
 
         // Store all of the explicitly declared param types
-        if (node.getParams() != null) {
-          for (TemplateParam param : node.getParams()) {
-            if (param.declLoc() == DeclLoc.SOY_DOC) {
-              paramTypes.isStrictlyTyped = false;
-            }
-            Preconditions.checkNotNull(param.type());
-            paramTypes.params.put(param.name(), param.type());
+        for (TemplateParam param : node.getParams()) {
+          if (param.declLoc() == DeclLoc.SOY_DOC) {
+            paramTypes.isStrictlyTyped = false;
           }
+          Preconditions.checkNotNull(param.type());
+          paramTypes.params.put(param.name(), param.type());
         }
 
         // Store indirect params where there's no conflict with explicit params.
@@ -463,8 +461,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       // If all the data keys being passed are listed using 'param' commands, then check that all
       // required params of the callee are included.
       if (!caller.isPassingData()) {
-        // Do the check if the callee node has declared params.
-        if (callee != null && callee.getParams() != null) {
+        if (callee != null) {
           // Get param keys passed by caller.
           Set<String> callerParamKeys = Sets.newHashSet();
           for (CallParamNode callerParam : caller.getChildren()) {

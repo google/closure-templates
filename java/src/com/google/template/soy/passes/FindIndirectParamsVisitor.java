@@ -280,21 +280,16 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     } else {
       // Add the params listed by this template.
       List<TemplateParam> params = node.getParams();
-      if (params == null) {
-        // We can't tell what's going on because this template doesn't have param decls.
-        mayHaveIndirectParamsInExternalCalls = true;
-      } else {
-        for (TemplateParam param : params) {
-          if (callerStack.peek().allCallParamKeys.contains(param.name())) {
-            continue; // param is actually not being passed by data="all"
-          }
-          if (! indirectParams.containsKey(param.name())) {
-            indirectParams.put(param.name(), param);
-          }
-          paramKeyToCalleesMultimap.put(param.name(), node);
-          Preconditions.checkNotNull(param.type());
-          indirectParamTypes.put(param.name(), param.type());
+      for (TemplateParam param : params) {
+        if (callerStack.peek().allCallParamKeys.contains(param.name())) {
+          continue; // param is actually not being passed by data="all"
         }
+        if (!indirectParams.containsKey(param.name())) {
+          indirectParams.put(param.name(), param);
+        }
+        paramKeyToCalleesMultimap.put(param.name(), node);
+        Preconditions.checkNotNull(param.type());
+        indirectParamTypes.put(param.name(), param.type());
       }
     }
 
