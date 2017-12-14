@@ -819,6 +819,7 @@ public final class SoyFileSet {
                   soyFunctionMap,
                   errorReporter));
 
+      throwIfErrorsPresent();
       SoyFileSetNode soyTree = result.fileSet();
       TemplateRegistry registry = result.registry();
 
@@ -843,6 +844,7 @@ public final class SoyFileSet {
       for (SoyMsg extractedMsg : extractedMsgBundle) {
         extractedMsgIdsBuilder.add(extractedMsg.getId());
       }
+      throwIfErrorsPresent();
       memoizedExtractedMsgIdsForPruning = extractedMsgIdsBuilder.build();
     }
 
@@ -854,8 +856,7 @@ public final class SoyFileSet {
         prunedTransMsgsBuilder.add(transMsg);
       }
     }
-    // TODO(lukes): this should call throwIfErrorsPresent(), but can't because it will break
-    // build rules.
+    throwIfErrorsPresent();
     return new SoyMsgBundleImpl(
         origTransMsgBundle.getLocaleString(), prunedTransMsgsBuilder.build());
   }
