@@ -32,7 +32,9 @@ public final class GenPyCallExprVisitorTest {
   private static final String SOY_BASE =
       "{namespace boo.foo}\n"
           + "{template .goo}\n"
-          + "  Hello\n"
+          + "  {@param? goo: string}\n"
+          + "  {@param? moo: string}\n"
+          + "  {$moo ?: 'Hello'} {$goo}\n"
           + "{/template}\n"
           + "{template .moo}\n"
           + "  %s\n"

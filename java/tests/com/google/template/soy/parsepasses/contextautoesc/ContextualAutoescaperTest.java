@@ -1911,8 +1911,8 @@ public final class ContextualAutoescaperTest {
             "{/call}",
             "\n{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? fooHTML: ?}\n",
-            "{$fooHTML |noAutoescape}",
+            "  {@param? fooHtml: ?}\n",
+            "{$fooHtml |noAutoescape}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -1928,8 +1928,8 @@ public final class ContextualAutoescaperTest {
             "  {/call}\n",
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? fooHTML: ?}\n",
-            "  {$fooHTML |noAutoescape}\n",
+            "  {@param? fooHtml: ?}\n",
+            "  {$fooHtml |noAutoescape}\n",
             "{/template}"));
   }
 
