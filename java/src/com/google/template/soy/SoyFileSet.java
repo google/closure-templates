@@ -601,7 +601,8 @@ public final class SoyFileSet {
      * <p>For compilation failures warnings are reported along with the errors, by throwing an
      * exception. The default is to report warnings to the logger for SoyFileSet.
      */
-    Builder setWarningSink(Appendable warningSink) {
+    @VisibleForTesting
+    public Builder setWarningSink(Appendable warningSink) {
       this.warningSink = checkNotNull(warningSink);
       return this;
     }
