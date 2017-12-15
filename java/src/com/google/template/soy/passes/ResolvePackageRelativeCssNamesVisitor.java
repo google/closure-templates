@@ -40,7 +40,11 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
       SoyErrorKind.of(
           "Package-relative class name ''{0}'' cannot be used with component expression.");
   private static final SoyErrorKind NO_CSS_PACKAGE =
-      SoyErrorKind.of("No CSS package defined for package-relative class name ''{0}''.");
+      SoyErrorKind.of(
+          "No CSS package defined for package-relative class name ''{0}''. "
+              + "CSS package prefixes are set via the ''cssbase'' attribute on the template, a "
+              + "''cssbase'' attribute on the namespace, or the first ''requirecss'' package on "
+              + "the namesapce.{1}.");
 
   private final ErrorReporter errorReporter;
   private String packagePrefix = null;
@@ -65,11 +69,11 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
 
     List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
     for (FunctionNode fn : fnNodes) {
-      resolveSelector(fn);
+      resolveSelector(node, fn);
     }
   }
 
-  private void resolveSelector(FunctionNode node) {
+  private void resolveSelector(TemplateNode template, FunctionNode node) {
     if (node.getSoyFunction() != BuiltinFunction.CSS) {
       return;
     }
@@ -94,7 +98,13 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     }
 
     if (packagePrefix == null) {
-      errorReporter.report(selector.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
+      errorReporter.report(
+          selector.getSourceLocation(),
+          NO_CSS_PACKAGE,
+          selectorText,
+          template.getRequiredCssNamespaces().isEmpty()
+              ? ""
+              : " NOTE: ''requirecss'' on a template is not used to infer the CSS package.");
     }
 
     // Replace the selector text with resolved selector text
