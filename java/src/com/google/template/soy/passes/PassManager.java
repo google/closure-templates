@@ -113,7 +113,7 @@ public final class PassManager {
             // Needs to run after HtmlRewritePass
             .add(new InsertMsgPlaceholderNodesPass(errorReporter))
             .add(new RewriteGendersPass())
-            .add(new RewriteRemaindersPass())
+            .add(new RewriteRemaindersPass(errorReporter))
             // Needs to run after inserting msg placeholders to ensure that genders="..."
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(errorReporter))
@@ -404,13 +404,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter).exec(file);
-    }
-  }
-
-  private final class RewriteRemaindersPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new RewriteRemaindersVisitor(errorReporter).exec(file);
     }
   }
 
