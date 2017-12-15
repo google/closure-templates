@@ -36,6 +36,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -403,7 +404,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     SoyValue base = visitNullSafeNodeRecurse(itemAccess.getBaseExprChild());
 
     // attempting item access on non-SoyMap
-    if (!(base instanceof SoyMap)) {
+    if (!(base instanceof SoyMap || base instanceof SoyNewMap)) {
       if (base == NullSafetySentinel.INSTANCE) {
         // Bail out if base expression failed a null-safety check.
         return NullSafetySentinel.INSTANCE;
@@ -426,10 +427,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return UndefinedData.INSTANCE;
     }
 
-    // base is a valid SoyMap: get value
-
+    // base is a valid SoyMap or SoyNewMap: get value
     SoyValue key = visit(itemAccess.getKeyExprChild());
-    SoyValue value = ((SoyMap) base).getItem(key);
+    SoyValue value =
+        base instanceof SoyMap ? ((SoyMap) base).getItem(key) : ((SoyNewMap) base).get(key);
 
     if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(

@@ -55,8 +55,8 @@ public final class LegacyObjectMapToMapFunctionTest {
                 "x", CONVERTER.convert("y"), "z", SoyValueConverterUtility.newDict("xx", 2)));
     SoyMapImpl convertedMap =
         (SoyMapImpl) LEGACY_OBJECT_MAP_TO_MAP.computeForJava(ImmutableList.of(legacyObjectMap));
-    assertThat(map.getItem(StringData.forValue("x")))
-        .isEqualTo(convertedMap.getItem(StringData.forValue("x")));
+    assertThat(map.get(StringData.forValue("x")))
+        .isEqualTo(convertedMap.get(StringData.forValue("x")));
   }
 
   @Test

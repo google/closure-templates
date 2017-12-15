@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
@@ -43,7 +43,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * object.
  */
 @ParametersAreNonnullByDefault
-public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
+public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
   // TODO(b/69794482)): Support non-string keys in the new map implementation.
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   public static SoyMapImpl forProviderMap(Map<String, ? extends SoyValueProvider> providerMap) {
@@ -58,13 +58,13 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
   private final ImmutableMap<String, ? extends SoyValueProvider> providerMap;
 
   @Override
-  public int getItemCnt() {
+  public int size() {
     return providerMap.size();
   }
 
   @Override
   @Nonnull
-  public final Iterable<? extends SoyValue> getItemKeys() {
+  public final Iterable<? extends SoyValue> keys() {
     return Iterables.transform(
         providerMap.keySet(),
         new Function<String, SoyValue>() {
@@ -76,18 +76,18 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
   }
 
   @Override
-  public boolean hasItem(SoyValue key) {
+  public boolean containsKey(SoyValue key) {
     return providerMap.containsKey(key.stringValue());
   }
 
   @Override
-  public SoyValue getItem(SoyValue key) {
-    SoyValueProvider provider = getItemProvider(key);
+  public SoyValue get(SoyValue key) {
+    SoyValueProvider provider = getProvider(key);
     return (provider != null) ? provider.resolve() : null;
   }
 
   @Override
-  public SoyValueProvider getItemProvider(SoyValue key) {
+  public SoyValueProvider getProvider(SoyValue key) {
     return providerMap.get(key.stringValue());
   }
 
@@ -122,8 +122,8 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
     appendable.append('{');
 
     boolean isFirst = true;
-    for (SoyValue key : getItemKeys()) {
-      SoyValue value = getItem(key);
+    for (SoyValue key : keys()) {
+      SoyValue value = get(key);
       if (isFirst) {
         isFirst = false;
       } else {

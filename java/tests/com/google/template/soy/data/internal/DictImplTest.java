@@ -16,10 +16,12 @@
 
 package com.google.template.soy.data.internal;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -100,17 +102,15 @@ public class DictImplTest {
   }
 
   @Test
-  public void testMapMethods() {
-
-    StringData BOO = StringData.forValue("boo");
-
+  public void testLegacyObjectMapMethods() {
+    StringData boo = StringData.forValue("boo");
     Map<String, SoyValueProvider> providerMap = Maps.newHashMap();
-    SoyDict dict = DictImpl.forProviderMap(providerMap);
+    DictImpl dict = DictImpl.forProviderMap(providerMap);
     assertEquals(0, dict.getItemCnt());
     assertEquals(0, Iterables.size(dict.getItemKeys()));
-    assertFalse(dict.hasItem(BOO));
-    assertNull(dict.getItem(BOO));
-    assertNull(dict.getItemProvider(BOO));
+    assertFalse(dict.hasItem(boo));
+    assertNull(dict.getItem(boo));
+    assertNull(dict.getItemProvider(boo));
     providerMap.put("boo", IntegerData.forValue(111));
     assertEquals(1, dict.getItemCnt());
     assertEquals(1, Iterables.size(dict.getItemKeys()));
@@ -119,17 +119,77 @@ public class DictImplTest {
     providerMap.put("goo", IntegerData.forValue(333));
     assertEquals(3, dict.getItemCnt());
     assertEquals(3, Iterables.size(dict.getItemKeys()));
-    assertTrue(dict.hasItem(BOO));
-    assertEquals(111, dict.getItem(BOO).integerValue());
-    assertEquals(111, dict.getItemProvider(BOO).resolve().integerValue());
+    assertTrue(dict.hasItem(boo));
+    assertEquals(111, dict.getItem(boo).integerValue());
+    assertEquals(111, dict.getItemProvider(boo).resolve().integerValue());
     providerMap.remove("foo");
     assertEquals(2, dict.getItemCnt());
     providerMap.remove("boo");
     providerMap.remove("goo");
     assertEquals(0, dict.getItemCnt());
     assertEquals(0, Iterables.size(dict.getItemKeys()));
-    assertFalse(dict.hasItem(BOO));
-    assertNull(dict.getItem(BOO));
-    assertNull(dict.getItemProvider(BOO));
+    assertFalse(dict.hasItem(boo));
+    assertNull(dict.getItem(boo));
+    assertNull(dict.getItemProvider(boo));
+  }
+
+  @Test
+  public void testMapMethods() {
+    StringData boo = StringData.forValue("boo");
+    Map<String, SoyValueProvider> providerMap = Maps.newHashMap();
+    DictImpl dict = DictImpl.forProviderMap(providerMap);
+    assertEquals(0, dict.size());
+    assertEquals(0, Iterables.size(dict.keys()));
+    assertFalse(dict.containsKey(boo));
+    assertNull(dict.get(boo));
+    assertNull(dict.getProvider(boo));
+    providerMap.put("boo", IntegerData.forValue(111));
+    assertEquals(1, dict.size());
+    assertEquals(1, Iterables.size(dict.keys()));
+    assertEquals("boo", Iterables.getOnlyElement(dict.keys()).stringValue());
+    providerMap.put("foo", IntegerData.forValue(222));
+    providerMap.put("goo", IntegerData.forValue(333));
+    assertEquals(3, dict.size());
+    assertEquals(3, Iterables.size(dict.keys()));
+    assertTrue(dict.containsKey(boo));
+    assertEquals(111, dict.get(boo).integerValue());
+    assertEquals(111, dict.getProvider(boo).resolve().integerValue());
+    providerMap.remove("foo");
+    assertEquals(2, dict.size());
+    providerMap.remove("boo");
+    providerMap.remove("goo");
+    assertEquals(0, dict.size());
+    assertEquals(0, Iterables.size(dict.keys()));
+    assertFalse(dict.containsKey(boo));
+    assertNull(dict.get(boo));
+    assertNull(dict.getProvider(boo));
+  }
+
+  @Test
+  public void testMapInteroperability() {
+    Map<String, SoyValueProvider> providerMap = Maps.newHashMap();
+    DictImpl dict = DictImpl.forProviderMap(providerMap);
+    assertEquals(0, dict.size());
+    try {
+      dict.getItemCnt();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage())
+          .isEqualTo(
+              "Expected a value of type `map`, got `legacy_object_map`. "
+                  + "These two map types are not interoperable.");
+    }
+    // Recreate the map that resets the internal state.
+    dict = DictImpl.forProviderMap(providerMap);
+    assertEquals(0, dict.getItemCnt());
+    try {
+      dict.keys();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage())
+          .isEqualTo(
+              "Expected a value of type `legacy_object_map`, got `map`. "
+                  + "These two map types are not interoperable.");
+    }
   }
 }

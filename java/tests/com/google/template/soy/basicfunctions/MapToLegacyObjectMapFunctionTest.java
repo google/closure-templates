@@ -56,7 +56,7 @@ public final class MapToLegacyObjectMapFunctionTest {
         SoyValueConverterUtility.newDict("x", "y", "z", SoyValueConverterUtility.newDict("xx", 2));
     SoyDict convertedMap = (SoyDict) MAP_TO_LEGACY_OBJECT_MAP.computeForJava(ImmutableList.of(map));
     // maps use instance equality to match Javascript behavior
-    assertThat(map.getItem(StringData.forValue("x")))
+    assertThat(expectedMap.getItem(StringData.forValue("x")))
         .isEqualTo(convertedMap.getItem(StringData.forValue("x")));
   }
 
