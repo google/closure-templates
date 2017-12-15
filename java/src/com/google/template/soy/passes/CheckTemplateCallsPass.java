@@ -458,22 +458,22 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
      * </ul>
      */
     private void checkCallParamNames(CallNode caller, TemplateNode callee) {
-      // If all the data keys being passed are listed using 'param' commands, then check that all
-      // required params of the callee are included.
-      if (!caller.isPassingData()) {
-        if (callee != null) {
-          // Get param keys passed by caller.
-          Set<String> callerParamKeys = Sets.newHashSet();
-          for (CallParamNode callerParam : caller.getChildren()) {
-            boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
-            if (!isUnique) {
-              // Found a duplicate param.
-              errorReporter.report(
-                  callerParam.getKey().location(),
-                  DUPLICATE_PARAM,
-                  callerParam.getKey().identifier());
-            }
+      if (callee != null) {
+        // Get param keys passed by caller.
+        Set<String> callerParamKeys = Sets.newHashSet();
+        for (CallParamNode callerParam : caller.getChildren()) {
+          boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
+          if (!isUnique) {
+            // Found a duplicate param.
+            errorReporter.report(
+                callerParam.getKey().location(),
+                DUPLICATE_PARAM,
+                callerParam.getKey().identifier());
           }
+        }
+        // If all the data keys being passed are listed using 'param' commands, then check that all
+        // required params of the callee are included.
+        if (!caller.isPassingData()) {
           // Check param keys required by callee.
           List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
           for (TemplateParam calleeParam : callee.getParams()) {
