@@ -550,8 +550,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitForeachNode(ForeachNode node) {
-      // TODO(b/70577468): optimize for when the list is a call to range(...)
-      // Build the local variable names.
       ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
       String baseVarName = nonEmptyNode.getVarName();
       String listVarName = String.format("%sList%d", baseVarName, node.getId());

@@ -108,8 +108,10 @@ public final class RangeFunction
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
-    // Coincidentally, soy range is identical to python range
-    return new PyFunctionExprBuilder("range").addArgs(args).asPyExpr();
+    // Coincidentally, soy range is identical to python xrange
+    // in theory we should use range which is guaranteed to produce a list.  But the xrange object
+    // is also enumerable, so as far as soy is concerned it is also a list and we can just use it.
+    return new PyFunctionExprBuilder("xrange").addArgs(args).asPyExpr();
   }
 
   @Override
