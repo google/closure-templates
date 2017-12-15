@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayDeque;
@@ -75,7 +76,14 @@ public final class RenderException extends RuntimeException {
     // Typically, this is fast since templates aren't that deep and we only do this in error
     // situations so performance matters less.
     TemplateNode template = node.getNearestAncestor(TemplateNode.class);
-    soyStackTrace.add(template.createStackTraceElement(node.getSourceLocation()));
+    return addStackTraceElement(template, node.getSourceLocation());
+  }
+
+  /** Add a partial stack trace element by specifying the source location of the soy file. */
+  RenderException addStackTraceElement(TemplateNode template, SourceLocation location) {
+    // Typically, this is fast since templates aren't that deep and we only do this in error
+    // situations so performance matters less.
+    soyStackTrace.add(template.createStackTraceElement(location));
     return this;
   }
 

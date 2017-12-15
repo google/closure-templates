@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -394,39 +395,63 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitForeachNode(ForeachNode node) {
-    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
-    // allocating the list altogether.
-    SoyValue dataRefValue = eval(node.getExpr(), node);
-    if (!(dataRefValue instanceof SoyList)) {
-      throw RenderException.createWithSource(
-          "In 'foreach' command "
-              + node.toSourceString()
-              + ", the data reference does not "
-              + "resolve to a SoyList "
-              + "(encountered type "
-              + dataRefValue.getClass().getName()
-              + ").",
-          node);
-    }
-    SoyList foreachList = (SoyList) dataRefValue;
-    int listLength = foreachList.length();
-    if (listLength > 0) {
-      // Case 1: Nonempty list.
-      ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
-      LoopVar var = child.getVar();
-      for (int i = 0; i < listLength; ++i) {
-        SoyValueProvider value = foreachList.getProvider(i);
-        env.bind(var, value);
-        env.bindCurrentIndex(var, i);
-        env.bindIsLast(var, listLength - 1 == i);
-        visitChildren(child);
+    Optional<ForeachNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
+    if (exprAsRangeArgs.isPresent()) {
+      ForeachNode.RangeArgs args = exprAsRangeArgs.get();
+      int step = args.increment().isPresent() ? evalRangeArg(node, args.increment().get()) : 1;
+      int start = args.start().isPresent() ? evalRangeArg(node, args.start().get()) : 0;
+      int end = evalRangeArg(node, args.limit());
+      int length = end - start;
+      if ((length ^ step) < 0) {
+        // sign mismatch, step will never cause start to reach end.
+        // handle ifempty, if present
+        if (node.numChildren() == 2) {
+          visit(node.getChild(1));
+        }
+      } else {
+        ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
+        int size = length / step + (length % step == 0 ? 0 : 1);
+        for (int i = 0; i < size; ++i) {
+          executeForeachBody(child, i, IntegerData.forValue(start + step * i), size);
+        }
       }
     } else {
-      // Case 2: Empty list. If the 'ifempty' node exists, visit it.
-      if (node.numChildren() == 2) {
-        visit(node.getChild(1));
+      SoyValue dataRefValue = eval(node.getExpr(), node);
+      if (!(dataRefValue instanceof SoyList)) {
+        throw RenderException.createWithSource(
+            "In 'foreach' command "
+                + node.toSourceString()
+                + ", the data reference does not "
+                + "resolve to a SoyList "
+                + "(encountered type "
+                + dataRefValue.getClass().getName()
+                + ").",
+            node);
+      }
+      SoyList foreachList = (SoyList) dataRefValue;
+      int listLength = foreachList.length();
+      if (listLength > 0) {
+        // Case 1: Nonempty list.
+        ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
+        for (int i = 0; i < listLength; ++i) {
+          executeForeachBody(child, i, foreachList.getProvider(i), listLength);
+        }
+      } else {
+        // Case 2: Empty list. If the 'ifempty' node exists, visit it.
+        if (node.numChildren() == 2) {
+          visit(node.getChild(1));
+        }
       }
     }
+  }
+
+  private void executeForeachBody(
+      ForeachNonemptyNode child, int i, SoyValueProvider value, int size) {
+    LoopVar var = child.getVar();
+    env.bind(var, value);
+    env.bindCurrentIndex(var, i);
+    env.bindIsLast(var, size - 1 == i);
+    visitChildren(child);
   }
 
   @Override
@@ -445,16 +470,15 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private int evalRangeArg(ForNode node, ExprRootNode rangeArg) {
+  private int evalRangeArg(SoyNode node, ExprNode rangeArg) {
     SoyValue rangeArgValue = eval(rangeArg, node);
     if (!(rangeArgValue instanceof IntegerData)) {
-      throw RenderException.createWithSource(
-          "In 'for' command "
-              + node.toSourceString()
-              + ", the expression \""
-              + rangeArg.toSourceString()
-              + "\" does not resolve to an integer.",
-          node);
+      throw RenderException.create(
+              "In 'range' expression \""
+                  + rangeArg.toSourceString()
+                  + "\" does not resolve to an integer.")
+          .addStackTraceElement(
+              node.getNearestAncestor(TemplateNode.class), rangeArg.getSourceLocation());
     }
     return rangeArgValue.integerValue();
   }
