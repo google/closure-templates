@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -38,8 +37,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class AugmentMapFunctionTest {
-
-  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
 
   @Test
   public void testComputeForJava() {

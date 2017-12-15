@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
@@ -49,8 +48,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class KeysFunctionTest {
-
-  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
 
   @Test
   public void testComputeForJava() {

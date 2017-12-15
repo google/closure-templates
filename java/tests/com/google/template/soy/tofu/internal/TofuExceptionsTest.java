@@ -45,7 +45,6 @@ import org.junit.runners.JUnit4;
 /** Unit tests for exception behavior of Tofu. */
 @RunWith(JUnit4.class)
 public final class TofuExceptionsTest {
-  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   private static final String SOY_FILE =

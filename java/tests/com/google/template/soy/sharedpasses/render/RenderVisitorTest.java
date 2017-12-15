@@ -40,7 +40,6 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
@@ -86,8 +85,6 @@ import org.junit.runners.JUnit4;
 public class RenderVisitorTest {
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
-  private static final SoyValueConverter CONVERTER = INJECTOR.getInstance(SoyValueConverter.class);
 
   private static final SoyRecord TEST_DATA;
 
