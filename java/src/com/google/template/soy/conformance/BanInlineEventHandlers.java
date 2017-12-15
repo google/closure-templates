@@ -42,13 +42,15 @@ final class BanInlineEventHandlers extends Rule<HtmlAttributeNode> {
       // inline event handlers all have values
       return;
     }
-    // Ban all html attributes which start with 'on'
+    // Ban all html attributes which start with 'on' and are not equal to 'on'.
     // this is the same logic that the autoescaper uses to decide if a given attribute is an
     // inline event handler.
     StandaloneNode attrName = attributeNode.getChild(0);
-    if (attrName instanceof RawTextNode
-        && Ascii.toLowerCase(((RawTextNode) attrName).getRawText()).startsWith("on")) {
-      errorReporter.report(attributeNode.getChild(0).getSourceLocation(), error);
+    if (attrName instanceof RawTextNode) {
+      String text = Ascii.toLowerCase(((RawTextNode) attrName).getRawText());
+      if (text.startsWith("on") && !text.equals("on")) {
+        errorReporter.report(attributeNode.getChild(0).getSourceLocation(), error);
+      }
     }
   }
 }

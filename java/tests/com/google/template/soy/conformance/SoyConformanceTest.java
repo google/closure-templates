@@ -342,6 +342,14 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n" + "{template .foo}\n" + "<div ONCLICK='bar'></div>\n" + "{/template}");
+    assertNoViolation(
+        "requirement: {\n"
+            + "  custom: {\n"
+            + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<div on='bar'></div>\n" + "{/template}");
   }
 
   @Test
