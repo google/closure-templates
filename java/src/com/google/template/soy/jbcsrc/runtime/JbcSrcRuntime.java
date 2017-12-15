@@ -402,6 +402,14 @@ public final class JbcSrcRuntime {
     return LOGGER;
   }
 
+  public static int rangeLoopLength(int start, int end, int step) {
+    int length = end - start;
+    if ((length ^ step) < 0) {
+      return 0;
+    }
+    return length / step + (length % step == 0 ? 0 : 1);
+  }
+
   public static boolean coerceToBoolean(double v) {
     // NaN and 0 should both be falsy, all other numbers are truthy
     // use & instead of && to avoid a branch

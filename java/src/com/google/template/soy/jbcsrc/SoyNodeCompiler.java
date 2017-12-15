@@ -56,6 +56,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -451,27 +452,65 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitForeachNode(ForeachNode node) {
-    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
-    // allocating the list altogether.
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-    SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAs(List.class);
+    Optional<ForeachNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
     Scope scope = variables.enterScope();
-    final Variable listVar =
-        scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
-    final Variable indexVar =
-        scope.createSynthetic(SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
-    final Variable listSizeVar =
-        scope.createSynthetic(
-            SyntheticVarName.foreachLoopLength(nonEmptyNode),
-            MethodRef.LIST_SIZE.invoke(listVar.local()),
-            DERIVED);
-    final Variable itemVar =
-        scope.create(
-            nonEmptyNode.getVarName(),
-            MethodRef.LIST_GET
-                .invoke(listVar.local(), indexVar.local())
-                .checkedCast(SOY_VALUE_PROVIDER_TYPE),
-            DERIVED);
+    final Variable indexVar;
+    final List<Statement> initializers = new ArrayList<>();
+    final Variable sizeVar;
+    final Variable itemVar;
+    if (exprAsRangeArgs.isPresent()) {
+      final CompiledForeachRangeArgs compiledArgs = calculateRangeArgs(node, scope);
+      initializers.addAll(compiledArgs.initStatements());
+      // The size is just the number of items in the range.  The logic is a little tricky so we
+      // implement it in a runtime function: JbcsrcRuntime.rangeLoopLength
+      sizeVar =
+          scope.createSynthetic(
+              SyntheticVarName.foreachLoopLength(nonEmptyNode),
+              MethodRef.RUNTIME_RANGE_LOOP_LENGTH.invoke(
+                  compiledArgs.start(), compiledArgs.end(), compiledArgs.step()),
+              DERIVED);
+      indexVar =
+          scope.createSynthetic(
+              SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+      itemVar =
+          scope.create(
+              nonEmptyNode.getVarName(),
+              new Expression(Type.LONG_TYPE, Feature.CHEAP) {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  // executes ((long) start + index * step)
+                  compiledArgs.start().gen(adapter);
+                  compiledArgs.step().gen(adapter);
+                  indexVar.local().gen(adapter);
+                  adapter.visitInsn(Opcodes.IMUL);
+                  adapter.visitInsn(Opcodes.IADD);
+                  adapter.cast(Type.INT_TYPE, Type.LONG_TYPE);
+                }
+              },
+              DERIVED);
+    } else {
+      SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAs(List.class);
+      Variable listVar =
+          scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
+      initializers.add(listVar.initializer());
+      sizeVar =
+          scope.createSynthetic(
+              SyntheticVarName.foreachLoopLength(nonEmptyNode),
+              MethodRef.LIST_SIZE.invoke(listVar.local()),
+              DERIVED);
+      indexVar =
+          scope.createSynthetic(
+              SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+      itemVar =
+          scope.create(
+              nonEmptyNode.getVarName(),
+              MethodRef.LIST_GET
+                  .invoke(listVar.local(), indexVar.local())
+                  .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+              DERIVED);
+    }
+    initializers.add(sizeVar.initializer());
     final Statement loopBody = visitChildrenInNewScope(nonEmptyNode);
     final Statement exitScope = scope.exitScope();
 
@@ -481,9 +520,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
-        listVar.initializer().gen(adapter);
-        listSizeVar.initializer().gen(adapter);
-        listSizeVar.local().gen(adapter);
+        for (Statement initializer : initializers) {
+          initializer.gen(adapter);
+        }
+        sizeVar.local().gen(adapter);
         Label emptyListLabel = new Label();
         adapter.ifZCmp(Opcodes.IFEQ, emptyListLabel);
         indexVar.initializer().gen(adapter);
@@ -494,7 +534,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
         adapter.iinc(indexVar.local().index(), 1); // index++
         indexVar.local().gen(adapter);
-        listSizeVar.local().gen(adapter);
+        sizeVar.local().gen(adapter);
         adapter.ifICmp(Opcodes.IFLT, loopStart); // if index < list.size(), goto loopstart
         // exit the loop
         exitScope.gen(adapter);
@@ -510,6 +550,93 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         }
       }
     };
+  }
+
+  @AutoValue
+  abstract static class CompiledForeachRangeArgs {
+    /** Current loop index. */
+    abstract Expression start();
+
+    /** Where to end loop iteration, defaults to {@code 0}. */
+    abstract Expression end();
+
+    /** This statement will increment the index by the loop stride. */
+    abstract Expression step();
+
+    /** Statements that must have been run prior to using any of the above expressions. */
+    abstract ImmutableList<Statement> initStatements();
+  }
+
+  /**
+   * Interprets the given expressions as the arguments of a {@code range(...)} expression in a
+   * {@code foreach} loop.
+   */
+  private CompiledForeachRangeArgs calculateRangeArgs(ForeachNode forNode, Scope scope) {
+    ForeachNode.RangeArgs rangeArgs = forNode.exprAsRangeArgs().get();
+    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) forNode.getChild(0);
+    ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
+    Expression startExpression =
+        computeRangeValue(
+            SyntheticVarName.foreachLoopRangeStart(nonEmptyNode),
+            rangeArgs.start(),
+            0,
+            scope,
+            initStatements);
+    Expression stepExpression =
+        computeRangeValue(
+            SyntheticVarName.foreachLoopRangeStep(nonEmptyNode),
+            rangeArgs.increment(),
+            1,
+            scope,
+            initStatements);
+    Expression endExpression =
+        computeRangeValue(
+            SyntheticVarName.foreachLoopRangeEnd(nonEmptyNode),
+            Optional.of(rangeArgs.limit()),
+            Integer.MAX_VALUE,
+            scope,
+            initStatements);
+
+    return new AutoValue_SoyNodeCompiler_CompiledForeachRangeArgs(
+        startExpression, endExpression, stepExpression, initStatements.build());
+  }
+
+  /**
+   * Computes a single range argument.
+   *
+   * @param varName The variable name to use if this value should be stored in a local
+   * @param expression The expression
+   * @param defaultValue The value to use if there is no expression
+   * @param scope The current variable scope to add variables to
+   * @param initStatements Initializing statements, if any.
+   */
+  private Expression computeRangeValue(
+      SyntheticVarName varName,
+      Optional<ExprNode> expression,
+      int defaultValue,
+      Scope scope,
+      final ImmutableList.Builder<Statement> initStatements) {
+    if (!expression.isPresent()) {
+      return constant(defaultValue);
+    } else if (expression.get() instanceof IntegerNode
+        && ((IntegerNode) expression.get()).isInt()) {
+      int value = Ints.checkedCast(((IntegerNode) expression.get()).getValue());
+      return constant(value);
+    } else {
+      Label startDetachPoint = new Label();
+      // Note: If the value of rangeArgs.start() is above 32 bits, Ints.checkedCast() will fail at
+      // runtime with IllegalArgumentException.
+      Expression startExpression =
+          MethodRef.INTS_CHECKED_CAST.invoke(
+              exprCompiler.compile(expression.get(), startDetachPoint).unboxAs(long.class));
+      if (!startExpression.isCheap()) {
+        // bounce it into a local variable
+        Variable startVar = scope.createSynthetic(varName, startExpression, STORE);
+        initStatements.add(startVar.initializer().labelStart(startDetachPoint));
+        startExpression = startVar.local();
+      }
+      return startExpression;
+    }
   }
 
   @Override

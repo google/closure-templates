@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
 /**
  * Attempts to compile an {@link ExprNode} to an {@link Expression} for a {@link SoyValueProvider}
@@ -190,7 +191,16 @@ final class ExpressionToSoyValueProviderCompiler {
 
     @Override
     Optional<Expression> visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
-      return Optional.of(variables.getLocal(local));
+      Expression loopVar = variables.getLocal(local);
+      if (loopVar.resultType() == Type.LONG_TYPE) {
+        // this happens in foreach loops over ranges
+        if (allowsBoxing()) {
+          return Optional.of(SoyExpression.forInt(loopVar).box());
+        }
+        return Optional.absent();
+      } else {
+        return Optional.of(loopVar);
+      }
     }
 
     @Override

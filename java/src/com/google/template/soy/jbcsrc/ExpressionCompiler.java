@@ -721,10 +721,16 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
-      expression = detacher.get().resolveSoyValueProvider(expression);
-      return SoyExpression.forSoyValue(
-          varRef.getType(),
-          expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+      if (expression.resultType() == Type.LONG_TYPE) {
+        // it can be an unboxed long when executing a foreach over a range
+        return SoyExpression.forInt(expression);
+      } else {
+        // otherwise it must be a SoyValueProvider, resolve and cast
+        expression = detacher.get().resolveSoyValueProvider(expression);
+        return SoyExpression.forSoyValue(
+            varRef.getType(),
+            expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+      }
     }
 
     // Params

@@ -41,6 +41,18 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName(forNode.getVarName() + "_limit", forNode);
   }
 
+  static SyntheticVarName foreachLoopRangeStart(ForeachNonemptyNode foreachNode) {
+    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_start", foreachNode);
+  }
+
+  static SyntheticVarName foreachLoopRangeStep(ForeachNonemptyNode foreachNode) {
+    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_step", foreachNode);
+  }
+
+  static SyntheticVarName foreachLoopRangeEnd(ForeachNonemptyNode foreachNode) {
+    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_end", foreachNode);
+  }
+
   static SyntheticVarName foreachLoopList(ForeachNonemptyNode foreachNode) {
     return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_list", foreachNode);
   }

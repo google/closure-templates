@@ -194,6 +194,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_APPLY_ESCAPERS =
       create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
 
+  public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
+      create(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();
+
   public static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
       create(
           JbcSrcRuntime.class,
