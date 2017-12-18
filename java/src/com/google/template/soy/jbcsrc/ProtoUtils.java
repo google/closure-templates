@@ -625,7 +625,11 @@ final class ProtoUtils {
 
         Statement setter;
         if (field.isRepeated()) {
-          setter = handleRepeated(baseArg, field);
+          if (field.isMapField()) {
+            setter = handleMapSetter(baseArg, field);
+          } else {
+            setter = handleRepeated(baseArg, field);
+          }
         } else {
           if (field.isExtension()) {
             setter = handleExtension(baseArg, field);
@@ -678,6 +682,11 @@ final class ProtoUtils {
           }
         }
       };
+    }
+
+    private Statement handleMapSetter(final SoyExpression mapExpression, FieldDescriptor field) {
+      // TODO(b/70692266): Do something in Jbcsrc.
+      return Statement.NULL_STATEMENT;
     }
 
     private Statement handleRepeated(final SoyExpression listArg, FieldDescriptor field) {

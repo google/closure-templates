@@ -32,6 +32,7 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
+import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
@@ -41,6 +42,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -54,6 +56,7 @@ import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** A collaborator for {@link SoyProtoType} that handles the interpretation of proto fields. */
 abstract class FieldInterpreter {
@@ -108,8 +111,12 @@ abstract class FieldInterpreter {
   private static FieldInterpreter getMapType(
       final FieldInterpreter keyField,
       final FieldInterpreter valueField,
-      FieldDescriptor fieldDescriptor) {
+      final FieldDescriptor fieldDescriptor) {
+    final Descriptor messageDescriptor = fieldDescriptor.getMessageType();
+    final FieldDescriptor keyDescriptor = messageDescriptor.getFields().get(0);
+    final FieldDescriptor valueDescriptor = messageDescriptor.getFields().get(1);
     return new FieldInterpreter() {
+
       @Override
       SoyType type(SoyTypeRegistry registry) {
         return registry.getOrCreateMapType(keyField.type(registry), valueField.type(registry));
@@ -117,12 +124,35 @@ abstract class FieldInterpreter {
 
       @Override
       SoyValueProvider soyFromProto(Object field) {
-        throw new UnsupportedOperationException("TODO(b/69064671)");
+        // TODO(b/69794482): Support non-string key.
+        @SuppressWarnings("unchecked")
+        List<Message> entries = (List<Message>) field;
+        ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
+        for (Message message : entries) {
+          String key = (String) message.getField(keyDescriptor);
+          builder.put(key, valueField.soyFromProto(message.getField(valueDescriptor)));
+        }
+        return SoyMapImpl.forProviderMap(builder.build());
       }
 
       @Override
       Object protoFromSoy(SoyValue field) {
-        throw new UnsupportedOperationException("TODO(b/69064671)");
+        SoyMapImpl map = (SoyMapImpl) field;
+        // TODO(b/69794482): Support non-string key.
+        // Proto map fields use a non-standard API. A protobuf map is actually a repeated list of
+        // MapEntry quasi-messages, which one cannot mutate in-place inside a map.
+        ImmutableList.Builder<Message> mapEntries = ImmutableList.builder();
+        @SuppressWarnings("unchecked")
+        Map<String, SoyValue> resolvedMap = (Map<String, SoyValue>) map.asResolvedJavaStringMap();
+        Message.Builder defaultInstance =
+            DynamicMessage.newBuilder(messageDescriptor.getContainingType());
+        for (String key : resolvedMap.keySet()) {
+          Message.Builder entryBuilder = defaultInstance.newBuilderForField(fieldDescriptor);
+          entryBuilder.setField(keyDescriptor, key);
+          entryBuilder.setField(valueDescriptor, valueField.protoFromSoy(resolvedMap.get(key)));
+          mapEntries.add(entryBuilder.build());
+        }
+        return mapEntries.build();
       }
     };
   }
