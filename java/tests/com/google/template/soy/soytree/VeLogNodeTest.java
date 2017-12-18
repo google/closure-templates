@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
@@ -43,6 +44,20 @@ public final class VeLogNodeTest {
     assertThat(logNode.getName().identifier()).isEqualTo("Bar");
     assertThat(logNode.getConfigExpression()).isNull();
     assertThat(logNode.getLogonlyExpression()).isNull();
+  }
+
+  @Test
+  public void testClonePreservesId() {
+    VeLogNode logNode = parseVeLog("{velog Bar}<div></div>{/velog}");
+
+    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar}<div></div>{/velog}");
+    assertThat(logNode.getName().identifier()).isEqualTo("Bar");
+    assertThat(logNode.getLoggingId()).isEqualTo(1);
+
+    VeLogNode copy = logNode.copy(new CopyState());
+    assertThat(copy.toSourceString()).isEqualTo("{velog Bar}<div></div>{/velog}");
+    assertThat(copy.getName().identifier()).isEqualTo("Bar");
+    assertThat(copy.getLoggingId()).isEqualTo(1);
   }
 
   @Test

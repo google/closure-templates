@@ -79,6 +79,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     this.name = orig.name;
     this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
+    this.loggingId = orig.loggingId;
   }
 
   /** Returns the name associated with this log statement. */
@@ -124,7 +125,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   }
 
   @Override
-  public SoyNode copy(CopyState copyState) {
+  public VeLogNode copy(CopyState copyState) {
     return new VeLogNode(this, copyState);
   }
 
