@@ -39,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -301,18 +302,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsCodeBuilder;
   }
 
-  /**
-   * Visits the given node, returning a {@link CodeChunk} encapsulating its JavaScript code. The
-   * chunk is indented one level from the current indent level.
-   *
-   * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
-   * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
-   * {@link JsCodeBuilder} and using the unsound {@link
-   * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
-   */
-  private CodeChunk visitNodeReturningCodeChunk(ParentSoyNode<?> node) {
-    return doVisitReturningCodeChunk(node, false);
-  }
 
   /**
    * Visits the children of the given node, returning a {@link CodeChunk} encapsulating its
@@ -1161,41 +1150,109 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitForeachNode(ForeachNode node) {
     boolean hasIfempty = (node.numChildren() == 2);
-
+    // NOTE: below we call id(varName) on a number of variables instead of using
+    // VariableDeclaration.ref(),  this is because the refs() might be referenced on the other side
+    // of a call to visitChildrenReturningCodeChunk.
+    // That will break the normal behavior of FormattingContext being able to tell whether or not an
+    // initial statement has already been generated because it eagerly coerces the value to a
+    // string.  This will lead to redundant variable declarations.
+    // When visitChildrenReturningCodeChunk is gone, this can be cleaned up, but for now we have to
+    // manually decide where to declare the variables.
+    List<CodeChunk> statements = new ArrayList<>();
     // Build some local variable names.
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
     String varPrefix = nonEmptyNode.getVarName() + node.getId();
 
     // TODO(user): A more consistent pattern for local variable management.
-    String listName = varPrefix + "List";
     String limitName = varPrefix + "ListLen";
-
-    // Define list var and list-len var.
-    CodeChunk.WithValue dataRef =
-        jsExprTranslator.translateToCodeChunk(
-            node.getExpr(), templateTranslationContext, errorReporter);
-
-    jsCodeBuilder.append(VariableDeclaration.builder(listName).setRhs(dataRef).build());
-    jsCodeBuilder.append(
-        VariableDeclaration.builder(limitName)
-            .setRhs(dottedIdNoRequire(listName + ".length"))
-            .build());
+    CodeChunk.WithValue limitInitializer;
+    Optional<ForeachNode.RangeArgs> args = node.exprAsRangeArgs();
+    Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction;
+    if (args.isPresent()) {
+      ForeachNode.RangeArgs range = args.get();
+      // if any of the expressions are too expensive, allocate local variables for them
+      final CodeChunk.WithValue start =
+          maybeStashInLocal(
+              range.start().isPresent()
+                  ? jsExprTranslator.translateToCodeChunk(
+                      range.start().get(), templateTranslationContext, errorReporter)
+                  : CodeChunk.number(0),
+              varPrefix + "_RangeStart",
+              statements);
+      final CodeChunk.WithValue end =
+          maybeStashInLocal(
+              jsExprTranslator.translateToCodeChunk(
+                  range.limit(), templateTranslationContext, errorReporter),
+              varPrefix + "_RangeEnd",
+              statements);
+      final CodeChunk.WithValue step =
+          maybeStashInLocal(
+              range.increment().isPresent()
+                  ? jsExprTranslator.translateToCodeChunk(
+                      range.increment().get(), templateTranslationContext, errorReporter)
+                  : CodeChunk.number(1),
+              varPrefix + "_RangeStep",
+              statements);
+      // the logic we want is
+      // step * (end-start) < 0 ? 0 : ( (end-start)/step + ((end-start) % step == 0 ? 0 : 1));
+      // but given that all javascript numbers are doubles we can simplify this somewhat.
+      // Math.max(0, Match.ceil((end - start)/step))
+      // should yield identical results.
+      limitInitializer =
+          CodeChunk.dottedIdNoRequire("Math.max")
+              .call(
+                  number(0), dottedIdNoRequire("Math.ceil").call(end.minus(start).divideBy(step)));
+      // optimize for foreach over a range
+      getDataItemFunction =
+          new Function<CodeChunk.WithValue, CodeChunk.WithValue>() {
+            @Override
+            public CodeChunk.WithValue apply(CodeChunk.WithValue index) {
+              return start.plus(index.times(step));
+            }
+          };
+    } else {
+      // Define list var and list-len var.
+      CodeChunk.WithValue dataRef =
+          jsExprTranslator.translateToCodeChunk(
+              node.getExpr(), templateTranslationContext, errorReporter);
+      final String listVarName = varPrefix + "List";
+      CodeChunk.WithValue listVar =
+          VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
+      // does it make sense to store this in a variable?
+      limitInitializer = listVar.dotAccess("length");
+      getDataItemFunction =
+          new Function<CodeChunk.WithValue, CodeChunk.WithValue>() {
+            @Override
+            public CodeChunk.WithValue apply(CodeChunk.WithValue index) {
+              return id(listVarName).bracketAccess(index);
+            }
+          };
+    }
 
     // Generate the foreach body as a CodeChunk.
-    CodeChunk foreachBody = visitNodeReturningCodeChunk(nonEmptyNode);
+    CodeChunk.WithValue limit = id(limitName);
+    statements.add(VariableDeclaration.builder(limitName).setRhs(limitInitializer).build());
+    CodeChunk foreachBody = handleForeachLoop(nonEmptyNode, limit, getDataItemFunction);
 
     if (hasIfempty) {
       // If there is an ifempty node, wrap the foreach body in an if statement and append the
       // ifempty body as the else clause.
       CodeChunk ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
-      CodeChunk.WithValue limitCheck = id(limitName).op(Operator.GREATER_THAN, number(0));
+      CodeChunk.WithValue limitCheck = limit.op(Operator.GREATER_THAN, number(0));
 
-      CodeChunk foreach = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
-      jsCodeBuilder.append(foreach);
-    } else {
-      // Otherwise, simply append the foreach body.
-      jsCodeBuilder.append(foreachBody);
+      foreachBody = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
     }
+    statements.add(foreachBody);
+    jsCodeBuilder.append(CodeChunk.statements(statements));
+  }
+
+  private CodeChunk.WithValue maybeStashInLocal(
+      CodeChunk.WithValue expr, String varName, List<CodeChunk> statements) {
+    if (expr.isCheap()) {
+      return expr;
+    }
+    statements.add(VariableDeclaration.builder(varName).setRhs(expr).build());
+    return id(varName);
   }
 
   /**
@@ -1216,23 +1273,21 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *   }
    * </pre>
    */
-  @Override
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
-    // TODO(b/70577468): optimize for when the list is a call to range(...).  We can avoid
-    // allocating the list.
-
+  private CodeChunk handleForeachLoop(
+      ForeachNonemptyNode node,
+      CodeChunk.WithValue limit,
+      Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction) {
     // Build some local variable names.
     String varName = node.getVarName();
     String varPrefix = varName + node.getForeachNodeId();
 
     // TODO(user): A more consistent pattern for local variable management.
-    String listName = varPrefix + "List";
     String loopIndexName = varPrefix + "Index";
     String dataName = varPrefix + "Data";
-    String limitName = varPrefix + "ListLen";
 
     CodeChunk.WithValue loopIndex = id(loopIndexName);
-    CodeChunk.WithValue limit = id(limitName);
+    VariableDeclaration data =
+        VariableDeclaration.builder(dataName).setRhs(getDataItemFunction.apply(loopIndex)).build();
 
     // Populate the local var translations with the translations from this node.
     templateTranslationContext
@@ -1243,16 +1298,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    CodeChunk data =
-        VariableDeclaration.builder(dataName).setRhs(id(listName).bracketAccess(loopIndex)).build();
-    CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
-    CodeChunk body = CodeChunk.statements(data, foreachBody);
+    CodeChunk foreachBody = CodeChunk.statements(data, visitChildrenReturningCodeChunk(node));
 
     // Create the entire for block.
-    CodeChunk forChunk = forLoop(loopIndexName, limit, body);
+    return forLoop(loopIndexName, limit, foreachBody);
+  }
 
-    // Do not call visitReturningCodeChunk(); This is already inside the one from visitForeachNode()
-    jsCodeBuilder.append(forChunk);
+  @Override
+  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+    // should be handled by handleForeachLoop
+    throw new UnsupportedOperationException();
   }
 
   /**
