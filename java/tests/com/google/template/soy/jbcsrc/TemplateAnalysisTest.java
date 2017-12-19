@@ -158,11 +158,27 @@ public final class TemplateAnalysisTest {
     // after the loop.
     runTest(
         "{@param p : string}",
+        "{@param p2 : string}",
         "{for $i in range(0, 1)}",
         "  {$p}",
         "  {$i}",
+        "{ifempty}",
+        "  {$p2}",
         "{/for}",
-        "{refed($p)}");
+        "{refed($p)}",
+        "{notrefed($p2)}");
+
+    runTest(
+        "{@param p : string}",
+        "{@param p2 : string}",
+        "{for $i in range(1, 1)}",
+        "  {$p}",
+        "  {$i}",
+        "{ifempty}",
+        "  {$p2}",
+        "{/for}",
+        "{notrefed($p)}",
+        "{refed($p2)}");
   }
 
   @Test

@@ -22,7 +22,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -134,11 +133,6 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
   @Override
   protected Boolean visitForeachNode(ForeachNode node) {
     // TODO(dcphillips): Consider using list comprehensions to generate the output of a foreach.
-    return false;
-  }
-
-  @Override
-  protected Boolean visitForNode(ForNode node) {
     return false;
   }
 

@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -31,14 +30,6 @@ import com.google.template.soy.soytree.SwitchNode;
 abstract class SyntheticVarName {
   static SyntheticVarName forSwitch(SwitchNode node) {
     return new AutoValue_SyntheticVarName("switch", node);
-  }
-
-  static SyntheticVarName forLoopIncrement(ForNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_increment", forNode);
-  }
-
-  static SyntheticVarName forLoopLimit(ForNode forNode) {
-    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_limit", forNode);
   }
 
   static SyntheticVarName foreachLoopRangeStart(ForeachNonemptyNode foreachNode) {

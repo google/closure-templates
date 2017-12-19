@@ -24,7 +24,6 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -39,7 +38,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -471,57 +469,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           throw new AssertionError("Unexpected switch child node type. Child: " + child);
         }
       }
-    }
-
-    /**
-     * Visits a ForNode and generates a for loop over a given range.
-     *
-     * <p>Example:
-     *
-     * <pre>
-     *   {for $i in range(1, $boo)}
-     *     ...
-     *   {/for}
-     * </pre>
-     *
-     * might generate
-     *
-     * <pre>
-     *   for i4 in xrange(1, data.get('boo')):
-     *     ...
-     * </pre>
-     */
-    @Override
-    protected void visitForNode(ForNode node) {
-      TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, errorReporter);
-
-      String varName = node.getVarName();
-      String nodeId = Integer.toString(node.getId());
-
-      // The start of the Python 'for' loop.
-      pyCodeBuilder.appendLineStart("for ", varName, nodeId, " in ");
-
-      // Build the xrange call. Since the Python param syntax matches Soy range syntax, params can
-      // be directly dropped in.
-      PyFunctionExprBuilder funcBuilder = new PyFunctionExprBuilder("xrange");
-      for (ExprRootNode arg : node.getExprList()) {
-        funcBuilder.addArg(translator.exec(arg));
-      }
-
-      pyCodeBuilder.appendLineEnd(funcBuilder.asPyExpr().getText(), ":");
-
-      // Add a new localVarExprs frame and populate it with the translations from this node.
-      localVarExprs.pushFrame();
-      localVarExprs.addVariable(varName, new PyExpr(varName + nodeId, Integer.MAX_VALUE));
-
-      // Generate the code for the loop body.
-      pyCodeBuilder.increaseIndent();
-      visitChildren(node);
-      pyCodeBuilder.decreaseIndent();
-
-      // Remove the localVarTranslations frame that we added above.
-      localVarExprs.popFrame();
     }
 
     /**

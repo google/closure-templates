@@ -75,7 +75,6 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -241,18 +240,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             node.getContentKind() != null
                 ? SanitizedType.getTypeForContentKind(node.getContentKind())
                 : StringType.getInstance());
-  }
-
-  @Override
-  protected void visitForNode(ForNode node) {
-    // Visit the range expressions.
-    visitExpressions(node);
-
-    // Set the type of the loop variable.
-    node.getVar().setType(IntType.getInstance());
-
-    // Visit the node body
-    visitChildren(node);
   }
 
   @Override

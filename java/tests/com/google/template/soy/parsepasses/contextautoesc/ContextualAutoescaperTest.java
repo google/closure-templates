@@ -638,7 +638,7 @@ public final class ContextualAutoescaperTest {
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "  {@param n: ?}\n",
             "<style>",
-            "{for $i in range(0, $n, 1)}",
+            "{for $i in range($n)}",
             ".foo{$i |filterCssValue}:before {lb}",
             "content: '{$i |escapeCssString}'",
             "{rb}",
@@ -663,7 +663,7 @@ public final class ContextualAutoescaperTest {
   public void testBrokenForLoop() throws Exception {
     assertRewriteFails(
         "In file no-path:6:5, template ns.bar: "
-            + "{for} command changes context so it cannot be reentered.",
+            + "{for} body does not end in the same context after repeated entries.",
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",

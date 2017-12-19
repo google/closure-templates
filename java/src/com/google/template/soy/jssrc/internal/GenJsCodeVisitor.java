@@ -52,7 +52,6 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -73,8 +72,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -1308,66 +1305,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
     // should be handled by handleForeachLoop
     throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Example:
-   *
-   * <pre>
-   *   {for $i in range(1, $boo, $goo)}
-   *     ...
-   *   {/for}
-   * </pre>
-   *
-   * might generate
-   *
-   * <pre>
-   *   var i4Limit = opt_data.boo;
-   *   var i4Increment = opt_data.goo
-   *   for (var i4 = 1; i4 &lt; i4Limit; i4 += i4Increment) {
-   *     ...
-   *   }
-   * </pre>
-   */
-  @Override
-  protected void visitForNode(ForNode node) {
-
-    String varName = node.getVarName();
-    String localVar = varName + node.getId();
-
-    // Get CodeChunks for the initial/limit/increment values.
-    RangeArgs range = node.getRangeArgs();
-    CodeChunk.WithValue initial =
-        jsExprTranslator.translateToCodeChunk(
-            range.start(), templateTranslationContext, errorReporter);
-    CodeChunk.WithValue limit =
-        jsExprTranslator.translateToCodeChunk(
-            range.limit(), templateTranslationContext, errorReporter);
-    CodeChunk.WithValue increment =
-        jsExprTranslator.translateToCodeChunk(
-            range.increment(), templateTranslationContext, errorReporter);
-
-    // If the limit or increment are not raw integers, save them to a separate variable so that
-    // they are not calculated multiple times.
-    // No need to do so for initial, since it is only executed once.
-    if (!(range.limit().getRoot() instanceof IntegerNode)) {
-      limit = VariableDeclaration.builder(localVar + "Limit").setRhs(limit).build().ref();
-    }
-    if (!(range.increment().getRoot() instanceof IntegerNode)) {
-      increment =
-          VariableDeclaration.builder(localVar + "Increment").setRhs(increment).build().ref();
-    }
-
-    // Populate Soy to JS var mappings with this for node's local variable.
-    templateTranslationContext.soyToJsVariableMappings().put(varName, id(localVar));
-
-    // Generate the CodeChunk for the loop body.
-    CodeChunk body = visitChildrenReturningCodeChunk(node);
-
-    // Create the entire for block.
-    CodeChunk forChunk = forLoop(localVar, initial, limit, increment, body);
-
-    jsCodeBuilder.append(forChunk);
   }
 
   /**

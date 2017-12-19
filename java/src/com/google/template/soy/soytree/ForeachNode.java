@@ -38,6 +38,8 @@ import java.util.List;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * <p>TODO(b/70577468): rename ForNode, eliminate LoopNode
+ *
  */
 public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
@@ -50,8 +52,8 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
    * @param location The node's source location
    * @param expr The loop collection expression
    */
-  public ForeachNode(int id, SourceLocation location, ExprNode expr) {
-    super(id, location, "foreach");
+  public ForeachNode(int id, SourceLocation location, String commandName, ExprNode expr) {
+    super(id, location, commandName);
     this.expr = new ExprRootNode(expr);
   }
 

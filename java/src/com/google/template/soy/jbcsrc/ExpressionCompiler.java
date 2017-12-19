@@ -707,17 +707,6 @@ final class ExpressionCompiler {
               falseBranch.box().checkedCast(SoyValue.class)));
     }
 
-    // For loop variables
-
-    @Override
-    SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {
-      // an index variable in a {for $index in range(...)} statement
-      // These are special because they do not need any attaching/detaching logic and are
-      // always unboxed ints
-      return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(parameters.getLocal(local), Type.LONG_TYPE));
-    }
-
     @Override
     SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);

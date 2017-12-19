@@ -60,8 +60,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -87,7 +85,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
@@ -452,22 +449,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     env.bindCurrentIndex(var, i);
     env.bindIsLast(var, size - 1 == i);
     visitChildren(child);
-  }
-
-  @Override
-  protected void visitForNode(ForNode node) {
-
-    RangeArgs rangeArgs = node.getRangeArgs();
-
-    int increment = evalRangeArg(node, rangeArgs.increment());
-    int init = evalRangeArg(node, rangeArgs.start());
-    int limit = evalRangeArg(node, rangeArgs.limit());
-
-    LocalVar localVarName = node.getVar();
-    for (int i = init; i < limit; i += increment) {
-      env.bind(localVarName, IntegerData.forValue(i));
-      visitChildren(node);
-    }
   }
 
   private int evalRangeArg(SoyNode node, ExprNode rangeArg) {

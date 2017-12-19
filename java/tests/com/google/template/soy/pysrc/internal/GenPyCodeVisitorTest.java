@@ -216,8 +216,9 @@ public final class GenPyCodeVisitorTest {
             + "def helloWorld(data={}, ijData={}):\n"
             + "  output = []\n"
             + "  if data.get('foo'):\n"
-            + "    for i### in xrange(0, 5, 1):\n"
-            + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n"
+            + "    iList### = xrange(5)\n"
+            + "    for iIndex###, iData### in enumerate(iList###):\n"
+            + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n"
             + "  else:\n"
             + "    output.append('Blah')\n"
             + "  return sanitize.SanitizedHtml(''.join(output), "
@@ -255,14 +256,16 @@ public final class GenPyCodeVisitorTest {
     String soyCode =
         "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     String expectedPyCode =
-        "for i### in xrange(0, 5, 1):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "iList### = xrange(5)\n"
+            + "for iIndex###, iData### in enumerate(iList###):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(5, 10, 1):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "iList### = xrange(5, 10)\n"
+            + "for iIndex###, iData### in enumerate(iList###):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
@@ -273,8 +276,9 @@ public final class GenPyCodeVisitorTest {
             + "  {$boo[$i]}\n"
             + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(data.get('foo'), data.get('boo'), data.get('goo')):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "iList### = xrange(data.get('foo'), data.get('boo'), data.get('goo'))\n"
+            + "for iIndex###, iData### in enumerate(iList###):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
@@ -367,9 +371,11 @@ public final class GenPyCodeVisitorTest {
             + "{/let}\n";
 
     String expectedPyCode =
-        "foo__soy### = []\n"
-            + "for num### in xrange(0, 5, 1):\n"
-            + "  foo__soy###.append(str(num###))\n"
+        ""
+            + "foo__soy### = []\n"
+            + "numList### = xrange(5)\n"
+            + "for numIndex###, numData### in enumerate(numList###):\n"
+            + "  foo__soy###.append(str(numData###))\n"
             + "foo__soy###.extend(['Hello ',str(data.get('boo'))])\n"
             + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
             + SANITIZATION_APPROVAL

@@ -119,32 +119,6 @@ public final class SourceLocationTest {
   }
 
   @Test
-  public void testForLoop() throws Exception {
-    assertSourceLocations(
-        JOINER.join(
-            "SoyFileSetNode",
-            "  SoyFileNode",
-            "    TemplateBasicNode          @ /example/file.soy:2:1",
-            "      RawTextNode              @ /example/file.soy:3:3",
-            "      ForNode                  @ /example/file.soy:4:3",
-            "        RawTextNode            @ /example/file.soy:5:5",
-            "        PrintNode              @ /example/file.soy:6:5",
-            "      RawTextNode              @ /example/file.soy:8:3",
-            ""),
-        JOINER.join(
-            "{namespace ns}",
-            "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
-            "  Hello", // 2
-            "  {for $i in range(0, 1, 10)}", // 3
-            "    ,", // 4
-            "    {print $i}", // 5
-            "  {/for}", // 6
-            "  !", // 7
-            "{/template}", // 8
-            ""));
-  }
-
-  @Test
   public void testForeachLoop() throws Exception {
     assertSourceLocations(
         JOINER.join(

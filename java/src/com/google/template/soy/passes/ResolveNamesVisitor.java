@@ -31,7 +31,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -267,19 +266,6 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
     localVariables.exitLazyScope();
     localVariables.define(node.getVar(), node);
-  }
-
-  @Override
-  protected void visitForNode(ForNode node) {
-    // Visit the range expressions.
-    visitExpressions(node);
-
-    localVariables.enterScope();
-    localVariables.define(node.getVar(), node);
-
-    // Visit the node body
-    visitChildren(node);
-    localVariables.exitScope();
   }
 
   @Override

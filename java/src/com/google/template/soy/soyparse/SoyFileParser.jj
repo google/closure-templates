@@ -88,7 +88,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -1828,7 +1827,7 @@ private StatementNode PrintableStmt() :
 }
 
 /**
- * ControlFlowStmt -> IfStmt | SwitchStmt | ForeachStmt | ForStmt
+ * ControlFlowStmt -> IfStmt | SwitchStmt | ForeachStmt
  */
 private StatementNode ControlFlowStmt() :
 {
@@ -1839,7 +1838,6 @@ private StatementNode ControlFlowStmt() :
     stmt = IfStmt()
   | stmt = SwitchStmt()
   | stmt = ForeachStmt()
-  | stmt = ForStmt()
   )
 
   { return stmt; }
@@ -2616,19 +2614,22 @@ private SwitchNode SwitchStmt() :
 
 
 /**
- * ForeachStmt -> CmdBeginForeach VarRef Ident Expr CmdEnd TemplateBlock
- *                [ CmdFullIfempty TemplateBlock ] CmdCloseForeach
+ * ForStatement -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock
+ *                [ CmdFullIfempty TemplateBlock ] CmdCloseFor
  */
 private ForeachNode ForeachStmt() :
 {
-  Token tagBegin, tagEnd, in, ifemptyTag;
+  Token tagBegin, tagEnd, in, ifemptyTag, tagClose;
   VarRefNode var = null;
   ExprNode expr = null;
   List<StandaloneNode> templateBlock;
 }
 {
-  tagBegin = <CMD_BEGIN_FOREACH>
-
+  // TODO(b/70577468): support both for and foreach keywords during migration
+  (
+    tagBegin = <CMD_BEGIN_FOREACH>
+  | tagBegin = <CMD_BEGIN_FOR>
+  )
   try {
     var = VarRef()
     in = Keyword("in")
@@ -2648,7 +2649,11 @@ private ForeachNode ForeachStmt() :
 
   {
     ForeachNode foreachNode =
-        new ForeachNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), expr);
+        new ForeachNode(
+            nodeIdGen.genId(),
+            createSrcLoc(tagBegin, tagEnd),
+            tagBegin.kind == CMD_BEGIN_FOREACH ? "foreach": "for",
+            expr);
     ForeachNonemptyNode nonEmpty =
         new ForeachNonemptyNode(nodeIdGen.genId(), var.getSourceLocation(), var.getName());
     foreachNode.addChild(nonEmpty);
@@ -2668,62 +2673,12 @@ private ForeachNode ForeachStmt() :
     }
   ]
 
-  <CMD_CLOSE_FOREACH>
-
+  // the lookahead acts like an if so we only expect {/foreach} if we begin with {foreach}
+  ( LOOKAHEAD({tagBegin.kind != CMD_BEGIN_FOR})
+    tagClose = <CMD_CLOSE_FOREACH>
+  | tagClose = <CMD_CLOSE_FOR>
+  )
   { return foreachNode; }
-}
-
-
-/**
- * ForStmt -> CmdBeginFor VarRef "in" Expr CmdEnd TemplateBlock CmdCloseFor
- */
-private ForNode ForStmt() :
-{
-  Token tagBegin, tagEnd, in;
-  VarRefNode forVar = null;
-  ExprNode rangeExpr;
-  List<ExprNode> rangeArgs = ImmutableList.of();
-  List<StandaloneNode> templateBlock;
-}
-{
-  tagBegin = <CMD_BEGIN_FOR>
-
-  try {
-    forVar = VarRef()
-    in = Keyword("in")
-    rangeExpr = Expr()
-    {
-      // Same as above, we do not want to make "range" a token.
-      if (!(rangeExpr instanceof FunctionNode)
-          || !((FunctionNode) rangeExpr).getSoyFunction().getName().equals("range")) {
-        errorReporter.report(
-            rangeExpr.getSourceLocation(), PARSER_ERROR, rangeExpr.toSourceString(), "range(...)");
-      } else {
-        rangeArgs = ((FunctionNode) rangeExpr).getChildren();
-      }
-    }
-
-    tagEnd = <CMD_END>
-  } catch (ParseException e) {
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
-
-    if (forVar == null) {
-      forVar = errorExpr(tagBegin);
-    }
-  }
-
-  {
-    ForNode forNode =
-        new ForNode(
-            nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), errorReporter, forVar, rangeArgs);
-  }
-
-  templateBlock = TemplateBlock()
-  { forNode.addChildren(templateBlock); }
-
-  <CMD_CLOSE_FOR>
-
-  { return forNode; }
 }
 
 

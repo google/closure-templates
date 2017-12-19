@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -32,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -41,6 +43,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
@@ -57,8 +60,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -223,7 +224,7 @@ final class TemplateAnalysis {
       Block loopBody = loopBegin.addBranch();
       Block loopEnd = exec(loopBody, node.getChild(0));
       // If we can statically prove the list empty, use that information.
-      StaticAnalysisResult isLoopEmpty = isListExpressionEmpty(node.getExpr());
+      StaticAnalysisResult isLoopEmpty = isListExpressionEmpty(node);
       if (node.numChildren() == 2) { // there is an {ifempty} block
         Block ifEmptyBlock = loopBegin.addBranch();
         Block ifEmptyEnd = exec(ifEmptyBlock, node.getChild(1));
@@ -265,30 +266,6 @@ final class TemplateAnalysis {
     @Override
     protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
       visitChildren(node);
-    }
-
-    @Override
-    protected void visitForNode(ForNode node) {
-      // The range(...) args of a For node are always evaluated first, in this order.
-      // (see SoyNodeCompiler)
-      RangeArgs rangeArgs = node.getRangeArgs();
-      evalInline(rangeArgs.start());
-      evalInline(rangeArgs.increment());
-      evalInline(rangeArgs.limit());
-      Block loopBegin = this.current;
-      // create a branch for the loop body
-      Block loopBody = loopBegin.addBranch();
-      Block loopEnd = loopBody;
-      for (StandaloneNode child : node.getChildren()) {
-        loopEnd = exec(loopEnd, child);
-      }
-      // If the loop definitely executed we could merge results back up.  There are actually a
-      // surprising number of people using constants in their range args.
-      if (rangeArgs.definitelyNotEmpty()) {
-        this.current = loopEnd;
-      } else {
-        this.current = Block.merge(loopBegin, loopEnd);
-      }
     }
 
     @Override
@@ -559,14 +536,62 @@ final class TemplateAnalysis {
     UNKNOWN;
   }
 
-  private static StaticAnalysisResult isListExpressionEmpty(ExprNode node) {
-    node = node instanceof ExprRootNode ? ((ExprRootNode) node).getRoot() : node;
-    if (node instanceof ListLiteralNode) {
-      return ((ListLiteralNode) node).numChildren() > 0
+  // consider moving this to SoyTreeUtils or some similar place.
+  private static StaticAnalysisResult isListExpressionEmpty(ForeachNode node) {
+    Optional<ForeachNode.RangeArgs> rangeArgs = node.exprAsRangeArgs();
+    if (rangeArgs.isPresent()) {
+      return isRangeExpressionEmpty(rangeArgs.get());
+    }
+    ExprNode expr = node.getExpr().getRoot();
+    if (expr instanceof ListLiteralNode) {
+      return ((ListLiteralNode) expr).numChildren() > 0
           ? StaticAnalysisResult.FALSE
           : StaticAnalysisResult.TRUE;
     }
     return StaticAnalysisResult.UNKNOWN;
+  }
+
+  private static StaticAnalysisResult isRangeExpressionEmpty(ForeachNode.RangeArgs range) {
+    int start = 0;
+    if (range.start().isPresent()) {
+      if (range.start().get() instanceof IntegerNode) {
+        long startAsLong = ((IntegerNode) range.start().get()).getValue();
+        if (startAsLong != (int) startAsLong) {
+          return StaticAnalysisResult.UNKNOWN;
+        }
+        start = (int) startAsLong;
+      } else {
+        // if the start is not a constant then we don't know anything
+        return StaticAnalysisResult.UNKNOWN;
+      }
+    }
+
+    int limit;
+    if (range.limit() instanceof IntegerNode) {
+      long limitAsLong = ((IntegerNode) range.limit()).getValue();
+      if (limitAsLong != (int) limitAsLong) {
+        return StaticAnalysisResult.UNKNOWN;
+      }
+      limit = (int) limitAsLong;
+    } else {
+      return StaticAnalysisResult.UNKNOWN;
+    }
+
+    int step = 1;
+    if (range.increment().isPresent()) {
+      if (range.increment().get() instanceof IntegerNode) {
+        long stepAsLong = ((IntegerNode) range.increment().get()).getValue();
+        if (stepAsLong != (int) stepAsLong) {
+          return StaticAnalysisResult.UNKNOWN;
+        }
+        step = (int) stepAsLong;
+      } else {
+        return StaticAnalysisResult.UNKNOWN;
+      }
+    }
+    return JbcSrcRuntime.rangeLoopLength(start, limit, step) > 0
+        ? StaticAnalysisResult.FALSE
+        : StaticAnalysisResult.TRUE;
   }
 
   private static final class PseudoEvaluatorExprVisitor extends AbstractExprNodeVisitor<Void> {

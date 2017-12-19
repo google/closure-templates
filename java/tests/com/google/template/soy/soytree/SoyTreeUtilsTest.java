@@ -161,9 +161,6 @@ public final class SoyTreeUtilsTest {
               "    {ifempty}",
               "      <li><i>Nothing to see here!",
               "    {/foreach}",
-              "    {for $i in range($start, $end)}",
-              "      <li value={$i}>foo</li>",
-              "    {/for}",
               "  </ol>",
               "  {let $local : 'foo' /}",
               "  {$local}",
@@ -182,8 +179,6 @@ public final class SoyTreeUtilsTest {
 
     assertEquals(clone.getChild(0).toSourceString(), soyTree.getChild(0).toSourceString());
     // All the localvarnodes, there is one of each type
-    ForNode forNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(clone, ForNode.class));
     ForeachNonemptyNode foreachNonemptyNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(clone, ForeachNonemptyNode.class));
     LetValueNode letValueNode =
@@ -201,11 +196,6 @@ public final class SoyTreeUtilsTest {
           local = (LocalVar) defn;
           assertSame(foreachNonemptyNode, local.declaringNode());
           assertSame(foreachNonemptyNode.getVar(), defn);
-          break;
-        case "i":
-          local = (LocalVar) defn;
-          assertSame(forNode, local.declaringNode());
-          assertSame(forNode.getVar(), defn);
           break;
         default:
           // fall through
@@ -310,12 +300,13 @@ public final class SoyTreeUtilsTest {
             ""
                 + "    SOY_FILE_NODE\n"
                 + "      TEMPLATE_BASIC_NODE\n"
-                + "        FOR_NODE\n"
-                + "          IF_NODE\n"
-                + "            IF_COND_NODE\n"
-                + "              PRINT_NODE\n"
-                + "            IF_ELSE_NODE\n"
-                + "              PRINT_NODE\n"
+                + "        FOREACH_NODE\n"
+                + "          FOREACH_NONEMPTY_NODE\n"
+                + "            IF_NODE\n"
+                + "              IF_COND_NODE\n"
+                + "                PRINT_NODE\n"
+                + "              IF_ELSE_NODE\n"
+                + "                PRINT_NODE\n"
                 + "        RAW_TEXT_NODE\n");
   }
 }

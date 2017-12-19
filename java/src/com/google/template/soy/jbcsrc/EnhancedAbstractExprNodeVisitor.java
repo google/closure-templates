@@ -55,8 +55,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         LocalVar local = (LocalVar) defn;
         LocalVarNode declaringNode = local.declaringNode();
         switch (declaringNode.getKind()) {
-          case FOR_NODE:
-            return visitForLoopIndex(node, local);
           case FOREACH_NONEMPTY_NODE:
             return visitForeachLoopVar(node, local);
           case LET_CONTENT_NODE:
@@ -108,10 +106,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     }
 
     return visitPluginFunction(node);
-  }
-
-  T visitForLoopIndex(VarRefNode varRef, LocalVar local) {
-    return visitExprNode(varRef);
   }
 
   T visitForeachLoopVar(VarRefNode varRef, LocalVar local) {

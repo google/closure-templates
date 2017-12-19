@@ -917,15 +917,15 @@ public final class GenJsCodeVisitorTest {
             + "if (opt_data.boo) {\n"
             + "  var alpha__soy8 = opt_data.boo.foo;\n"
             + "  var beta__soy11 = 'Boo!';\n"
-            + "  var gamma__soy20 = '';\n"
-            + "  var i14Limit = alpha__soy8;\n"
-            + "  for (var i14 = 0; i14 < i14Limit; i14++) {\n"
-            + "    gamma__soy20 += i14 + beta__soy11;\n"
+            + "  var gamma__soy21 = '';\n"
+            + "  var i14ListLen = Math.max(0, Math.ceil((alpha__soy8 - 0) / 1));\n"
+            + "  for (var i14Index = 0; i14Index < i14ListLen; i14Index++) {\n"
+            + "    var i14Data = 0 + i14Index * 1;\n"
+            + "    gamma__soy21 += i14Data + beta__soy11;\n"
             + "  }\n"
-            + "  var delta__soy23 = 'Boop!';\n"
-            + "  delta__soy23 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks("
-            + "delta__soy23);\n"
-            + "  output += alpha__soy8 + beta__soy11 + gamma__soy20 + delta__soy23;\n"
+            + "  var delta__soy24 = 'Boop!';\n"
+            + "  delta__soy24 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
+            + "  output += alpha__soy8 + beta__soy11 + gamma__soy21 + delta__soy24;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -997,8 +997,10 @@ public final class GenJsCodeVisitorTest {
     expectedJsCode =
         ""
             + "if (opt_data.boo.foo > 0) {\n"
-            + "  for (var i9 = 0; i9 < 4; i9++) {\n"
-            + "    output += i9 + 1 + '<br>';\n"
+            + "  var i9ListLen = Math.max(0, Math.ceil((4 - 0) / 1));\n"
+            + "  for (var i9Index = 0; i9Index < i9ListLen; i9Index++) {\n"
+            + "    var i9Data = 0 + i9Index * 1;\n"
+            + "    output += i9Data + 1 + '<br>';\n"
             + "  }\n"
             + "} else if (!(('' + gooData8).indexOf('goo') != -1)) {\n"
             + "  output += 'Bleh';\n"
@@ -1107,8 +1109,10 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     String expectedJsCode =
         ""
-            + "for (var i6 = 8; i6 < 16; i6 += 2) {\n"
-            + "  output += opt_data.boo[i6] + gooData8[i6];\n"
+            + "var i6ListLen = Math.max(0, Math.ceil((16 - 8) / 2));\n"
+            + "for (var i6Index = 0; i6Index < i6ListLen; i6Index++) {\n"
+            + "  var i6Data = 8 + i6Index * 2;\n"
+            + "  output += opt_data.boo[i6Data] + gooData8[i6Data];\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1122,10 +1126,13 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     expectedJsCode =
         ""
-            + "var i7Limit = opt_data.boo + gooData8;\n"
-            + "var i7Increment = opt_data.foo;\n"
-            + "for (var i7 = opt_data.boo - gooData8; i7 < i7Limit; i7 += i7Increment) {\n"
-            + "  output += i7 + 1 + ' ';\n"
+            + "var i7_RangeStart = opt_data.boo - gooData8;\n"
+            + "var i7_RangeEnd = opt_data.boo + gooData8;\n"
+            + "var i7_RangeStep = opt_data.foo;\n"
+            + "var i7ListLen = Math.max(0, Math.ceil((i7_RangeEnd - i7_RangeStart) / i7_RangeStep));\n"
+            + "for (var i7Index = 0; i7Index < i7ListLen; i7Index++) {\n"
+            + "  var i7Data = i7_RangeStart + i7Index * i7_RangeStep;\n"
+            + "  output += i7Data + 1 + ' ';\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1138,10 +1145,13 @@ public final class GenJsCodeVisitorTest {
     expectedJsCode =
         ""
             + "var boo__soy4 = {a: [], b: [10, 20, 30]};\n"
-            + "var i6Limit = boo__soy4.b[1];\n"
-            + "var i6Increment = boo__soy4.b[2];\n"
-            + "for (var i6 = boo__soy4.b[0]; i6 < i6Limit; i6 += i6Increment) {\n"
-            + "  output += i6;\n"
+            + "var i6_RangeStart = boo__soy4.b[0];\n"
+            + "var i6_RangeEnd = boo__soy4.b[1];\n"
+            + "var i6_RangeStep = boo__soy4.b[2];\n"
+            + "var i6ListLen = Math.max(0, Math.ceil((i6_RangeEnd - i6_RangeStart) / i6_RangeStep));\n"
+            + "for (var i6Index = 0; i6Index < i6ListLen; i6Index++) {\n"
+            + "  var i6Data = i6_RangeStart + i6Index * i6_RangeStep;\n"
+            + "  output += i6Data;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1169,12 +1179,13 @@ public final class GenJsCodeVisitorTest {
             + "{/call}\n";
     String expectedJsCode =
         ""
-            + "var param11 = '';\n"
-            + "for (var i6 = 0; i6 < 7; i6++) {\n"
-            + "  param11 += i6;\n"
+            + "var param12 = '';\n"
+            + "var i6ListLen = Math.max(0, Math.ceil((7 - 0) / 1));\n"
+            + "for (var i6Index = 0; i6Index < i6ListLen; i6Index++) {\n"
+            + "  var i6Data = 0 + i6Index * 1;\n"
+            + "  param12 += i6Data;\n"
             + "}\n"
-            + "output += some.func(soy.$$assignDefaults({goo: param11}, opt_data.boo), "
-            + "opt_ijData);\n";
+            + "output += some.func(soy.$$assignDefaults({goo: param12}, opt_data.boo), opt_ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 

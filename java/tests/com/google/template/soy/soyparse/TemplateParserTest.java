@@ -44,7 +44,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -1219,7 +1218,7 @@ public final class TemplateParserTest {
     assertEquals(SanitizedContentKind.HTML, betaNode.getContentKind());
     LetContentNode gammaNode = (LetContentNode) nodes.get(2);
     assertEquals("gamma", gammaNode.getVarName());
-    assertTrue(gammaNode.getChild(0) instanceof ForNode);
+    assertThat(gammaNode.getChild(0)).isInstanceOf(ForeachNode.class);
     assertEquals(SanitizedContentKind.HTML, gammaNode.getContentKind());
     LetContentNode deltaNode = (LetContentNode) nodes.get(3);
     assertEquals("delta", deltaNode.getVarName());
@@ -1373,41 +1372,6 @@ public final class TemplateParserTest {
     ForeachIfemptyNode fn1fin1 = (ForeachIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());
     assertEquals("Sorry, no booze.", ((RawTextNode) fn1fin1.getChild(0)).getRawText());
-  }
-
-  @Test
-  public void testParseForStmt() throws Exception {
-
-    String templateBody =
-        "{@param items : ?}{@param itemsLength : ?}\n"
-            + "  {for $i in range(10, $itemsLength + 1)}\n"
-            + "    {msg desc=\"Numbered item.\"}\n"
-            + "      {$i}: {$items[$i - 1]}{\\n}\n"
-            + "    {/msg}\n"
-            + "  {/for}\n";
-
-    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
-    assertEquals(1, nodes.size());
-
-    ForNode fn = (ForNode) nodes.get(0);
-    assertEquals("i", fn.getVarName());
-    ForNode.RangeArgs rangeArgs = fn.getRangeArgs();
-    assertEquals("1", rangeArgs.increment().toSourceString());
-    assertEquals("10", rangeArgs.start().toSourceString());
-    assertEquals("$itemsLength + 1", rangeArgs.limit().toSourceString());
-
-    assertThat(rangeArgs.start().getRoot()).isInstanceOf(IntegerNode.class);
-    assertThat(rangeArgs.limit().getRoot()).isInstanceOf(PlusOpNode.class);
-
-    assertEquals(1, fn.numChildren());
-    MsgNode mn = ((MsgFallbackGroupNode) ((ForNode) nodes.get(0)).getChild(0)).getChild(0);
-    assertEquals(4, mn.numChildren());
-    assertEquals(
-        "$i",
-        ((PrintNode) ((MsgPlaceholderNode) mn.getChild(0)).getChild(0)).getExpr().toSourceString());
-    assertEquals(
-        "$items[$i - 1]",
-        ((PrintNode) ((MsgPlaceholderNode) mn.getChild(2)).getChild(0)).getExpr().toSourceString());
   }
 
   @SuppressWarnings({"ConstantConditions"})

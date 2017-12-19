@@ -33,7 +33,6 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -395,37 +394,6 @@ final class InferenceEngine {
      * many times the loop is entered.
      */
     @Override
-    protected void visitForNode(ForNode forNode) {
-      // Strictly speaking, if a for loop is guaranteed to execute once, then the result of
-      // rewrite(loopBody, context) must be the same as rewrite(loopBody, result).
-      // But where we cannot prove that the loop is executed at least once, the result must be the
-      // same as context.
-      // Even more strictly speaking, if there exists an arbitrary positive integer P such that the
-      // loop is guaranteed to execute N*P times for some arbitrary non-negative integer N then
-      // we can follow the loop body P times to compute the end context, and where N is positive,
-      // we can ignore the context before the loop.
-      // For simplicity, we just enforce the property that the loop body cannot change context.
-      try {
-        Context afterBody = context;
-        for (SoyNode child : forNode.getChildren()) {
-          afterBody = infer(child, afterBody);
-        }
-        Optional<Context> combined = Context.union(context, afterBody);
-        if (!combined.isPresent()) {
-          throw SoyAutoescapeException.createWithNode(
-              "{for} command changes context so it cannot be reentered.", forNode);
-        }
-        context = combined.get();
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(forNode);
-      }
-    }
-
-    /**
-     * Do multiple inferences so we can make sure we get to a consistent context regardless of how
-     * many times the loop is entered.
-     */
-    @Override
     protected void visitForeachNode(ForeachNode foreachNode) {
       List<BlockNode> foreachChildren = foreachNode.getChildren();
       ForeachNonemptyNode neNode = (ForeachNonemptyNode) foreachChildren.get(0);
@@ -446,7 +414,10 @@ final class InferenceEngine {
           Optional<Context> combined = Context.union(elseContext, afterBody);
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
-                "{foreach} body does not end in the same context after repeated entries.", neNode);
+                "{"
+                    + foreachNode.getCommandName()
+                    + "} body does not end in the same context after repeated entries.",
+                foreachNode);
           }
           afterBody = combined.get();
         }
@@ -459,9 +430,12 @@ final class InferenceEngine {
         Optional<Context> combined = Context.union(ifemptyContext, afterBody);
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
-              (ieNode == null
-                  ? "{foreach} body changes context."
-                  : "{foreach} body does not end in the same context as {ifempty}."),
+              "{"
+                  + foreachNode.getCommandName()
+                  + "} body "
+                  + (ieNode == null
+                      ? "changes context."
+                      : "does not end in the same context as {ifempty}."),
               ieNode == null ? foreachNode : ieNode);
         }
         context = combined.get();

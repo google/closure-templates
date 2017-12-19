@@ -22,7 +22,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -155,11 +154,6 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   @Override
   protected Boolean visitForeachNode(ForeachNode node) {
-    return false;
-  }
-
-  @Override
-  protected Boolean visitForNode(ForNode node) {
     return false;
   }
 

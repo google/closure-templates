@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -120,7 +119,7 @@ public final class ExtractMsgVariablesVisitorTest {
     assertThat(m2.getPlaceholderName(gm2p0)).isEqualTo("START_SPAN");
     MsgHtmlTagNode gm2pc0 = (MsgHtmlTagNode) gm2p0.getChild(0);
     assertThat(gm2pc0.numChildren()).isEqualTo(3);
-    assertThat(gm2pc0.getChild(1)).isInstanceOf(ForNode.class);
+    assertThat(gm2pc0.getChild(1)).isInstanceOf(ForeachNode.class);
   }
 
   @Test
@@ -336,7 +335,7 @@ public final class ExtractMsgVariablesVisitorTest {
     // [TemplateNode]
     //   |--[MsgFallbackGroupNode]  msg3
     //   |--[MsgFallbackGroupNode]  msg1
-    //   +--[ForNode]  $i in range(3)
+    //   +--[ForeachNode]  $i in range(3)
     //        |--[MsgFallbackGroupNode]  msg4
     //        |--[MsgFallbackGroupNode]  msg2
     //        |--[PrintNode]
@@ -348,7 +347,8 @@ public final class ExtractMsgVariablesVisitorTest {
     assertThat(getMsgFallbackGroupNode(template, 0).getChild(0).getDesc()).isEqualTo("msg3");
     assertThat(getMsgFallbackGroupNode(template, 1).getChild(0).getDesc()).isEqualTo("msg1");
 
-    ForNode forNode = (ForNode) template.getChild(2);
+    ForeachNonemptyNode forNode =
+        (ForeachNonemptyNode) ((ForeachNode) template.getChild(2)).getChild(0);
     assertThat(forNode.numChildren()).isEqualTo(6);
     assertThat(getMsgFallbackGroupNode(forNode, 0).getChild(0).getDesc()).isEqualTo("msg4");
     assertThat(getMsgFallbackGroupNode(forNode, 1).getChild(0).getDesc()).isEqualTo("msg2");
@@ -397,7 +397,7 @@ public final class ExtractMsgVariablesVisitorTest {
     //   |              +--[ForeachNonemptyNode]
     //   |                   |--[MsgFallbackGroupNode]  msg6
     //   |                   |--[MsgFallbackGroupNode]  msg3
-    //   |                   +--[ForNode]
+    //   |                   +--[ForeachNode]
     //   |                        |--[MsgFallbackGroupNode]  msg8
     //   |                        |--[MsgFallbackGroupNode]  msg7
     //   |                        |--[MsgFallbackGroupNode]  msg4
@@ -428,7 +428,8 @@ public final class ExtractMsgVariablesVisitorTest {
     assertThat(getMsgFallbackGroupNode(foreachNonemptyNode, 1).getChild(0).getDesc())
         .isEqualTo("msg3");
 
-    ForNode forNode = (ForNode) foreachNonemptyNode.getChild(2);
+    ForeachNonemptyNode forNode =
+        (ForeachNonemptyNode) ((ForeachNode) foreachNonemptyNode.getChild(2)).getChild(0);
     assertThat(forNode.numChildren()).isEqualTo(11);
     assertThat(getMsgFallbackGroupNode(forNode, 0).getChild(0).getDesc()).isEqualTo("msg8");
     assertThat(getMsgFallbackGroupNode(forNode, 1).getChild(0).getDesc()).isEqualTo("msg7");

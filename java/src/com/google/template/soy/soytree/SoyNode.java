@@ -84,8 +84,6 @@ public interface SoyNode extends Node {
     FOREACH_NONEMPTY_NODE,
     FOREACH_IFEMPTY_NODE,
 
-    FOR_NODE,
-
     CALL_BASIC_NODE,
     CALL_DELEGATE_NODE,
     CALL_PARAM_VALUE_NODE,

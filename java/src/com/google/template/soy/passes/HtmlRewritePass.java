@@ -26,7 +26,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -47,7 +46,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -1310,22 +1308,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
     // control flow blocks
 
     @Override
-    protected void visitForNode(ForNode node) {
-      visitControlFlowStructure(
-          node,
-          ImmutableList.<BlockNode>of(node),
-          "for loop",
-          Functions.constant("loop body"),
-          false /* no guarantee that the children will execute exactly once. */,
-          false /* no guarantee that the children will execute at least once. */);
-    }
-
-    @Override
     protected void visitForeachNode(ForeachNode node) {
       visitControlFlowStructure(
           node,
           node.getChildren(),
-          "foreach loop",
+          node.getCommandName() + " loop",
           new Function<BlockNode, String>() {
             @Override
             public String apply(@Nullable BlockNode input) {
