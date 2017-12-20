@@ -19,6 +19,7 @@ package com.google.template.soy.conformance;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
@@ -534,14 +535,16 @@ public class SoyConformanceTest {
         "{namespace ns}{template .foo}{@inject foo : ?}{$foo}{/template}\n");
   }
 
-  private void assertViolation(String textProto, String input) {
+  private SoyError assertViolation(String textProto, String input) {
     ImmutableList<SoyError> violations = getViolations(textProto, input);
     assertThat(violations).hasSize(1);
+    return Iterables.getOnlyElement(violations);
   }
 
-  private void assertViolation(String textProto, SoyFileSupplier... soyFileSuppliers) {
+  private SoyError assertViolation(String textProto, SoyFileSupplier... soyFileSuppliers) {
     ImmutableList<SoyError> violations = getViolations(textProto, soyFileSuppliers);
     assertThat(violations).hasSize(1);
+    return Iterables.getOnlyElement(violations);
   }
 
   private void assertNoViolation(String textProto, String input) {

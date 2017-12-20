@@ -581,6 +581,7 @@ public final class SoyFileSet {
 
     /** Registers a conformance config proto. */
     Builder setConformanceConfig(ValidatedConformanceConfig config) {
+      checkNotNull(config);
       this.conformanceConfig = config;
       return this;
     }

@@ -228,11 +228,12 @@ abstract class AbstractSoyCompiler {
     modules.addAll(pluginModules);
     // TODO(lukes): Stage.PRODUCTION?
     Injector injector = Guice.createInjector(modules);
+    ValidatedConformanceConfig conformanceConfig = parseConformanceConfig();
     SoyFileSet.Builder sfsBuilder =
         injector
             .getInstance(SoyFileSet.Builder.class)
             .setWarningSink(err)
-            .setConformanceConfig(parseConformanceConfig())
+            .setConformanceConfig(conformanceConfig)
             .setValidatedLoggingConfig(parseLoggingConfig())
             // Set experimental features that are not generally available.
             .setExperimentalFeatures(experimentalFeatures);
