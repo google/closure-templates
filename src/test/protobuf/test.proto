@@ -39,6 +39,7 @@ message Foo {
   optional int64 long_field = 20;
   map<string, string> map_field = 21;
   map<int32, InnerMessage> map_message_field = 22;
+  map<string, InnerMessage> map_string_message_field = 23;
 }
 
 message SixtyFourBitIntFieldsAsStrings {

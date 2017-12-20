@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MAP_ENTRY_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
@@ -75,6 +76,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.JavaQualifiedNames;
 import com.google.template.soy.types.proto.SoyProtoType;
@@ -625,11 +627,7 @@ final class ProtoUtils {
 
         Statement setter;
         if (field.isRepeated()) {
-          if (field.isMapField()) {
-            setter = handleMapSetter(baseArg, field);
-          } else {
-            setter = handleRepeated(baseArg, field);
-          }
+          setter = handleRepeated(baseArg, field);
         } else {
           if (field.isExtension()) {
             setter = handleExtension(baseArg, field);
@@ -640,6 +638,22 @@ final class ProtoUtils {
         setters.add(setter);
       }
       return setters.build();
+    }
+
+    private Statement handleMapSetter(
+        final SoyExpression keyArg, final SoyExpression valueArg, final FieldDescriptor field) {
+      final MethodRef putMethod = getPutMethod(field);
+      return new Statement() {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          keyArg.gen(cb);
+          valueArg.gen(cb);
+          // TODO(b/70692266): This might blow up if value is null.
+          // Find a way to reuse null-check code from handleNormalSetter.
+          unboxAndCoerce(cb, valueArg, field.getMessageType().getFields().get(1));
+          putMethod.invokeUnchecked(cb);
+        }
+      };
     }
 
     /**
@@ -684,46 +698,131 @@ final class ProtoUtils {
       };
     }
 
-    private Statement handleMapSetter(final SoyExpression mapExpression, FieldDescriptor field) {
-      // TODO(b/70692266): Do something in Jbcsrc.
-      return Statement.NULL_STATEMENT;
+    private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
+      Preconditions.checkArgument(mapArg.isNonNullable());
+      // TODO(b/70692266): We need to resolve all values here.
+      // That needs an additional method in ExpressionDetacher.
+
+      // Enter new scope
+      Scope scope = varManager.enterScope();
+      // Create local variables
+      // mapArg.asJavaStringMap()
+      final Variable map =
+          scope.createTemporary(
+              field.getName() + "__map", mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
+      // map.entrySet().iterator()
+      final Variable iter =
+          scope.createTemporary(
+              field.getName() + "__iter",
+              map.local().invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR));
+      // (Map.Entry) iter.next()
+      final Variable mapEntry =
+          scope.createTemporary(
+              field.getName() + "__mapEntry",
+              iter.local().invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE));
+
+      // exitScope must be called after creating all the variables
+      final Statement scopeExit = scope.exitScope();
+
+      // Get type info of the map key/value
+      // TODO(b/69794482): For now, we only check value type since key is always string.
+      SoyType valueType = ((MapType) mapArg.soyType()).getValueType();
+      SoyRuntimeType valueRuntimeType = SoyRuntimeType.getBoxedType(valueType);
+
+      // iter.hasNext()
+      final Expression iterHasNext = iter.local().invoke(MethodRef.ITERATOR_HAS_NEXT);
+
+      // TODO(b/69794482): Support non-string key.
+      // (String) mapEntry.getKey()
+      SoyExpression mapKey =
+          SoyExpression.forString(
+              mapEntry.local().invoke(MethodRef.MAP_GET_KEY).checkedCast(STRING_TYPE));
+
+      // resolve() is safe since we called ExpressionDetacher at the very beginning of this method
+      // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
+      Expression getAndResolveMapValue =
+          mapEntry
+              .local()
+              .invoke(MethodRef.MAP_GET_VALUE)
+              .checkedCast(SOY_VALUE_PROVIDER_TYPE)
+              .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
+              .checkedCast(valueRuntimeType.runtimeType());
+
+      // Converts the soy value to java type
+      SoyExpression mapValue = SoyExpression.forSoyValue(valueType, getAndResolveMapValue);
+
+      // Invokes the putFooFieldMap method in proto message builder
+      final Statement putOne = handleMapSetter(mapKey, mapValue, field);
+
+      // Put all expressions together into the while loop
+      return new Statement() {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          map.initializer().gen(cb);
+          iter.initializer().gen(cb);
+
+          // Loop start
+          Label loopStart = cb.mark();
+          // If hasNext is false, jumps to the end
+          iterHasNext.gen(cb);
+          Label end = new Label();
+          cb.ifZCmp(Opcodes.IFEQ, end);
+
+          // Loop body: load the current map entry and put it into proto
+          mapEntry.initializer().gen(cb);
+          putOne.gen(cb);
+
+          // Go back to loop start
+          cb.goTo(loopStart);
+
+          // Return
+          cb.mark(end);
+          scopeExit.gen(cb);
+        }
+      };
     }
 
-    private Statement handleRepeated(final SoyExpression listArg, FieldDescriptor field) {
-      // If the list arg is definitely an empty list, do nothing
-      if (listArg.soyType().equals(ListType.EMPTY_LIST)) {
+    private Statement handleRepeated(final SoyExpression baseArg, FieldDescriptor field) {
+      // If the list arg is definitely an empty list/map, do nothing
+      if (baseArg.soyType().equals(ListType.EMPTY_LIST)
+          || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
         return Statement.NULL_STATEMENT;
       }
 
-      if (listArg.isNonNullable()) {
-        return handleRepeatedNotNull(listArg, field);
+      if (baseArg.isNonNullable()) {
+        return field.isMapField()
+            ? handleMapSetterNotNull(baseArg, field)
+            : handleRepeatedNotNull(baseArg, field);
       }
 
-      final Label listIsNonNull = new Label();
+      final Label isNonNull = new Label();
       final Label end = new Label();
 
       // perform null check
       SoyExpression nonNull =
-          listArg
+          baseArg
               .withSource(
-                  new Expression(listArg.resultType(), listArg.features()) {
+                  new Expression(baseArg.resultType(), baseArg.features()) {
                     @Override
                     protected void doGen(CodeBuilder cb) {
-                      listArg.gen(cb);
+                      baseArg.gen(cb);
 
                       cb.dup();
-                      cb.ifNonNull(listIsNonNull);
+                      cb.ifNonNull(isNonNull);
 
                       cb.pop(); // pop null off list, skip to end
                       // TODO(user): This violates Expression contract, as it jumps out of itself
                       cb.goTo(end);
 
-                      cb.mark(listIsNonNull);
+                      cb.mark(isNonNull);
                     }
                   })
               .asNonNullable();
 
-      final Statement handle = handleRepeatedNotNull(nonNull, field);
+      final Statement handle =
+          field.isMapField()
+              ? handleMapSetterNotNull(nonNull, field)
+              : handleRepeatedNotNull(nonNull, field);
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -1125,6 +1224,19 @@ final class ProtoUtils {
     return MethodRef.createStaticMethod(
             message, new Method("getDefaultInstance", message.type(), NO_METHOD_ARGS))
         .asNonNullable();
+  }
+
+  /** Returns the {@link MethodRef} for the generated put method for proto map. */
+  private static MethodRef getPutMethod(FieldDescriptor descriptor) {
+    Preconditions.checkState(descriptor.isMapField());
+    List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
+    TypeInfo builder = builderRuntimeType(descriptor.getContainingType());
+    return MethodRef.createInstanceMethod(
+        builder,
+        new Method(
+            "put" + getFieldName(descriptor, true),
+            builder.type(),
+            new Type[] {getRuntimeType(mapFields.get(0)), getRuntimeType(mapFields.get(1))}));
   }
 
   /** Returns the {@link MethodRef} for the generated setter/adder method. */

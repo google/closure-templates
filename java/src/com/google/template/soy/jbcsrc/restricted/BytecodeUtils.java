@@ -84,6 +84,7 @@ public final class BytecodeUtils {
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
   public static final Type MAP_TYPE = Type.getType(Map.class);
+  public static final Type MAP_ENTRY_TYPE = Type.getType(Map.Entry.class);
   public static final Type MESSAGE_TYPE = Type.getType(Message.class);
   public static final Type NULL_POINTER_EXCEPTION_TYPE = Type.getType(NullPointerException.class);
   public static final Type RENDER_CONTEXT_TYPE = Type.getType(RenderContext.class);

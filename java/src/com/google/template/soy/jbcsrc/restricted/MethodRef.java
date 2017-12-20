@@ -59,6 +59,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +148,20 @@ public abstract class MethodRef {
   public static final MethodRef LIST_GET = create(List.class, "get", int.class).asCheap();
 
   public static final MethodRef LIST_SIZE = create(List.class, "size").asCheap();
+
+  public static final MethodRef MAP_SIZE = create(Map.class, "size").asCheap();
+
+  public static final MethodRef MAP_ENTRY_SET = create(Map.class, "entrySet");
+
+  public static final MethodRef GET_ITERATOR = create(Iterable.class, "iterator");
+
+  public static final MethodRef ITERATOR_NEXT = create(Iterator.class, "next");
+
+  public static final MethodRef ITERATOR_HAS_NEXT = create(Iterator.class, "hasNext");
+
+  public static final MethodRef MAP_GET_KEY = create(Map.Entry.class, "getKey");
+
+  public static final MethodRef MAP_GET_VALUE = create(Map.Entry.class, "getValue");
 
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       create(ListImpl.class, "forProviderList", List.class);
