@@ -28,6 +28,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -290,6 +291,10 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
         paramKeyToCalleesMultimap.put(param.name(), node);
         Preconditions.checkNotNull(param.type());
         indirectParamTypes.put(param.name(), param.type());
+      }
+      if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+        // V1 templates don't need to declare all params.
+        mayHaveIndirectParamsInExternalCalls = true;
       }
     }
 

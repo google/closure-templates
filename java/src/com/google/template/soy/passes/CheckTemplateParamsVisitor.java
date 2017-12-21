@@ -19,8 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.Node;
-import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -29,12 +27,9 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -44,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
@@ -66,57 +60,27 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind UNUSED_PARAM =
       SoyErrorKind.of("Param ''{0}'' unused in template body.");
 
-  /** User-declared syntax version. */
-  private final SyntaxVersion declaredSyntaxVersion;
-
   private final ErrorReporter errorReporter;
 
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
 
-  /** @param declaredSyntaxVersion User-declared syntax version, */
   CheckTemplateParamsVisitor(
       TemplateRegistry templateRegistry,
-      SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
   @Override
-  protected void visitSoyFileSetNode(SoyFileSetNode node) {
-    // Run pass only on the Soy files that are all in V2 syntax.
-    for (SoyFileNode soyFile : node.getChildren()) {
-      // Run pass on Soy file if it is all in V2 syntax.
-      if (declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num || allNodesInferredAboveV2(soyFile)) {
-        visit(soyFile);
-      }
-    }
-  }
-
-  private boolean allNodesInferredAboveV2(SoyNode node) {
-    final AtomicBoolean allV2 = new AtomicBoolean(true);
-    SoyTreeUtils.visitAllNodes(
-        node,
-        new NodeVisitor<Node, VisitDirective>() {
-          @Override
-          public VisitDirective exec(Node node) {
-            if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
-              allV2.set(false);
-              return VisitDirective.ABORT;
-            }
-            return VisitDirective.CONTINUE;
-          }
-        });
-    return allV2.get();
-  }
-
-  @Override
   protected void visitTemplateNode(TemplateNode node) {
+    if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+      return;
+    }
+
     ListMultimap<String, SourceLocation> dataKeys = ArrayListMultimap.create();
 
     for (VarRefNode varRefNode : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {

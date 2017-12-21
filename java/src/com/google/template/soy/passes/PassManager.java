@@ -445,9 +445,7 @@ public final class PassManager {
   private final class CheckTemplateParamsPass extends CompilerFileSetPass {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      // Syntax version is used to decide whether or not to enforce that params are correctly
-      // delcared.  Switch this to using the deprecatedV1 bit
-      new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(fileSet);
+      new CheckTemplateParamsVisitor(registry, errorReporter).exec(fileSet);
     }
   }
 

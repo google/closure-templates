@@ -307,33 +307,20 @@ public final class CheckTemplateParamsVisitorTest {
   }
 
   @Test
-  public void testWithHeaderParams() {
+  public void testDeprecatedV1() {
     String fileContent =
         "{namespace boo}\n"
             + "\n"
-            + "/** */\n"
-            + "{template .foo}\n"
-            + "  {@param goo: string}\n"
-            + "  {@inject zoo: string}\n"
-            + "  {$goo}\n"
-            + "  {$zoo}\n"
-            + "{/template}\n";
-
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
-
-    fileContent =
-        "{namespace boo}\n"
+            + "{template .v1 deprecatedV1=\"true\"}\n"
+            + "  {$x}\n" // Ignored.
+            + "{/template}\n"
             + "\n"
-            + "/** */\n"
-            + "{template .foo}\n"
-            + "  {@param goo: string}\n"
-            + "  {@inject zoo: string}\n"
+            + "{template .v2}\n"
+            + "  {$y}\n" // Checked.
             + "{/template}\n";
 
     ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent);
-    assertThat(errors).hasSize(2);
-    assertThat(errors.get(0).message()).isEqualTo("Param 'goo' unused in template body.");
-    assertThat(errors.get(1).message()).isEqualTo("Param 'zoo' unused in template body.");
+    assertThat(Iterables.getOnlyElement(errors).message()).isEqualTo("Unknown data key 'y'.");
   }
 
   private static ImmutableList<SoyError> soyDocErrorsForTemplate(
