@@ -27,6 +27,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
@@ -86,6 +87,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
@@ -95,6 +97,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
@@ -176,6 +179,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
   private static final SoyErrorKind INCOMPATIBLE_AIRTHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
+  private static final SoyErrorKind INCORRECT_ARG_TYPE =
+      SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
+  private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
+      SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
+  private static final SoyErrorKind STRING_LITERAL_REQUIRED =
+      SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -398,7 +407,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             requireNodeType(node);
           }
         };
-
 
     @Override
     public Void exec(ExprNode node) {
@@ -756,56 +764,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       visitChildren(node);
       SoyFunction knownFunction = node.getSoyFunction();
       if (knownFunction instanceof BuiltinFunction) {
-        switch ((BuiltinFunction) knownFunction) {
-          case CHECK_NOT_NULL:
-            SoyType type = node.getChild(0).getType();
-            if (type.equals(NullType.getInstance())) {
-              errorReporter.report(node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL);
-            } else {
-              // Same type as its child but with nulls removed
-              node.setType(SoyTypes.removeNull(type));
-            }
-            break;
-          case INDEX:
-            node.setType(IntType.getInstance());
-            break;
-          case QUOTE_KEYS_IF_JS:
-            // TODO(lukes): it would be easy to add type information here, but doing so would
-            // introduce compile errors into user templates.  So doing so will require a global
-            // cleanup of all broken templates.
-            node.setType(UnknownType.getInstance());
-            break;
-          case IS_FIRST:
-          case IS_LAST:
-            node.setType(BoolType.getInstance());
-            break;
-          case CSS:
-          case XID:
-            node.setType(StringType.getInstance());
-            break;
-          case V1_EXPRESSION:
-            node.setType(UnknownType.getInstance());
-            break;
-          default:
-            throw new AssertionError();
-        }
-      } else if (knownFunction instanceof ParseIntFunction) {
-        // TODO(user): This is hacky and incomplete. Come up with a better solution.
-        node.setType(SoyTypes.makeNullable(IntType.getInstance()));
-      } else if (knownFunction instanceof ParseFloatFunction) {
-        node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
-      } else if (knownFunction instanceof LegacyObjectMapToMapFunction) {
-        visitLegacyObjectMapToMapFunction(node);
-      } else if (knownFunction instanceof MapToLegacyObjectMapFunction) {
-        visitMapToLegacyObjectMapFunction(node);
-      } else if (knownFunction instanceof RangeFunction) {
-        node.setType(typeRegistry.getOrCreateListType(IntType.getInstance()));
+        visitBuiltinFunction((BuiltinFunction) knownFunction, node);
       } else {
-        // We have no way of knowing the return type of a function.
-        // TODO: think about adding function type declarations.
-        // TODO(lukes): at the very least we could hard code types for standard functions for
-        // example, everything in the BasicFunctionsModule.
-        node.setType(UnknownType.getInstance());
+        visitSoyFunction(knownFunction, node);
       }
       tryApplySubstitution(node);
     }
@@ -815,9 +776,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         errorReporter.report(
             node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "legacyObjectMapToMap");
       }
-      ExprNode arg = node.getChild(0);
-      SoyType argType = arg.getType();
-
+      SoyType argType = node.getChild(0).getType();
       // Allow the type of the arg to be unknown.
       // This is mostly for integration tests: legacy_object_map literals will string-literal keys
       // are interpreted as *record* literals, unless surrounded by quoteKeysIfJs. But quoteKeysIfJs
@@ -829,18 +788,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             typeRegistry.getOrCreateMapType(UnknownType.getInstance(), UnknownType.getInstance()));
         return;
       }
-
-      if (argType.getKind() != SoyType.Kind.LEGACY_OBJECT_MAP) {
-        errorReporter.report(
-            arg.getSourceLocation(),
-            INVALID_TYPE_SUBSTITUTION,
-            // TODO(b/69046843): string representation should be legacy_object_map
-            "map<?,?>",
-            argType);
-        node.setType(UnknownType.getInstance());
-        return;
-      }
-
       LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
       node.setType(
           typeRegistry.getOrCreateMapType(
@@ -852,18 +799,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         errorReporter.report(
             node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "mapToLegacyObjectMap");
       }
-      ExprNode arg = node.getChild(0);
-      SoyType argType = arg.getType();
-      if (argType.getKind() != SoyType.Kind.MAP) {
-        errorReporter.report(
-            arg.getSourceLocation(),
-            INVALID_TYPE_SUBSTITUTION,
-            // TODO(b/69046843): string representation should be legacy_object_map
-            "experimental_map<?,?>",
-            argType);
-        node.setType(UnknownType.getInstance());
-        return;
-      }
+      SoyType argType = node.getChild(0).getType();
       MapType actualArgType = (MapType) argType;
       node.setType(
           typeRegistry.getOrCreateLegacyObjectMapType(
@@ -1189,6 +1125,141 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         }
       }
       return null;
+    }
+
+    /**
+     * Private helper that checks types of the arguments and tries to set the return type for some
+     * built-in functions.
+     */
+    private void visitBuiltinFunction(BuiltinFunction builtinFunction, FunctionNode node) {
+      // Most non-plugin functions have exactly 1 arg
+      ExprNode arg1 = node.getChild(0);
+      switch (builtinFunction) {
+        case CHECK_NOT_NULL:
+          SoyType type = node.getChild(0).getType();
+          if (type.equals(NullType.getInstance())) {
+            errorReporter.report(node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL);
+          } else {
+            // Same type as its child but with nulls removed
+            node.setType(SoyTypes.removeNull(type));
+          }
+          break;
+        case INDEX:
+          requireLoopVariableInScope(node, arg1);
+          node.setType(IntType.getInstance());
+          break;
+        case QUOTE_KEYS_IF_JS:
+          if (!(arg1 instanceof LegacyObjectMapLiteralNode)) {
+            errorReporter.report(
+                arg1.getSourceLocation(),
+                INCORRECT_ARG_TYPE,
+                "quoteKeysIfJs",
+                arg1.getType(),
+                "map literal");
+          }
+          // TODO(b/70946095): it would be easy to add type information here, but doing so would
+          // introduce compile errors into user templates.  So doing so will require a global
+          // cleanup of all broken templates.
+          node.setType(UnknownType.getInstance());
+          break;
+        case IS_FIRST:
+        case IS_LAST:
+          requireLoopVariableInScope(node, arg1);
+          node.setType(BoolType.getInstance());
+          break;
+        case CSS:
+          checkArgIsStringLiteral(node.getChild(node.numChildren() - 1), "css");
+          node.setType(StringType.getInstance());
+          break;
+        case XID:
+          checkArgIsStringLiteral(arg1, "xid");
+          node.setType(StringType.getInstance());
+          break;
+        case V1_EXPRESSION:
+          checkArgIsStringLiteral(arg1, "v1Expression");
+          node.setType(UnknownType.getInstance());
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+
+    /** Private helper that reports an error if the argument is not a string literal. */
+    private void checkArgIsStringLiteral(ExprNode arg, String funcName) {
+      if (!(arg instanceof StringNode)) {
+        errorReporter.report(arg.getSourceLocation(), STRING_LITERAL_REQUIRED, funcName);
+      }
+    }
+
+    /**
+     * Private helper that checks types of the arguments and tries to set the return type for some
+     * basic functions provided by Soy.
+     */
+    private void visitSoyFunction(SoyFunction fn, FunctionNode node) {
+      if (fn instanceof ParseIntFunction) {
+        checkArgType(node.getChild(0), StringType.getInstance(), node);
+        node.setType(SoyTypes.makeNullable(IntType.getInstance()));
+      } else if (fn instanceof ParseFloatFunction) {
+        checkArgType(node.getChild(0), StringType.getInstance(), node);
+        node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
+      } else if (fn instanceof LegacyObjectMapToMapFunction) {
+        // If argument type is incorrect, do not try to create a return type. Instead, set the
+        // return type to unknown.
+        if (checkArgType(node.getChild(0), LegacyObjectMapType.ANY_MAP, node)) {
+          visitLegacyObjectMapToMapFunction(node);
+        } else {
+          node.setType(UnknownType.getInstance());
+        }
+      } else if (fn instanceof MapToLegacyObjectMapFunction) {
+        // If argument type is incorrect, do not try to create a return type. Instead, set the
+        // return type to unknown.
+        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node)) {
+          visitMapToLegacyObjectMapFunction(node);
+        } else {
+          node.setType(UnknownType.getInstance());
+        }
+      } else if (fn instanceof LengthFunction) {
+        checkArgType(node.getChild(0), ListType.of(AnyType.getInstance()), node);
+        node.setType(IntType.getInstance());
+      } else if (fn instanceof RangeFunction) {
+        // Range function can takes up to 3 arguments.
+        // TODO(b/70946095): check the arguments type here.
+        node.setType(typeRegistry.getOrCreateListType(IntType.getInstance()));
+      } else {
+        // We have no way of knowing the return type of a function.
+        // TODO: think about adding function type declarations.
+        // TODO(b/70946095): at the very least we could hard code types for standard functions for
+        // example, everything in the BasicFunctionsModule.
+        // TODO(b/70946095): Maybe we should set to ErrorType if checkArgType failed.
+        node.setType(UnknownType.getInstance());
+      }
+    }
+
+    /** @param fn The function that must take a loop variable. */
+    private void requireLoopVariableInScope(FunctionNode fn, ExprNode loopVariable) {
+      if (!(loopVariable instanceof VarRefNode
+          && ((VarRefNode) loopVariable).getDefnDecl() instanceof LoopVar)) {
+        errorReporter.report(
+            fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getFunctionName());
+      }
+    }
+
+    /** Checks the argument type. Returns false if an incorrect arg type error was reported. */
+    private boolean checkArgType(ExprNode arg, SoyType expectedType, FunctionNode node) {
+      SoyType.Kind argTypeKind = arg.getType().getKind();
+      if (argTypeKind == SoyType.Kind.UNKNOWN || argTypeKind == SoyType.Kind.ERROR) {
+        return true;
+      }
+      if (!expectedType.isAssignableFrom(arg.getType())) {
+        errorReporter.report(
+            arg.getSourceLocation(),
+            INCORRECT_ARG_TYPE,
+            node.getSoyFunction().getName(),
+            arg.getType(),
+            expectedType);
+        return false;
+      }
+      return true;
     }
   }
 

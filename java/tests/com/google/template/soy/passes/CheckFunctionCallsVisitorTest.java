@@ -204,7 +204,7 @@ public final class CheckFunctionCallsVisitorTest {
 
     assertFunctionCallsInvalid(
         SyntaxVersion.V1_0,
-        "Function 'v1Expression' called with incorrect arg type string (expected string literal).",
+        "Argument to function 'v1Expression' must be a string literal.",
         "{namespace ns}\n",
         "{template .foo deprecatedV1=\"true\"}",
         "  {let $blah: 'foo' /}",

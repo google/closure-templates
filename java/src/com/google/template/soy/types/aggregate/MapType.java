@@ -18,6 +18,7 @@ package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.primitive.AnyType;
 import java.util.Objects;
 
 /**
@@ -31,6 +32,8 @@ import java.util.Objects;
 public final class MapType extends AbstractMapType {
 
   public static final MapType EMPTY_MAP = new MapType(null, null);
+
+  public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;

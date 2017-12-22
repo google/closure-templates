@@ -364,7 +364,7 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pf: float}",
                     "{let $list: [$pi, $pf]/}",
                     "{assertType('list<float|int>', $list)}",
-                    "{assertType('?', length($list))}"))
+                    "{assertType('int', length($list))}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)

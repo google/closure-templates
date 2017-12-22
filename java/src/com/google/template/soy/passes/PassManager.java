@@ -71,8 +71,8 @@ import javax.annotation.Nullable;
  *
  * <p>A note on ordering. There is no real structure to the ordering of the passes beyond what is
  * documented in comments. Many passes do rely on running before/after a different pass (e.g. {@link
- * CheckFunctionCallsPass} needs to run after {@link ResolveExpressionTypesVisitor} which needs to
- * run after {@link ResolveNamesPass}), but there isn't any dependency system in place.
+ * ResolveExpressionTypesVisitor} needs to run after {@link ResolveNamesPass}), but there isn't any
+ * dependency system in place.
  */
 public final class PassManager {
   private final ImmutableList<CompilerFilePass> singleFilePasses;
@@ -140,9 +140,7 @@ public final class PassManager {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
       // TODO(lukes): both of these are really about type checking, they should be part of
       // ResolveExpressionTypesVisitor
-      singleFilePassesBuilder
-          .add(new CheckProtoInitCallsPass(errorReporter))
-          .add(new CheckFunctionCallsPass(errorReporter));
+      singleFilePassesBuilder.add(new CheckProtoInitCallsPass(errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {

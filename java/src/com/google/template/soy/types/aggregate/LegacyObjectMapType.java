@@ -18,6 +18,7 @@ package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.primitive.AnyType;
 import java.util.Objects;
 
 /**
@@ -33,6 +34,9 @@ import java.util.Objects;
 public final class LegacyObjectMapType extends AbstractMapType {
 
   public static final LegacyObjectMapType EMPTY_MAP = new LegacyObjectMapType(null, null);
+
+  public static final LegacyObjectMapType ANY_MAP =
+      new LegacyObjectMapType(AnyType.getInstance(), AnyType.getInstance());
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
