@@ -28,6 +28,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.LengthFunction;
+import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
@@ -771,6 +772,19 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       tryApplySubstitution(node);
     }
 
+    private void visitMapKeysFunction(FunctionNode node) {
+      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
+        errorReporter.report(
+            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "mapKeys");
+      }
+      SoyType argType = node.getChild(0).getType();
+      if (argType.equals(MapType.EMPTY_MAP)) {
+        node.setType(ListType.EMPTY_LIST);
+      } else {
+        node.setType(typeRegistry.getOrCreateListType(((MapType) argType).getKeyType()));
+      }
+    }
+
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
         errorReporter.report(
@@ -1225,6 +1239,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         // Range function can takes up to 3 arguments.
         // TODO(b/70946095): check the arguments type here.
         node.setType(typeRegistry.getOrCreateListType(IntType.getInstance()));
+      } else if (fn instanceof MapKeysFunction) {
+        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node)) {
+          visitMapKeysFunction(node);
+        } else {
+          node.setType(UnknownType.getInstance());
+        }
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.

@@ -17,7 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -32,22 +32,15 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.aggregate.MapType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Soy function that gets the keys in a map. This method is only used for legacy_object_map. For new
- * map type (proto map and ES6 map in JS), use {@code MapKeysFunction} instead.
- *
- * <p>This function also supports list input to mimic JS behaviors. In JS, list is also an object,
- * and iterating its keys returns a list of indices.
+ * Soy function that gets the keys in a map.
  *
  * <p>The keys are returned as a list with no guarantees on the order (may be different on each run
  * or for each backend).
@@ -58,18 +51,18 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class KeysFunction
+public final class MapKeysFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
 
   @Inject
-  KeysFunction() {}
+  MapKeysFunction() {}
 
   @Override
   public String getName() {
-    return "keys";
+    return "mapKeys";
   }
 
   @Override
@@ -81,23 +74,23 @@ public final class KeysFunction
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    if (!(arg instanceof SoyMap)) {
-      throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
+    if (!(arg instanceof SoyNewMap)) {
+      throw new IllegalArgumentException("Argument to mapKeys() function is not a SoyNewMap.");
     }
 
-    return ListImpl.forProviderList(BasicFunctionsRuntime.keys((SoyMap) arg));
+    return ListImpl.forProviderList(BasicFunctionsRuntime.mapKeys((SoyNewMap) arg));
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
-    return new JsExpr("soy.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
+    return new JsExpr("soy.map.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.<String>of("soy");
+    return ImmutableSet.<String>of("soy.map");
   }
 
   @Override
@@ -109,25 +102,17 @@ public final class KeysFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
-    static final MethodRef KEYS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyMap.class);
+    static final MethodRef MAP_KEYS_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "mapKeys", SoyNewMap.class);
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     SoyExpression soyExpression = args.get(0);
     SoyType argType = soyExpression.soyType();
-    // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
-    SoyType listElementType;
-    if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
-      listElementType = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
-    } else if (argType.getKind() == Kind.LIST) {
-      listElementType = IntType.getInstance();
-    } else {
-      listElementType = UnknownType.getInstance();
-    }
+    SoyType keyType = ((MapType) argType).getKeyType();
     return SoyExpression.forList(
-        ListType.of(listElementType),
-        JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
+        keyType == null ? ListType.EMPTY_LIST : ListType.of(keyType),
+        JbcSrcMethods.MAP_KEYS_FN.invoke(soyExpression.box().checkedCast(SoyNewMap.class)));
   }
 }

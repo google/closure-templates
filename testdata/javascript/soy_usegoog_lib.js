@@ -23402,6 +23402,12 @@ class SoyMap {
   set(k, v) {}
 
   /**
+   * @return {!IteratorIterable<K>} An iterator that contains the keys for each
+   *     element in this map.
+   */
+  keys() {}
+
+  /**
    * Returns an iterator over the [key, value] pair entries of this map.
    *
    * TODO(b/69049599): structural interfaces defeat property renaming.
@@ -23449,8 +23455,19 @@ function $$legacyObjectMapToMap(obj) {
 }
 
 /**
+ * Gets the keys in a map as an array. There are no guarantees on the order.
+ * TODO(b/69794482): Support non-string key.
+ * @param {!SoyMap<K, V>} map The map to get the keys of.
+ * @return {!Array<K>} The array of keys in the given map.
+ * @template K, V
+ */
+function $$getMapKeys(map) {
+  return Array.from(map.keys());
+}
+
+/**
  * Saves the contents of a SoyMap to another SoyMap.
- * This is used for proto initilization in Soy. Protocol buffer in JS does not
+ * This is used for proto initialization in Soy. Protocol buffer in JS does not
  * generate setters for map fields. To construct a proto map field, we use this
  * help method to save the content of map literal to proto.
  * @param {!SoyMap<K, V>} jspbMap
@@ -23467,6 +23484,7 @@ exports = {
   $$legacyObjectMapToMap,
   $$mapToLegacyObjectMap,
   $$populateMap,
+  $$getMapKeys,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,
