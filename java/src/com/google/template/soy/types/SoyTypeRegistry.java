@@ -24,11 +24,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -72,7 +74,8 @@ import javax.inject.Singleton;
 @Singleton
 public final class SoyTypeRegistry {
 
-  private static final SoyErrorKind UNKNOWN_TYPE = SoyErrorKind.of("Unknown type ''{0}''.");
+  private static final SoyErrorKind UNKNOWN_TYPE =
+      SoyErrorKind.of("Unknown type ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind DUPLICATE_RECORD_FIELD =
       SoyErrorKind.of("Duplicate field ''{0}'' in record declaration.");
@@ -87,7 +90,7 @@ public final class SoyTypeRegistry {
   private static final SoyErrorKind NOT_A_GENERIC_TYPE =
       SoyErrorKind.of("''{0}'' is not a generic type, expected ''list'' or ''map''.");
 
-  private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMTERS =
+  private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
   /** A type registry that defaults all unknown types to the 'unknown' type. */
@@ -98,6 +101,11 @@ public final class SoyTypeRegistry {
                 @Override
                 public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
                   return UnknownType.getInstance();
+                }
+
+                @Override
+                public Iterable<String> getAllTypeNames() {
+                  return ImmutableList.of();
                 }
               }));
 
@@ -156,6 +164,14 @@ public final class SoyTypeRegistry {
       }
     }
     return null;
+  }
+
+  private Iterable<String> getAllTypeNames() {
+    Iterable<String> typeNames = BUILTIN_TYPES.keySet();
+    for (SoyTypeProvider provider : typeProviders) {
+      typeNames = Iterables.concat(provider.getAllTypeNames());
+    }
+    return typeNames;
   }
 
   /**
@@ -316,12 +332,15 @@ public final class SoyTypeRegistry {
         if (genericType != null) {
           errorReporter.report(
               node.sourceLocation(),
-              MISSING_GENERIC_TYPE_PARAMTERS,
+              MISSING_GENERIC_TYPE_PARAMETERS,
               name,
               genericType.formatNumTypeParams());
         } else {
-          // TODO(slaks): Add typo detection.
-          errorReporter.report(node.sourceLocation(), UNKNOWN_TYPE, name);
+          errorReporter.report(
+              node.sourceLocation(),
+              UNKNOWN_TYPE,
+              name,
+              SoyErrors.getDidYouMeanMessage(getAllTypeNames(), name));
         }
         type = ErrorType.getInstance();
       }

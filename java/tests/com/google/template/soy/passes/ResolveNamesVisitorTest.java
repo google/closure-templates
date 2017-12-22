@@ -35,10 +35,8 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.primitive.UnknownType;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,19 +49,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ResolveNamesVisitorTest {
 
-  private static final SoyTypeProvider typeProvider =
-      new SoyTypeProvider() {
-        @Override
-        public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
-          if (typeName.equals("unknown")) {
-            return UnknownType.getInstance();
-          }
-          return null;
-        }
-      };
-
   private static final SoyTypeRegistry typeRegistry =
-      new SoyTypeRegistry(ImmutableSet.of(typeProvider));
+      new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of());
 
   @Test
   public void testParamNameLookupSuccess() {

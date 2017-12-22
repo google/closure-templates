@@ -32,4 +32,7 @@ public interface SoyTypeProvider {
    * @return The type object, or null.
    */
   SoyType getType(String typeName, SoyTypeRegistry typeRegistry);
+
+  /** Returns the set of all known type names. */
+  Iterable<String> getAllTypeNames();
 }

@@ -37,7 +37,6 @@ import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Set;
 import org.junit.Test;
@@ -63,19 +62,8 @@ public final class ResolveExpressionTypesVisitorTest {
         }
       };
 
-  private static final SoyTypeProvider TYPE_PROVIDER =
-      new SoyTypeProvider() {
-        @Override
-        public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
-          if (typeName.equals("unknown")) {
-            return UnknownType.getInstance();
-          }
-          return null;
-        }
-      };
-
   private static final SoyTypeRegistry TYPE_REGISTRY =
-      new SoyTypeRegistry(ImmutableSet.of(TYPE_PROVIDER));
+      new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of());
   private static final SoyGeneralOptions EXPERIMENTAL_MAP_OPTIONS =
       new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("experimental_map"));
 
@@ -140,7 +128,7 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pb: map<string, float>}",
                     "{@param pc: map<int, string>}",
                     "{assertType('?', $pa[0])}",
@@ -179,7 +167,7 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{assertType('?', $pa + $pa)}",
@@ -241,7 +229,7 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{assertType('?', $pa and $pa)}",
@@ -265,7 +253,7 @@ public final class ResolveExpressionTypesVisitorTest {
     soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{assertType('bool', $pa and $pa)}",
@@ -292,7 +280,7 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{assertType('bool', $pa > $pa)}",
@@ -326,7 +314,7 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param pa: unknown}",
+                    "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{@param? ni: int}",

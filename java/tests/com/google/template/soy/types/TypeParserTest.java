@@ -64,6 +64,11 @@ public class TypeParserTest {
           }
           return null;
         }
+
+        @Override
+        public Iterable<String> getAllTypeNames() {
+          return ImmutableSet.of("foo.bar");
+        }
       };
 
   private SoyTypeRegistry typeRegistry;

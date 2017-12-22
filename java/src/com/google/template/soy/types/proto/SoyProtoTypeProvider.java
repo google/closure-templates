@@ -243,6 +243,11 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     return doGetType(name, typeRegistry, descriptor);
   }
 
+  @Override
+  public Iterable<String> getAllTypeNames() {
+    return descriptors.keySet();
+  }
+
   /**
    * Internal helper method to construct a type based on a Descriptor.  This is for the Tofu backend
    * which doesn't require all protos to be pre-registered.
