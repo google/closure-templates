@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class TypedSoyFunctionTest {
 
-  private class BadTypedSoyFunction extends TypedSoyFunction {
+  private static final class BadTypedSoyFunction extends TypedSoyFunction {
 
     @Override
     public List<Signature> signatures() {

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
 import com.google.template.soy.data.SoyValue;
@@ -29,12 +30,15 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.primitive.FloatType;
+import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,7 +55,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class ParseFloatFunction
+public final class ParseFloatFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -66,8 +70,10 @@ public final class ParseFloatFunction
   }
 
   @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
+  public List<Signature> signatures() {
+    ImmutableList<SoyType> argTypes = ImmutableList.of(StringType.getInstance());
+    SoyType returnType = SoyTypes.makeNullable(FloatType.getInstance());
+    return ImmutableList.of(Signature.create(argTypes, returnType));
   }
 
   @Override

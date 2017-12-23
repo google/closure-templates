@@ -29,8 +29,6 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
-import com.google.template.soy.basicfunctions.ParseFloatFunction;
-import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -1229,13 +1227,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      * basic functions provided by Soy.
      */
     private void visitSoyFunction(SoyFunction fn, FunctionNode node) {
-      if (fn instanceof ParseIntFunction) {
-        checkArgType(node.getChild(0), StringType.getInstance(), node);
-        node.setType(SoyTypes.makeNullable(IntType.getInstance()));
-      } else if (fn instanceof ParseFloatFunction) {
-        checkArgType(node.getChild(0), StringType.getInstance(), node);
-        node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
-      } else if (fn instanceof LegacyObjectMapToMapFunction) {
+      if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
         if (checkArgType(node.getChild(0), LegacyObjectMapType.ANY_MAP, node)) {
