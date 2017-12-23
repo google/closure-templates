@@ -27,7 +27,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
-import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
@@ -75,7 +74,9 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -98,7 +99,6 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
@@ -766,10 +766,29 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyFunction knownFunction = node.getSoyFunction();
       if (knownFunction instanceof BuiltinFunction) {
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
+      } else if (knownFunction instanceof TypedSoyFunction) {
+        visitTypedSoyFunction((TypedSoyFunction) knownFunction, node);
       } else {
         visitSoyFunction(knownFunction, node);
       }
       tryApplySubstitution(node);
+    }
+
+    private void visitTypedSoyFunction(TypedSoyFunction knownFunction, FunctionNode node) {
+      List<Signature> signatures = knownFunction.signatures();
+      Signature matchedSignature = null;
+      // Found the matched signature for the current function call.
+      // PluginResolver already guarantees that there is exactly one matched signature.
+      for (Signature signature : signatures) {
+        if (signature.parameterTypes().size() == node.numChildren()) {
+          matchedSignature = signature;
+          break;
+        }
+      }
+      for (int i = 0; i < node.numChildren(); ++i) {
+        checkArgType(node.getChild(i), matchedSignature.parameterTypes().get(i), node);
+      }
+      node.setType(matchedSignature.returnType());
     }
 
     private void visitMapKeysFunction(FunctionNode node) {
@@ -1232,9 +1251,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         } else {
           node.setType(UnknownType.getInstance());
         }
-      } else if (fn instanceof LengthFunction) {
-        checkArgType(node.getChild(0), ListType.of(AnyType.getInstance()), node);
-        node.setType(IntType.getInstance());
       } else if (fn instanceof RangeFunction) {
         // Range function can takes up to 3 arguments.
         // TODO(b/70946095): check the arguments type here.
