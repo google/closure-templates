@@ -16,6 +16,10 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -37,6 +41,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -65,13 +70,143 @@ public final class SoyValueConverter {
   /** An immutable empty map. */
   public static final SoyMapImpl EMPTY_MAP = SoyMapImpl.forProviderMap(ImmutableMap.of());
 
+  private final TypeMap cheapConverterMap = new TypeMap();
+  private final TypeMap expensiveConverterMap = new TypeMap();
+
   /** List of user-provided custom value converters. */
   // Note: Using field injection instead of constructor injection because we want optional = true.
   @Inject(optional = true)
   private List<SoyCustomValueConverter> customValueConverters;
 
   @Inject
-  SoyValueConverter() {}
+  SoyValueConverter() {
+    cheapConverterMap.put(
+        SoyValueProvider.class,
+        new Converter<SoyValueProvider>() {
+          @Override
+          public SoyValueProvider apply(SoyValueProvider input) {
+            return input;
+          }
+        });
+    cheapConverterMap.put(
+        String.class,
+        new Converter<String>() {
+          @Override
+          public SoyValueProvider apply(String input) {
+            return StringData.forValue(input);
+          }
+        });
+    cheapConverterMap.put(
+        Boolean.class,
+        new Converter<Boolean>() {
+          @Override
+          public SoyValueProvider apply(Boolean input) {
+            return BooleanData.forValue(input);
+          }
+        });
+    cheapConverterMap.put(
+        Integer.class,
+        new Converter<Integer>() {
+          @Override
+          public SoyValueProvider apply(Integer input) {
+            return IntegerData.forValue(input.longValue());
+          }
+        });
+    cheapConverterMap.put(
+        Long.class,
+        new Converter<Long>() {
+          @Override
+          public SoyValueProvider apply(Long input) {
+            return IntegerData.forValue(input.longValue());
+          }
+        });
+
+    cheapConverterMap.put(
+        Float.class,
+        new Converter<Float>() {
+          @Override
+          public SoyValueProvider apply(Float input) {
+            return FloatData.forValue(input.doubleValue());
+          }
+        });
+    cheapConverterMap.put(
+        Double.class,
+        new Converter<Double>() {
+          @Override
+          public SoyValueProvider apply(Double input) {
+            return FloatData.forValue(input.doubleValue());
+          }
+        });
+    cheapConverterMap.put(
+        Future.class,
+        new Converter<Future<?>>() {
+          @Override
+          @Nullable
+          public SoyValueProvider apply(@Nullable Future<?> input) {
+            return new SoyFutureValueProvider(SoyValueConverter.this, input);
+          }
+        });
+    cheapConverterMap.put(
+        EnumValueDescriptor.class,
+        new Converter<EnumValueDescriptor>() {
+          @Override
+          public SoyValueProvider apply(@Nullable EnumValueDescriptor input) {
+            // / Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
+            return IntegerData.forValue(input.getNumber());
+          }
+        });
+    cheapConverterMap.put(
+        ProtocolMessageEnum.class,
+        new Converter<ProtocolMessageEnum>() {
+          @Override
+          public SoyValueProvider apply(@Nullable ProtocolMessageEnum input) {
+            // Proto enum that was directly passed into the template
+            return IntegerData.forValue(input.getNumber());
+          }
+        });
+
+    expensiveConverterMap.put(
+        ByteString.class,
+        new Converter<ByteString>() {
+          @Override
+          public SoyValueProvider apply(ByteString input) {
+            return StringData.forValue(BaseEncoding.base64().encode(input.toByteArray()));
+          }
+        });
+    expensiveConverterMap.put(
+        SoyGlobalsValue.class,
+        new Converter<SoyGlobalsValue>() {
+          @Override
+          public SoyValueProvider apply(SoyGlobalsValue input) {
+            return convert(input.getSoyGlobalValue());
+          }
+        });
+
+    expensiveConverterMap.put(
+        Map.class,
+        new Converter<Map<String, ?>>() {
+          @Override
+          public SoyValueProvider apply(Map<String, ?> input) {
+            return newDictFromMap(input);
+          }
+        });
+    expensiveConverterMap.put(
+        Collection.class,
+        new Converter<Collection<?>>() {
+          @Override
+          public SoyValueProvider apply(Collection<?> input) {
+            return newListFromIterable(input);
+          }
+        });
+    expensiveConverterMap.put(
+        FluentIterable.class,
+        new Converter<FluentIterable<?>>() {
+          @Override
+          public SoyValueProvider apply(FluentIterable<?> input) {
+            return newListFromIterable(input);
+          }
+        });
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Creating.
@@ -141,46 +276,31 @@ public final class SoyValueConverter {
    */
   @Nonnull
   public SoyValueProvider convert(@Nullable Object obj) {
-    SoyValueProvider convertedPrimitive = convertPrimitive(obj);
+    SoyValueProvider convertedPrimitive = convertCheap(obj);
     if (convertedPrimitive != null) {
       return convertedPrimitive;
-    } else if (obj instanceof Map<?, ?>) {
-      // TODO: Instead of hoping that the map is string-keyed, we should only enter this case if we
-      // know the map is string-keyed. Otherwise, we should fall through and let the user's custom
-      // converters have a chance at converting the map.
-      @SuppressWarnings("unchecked")
-      Map<String, ?> objCast = (Map<String, ?>) obj;
-      // TODO(b/69064671): Change this to use runtime type detection.
-      return newDictFromMap(objCast);
-    } else if (obj instanceof Collection<?> || obj instanceof FluentIterable<?>) {
-      // NOTE: We don't trap Iterable itself, because many types extend from Iterable but are not
-      // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
-      return newListFromIterable((Iterable<?>) obj);
-    } else if (obj instanceof SoyGlobalsValue) {
-      return convert(((SoyGlobalsValue) obj).getSoyGlobalValue());
-    } else if (obj instanceof ByteString) {
-      // Encode ByteStrings as base 64, as a safe and consistent way to send them to JS
-      return StringData.forValue(BaseEncoding.base64().encode(((ByteString) obj).toByteArray()));
-    } else if (obj instanceof EnumValueDescriptor) {
-      // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
-      return IntegerData.forValue(((EnumValueDescriptor) obj).getNumber());
-    } else if (obj instanceof ProtocolMessageEnum) {
-      // Proto enum that was directly passed into the template
-      return IntegerData.forValue(((ProtocolMessageEnum) obj).getNumber());
-    } else {
-      if (customValueConverters != null) {
-        for (SoyCustomValueConverter customConverter : customValueConverters) {
-          SoyValueProvider result = customConverter.convert(this, obj);
-          if (result != null) {
-            return result;
-          }
+    }
+    return convertNonPrimitive(obj);
+  }
+
+  private SoyValueProvider convertNonPrimitive(@Nullable Object obj) {
+    SoyValueProvider converted = expensiveConverterMap.convert(obj);
+    if (converted != null) {
+      return converted;
+    }
+
+    if (customValueConverters != null) {
+      for (SoyCustomValueConverter customConverter : customValueConverters) {
+        converted = customConverter.convert(this, obj);
+        if (converted != null) {
+          return converted;
         }
       }
-      throw new SoyDataException(
-          "Attempting to convert unrecognized object to Soy value (object type "
-              + obj.getClass().getName()
-              + ").");
     }
+    throw new SoyDataException(
+        "Attempting to convert unrecognized object to Soy value (object type "
+            + obj.getClass().getName()
+            + ").");
   }
 
   /**
@@ -188,14 +308,14 @@ public final class SoyValueConverter {
    * resolve() is called.
    */
   private SoyValueProvider convertLazy(@Nullable final Object obj) {
-    SoyValueProvider convertedPrimitive = convertPrimitive(obj);
+    SoyValueProvider convertedPrimitive = convertCheap(obj);
     if (convertedPrimitive != null) {
       return convertedPrimitive;
     } else {
       return new SoyAbstractCachingValueProvider() {
         @Override
         protected SoyValue compute() {
-          return convert(obj).resolve();
+          return convertNonPrimitive(obj).resolve();
         }
 
         @Override
@@ -211,30 +331,77 @@ public final class SoyValueConverter {
    * primitive.
    */
   @Nullable
-  private SoyValueProvider convertPrimitive(@Nullable Object obj) {
+  private SoyValueProvider convertCheap(@Nullable Object obj) {
     if (obj == null) {
       return NullData.INSTANCE;
-    } else if (obj instanceof SoyValueProvider) {
-      return (SoyValueProvider) obj;
-    } else if (obj instanceof String) {
-      return StringData.forValue((String) obj);
-    } else if (obj instanceof Boolean) {
-      return BooleanData.forValue((Boolean) obj);
-    } else if (obj instanceof Number) {
-      if (obj instanceof Integer) {
-        return IntegerData.forValue((Integer) obj);
-      } else if (obj instanceof Long) {
-        return IntegerData.forValue((Long) obj);
-      } else if (obj instanceof Double) {
-        return FloatData.forValue((Double) obj);
-      } else if (obj instanceof Float) {
-        // Automatically convert float to double.
-        return FloatData.forValue((Float) obj);
+    }
+    return cheapConverterMap.convert(obj);
+  }
+
+  private interface Converter<T> extends Function<T, SoyValueProvider> {}
+
+  private static final class TypeMap {
+    // An explicit marker used to record failed lookups.
+    private static final Object NULL_MARKER = new Object();
+    private final Map<Class<?>, Object> map = new ConcurrentHashMap<>();
+
+    <T> SoyValueProvider convert(T o) {
+      @SuppressWarnings("unchecked")
+      Converter<T> converter = getConverter((Class<T>) o.getClass());
+      if (converter != null) {
+        return converter.apply(o);
       }
-    } else if (obj instanceof Future<?>) {
-      return new SoyFutureValueProvider(this, (Future<?>) obj);
+      return null;
     }
 
-    return null;
+    @SuppressWarnings("unchecked")
+    <T> Converter<T> getConverter(Class<T> clz) {
+      Object o = resolveConverter(checkNotNull(clz));
+      if (o == NULL_MARKER) {
+        return null;
+      }
+      return (Converter) o;
+    }
+
+    <T> void put(Class<T> clazz, Converter<? extends T> converter) {
+      checkState(map.put(clazz, checkNotNull(converter)) == null);
+    }
+
+    /**
+     * Returns the converter for the given type. The lookup algorithm is:
+     *
+     * <ul>
+     *   <li>Explicit mapping
+     *   <li>Check the superclass
+     *   <li>Check each interface
+     * </ul>
+     *
+     * @param clazz the type to lookup
+     * @return the registered handler, or null if none could be found
+     */
+    private Object resolveConverter(@Nullable Class<?> clazz) {
+      if (clazz == null) {
+        // recursive base case
+        return NULL_MARKER;
+      }
+      Object c = map.get(clazz);
+      if (c != null) {
+        return c;
+      }
+      // Walk the ancestors classes and interfaces.
+      c = resolveConverter(clazz.getSuperclass());
+      if (c == NULL_MARKER) {
+        for (Class<?> iface : clazz.getInterfaces()) {
+          c = resolveConverter(iface);
+          if (c != NULL_MARKER) {
+            break;
+          }
+        }
+      }
+      // at this point c is either a valid converter or NULL_MARKER, store the result to speed
+      // future lookups
+      map.put(clazz, c);
+      return c;
+    }
   }
 }
