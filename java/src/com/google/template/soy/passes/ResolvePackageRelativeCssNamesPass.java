@@ -18,21 +18,20 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.List;
+import javax.annotation.Nullable;
 
 /** Converts package-relative CSS class names to absolute names. */
-final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
 
   private static final String RELATIVE_SELECTOR_PREFIX = "%";
 
@@ -47,33 +46,36 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
               + "the namesapce.{1}.");
 
   private final ErrorReporter errorReporter;
-  private String packagePrefix = null;
 
-  ResolvePackageRelativeCssNamesVisitor(ErrorReporter errorReporter) {
+  ResolvePackageRelativeCssNamesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  protected void visitTemplateNode(TemplateNode node) {
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // Compute the CSS package prefix for this template. The search order is:
     // 1) cssbase on the template
     // 2) cssbase on the namespace
     // 3) first requirecss on the namespace
-    if (node.getCssBaseNamespace() != null) {
-      packagePrefix = toCamelCase(node.getCssBaseNamespace());
-    } else if (node.getParent().getCssBaseNamespace() != null) {
-      packagePrefix = toCamelCase(node.getParent().getCssBaseNamespace());
-    } else if (!node.getParent().getRequiredCssNamespaces().isEmpty()) {
-      packagePrefix = toCamelCase(node.getParent().getRequiredCssNamespaces().get(0));
+    String namespacePrefix = null;
+    if (file.getCssBaseNamespace() != null) {
+      namespacePrefix = toCamelCase(file.getCssBaseNamespace());
+    } else if (!file.getRequiredCssNamespaces().isEmpty()) {
+      namespacePrefix = toCamelCase(file.getRequiredCssNamespaces().get(0));
     }
-
-    List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
-    for (FunctionNode fn : fnNodes) {
-      resolveSelector(node, fn);
+    for (TemplateNode template : file.getChildren()) {
+      String packagePrefix = namespacePrefix;
+      if (template.getCssBaseNamespace() != null) {
+        packagePrefix = toCamelCase(template.getCssBaseNamespace());
+      }
+      for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+        resolveSelector(template, fn, packagePrefix);
+      }
     }
   }
 
-  private void resolveSelector(TemplateNode template, FunctionNode node) {
+  private void resolveSelector(
+      TemplateNode template, FunctionNode node, @Nullable String packagePrefix) {
     if (node.getSoyFunction() != BuiltinFunction.CSS) {
       return;
     }
@@ -111,13 +113,6 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     String prefixed = packagePrefix + selectorText.substring(RELATIVE_SELECTOR_PREFIX.length());
     StringNode newSelector = new StringNode(prefixed, selector.getSourceLocation());
     node.replaceChild(selector, newSelector);
-  }
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
-    }
   }
 
   private static String toCamelCase(String packageName) {

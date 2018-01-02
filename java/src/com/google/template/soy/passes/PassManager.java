@@ -124,7 +124,7 @@ public final class PassManager {
       // needs to run after both resolve types and htmlrewrite pass
       singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, builder.loggingConfig));
     }
-    singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass());
+    singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass(errorReporter));
     if (!allowUnknownGlobals) {
       // Must come after RewriteGlobalsPass since that is when values are substituted.
       // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
@@ -420,13 +420,6 @@ public final class PassManager {
       // 2. whether to allow printing bools
       new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, options, errorReporter)
           .exec(file);
-    }
-  }
-
-  private final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(file);
     }
   }
 
