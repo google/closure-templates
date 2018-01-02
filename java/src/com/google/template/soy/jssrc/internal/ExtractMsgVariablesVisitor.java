@@ -107,6 +107,12 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   protected void wrapMsgFallbackGroupNodeHelper(
       MsgFallbackGroupNode msgFbGrpNode, IdGenerator nodeIdGen) {
+    // if it is already wrapped in a LetContentNode and is the only child, don't bother
+    // this will occur for messages that are the target of msgId() calls.
+    if (msgFbGrpNode.getParent() instanceof LetContentNode
+        && msgFbGrpNode.getParent().numChildren() == 1) {
+      return;
+    }
     // try to generate a unique variable name
     // due to an optimization in GenJsCodeVisitor this variable is never actually used directly.
     // though it may be for incrementaldomsrc.
