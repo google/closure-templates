@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyValue;
@@ -30,6 +31,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -86,11 +88,15 @@ public final class SimplifyVisitor {
       Preconditions.checkArgument(node instanceof SoyFileSetNode);
       SoyFileSetNode nodeAsRoot = (SoyFileSetNode) node;
 
-      // First simplify all expressions in the subtree.
-      SoyTreeUtils.execOnAllV2Exprs(nodeAsRoot, simplifyExprVisitor);
+      // no point in optimizing non-src files
+      for (SoyFileNode file :
+          Iterables.filter(nodeAsRoot.getChildren(), SoyFileNode.MATCH_SRC_FILENODE)) {
+        // First simplify all expressions in the subtree.
+        SoyTreeUtils.execOnAllV2Exprs(file, simplifyExprVisitor);
 
-      // Simpify the subtree.
-      super.exec(nodeAsRoot);
+        // Simpify the subtree.
+        visit(file);
+      }
 
       return null;
     }
