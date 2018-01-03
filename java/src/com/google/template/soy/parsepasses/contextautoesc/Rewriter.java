@@ -93,7 +93,7 @@ final class Rewriter {
     protected void visitTemplateNode(TemplateNode templateNode) {
       boolean firstTime = visitedTemplateNames.add(templateNode.getTemplateName());
       Preconditions.checkState(firstTime, "already visited: %s", templateNode.getTemplateName());
-      visitChildrenAllowingConcurrentModification(templateNode);
+      visitChildren(templateNode);
     }
 
     /** Add any escaping directives. */
@@ -170,14 +170,14 @@ final class Rewriter {
       // For strict templates, set any necessary escaping directives.
       node.setEscapingDirectives(getDirectivesForNode(node));
 
-      visitChildrenAllowingConcurrentModification(node);
+      visitChildren(node);
     }
 
     /** Recurses to children. */
     @Override
     protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
-        visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
+        visitChildren((ParentSoyNode<?>) node);
       }
     }
   }

@@ -143,7 +143,7 @@ final class RewriteRemaindersPass extends CompilerFilePass {
     @Override
     protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
-        visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
+        visitChildren((ParentSoyNode<?>) node);
       }
       if (node instanceof ExprHolderNode) {
         for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {

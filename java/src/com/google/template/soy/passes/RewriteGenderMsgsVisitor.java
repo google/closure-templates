@@ -198,7 +198,7 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
-      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
+      visitChildren((ParentSoyNode<?>) node);
     }
   }
 
