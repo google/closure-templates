@@ -19,9 +19,11 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
@@ -42,17 +44,34 @@ final class CheckNonEmptyMsgNodesPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (MsgNode msg : SoyTreeUtils.getAllNodesOfType(file, MsgNode.class)) {
-      if (msg.numChildren() == 0) {
-        errorReporter.report(msg.getSourceLocation(), EMPTY_MSG_ERROR);
-      } else if (msg.numChildren() == 1) {
-        // a single raw text node with an empty string is possible given something like
-        // {msg ..}{nil}{/msg}
-        if (msg.getChild(0) instanceof RawTextNode
-            && ((RawTextNode) msg.getChild(0)).getRawText().isEmpty()) {
+    for (MsgFallbackGroupNode groupNode :
+        SoyTreeUtils.getAllNodesOfType(file, MsgFallbackGroupNode.class)) {
+      for (MsgNode msg : groupNode.getChildren()) {
+        if (isEmpty(msg)) {
           errorReporter.report(msg.getSourceLocation(), EMPTY_MSG_ERROR);
+          // remove the whole group.
+          // a number of msgnode methods throw if there are no children and having a fallback group
+          // with 0 children is also unexpected.
+          groupNode.getParent().removeChild(groupNode);
+          break;
         }
       }
     }
+  }
+
+  /**
+   * If the only children are empty raw text nodes, then the node is empty.
+   *
+   * <p>Empty raw text nodes are inserted by the parser to keep track of trimmed whitespace for the
+   * html parser and removed later in the compiler.
+   */
+  private static boolean isEmpty(MsgNode msg) {
+    for (SoyNode child : msg.getChildren()) {
+      if (child instanceof RawTextNode && ((RawTextNode) child).getRawText().isEmpty()) {
+        continue;
+      }
+      return false;
+    }
+    return true;
   }
 }
