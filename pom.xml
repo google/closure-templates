@@ -6,7 +6,7 @@
   <name>Closure Templates</name>
   <groupId>com.google.template</groupId>
   <artifactId>soy</artifactId>
-  <version>2017-04-23</version>
+  <version>2018-01-03</version>
   <description>
     Closure Templates are a client-side and server-side templating system.
   </description>
@@ -359,6 +359,9 @@
               </bottom>
               <!-- Ignore javadoc errors. -->
               <failOnError>false</failOnError>
+              <!-- This disable the additional check introduced in Java8.
+                  We need to fix all the incompatible docs, but for now we disable this. -->
+              <doclint>none</doclint>
             </configuration>
             <executions>
               <execution>
