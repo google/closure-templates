@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
@@ -53,7 +52,7 @@ abstract class BinaryOperation extends Operation {
       CodeChunk.WithValue arg1,
       CodeChunk.WithValue arg2) {
     return new AutoValue_BinaryOperation(
-        ImmutableSet.<CodeChunk>builder()
+        ImmutableList.<CodeChunk>builder()
             .addAll(arg1.initialStatements())
             .addAll(arg2.initialStatements())
             .build(),

@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -36,7 +35,7 @@ abstract class MapLiteral extends CodeChunk.WithValue {
       ImmutableList<? extends CodeChunk.WithValue> keys,
       ImmutableList<? extends CodeChunk.WithValue> values) {
     Preconditions.checkArgument(keys.size() == values.size(), "Mismatch between keys and values.");
-    ImmutableSet.Builder<CodeChunk> initialStatements = ImmutableSet.builder();
+    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
     for (CodeChunk.WithValue key : keys) {
       initialStatements.addAll(key.initialStatements());
     }

@@ -483,7 +483,7 @@ public abstract class CodeChunk {
      *
      * <p>These are direct dependencies only, not transitive.
      */
-    public abstract ImmutableSet<CodeChunk> initialStatements();
+    public abstract ImmutableList<CodeChunk> initialStatements();
 
     /**
      * Returns {@code true} if the expression represented by this code chunk is so trivial that it

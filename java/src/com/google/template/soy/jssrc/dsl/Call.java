@@ -20,7 +20,6 @@ import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
@@ -33,7 +32,7 @@ abstract class Call extends Operation {
   abstract ImmutableList<CodeChunk.WithValue> args();
 
   static Call create(CodeChunk.WithValue receiver, ImmutableList<CodeChunk.WithValue> args) {
-    ImmutableSet.Builder<CodeChunk> builder = ImmutableSet.builder();
+    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
     builder.addAll(receiver.initialStatements());
     for (CodeChunk.WithValue arg : args) {
       builder.addAll(arg.initialStatements());

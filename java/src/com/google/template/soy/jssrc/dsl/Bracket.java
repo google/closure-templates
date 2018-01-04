@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
@@ -34,7 +34,7 @@ abstract class Bracket extends Operation {
 
   static Bracket create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
     return new AutoValue_Bracket(
-        ImmutableSet.<CodeChunk>builder()
+        ImmutableList.<CodeChunk>builder()
             .addAll(receiver.initialStatements())
             .addAll(key.initialStatements())
             .build(),

@@ -20,7 +20,7 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
@@ -46,7 +46,7 @@ abstract class Ternary extends Operation {
     Preconditions.checkArgument(
         predicate.initialStatements().containsAll(alternate.initialStatements()));
     return new AutoValue_Ternary(
-        ImmutableSet.<CodeChunk>builder()
+        ImmutableList.<CodeChunk>builder()
             .addAll(predicate.initialStatements())
             .addAll(consequent.initialStatements())
             .addAll(alternate.initialStatements())

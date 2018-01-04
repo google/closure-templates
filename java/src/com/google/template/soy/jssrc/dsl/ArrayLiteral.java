@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -30,7 +29,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   abstract ImmutableList<? extends CodeChunk.WithValue> elements();
 
   static ArrayLiteral create(ImmutableList<? extends CodeChunk.WithValue> elements) {
-    ImmutableSet.Builder<CodeChunk> builder = ImmutableSet.builder();
+    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
     for (CodeChunk.WithValue element : elements) {
       builder.addAll(element.initialStatements());
     }

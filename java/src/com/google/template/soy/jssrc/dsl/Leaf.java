@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -37,7 +38,11 @@ abstract class Leaf extends CodeChunk.WithValue {
   }
 
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
-    return new AutoValue_Leaf(value, ImmutableSet.copyOf(requires), isCheap);
+    return new AutoValue_Leaf(
+        /* initialStatements= */ ImmutableList.<CodeChunk>of(),
+        value,
+        ImmutableSet.copyOf(requires),
+        isCheap);
   }
 
   abstract JsExpr value();
@@ -67,10 +72,5 @@ abstract class Leaf extends CodeChunk.WithValue {
     for (GoogRequire require : requires()) {
       collector.add(require);
     }
-  }
-
-  @Override
-  public ImmutableSet<CodeChunk> initialStatements() {
-    return ImmutableSet.of();
   }
 }

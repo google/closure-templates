@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -29,7 +29,7 @@ abstract class VariableReference extends CodeChunk.WithValue {
   abstract VariableDeclaration declaration();
 
   static VariableReference of(VariableDeclaration declaration) {
-    return new AutoValue_VariableReference(ImmutableSet.<CodeChunk>of(declaration), declaration);
+    return new AutoValue_VariableReference(ImmutableList.<CodeChunk>of(declaration), declaration);
   }
 
   @Override

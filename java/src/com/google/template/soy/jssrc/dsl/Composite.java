@@ -19,26 +19,23 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an expression preceded by one or more initial statements. */
 @AutoValue
 @Immutable
-public abstract class Composite extends CodeChunk.WithValue {
-  abstract ImmutableList<CodeChunk> initialStmts();
+abstract class Composite extends CodeChunk.WithValue {
 
   abstract CodeChunk.WithValue value();
 
   static Composite create(ImmutableList<CodeChunk> initialStatements, CodeChunk.WithValue value) {
     Preconditions.checkState(!initialStatements.isEmpty());
     return new AutoValue_Composite(
-        ImmutableSet.<CodeChunk>builder()
+        ImmutableList.<CodeChunk>builder()
             .addAll(initialStatements)
             .addAll(value.initialStatements())
             .build(),
-        initialStatements,
         value);
   }
 
@@ -52,6 +49,8 @@ public abstract class Composite extends CodeChunk.WithValue {
    * expression. When a composite is the only chunk being serialized, and its value is a variable
    * reference, this leads to a redundant trailing expression (the variable name). Override the
    * superclass implementation to omit it.
+   *
+   * <p>This heuristic appears to only be depended on by unit tests
    */
   @Override
   String getCode(int startingIndent) {
@@ -62,7 +61,7 @@ public abstract class Composite extends CodeChunk.WithValue {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk stmt : initialStmts()) {
+    for (CodeChunk stmt : initialStatements()) {
       ctx.appendAll(stmt);
     }
     ctx.appendInitialStatements(value());
@@ -70,7 +69,7 @@ public abstract class Composite extends CodeChunk.WithValue {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk stmt : initialStmts()) {
+    for (CodeChunk stmt : initialStatements()) {
       stmt.collectRequires(collector);
     }
     value().collectRequires(collector);
