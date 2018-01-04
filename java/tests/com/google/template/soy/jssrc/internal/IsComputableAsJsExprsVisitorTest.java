@@ -57,7 +57,7 @@ public final class IsComputableAsJsExprsVisitorTest {
     runTestHelper(
         "{@param boo: ?}\n{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", false);
 
-    runTestHelper(join("{@param booze: ?}", "{foreach $boo in $booze}{$boo}{/foreach}"), false);
+    runTestHelper(join("{@param booze: ?}", "{for $boo in $booze}{$boo}{/for}"), false);
 
     runTestHelper("{for $i in range(4)}{$i + 1}{/for}", false);
   }
@@ -96,7 +96,7 @@ public final class IsComputableAsJsExprsVisitorTest {
         join(
             "{@param goo: ?}",
             "{@param moose: ?}",
-            "{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}"),
+            "{if $goo}{for $moo in $moose}{$moo}{/for}{/if}"),
         false);
   }
 
@@ -121,9 +121,9 @@ public final class IsComputableAsJsExprsVisitorTest {
             "{@param moose: ?}",
             "{call .foo data=\"$boo\"}",
             "  {param goo}",
-            "  {foreach $moo in $moose}",
+            "  {for $moo in $moose}",
             "    {$moo}",
-            "{/foreach}",
+            "{/for}",
             "{/param}",
             "{/call}"),
         false);

@@ -234,11 +234,11 @@ public final class DetachStateTest {
         TemplateTester.compileTemplateBody(
             "{@param list : list<string>}",
             "prefix{\\n}",
-            "{foreach $item in $list}",
+            "{for $item in $list}",
             "  loop-prefix{\\n}",
             "  {$item}{\\n}",
             "  loop-suffix{\\n}",
-            "{/foreach}",
+            "{/for}",
             "suffix");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
@@ -283,9 +283,9 @@ public final class DetachStateTest {
         TemplateTester.compileTemplateBody(
             "{@param list : list<int>}",
             "{@param foo : int}",
-            "{foreach $item in $list}",
+            "{for $item in $list}",
             "  {$item + $foo}",
-            "{/foreach}");
+            "{/for}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));

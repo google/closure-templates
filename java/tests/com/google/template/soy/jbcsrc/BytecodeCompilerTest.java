@@ -393,24 +393,22 @@ public class BytecodeCompilerTest {
   @Test
   public void testForEachNode() {
     // empty loop
-    assertThatTemplateBody(
-            "{@param list: list<int>}", "{foreach $i in $list}", "  {$i}", "{/foreach}")
+    assertThatTemplateBody("{@param list: list<int>}", "{for $i in $list}", "  {$i}", "{/for}")
         .rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody(
             "{@param list: list<int>}",
-            "{foreach $i in $list}",
+            "{for $i in $list}",
             "  {$i}",
             "{ifempty}",
             "  empty",
-            "{/foreach}")
+            "{/for}")
         .rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
 
-    assertThatTemplateBody("{foreach $i in [1,2,3,4,5]}", "  {$i}", "{/foreach}")
-        .rendersAs("12345");
+    assertThatTemplateBody("{for $i in [1,2,3,4,5]}", "  {$i}", "{/for}").rendersAs("12345");
 
     assertThatTemplateBody(
-            "{foreach $i in [1,2,3,4,5]}",
+            "{for $i in [1,2,3,4,5]}",
             "  {if isFirst($i)}",
             "    first!{\\n}",
             "  {/if}",
@@ -418,7 +416,7 @@ public class BytecodeCompilerTest {
             "  {if isLast($i)}",
             "    last!",
             "  {/if}",
-            "{/foreach}")
+            "{/for}")
         .rendersAs(Joiner.on('\n').join("first!", "1-0", "2-1", "3-2", "4-3", "5-4", "last!"));
   }
 
@@ -426,9 +424,9 @@ public class BytecodeCompilerTest {
   public void testForEachNode_mapKeys() {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",
-            "{foreach $key in keys($map)}",
+            "{for $key in keys($map)}",
             "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
-            "{/foreach}")
+            "{/for}")
         .rendersAs("a - 1\nb - 2", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
   }
 
@@ -437,9 +435,9 @@ public class BytecodeCompilerTest {
     // The compiler should be rejected this :(
     assertThatTemplateBody(
             "{@param map : map<string, list<int>>}",
-            "{foreach $item in $map?['key']}",
+            "{for $item in $map?['key']}",
             "  {$item}",
-            "{/foreach}")
+            "{/for}")
         .rendersAs(
             "123", ImmutableMap.of("map", ImmutableMap.of("key", ImmutableList.of(1, 2, 3))));
   }
@@ -611,11 +609,11 @@ public class BytecodeCompilerTest {
   public void testBoxedIntComparisonFromFunctions() {
     assertThatTemplateBody(
             "{@param list : list<int>}",
-            "{foreach $item in $list}",
+            "{for $item in $list}",
             "{if index($item) == ceiling(length($list) / 2) - 1}",
             "  Middle.",
             "{/if}",
-            "{/foreach}",
+            "{/for}",
             "")
         .rendersAs("Middle.", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
   }
@@ -626,9 +624,9 @@ public class BytecodeCompilerTest {
         assertThatTemplateBody(
             "{@param? list : list<int>}",
             "{if $list}",
-            "  {foreach $item in $list}",
+            "  {for $item in $list}",
             "    {$item}",
-            "  {/foreach}",
+            "  {/for}",
             "{/if}",
             "");
     tester.rendersAs("123", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
@@ -1000,9 +998,9 @@ public class BytecodeCompilerTest {
                     "{if not $opt}",
                     // failures on the foreach loop used to get assigned the line number of the
                     // if statement.
-                    "  {foreach $foo in $list}",
+                    "  {for $foo in $list}",
                     "    {$foo}{if not isLast($foo)}{sp}{/if}",
-                    "  {/foreach}",
+                    "  {/for}",
                     "{/if}",
                     "{/template}"));
     assertThat(

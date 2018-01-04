@@ -1125,11 +1125,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Example:
    *
    * <pre>
-   *   {foreach $foo in $boo.foos}
+   *   {for $foo in $boo.foos}
    *     ...
    *   {ifempty}
    *     ...
-   *   {/foreach}
+   *   {/for}
    * </pre>
    *
    * might generate
@@ -1256,9 +1256,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Example:
    *
    * <pre>
-   *   {foreach $foo in $boo.foos}
+   *   {for $foo in $boo.foos}
    *     ...
-   *   {/foreach}
+   *   {/for}
    * </pre>
    *
    * might generate

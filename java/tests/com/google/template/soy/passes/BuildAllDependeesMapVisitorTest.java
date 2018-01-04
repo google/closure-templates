@@ -67,7 +67,7 @@ public final class BuildAllDependeesMapVisitorTest {
             + "  {$a}{$b.c}\n"
             + "  {if $b.d}\n"
             + "    {$e}\n"
-            + "    {foreach $f in $fs}\n"
+            + "    {for $f in $fs}\n"
             + "      {$f}{$g.h|noAutoescape}\n"
             + "      {msg desc=\"\"}\n"
             + "        {$i}\n"
@@ -76,7 +76,7 @@ public final class BuildAllDependeesMapVisitorTest {
             + "          {param m}{$n}{$f.o}{/param}\n"
             + "        {/call}\n"
             + "      {/msg}\n"
-            + "    {/foreach}\n"
+            + "    {/for}\n"
             + "  {/if}\n"
             + "{/template}\n";
 

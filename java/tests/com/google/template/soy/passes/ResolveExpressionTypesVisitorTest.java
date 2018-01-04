@@ -687,7 +687,7 @@ public final class ResolveExpressionTypesVisitorTest {
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
                     "{@inject list: list<int|null>}",
-                    "{foreach $item in $list}",
+                    "{for $item in $list}",
                     "   {assertType('int', index($item))}",
                     "   {assertType('bool', isLast($item))}",
                     "   {assertType('bool', isFirst($item))}",
@@ -695,7 +695,7 @@ public final class ResolveExpressionTypesVisitorTest {
                     "   {assertType('int', checkNotNull($item))}",
                     "   {assertType('string', css('foo'))}",
                     "   {assertType('string', xid('bar'))}",
-                    "{/foreach}"))
+                    "{/for}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -727,14 +727,13 @@ public final class ResolveExpressionTypesVisitorTest {
   public void testBadForEach() {
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type int.",
-        constructTemplateSource("{@param p: int}", "{foreach $item in $p}{/foreach}"));
+        constructTemplateSource("{@param p: int}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type int|string.",
-        constructTemplateSource("{@param p: int|string}", "{foreach $item in $p}{/foreach}"));
+        constructTemplateSource("{@param p: int|string}", "{for $item in $p}{/for}"));
     assertResolveExpressionTypesFails(
         "Cannot iterate over $p of type list<string>|string|uri.",
-        constructTemplateSource(
-            "{@param p: list<string>|string|uri}", "{foreach $item in $p}{/foreach}"));
+        constructTemplateSource("{@param p: list<string>|string|uri}", "{for $item in $p}{/for}"));
   }
 
   @Test

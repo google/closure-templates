@@ -187,13 +187,13 @@ public final class TemplateAnalysisTest {
     // var, they actually aren't.
     runTest(
         "{@param list : list<?>}",
-        "{foreach $item in $list}",
+        "{for $item in $list}",
         "  {if isFirst($item)}first{/if}",
         "  {if isLast($item)}last{/if}",
         "  {index($item)}",
         "  {notrefed($item)}",
         "  {refed($list)}",
-        "{/foreach}",
+        "{/for}",
         "{refed($list)}");
 
     // test ifempty blocks
@@ -202,13 +202,13 @@ public final class TemplateAnalysisTest {
         "{@param p: ?}",
         "{@param p2: ?}",
         "{@param p3: ?}",
-        "{foreach $item in $list}",
+        "{for $item in $list}",
         "  {$p}",
         "  {$p2}",
         "{ifempty}",
         "  {$p}",
         "  {$p3}",
-        "{/foreach}",
+        "{/for}",
         "{refed($list)}",
         "{refed($p)}",
         "{notrefed($p2)}",
@@ -229,11 +229,11 @@ public final class TemplateAnalysisTest {
         "{@param list: list<?>}",
         "{@param p: ?}",
         "{@param p2: ?}",
-        "{foreach $item in $list}",
+        "{for $item in $list}",
         "  {$p}",
         "{ifempty}",
         "  {$p2}",
-        "{/foreach}",
+        "{/for}",
         "{notrefed($p)}",
         "{refed($p2)}");
 
@@ -241,11 +241,11 @@ public final class TemplateAnalysisTest {
     runTest(
         "{@param p: ?}",
         "{@param p2: ?}",
-        "{foreach $item in [1, 2, 3]}",
+        "{for $item in [1, 2, 3]}",
         "  {$p}",
         "{ifempty}",
         "  {$p2}",
-        "{/foreach}",
+        "{/for}",
         "{refed($p)}",
         "{notrefed($p2)}");
   }

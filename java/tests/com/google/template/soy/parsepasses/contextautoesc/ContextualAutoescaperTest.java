@@ -686,9 +686,9 @@ public final class ContextualAutoescaperTest {
             "{template .baz autoescape=\"deprecated-contextual\"}\n",
             "  {@param foo: ?}\n",
             "<ol>",
-            "{foreach $x in $foo}",
+            "{for $x in $foo}",
             "<li>{$x |escapeHtml}</li>",
-            "{/foreach}",
+            "{/for}",
             "</ol>\n",
             "{/template}"),
         join(
@@ -696,9 +696,9 @@ public final class ContextualAutoescaperTest {
             "{template .baz autoescape=\"deprecated-contextual\"}\n",
             "  {@param foo: ?}\n",
             "  <ol>\n",
-            "    {foreach $x in $foo}\n",
+            "    {for $x in $foo}\n",
             "      <li>{$x}</li>\n",
-            "    {/foreach}\n",
+            "    {/for}\n",
             "  </ol>\n",
             "{/template}"));
   }
@@ -711,11 +711,11 @@ public final class ContextualAutoescaperTest {
             "{template .baz autoescape=\"deprecated-contextual\"}\n",
             "  {@param foo: ?}\n",
             "<ol>",
-            "{foreach $x in $foo}",
+            "{for $x in $foo}",
             "<li>{$x |escapeHtml}</li>",
             "{ifempty}",
             "<li><i>Nothing</i></li>",
-            "{/foreach}",
+            "{/for}",
             "</ol>\n",
             "{/template}"),
         join(
@@ -723,11 +723,11 @@ public final class ContextualAutoescaperTest {
             "{template .baz autoescape=\"deprecated-contextual\"}\n",
             "  {@param foo: ?}\n",
             "  <ol>\n",
-            "    {foreach $x in $foo}\n",
+            "    {for $x in $foo}\n",
             "      <li>{$x}</li>\n",
             "    {ifempty}\n",
             "      <li><i>Nothing</i></li>\n",
-            "    {/foreach}\n",
+            "    {/for}\n",
             "  </ol>\n",
             "{/template}"));
   }

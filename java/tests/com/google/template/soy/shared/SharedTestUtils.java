@@ -212,7 +212,7 @@ public final class SharedTestUtils {
     }
     String contents = "{" + soyExpr + "}\n";
     for (String loopVar : loopVarNames) {
-      contents = "{foreach $" + loopVar + " in [null]}\n" + contents + "\n{/foreach}";
+      contents = "{for $" + loopVar + " in [null]}\n" + contents + "\n{/for}";
     }
     templateBody.append(contents);
     return templateBody.toString();

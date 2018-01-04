@@ -11,7 +11,7 @@
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
-  {foreach $moo in $moose}
+  {for $moo in $moose}
     {if isFirst($moo)}
       {call .mooHelper_}
         {param moo : $moo /}
@@ -21,7 +21,7 @@
         {param moo: $moo /}
       {/call}
     {/if}
-  {/foreach}
+  {/for}
   {msg desc="Tells what a moose says."}
     Moose <i>also</i> says {$moose[0]}.  // oops, "forgot" the noAutoescape directive
   {/msg}{\n}

@@ -118,7 +118,7 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     return new ForeachNode(this, copyState);
   }
 
-  /** The arguments to a {@code range(...)} expression in a {@code {foreach ...}} loop statement. */
+  /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
   @AutoValue
   public abstract static class RangeArgs {
     static RangeArgs create(List<ExprNode> args) {

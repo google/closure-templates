@@ -285,10 +285,7 @@ public final class GenPyCodeVisitorTest {
   @Test
   public void testForeach() {
     String soyCode =
-        "{@param operands : ?}\n"
-            + "{foreach $operand in $operands}\n"
-            + "  {$operand}\n"
-            + "{/foreach}\n";
+        "{@param operands : ?}\n" + "{for $operand in $operands}\n" + "  {$operand}\n" + "{/for}\n";
 
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
@@ -301,11 +298,11 @@ public final class GenPyCodeVisitorTest {
 
     soyCode =
         "{@param operands : ?}\n"
-            + "{foreach $operand in $operands}\n"
+            + "{for $operand in $operands}\n"
             + "  {isFirst($operand) ? 1 : 0}\n"
             + "  {isLast($operand) ? 1 : 0}\n"
             + "  {index($operand)}\n"
-            + "{/foreach}\n";
+            + "{/for}\n";
 
     expectedPyCode =
         "operandList### = data.get('operands')\n"
@@ -322,11 +319,11 @@ public final class GenPyCodeVisitorTest {
     String soyCode =
         "{@param operands : ?}\n"
             + "{@param foo : ?}\n"
-            + "{foreach $operand in $operands}\n"
+            + "{for $operand in $operands}\n"
             + "  {$operand}\n"
             + "{ifempty}\n"
             + "  {$foo}"
-            + "{/foreach}\n";
+            + "{/for}\n";
 
     String expectedPyCode =
         "operandList### = data.get('operands')\n"

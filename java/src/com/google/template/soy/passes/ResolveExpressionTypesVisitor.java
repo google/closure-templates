@@ -181,7 +181,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
-      SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
+      SoyErrorKind.of("Function ''{0}'' must have a loop variable as its argument.");
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
 

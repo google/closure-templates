@@ -478,11 +478,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      * <p>Example:
      *
      * <pre>
-     *   {foreach $foo in $boo}
+     *   {for $foo in $boo}
      *     ...
      *   {ifempty}
      *     ...
-     *   {/foreach}
+     *   {/for}
      * </pre>
      *
      * might generate
@@ -539,9 +539,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      * <p>Example:
      *
      * <pre>
-     *   {foreach $foo in $boo}
+     *   {for $foo in $boo}
      *     ...
-     *   {/foreach}
+     *   {/for}
      * </pre>
      *
      * might generate

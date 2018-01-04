@@ -78,7 +78,7 @@ public class CanInitOutputVarVisitorTest {
     runTestHelper(
         "{@param boo: ? }\n{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", true);
 
-    runTestHelper("{@param booze: ? }\n{foreach $boo in $booze}{$boo}{/foreach}", true);
+    runTestHelper("{@param booze: ? }\n{for $boo in $booze}{$boo}{/for}", true);
 
     runTestHelper("{for $i in range(4)}{$i + 1}{/for}", true);
 
@@ -88,7 +88,7 @@ public class CanInitOutputVarVisitorTest {
     runTestHelper(
         "{@param goo: ?}\n"
             + "{@param moose: ?}\n"
-            + "{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}",
+            + "{if $goo}{for $moo in $moose}{$moo}{/for}{/if}",
         true);
 
     runTestHelper("{call .foo data=\"all\" /}", true);
@@ -110,7 +110,7 @@ public class CanInitOutputVarVisitorTest {
                 "{@param boo : ?}",
                 "{@param moose : ?}",
                 "{call .foo data=\"$boo\"}",
-                "{param goo}{foreach $moo in $moose}{$moo}{/foreach}{/param}",
+                "{param goo}{for $moo in $moose}{$moo}{/for}{/param}",
                 "{/call}"),
         false);
   }

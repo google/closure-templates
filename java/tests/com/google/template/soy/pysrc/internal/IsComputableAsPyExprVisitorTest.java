@@ -45,7 +45,7 @@ public class IsComputableAsPyExprVisitorTest {
     runTestHelper("{let $data: 'foo'/}", false);
     runTestHelper(
         "{@param boo:?}\n{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", false);
-    runTestHelper("{@param booze:?}\n{foreach $boo in $booze}{$boo}{/foreach}", false);
+    runTestHelper("{@param booze:?}\n{for $boo in $booze}{$boo}{/for}", false);
     runTestHelper("{for $i in range(4)}{$i + 1}{/for}", false);
   }
 
@@ -54,8 +54,7 @@ public class IsComputableAsPyExprVisitorTest {
     runTestHelper(
         "{@param boo:?}\n{@param foo:?}\n{if $boo}Blah{elseif $foo}Bleh{else}Bluh{/if}", true);
     runTestHelper(
-        "{@param goo:?}\n{@param moose:?}\n{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}",
-        false);
+        "{@param goo:?}\n{@param moose:?}\n{if $goo}{for $moo in $moose}{$moo}{/for}{/if}", false);
   }
 
   @Test
@@ -70,9 +69,9 @@ public class IsComputableAsPyExprVisitorTest {
             + "{@param moose:?}\n"
             + "{call .foo data=\"$boo\"}"
             + "  {param goo}"
-            + "    {foreach $moo in $moose}"
+            + "    {for $moo in $moose}"
             + "      {$moo}"
-            + "    {/foreach}"
+            + "    {/for}"
             + "  {/param}"
             + "{/call}",
         false);

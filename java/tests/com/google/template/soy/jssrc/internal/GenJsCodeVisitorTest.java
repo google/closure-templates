@@ -1069,7 +1069,7 @@ public final class GenJsCodeVisitorTest {
   public void testForeach() {
     String soyNodeCode =
         "{@param boo : ?}\n"
-            + "{foreach $foo in $boo.foos}\n"
+            + "{for $foo in $boo.foos}\n"
             + "  {if not isFirst($foo)}\n"
             + "    <br>\n"
             + "  {/if}\n"
@@ -1079,7 +1079,7 @@ public final class GenJsCodeVisitorTest {
             + "  {/if}\n"
             + "{ifempty}\n"
             + "  No fools here.\n"
-            + "{/foreach}\n";
+            + "{/for}\n";
     String expectedJsCode =
         ""
             + "var foo5List = opt_data.boo.foos;\n"

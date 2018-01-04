@@ -83,11 +83,11 @@ public final class CheckTemplateParamsVisitorTest {
     // ------ 'foreach', 'ifempty', '/foreach' ------
     soyDoc = "@param moose @param? meese";
     templateBody =
-        "{foreach $moo in $moose}\n"
+        "{for $moo in $moose}\n"
             + "  Cow says {$moo}.\n"
             + "{ifempty}\n"
             + "  No {$meese}.\n"
-            + "{/foreach}\n";
+            + "{/for}\n";
     assertThat(soyDocErrorsForTemplate(soyDoc, templateBody)).isEmpty();
 
     // ------ 'for', '/for' ------

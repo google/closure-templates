@@ -34,7 +34,7 @@ public final class CheckFunctionCallsVisitorTest {
   @Test
   public void testNotALoopVariable1() {
     assertFunctionCallsInvalid(
-        "Function 'index' must have a foreach loop variable as its argument",
+        "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "/**",
         " * @param x",
@@ -47,7 +47,7 @@ public final class CheckFunctionCallsVisitorTest {
   @Test
   public void testNotALoopVariable2() {
     assertFunctionCallsInvalid(
-        "Function 'index' must have a foreach loop variable as its argument",
+        "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "/**",
         " * @param x",
@@ -60,7 +60,7 @@ public final class CheckFunctionCallsVisitorTest {
   @Test
   public void testNotALoopVariable3() {
     assertFunctionCallsInvalid(
-        "Function 'index' must have a foreach loop variable as its argument",
+        "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "{template .foo}",
         "  {print index($ij.data)}",
@@ -70,7 +70,7 @@ public final class CheckFunctionCallsVisitorTest {
   @Test
   public void testNotALoopVariable4() {
     assertFunctionCallsInvalid(
-        "Function 'index' must have a foreach loop variable as its argument",
+        "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "/**",
         " * @param x",
@@ -88,26 +88,26 @@ public final class CheckFunctionCallsVisitorTest {
         " * @param elements",
         " */",
         "{template .foo}",
-        "  {foreach $z in $elements}",
+        "  {for $z in $elements}",
         "    {if isLast($z)}Lorem Ipsum{/if}",
-        "  {/foreach}",
+        "  {/for}",
         "{/template}");
   }
 
   @Test
   public void testLoopVariableNotInScopeWhenEmpty() {
     assertFunctionCallsInvalid(
-        "Function 'index' must have a foreach loop variable as its argument",
+        "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "/**",
         " * @param elements",
         " */",
         "{template .foo}",
-        "  {foreach $z in $elements}",
+        "  {for $z in $elements}",
         "    Lorem Ipsum...",
         "  {ifempty}",
         "    {print index($elements)}", // Loop variable not in scope when empty.
-        "  {/foreach}",
+        "  {/for}",
         "{/template}");
   }
 

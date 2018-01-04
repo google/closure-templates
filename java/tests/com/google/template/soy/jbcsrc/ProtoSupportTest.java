@@ -220,9 +220,9 @@ public final class ProtoSupportTest {
   public void testRepeatedFields() {
     assertThatTemplateBody(
             "{@param map : example.KvMap}",
-            "{foreach $pair in $map.otherFieldList}",
+            "{for $pair in $map.otherFieldList}",
             "  {$pair.key}",
-            "{/foreach}")
+            "{/for}")
         .rendersAs(
             "k1k2",
             ImmutableMap.of(
@@ -236,9 +236,9 @@ public final class ProtoSupportTest {
   public void testRepeatedFields_ofNullable() {
     assertThatTemplateBody(
             "{@param e : example.ExampleExtendable}",
-            "{foreach $str in $e.someEmbeddedMessage.someEmbeddedRepeatedStringList}",
+            "{for $str in $e.someEmbeddedMessage.someEmbeddedRepeatedStringList}",
             "  {$str}",
-            "{/foreach}")
+            "{/for}")
         .rendersAs(
             "abc",
             ImmutableMap.of(

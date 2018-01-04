@@ -60,9 +60,9 @@ public final class SoyTreeUtilsTest {
             + "/** @param items */\n"
             + "{template .foo}\n"
             + "  {length($items) + 5}\n" // 5 nodes
-            + "  {foreach $item in $items}\n" // 2 nodes
+            + "  {for $item in $items}\n" // 2 nodes
             + "    {$item.goo}\n" // 3 nodes
-            + "  {/foreach}\n"
+            + "  {/for}\n"
             + "{/template}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
@@ -156,11 +156,11 @@ public final class SoyTreeUtilsTest {
               "  <style>{css($foo, 'bar')} {lb}color: red{rb}</style>",
               "  {msg desc=\"test\"}<h1 class=\"howdy\">Hello, {$world}!</h1>{/msg}",
               "  <ol>",
-              "    {foreach $item in $items}",
+              "    {for $item in $items}",
               "      <li>{$item}</li>",
               "    {ifempty}",
               "      <li><i>Nothing to see here!",
-              "    {/foreach}",
+              "    {/for}",
               "  </ol>",
               "  {let $local : 'foo' /}",
               "  {$local}",

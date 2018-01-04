@@ -127,7 +127,7 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          @ /example/file.soy:2:1",
             "      RawTextNode              @ /example/file.soy:3:3",
             "      ForeachNode              @ /example/file.soy:4:3",
-            "        ForeachNonemptyNode    @ /example/file.soy:4:12",
+            "        ForeachNonemptyNode    @ /example/file.soy:4:8",
             "          RawTextNode          @ /example/file.soy:5:5",
             "          PrintNode            @ /example/file.soy:6:5",
             "        ForeachIfemptyNode     @ /example/file.soy:7:3",
@@ -138,12 +138,12 @@ public final class SourceLocationTest {
             "{namespace ns}",
             "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
             "  Hello", // 2
-            "  {foreach $planet in ['mercury', 'mars', 'venus']}", // 3
+            "  {for $planet in ['mercury', 'mars', 'venus']}", // 3
             "    ,", // 4
             "    {print $planet}", // 5
             "  {ifempty}", // 6
             "    lifeless interstellar void", // 7
-            "  {/foreach}", // 8
+            "  {/for}", // 8
             "  !", // 9
             "{/template}", // 10
             ""));

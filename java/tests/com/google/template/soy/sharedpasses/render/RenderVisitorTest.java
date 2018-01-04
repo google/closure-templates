@@ -752,28 +752,28 @@ public class RenderVisitorTest {
             + "{@param list0 : list<?> }\n"
             + "{@param foo : ? }\n"
             + "{@param boo : ? }\n"
-            + "  {foreach $n in $goo}\n"
+            + "  {for $n in $goo}\n"
             + "    {if not isFirst($n)}{\\n}{/if}\n"
             + "    {$n} = Sum of 1 through {index($n) + 1}.\n"
-            + "  {/foreach}\n"
+            + "  {/for}\n"
             + "  {\\n}\n"
-            + "  {foreach $i in $goo}\n"
-            + "    {foreach $j in $foo.goo2}\n"
+            + "  {for $i in $goo}\n"
+            + "    {for $j in $foo.goo2}\n"
             + "      {if $i == $j} {$i + $j}{/if}\n"
-            + "    {/foreach}\n"
-            + "  {/foreach}\n"
+            + "    {/for}\n"
+            + "  {/for}\n"
             + "  {sp}\n"
-            + "  {foreach $item in $list0}\n"
+            + "  {for $item in $list0}\n"
             + "    Blah\n"
             + "  {ifempty}\n"
             + "    Bluh\n"
-            + "  {/foreach}\n"
-            + "  {foreach $item in $list0}\n"
+            + "  {/for}\n"
+            + "  {for $item in $list0}\n"
             + "    Blah\n"
-            + "  {/foreach}\n"
-            + "  {foreach $item in ['blah', 123, $boo]}\n"
+            + "  {/for}\n"
+            + "  {for $item in ['blah', 123, $boo]}\n"
             + "    {sp}{$item}\n"
-            + "  {/foreach}\n";
+            + "  {/for}\n";
 
     assertRender(
         templateBody,
@@ -790,7 +790,7 @@ public class RenderVisitorTest {
     templateBody =
         ""
             + "{@param myMap : map<string, ?> }\n"
-            + "  {foreach $key in keys($myMap)}\n"
+            + "  {for $key in keys($myMap)}\n"
             + "    {if isFirst($key)}\n"
             + "      [\n"
             + "    {/if}\n"
@@ -800,7 +800,7 @@ public class RenderVisitorTest {
             + "    {else}\n"
             + "      ,{sp}\n"
             + "    {/if}\n"
-            + "  {/foreach}\n";
+            + "  {/for}\n";
 
     SoyDict data =
         SoyValueConverterUtility.newDict(
@@ -813,14 +813,14 @@ public class RenderVisitorTest {
   public void testRenderForStmt() throws Exception {
     String templateBody =
         "{@param goo : list<?> }\n"
-            + "  {foreach $n in $goo}\n"
+            + "  {for $n in $goo}\n"
             + "    {if not isFirst($n)}{\\n}{/if}\n"
             + "    {$n} ={sp}\n"
             + "    {for $i in range(1, index($n)+2)}\n"
             + "      {if $i != 1} + {/if}\n"
             + "      {$i}\n"
             + "    {/for}\n"
-            + "  {/foreach}\n";
+            + "  {/for}\n";
 
     assertRender(
         templateBody,
@@ -906,7 +906,7 @@ public class RenderVisitorTest {
             + " */\n"
             + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$boo}\n"
-            + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
+            + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
 
     SoyDict foo =
@@ -1007,7 +1007,7 @@ public class RenderVisitorTest {
             + " */\n"
             + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
             + "  {$boo}{$ij.future}\n"
-            + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
+            + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
 
     TemplateRegistry templateRegistry =

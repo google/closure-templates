@@ -173,8 +173,8 @@ public final class TemplateParserTest {
             + "blah // }\n"
             + "{$boo}{msg desc=\"\"} //}\n"
             + "msg content{/msg} // {/msg}\n"
-            + "{foreach $item in $items}\t// }\n"
-            + "{$item.name}{/foreach} //{{{{\n");
+            + "{for $item in $items}\t// }\n"
+            + "{$item.name}{/for} //{{{{\n");
 
     assertValidTemplate(
         "{@param boo : ?}\n"
@@ -184,8 +184,8 @@ public final class TemplateParserTest {
             + "/******************/ {/msg}\n"
             + "/* {}} { }* }* / }/ * { **}  //}{ { } {\n"
             + "\n  } {//*} {* /} { /* /}{} {}/ } **}}} */\n"
-            + "{foreach $item in $items} /* }\n"
-            + "{{{{{*/{$item.name}{/foreach}/*{{{{*/\n");
+            + "{for $item in $items} /* }\n"
+            + "{{{{{*/{$item.name}{/for}/*{{{{*/\n");
 
     assertValidTemplate(
         "{@param boo : ?}\n"
@@ -195,8 +195,8 @@ public final class TemplateParserTest {
             + "/******************/ {/msg}\n"
             + "/** {}} { }* }* / }/ * { **}  //}{ { } {\n"
             + "\n  } {//**} {* /} { /** /}{} {}/ } **}}} */\n"
-            + "{foreach $item in $items} /** }\n"
-            + "{{{{{*/{$item.name}{/foreach}/**{{{{*/\n");
+            + "{for $item in $items} /** }\n"
+            + "{{{{{*/{$item.name}{/for}/**{{{{*/\n");
 
     assertValidTemplate(" // Not an invalid command: }\n");
     assertValidTemplate(" // Not an invalid command: {{let}}\n");
@@ -221,10 +221,10 @@ public final class TemplateParserTest {
 
     assertValidTemplate(
         "{@param items : list<string>}\n"
-            + "{foreach $item // }\n"
+            + "{for $item // }\n"
             + "                                   in $items}\n"
             + "{$item}\n"
-            + "{/foreach}\n");
+            + "{/for}\n");
 
     assertInvalidTemplate("{css // }");
     assertInvalidTemplate("aa////}\n");
@@ -425,8 +425,7 @@ public final class TemplateParserTest {
             + "    {default} bluh bluh\n"
             + "  {/switch}\n");
     assertValidTemplate(
-        "{@param items : list<?>}"
-            + "{foreach $item in $items}{index($item)}. {$item.name}<br>{/foreach}");
+        "{@param items : list<?>}" + "{for $item in $items}{index($item)}. {$item.name}<br>{/for}");
     assertValidTemplate(
         "{@param boo : ?}"
             + "{for $i in range($boo + 1,\n"
@@ -1330,15 +1329,15 @@ public final class TemplateParserTest {
 
     String templateBody =
         "{@param goose : ?}{@param foo: ?}\n"
-            + "  {foreach $goo in $goose}\n"
+            + "  {for $goo in $goose}\n"
             + "    {$goose.numKids} goslings.{\\n}\n"
-            + "  {/foreach}\n"
-            + "  {foreach $boo in $foo.booze}\n"
+            + "  {/for}\n"
+            + "  {for $boo in $foo.booze}\n"
             + "    Scary drink {$boo.name}!\n"
             + "    {if not isLast($boo)}{\\n}{/if}\n"
             + "  {ifempty}\n"
             + "    Sorry, no booze.\n"
-            + "  {/foreach}\n";
+            + "  {/for}\n";
 
     List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(2, nodes.size());
@@ -1869,7 +1868,7 @@ public final class TemplateParserTest {
     parseTemplateContent(
         "{call .123 /}\n" // Invalid callee name
             + "{delcall 456 /}\n" // Invalid callee name
-            + "{foreach foo in bar}{/foreach}\n" // Invalid foreach var
+            + "{for foo in bar}{/for}\n" // Invalid foreach var
             + "{let /}\n", // Missing let var
         errorReporter);
     List<SoyError> errors = errorReporter.getErrors();

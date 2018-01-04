@@ -129,11 +129,11 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody(
             "{@param l : list<string>}",
-            "{foreach $s in $l}",
+            "{for $s in $l}",
             // the index function is implemented via a synthetic loop index
             "  {let $bar : index($s) + index($s) /}",
             "  {$bar}",
-            "{/foreach}");
+            "{/for}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());

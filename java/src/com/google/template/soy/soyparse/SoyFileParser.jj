@@ -457,6 +457,8 @@ public class SoyFileParser {
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
+  private static final SoyErrorKind FOREACH_IS_DEPRECATED = SoyErrorKind.of(
+      "foreach loops are deprecated, please switch to the for loop.", StyleAllowance.NO_CAPS);
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
@@ -2678,7 +2680,12 @@ private ForeachNode ForeachStmt() :
     tagClose = <CMD_CLOSE_FOREACH>
   | tagClose = <CMD_CLOSE_FOR>
   )
-  { return foreachNode; }
+  {
+    if (tagBegin.kind == CMD_BEGIN_FOREACH) {
+      errorReporter.warn(createSrcLoc(tagBegin), FOREACH_IS_DEPRECATED);
+    }
+    return foreachNode;
+  }
 }
 
 

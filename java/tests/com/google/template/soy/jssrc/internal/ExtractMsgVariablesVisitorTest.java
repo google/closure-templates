@@ -270,7 +270,7 @@ public final class ExtractMsgVariablesVisitorTest {
             ""
                 + "{@param goose: ?}\n"
                 + "{@param moo: ?}\n"
-                + "{foreach $goo in $goose}\n"
+                + "{for $goo in $goose}\n"
                 + "  {msg desc=\"msg1\"}blah{/msg}\n"
                 + "  {msg desc=\"msg2\"}{$goo}{/msg}\n"
                 + // dep on $goo
@@ -280,7 +280,7 @@ public final class ExtractMsgVariablesVisitorTest {
                 "{ifempty}\n"
                 + "  {msg desc=\"msg5\"}{$moo}{/msg}\n"
                 + "  {msg desc=\"msg6\"}blah{/msg}\n"
-                + "{/foreach}\n");
+                + "{/for}\n");
 
     // Expected:
     // [TemplateNode]
@@ -364,7 +364,7 @@ public final class ExtractMsgVariablesVisitorTest {
                 + "{@param moose: ?}\n"
                 + "{@param zoo: ?}\n"
                 + "{if $goo}\n"
-                + "  {foreach $moo in $moose}\n"
+                + "  {for $moo in $moose}\n"
                 + "    {for $i in range(3)}\n"
                 + "      {msg desc=\"msg1\"}blah{/msg}\n"
                 + "      {msg desc=\"msg2\"}{$goo}{/msg}\n"
@@ -381,7 +381,7 @@ public final class ExtractMsgVariablesVisitorTest {
                 "      {msg desc=\"msg8\"}{$moo}{$i}{/msg}\n"
                 + // dep on $moo and $i
                 "    {/for}\n"
-                + "  {/foreach}\n"
+                + "  {/for}\n"
                 + "{/if}\n"
                 + "{msg desc=\"msg9\"}{$goo}{/msg}\n"); // dep on $goo (irrelevant)
 

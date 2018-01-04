@@ -89,18 +89,18 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join(
             "{template .foo}\n",
             "  {@param jsUrls: list<string>}\n",
-            "{foreach $jsUrl in $jsUrls}",
+            "{for $jsUrl in $jsUrls}",
             "<script type=\"text/javascript\" ",
             "src='{$jsUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
             NONCE + "></script>",
-            "{/foreach}\n",
+            "{/for}\n",
             "{/template}"),
         join(
             "{template .foo}\n",
             "  {@param jsUrls: list<string>}\n",
-            "{foreach $jsUrl in $jsUrls}\n",
+            "{for $jsUrl in $jsUrls}\n",
             "<script type=\"text/javascript\" src='{$jsUrl}'></script>\n",
-            "{/foreach}\n",
+            "{/for}\n",
             "{/template}"));
   }
 

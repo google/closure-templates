@@ -98,9 +98,9 @@ public final class ResolveNamesVisitorTest {
                     "{@param pa: bool}",
                     "{@param pb: bool}",
                     "{let $la: 1 /}",
-                    "{foreach $item in ['a', 'b']}",
+                    "{for $item in ['a', 'b']}",
                     "  {$pa ? 1 : 0}{$pb ? 1 : 0}{$la + $item}",
-                    "{/foreach}",
+                    "{/for}",
                     "{let $lb: 1 /}"))
             .parse()
             .fileSet();
@@ -156,23 +156,20 @@ public final class ResolveNamesVisitorTest {
     assertResolveNamesFails(
         "Variable '$la' already defined at line 4.",
         constructTemplateSource(
-            "{let $la: 1 /}", "{foreach $item in ['a', 'b']}", "  {let $la: $la /}", "{/foreach}"));
+            "{let $la: 1 /}", "{for $item in ['a', 'b']}", "  {let $la: $la /}", "{/for}"));
     assertResolveNamesFails(
         "Variable '$group' already defined at line 4.",
         constructTemplateSource(
-            "{@param group: string}",
-            "{foreach $group in ['a', 'b']}",
-            "  {$group}",
-            "{/foreach}"));
+            "{@param group: string}", "{for $group in ['a', 'b']}", "  {$group}", "{/for}"));
     // valid, $item and $la are defined in non-overlapping scopes
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource(
-                "{foreach $item in ['a', 'b']}",
+                "{for $item in ['a', 'b']}",
                 "  {let $la: 1 /}",
-                "{/foreach}",
-                "{foreach $item in ['a', 'b']}",
+                "{/for}",
+                "{for $item in ['a', 'b']}",
                 "  {let $la: 1 /}",
-                "{/foreach}"))
+                "{/for}"))
         .parse()
         .fileSet();
   }
