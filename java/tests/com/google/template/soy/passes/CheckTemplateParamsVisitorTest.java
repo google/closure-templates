@@ -258,6 +258,19 @@ public final class CheckTemplateParamsVisitorTest {
   }
 
   @Test
+  public void testPassingUnusedParamToUnknownTemplate() {
+    String fileContent =
+        "{namespace ns}\n"
+            + "\n"
+            + "{template .a}\n"
+            // This is fine because we know nothing about ns2.b.
+            + "  {call ns2.b}{param a: '' /}{/call}\n"
+            + "{/template}\n";
+
+    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
+  }
+
+  @Test
   public void testDelegateCallVariant() {
     String fileContent =
         ""

@@ -20,15 +20,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -69,9 +72,9 @@ import javax.annotation.Nullable;
  * This compiler pass runs several checks on {@code CallNode}s.
  *
  * <ul>
- *   <li> Checks that calling arguments match the declared parameter types of the called template.
- *   <li> Checks missing or duplicate parameters.
- *   <li> Checks strict-html templates can only call other strict-html templates from an html
+ *   <li>Checks that calling arguments match the declared parameter types of the called template.
+ *   <li>Checks missing, unused or duplicate parameters.
+ *   <li>Checks strict-html templates can only call other strict-html templates from an html
  *       context.
  * </ul>
  *
@@ -87,6 +90,10 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       SoyErrorKind.of(
           "Type mismatch on param {0}: expected: {1}, actual: {2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
+  private static final SoyErrorKind PASSES_UNUSED_PARAM =
+      SoyErrorKind.of(
+          "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT =
       SoyErrorKind.of("Passing protobuf {0} of type {1} to an untyped template is not allowed.");
@@ -129,6 +136,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(node, callee);
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
         checkCallParamNames(node, callee);
+        checkPassesUnusedParams(node, callee);
       }
       checkStrictHtml(node, callee);
       visitChildren(node);
@@ -147,6 +155,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
         paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
         checkCallParamNames(node, delTemplate);
+        // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
       if (!potentialCallees.isEmpty()) {
@@ -489,6 +498,51 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
                     : "params " + missingParamKeys;
             errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
           }
+        }
+      }
+    }
+
+    /** Reports error if unused params are passed to a template. */
+    private void checkPassesUnusedParams(CallNode caller, TemplateNode callee) {
+      if (caller.numChildren() == 0) {
+        return;
+      }
+      // If we are calling a deprecatedV1 template, we cannot check it since the declarations are
+      // likely wrong.
+      if (!callee.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+        return;
+      }
+      Set<String> paramNames = Sets.newHashSet();
+      for (TemplateParam param : callee.getParams()) {
+        paramNames.add(param.name());
+      }
+      IndirectParamsInfo ipi = null; // Compute only if necessary.
+      for (CallParamNode callerParam : caller.getChildren()) {
+        String paramName = callerParam.getKey().identifier();
+        if (paramNames.contains(paramName)) {
+          continue;
+        }
+        if (ipi == null) {
+          ipi = new FindIndirectParamsVisitor(templateRegistry).exec(callee);
+          // If the callee has unknown indirect params then we can't validate that this isn't one
+          // of them. So just give up.
+          if (ipi.mayHaveIndirectParamsInExternalCalls
+              || ipi.mayHaveIndirectParamsInExternalDelCalls) {
+            return;
+          }
+        }
+        if (!ipi.indirectParams.containsKey(paramName)) {
+          Set<String> allParams =
+              ImmutableSet.<String>builder()
+                  .addAll(paramNames)
+                  .addAll(ipi.indirectParams.keySet())
+                  .build();
+          errorReporter.warn(
+              callerParam.getKey().location(),
+              PASSES_UNUSED_PARAM,
+              paramName,
+              callee.getTemplateName(),
+              SoyErrors.getDidYouMeanMessage(allParams, paramName));
         }
       }
     }
