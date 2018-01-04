@@ -6984,6 +6984,14 @@ goog.string.editDistance = function(a, b) {
  * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
  * should not be used outside of goog.labs.userAgent.*.
  *
+ * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__subpackages__}
+ * @visibility {//javascript/closure/style:__pkg__}
+ * @visibility {//javascript/closure/testing:__pkg__}
+ * @visibility {//javascript/closure/useragent:__subpackages__}
+ * @visibility {//testing/puppet/modules:__pkg__}
+ * @visibility {:util_legacy_users}
  *
  * @author nnaze@google.com (Nathan Naze)
  */

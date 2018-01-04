@@ -80,12 +80,7 @@ final class FormattingContext implements AutoCloseable {
   /** Writes all code for the {@code chunk} to the buffer. */
   FormattingContext appendAll(CodeChunk chunk) {
     appendInitialStatements(chunk);
-    if (chunk instanceof CodeChunk.WithValue
-        // Skip Composites and Declarations to prevent a spurious trailing variable name.
-        // TODO(brndn): migrate these classes to be CodeChunks (not CodeChunk.WithValues) and
-        // remove this logic.
-        && !(chunk instanceof Composite)
-        && !(chunk instanceof VariableDeclaration)) {
+    if (chunk instanceof CodeChunk.WithValue) {
       appendOutputExpression((CodeChunk.WithValue) chunk);
       append(";");
       endLine();
