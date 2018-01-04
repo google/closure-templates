@@ -65,6 +65,10 @@ public final class SoyMsgBundleWithFullLocale extends SoyMsgBundle {
 
   @VisibleForTesting
   SoyMsgBundleWithFullLocale(SoyMsgBundle delegate, ULocale locale, String localeString) {
+    // unwrap the delegate
+    while (delegate instanceof SoyMsgBundleWithFullLocale) {
+      delegate = ((SoyMsgBundleWithFullLocale) delegate).delegate;
+    }
     this.delegate = delegate;
     this.locale = locale;
     this.localeString = localeString;
