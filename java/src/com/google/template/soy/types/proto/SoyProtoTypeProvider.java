@@ -18,8 +18,8 @@ package com.google.template.soy.types.proto;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.io.ByteSource;
@@ -47,8 +47,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import javax.annotation.concurrent.GuardedBy;
 
 /**
@@ -169,11 +167,9 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
      */
     public SoyProtoTypeProvider build()
         throws FileNotFoundException, IOException, DescriptorValidationException {
-      SoyProtoTypeProvider provider = new SoyProtoTypeProvider();
       DescriptorAddingDescriptorTreeWalker walker = new DescriptorAddingDescriptorTreeWalker();
       walkAll(walker);
-      walker.commitInto(provider);
-      return provider;
+      return new SoyProtoTypeProvider(walker.descriptors, walker.extensions);
     }
 
     /**
@@ -195,27 +191,10 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
   private final Object lock = new Object();
 
   /** Map of all the protobuf type descriptors that we've discovered. */
-  // reads can be performed without the lock, but writes need to hold the lock.
-  private final ConcurrentMap<String, GenericDescriptor> descriptors =
-      new ConcurrentHashMap<>();
+  private final ImmutableMap<String, GenericDescriptor> descriptors;
 
-  @GuardedBy("lock")
-  private final SetMultimap<String, FieldDescriptor> extensions =
-      MultimapBuilder.hashKeys()
-          // We need a custom comparator since FieldDescriptor doesn't implement equals/hashCode
-          // reasonably.  We don't really care about the order, just deduplication.
-          .treeSetValues(new Comparator<FieldDescriptor>() {
-            @Override public int compare(FieldDescriptor left, FieldDescriptor right) {
-              return ComparisonChain.start()
-                  .compare(
-                      left.getNumber(),
-                      right.getNumber())
-                  .compare(
-                      left.getContainingType().getFullName(),
-                      right.getContainingType().getFullName())
-                  .result();
-            }
-          }).build();
+  /* Multimap of all known extensions of a given proto */
+  private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
 
   /**
    * Map of SoyTypes that have been created from the type descriptors. Gets filled in
@@ -224,10 +203,12 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
   @GuardedBy("lock")
   private final Map<String, SoyType> typeCache;
 
-  private SoyProtoTypeProvider() {
-    this.typeCache = new HashMap<>();
+  private SoyProtoTypeProvider(
+      Map<String, GenericDescriptor> descriptors, SetMultimap<String, FieldDescriptor> extensions) {
+    this.descriptors = ImmutableMap.copyOf(descriptors);
+    this.extensions = ImmutableSetMultimap.copyOf(extensions);
     // Seed the type cache with types that are handled specially by SoyProtoValueConverter.
-    this.typeCache.putAll(SafeStringTypes.SAFE_PROTO_TO_SANITIZED_TYPE);
+    this.typeCache = new HashMap<>(SafeStringTypes.SAFE_PROTO_TO_SANITIZED_TYPE);
   }
 
   public static SoyProtoTypeProvider empty() {
@@ -248,20 +229,6 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     return descriptors.keySet();
   }
 
-  /**
-   * Internal helper method to construct a type based on a Descriptor.  This is for the Tofu backend
-   * which doesn't require all protos to be pre-registered.
-   */
-  SoyProtoType getType(Descriptor descriptor, SoyTypeRegistry registry) {
-    String fullName = descriptor.getFullName();
-    if (!descriptors.containsKey(fullName)) {
-      DescriptorAddingDescriptorTreeWalker walker = new DescriptorAddingDescriptorTreeWalker();
-      walker.walkDescriptor(descriptor);
-      walker.commitInto(this);
-    }
-    return (SoyProtoType) doGetType(fullName, registry, descriptor);
-  }
-
   private SoyType doGetType(String name, SoyTypeRegistry typeRegistry,
       GenericDescriptor descriptor) {
     SoyType type;
@@ -280,17 +247,26 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
   }
 
   /** Walks a descriptor tree to build the descriptors, and extensions maps. */
-  static final class DescriptorAddingDescriptorTreeWalker extends DescriptorTreeWalker {
+  private static final class DescriptorAddingDescriptorTreeWalker extends DescriptorTreeWalker {
 
-    private final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
-    private final Multimap<String, FieldDescriptor> extensions = LinkedListMultimap.create();
-
-    void commitInto(SoyProtoTypeProvider provider) {
-      synchronized (provider.lock) {
-        provider.descriptors.putAll(descriptors);
-        provider.extensions.putAll(extensions);
-      }
-    }
+    final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
+    final SetMultimap<String, FieldDescriptor> extensions =
+        MultimapBuilder.linkedHashKeys()
+            // We need a custom comparator since FieldDescriptor doesn't implement equals/hashCode
+            // reasonably.  We don't really care about the order, just deduplication.
+            .treeSetValues(
+                new Comparator<FieldDescriptor>() {
+                  @Override
+                  public int compare(FieldDescriptor left, FieldDescriptor right) {
+                    return ComparisonChain.start()
+                        .compare(left.getNumber(), right.getNumber())
+                        .compare(
+                            left.getContainingType().getFullName(),
+                            right.getContainingType().getFullName())
+                        .result();
+                  }
+                })
+            .build();
 
     @Override
     void visitMessageDescriptor(Descriptor descriptor) {

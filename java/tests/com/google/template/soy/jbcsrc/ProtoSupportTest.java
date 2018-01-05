@@ -39,14 +39,14 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvMap;
 import com.google.template.soy.testing.KvPair;
-import com.google.template.soy.testing.Map;
+import com.google.template.soy.testing.Proto3;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
-import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
@@ -87,13 +87,8 @@ public final class ProtoSupportTest {
               SoyProtoTypeProvider provideProtoTypeProvider() {
                 return new SoyProtoTypeProvider.Builder()
                     .addDescriptors(
-                        ExampleExtendable.getDescriptor(),
-                        KvPair.getDescriptor(),
-                        KvMap.getDescriptor(),
-                        Map.getDescriptor(),
-                        SomeEmbeddedMessage.getDescriptor(),
-                        Proto3Message.getDescriptor(),
-                        SomeExtension.getDescriptor())
+                        Example.getDescriptor(),
+                        Proto3.getDescriptor())
                     .buildNoFiles();
               }
 
