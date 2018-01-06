@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -43,12 +44,14 @@ import org.objectweb.asm.Type;
 /**
  * A function that determines the index of the first occurrence of a string within another string.
  *
- * <p><code>strIndexOf(expr1, expr2)</code> requires <code>expr1</code> and <code>expr2</code> to be
- * of type string or {@link com.google.template.soy.data.SanitizedContent}.
+ * <p><code>strIndexOf(expr1, expr2, expr3)</code> requires <code>expr1</code>, <code>expr2</code>
+ * to be of type string or {@link com.google.template.soy.data.SanitizedContent} and <code>expr3
+ * </code> of type boolean. <code>expr3</code> is optional for case insensitive compare.
  *
  * <p>It returns the index within the string <code>expr1</code> of the first occurrence of the
  * specified substring <code>expr2</code>. If no such index exists, then <code>-1</code>is returned.
- * <code>strIndexOf</code> is case sensitive and the string indices are zero based.
+ * <code>strIndexOf</code> by default is case sensitive and the string indices are zero based. If
+ * <code>expr3</code> is specified and is <code>true</code>, then case insensitive compare is done.
  *
  */
 @Singleton
@@ -66,13 +69,14 @@ final class StrIndexOfFunction
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2);
+    return ImmutableSet.of(2, 3);
   }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
+    SoyValue arg2 = args.size() == 3 ? args.get(2) : null;
 
     Preconditions.checkArgument(
         arg0 instanceof StringData || arg0 instanceof SanitizedContent,
@@ -84,8 +88,20 @@ final class StrIndexOfFunction
         "Second argument to strIndexOf() function is not StringData or SanitizedContent: %s",
         arg1);
 
+    if (arg2 != null) {
+      Preconditions.checkArgument(
+              arg2 instanceof BooleanData,
+              "Third argument to strIndexOf() function is not BooleanData: %s",
+              arg2);
+    }
+
     String strArg0 = arg0.coerceToString();
     String strArg1 = arg1.coerceToString();
+
+    if (arg2 != null && arg2.coerceToBoolean()) {
+      strArg0 = strArg0.toUpperCase();
+      strArg1 = strArg1.toUpperCase();
+    }
 
     return IntegerData.forValue(strArg0.indexOf(strArg1));
   }
@@ -95,6 +111,12 @@ final class StrIndexOfFunction
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
     String arg1 = JsExprUtils.toString(args.get(1)).getText();
+    JsExpr arg2 = args.size() == 3 ? args.get(2) : null;
+
+    if (arg2 != null && arg2.getText().toUpperCase().equals("TRUE")) {
+      arg0 = arg0.toUpperCase();
+      arg1 = arg1.toUpperCase();
+    }
 
     return new JsExpr("(" + arg0 + ").indexOf(" + arg1 + ")", Integer.MAX_VALUE);
   }
@@ -104,8 +126,16 @@ final class StrIndexOfFunction
     // Coerce SanitizedContent args to strings.
     String arg0 = args.get(0).toPyString().getText();
     String arg1 = args.get(1).toPyString().getText();
+    PyExpr arg2 = args.size() == 3 ? args.get(2) : null;
 
-    return new PyExpr("(" + arg0 + ").find(" + arg1 + ")", Integer.MAX_VALUE);
+    String exprText;
+    if (arg2 != null && arg2.toPyString().getText().toUpperCase().equals("TRUE")) {
+      exprText = "(" + arg0 + ".upper().find(" + arg1 + ".upper()))";
+    } else {
+      exprText = "(" + arg0 + ").find(" + arg1 + ")";
+    }
+
+    return new PyExpr(exprText, Integer.MAX_VALUE);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.

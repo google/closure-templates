@@ -37,10 +37,10 @@ import org.junit.runners.JUnit4;
 /**
  * Unit tests for {@link StrContainsFunction}.
  *
+ * @author Felix Arends
  */
 @RunWith(JUnit4.class)
 public class StrContainsFunctionTest {
-
   @Test
   public void testComputeForJava_containsString() {
     StrContainsFunction strContains = new StrContainsFunction();
@@ -50,11 +50,29 @@ public class StrContainsFunctionTest {
   }
 
   @Test
+  public void testComputeForJava_containsString_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    SoyValue arg0 = StringData.forValue("fooBarfoo");
+    SoyValue arg1 = StringData.forValue("bar");
+    SoyValue arg2 = BooleanData.forValue(true);
+    assertEquals(BooleanData.TRUE, strContains.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+  }
+
+  @Test
   public void testComputeForJava_containsSanitizedContent() {
     StrContainsFunction strContains = new StrContainsFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
     assertEquals(BooleanData.TRUE, strContains.computeForJava(ImmutableList.of(arg0, arg1)));
+  }
+
+  @Test
+  public void testComputeForJava_containsSanitizedContent_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    SoyValue arg0 = ordainAsSafe("fooBarFoo", ContentKind.TEXT);
+    SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
+    SoyValue arg2 = BooleanData.forValue(true);
+    assertEquals(BooleanData.TRUE, strContains.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -78,11 +96,20 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr(
-            "('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r')) != -1",
+    assertEquals(new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r')) != -1",
             Operator.NOT_EQUAL.getPrecedence()),
         strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+  }
+
+  @Test
+  public void testComputeForJsSrc_lowPrecedenceArg_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    JsExpr arg0 = new JsExpr("'foo' + 'bAr'", Operator.PLUS.getPrecedence());
+    JsExpr arg1 = new JsExpr("'Ba' + 'r'", Operator.PLUS.getPrecedence());
+    JsExpr arg2 = new JsExpr("true", 0);
+    assertEquals(new JsExpr("('' + ('FOO' + 'BAR')).indexOf('' + ('BA' + 'R')) != -1",
+                    Operator.NOT_EQUAL.getPrecedence()),
+            strContains.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -90,9 +117,18 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('foobar').indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()),
+    assertEquals(new JsExpr("('foobar').indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()),
         strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+  }
+
+  @Test
+  public void testComputeForJsSrc_maxPrecedenceArgs_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    JsExpr arg0 = new JsExpr("'fooBar'", Integer.MAX_VALUE);
+    JsExpr arg1 = new JsExpr("'bAr'", Integer.MAX_VALUE);
+    JsExpr arg2 = new JsExpr("true", 0);
+    assertEquals(new JsExpr("('FOOBAR').indexOf('BAR') != -1", Operator.NOT_EQUAL.getPrecedence()),
+            strContains.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -101,10 +137,19 @@ public class StrContainsFunctionTest {
     PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
     PyExpr substring = new PyStringExpr("'bar'", Integer.MAX_VALUE);
     assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(
-            new PyExpr(
-                "('foobar').find('bar') != -1",
-                PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
+        .isEqualTo(new PyExpr("('foobar').find('bar') != -1",
+            PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
+  }
+
+  @Test
+  public void testComputeForPySrc_stringInput_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    PyExpr base = new PyStringExpr("'fOobar'", Integer.MAX_VALUE);
+    PyExpr substring = new PyStringExpr("'baR'", Integer.MAX_VALUE);
+    PyExpr caseInsensitive = new PyStringExpr("true", Integer.MAX_VALUE);
+    assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring, caseInsensitive)))
+        .isEqualTo(new PyExpr("('fOobar'.upper().find('baR'.upper())) != -1",
+            PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
   }
 
   @Test
@@ -113,9 +158,18 @@ public class StrContainsFunctionTest {
     PyExpr base = new PyExpr("foobar", Integer.MAX_VALUE);
     PyExpr substring = new PyExpr("bar", Integer.MAX_VALUE);
     assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(
-            new PyExpr(
-                "(str(foobar)).find(str(bar)) != -1",
-                PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
+        .isEqualTo(new PyExpr("(str(foobar)).find(str(bar)) != -1",
+            PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
+  }
+
+  @Test
+  public void testComputeForPySrc_nonStringInput_caseInsensitive() {
+    StrContainsFunction strContains = new StrContainsFunction();
+    PyExpr base = new PyExpr("fooBaR", Integer.MAX_VALUE);
+    PyExpr substring = new PyExpr("bAr", Integer.MAX_VALUE);
+    PyExpr caseInsensitive = new PyStringExpr("true", Integer.MAX_VALUE);
+    assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring, caseInsensitive)))
+        .isEqualTo(new PyExpr("(str(fooBaR).upper().find(str(bAr).upper())) != -1",
+            PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
   }
 }
