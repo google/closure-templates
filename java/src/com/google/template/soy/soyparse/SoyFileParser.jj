@@ -1803,7 +1803,7 @@ private StatementNode NonPrintableStmt() :
     stmt = LetStmt()
   | stmt = LogStmt()
   | stmt = DebuggerStmt()
-  | stmt = FooLogStmt()
+  | stmt = VeLogStmt()
   )
 
   { return stmt; }
@@ -2502,7 +2502,7 @@ private IfNode IfStmt() :
 /**
  * VeLogStmt
  */
-private VeLogNode FooLogStmt() :
+private VeLogNode VeLogStmt() :
 {
   Identifier name = null;
   Token tagBegin, tagEnd;

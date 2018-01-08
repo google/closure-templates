@@ -21,7 +21,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import javax.annotation.Nullable;
 
-/** The value of a {@code foolog} statement. */
+/** The value of a {@code velog} statement. */
 @AutoValue
 public abstract class LogStatement {
   public static LogStatement create(long id, @Nullable Message data, boolean logOnly) {

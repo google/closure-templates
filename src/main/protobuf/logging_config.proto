@@ -20,7 +20,7 @@ package soy;
 option java_package = "com.google.template.soy.logging";
 option java_multiple_files = true;
 
-// The logging configuration for the compiler.  Defines all the valid FooLog
+// The logging configuration for the compiler.  Defines all the valid VeLog
 // names and identifiers.
 // It is an error for there to be duplicate names or ids.
 message LoggingConfig {

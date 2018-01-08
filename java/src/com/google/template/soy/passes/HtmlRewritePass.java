@@ -221,7 +221,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected close tag for context-changing tag.");
 
-  private static final SoyErrorKind FOOLOG_CAN_ONLY_BE_USED_IN_PCDATA =
+  private static final SoyErrorKind VELOG_CAN_ONLY_BE_USED_IN_PCDATA =
       SoyErrorKind.of(
           "'{'velog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
 
@@ -1244,7 +1244,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     @Override
     protected void visitVeLogNode(VeLogNode node) {
       if (context.getState() != State.PCDATA) {
-        errorReporter.report(node.getSourceLocation(), FOOLOG_CAN_ONLY_BE_USED_IN_PCDATA);
+        errorReporter.report(node.getSourceLocation(), VELOG_CAN_ONLY_BE_USED_IN_PCDATA);
       }
       visitScopedBlock(SanitizedContentKind.HTML, node, "velog");
     }

@@ -94,14 +94,14 @@ public final class VeLogNodeTest {
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
-  private VeLogNode parseVeLog(String fooLog) {
-    return parseVeLog(fooLog, ErrorReporter.exploding());
+  private VeLogNode parseVeLog(String veLog) {
+    return parseVeLog(veLog, ErrorReporter.exploding());
   }
 
-  private VeLogNode parseVeLog(String fooLog, ErrorReporter reporter) {
+  private VeLogNode parseVeLog(String veLog, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
-            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, fooLog)
+            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, veLog)
                 .typeRegistry(
                     new SoyTypeRegistry(
                         ImmutableSet.<SoyTypeProvider>of(

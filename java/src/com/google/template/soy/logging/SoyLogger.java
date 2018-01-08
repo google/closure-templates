@@ -21,13 +21,13 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 /**
  * Experimental logging interface for soy.
  *
- * <p>This implements a callback protocol with the {@code foolog} syntax.
+ * <p>This implements a callback protocol with the {@code velog} syntax.
  */
 public interface SoyLogger {
-  /** Called when a {@code foolog} statement is entered. */
+  /** Called when a {@code velog} statement is entered. */
   void enter(LogStatement statement);
 
-  /** Called when a {@code foolog} statement is exited. */
+  /** Called when a {@code velog} statement is exited. */
   void exit();
 
   // called to format a logging function value.
