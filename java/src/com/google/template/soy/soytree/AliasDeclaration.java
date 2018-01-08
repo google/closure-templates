@@ -18,33 +18,22 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
+import com.google.auto.value.AutoValue;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.Identifier.Type;
 
 /** An {@code {alias ..}} declaration. */
-public final class AliasDeclaration {
+@AutoValue
+public abstract class AliasDeclaration {
 
-  private final String namespace;
-  private final String alias;
-  private final SourceLocation location;
-
-  public AliasDeclaration(String namespace, String alias, SourceLocation location) {
-    checkArgument(BaseUtils.isDottedIdentifier(namespace));
-    checkArgument(BaseUtils.isIdentifier(alias));
-    this.namespace = namespace;
-    this.alias = alias;
-    this.location = location;
+  public static AliasDeclaration create(Identifier namespace, Identifier alias) {
+    checkArgument(namespace.type() != Type.DOT_IDENT);
+    checkArgument(alias.type() == Type.SINGLE_IDENT);
+    return new AutoValue_AliasDeclaration(namespace, alias);
   }
 
-  public String getNamespace() {
-    return namespace;
-  }
+  public abstract Identifier namespace();
 
-  public String getAlias() {
-    return alias;
-  }
-
-  public SourceLocation getLocation() {
-    return location;
-  }
+  /** The alias itself (either following `as` or the last word in the aliased identifier) */
+  public abstract Identifier alias();
 }

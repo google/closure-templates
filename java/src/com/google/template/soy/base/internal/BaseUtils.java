@@ -151,7 +151,7 @@ public class BaseUtils {
    * underscore and must only contain letters, digits, and underscores (i.e. it must match the
    * regular expression {@code [A-Za-z_][A-Za-z_0-9]*}).
    *
-   * @param ident The identifer to convert.
+   * @param ident The identifier to convert.
    * @return The identifier in upper-underscore format.
    */
   public static String convertToUpperUnderscore(String ident) {

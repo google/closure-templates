@@ -58,6 +58,11 @@ public abstract class Identifier {
 
   public abstract SourceLocation location();
 
+  @Override
+  public String toString() {
+    return identifier();
+  }
+
   // This field is only rarely accessed, memoize it.
   @Memoized
   public Type type() {
@@ -69,5 +74,17 @@ public abstract class Identifier {
       checkArgument(BaseUtils.isDottedIdentifier(identifier()));
       return dotIndex == -1 ? Type.SINGLE_IDENT : Type.DOTTED_IDENT;
     }
+  }
+
+  /**
+   * Gets the part after the last dot in a dotted identifier. If there are no dots, returns the
+   * whole identifier.
+   *
+   * <p><b>Important:</b> The input must be a dotted identifier. This is not checked.
+   */
+  public Identifier extractPartAfterLastDot() {
+    String part = BaseUtils.extractPartAfterLastDot(identifier());
+    return Identifier.create(
+        part, location().offsetStartCol(identifier().length() - part.length()));
   }
 }

@@ -1225,10 +1225,10 @@ private AliasDeclaration Alias() :
       return null;
     }
 
-    String aliasString = (alias == null)
-        ? BaseUtils.extractPartAfterLastDot(namespace.identifier())
-        : alias.identifier();
-    return new AliasDeclaration(namespace.identifier(), aliasString, srcLoc);
+    if (alias == null) {  // Implicit alias is the last part of the namespace.
+      alias = namespace.extractPartAfterLastDot();
+    }
+    return AliasDeclaration.create(namespace, alias);
   }
 }
 

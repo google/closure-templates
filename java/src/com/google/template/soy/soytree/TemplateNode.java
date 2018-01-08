@@ -147,18 +147,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       String aliasForFileNamespace =
           BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace());
       for (AliasDeclaration aliasDeclaration : aliases) {
-        String aliasNamespace = aliasDeclaration.getNamespace();
-        String alias = aliasDeclaration.getAlias();
+        String aliasNamespace = aliasDeclaration.namespace().identifier();
+        String alias = aliasDeclaration.alias().identifier();
         if (alias.equals(aliasForFileNamespace)
             && !aliasNamespace.equals(namespaceDeclaration.getNamespace())) {
           errorReporter.report(
-              aliasDeclaration.getLocation(),
+              aliasDeclaration.alias().location(),
               INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE,
               namespaceDeclaration.getNamespace(),
               aliasNamespace);
         }
         if (map.containsKey(alias)) {
-          errorReporter.report(aliasDeclaration.getLocation(), DUPLICATE_ALIAS, alias);
+          errorReporter.report(aliasDeclaration.alias().location(), DUPLICATE_ALIAS, alias);
         }
         map.put(alias, aliasNamespace);
       }

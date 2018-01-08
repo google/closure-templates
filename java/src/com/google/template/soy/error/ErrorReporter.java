@@ -59,6 +59,7 @@ public abstract class ErrorReporter {
    * given {@code sourceLocation}.
    */
   public abstract void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
+
   /**
    * Reports a warning.
    *

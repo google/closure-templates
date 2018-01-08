@@ -373,8 +373,6 @@ public final class PassManager {
     public PassManager build() {
       return new PassManager(this);
     }
-
-
   }
 
   private final class CheckSyntaxVersionPass extends CompilerFilePass {
@@ -482,13 +480,17 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       for (AliasDeclaration alias : file.getAliasDeclarations()) {
-        if (options.getCompileTimeGlobals().containsKey(alias.getAlias())) {
-          errorReporter.report(alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.getAlias());
+        if (options.getCompileTimeGlobals().containsKey(alias.alias().identifier())) {
+          errorReporter.report(
+              alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.alias());
         }
         for (String global : options.getCompileTimeGlobals().keySet()) {
-          if (global.startsWith(alias.getAlias() + ".")) {
+          if (global.startsWith(alias.alias().identifier() + ".")) {
             errorReporter.report(
-                alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX, alias.getAlias(), global);
+                alias.alias().location(),
+                ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX,
+                alias.alias(),
+                global);
           }
         }
       }
