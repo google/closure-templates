@@ -955,29 +955,29 @@ public class BytecodeCompilerTest {
       render(
           templates, asRecord(ImmutableMap.of("p1", failed, "p2", 2, "p3", 3, "p4", 4)), "ns.foo");
       fail();
-    } catch (Throwable t) {
-      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(8);
+    } catch (Exception e) {
+      assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(8);
     }
     try {
       render(
           templates, asRecord(ImmutableMap.of("p1", 1, "p2", failed, "p3", 3, "p4", 4)), "ns.foo");
       fail();
-    } catch (Throwable t) {
-      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(9);
+    } catch (Exception e) {
+      assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(9);
     }
     try {
       render(
           templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", failed, "p4", 4)), "ns.foo");
       fail();
-    } catch (Throwable t) {
-      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(10);
+    } catch (Exception e) {
+      assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(10);
     }
     try {
       render(
           templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", failed)), "ns.foo");
       fail();
-    } catch (Throwable t) {
-      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(11);
+    } catch (Exception e) {
+      assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(11);
     }
   }
 
@@ -1012,8 +1012,8 @@ public class BytecodeCompilerTest {
     try {
       render(templates, asRecord(ImmutableMap.of("list", failed)), "ns.foo");
       fail();
-    } catch (Throwable t) {
-      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(7);
+    } catch (Exception e) {
+      assertThat(getTemplateLineNumber("ns.foo", e)).isEqualTo(7);
     }
   }
 
