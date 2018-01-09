@@ -23,8 +23,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -94,12 +94,12 @@ public final class BuildAllDependeesMapVisitorTest {
     IfNode ifNode = (IfNode) template.getChild(2);
     IfCondNode ifCondNode = (IfCondNode) ifNode.getChild(0);
     PrintNode e = (PrintNode) ifCondNode.getChild(0);
-    ForeachNode foreachNode = (ForeachNode) ifCondNode.getChild(1);
-    ForeachNonemptyNode foreachNonemptyNode = (ForeachNonemptyNode) foreachNode.getChild(0);
-    PrintNode f = (PrintNode) foreachNonemptyNode.getChild(0);
-    PrintNode gh = (PrintNode) foreachNonemptyNode.getChild(1);
+    ForNode forNode = (ForNode) ifCondNode.getChild(1);
+    ForNonemptyNode forNonemptyNode = (ForNonemptyNode) forNode.getChild(0);
+    PrintNode f = (PrintNode) forNonemptyNode.getChild(0);
+    PrintNode gh = (PrintNode) forNonemptyNode.getChild(1);
     PrintDirectiveNode ghPdn = gh.getChild(0);
-    MsgFallbackGroupNode msgFbGrpNode = (MsgFallbackGroupNode) foreachNonemptyNode.getChild(2);
+    MsgFallbackGroupNode msgFbGrpNode = (MsgFallbackGroupNode) forNonemptyNode.getChild(2);
     MsgNode msgNode = msgFbGrpNode.getChild(0);
     MsgPlaceholderNode iPh = (MsgPlaceholderNode) msgNode.getChild(0);
     PrintNode i = (PrintNode) iPh.getChild(0);
@@ -118,41 +118,41 @@ public final class BuildAllDependeesMapVisitorTest {
     assertThat(allDependeesMap.get(ifNode)).containsExactly(template);
     assertThat(allDependeesMap.get(ifCondNode)).containsExactly(ifNode, template).inOrder();
     assertThat(allDependeesMap.get(e)).containsExactly(ifCondNode, template).inOrder();
-    assertThat(allDependeesMap.get(foreachNode)).containsExactly(ifCondNode, template).inOrder();
-    assertThat(allDependeesMap.get(foreachNonemptyNode))
-        .containsExactly(foreachNode, ifCondNode, template)
+    assertThat(allDependeesMap.get(forNode)).containsExactly(ifCondNode, template).inOrder();
+    assertThat(allDependeesMap.get(forNonemptyNode))
+        .containsExactly(forNode, ifCondNode, template)
         .inOrder();
     assertThat(allDependeesMap.get(f))
-        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(forNonemptyNode, ifCondNode, template)
         .inOrder();
-    // Note special case: foreachNonemptyNode does not count as conditional block.
+    // Note special case: ForNonemptyNode does not count as conditional block.
     assertThat(allDependeesMap.get(gh)).containsExactly(ifCondNode, template).inOrder();
     assertThat(allDependeesMap.get(ghPdn)).containsExactly(gh, ifCondNode, template).inOrder();
     assertThat(allDependeesMap.get(msgFbGrpNode))
-        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(forNonemptyNode, ifCondNode, template)
         .inOrder();
     assertThat(allDependeesMap.get(msgNode))
-        .containsExactly(msgFbGrpNode, foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(msgFbGrpNode, forNonemptyNode, ifCondNode, template)
         .inOrder();
-    // Note special case: foreachNonemptyNode does not count as conditional block.
+    // Note special case: ForNonemptyNode does not count as conditional block.
     assertThat(allDependeesMap.get(iPh)).containsExactly(msgNode, ifCondNode, template).inOrder();
-    // Note special case: foreachNonemptyNode does not count as conditional block.
+    // Note special case: ForNonemptyNode does not count as conditional block.
     assertThat(allDependeesMap.get(i)).containsExactly(ifCondNode, template).inOrder();
     assertThat(allDependeesMap.get(callPh))
-        .containsExactly(msgNode, foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(msgNode, forNonemptyNode, ifCondNode, template)
         .inOrder();
     assertThat(allDependeesMap.get(callNode))
-        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(forNonemptyNode, ifCondNode, template)
         .inOrder();
-    // Note special case: foreachNonemptyNode does not count as conditional block.
+    // Note special case: ForNonemptyNode does not count as conditional block.
     assertThat(allDependeesMap.get(cpvn)).containsExactly(callNode, ifCondNode, template).inOrder();
     assertThat(allDependeesMap.get(cpcn))
-        .containsExactly(callNode, foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(callNode, forNonemptyNode, ifCondNode, template)
         .inOrder();
-    // Note special case: foreachNonemptyNode does not count as conditional block.
+    // Note special case: ForNonemptyNode does not count as conditional block.
     assertThat(allDependeesMap.get(n)).containsExactly(ifCondNode, template).inOrder();
     assertThat(allDependeesMap.get(fo))
-        .containsExactly(foreachNonemptyNode, ifCondNode, template)
+        .containsExactly(forNonemptyNode, ifCondNode, template)
         .inOrder();
   }
 }

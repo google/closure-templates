@@ -44,9 +44,9 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -513,8 +513,8 @@ public final class TemplateParserTest {
                 + "{/msg}")
         .causesError(
             "parse error at '{fallbackmsg ': expected text, {literal}, {call, {delcall, {msg, "
-                + "{/msg}, {if, {let, {for, {plural, {select, {switch, "
-                + "{foreach, {log}, {debugger}, {print, {, or whitespace");
+                + "{/msg}, {if, {let, {for, {plural, {select, {switch, {log}, {debugger}, {print, "
+                + "{, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
     assertInvalidTemplate("{call .aaa.bbb /}");
@@ -1217,7 +1217,7 @@ public final class TemplateParserTest {
     assertEquals(SanitizedContentKind.HTML, betaNode.getContentKind());
     LetContentNode gammaNode = (LetContentNode) nodes.get(2);
     assertEquals("gamma", gammaNode.getVarName());
-    assertThat(gammaNode.getChild(0)).isInstanceOf(ForeachNode.class);
+    assertThat(gammaNode.getChild(0)).isInstanceOf(ForNode.class);
     assertEquals(SanitizedContentKind.HTML, gammaNode.getContentKind());
     LetContentNode deltaNode = (LetContentNode) nodes.get(3);
     assertEquals("delta", deltaNode.getVarName());
@@ -1342,23 +1342,23 @@ public final class TemplateParserTest {
     List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(2, nodes.size());
 
-    ForeachNode fn0 = (ForeachNode) nodes.get(0);
+    ForNode fn0 = (ForNode) nodes.get(0);
     assertEquals("$goose", fn0.getExpr().toSourceString());
     assertTrue(fn0.getExpr().getRoot() instanceof VarRefNode);
     assertEquals(1, fn0.numChildren());
 
-    ForeachNonemptyNode fn0fnn0 = (ForeachNonemptyNode) fn0.getChild(0);
+    ForNonemptyNode fn0fnn0 = (ForNonemptyNode) fn0.getChild(0);
     assertEquals("goo", fn0fnn0.getVarName());
     assertEquals(2, fn0fnn0.numChildren());
     assertEquals("$goose.numKids", ((PrintNode) fn0fnn0.getChild(0)).getExpr().toSourceString());
     assertEquals(" goslings.\n", ((RawTextNode) fn0fnn0.getChild(1)).getRawText());
 
-    ForeachNode fn1 = (ForeachNode) nodes.get(1);
+    ForNode fn1 = (ForNode) nodes.get(1);
     assertEquals("$foo.booze", fn1.getExpr().toSourceString());
     assertTrue(fn1.getExpr().getRoot() instanceof FieldAccessNode);
     assertEquals(2, fn1.numChildren());
 
-    ForeachNonemptyNode fn1fnn0 = (ForeachNonemptyNode) fn1.getChild(0);
+    ForNonemptyNode fn1fnn0 = (ForNonemptyNode) fn1.getChild(0);
     assertEquals("boo", fn1fnn0.getVarName());
     assertEquals("$foo.booze", fn1fnn0.getExpr().toSourceString());
     assertEquals("boo", fn1fnn0.getVarName());
@@ -1368,7 +1368,7 @@ public final class TemplateParserTest {
     assertEquals(
         "not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getExpr().toSourceString());
 
-    ForeachIfemptyNode fn1fin1 = (ForeachIfemptyNode) fn1.getChild(1);
+    ForIfemptyNode fn1fin1 = (ForIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());
     assertEquals("Sorry, no booze.", ((RawTextNode) fn1fin1.getChild(0)).getRawText());
   }

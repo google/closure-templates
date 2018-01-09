@@ -38,9 +38,9 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -472,8 +472,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     /**
-     * The top level ForeachNode primarily serves to test for the ifempty case. If present, the loop
-     * is wrapped in an if statement which checks for data in the list before iterating.
+     * The top level ForNode primarily serves to test for the ifempty case. If present, the loop is
+     * wrapped in an if statement which checks for data in the list before iterating.
      *
      * <p>Example:
      *
@@ -496,8 +496,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      * </pre>
      */
     @Override
-    protected void visitForeachNode(ForeachNode node) {
-      ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
+    protected void visitForNode(ForNode node) {
+      ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
       String baseVarName = nonEmptyNode.getVarName();
       String listVarName = String.format("%sList%d", baseVarName, node.getId());
 
@@ -532,9 +532,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     /**
-     * The ForeachNonemptyNode performs the actual looping. We use a standard {@code for} loop,
-     * except that instead of looping directly over the list, we loop over an enumeration to have
-     * easy access to the index along with the data.
+     * The ForNonemptyNode performs the actual looping. We use a standard {@code for} loop, except
+     * that instead of looping directly over the list, we loop over an enumeration to have easy
+     * access to the index along with the data.
      *
      * <p>Example:
      *
@@ -553,13 +553,13 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      * </pre>
      */
     @Override
-    protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+    protected void visitForNonemptyNode(ForNonemptyNode node) {
       // Build the local variable names.
       String baseVarName = node.getVarName();
-      String foreachNodeId = Integer.toString(node.getForeachNodeId());
-      String listVarName = baseVarName + "List" + foreachNodeId;
-      String indexVarName = baseVarName + "Index" + foreachNodeId;
-      String dataVarName = baseVarName + "Data" + foreachNodeId;
+      String forNodeId = Integer.toString(node.getForNodeId());
+      String listVarName = baseVarName + "List" + forNodeId;
+      String indexVarName = baseVarName + "Index" + forNodeId;
+      String dataVarName = baseVarName + "Data" + forNodeId;
 
       // Create the loop with an enumeration.
       pyCodeBuilder.appendLine(
@@ -588,7 +588,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     @Override
-    protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+    protected void visitForIfemptyNode(ForIfemptyNode node) {
       visitChildren(node);
     }
 

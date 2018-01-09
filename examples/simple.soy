@@ -48,7 +48,7 @@
  */
 {template .helloNames}
   {@param names: ?}  /** List of names of the people to say hello to. */
-  {foreach $name in $names}
+  {for $name in $names}
     {call .helloName}
       {param name: $name /}
     {/call}
@@ -58,5 +58,5 @@
   {ifempty}
     // If names list is empty, say "Hello world".
     {call .helloWorld /}
-  {/foreach}
+  {/for}
 {/template}

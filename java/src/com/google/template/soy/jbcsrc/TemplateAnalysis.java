@@ -60,9 +60,9 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -215,7 +215,7 @@ final class TemplateAnalysis {
     }
 
     @Override
-    protected void visitForeachNode(ForeachNode node) {
+    protected void visitForNode(ForNode node) {
       // the list is always evaluated first.
       evalInline(node.getExpr());
 
@@ -259,12 +259,12 @@ final class TemplateAnalysis {
     }
 
     @Override
-    protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+    protected void visitForIfemptyNode(ForIfemptyNode node) {
       visitChildren(node);
     }
 
     @Override
-    protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+    protected void visitForNonemptyNode(ForNonemptyNode node) {
       visitChildren(node);
     }
 
@@ -537,8 +537,8 @@ final class TemplateAnalysis {
   }
 
   // consider moving this to SoyTreeUtils or some similar place.
-  private static StaticAnalysisResult isListExpressionEmpty(ForeachNode node) {
-    Optional<ForeachNode.RangeArgs> rangeArgs = node.exprAsRangeArgs();
+  private static StaticAnalysisResult isListExpressionEmpty(ForNode node) {
+    Optional<ForNode.RangeArgs> rangeArgs = node.exprAsRangeArgs();
     if (rangeArgs.isPresent()) {
       return isRangeExpressionEmpty(rangeArgs.get());
     }
@@ -551,7 +551,7 @@ final class TemplateAnalysis {
     return StaticAnalysisResult.UNKNOWN;
   }
 
-  private static StaticAnalysisResult isRangeExpressionEmpty(ForeachNode.RangeArgs range) {
+  private static StaticAnalysisResult isRangeExpressionEmpty(ForNode.RangeArgs range) {
     int start = 0;
     if (range.start().isPresent()) {
       if (range.start().get() instanceof IntegerNode) {

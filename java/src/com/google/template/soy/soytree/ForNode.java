@@ -33,15 +33,15 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 import java.util.List;
 
 /**
- * Node representing a 'foreach' statement. Should always contain a ForeachNonemptyNode as the first
- * child. May contain a second child, which should be a ForeachIfemptyNode.
+ * Node representing a 'foreach' statement. Should always contain a ForNonemptyNode as the first
+ * child. May contain a second child, which should be a ForIfemptyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>TODO(b/70577468): rename ForNode, eliminate LoopNode
+ * <p>TODO(b/70577468): eliminate LoopNode
  *
  */
-public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
+public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
 
   /** The parsed expression for the list that we're iterating over. */
@@ -52,7 +52,7 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
    * @param location The node's source location
    * @param expr The loop collection expression
    */
-  public ForeachNode(int id, SourceLocation location, String commandName, ExprNode expr) {
+  public ForNode(int id, SourceLocation location, String commandName, ExprNode expr) {
     super(id, location, commandName);
     this.expr = new ExprRootNode(expr);
   }
@@ -62,14 +62,14 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
    *
    * @param orig The node to copy.
    */
-  private ForeachNode(ForeachNode orig, CopyState copyState) {
+  private ForNode(ForNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
   }
 
   @Override
   public Kind getKind() {
-    return Kind.FOREACH_NODE;
+    return Kind.FOR_NODE;
   }
 
   /** Returns true if this {@code foreach} loop has and {@code ifempty} block. */
@@ -99,7 +99,7 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
 
   @Override
   public String getCommandText() {
-    return "$" + ((ForeachNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
+    return "$" + ((ForNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
   }
 
   @Override
@@ -114,8 +114,8 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   }
 
   @Override
-  public ForeachNode copy(CopyState copyState) {
-    return new ForeachNode(this, copyState);
+  public ForNode copy(CopyState copyState) {
+    return new ForNode(this, copyState);
   }
 
   /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
@@ -124,13 +124,13 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     static RangeArgs create(List<ExprNode> args) {
       switch (args.size()) {
         case 1:
-          return new AutoValue_ForeachNode_RangeArgs(
+          return new AutoValue_ForNode_RangeArgs(
               Optional.<ExprNode>absent(), args.get(0), Optional.<ExprNode>absent());
         case 2:
-          return new AutoValue_ForeachNode_RangeArgs(
+          return new AutoValue_ForNode_RangeArgs(
               Optional.of(args.get(0)), args.get(1), Optional.<ExprNode>absent());
         case 3:
-          return new AutoValue_ForeachNode_RangeArgs(
+          return new AutoValue_ForNode_RangeArgs(
               Optional.of(args.get(0)), args.get(1), Optional.of(args.get(2)));
         default:
           throw new AssertionError();

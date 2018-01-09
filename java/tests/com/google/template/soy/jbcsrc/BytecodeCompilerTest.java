@@ -370,7 +370,7 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testForNode() {
+  public void testForRangeNode() {
     // empty loop
     assertThatTemplateBody("{for $i in range(2, 2)}", "  {$i}", "{/for}").rendersAs("");
 
@@ -391,7 +391,7 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testForEachNode() {
+  public void testForNode() {
     // empty loop
     assertThatTemplateBody("{@param list: list<int>}", "{for $i in $list}", "  {$i}", "{/for}")
         .rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
@@ -421,7 +421,7 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testForEachNode_mapKeys() {
+  public void testForNode_mapKeys() {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",
             "{for $key in keys($map)}",
@@ -431,7 +431,7 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testForEachNode_nullableList() {
+  public void testForNode_nullableList() {
     // The compiler should be rejected this :(
     assertThatTemplateBody(
             "{@param map : map<string, list<int>>}",

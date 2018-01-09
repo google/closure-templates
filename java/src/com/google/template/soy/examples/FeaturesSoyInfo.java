@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 
-
 /**
  * Soy parse info for features.soy.
  */
@@ -39,10 +38,10 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String DEMO_IF = "soy.examples.features.demoIf";
     /** The full template name of the .demoSwitch template. */
     public static final String DEMO_SWITCH = "soy.examples.features.demoSwitch";
-    /** The full template name of the .demoForeach template. */
-    public static final String DEMO_FOREACH = "soy.examples.features.demoForeach";
     /** The full template name of the .demoFor template. */
     public static final String DEMO_FOR = "soy.examples.features.demoFor";
+    /** The full template name of the .demoFor_Range template. */
+    public static final String DEMO_FOR_RANGE = "soy.examples.features.demoFor_Range";
     /** The full template name of the .demoCallWithoutParam template. */
     public static final String DEMO_CALL_WITHOUT_PARAM = "soy.examples.features.demoCallWithoutParam";
     /** The full template name of the .demoCallOtherFile template. */
@@ -107,9 +106,9 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
      * .demoCallWithParamBlock, .tripReport_ (private).
      */
     public static final String NAME = "name";
-    /** Listed by .demoFor. */
+    /** Listed by .demoFor_Range. */
     public static final String NUM_LINES = "numLines";
-    /** Listed by .demoForeach. */
+    /** Listed by .demoFor. */
     public static final String PERSONS = "persons";
     /** Listed by .demoIf. */
     public static final String PI = "pi";
@@ -233,9 +232,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoPrint";
 
-    /** Something scary. */
+    // Indirect params.
+    /** Listed by . */
     public static final String BOO = "boo";
-    /** Preferably the number 2. */
+
+    /** Something scary. */
     public static final String TWO = "two";
 
     private DemoPrintSoyTemplateInfo() {
@@ -272,7 +273,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoAutoescapeTrue";
 
-    /** A string surrounded by HTML italics tags. */
+    // Indirect params.
+    /** Listed by . */
     public static final String ITALIC_HTML = "italicHtml";
 
     private DemoAutoescapeTrueSoyTemplateInfo() {
@@ -308,9 +310,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoMsg";
 
-    /** The name of the person to say hello to. */
+    // Indirect params.
+    /** Listed by . */
     public static final String NAME = "name";
-    /** The URL of the unreleased 'Labs' feature. */
+
+    /** The name of the person to say hello to. */
     public static final String LABS_URL = "labsUrl";
 
     private DemoMsgSoyTemplateInfo() {
@@ -347,7 +351,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoIf";
 
-    /** An approximate value for pi. */
+    // Indirect params.
+    /** Listed by . */
     public static final String PI = "pi";
 
     private DemoIfSoyTemplateInfo() {
@@ -383,7 +388,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoSwitch";
 
-    /** The name of a kid. */
+    // Indirect params.
+    /** Listed by . */
     public static final String NAME = "name";
 
     private DemoSwitchSoyTemplateInfo() {
@@ -408,46 +414,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   public static final DemoSwitchSoyTemplateInfo DEMO_SWITCH =
       DemoSwitchSoyTemplateInfo.getInstance();
 
-
-  /**
-   * Demo 'foreach'.
-   */
-  public static final class DemoForeachSoyTemplateInfo extends SoyTemplateInfo {
-
-    /** This template's full name. */
-    public static final String __NAME__ = "soy.examples.features.demoForeach";
-    /** This template's partial name. */
-    public static final String __PARTIAL_NAME__ = ".demoForeach";
-
-    /** List of persons. Each person must have 'name' and 'numWaffles'. */
-    public static final String PERSONS = "persons";
-
-    private DemoForeachSoyTemplateInfo() {
-      super(
-          "soy.examples.features.demoForeach",
-          ImmutableMap.<String, ParamRequisiteness>builder()
-              .put("persons", ParamRequisiteness.REQUIRED)
-              .build(),
-          ImmutableSortedSet.<String>of(),
-          "strict");
-    }
-
-    private static final DemoForeachSoyTemplateInfo __INSTANCE__ =
-        new DemoForeachSoyTemplateInfo();
-
-    public static DemoForeachSoyTemplateInfo getInstance() {
-      return __INSTANCE__;
-    }
-  }
-
-  /** Same as DemoForeachSoyTemplateInfo.getInstance(). */
-  public static final DemoForeachSoyTemplateInfo DEMO_FOREACH =
-      DemoForeachSoyTemplateInfo.getInstance();
-
-
-  /**
-   * Demo 'for'.
-   */
+  /** Demo 'for'. */
   public static final class DemoForSoyTemplateInfo extends SoyTemplateInfo {
 
     /** This template's full name. */
@@ -455,21 +422,21 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoFor";
 
-    /** The number of lines to display. */
-    public static final String NUM_LINES = "numLines";
+    // Indirect params.
+    /** Listed by . */
+    public static final String PERSONS = "persons";
 
     private DemoForSoyTemplateInfo() {
       super(
           "soy.examples.features.demoFor",
           ImmutableMap.<String, ParamRequisiteness>builder()
-              .put("numLines", ParamRequisiteness.REQUIRED)
+              .put("persons", ParamRequisiteness.REQUIRED)
               .build(),
           ImmutableSortedSet.<String>of(),
           "strict");
     }
 
-    private static final DemoForSoyTemplateInfo __INSTANCE__ =
-        new DemoForSoyTemplateInfo();
+    private static final DemoForSoyTemplateInfo __INSTANCE__ = new DemoForSoyTemplateInfo();
 
     public static DemoForSoyTemplateInfo getInstance() {
       return __INSTANCE__;
@@ -477,9 +444,41 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   }
 
   /** Same as DemoForSoyTemplateInfo.getInstance(). */
-  public static final DemoForSoyTemplateInfo DEMO_FOR =
-      DemoForSoyTemplateInfo.getInstance();
+  public static final DemoForSoyTemplateInfo DEMO_FOR = DemoForSoyTemplateInfo.getInstance();
 
+  /** Demo 'for' using range. */
+  public static final class DemoForRangeSoyTemplateInfo extends SoyTemplateInfo {
+
+    /** This template's full name. */
+    public static final String __NAME__ = "soy.examples.features.demoFor_Range";
+    /** This template's partial name. */
+    public static final String __PARTIAL_NAME__ = ".demoFor_Range";
+
+    // Indirect params.
+    /** Listed by . */
+    public static final String NUM_LINES = "numLines";
+
+    private DemoForRangeSoyTemplateInfo() {
+      super(
+          "soy.examples.features.demoFor_Range",
+          ImmutableMap.<String, ParamRequisiteness>builder()
+              .put("numLines", ParamRequisiteness.REQUIRED)
+              .build(),
+          ImmutableSortedSet.<String>of(),
+          "strict");
+    }
+
+    private static final DemoForRangeSoyTemplateInfo __INSTANCE__ =
+        new DemoForRangeSoyTemplateInfo();
+
+    public static DemoForRangeSoyTemplateInfo getInstance() {
+      return __INSTANCE__;
+    }
+  }
+
+  /** Same as DemoForRangeSoyTemplateInfo.getInstance(). */
+  public static final DemoForRangeSoyTemplateInfo DEMO_FOR_RANGE =
+      DemoForRangeSoyTemplateInfo.getInstance();
 
   /**
    * Demo 'call' without 'param's.
@@ -491,12 +490,12 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoCallWithoutParam";
 
-    /** The name of the person who took a trip. */
-    public static final String NAME = "name";
-    /** The full record of the trip ('name' and 'destination'). */
-    public static final String TRIP_INFO = "tripInfo";
-
     // Indirect params.
+    /** Listed by .tripReport_ (private). */
+    public static final String NAME = "name";
+
+    /** The name of the person who took a trip. */
+    public static final String TRIP_INFO = "tripInfo";
     /** Listed by .tripReport_ (private). */
     public static final String DESTINATION = "destination";
 
@@ -566,11 +565,13 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoCallWithParam";
 
-    /** The name of the person who took the trips. */
+    // Indirect params.
+    /** Listed by .tripReport_ (private). */
     public static final String NAME = "name";
-    /** The name of the person who went along for the odd-numbered trips only. */
+
+    /** The name of the person who took the trips. */
     public static final String COMPANION_NAME = "companionName";
-    /** List of destinations visited by this person. */
+    /** The name of the person who went along for the odd-numbered trips only. */
     public static final String DESTINATIONS = "destinations";
 
     private DemoCallWithParamSoyTemplateInfo() {
@@ -608,7 +609,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoCallWithParamBlock";
 
-    /** The name of the person who took the trip. */
+    // Indirect params.
+    /** Listed by . */
     public static final String NAME = "name";
 
     private DemoCallWithParamBlockSoyTemplateInfo() {
@@ -644,9 +646,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoParamWithKindAttribute";
 
-    /** A message text. */
+    // Indirect params.
+    /** Listed by . */
     public static final String MESSAGE = "message";
-    /** A list of things. */
+
+    /** A message text. */
     public static final String LIST = "list";
 
     private DemoParamWithKindAttributeSoyTemplateInfo() {
@@ -683,9 +687,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoExpressions";
 
-    /** Nonempty list of students. Each student must have 'name', 'major', and 'year'. */
+    // Indirect params.
+    /** Listed by . */
     public static final String STUDENTS = "students";
-    /** The current year. */
+
+    /** Nonempty list of students. Each student must have 'name', 'major', and 'year'. */
     public static final String CURRENT_YEAR = "currentYear";
 
     private DemoExpressionsSoyTemplateInfo() {
@@ -722,9 +728,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoDoubleBraces";
 
-    /** The name of the infinite set. */
+    // Indirect params.
+    /** Listed by . */
     public static final String SET_NAME = "setName";
-    /** List of the first few members of the set. */
+
+    /** The name of the infinite set. */
     public static final String SET_MEMBERS = "setMembers";
 
     private DemoDoubleBracesSoyTemplateInfo() {
@@ -761,13 +769,15 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".demoBidiSupport";
 
-    /** Book title. */
+    // Indirect params.
+    /** Listed by . */
     public static final String TITLE = "title";
-    /** Author's name. */
+
+    /** Book title. */
     public static final String AUTHOR = "author";
-    /** Year published. */
+    /** Author's name. */
     public static final String YEAR = "year";
-    /** List of keywords. */
+    /** Year published. */
     public static final String KEYWORDS = "keywords";
 
     private DemoBidiSupportSoyTemplateInfo() {
@@ -779,8 +789,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("year", ParamRequisiteness.REQUIRED)
               .put("keywords", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(
-              "csp_nonce"),
+          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -839,9 +848,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** This template's partial name. */
     public static final String __PARTIAL_NAME__ = ".exampleHeader";
 
-    /** The number of the example. */
+    // Indirect params.
+    /** Listed by . */
     public static final String EXAMPLE_NUM = "exampleNum";
-    /** The name of the example. */
+
+    /** The number of the example. */
     public static final String EXAMPLE_NAME = "exampleName";
 
     private ExampleHeaderSoyTemplateInfo() {
@@ -881,8 +892,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_MSG,
             DEMO_IF,
             DEMO_SWITCH,
-            DEMO_FOREACH,
             DEMO_FOR,
+            DEMO_FOR_RANGE,
             DEMO_CALL_WITHOUT_PARAM,
             DEMO_CALL_OTHER_FILE,
             DEMO_CALL_WITH_PARAM,

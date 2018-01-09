@@ -46,8 +46,8 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
@@ -1308,7 +1308,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     // control flow blocks
 
     @Override
-    protected void visitForeachNode(ForeachNode node) {
+    protected void visitForNode(ForNode node) {
       visitControlFlowStructure(
           node,
           node.getChildren(),
@@ -1316,7 +1316,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
           new Function<BlockNode, String>() {
             @Override
             public String apply(@Nullable BlockNode input) {
-              if (input instanceof ForeachNonemptyNode) {
+              if (input instanceof ForNonemptyNode) {
                 return "loop body";
               }
               return "ifempty block";

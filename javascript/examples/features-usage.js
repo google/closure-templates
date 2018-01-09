@@ -88,19 +88,19 @@ function _renderFeaturesUsage() {
   sb.append(soy.examples.features.demoSwitch({name: 'Ivy'}));
 
   // ---------------------------------------------------------------------------
-  appendExampleHeader('demoForeach');
-  sb.append(soy.examples.features.demoForeach(
+  appendExampleHeader('demoFor');
+  sb.append(soy.examples.features.demoFor(
       {persons: [
            {name: 'Jen', numWaffles: 1},
            {name: 'Kai', numWaffles: 3},
            {name: 'Lex', numWaffles: 1},
            {name: 'Mel', numWaffles: 2}
       ]}));
-  sb.append(soy.examples.features.demoForeach({persons: []}));
+  sb.append(soy.examples.features.demoFor({persons: []}));
 
   // ---------------------------------------------------------------------------
-  appendExampleHeader('demoFor');
-  sb.append(soy.examples.features.demoFor({numLines: 3}));
+  appendExampleHeader('demoFor_Range');
+  sb.append(soy.examples.features.demoFor_Range({numLines: 3}));
 
   // ---------------------------------------------------------------------------
   appendExampleHeader('demoCallWithoutParam');

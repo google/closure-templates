@@ -137,14 +137,14 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitSwitchDefaultNode((SwitchDefaultNode) node);
         break;
 
-      case FOREACH_NODE:
-        visitForeachNode((ForeachNode) node);
+      case FOR_NODE:
+        visitForNode((ForNode) node);
         break;
-      case FOREACH_NONEMPTY_NODE:
-        visitForeachNonemptyNode((ForeachNonemptyNode) node);
+      case FOR_NONEMPTY_NODE:
+        visitForNonemptyNode((ForNonemptyNode) node);
         break;
-      case FOREACH_IFEMPTY_NODE:
-        visitForeachIfemptyNode((ForeachIfemptyNode) node);
+      case FOR_IFEMPTY_NODE:
+        visitForIfemptyNode((ForIfemptyNode) node);
         break;
 
       case CALL_BASIC_NODE:
@@ -332,15 +332,15 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitForeachNode(ForeachNode node) {
+  protected void visitForNode(ForNode node) {
     visitSoyNode(node);
   }
 
-  protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+  protected void visitForIfemptyNode(ForIfemptyNode node) {
     visitSoyNode(node);
   }
 
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  protected void visitForNonemptyNode(ForNonemptyNode node) {
     visitLoopNode(node);
   }
 

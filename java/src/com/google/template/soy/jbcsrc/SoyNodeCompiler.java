@@ -77,8 +77,8 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -312,9 +312,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override
-  protected Statement visitForeachNode(ForeachNode node) {
-    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-    Optional<ForeachNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
+  protected Statement visitForNode(ForNode node) {
+    ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
+    Optional<ForNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
     Scope scope = variables.enterScope();
     final Variable indexVar;
     final List<Statement> initializers = new ArrayList<>();
@@ -432,9 +432,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * Interprets the given expressions as the arguments of a {@code range(...)} expression in a
    * {@code foreach} loop.
    */
-  private CompiledForeachRangeArgs calculateRangeArgs(ForeachNode forNode, Scope scope) {
-    ForeachNode.RangeArgs rangeArgs = forNode.exprAsRangeArgs().get();
-    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) forNode.getChild(0);
+  private CompiledForeachRangeArgs calculateRangeArgs(ForNode forNode, Scope scope) {
+    ForNode.RangeArgs rangeArgs = forNode.exprAsRangeArgs().get();
+    ForNonemptyNode nonEmptyNode = (ForNonemptyNode) forNode.getChild(0);
     ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
     Expression startExpression =
         computeRangeValue(

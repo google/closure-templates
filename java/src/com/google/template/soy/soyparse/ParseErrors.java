@@ -204,7 +204,7 @@ final class ParseErrors {
       case SoyFileParserConstants.CMD_BEGIN_CASE:
         return "{case";
       case SoyFileParserConstants.CMD_BEGIN_FOREACH:
-        return "{foreach";
+        return null; // want to exclude this from expectation messages
       case SoyFileParserConstants.CMD_BEGIN_PRINT:
         return "{print";
 

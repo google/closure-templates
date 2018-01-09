@@ -28,7 +28,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -418,9 +418,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
-    // TODO(user): We could do something special for ForeachIfemptyNode.
+    // TODO(user): We could do something special for ForIfemptyNode.
     @Override
-    protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+    protected void visitForIfemptyNode(ForIfemptyNode node) {
       visitBlockChildren(node, /* inControlBlock= */ false);
     }
 

@@ -31,7 +31,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -269,7 +269,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  protected void visitForNonemptyNode(ForNonemptyNode node) {
     // Visit the foreach iterator expression
     visitExpressions(node.getParent());
 

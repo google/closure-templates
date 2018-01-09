@@ -25,7 +25,7 @@ import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_COMMENTS;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_DOUBLE_BRACES;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_EXPRESSIONS;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_FOR;
-import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_FOREACH;
+import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_FOR_RANGE;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_IF;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_LINE_JOINING;
 import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_MSG;
@@ -50,8 +50,8 @@ import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithParamSoyTemp
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithoutParamSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoDoubleBracesSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoExpressionsSoyTemplateInfo;
+import com.google.template.soy.examples.FeaturesSoyInfo.DemoForRangeSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoForSoyTemplateInfo;
-import com.google.template.soy.examples.FeaturesSoyInfo.DemoForeachSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoMsgSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoPrintSoyTemplateInfo;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -225,22 +225,22 @@ public class FeaturesUsage {
             .setMsgBundle(msgBundle)
             .render());
 
-    writeExampleHeader("demoForeach");
+    writeExampleHeader("demoFor");
     SoyListData persons = new SoyListData();
     persons.add(new SoyMapData("name", "Jen", "numWaffles", 1));
     persons.add(new SoyMapData("name", "Kai", "numWaffles", 3));
     persons.add(new SoyMapData("name", "Lex", "numWaffles", 1));
     persons.add(new SoyMapData("name", "Mel", "numWaffles", 2));
     System.out.println(
-        tofu.newRenderer(DEMO_FOREACH)
-            .setData(new SoyMapData(DemoForeachSoyTemplateInfo.PERSONS, persons))
+        tofu.newRenderer(DEMO_FOR)
+            .setData(new SoyMapData(DemoForSoyTemplateInfo.PERSONS, persons))
             .setMsgBundle(msgBundle)
             .render());
 
-    writeExampleHeader("demoFor");
+    writeExampleHeader("demoFor_Range");
     System.out.println(
-        tofu.newRenderer(DEMO_FOR)
-            .setData(new SoyMapData(DemoForSoyTemplateInfo.NUM_LINES, 3))
+        tofu.newRenderer(DEMO_FOR_RANGE)
+            .setData(new SoyMapData(DemoForRangeSoyTemplateInfo.NUM_LINES, 3))
             .setMsgBundle(msgBundle)
             .render());
 

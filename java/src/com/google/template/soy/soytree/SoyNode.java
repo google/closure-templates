@@ -80,9 +80,9 @@ public interface SoyNode extends Node {
     SWITCH_CASE_NODE,
     SWITCH_DEFAULT_NODE,
 
-    FOREACH_NODE,
-    FOREACH_NONEMPTY_NODE,
-    FOREACH_IFEMPTY_NODE,
+    FOR_NODE,
+    FOR_NONEMPTY_NODE,
+    FOR_IFEMPTY_NODE,
 
     CALL_BASIC_NODE,
     CALL_DELEGATE_NODE,
@@ -142,15 +142,14 @@ public interface SoyNode extends Node {
    * there are special structural requirements on its immediate children (e.g. IfNode may only have
    * IfCondNode and IfElseNode as children).
    *
-   * <p>Includes nodes such as SoyFileSetNode, SoyFileNode, IfNode, SwitchNode, ForeachNode,
-   * CallNode, etc.
+   * <p>Includes nodes such as SoyFileSetNode, SoyFileNode, IfNode, SwitchNode, ForNode, CallNode,
+   * etc.
    *
    * <p>During optimization, the immediate children should never be moved, but lower descendants may
    * be freely moved (either moved within the node's subtree or moved outside of the node's
    * subtree).
    */
   interface SplitLevelTopNode<N extends SoyNode> extends ParentSoyNode<N> {}
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -217,7 +216,7 @@ public interface SoyNode extends Node {
    * loops.
    *
    * <p>Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
-   * ForeachNonemptyNode, ForeachIfemptyNode, ForNode etc.
+   * ForNonemptyNode, ForIfemptyNode, ForNode etc.
    */
   interface ConditionalBlockNode extends BlockNode {}
 
@@ -226,7 +225,7 @@ public interface SoyNode extends Node {
   /**
    * A node that represents a block of code that is executed in a loop.
    *
-   * <p>Includes nodes such as ForeachNonemptyNode and ForNode.
+   * <p>Includes nodes such as ForNonemptyNode and ForNode.
    */
   interface LoopNode extends BlockNode {}
 

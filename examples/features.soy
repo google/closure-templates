@@ -185,12 +185,12 @@
 
 
 /**
- * Demo 'foreach'.
+ * Demo 'for'.
  */
-{template .demoForeach}
+{template .demoFor}
   {@param persons: ?}  /** List of persons. Each person must have 'name' and 'numWaffles'. */
 
-  {foreach $person in $persons}
+  {for $person in $persons}
 
     {if isFirst($person)}
       First,
@@ -211,15 +211,15 @@
   {ifempty}
     Nobody here ate any waffles.<br>
 
-  {/foreach}
+  {/for}
 
 {/template}
 
 
 /**
- * Demo 'for'.
+ * Demo 'for' using range.
  */
-{template .demoFor}
+{template .demoFor_Range}
   {@param numLines: ?}  /** The number of lines to display. */
 
   {for $i in range($numLines)}
@@ -275,7 +275,7 @@
                                  trips only. */
   {@param destinations: ?}  /** List of destinations visited by this person. */
 
-  {foreach $destination in $destinations}
+  {for $destination in $destinations}
 
     // Pass the current template data and also pass a parameter.
     // Note: Only passing data="all" is not sufficient for providing the 'destination' parameter of
@@ -293,7 +293,7 @@
       {/call}<br>
     {/if}
 
-  {/foreach}
+  {/for}
 
 {/template}
 
@@ -363,9 +363,9 @@
         <b>{$message}</b>
       {/param}
       {param listItems kind="html"}
-        {foreach $i in $list}
+        {for $i in $list}
           <li>{$i}</li>
-        {/foreach}
+        {/for}
       {/param}
     {/call}
   </div>
@@ -401,7 +401,7 @@
   Last student's year: {$students[length($students) - 1].year}<br>
   Random student's major: {$students[randomInt(length($students))].major}<br>
 
-  {foreach $student in $students}
+  {for $student in $students}
     {$student.name}:
 
     {if isFirst($student)}
@@ -425,7 +425,7 @@
     {sp}{if $student.year < 2000}{round($student.year - 1905, -1)}{else}00{/if}s.
 
     <br>
-  {/foreach}
+  {/for}
 
 {/template}
 
@@ -438,8 +438,8 @@
   {@param setMembers: ?}  /** List of the first few members of the set. */
   {msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}
     // Note: This message also demonstrates a useful trick. Since a 'msg' block cannot contain a
-    // 'foreach' statement (impossible to translate as one message), we use a 'call' to a helper
-    // template that contains the 'foreach' loop. In order to use this trick, please observe the
+    // 'for' statement (impossible to translate as one message), we use a 'call' to a helper
+    // template that contains the 'for' loop. In order to use this trick, please observe the
     // following: (a) the output of the 'call' must not contain translated content, otherwise the
     // message would be translated in multiple parts and may not read correctly in some languages,
     // (b) since the whole 'call' turns into a single placeholder, be sure to provide a clear
@@ -458,12 +458,12 @@
  */
 {template .buildCommaSeparatedList_ visibility="private" kind="text"}
   {@param items: ?}  /** The list of items. */
-  {foreach $item in $items}
+  {for $item in $items}
     {if not isFirst($item)}
       ,{sp}
     {/if}
     {$item}
-  {/foreach}
+  {/for}
 {/template}
 
 
@@ -518,7 +518,7 @@
     // not be of the opposite directionality and do not need directionality declaration.
     {msg desc="Ask user to pick best keyword"}Your favorite keyword{/msg}:{sp}
     <select>
-      {foreach $keyword in $keywords}
+      {for $keyword in $keywords}
         // Mark-up is not allowed under the option element, and setting its dir attribute does not
         // do what one would expect. The only way to prevent the garbling of opposite-
         // directionality options is to use |bidiUnicodeWrap, which wraps its input in Unicode BiDi
@@ -526,7 +526,7 @@
         // |bidiUnicodeWrap instead of |bidiSpanWrap? Because the W3C strongly deprecates the use
         // of the formatting characters it uses except in places where mark-up cannot be used.
         <option value="{$keyword}">{$keyword |bidiUnicodeWrap}</option>
-      {/foreach}
+      {/for}
     </select>
   </div>
 

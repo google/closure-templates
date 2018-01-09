@@ -24,7 +24,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
@@ -234,7 +234,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     }
 
     @Override
-    protected void visitForeachNode(ForeachNode node) {
+    protected void visitForNode(ForNode node) {
       visitControlFlowBranches(node.getChildren());
     }
 

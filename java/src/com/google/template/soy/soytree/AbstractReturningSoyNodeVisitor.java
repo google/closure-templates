@@ -110,12 +110,12 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case SWITCH_DEFAULT_NODE:
         return visitSwitchDefaultNode((SwitchDefaultNode) node);
 
-      case FOREACH_NODE:
-        return visitForeachNode((ForeachNode) node);
-      case FOREACH_NONEMPTY_NODE:
-        return visitForeachNonemptyNode((ForeachNonemptyNode) node);
-      case FOREACH_IFEMPTY_NODE:
-        return visitForeachIfemptyNode((ForeachIfemptyNode) node);
+      case FOR_NODE:
+        return visitForNode((ForNode) node);
+      case FOR_NONEMPTY_NODE:
+        return visitForNonemptyNode((ForNonemptyNode) node);
+      case FOR_IFEMPTY_NODE:
+        return visitForIfemptyNode((ForIfemptyNode) node);
 
       case CALL_BASIC_NODE:
         return visitCallBasicNode((CallBasicNode) node);
@@ -262,15 +262,15 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitSoyNode(node);
   }
 
-  protected R visitForeachNode(ForeachNode node) {
+  protected R visitForNode(ForNode node) {
     return visitSoyNode(node);
   }
 
-  protected R visitForeachIfemptyNode(ForeachIfemptyNode node) {
+  protected R visitForIfemptyNode(ForIfemptyNode node) {
     return visitSoyNode(node);
   }
 
-  protected R visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  protected R visitForNonemptyNode(ForNonemptyNode node) {
     return visitLoopNode(node);
   }
 

@@ -33,9 +33,9 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -394,12 +394,12 @@ final class InferenceEngine {
      * many times the loop is entered.
      */
     @Override
-    protected void visitForeachNode(ForeachNode foreachNode) {
-      List<BlockNode> foreachChildren = foreachNode.getChildren();
-      ForeachNonemptyNode neNode = (ForeachNonemptyNode) foreachChildren.get(0);
-      ForeachIfemptyNode ieNode;
+    protected void visitForNode(ForNode forNode) {
+      List<BlockNode> foreachChildren = forNode.getChildren();
+      ForNonemptyNode neNode = (ForNonemptyNode) foreachChildren.get(0);
+      ForIfemptyNode ieNode;
       if (foreachChildren.size() == 2) {
-        ieNode = (ForeachIfemptyNode) foreachChildren.get(1);
+        ieNode = (ForIfemptyNode) foreachChildren.get(1);
       } else if (foreachChildren.size() == 1) {
         ieNode = null;
       } else {
@@ -415,9 +415,9 @@ final class InferenceEngine {
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
                 "{"
-                    + foreachNode.getCommandName()
+                    + forNode.getCommandName()
                     + "} body does not end in the same context after repeated entries.",
-                foreachNode);
+                forNode);
           }
           afterBody = combined.get();
         }
@@ -431,16 +431,16 @@ final class InferenceEngine {
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               "{"
-                  + foreachNode.getCommandName()
+                  + forNode.getCommandName()
                   + "} body "
                   + (ieNode == null
                       ? "changes context."
                       : "does not end in the same context as {ifempty}."),
-              ieNode == null ? foreachNode : ieNode);
+              ieNode == null ? forNode : ieNode);
         }
         context = combined.get();
       } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(foreachNode);
+        throw ex.maybeAssociateNode(forNode);
       }
     }
 

@@ -60,8 +60,8 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -391,10 +391,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override
-  protected void visitForeachNode(ForeachNode node) {
-    Optional<ForeachNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
+  protected void visitForNode(ForNode node) {
+    Optional<ForNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
     if (exprAsRangeArgs.isPresent()) {
-      ForeachNode.RangeArgs args = exprAsRangeArgs.get();
+      ForNode.RangeArgs args = exprAsRangeArgs.get();
       int step = args.increment().isPresent() ? evalRangeArg(node, args.increment().get()) : 1;
       int start = args.start().isPresent() ? evalRangeArg(node, args.start().get()) : 0;
       int end = evalRangeArg(node, args.limit());
@@ -406,7 +406,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
           visit(node.getChild(1));
         }
       } else {
-        ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
+        ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         int size = length / step + (length % step == 0 ? 0 : 1);
         for (int i = 0; i < size; ++i) {
           executeForeachBody(child, i, IntegerData.forValue(start + step * i), size);
@@ -429,7 +429,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       int listLength = foreachList.length();
       if (listLength > 0) {
         // Case 1: Nonempty list.
-        ForeachNonemptyNode child = (ForeachNonemptyNode) node.getChild(0);
+        ForNonemptyNode child = (ForNonemptyNode) node.getChild(0);
         for (int i = 0; i < listLength; ++i) {
           executeForeachBody(child, i, foreachList.getProvider(i), listLength);
         }
@@ -442,8 +442,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void executeForeachBody(
-      ForeachNonemptyNode child, int i, SoyValueProvider value, int size) {
+  private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value, int size) {
     LoopVar var = child.getVar();
     env.bind(var, value);
     env.bindCurrentIndex(var, i);

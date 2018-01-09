@@ -81,7 +81,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -708,7 +708,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+    SoyExpression visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
       if (expression.resultType() == Type.LONG_TYPE) {
         // it can be an unboxed long when executing a foreach over a range
@@ -789,7 +789,7 @@ final class ExpressionCompiler {
     SoyExpression visitIsFirstFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
       final Expression expr = parameters.getLocal(indexVar);
 
       return SoyExpression.forBool(
@@ -814,8 +814,8 @@ final class ExpressionCompiler {
     SoyExpression visitIsLastFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
-      SyntheticVarName lengthVar = foreachLoopLength((ForeachNonemptyNode) foreach);
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
+      SyntheticVarName lengthVar = foreachLoopLength((ForNonemptyNode) foreach);
 
       final Expression index = parameters.getLocal(indexVar);
       final Expression length = parameters.getLocal(lengthVar);
@@ -845,7 +845,7 @@ final class ExpressionCompiler {
     SoyExpression visitIndexFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
 
       // '(long) index'
       return SoyExpression.forInt(
@@ -1082,7 +1082,7 @@ final class ExpressionCompiler {
     static final RequiresDetachVisitor INSTANCE = new RequiresDetachVisitor();
 
     @Override
-    Boolean visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+    Boolean visitForLoopVar(VarRefNode varRef, LocalVar local) {
       return true;
     }
 

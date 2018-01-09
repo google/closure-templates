@@ -76,7 +76,7 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -312,7 +312,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  protected void visitForNonemptyNode(ForNonemptyNode node) {
     // Visit the foreach iterator expression
     visitExpressions(node.getParent());
     // Set the inferred type of the loop variable.
@@ -343,10 +343,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
    * Given a collection type, compute the element type.
    *
    * @param collectionType The base type.
-   * @param node The ForeachNonemptyNode being iterated.
+   * @param node The ForNonemptyNode being iterated.
    * @return The type of the elements of the collection.
    */
-  private SoyType getElementType(SoyType collectionType, ForeachNonemptyNode node) {
+  private SoyType getElementType(SoyType collectionType, ForNonemptyNode node) {
     Preconditions.checkNotNull(collectionType);
     switch (collectionType.getKind()) {
       case UNKNOWN:

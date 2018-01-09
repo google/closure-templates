@@ -72,8 +72,8 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -1145,7 +1145,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    */
   @Override
-  protected void visitForeachNode(ForeachNode node) {
+  protected void visitForNode(ForNode node) {
     boolean hasIfempty = (node.numChildren() == 2);
     // NOTE: below we call id(varName) on a number of variables instead of using
     // VariableDeclaration.ref(),  this is because the refs() might be referenced on the other side
@@ -1157,16 +1157,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // manually decide where to declare the variables.
     List<CodeChunk> statements = new ArrayList<>();
     // Build some local variable names.
-    ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
+    ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     String varPrefix = nonEmptyNode.getVarName() + node.getId();
 
     // TODO(user): A more consistent pattern for local variable management.
     String limitName = varPrefix + "ListLen";
     CodeChunk.WithValue limitInitializer;
-    Optional<ForeachNode.RangeArgs> args = node.exprAsRangeArgs();
+    Optional<ForNode.RangeArgs> args = node.exprAsRangeArgs();
     Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction;
     if (args.isPresent()) {
-      ForeachNode.RangeArgs range = args.get();
+      ForNode.RangeArgs range = args.get();
       // if any of the expressions are too expensive, allocate local variables for them
       final CodeChunk.WithValue start =
           maybeStashInLocal(
@@ -1271,12 +1271,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    */
   private CodeChunk handleForeachLoop(
-      ForeachNonemptyNode node,
+      ForNonemptyNode node,
       CodeChunk.WithValue limit,
       Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction) {
     // Build some local variable names.
     String varName = node.getVarName();
-    String varPrefix = varName + node.getForeachNodeId();
+    String varPrefix = varName + node.getForNodeId();
 
     // TODO(user): A more consistent pattern for local variable management.
     String loopIndexName = varPrefix + "Index";
@@ -1302,7 +1302,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   @Override
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  protected void visitForNonemptyNode(ForNonemptyNode node) {
     // should be handled by handleForeachLoop
     throw new UnsupportedOperationException();
   }

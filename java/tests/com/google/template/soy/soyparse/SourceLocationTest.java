@@ -119,18 +119,18 @@ public final class SourceLocationTest {
   }
 
   @Test
-  public void testForeachLoop() throws Exception {
+  public void testForLoop() throws Exception {
     assertSourceLocations(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
             "    TemplateBasicNode          @ /example/file.soy:2:1",
             "      RawTextNode              @ /example/file.soy:3:3",
-            "      ForeachNode              @ /example/file.soy:4:3",
-            "        ForeachNonemptyNode    @ /example/file.soy:4:8",
+            "      ForNode                  @ /example/file.soy:4:3",
+            "        ForNonemptyNode        @ /example/file.soy:4:8",
             "          RawTextNode          @ /example/file.soy:5:5",
             "          PrintNode            @ /example/file.soy:6:5",
-            "        ForeachIfemptyNode     @ /example/file.soy:7:3",
+            "        ForIfemptyNode         @ /example/file.soy:7:3",
             "          RawTextNode          @ /example/file.soy:8:5",
             "      RawTextNode              @ /example/file.soy:10:3",
             ""),

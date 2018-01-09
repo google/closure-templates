@@ -17,7 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SwitchNode;
 
@@ -32,28 +32,28 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName("switch", node);
   }
 
-  static SyntheticVarName foreachLoopRangeStart(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_start", foreachNode);
+  static SyntheticVarName foreachLoopRangeStart(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_start", forNode);
   }
 
-  static SyntheticVarName foreachLoopRangeStep(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_step", foreachNode);
+  static SyntheticVarName foreachLoopRangeStep(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_step", forNode);
   }
 
-  static SyntheticVarName foreachLoopRangeEnd(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_end", foreachNode);
+  static SyntheticVarName foreachLoopRangeEnd(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_end", forNode);
   }
 
-  static SyntheticVarName foreachLoopList(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_list", foreachNode);
+  static SyntheticVarName foreachLoopList(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_list", forNode);
   }
 
-  static SyntheticVarName foreachLoopIndex(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_index", foreachNode);
+  static SyntheticVarName foreachLoopIndex(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_index", forNode);
   }
 
-  static SyntheticVarName foreachLoopLength(ForeachNonemptyNode foreachNode) {
-    return new AutoValue_SyntheticVarName(foreachNode.getVarName() + "_length", foreachNode);
+  static SyntheticVarName foreachLoopLength(ForNonemptyNode forNode) {
+    return new AutoValue_SyntheticVarName(forNode.getVarName() + "_length", forNode);
   }
 
   abstract String name();

@@ -190,7 +190,7 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    Optional<Expression> visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+    Optional<Expression> visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression loopVar = variables.getLocal(local);
       if (loopVar.resultType() == Type.LONG_TYPE) {
         // this happens in foreach loops over ranges

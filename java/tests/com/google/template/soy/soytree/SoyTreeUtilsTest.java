@@ -179,8 +179,8 @@ public final class SoyTreeUtilsTest {
 
     assertEquals(clone.getChild(0).toSourceString(), soyTree.getChild(0).toSourceString());
     // All the localvarnodes, there is one of each type
-    ForeachNonemptyNode foreachNonemptyNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(clone, ForeachNonemptyNode.class));
+    ForNonemptyNode forNonemptyNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(clone, ForNonemptyNode.class));
     LetValueNode letValueNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(clone, LetValueNode.class));
     for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(clone, VarRefNode.class)) {
@@ -194,8 +194,8 @@ public final class SoyTreeUtilsTest {
           break;
         case "item":
           local = (LocalVar) defn;
-          assertSame(foreachNonemptyNode, local.declaringNode());
-          assertSame(foreachNonemptyNode.getVar(), defn);
+          assertSame(forNonemptyNode, local.declaringNode());
+          assertSame(forNonemptyNode.getVar(), defn);
           break;
         default:
           // fall through
@@ -300,8 +300,8 @@ public final class SoyTreeUtilsTest {
             ""
                 + "    SOY_FILE_NODE\n"
                 + "      TEMPLATE_BASIC_NODE\n"
-                + "        FOREACH_NODE\n"
-                + "          FOREACH_NONEMPTY_NODE\n"
+                + "        FOR_NODE\n"
+                + "          FOR_NONEMPTY_NODE\n"
                 + "            IF_NODE\n"
                 + "              IF_COND_NODE\n"
                 + "                PRINT_NODE\n"

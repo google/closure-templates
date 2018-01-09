@@ -88,9 +88,9 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ForeachIfemptyNode;
-import com.google.template.soy.soytree.ForeachNode;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -1829,7 +1829,7 @@ private StatementNode PrintableStmt() :
 }
 
 /**
- * ControlFlowStmt -> IfStmt | SwitchStmt | ForeachStmt
+ * ControlFlowStmt -> IfStmt | SwitchStmt | ForStmt
  */
 private StatementNode ControlFlowStmt() :
 {
@@ -1839,7 +1839,7 @@ private StatementNode ControlFlowStmt() :
   (
     stmt = IfStmt()
   | stmt = SwitchStmt()
-  | stmt = ForeachStmt()
+  | stmt = ForStmt()
   )
 
   { return stmt; }
@@ -2619,7 +2619,7 @@ private SwitchNode SwitchStmt() :
  * ForStatement -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock
  *                [ CmdFullIfempty TemplateBlock ] CmdCloseFor
  */
-private ForeachNode ForeachStmt() :
+private ForNode ForStmt() :
 {
   Token tagBegin, tagEnd, in, ifemptyTag, tagClose;
   VarRefNode var = null;
@@ -2650,15 +2650,15 @@ private ForeachNode ForeachStmt() :
   }
 
   {
-    ForeachNode foreachNode =
-        new ForeachNode(
+    ForNode forNode =
+        new ForNode(
             nodeIdGen.genId(),
             createSrcLoc(tagBegin, tagEnd),
             tagBegin.kind == CMD_BEGIN_FOREACH ? "foreach": "for",
             expr);
-    ForeachNonemptyNode nonEmpty =
-        new ForeachNonemptyNode(nodeIdGen.genId(), var.getSourceLocation(), var.getName());
-    foreachNode.addChild(nonEmpty);
+    ForNonemptyNode nonEmpty =
+        new ForNonemptyNode(nodeIdGen.genId(), var.getSourceLocation(), var.getName());
+    forNode.addChild(nonEmpty);
   }
 
   templateBlock = TemplateBlock()
@@ -2668,10 +2668,10 @@ private ForeachNode ForeachStmt() :
     ifemptyTag = <CMD_FULL_IFEMPTY>
     templateBlock = TemplateBlock()
     {
-      ForeachIfemptyNode ifempty =
-          new ForeachIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag));
+      ForIfemptyNode ifempty =
+          new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag));
       ifempty.addChildren(templateBlock);
-      foreachNode.addChild(ifempty);
+      forNode.addChild(ifempty);
     }
   ]
 
@@ -2684,7 +2684,7 @@ private ForeachNode ForeachStmt() :
     if (tagBegin.kind == CMD_BEGIN_FOREACH) {
       errorReporter.warn(createSrcLoc(tagBegin), FOREACH_IS_DEPRECATED);
     }
-    return foreachNode;
+    return forNode;
   }
 }
 

@@ -30,7 +30,7 @@ import com.google.template.soy.soytree.defn.LoopVar;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class ForeachNonemptyNode extends AbstractBlockNode
+public final class ForNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LoopNode, LocalVarBlockNode {
 
   private final LoopVar var;
@@ -40,7 +40,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
    * @param location The node's source location.
    * @param varName The variable name of the loop index variable.
    */
-  public ForeachNonemptyNode(int id, SourceLocation location, String varName) {
+  public ForNonemptyNode(int id, SourceLocation location, String varName) {
     super(id, location);
     this.var = new LoopVar(varName, this, null);
   }
@@ -50,7 +50,7 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
    *
    * @param orig The node to copy.
    */
-  private ForeachNonemptyNode(ForeachNonemptyNode orig, CopyState copyState) {
+  private ForNonemptyNode(ForNonemptyNode orig, CopyState copyState) {
     super(orig, copyState);
     this.var = new LoopVar(orig.var, this);
     copyState.updateRefs(orig.var, this.var);
@@ -58,10 +58,10 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
 
   @Override
   public Kind getKind() {
-    return Kind.FOREACH_NONEMPTY_NODE;
+    return Kind.FOR_NONEMPTY_NODE;
   }
 
-  public int getForeachNodeId() {
+  public int getForNodeId() {
     return getParent().getId();
   }
 
@@ -88,12 +88,12 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
   }
 
   @Override
-  public ForeachNode getParent() {
-    return (ForeachNode) super.getParent();
+  public ForNode getParent() {
+    return (ForNode) super.getParent();
   }
 
   @Override
-  public ForeachNonemptyNode copy(CopyState copyState) {
-    return new ForeachNonemptyNode(this, copyState);
+  public ForNonemptyNode copy(CopyState copyState) {
+    return new ForNonemptyNode(this, copyState);
   }
 }
