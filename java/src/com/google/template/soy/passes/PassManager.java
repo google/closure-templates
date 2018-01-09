@@ -26,14 +26,12 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
-import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -132,7 +130,7 @@ public final class PassManager {
       singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
     singleFilePassesBuilder
-        .add(new ValidateAliasesPass())
+        .add(new ValidateAliasesPass(registry, errorReporter, options))
         // could run anywhere
         .add(new CheckNonEmptyMsgNodesPass(errorReporter))
         .add(new CheckSyntaxVersionPass());
@@ -467,32 +465,6 @@ public final class PassManager {
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       if (simplifyVisitor != null) { // it will be null when disabled
         simplifyVisitor.simplify(fileSet, registry);
-      }
-    }
-  }
-
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with a global of the same name.");
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for global ''{1}''.");
-
-  private final class ValidateAliasesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      for (AliasDeclaration alias : file.getAliasDeclarations()) {
-        if (options.getCompileTimeGlobals().containsKey(alias.alias().identifier())) {
-          errorReporter.report(
-              alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.alias());
-        }
-        for (String global : options.getCompileTimeGlobals().keySet()) {
-          if (global.startsWith(alias.alias().identifier() + ".")) {
-            errorReporter.report(
-                alias.alias().location(),
-                ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX,
-                alias.alias(),
-                global);
-          }
-        }
       }
     }
   }

@@ -27,6 +27,7 @@ import com.google.common.collect.Interners;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -134,6 +135,7 @@ public final class SoyTypeRegistry {
   private final Interner<LegacyObjectMapType> legacyObjectMapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
+  private ImmutableList<String> lazyAllSortedTypeNames;
 
   @Inject
   public SoyTypeRegistry(Set<SoyTypeProvider> typeProviders) {
@@ -164,6 +166,25 @@ public final class SoyTypeRegistry {
       }
     }
     return null;
+  }
+
+  /** Finds a type whose top-level namespace is a specified prefix, or null if there are none. */
+  public String findTypeWithMatchingNamespace(String prefix) {
+    prefix = prefix + ".";
+    // This must be sorted so that errors are deterministic, or we'll break integration tests.
+    for (String name : getAllSortedTypeNames()) {
+      if (name.startsWith(prefix)) {
+        return name;
+      }
+    }
+    return null;
+  }
+
+  private synchronized Iterable<String> getAllSortedTypeNames() {
+    if (lazyAllSortedTypeNames == null) {
+      lazyAllSortedTypeNames = Ordering.natural().immutableSortedCopy(getAllTypeNames());
+    }
+    return lazyAllSortedTypeNames;
   }
 
   private Iterable<String> getAllTypeNames() {
@@ -340,7 +361,7 @@ public final class SoyTypeRegistry {
               node.sourceLocation(),
               UNKNOWN_TYPE,
               name,
-              SoyErrors.getDidYouMeanMessage(getAllTypeNames(), name));
+              SoyErrors.getDidYouMeanMessage(getAllSortedTypeNames(), name));
         }
         type = ErrorType.getInstance();
       }
