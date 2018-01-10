@@ -64,6 +64,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -187,6 +188,9 @@ public abstract class MethodRef {
 
   public static final MethodRef OBJECT_TO_STRING = create(Object.class, "toString");
 
+  public static final MethodRef OBJECTS_EQUALS =
+      create(Objects.class, "equals", Object.class, Object.class);
+
   public static final MethodRef ORDAIN_AS_SAFE =
       create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
 
@@ -235,6 +239,9 @@ public abstract class MethodRef {
 
   public static final MethodRef RUNTIME_COMPARE_STRING =
       create(SharedRuntime.class, "compareString", String.class, SoyValue.class);
+
+  public static final MethodRef RUNTIME_COMPARE_NULLABLE_STRING =
+      create(JbcSrcRuntime.class, "compareNullableString", String.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)

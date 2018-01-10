@@ -23,6 +23,7 @@ import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyNewMap;
@@ -32,6 +33,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -51,6 +53,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -91,6 +94,10 @@ public final class JbcSrcRuntime {
   }
 
   public static boolean stringEqualsAsNumber(String expr, double number) {
+    if (expr == null) {
+      return false;
+    }
+
     try {
       return Double.parseDouble(expr) == number;
     } catch (NumberFormatException nfe) {
@@ -408,6 +415,31 @@ public final class JbcSrcRuntime {
           System.out.append(val);
         }
       };
+
+  /** Determines if the operand's string form can be equality-compared with a string. */
+  public static boolean compareNullableString(@Nullable String string, SoyValue other) {
+    // This is a parallel version of SharedRuntime.compareString except it can handle a null LHS.
+
+    // This follows similarly to the Javascript specification, to ensure similar operation
+    // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3
+    if (other instanceof StringData || other instanceof SanitizedContent) {
+      return Objects.equals(string, other.toString());
+    }
+    if (other instanceof NumberData) {
+      if (string == null) {
+        return false;
+      }
+
+      try {
+        // Parse the string as a number.
+        return Double.parseDouble(string) == other.numberValue();
+      } catch (NumberFormatException nfe) {
+        // Didn't parse as a number.
+        return false;
+      }
+    }
+    return false;
+  }
 
   public static LoggingAdvisingAppendable logger() {
     return LOGGER;

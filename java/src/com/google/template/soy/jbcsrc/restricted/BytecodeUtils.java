@@ -579,11 +579,16 @@ public final class BytecodeUtils {
       // TODO(lukes): we are changing the order of evaluation here.
       return doEqualsString(right.unboxAs(String.class), left);
     }
-    if (leftRuntimeType.isKnownInt() && rightRuntimeType.isKnownInt()) {
+    if (leftRuntimeType.isKnownInt()
+        && rightRuntimeType.isKnownInt()
+        && left.isNonNullable()
+        && right.isNonNullable()) {
       return compare(Opcodes.IFEQ, left.unboxAs(long.class), right.unboxAs(long.class));
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
+        && left.isNonNullable()
+        && right.isNonNullable()
         && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
     }
@@ -601,15 +606,19 @@ public final class BytecodeUtils {
     // transitivity.  See b/21461181
     SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
     if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
-      return stringExpr.invoke(MethodRef.EQUALS, other.unboxAs(String.class));
+      if (stringExpr.isNonNullable()) {
+        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAs(String.class));
+      } else {
+        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAs(String.class));
+      }
     }
-    if (otherRuntimeType.isKnownNumber()) {
+    if (otherRuntimeType.isKnownNumber() && other.isNonNullable()) {
       // in this case, we actually try to convert stringExpr to a number
       return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
     }
     // We don't know what other is, assume the worst and call out to our boxed implementation for
     // string comparisons.
-    return MethodRef.RUNTIME_COMPARE_STRING.invoke(stringExpr, other.box());
+    return MethodRef.RUNTIME_COMPARE_NULLABLE_STRING.invoke(stringExpr, other.box());
   }
 
   /**
