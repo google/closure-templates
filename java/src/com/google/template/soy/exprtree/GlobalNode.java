@@ -35,8 +35,7 @@ public final class GlobalNode extends AbstractExprNode {
     return new GlobalNode("error", location);
   }
 
-  /** The name of the global. Not final in order to handle aliases in {@link RewriteGlobalsPass.} */
-  private String name;
+  private final String name;
 
   private boolean suppressUnknownGlobalErrors;
 
@@ -90,11 +89,6 @@ public final class GlobalNode extends AbstractExprNode {
   /** Returns the name of the global. */
   public String getName() {
     return name;
-  }
-
-  /** Only to be used by {@link RewriteGlobalsPass}. */
-  public void setName(String name) {
-    this.name = name;
   }
 
   /**

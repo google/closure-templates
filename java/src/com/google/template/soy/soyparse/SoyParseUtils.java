@@ -47,17 +47,8 @@ final class SoyParseUtils {
         // Case 1: Source callee name is partial.
         return header.namespace + name;
       case DOTTED_IDENT:
-        // Case 2: Source callee name is a proper dotted ident.
-        int firstDot = name.indexOf('.');
-        String alias = header.aliasToNamespaceMap.get(name.substring(0, firstDot));
-
-        // Case 2a: Source callee name's first part is an alias.
-        if (alias != null) {
-          return alias + name.substring(firstDot);
-        }
-
-        // Case 2b: Source callee name's first part is not an alias.
-        return name;
+        // Case 2: Source callee name is a proper dotted ident, which might start with an alias.
+        return header.resolveAlias(name);
       case SINGLE_IDENT:
         // Case 3: Source callee name is a single ident (not dotted).
         if (header.aliasToNamespaceMap.containsKey(name)) {

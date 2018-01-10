@@ -90,6 +90,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    */
   @Immutable
   public static class SoyFileHeaderInfo {
+    /** A header with no aliases, used for parsing non-files. */
+    public static final SoyFileHeaderInfo EMPTY = new SoyFileHeaderInfo("sample.ns");
 
     /** Map from aliases to namespaces for this file. */
     public final ImmutableMap<String, String> aliasToNamespaceMap;
@@ -137,6 +139,23 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       this.defaultAutoescapeMode = defaultAutoescapeMode;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
+    }
+
+    /** Resolves an potentially-aliased name against the aliases in this file. */
+    public String resolveAlias(String fullName) {
+      String firstIdent;
+      String remainder;
+      int i = fullName.indexOf('.');
+      if (i > 0) {
+        firstIdent = fullName.substring(0, i);
+        remainder = fullName.substring(i);
+      } else {
+        firstIdent = fullName;
+        remainder = "";
+      }
+
+      String alias = aliasToNamespaceMap.get(firstIdent);
+      return alias == null ? fullName : alias + remainder;
     }
 
     private static ImmutableMap<String, String> createAliasMap(

@@ -482,6 +482,7 @@ public class SoyFileParser {
   @Nullable
   public static ExprNode parseExpression(String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(exprText, resolver, errorReporter);
+    parser.headerInfo = SoyFileHeaderInfo.EMPTY;
 
     try {
       return parser.ExprInput();
@@ -3444,7 +3445,8 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
           // TODO(user): Add source locations to paramNames
           // TODO(user): Also add type, then remove code from RETV
           ProtoInitNode pNode = new ProtoInitNode(
-              ident.identifier(), paramNames, ident.location().extend(createSrcLoc(closeParen)));
+              headerInfo.resolveAlias(ident.identifier()), paramNames,
+              ident.location().extend(createSrcLoc(closeParen)));
           pNode.addChildren(params);
           return pNode;
         }
@@ -3477,15 +3479,16 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
 
   { // If we did not find parens, this is a global node
     if (openParen == null) {
-      return new GlobalNode(ident.identifier(), ident.location());
+      return new GlobalNode(headerInfo.resolveAlias(ident.identifier()), ident.location());
     }
 
     // Look up ident in the type registry, see if it's a proto. Otherwise, it is a function.
     String name = ident.identifier();
+    String resolvedName = headerInfo.resolveAlias(name);
     SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
-    SoyType type = (typeRegistry == null) ? null : typeRegistry.getType(ident.identifier());
+    SoyType type = (typeRegistry == null) ? null : typeRegistry.getType(resolvedName);
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
-      return new ProtoInitNode(name, ImmutableList.<String>of(), loc);
+      return new ProtoInitNode(resolvedName, ImmutableList.<String>of(), loc);
     } else {
       return new FunctionNode(pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
@@ -3571,7 +3574,7 @@ private ExprNode MapKeyOrExpr() :
     {
       // If it wasn't for the LOOKAHEAD this would have parsed as a global, just create one here
       // so we can keep parsing.
-      itemExpr = new GlobalNode(ident.image, createSrcLoc(ident));
+      itemExpr = new GlobalNode(headerInfo.resolveAlias(ident.image), createSrcLoc(ident));
       // TODO(lukes): consider how important this check is.  The theory is that users might
       // think that our mapliterals work like keys in js object literals.  Though what will
       // really happen is that we will parse it as a global and then it just will get whatever
@@ -3846,7 +3849,7 @@ private TypeNode NamedType() :
     }
   )*
   {
-    ident = sb == null ? first.image : sb.toString();
+    ident = headerInfo.resolveAlias(sb == null ? first.image : sb.toString());
     fullLocation = next == null ? createSrcLoc(first) : createSrcLoc(first, next);
   }
 

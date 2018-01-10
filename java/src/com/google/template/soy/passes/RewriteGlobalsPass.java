@@ -45,8 +45,6 @@ final class RewriteGlobalsPass extends CompilerFilePass {
   private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;
   private final ErrorReporter errorReporter;
 
-  private ImmutableMap<String, String> aliasToNamespaceMap;
-
   RewriteGlobalsPass(
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, PrimitiveData> compileTimeGlobals,
@@ -58,30 +56,8 @@ final class RewriteGlobalsPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    this.aliasToNamespaceMap = file.getAliasToNamespaceMap();
     for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      resolveAlias(global); // Must come before resolveGlobal()
       resolveGlobal(global);
-    }
-  }
-
-  private void resolveAlias(GlobalNode global) {
-    String name = global.getName();
-
-    String firstIdent;
-    String remainder;
-    int i = name.indexOf('.');
-    if (i > 0) {
-      firstIdent = name.substring(0, i);
-      remainder = name.substring(i);
-    } else {
-      firstIdent = name;
-      remainder = "";
-    }
-
-    String alias = aliasToNamespaceMap.get(firstIdent);
-    if (alias != null) {
-      global.setName(alias + remainder);
     }
   }
 

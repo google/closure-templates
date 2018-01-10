@@ -18,12 +18,10 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -52,9 +50,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** This Soy file's namespace, or null if syntax version V1. */
   private final NamespaceDeclaration namespaceDeclaration;
 
-  /** Map from aliases to namespaces for this file. */
-  private final ImmutableMap<String, String> aliasToNamespaceMap;
-
   private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
   /**
@@ -76,7 +71,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.delPackageName = headerInfo.delPackageName;
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.aliasDeclarations; // immutable
-    this.aliasToNamespaceMap = headerInfo.aliasToNamespaceMap; // immutable
   }
 
   /**
@@ -90,7 +84,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.delPackageName = orig.delPackageName;
     this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
-    this.aliasToNamespaceMap = orig.aliasToNamespaceMap; // immutable
   }
 
   @Override
@@ -131,12 +124,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return namespaceDeclaration.getCssBaseNamespace();
   }
 
-  /** Returns the map from aliases to namespaces for this file. */
-  public ImmutableMap<String, String> getAliasToNamespaceMap() {
-    return aliasToNamespaceMap;
-  }
-
-  /** Returns the syntactic alias directives in the file. For semantics, use aliasToNamespaceMap. */
+  /** Returns the syntactic alias directives in the file. */
   public ImmutableList<AliasDeclaration> getAliasDeclarations() {
     return aliasDeclarations;
   }
@@ -169,11 +157,11 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     }
     sb.append(namespaceDeclaration.toSourceString());
 
-    if (!aliasToNamespaceMap.isEmpty()) {
+    if (!aliasDeclarations.isEmpty()) {
       sb.append("\n");
-      for (Map.Entry<String, String> entry : aliasToNamespaceMap.entrySet()) {
-        String alias = entry.getKey();
-        String aliasNamespace = entry.getValue();
+      for (AliasDeclaration aliasDeclaration : aliasDeclarations) {
+        String alias = aliasDeclaration.alias().identifier();
+        String aliasNamespace = aliasDeclaration.namespace().identifier();
         if (aliasNamespace.equals(alias) || aliasNamespace.endsWith("." + alias)) {
           sb.append("{alias ").append(aliasNamespace).append("}\n");
         } else {
