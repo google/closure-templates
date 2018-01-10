@@ -315,7 +315,7 @@ public final class JbcSrcRuntime {
       Map<String, Object> placeholders,
       Appendable out)
       throws IOException {
-    int pluralValue = getPlural(placeholders, plural.getPluralVarName());
+    long pluralValue = getPlural(placeholders, plural.getPluralVarName());
     for (SoyMsgPart casePart : plural.lookupCase(pluralValue, locale)) {
       if (casePart instanceof SoyMsgPlaceholderPart) {
         writePlaceholder((SoyMsgPlaceholderPart) casePart, placeholders, out);
@@ -343,12 +343,12 @@ public final class JbcSrcRuntime {
   }
 
   /** Returns the plural case variable value. */
-  private static int getPlural(Map<String, Object> placeholders, String pluralVarName) {
+  private static long getPlural(Map<String, Object> placeholders, String pluralVarName) {
     IntegerData pluralValue = (IntegerData) placeholders.get(pluralVarName);
     if (pluralValue == null) {
       throw new IllegalArgumentException("No value provided for plural: '" + pluralVarName + "'");
     }
-    return pluralValue.integerValue();
+    return pluralValue.longValue();
   }
 
   /** Append the placeholder to the output stream. */

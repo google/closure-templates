@@ -80,8 +80,8 @@ final class MsgCompiler {
       MethodRef.create(Case.class, "create", Object.class, Iterable.class);
   private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_TYPE =
       ConstructorRef.create(SoyMsgPluralCaseSpec.class, SoyMsgPluralCaseSpec.Type.class);
-  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_INT =
-      ConstructorRef.create(SoyMsgPluralCaseSpec.class, int.class);
+  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_LONG =
+      ConstructorRef.create(SoyMsgPluralCaseSpec.class, long.class);
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
@@ -216,7 +216,7 @@ final class MsgCompiler {
       for (Case<SoyMsgPluralCaseSpec> item : pluralPart.getCases()) {
         Expression spec;
         if (item.spec().getType() == Type.EXPLICIT) {
-          spec = SOY_MSG_PLURAL_CASE_SPEC_INT.construct(constant(item.spec().getExplicitValue()));
+          spec = SOY_MSG_PLURAL_CASE_SPEC_LONG.construct(constant(item.spec().getExplicitValue()));
         } else {
           spec =
               SOY_MSG_PLURAL_CASE_SPEC_TYPE.construct(

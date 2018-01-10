@@ -58,7 +58,7 @@ public class SoyMsgPluralCaseSpec {
   private final Type type;
 
   /** The numeric value if the type is numeric, -1 otherwise. */
-  private final int explicitValue;
+  private final long explicitValue;
 
   /**
    * Constructs an object from a non-numeric value.
@@ -84,7 +84,7 @@ public class SoyMsgPluralCaseSpec {
    * @param explicitValue The numeric value.
    * @throws SoyMsgException if invalid numeric value.
    */
-  public SoyMsgPluralCaseSpec(int explicitValue) {
+  public SoyMsgPluralCaseSpec(long explicitValue) {
     if (explicitValue >= 0) {
       type = Type.EXPLICIT;
       this.explicitValue = explicitValue;
@@ -107,7 +107,7 @@ public class SoyMsgPluralCaseSpec {
    *
    * @return if numeric, return the numeric value, else -1.
    */
-  public int getExplicitValue() {
+  public long getExplicitValue() {
     return explicitValue;
   }
 
