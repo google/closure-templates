@@ -537,7 +537,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
                   .addAll(paramNames)
                   .addAll(ipi.indirectParams.keySet())
                   .build();
-          errorReporter.warn(
+          errorReporter.report(
               callerParam.getKey().location(),
               PASSES_UNUSED_PARAM,
               paramName,
