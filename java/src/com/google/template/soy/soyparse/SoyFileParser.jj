@@ -463,6 +463,8 @@ public class SoyFileParser {
 
   private static final ImmutableList<String> FOREACH_WHITELISTED_PATHS = ImmutableList.of(
   );
+  private static final ImmutableSet<String> FOREACH_WHITELISTED_EXACT_PATHS = ImmutableSet.of(
+  );
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
@@ -2687,11 +2689,13 @@ private ForNode ForStmt() :
   )
   {
     if (tagBegin.kind == CMD_BEGIN_FOREACH) {
-      boolean isWhitelisted = false;
-      for (String whitelisted : FOREACH_WHITELISTED_PATHS) {
-        if (filePath.contains(whitelisted)) {
-          isWhitelisted = true;
-          break;
+      boolean isWhitelisted = FOREACH_WHITELISTED_EXACT_PATHS.contains(filePath);
+      if (!isWhitelisted) {
+        for (String whitelisted : FOREACH_WHITELISTED_PATHS) {
+          if (filePath.contains(whitelisted)) {
+            isWhitelisted = true;
+            break;
+          }
         }
       }
       if (isWhitelisted) {
