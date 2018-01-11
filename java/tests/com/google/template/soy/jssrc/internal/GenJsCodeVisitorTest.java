@@ -924,8 +924,8 @@ public final class GenJsCodeVisitorTest {
             + "    gamma__soy21 += i14Data + beta__soy11;\n"
             + "  }\n"
             + "  var delta__soy24 = 'Boop!';\n"
-            + "  delta__soy24 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
-            + "  output += alpha__soy8 + beta__soy11 + gamma__soy21 + delta__soy24;\n"
+            + "  var delta__wrapped24 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
+            + "  output += alpha__soy8 + beta__soy11 + gamma__soy21 + delta__wrapped24;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }

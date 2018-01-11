@@ -965,11 +965,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
       // "soydata.VERY_UNSAFE.ordainSanitizedHtml"), or null if the node has no 'kind' attribute.
+      // Introduce a new variable for this value since it has a different type from the output
+      // variable (SanitizedContent vs String) and this will enable optimizations in the jscompiler
+      String wrappedVarName = node.getVarName() + "__wrapped" + node.getId();
       jsCodeBuilder.append(
-          assign(
-              generatedVarName,
-              sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind())
-                  .call(generatedVar)));
+          VariableDeclaration.builder(wrappedVarName)
+              .setRhs(
+                  sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind())
+                      .call(generatedVar))
+              .build());
+      generatedVar = id(wrappedVarName);
     }
 
     // Add a mapping for generating future references to this local var.

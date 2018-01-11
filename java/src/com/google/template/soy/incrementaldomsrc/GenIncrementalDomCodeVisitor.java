@@ -273,7 +273,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitLetContentNode(LetContentNode node) {
-    // TODO(slaks): Call base class for non-HTML to get {msg} inlining.
     String generatedVarName = node.getUniqueVarName();
     visitLetParamContentNode(node, generatedVarName);
     templateTranslationContext
