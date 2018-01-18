@@ -91,18 +91,18 @@ public final class JavaQualifiedNames {
 
   /**
    * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
-   * separated using '$' instead of '.'
+   * separated using '$' instead of '.'.
    */
   public static String getClassName(Descriptor descriptor, ProtoFlavor flavor) {
-    return getClassName(classNameWithoutPackage(descriptor), descriptor.getFile(), flavor);
+    return getClassName(classNameWithoutPackage(descriptor, flavor), descriptor.getFile(), flavor);
   }
 
   /**
    * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
-   * separated using '$' instead of '.'
+   * separated using '$' instead of '.'.
    */
   public static String getClassName(EnumDescriptor descriptor, ProtoFlavor flavor) {
-    return getClassName(classNameWithoutPackage(descriptor), descriptor.getFile(), flavor);
+    return getClassName(classNameWithoutPackage(descriptor, flavor), descriptor.getFile(), flavor);
   }
 
   /** Returns the Java name for a proto field. */
@@ -207,17 +207,18 @@ public final class JavaQualifiedNames {
     return sb.toString();
   }
 
-  private static String classNameWithoutPackage(Descriptor descriptor) {
-    return stripPackageName(descriptor.getFullName(), descriptor.getFile());
+  private static String classNameWithoutPackage(Descriptor descriptor, ProtoFlavor flavor) {
+    String name = stripPackageName(descriptor.getFullName(), descriptor.getFile());
+    return name;
   }
 
-  private static String classNameWithoutPackage(EnumDescriptor descriptor) {
+  private static String classNameWithoutPackage(EnumDescriptor descriptor, ProtoFlavor flavor) {
     // Doesn't append "Mutable" for enum type's name.
     Descriptor messageDescriptor = descriptor.getContainingType();
     if (messageDescriptor == null) {
       return descriptor.getName();
     }
-    return classNameWithoutPackage(messageDescriptor) + '.' + descriptor.getName();
+    return classNameWithoutPackage(messageDescriptor, flavor) + '.' + descriptor.getName();
   }
 
   private static String stripPackageName(String fullName, FileDescriptor file) {
