@@ -276,7 +276,10 @@ public final class SoyTypeRegistry {
    *
    * <p>If any errors are encountered they are reported to the error reporter.
    */
-  public SoyType getOrCreateType(TypeNode node, ErrorReporter errorReporter) {
+  public SoyType getOrCreateType(@Nullable TypeNode node, ErrorReporter errorReporter) {
+    if (node == null) {
+      return UnknownType.getInstance();
+    }
     return node.accept(new TypeNodeConverter(errorReporter));
   }
 

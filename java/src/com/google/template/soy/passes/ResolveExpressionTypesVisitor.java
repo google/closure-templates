@@ -22,6 +22,7 @@ import static com.google.template.soy.exprtree.ExprNode.Kind.MAP_LITERAL_NODE;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -72,9 +73,12 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -107,6 +111,7 @@ import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -192,6 +197,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final SoyGeneralOptions generalOptions;
   /** Type registry. */
   private final SoyTypeRegistry typeRegistry;
+  /** Cached map that converts a string representation of types to actual soy types. */
+  private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
@@ -758,28 +765,70 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       tryApplySubstitution(node);
     }
 
+    /**
+     * Converts a signature annotation (string representation of type information) to a resolved
+     * signature (actual Soy type).
+     *
+     * @param signature The input signature.
+     * @param className The class name of the Soy function that has the signature annotation. This
+     *     is also used as a fake file path in the reported error.
+     * @param errorReporter The Soy error reporter.
+     */
+    private ResolvedSignature getOrCreateFunctionSignature(
+        Signature signature, String className, ErrorReporter errorReporter) {
+      ResolvedSignature resolvedSignature = signatureMap.get(signature);
+      if (resolvedSignature != null) {
+        return resolvedSignature;
+      }
+      ImmutableList.Builder<SoyType> paramTypes = ImmutableList.builder();
+      for (String paramTypeString : signature.parameterTypes()) {
+        paramTypes.add(
+            typeRegistry.getOrCreateType(
+                SoyFileParser.parseType(paramTypeString, className, errorReporter), errorReporter));
+      }
+      SoyType returnType =
+          typeRegistry.getOrCreateType(
+              SoyFileParser.parseType(signature.returnType(), className, errorReporter),
+              errorReporter);
+
+      resolvedSignature = ResolvedSignature.create(paramTypes.build(), returnType);
+      signatureMap.put(signature, resolvedSignature);
+      return resolvedSignature;
+    }
+
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
       SoyFunction knownFunction = node.getSoyFunction();
-      if (knownFunction instanceof BuiltinFunction) {
+      if (knownFunction.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        checkState(
+            knownFunction instanceof TypedSoyFunction,
+            "Function that uses @SoyFunctionSignature annotation must extend TypedSoyFunction.");
+        visitTypedSoyFunction(
+            knownFunction.getClass().getAnnotation(SoyFunctionSignature.class),
+            knownFunction.getClass().getCanonicalName(),
+            node);
+      } else if (knownFunction instanceof BuiltinFunction) {
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
-      } else if (knownFunction instanceof TypedSoyFunction) {
-        visitTypedSoyFunction((TypedSoyFunction) knownFunction, node);
       } else {
         visitSoyFunction(knownFunction, node);
       }
       tryApplySubstitution(node);
     }
 
-    private void visitTypedSoyFunction(TypedSoyFunction knownFunction, FunctionNode node) {
-      List<Signature> signatures = knownFunction.signatures();
-      Signature matchedSignature = null;
+    /**
+     * For soy functions with type annotation, perform the strict type checking and set the return
+     * type.
+     */
+    private void visitTypedSoyFunction(
+        SoyFunctionSignature fnSignature, String className, FunctionNode node) {
+      ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
-      // PluginResolver already guarantees that there is exactly one matched signature.
-      for (Signature signature : signatures) {
-        if (signature.parameterTypes().size() == node.numChildren()) {
-          matchedSignature = signature;
+      // TODO(b/71386491): SoyFunctionSignatureValidator needs to guarantee that there is exactly
+      // one matched signature.
+      for (Signature signature : fnSignature.value()) {
+        if (signature.parameterTypes().length == node.numChildren()) {
+          matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           break;
         }
       }

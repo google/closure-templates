@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -30,13 +29,12 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,6 +52,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
+@SoyFunctionSignature(
+    @Signature(
+      parameterTypes = {"string"},
+      returnType = "int"
+    ))
 public final class ParseIntFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
@@ -66,13 +69,6 @@ public final class ParseIntFunction extends TypedSoyFunction
   @Override
   public String getName() {
     return "parseInt";
-  }
-
-  @Override
-  public List<Signature> signatures() {
-    ImmutableList<SoyType> argTypes = ImmutableList.of(StringType.getInstance());
-    SoyType returnType = SoyTypes.makeNullable(IntType.getInstance());
-    return ImmutableList.of(Signature.create(argTypes, returnType));
   }
 
   @Override

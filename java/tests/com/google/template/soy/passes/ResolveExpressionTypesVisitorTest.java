@@ -26,10 +26,12 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -37,6 +39,12 @@ import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.aggregate.LegacyObjectMapType;
+import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.primitive.AnyType;
+import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Set;
 import org.junit.Test;
@@ -773,6 +781,47 @@ public final class ResolveExpressionTypesVisitorTest {
             "{else}",
             "  y: {$p.a}",
             "{/if}"));
+  }
+
+  @Test
+  public void testTypeParser() {
+    SoyType type = parseSoyType("string");
+    assertThat(type).isEqualTo(StringType.getInstance());
+    type = parseSoyType("int");
+    assertThat(type).isEqualTo(IntType.getInstance());
+    type = parseSoyType("list<any>");
+    assertThat(type.getKind()).isEqualTo(SoyType.Kind.LIST);
+    assertThat(((ListType) type).getElementType()).isEqualTo(AnyType.getInstance());
+    type = parseSoyType("map<string, ?>");
+    assertThat(type.getKind()).isEqualTo(SoyType.Kind.LEGACY_OBJECT_MAP);
+    assertThat(((LegacyObjectMapType) type).getKeyType()).isEqualTo(StringType.getInstance());
+    assertThat(((LegacyObjectMapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
+  }
+
+  @Test
+  public void testTypeParserFail() {
+    assertSoyTypeParserFail("foo", "Unknown type 'foo'");
+    assertSoyTypeParserFail("list<foo>", "Unknown type 'foo'");
+    assertSoyTypeParserFail("list<", "parse error at 'eof': expected identifier, >, [, or ?");
+  }
+
+  private void assertSoyTypeParserFail(String type, String expectedMessage) {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    parseSoyType(type, errorReporter);
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    SoyError soyError = Iterables.getOnlyElement(errorReporter.getErrors());
+    assertThat(soyError.message()).contains(expectedMessage);
+    assertThat(soyError.location().getFileName()).isEqualTo("com.google.foo.bar.FakeSoyFunction");
+  }
+
+  private SoyType parseSoyType(String type) {
+    return parseSoyType(type, ErrorReporter.exploding());
+  }
+
+  private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
+    return TYPE_REGISTRY.getOrCreateType(
+        SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter),
+        errorReporter);
   }
 
   /**

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -31,12 +30,10 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.primitive.AnyType;
-import com.google.template.soy.types.primitive.IntType;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -48,6 +45,11 @@ import org.objectweb.asm.Type;
  */
 @Singleton
 @SoyPureFunction
+@SoyFunctionSignature(
+    @Signature(
+      parameterTypes = {"list<any>"},
+      returnType = "int"
+    ))
 public final class LengthFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
@@ -57,13 +59,6 @@ public final class LengthFunction extends TypedSoyFunction
   @Override
   public String getName() {
     return "length";
-  }
-
-  @Override
-  public List<Signature> signatures() {
-    return ImmutableList.of(
-        Signature.create(
-            ImmutableList.of(ListType.of(AnyType.getInstance())), IntType.getInstance()));
   }
 
   @Override

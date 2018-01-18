@@ -22,12 +22,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation that represents parameter types and return type for a particular function signature.
+ * Annotation that contains a list of {@code Signature}. Soy functions/plugins can use this
+ * annotation to get additional type check for the arguments and return types.
+ *
+ * <p>TODO(b/71386491): Add some examples for external usages.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Signature {
-  String[] parameterTypes();
-
-  String returnType();
+public @interface SoyFunctionSignature {
+  Signature[] value();
 }

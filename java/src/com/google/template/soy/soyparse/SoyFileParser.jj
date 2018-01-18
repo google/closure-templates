@@ -486,15 +486,39 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a Soy expression. Returns null if parsing fails. */
   @Nullable
-  public static ExprNode parseExpression(String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
-    SoyFileParser parser = new SoyFileParser(exprText, resolver, errorReporter);
+  public static ExprNode parseExpression(
+      String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
+    String filePath = "expression parser";
+    SoyFileParser parser = new SoyFileParser(
+        exprText, resolver, filePath, errorReporter, EXPR);
     parser.headerInfo = SoyFileHeaderInfo.EMPTY;
 
     try {
       return parser.ExprInput();
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(
-          errorReporter, "expression parser", e, parser.token_source.curLexState);
+          errorReporter, filePath, e, parser.token_source.curLexState);
+      return null;
+    }
+  }
+
+  /** Attempts to parse the given input as a type node. Returns null if parsing fails. */
+  @Nullable
+  public static TypeNode parseType(String typeText, String filePath, ErrorReporter errorReporter) {
+    SoyFileParser parser = new SoyFileParser(
+        typeText,
+        PluginResolver.nullResolver(
+            PluginResolver.Mode.REQUIRE_DEFINITIONS,
+            errorReporter),
+        filePath,
+        errorReporter,
+        TYPE_EXPR);
+    parser.headerInfo = SoyFileHeaderInfo.EMPTY;
+    try {
+      return parser.TypeExpr();
+    } catch (ParseException e) {
+      ParseErrors.reportSoyFileParseException(
+          errorReporter, filePath, e, parser.token_source.curLexState);
       return null;
     }
   }
@@ -551,11 +575,17 @@ public class SoyFileParser {
     this.experimentalFeatures = checkNotNull(experimentalFeatures);
   }
 
-  /** Constructor for use by parseExpression() only. */
-  private SoyFileParser(String input, PluginResolver pluginResolver, ErrorReporter errorReporter) {
-    // this starts the lexer in EXPR state instead of DEFAULT
-    this(new SoyFileParserTokenManager(new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
-    this.filePath = "expression parser";
+  /** Constructor for use by parseExpression() and parseType() only. */
+  private SoyFileParser(
+      String input,
+      PluginResolver pluginResolver,
+      String filePath,
+      ErrorReporter errorReporter,
+      int lexState) {
+    // this starts the lexer in a particular state instead of DEFAULT
+    this(new SoyFileParserTokenManager(
+        new SimpleCharStream(new StringReader(input), 1, 1), lexState));
+    this.filePath = filePath;
     this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
     // This ctor is for testing only, and it is okay to enable experimental_map.

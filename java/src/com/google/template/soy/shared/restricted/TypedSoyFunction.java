@@ -17,28 +17,21 @@
 package com.google.template.soy.shared.restricted;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /** A soy function that carries type information. */
 public abstract class TypedSoyFunction implements SoyFunction {
 
-  /**
-   * Returns a list of {@link Signature}s, each {@link Signature} contains a list of parameter types
-   * and a return type. For any given number of parameters, we only allow up to one signature. For
-   * example, if a soy function says it can either take a IntType or take a StringType, a runtime
-   * exception will be thrown.
-   *
-   * @return List of {@link Signature}s that is allowed for this function.
-   */
-  public abstract List<Signature> signatures();
-
   @Override
   public final Set<Integer> getValidArgsSizes() {
+    if (!this.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+      throw new IllegalStateException(
+          "TypedSoyFunction must set @SoyFunctionSignature annotation.");
+    }
     Map<Integer, Signature> validArgs = new HashMap<>();
-    for (Signature signature : signatures()) {
-      int argSize = signature.parameterTypes().size();
+    for (Signature signature : this.getClass().getAnnotation(SoyFunctionSignature.class).value()) {
+      int argSize = signature.parameterTypes().length;
       if (validArgs.containsKey(argSize)) {
         throw new IllegalArgumentException(
             String.format(

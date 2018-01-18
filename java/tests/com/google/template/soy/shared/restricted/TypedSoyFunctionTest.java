@@ -19,10 +19,6 @@ package com.google.template.soy.shared.restricted;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
-import com.google.common.collect.ImmutableList;
-import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.StringType;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,15 +26,17 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class TypedSoyFunctionTest {
 
+  @SoyFunctionSignature({
+    @Signature(
+      parameterTypes = {"string"},
+      returnType = "string"
+    ),
+    @Signature(
+      parameterTypes = {"int"},
+      returnType = "int"
+    )
+  })
   private static final class BadTypedSoyFunction extends TypedSoyFunction {
-
-    @Override
-    public List<Signature> signatures() {
-      return ImmutableList.of(
-          Signature.create(ImmutableList.of(StringType.getInstance()), StringType.getInstance()),
-          Signature.create(ImmutableList.of(IntType.getInstance()), IntType.getInstance()));
-    }
-
     @Override
     public String getName() {
       return "badFunc";
