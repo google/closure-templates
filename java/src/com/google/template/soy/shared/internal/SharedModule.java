@@ -87,6 +87,9 @@ public final class SharedModule extends AbstractModule {
     for (SoyFunction function : soyFunctionsSet) {
       mapBuilder.put(function.getName(), function);
     }
+    for (String builtinFunctionName : BuiltinFunction.names()) {
+      mapBuilder.put(builtinFunctionName, BuiltinFunction.forFunctionName(builtinFunctionName));
+    }
     return mapBuilder.build();
   }
 

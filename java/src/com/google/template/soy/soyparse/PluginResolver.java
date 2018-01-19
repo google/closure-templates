@@ -21,13 +21,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -125,17 +123,13 @@ public final class PluginResolver {
   public SoyFunction lookupSoyFunction(String name, int numArgs, SourceLocation location) {
     SoyFunction soyFunction = functions.get(name);
     if (soyFunction == null) {
-      soyFunction = BuiltinFunction.forFunctionName(name);
-    }
-    if (soyFunction == null) {
       if (mode == Mode.REQUIRE_DEFINITIONS) {
         reporter.report(
             location,
             UNKNOWN_PLUGIN,
             "function",
             name,
-            SoyErrors.getDidYouMeanMessage(
-                Sets.union(BuiltinFunction.names(), functions.keySet()), name));
+            SoyErrors.getDidYouMeanMessage(functions.keySet(), name));
       }
       soyFunction = createPlaceholderSoyFunction(name, numArgs);
     }
