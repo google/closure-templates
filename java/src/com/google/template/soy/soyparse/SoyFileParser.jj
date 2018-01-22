@@ -1020,7 +1020,7 @@ TOKEN_MGR_DECLS: {
 
 // Collect the literal text using MORE.
 <IN_LITERAL_BLOCK> MORE: {
-  < <ANY_CHAR> >
+  < ~[] >
 }
 
 // When we reach the '{/literal}' tag, return the collected text content (minus the end tag).
@@ -1155,16 +1155,12 @@ TOKEN_MGR_DECLS: {
 // =================================================================================================
 
 <*> TOKEN: {
-  < #ANY_CHAR: ~[] >
-| < #WS: " " | "\t" | "\n" | "\r" | "\r\n" >
-| < #WS_CHAR: " " | "\t" | "\n" | "\r" >
+  < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
 | < #NOT_WS: ~[" ","\t","\n","\r"] >
-| < #NOT_NL: ~["\n","\r"] >
-| < #BRACE: ["{","}"] >
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
-| < #LINE_COMMENT: "//" ( <NOT_NL> )* >
+| < #LINE_COMMENT: "//" ( ~["\n","\r"] )* >
 }
 
 
