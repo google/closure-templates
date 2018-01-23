@@ -461,11 +461,6 @@ public class SoyFileParser {
       "foreach loops are no longer supported, please switch to the for loop."
       , StyleAllowance.NO_CAPS);
 
-  private static final ImmutableList<String> FOREACH_WHITELISTED_PATHS = ImmutableList.of(
-  );
-  private static final ImmutableSet<String> FOREACH_WHITELISTED_EXACT_PATHS = ImmutableSet.of(
-  );
-
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
       SoyErrorKind.of(
@@ -1873,6 +1868,7 @@ private StatementNode ControlFlowStmt() :
     stmt = IfStmt()
   | stmt = SwitchStmt()
   | stmt = ForStmt()
+  | stmt = ForeachStmt()
   )
 
   { return stmt; }
@@ -2654,17 +2650,13 @@ private SwitchNode SwitchStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagEnd, in, ifemptyTag, tagClose;
+  Token tagBegin, tagEnd, in, ifemptyTag;
   VarRefNode var = null;
   ExprNode expr = null;
   List<StandaloneNode> templateBlock;
 }
 {
-  // TODO(b/70577468): support both for and foreach keywords during migration
-  (
-    tagBegin = <CMD_BEGIN_FOREACH>
-  | tagBegin = <CMD_BEGIN_FOR>
-  )
+  tagBegin = <CMD_BEGIN_FOR>
   try {
     var = VarRef()
     in = Keyword("in")
@@ -2708,29 +2700,29 @@ private ForNode ForStmt() :
     }
   ]
 
-  // the lookahead acts like an if so we only expect {/foreach} if we begin with {foreach}
-  ( LOOKAHEAD({tagBegin.kind != CMD_BEGIN_FOR})
-    tagClose = <CMD_CLOSE_FOREACH>
-  | tagClose = <CMD_CLOSE_FOR>
-  )
+  <CMD_CLOSE_FOR>
+  { return forNode; }
+}
+
+/**
+ * Foreach -> error
+ *
+ * <p>We used to support a 'foreach' loop syntax, but it has been superceded by the for loop.  This
+ * production exists simply to provide a better error message. TODO(b/70577468): sometime in 2019,
+ * just delete this and the token definitions.
+ *
+ * <p>returns an empty log node as a placeholder
+ */
+private LogNode ForeachStmt() : {
+  Token tok;
+}
+{
+  tok = <CMD_BEGIN_FOREACH>
   {
-    if (tagBegin.kind == CMD_BEGIN_FOREACH) {
-      boolean isWhitelisted = FOREACH_WHITELISTED_EXACT_PATHS.contains(filePath);
-      if (!isWhitelisted) {
-        for (String whitelisted : FOREACH_WHITELISTED_PATHS) {
-          if (filePath.contains(whitelisted)) {
-            isWhitelisted = true;
-            break;
-          }
-        }
-      }
-      if (isWhitelisted) {
-        errorReporter.warn(createSrcLoc(tagBegin), FOREACH_IS_DISABLED);
-      } else {
-        errorReporter.report(createSrcLoc(tagBegin), FOREACH_IS_DISABLED);
-      }
-    }
-    return forNode;
+    SourceLocation location = createSrcLoc(tok);
+    errorReporter.report(location, FOREACH_IS_DISABLED);
+    skipToTemplateToken(CMD_CLOSE_FOREACH);
+    return new LogNode(nodeIdGen.genId(), location);
   }
 }
 
