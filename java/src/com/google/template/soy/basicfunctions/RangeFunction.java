@@ -33,11 +33,13 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.IntType;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.objectweb.asm.Type;
@@ -54,7 +56,21 @@ import org.objectweb.asm.Type;
  * </ul>
  */
 @Singleton
-public final class RangeFunction
+@SoyFunctionSignature({
+  @Signature(
+    parameterTypes = {"number"},
+    returnType = "list<int>"
+  ),
+  @Signature(
+    parameterTypes = {"number", "number"},
+    returnType = "list<int>"
+  ),
+  @Signature(
+    parameterTypes = {"number", "number", "number"},
+    returnType = "list<int>"
+  )
+})
+public final class RangeFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -65,11 +81,6 @@ public final class RangeFunction
   @Override
   public String getName() {
     return "range";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1, 2, 3);
   }
 
   private static final class JbcSrcMethods {

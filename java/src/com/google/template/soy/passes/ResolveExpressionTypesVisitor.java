@@ -30,7 +30,6 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
-import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -1298,10 +1297,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         } else {
           node.setType(UnknownType.getInstance());
         }
-      } else if (fn instanceof RangeFunction) {
-        // Range function can takes up to 3 arguments.
-        // TODO(b/70946095): check the arguments type here.
-        node.setType(typeRegistry.getOrCreateListType(IntType.getInstance()));
       } else if (fn instanceof MapKeysFunction) {
         if (checkArgType(node.getChild(0), MapType.ANY_MAP, node)) {
           visitMapKeysFunction(node);

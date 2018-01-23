@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.restricted;
 
+import com.google.common.collect.ImmutableSortedSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,6 @@ public abstract class TypedSoyFunction implements SoyFunction {
       }
       validArgs.put(argSize, signature);
     }
-    return validArgs.keySet();
+    return ImmutableSortedSet.copyOf(validArgs.keySet());
   }
 }
