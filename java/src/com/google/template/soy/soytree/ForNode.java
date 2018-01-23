@@ -16,21 +16,16 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import java.util.List;
 
 /**
  * Node representing a 'foreach' statement. Should always contain a ForNonemptyNode as the first
@@ -82,21 +77,6 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
     return expr;
   }
 
-  /**
-   * Returns a {@link RangeArgs} object if the loop expression is a {@code range(...)} expression.
-   */
-  public Optional<RangeArgs> exprAsRangeArgs() {
-    // TODO(b/70577468): consider caching this value? This would only help out TOFU, so it might not
-    // be worth it.
-    if (expr.getRoot() instanceof FunctionNode) {
-      FunctionNode fn = (FunctionNode) expr.getRoot();
-      if (fn.getSoyFunction() instanceof RangeFunction) {
-        return Optional.of(RangeArgs.create(fn.getChildren()));
-      }
-    }
-    return Optional.absent();
-  }
-
   @Override
   public String getCommandText() {
     return "$" + ((ForNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
@@ -116,34 +96,5 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   @Override
   public ForNode copy(CopyState copyState) {
     return new ForNode(this, copyState);
-  }
-
-  /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
-  @AutoValue
-  public abstract static class RangeArgs {
-    static RangeArgs create(List<ExprNode> args) {
-      switch (args.size()) {
-        case 1:
-          return new AutoValue_ForNode_RangeArgs(
-              Optional.<ExprNode>absent(), args.get(0), Optional.<ExprNode>absent());
-        case 2:
-          return new AutoValue_ForNode_RangeArgs(
-              Optional.of(args.get(0)), args.get(1), Optional.<ExprNode>absent());
-        case 3:
-          return new AutoValue_ForNode_RangeArgs(
-              Optional.of(args.get(0)), args.get(1), Optional.of(args.get(2)));
-        default:
-          throw new AssertionError();
-      }
-    }
-
-    /** The expression for the iteration start point. Default is {@code 0}. */
-    public abstract Optional<ExprNode> start();
-
-    /** The expression for the iteration end point. This is interpreted as an exclusive limit. */
-    public abstract ExprNode limit();
-
-    /** The expression for the iteration increment. Default is {@code 1}. */
-    public abstract Optional<ExprNode> increment();
   }
 }

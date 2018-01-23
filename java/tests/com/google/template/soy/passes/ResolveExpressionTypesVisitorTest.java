@@ -819,9 +819,8 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
-    return TYPE_REGISTRY.getOrCreateType(
-        SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter),
-        errorReporter);
+    return SoyFileParser.parseType(
+        type, TYPE_REGISTRY, "com.google.foo.bar.FakeSoyFunction", errorReporter);
   }
 
   /**

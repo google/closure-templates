@@ -46,6 +46,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SharedRuntime;
@@ -392,9 +393,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitForNode(ForNode node) {
-    Optional<ForNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
+    Optional<RangeArgs> exprAsRangeArgs = RangeArgs.createFromNode(node);
     if (exprAsRangeArgs.isPresent()) {
-      ForNode.RangeArgs args = exprAsRangeArgs.get();
+      RangeArgs args = exprAsRangeArgs.get();
       int step = args.increment().isPresent() ? evalRangeArg(node, args.increment().get()) : 1;
       int start = args.start().isPresent() ? evalRangeArg(node, args.start().get()) : 0;
       int end = evalRangeArg(node, args.limit());

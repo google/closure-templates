@@ -67,6 +67,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -314,7 +315,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitForNode(ForNode node) {
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
-    Optional<ForNode.RangeArgs> exprAsRangeArgs = node.exprAsRangeArgs();
+    Optional<RangeArgs> exprAsRangeArgs = RangeArgs.createFromNode(node);
     Scope scope = variables.enterScope();
     final Variable indexVar;
     final List<Statement> initializers = new ArrayList<>();
@@ -433,7 +434,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * {@code foreach} loop.
    */
   private CompiledForeachRangeArgs calculateRangeArgs(ForNode forNode, Scope scope) {
-    ForNode.RangeArgs rangeArgs = forNode.exprAsRangeArgs().get();
+    RangeArgs rangeArgs = RangeArgs.createFromNode(forNode).get();
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) forNode.getChild(0);
     ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
     Expression startExpression =
@@ -1058,16 +1059,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           }
 
           @Override
-          public Expression compileToString(PrintNode node, Label reattachPoint) {
-            return compilePrintNodeAsExpression(node, reattachPoint).coerceToString();
-          }
-
-          @Override
           public Statement compileToBuffer(CallNode call, AppendableExpression appendable) {
             // TODO(lukes): in the case that CallNode has to be escaped we will render all the bytes
             // into a buffer, box it into a soy value, escape it, then copy the bytes into this
             // buffer.  Consider optimizing at least one of the buffer copies away.
             return compilerWithNewAppendable(appendable).visit(call);
+          }
+
+          @Override
+          public Expression compileToString(PrintNode node, Label reattachPoint) {
+            return compilePrintNodeAsExpression(node, reattachPoint).coerceToString();
           }
 
           @Override

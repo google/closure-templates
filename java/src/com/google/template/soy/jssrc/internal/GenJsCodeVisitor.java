@@ -64,6 +64,7 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
+import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -1168,10 +1169,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // TODO(user): A more consistent pattern for local variable management.
     String limitName = varPrefix + "ListLen";
     CodeChunk.WithValue limitInitializer;
-    Optional<ForNode.RangeArgs> args = node.exprAsRangeArgs();
+    Optional<RangeArgs> args = RangeArgs.createFromNode(node);
     Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction;
     if (args.isPresent()) {
-      ForNode.RangeArgs range = args.get();
+      RangeArgs range = args.get();
       // if any of the expressions are too expensive, allocate local variables for them
       final CodeChunk.WithValue start =
           maybeStashInLocal(

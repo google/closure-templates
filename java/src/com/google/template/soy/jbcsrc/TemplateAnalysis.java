@@ -53,6 +53,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -538,7 +539,7 @@ final class TemplateAnalysis {
 
   // consider moving this to SoyTreeUtils or some similar place.
   private static StaticAnalysisResult isListExpressionEmpty(ForNode node) {
-    Optional<ForNode.RangeArgs> rangeArgs = node.exprAsRangeArgs();
+    Optional<RangeArgs> rangeArgs = RangeArgs.createFromNode(node);
     if (rangeArgs.isPresent()) {
       return isRangeExpressionEmpty(rangeArgs.get());
     }
@@ -551,7 +552,7 @@ final class TemplateAnalysis {
     return StaticAnalysisResult.UNKNOWN;
   }
 
-  private static StaticAnalysisResult isRangeExpressionEmpty(ForNode.RangeArgs range) {
+  private static StaticAnalysisResult isRangeExpressionEmpty(RangeArgs range) {
     int start = 0;
     if (range.start().isPresent()) {
       if (range.start().get() instanceof IntegerNode) {

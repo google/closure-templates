@@ -774,7 +774,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      *     is also used as a fake file path in the reported error.
      * @param errorReporter The Soy error reporter.
      */
-    private ResolvedSignature getOrCreateFunctionSignature(
+    private @Nullable ResolvedSignature getOrCreateFunctionSignature(
         Signature signature, String className, ErrorReporter errorReporter) {
       ResolvedSignature resolvedSignature = signatureMap.get(signature);
       if (resolvedSignature != null) {
@@ -782,15 +782,18 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       ImmutableList.Builder<SoyType> paramTypes = ImmutableList.builder();
       for (String paramTypeString : signature.parameterTypes()) {
-        paramTypes.add(
-            typeRegistry.getOrCreateType(
-                SoyFileParser.parseType(paramTypeString, className, errorReporter), errorReporter));
+        SoyType paramType =
+            SoyFileParser.parseType(paramTypeString, typeRegistry, className, errorReporter);
+        if (paramType == null) {
+          return null;
+        }
+        paramTypes.add(paramType);
       }
       SoyType returnType =
-          typeRegistry.getOrCreateType(
-              SoyFileParser.parseType(signature.returnType(), className, errorReporter),
-              errorReporter);
-
+          SoyFileParser.parseType(signature.returnType(), typeRegistry, className, errorReporter);
+      if (returnType == null) {
+        return null;
+      }
       resolvedSignature = ResolvedSignature.create(paramTypes.build(), returnType);
       signatureMap.put(signature, resolvedSignature);
       return resolvedSignature;
@@ -831,6 +834,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
           break;
         }
+      }
+      // TODO(b/71386491): Maybe we should set this to ErrorType
+      if (matchedSignature == null) {
+        node.setType(UnknownType.getInstance());
+        return;
       }
       for (int i = 0; i < node.numChildren(); ++i) {
         checkArgType(node.getChild(i), matchedSignature.parameterTypes().get(i), node);

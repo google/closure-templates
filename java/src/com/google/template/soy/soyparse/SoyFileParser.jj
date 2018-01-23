@@ -499,7 +499,7 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a type node. Returns null if parsing fails. */
   @Nullable
-  public static TypeNode parseType(String typeText, String filePath, ErrorReporter errorReporter) {
+  public static SoyType parseType(String typeText, SoyTypeRegistry typeRegistry, String filePath, ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(
         typeText,
         PluginResolver.nullResolver(
@@ -510,7 +510,7 @@ public class SoyFileParser {
         TYPE_EXPR);
     parser.headerInfo = SoyFileHeaderInfo.EMPTY;
     try {
-      return parser.TypeExpr();
+      return typeRegistry.getOrCreateType(parser.TypeExpr(), errorReporter);
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(
           errorReporter, filePath, e, parser.token_source.curLexState);
