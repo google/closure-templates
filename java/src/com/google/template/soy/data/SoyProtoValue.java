@@ -19,8 +19,7 @@ package com.google.template.soy.data;
 import com.google.protobuf.Message;
 
 /** A value object containing a proto. */
-// TODO(user): This should not implement SoyRecord.
-public interface SoyProtoValue extends SoyRecord {
+public interface SoyProtoValue extends SoyValue {
 
   /** Returns the underlying message. */
   Message getProto();
@@ -35,19 +34,4 @@ public interface SoyProtoValue extends SoyRecord {
    */
   SoyValue getProtoField(String name);
 
-  // -----------------------------------------------------------------------------------------------
-  // Explicitly deprecated SoyRecord methods. Use the *ProtoField methods instead.
-
-  @Deprecated
-  @Override
-  boolean hasField(String name);
-
-  @Deprecated
-  @Override
-  SoyValue getField(String name);
-
-  /** Proto fields are always immediately resolvable. */
-  @Deprecated
-  @Override
-  SoyValueProvider getFieldProvider(String name);
 }

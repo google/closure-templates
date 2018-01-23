@@ -18,6 +18,8 @@ package com.google.template.soy.types.proto;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -31,30 +33,58 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.shared.Names;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Soy value that wraps a protocol buffer message object.
  *
- * <p>This implements SoyMap to deal with some uses that require "reflecting" over Soy proto fields.
- * However, this usage is deprecated and will be unsupported when static type checking is used,
- * since it doesn't work with Javascript, which does not support reflection.
+ * <p>TODO(b/70906867): This implements SoyMap/SoyRecord for backwards compatibility. When Soy
+ * initially added support for protos we implemented these interfaces to support using protos in
+ * legacy untyped templates. This made it easier for teams to start passing protos to their
+ * templates but has turned out to be a bad idea because it means your templates work differently in
+ * javascript vs java. So now we continue to support these usecases but issue warnings when it
+ * occurs. In the long run we will switch to either throwing exception or always returning null from
+ * these methods.
  *
  */
-public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProtoValue, SoyMap {
+public final class SoyProtoValueImpl extends SoyAbstractValue
+    implements SoyProtoValue, SoyMap, SoyRecord {
+  // The minumum amount of time between logging for map/record access to a particular proto.
+  private static final long LOGGING_FREQUENCY = TimeUnit.MILLISECONDS.toMinutes(1);
+  private static final Logger logger = Logger.getLogger(SoyProtoValueImpl.class.getName());
+
+  private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForRecordAccess =
+      new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForMapAccess =
+      new ConcurrentHashMap<>();
+
+  @VisibleForTesting
+  static void clearLoggingData() {
+    protoNameToLastLogTimeForRecordAccess.clear();
+    protoNameToLastLogTimeForMapAccess.clear();
+  }
+
   private static final class ProtoClass {
     final ImmutableMap<String, Field> fields;
     final Message defaultInstance;
+    final String fullName;
 
     ProtoClass(Message defaultInstance, ImmutableMap<String, Field> fields) {
+      this.fullName = defaultInstance.getDescriptorForType().getFullName();
       this.defaultInstance = checkNotNull(defaultInstance);
       this.fields = checkNotNull(fields);
     }
@@ -90,6 +120,11 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
   // lazily initialized
   private ProtoClass clazz;
+
+  // This field is used by the Tofu renderer to tell the logging code where the access is, so that
+  // the log lines have sufficient information.  For jbcsrc we can just log an exception since the
+  // source location can be inferred from the stack trace.
+  private Object locationKey;
 
   private SoyProtoValueImpl(Message proto) {
     this.proto = checkNotNull(proto);
@@ -129,13 +164,21 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     return field.interpretField(proto).resolve();
   }
 
+  public void setAccessLocationKey(Object location) {
+    this.locationKey = location;
+  }
+
   // -----------------------------------------------------------------------------------------------
   // SoyRecord.
 
   @Deprecated
   @Override
-  // TODO(user): Issue warning for people who are running compilation that uses SoyRecord methods
   public boolean hasField(String name) {
+    asRecord();
+    return doHasField(name);
+  }
+
+  private boolean doHasField(String name) {
     // TODO(user): hasField(name) should really be two separate checks:
     // if (type.getField(name) == null) { throw new IllegalArgumentException(); }
     // if (!type.getField(name).hasField(proto)) { return null; }
@@ -148,21 +191,25 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
   @Deprecated
   @Override
-  // TODO(user): Issue warning for people who are running compilation that uses SoyRecord methods
   public SoyValue getField(String name) {
-    SoyValueProvider valueProvider = getFieldProvider(name);
+    asRecord();
+    return doGetField(name);
+  }
+
+  private SoyValue doGetField(String name) {
+    SoyValueProvider valueProvider = doGetFieldProvider(name);
     return (valueProvider != null) ? valueProvider.resolve() : null;
   }
 
   @Deprecated
   @Override
-  // TODO(user): Issue warning for people who are running compilation that uses SoyRecord methods
   public SoyValueProvider getFieldProvider(String name) {
-    return getFieldProviderInternal(name);
+    asRecord();
+    return doGetFieldProvider(name);
   }
 
-  private SoyValueProvider getFieldProviderInternal(final String name) {
-    if (!hasField(name)) {
+  private SoyValueProvider doGetFieldProvider(final String name) {
+    if (!doHasField(name)) {
       // jspb implements proto.getUnsetField() incorrectly. It should return default value for the
       // type (0, "", etc.), but jspb returns null instead. We follow jspb semantics, so return null
       // here, and the value will be converted to NullData higher up the chain.
@@ -175,13 +222,16 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
   // -----------------------------------------------------------------------------------------------
   // SoyMap.
 
+  @Deprecated
   @Override
   public int getItemCnt() {
     return getItemKeys().size();
   }
 
+  @Deprecated
   @Override
   public Collection<SoyValue> getItemKeys() {
+    asMap();
     // We allow iteration over keys for reflection, to support existing templates that require
     // this. We don't guarantee that this will be particularly fast (e.g. by caching) to avoid
     // slowing down the common case of field access. This basically goes over all possible keys,
@@ -195,19 +245,78 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     return builder.build();
   }
 
+  @Deprecated
   @Override
   public boolean hasItem(SoyValue key) {
-    return hasField(key.stringValue());
+    asMap();
+    return doHasField(key.stringValue());
   }
 
+  @Deprecated
   @Override
   public SoyValue getItem(SoyValue key) {
-    return getField(key.stringValue());
+    asMap();
+    return doGetField(key.stringValue());
   }
 
+  @Deprecated
   @Override
   public SoyValueProvider getItemProvider(SoyValue key) {
-    return getFieldProvider(key.stringValue());
+    asMap();
+    return doGetFieldProvider(key.stringValue());
+  }
+
+  private void asMap() {
+    asDeprecatedType("map", protoNameToLastLogTimeForMapAccess);
+  }
+
+  private void asRecord() {
+    asDeprecatedType("record", protoNameToLastLogTimeForRecordAccess);
+  }
+
+  private void asDeprecatedType(String type, ConcurrentHashMap<String, Long> lastAccessMap) {
+    Object locationKey = getAndClearLocationKey();
+    String fullName = clazz().fullName;
+    Long lastTime = lastAccessMap.get(fullName);
+    long nowMillis = System.currentTimeMillis();
+    if (lastTime == null || lastTime < nowMillis - LOGGING_FREQUENCY) {
+      Long replaced = lastAccessMap.put(fullName, nowMillis);
+      // we raced and stomped on a value, but that is fine, it just means that we might delay
+      // logging for this key
+      if (!Objects.equal(replaced, lastTime)) {
+        return;
+      }
+      if (logger.isLoggable(Level.WARNING)) {
+        if (locationKey == null) {
+          // if there is no locationKey (i.e. this is jbcsrc), then we will use a stack trace
+          Exception e = new Exception("bad proto access");
+          Names.rewriteStackTrace(e);
+          logger.log(
+              Level.WARNING,
+              String.format(
+                  "Accessing a proto of type %s as a %s is deprecated and won't work in "
+                      + "Javascript. Switch to strict types: go/soystatic",
+                  fullName, type),
+              e);
+        } else {
+          // if there is a locationKey (i.e. this is tofu), then we will use the location key
+          logger.log(
+              Level.WARNING,
+              String.format(
+                  "Accessing a proto of type %s as a %s is deprecated and won't work in "
+                      + "Javascript. Switch to strict types: go/soystatic\n\t%s",
+                  fullName, type, locationKey));
+        }
+      }
+    }
+  }
+
+  private Object getAndClearLocationKey() {
+    Object key = locationKey;
+    if (key != null) {
+      locationKey = null;
+    }
+    return key;
   }
 
   // -----------------------------------------------------------------------------------------------

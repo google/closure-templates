@@ -382,6 +382,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (fieldAccess.getBaseExprChild().getType().getKind() == Kind.PROTO) {
       return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
     }
+    maybeMarkBadProtoAccess(fieldAccess, base);
     // base is a valid SoyRecord: get value
     SoyValue value = ((SoyRecord) base).getField(fieldAccess.getFieldName());
 
@@ -428,6 +429,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     // base is a valid SoyMap or SoyNewMap: get value
+    maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
     SoyValue value =
         base instanceof SoyMap ? ((SoyMap) base).getItem(key) : ((SoyNewMap) base).get(key);
@@ -440,6 +442,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     return (value != null) ? value : UndefinedData.INSTANCE;
+  }
+
+  /**
+   * If the value is a proto, then set the current access location since we are about to access it
+   * incorrectly.
+   */
+  private static void maybeMarkBadProtoAccess(ExprNode expr, SoyValue value) {
+    if (value instanceof SoyProtoValueImpl) {
+      ((SoyProtoValueImpl) value).setAccessLocationKey(expr.getSourceLocation());
+    }
   }
 
   // Returns true if the base SoyValue of a data access chain is null or undefined.
