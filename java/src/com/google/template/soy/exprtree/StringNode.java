@@ -19,6 +19,7 @@ package com.google.template.soy.exprtree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.primitive.StringType;
 
@@ -33,13 +34,16 @@ public final class StringNode extends AbstractPrimitiveNode {
   /** The string value. */
   private final String value;
 
+  private final QuoteStyle quoteStyle;
+
   /**
    * @param value The string value.
    * @param sourceLocation The node's source location.
    */
-  public StringNode(String value, SourceLocation sourceLocation) {
+  public StringNode(String value, QuoteStyle quoteStyle, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.value = Preconditions.checkNotNull(value);
+    this.quoteStyle = quoteStyle;
   }
 
   /**
@@ -50,6 +54,7 @@ public final class StringNode extends AbstractPrimitiveNode {
   private StringNode(StringNode orig, CopyState copyState) {
     super(orig, copyState);
     this.value = orig.value;
+    this.quoteStyle = orig.quoteStyle;
   }
 
   @Override
@@ -85,7 +90,7 @@ public final class StringNode extends AbstractPrimitiveNode {
    * @return A Soy string literal for this string value (including the surrounding single quotes).
    */
   public String toSourceString(boolean escapeToAscii) {
-    return BaseUtils.escapeToSoyString(value, escapeToAscii);
+    return BaseUtils.escapeToSoyString(value, escapeToAscii, quoteStyle);
   }
 
   @Override

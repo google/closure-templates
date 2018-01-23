@@ -172,9 +172,11 @@ public class BaseUtils {
    * @param value The string value to escape.
    * @param shouldEscapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes
    *     (backslash + 'u' + 4 hex digits).
-   * @return A Soy string literal for this string value (including the surrounding single quotes).
+   * @param quoteStyle whether or not to use double quotes
+   * @return A Soy string literal for this string value (including the surrounding quotes).
    */
-  public static String escapeToSoyString(String value, boolean shouldEscapeToAscii) {
+  public static String escapeToSoyString(
+      String value, boolean shouldEscapeToAscii, QuoteStyle quoteStyle) {
 
     // StringUtil.javaScriptEscape() is meant to be compatible with JS string syntax, which is a
     // superset of the Soy expression string syntax, so we can't depend on it to properly escape a
@@ -184,7 +186,7 @@ public class BaseUtils {
 
     int len = value.length();
     StringBuilder out = new StringBuilder(len * 9 / 8);
-    out.append('\'');
+    out.append(quoteStyle.getQuoteChar());
 
     int codePoint;
     for (int i = 0; i < len; i += Character.charCount(codePoint)) {
@@ -210,11 +212,11 @@ public class BaseUtils {
           out.append("\\\\");
           break;
         case '\'':
-          out.append("\\'");
+          out.append(quoteStyle == QuoteStyle.DOUBLE ? "'" : "\\'");
           break;
         case '"':
-          out.append('"');
-          break; // note: don't escape double quotes in Soy strings
+          out.append(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : '"');
+          break;
         default:
           // If shouldEscapeToAscii, then hex escape characters outside the range 0x20 to 0x7F.
           if (shouldEscapeToAscii && (codePoint < 0x20 || codePoint >= 0x7F)) {
@@ -226,7 +228,7 @@ public class BaseUtils {
       }
     }
 
-    out.append('\'');
+    out.append(quoteStyle.getQuoteChar());
     return out.toString();
   }
 

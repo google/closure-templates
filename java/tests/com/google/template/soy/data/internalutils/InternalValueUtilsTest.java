@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -104,7 +105,8 @@ public class InternalValueUtilsTest {
         0.0);
     assertEquals(
         "foo",
-        InternalValueUtils.convertPrimitiveExprToData(new StringNode("foo", SourceLocation.UNKNOWN))
+        InternalValueUtils.convertPrimitiveExprToData(
+                new StringNode("foo", QuoteStyle.SINGLE, SourceLocation.UNKNOWN))
             .stringValue());
   }
 

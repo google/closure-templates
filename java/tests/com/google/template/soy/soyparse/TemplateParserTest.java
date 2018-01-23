@@ -443,7 +443,7 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("{'unfinished}")
         .causesError("Unexpected newline in Soy string.");
     TemplateSubject.assertThatTemplateContent("{\"unfinished}")
-        .causesError("Found use of double quotes, Soy strings use single quotes.");
+        .causesError("Unexpected newline in Soy string.");
 
     assertValidTemplate("{call aaa.bbb.ccc data=\"all\" /}");
     assertValidTemplate(

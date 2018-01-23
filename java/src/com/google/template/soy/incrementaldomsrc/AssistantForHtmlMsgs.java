@@ -22,6 +22,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESC
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -193,7 +194,9 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     jsCodeBuilder().increaseIndent();
 
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
-      jsCodeBuilder().appendLine("case ", BaseUtils.escapeToSoyString(ph.getKey(), true), ":");
+      jsCodeBuilder()
+          .appendLine(
+              "case ", BaseUtils.escapeToSoyString(ph.getKey(), true, QuoteStyle.SINGLE), ":");
       jsCodeBuilder().increaseIndent();
       master.visitForUseByAssistants(ph.getValue());
       jsCodeBuilder().appendLine("break;");

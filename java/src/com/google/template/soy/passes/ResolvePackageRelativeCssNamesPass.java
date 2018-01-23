@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -111,7 +112,8 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
 
     // Replace the selector text with resolved selector text
     String prefixed = packagePrefix + selectorText.substring(RELATIVE_SELECTOR_PREFIX.length());
-    StringNode newSelector = new StringNode(prefixed, selector.getSourceLocation());
+    StringNode newSelector =
+        new StringNode(prefixed, QuoteStyle.SINGLE, selector.getSourceLocation());
     node.replaceChild(selector, newSelector);
   }
 

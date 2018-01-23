@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -149,13 +150,15 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       FunctionNode funcNode =
           new FunctionNode(VeLogJsSrcLoggingFunction.INSTANCE, insertionLocation);
-      funcNode.addChild(new StringNode(function.getFunctionName(), insertionLocation));
+      funcNode.addChild(
+          new StringNode(function.getFunctionName(), QuoteStyle.SINGLE, insertionLocation));
       funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));
       StandaloneNode attributeName = node.getChild(0);
       if (attributeName instanceof RawTextNode) {
         // If attribute name is a plain text, directly pass it as a function argument.
         funcNode.addChild(
-            new StringNode(((RawTextNode) attributeName).getRawText(), insertionLocation));
+            new StringNode(
+                ((RawTextNode) attributeName).getRawText(), QuoteStyle.SINGLE, insertionLocation));
       } else {
         // Otherwise wrap the print node or call node into a let block, and use the let variable
         // as a function argument.

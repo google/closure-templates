@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -35,7 +36,7 @@ public class ProtoInitNodeTest {
             "my.awesome.Proto", ImmutableList.of("f", "i", "s"), SourceLocation.UNKNOWN);
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
-    fn.addChild(new StringNode("str", SourceLocation.UNKNOWN));
+    fn.addChild(new StringNode("str", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
     assertEquals("my.awesome.Proto(f: 3.14159, i: 2, s: 'str')", fn.toSourceString());
   }
 }

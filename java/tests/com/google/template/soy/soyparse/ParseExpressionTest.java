@@ -175,8 +175,8 @@ public final class ParseExpressionTest {
     assertThatExpression("'\\u00AG'").isNotValidExpression();
     assertThatExpression("'\\8'").isNotValidExpression();
     assertThatExpression("'\\a'").isNotValidExpression();
-    assertThatExpression("\"\"").isNotValidExpression();
-    assertThatExpression("\"abc\"").isNotValidExpression();
+    assertThatExpression("\"\"").isValidExpression();
+    assertThatExpression("\"abc\"").isValidExpression();
   }
 
   @Test

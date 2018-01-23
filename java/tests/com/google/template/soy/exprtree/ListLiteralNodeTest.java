@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,7 +41,8 @@ public final class ListLiteralNodeTest {
 
     ListLiteralNode listLit =
         new ListLiteralNode(
-            ImmutableList.<ExprNode>of(new StringNode("blah", X), new IntegerNode(123, X), dataRef),
+            ImmutableList.<ExprNode>of(
+                new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), dataRef),
             X);
     assertEquals("['blah', 123, $foo]", listLit.toSourceString());
 

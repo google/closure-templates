@@ -24,6 +24,7 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
@@ -156,7 +157,8 @@ public abstract class CodeChunk {
   public static WithValue stringLiteral(String contents) {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
     // JS source files.
-    String escaped = BaseUtils.escapeToSoyString(contents, true /* shouldEscapeToAscii */);
+    String escaped =
+        BaseUtils.escapeToSoyString(contents, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
 
     // </script in a JavaScript string will end the current script tag in most browsers. Escape the
     // forward slash in the string to get around this issue.

@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -274,7 +275,9 @@ public class TemplateNodeTest {
                     "{namespace ns}",
                     "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
                     "{/deltemplate}"));
-    node.getExprList().get(0).replaceChild(0, new StringNode("variant", node.getSourceLocation()));
+    node.getExprList()
+        .get(0)
+        .replaceChild(0, new StringNode("variant", QuoteStyle.SINGLE, node.getSourceLocation()));
     assertEquals("variant", node.getDelTemplateVariant());
     assertEquals("variant", node.getDelTemplateKey().variant());
   }
@@ -290,11 +293,15 @@ public class TemplateNodeTest {
                     "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
                     "{/deltemplate}"));
     node.getExprList().get(0).replaceChild(0, new BooleanNode(true, node.getSourceLocation()));
+    boolean succeeded = false;
     try {
       node.getDelTemplateVariant();
-      fail("An error is expected when an invalid node type is used.");
+      succeeded = true;
     } catch (AssertionError e) {
       assertTrue(e.getMessage().contains("Invalid expression for deltemplate"));
+    }
+    if (succeeded) {
+      fail("expected getDelTemplateVariant() to fail");
     }
 
     // Try to resolve a global to an invalid string
@@ -307,7 +314,8 @@ public class TemplateNodeTest {
                     "{/deltemplate}"));
     node.getExprList()
         .get(0)
-        .replaceChild(0, new StringNode("Not and Identifier!", node.getSourceLocation()));
+        .replaceChild(
+            0, new StringNode("Not and Identifier!", QuoteStyle.SINGLE, node.getSourceLocation()));
     try {
       node.getDelTemplateVariant();
       fail("An error is expected when a global string value is not an identifier.");

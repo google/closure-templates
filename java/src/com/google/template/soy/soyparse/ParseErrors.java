@@ -43,8 +43,6 @@ final class ParseErrors {
       SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator.");
   private static final SoyErrorKind LEGACY_NOT_ERROR =
       SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
-  private static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
-      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected closing tag.");
   private static final SoyErrorKind UNEXPECTED_EOF =
@@ -90,9 +88,6 @@ final class ParseErrors {
       case SoyFileParserConstants.DECL_BEGIN_INJECT_PARAM:
       case SoyFileParserConstants.DECL_BEGIN_OPT_INJECT_PARAM:
         reporter.report(location, UNEXPECTED_PARAM_DECL);
-        return;
-      case SoyFileParserConstants.DOUBLE_QUOTE:
-        reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
       case SoyFileParserConstants.LEGACY_AND:
         reporter.report(location, LEGACY_AND_ERROR);
@@ -183,10 +178,6 @@ final class ParseErrors {
         return "{msg";
       case SoyFileParserConstants.CMD_BEGIN_FALLBACK_MSG:
         return "{fallbackmsg";
-      case SoyFileParserConstants.CMD_BEGIN_XID:
-        return null;
-      case SoyFileParserConstants.CMD_BEGIN_CSS:
-        return null;
       case SoyFileParserConstants.CMD_BEGIN_IF:
         return "{if";
       case SoyFileParserConstants.CMD_BEGIN_ELSEIF:
@@ -203,6 +194,8 @@ final class ParseErrors {
         return "{switch";
       case SoyFileParserConstants.CMD_BEGIN_CASE:
         return "{case";
+      case SoyFileParserConstants.CMD_BEGIN_XID:
+      case SoyFileParserConstants.CMD_BEGIN_CSS:
       case SoyFileParserConstants.CMD_BEGIN_FOREACH:
         return null; // want to exclude this from expectation messages
       case SoyFileParserConstants.CMD_BEGIN_PRINT:
@@ -219,7 +212,6 @@ final class ParseErrors {
       case SoyFileParserConstants.VARIANT_ATTR:
       case SoyFileParserConstants.GENDERS_ATTR:
       case SoyFileParserConstants.LOGONLY_ATTR:
-      case SoyFileParserConstants.CONFIG_ATTR:
         return "attribute name";
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
       case SoyFileParserConstants.EQ_QUOTE:
@@ -243,6 +235,7 @@ final class ParseErrors {
       case SoyFileParserConstants.FLOAT:
         return "number";
       case SoyFileParserConstants.SINGLE_QUOTE:
+      case SoyFileParserConstants.DOUBLE_QUOTE:
         return "string";
       case SoyFileParserConstants.DOLLAR_IDENT:
         return "variable";

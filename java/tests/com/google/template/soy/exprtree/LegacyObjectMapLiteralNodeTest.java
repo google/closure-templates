@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,9 +42,9 @@ public final class LegacyObjectMapLiteralNodeTest {
     LegacyObjectMapLiteralNode mapLit =
         new LegacyObjectMapLiteralNode(
             ImmutableList.<ExprNode>of(
-                new StringNode("aaa", X),
-                new StringNode("blah", X),
-                new StringNode("bbb", X),
+                new StringNode("aaa", QuoteStyle.SINGLE, X),
+                new StringNode("blah", QuoteStyle.SINGLE, X),
+                new StringNode("bbb", QuoteStyle.SINGLE, X),
                 new IntegerNode(123, X),
                 booDataRef,
                 fooDataRef),

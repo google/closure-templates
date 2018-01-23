@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -27,8 +29,6 @@ final class SoyParseUtils {
 
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
       SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
-  private static final SoyErrorKind END_OF_STRING =
-      SoyErrorKind.of("End-of-string after escape character.");
   private static final SoyErrorKind INVALID_UNICODE_SEQUENCE =
       SoyErrorKind.of("Invalid unicode sequence ''{0}''.");
   private static final SoyErrorKind UNKNOWN_ESCAPE_CODE =
@@ -88,10 +88,7 @@ final class SoyParseUtils {
    */
   private static int doUnescape(
       String s, int i, StringBuilder sb, ErrorReporter errorReporter, SourceLocation loc) {
-    if (i >= s.length()) {
-      errorReporter.report(loc.offsetStartCol(i), END_OF_STRING);
-      return i;
-    }
+    checkArgument(i < s.length(), "Found escape sequence at the end of a string.");
 
     char c = s.charAt(i++);
     switch (c) {

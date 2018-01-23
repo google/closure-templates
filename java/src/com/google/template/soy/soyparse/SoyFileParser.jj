@@ -55,6 +55,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -702,7 +703,11 @@ TOKEN_MGR_DECLS: {
       // prevState isn't unset (i.e. -1) then something has gone wrong
       throw new IllegalStateException("pushed too deep");
     }
-    if (newState != IN_ATTRIBUTE_VALUE & newState != IN_SOYDOC & newState != IN_MULTILINE_COMMENT) {
+    if (newState != IN_ATTRIBUTE_VALUE
+        & newState != IN_DQ_STRING
+        & newState != IN_SQ_STRING
+        & newState != IN_SOYDOC
+        & newState != IN_MULTILINE_COMMENT) {
       throw new IllegalArgumentException("not allowed to push " + lexStateNames[newState]);
     }
     prevState = curLexState;
@@ -755,7 +760,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
 
-<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> SKIP: {
+<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
   < <WS> >
 | < <LINE_COMMENT> >
 }
@@ -770,7 +775,7 @@ TOKEN_MGR_DECLS: {
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> SKIP: {
+<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, TYPE_EXPR> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -832,20 +837,25 @@ TOKEN_MGR_DECLS: {
 
 // While most Soy tag attributes are parsed as one big text blob in the IN_ATTRIBUTE_VALUE state,
 // the attributes below need to be parsed as Soy expressions. Since javacc parsers do not backtrack,
-// we want to switch the parser in the EXPR state, and parse the expression directly from the input
-// stream. (Otherwise we would need to create a whole new SoyFileParser with just the attribute text
-// as input.)
-| < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < GENDERS_ATTR: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < LOGONLY_ATTR: "logonly" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < CONFIG_ATTR: "config" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
+// we want to switch the parser in the EXPR_NO_DOUBLE_QUOTE state, and parse the expression directly
+// from the input stream. (Otherwise we would need to create a whole new SoyFileParser with just the
+// attribute text as input.)
+| < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < GENDERS_ATTR: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < LOGONLY_ATTR: "logonly" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
 }
 
-<EXPR> TOKEN: {
+// used for things like phname
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < EQ_QUOTE: "=" ( <WS> )* "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
-| < DOUBLE_QUOTE: "\"" >
 }
+
+// exits the attribute value
+<EXPR_NO_DOUBLE_QUOTE> TOKEN: {
+  < END_EXPR_ATTR: "\"" >: IN_CMD_TAG
+}
+
 
 <IN_ATTRIBUTE_VALUE> TOKEN: {
   < ATTRIBUTE_VALUE: "\"" >
@@ -972,7 +982,7 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG, EXPR, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
@@ -988,7 +998,7 @@ TOKEN_MGR_DECLS: {
 | < CSS_SELECTOR: ( "-" | "%" )? <RAW_IDENT> ( "-" | <RAW_IDENT> | <DEC_DIGITS> )* >
 }
 
-<EXPR> TOKEN: {
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < PRINT_DIRECTIVE: "|" <IDENT> >
 }
 
@@ -1045,7 +1055,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Literals.
 
-<EXPR> TOKEN: {
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < NULL: "null" >
 | < TRUE: "true">
 | < FALSE: "false" >
@@ -1060,31 +1070,42 @@ TOKEN_MGR_DECLS: {
 
 // -------------------------------------------------------------------------------------------------
 // Strings.
+//
+// we use pushState/popState to make sure we pop back into the correct expr state
+//
 
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
+  < SINGLE_QUOTE: "'" > { pushState(IN_SQ_STRING); }
+}
 <EXPR> TOKEN: {
-  < SINGLE_QUOTE: "'" > : IN_STRING
+  < DOUBLE_QUOTE: "\"" > { pushState(IN_DQ_STRING); }
 }
 
-<IN_STRING> TOKEN: {
-  < STRING: "'" >
-  { matchedToken.image = matchedToken.image.substring(0, matchedToken.image.length() - 1); }
-  : EXPR
-  // We switch to TEMPLATE_DEFAULT rather than remaining in EXPR in order to not clobber the
-  // rest of the template in case the dev forgot to close a string, e.g. {print 'foo}
-| < UNEXPECTED_NEWLINE: ( "\n" | "\r" ) > : TEMPLATE_DEFAULT
+<IN_SQ_STRING> TOKEN: {
+  < SQ_STRING: "'" > { popState(); }
 }
 
-<IN_STRING> MORE: {
+<IN_DQ_STRING> TOKEN: {
+  < DQ_STRING: "\"" > { popState(); }
+}
+
+<IN_SQ_STRING, IN_DQ_STRING> MORE: {
   < ~["\n","\r"] >
 | "\\\\"
 | "\\'"
+| "\\\""
+}
+<IN_SQ_STRING, IN_DQ_STRING> TOKEN: {
+  // We switch to TEMPLATE_DEFAULT rather than remaining in EXPR in order to not clobber the
+  // rest of the template in case the dev forgot to close a string, e.g. {print 'foo}
+  < UNEXPECTED_NEWLINE: ( "\n" | "\r" ) > { resetState(); SwitchTo(TEMPLATE_DEFAULT); }
 }
 
 
 // -------------------------------------------------------------------------------------------------
 // Operators.
 
-<EXPR> TOKEN: {
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < QMARK: "?" >    // Precedence 1 operators
 | < COLON: ":" >    // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
@@ -1116,7 +1137,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Identifiers.
 
-<EXPR> TOKEN: {
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < IDENT: <RAW_IDENT> >
   // N.B. <IJ> needs to be defined above <DOLLAR_IDENT> so $ij isn't parsed as <DOLLAR_IDENT>
 | < IJ:  "$ij" >
@@ -1127,7 +1148,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Legacy and unexpected tokens.
 
-<EXPR> TOKEN: {
+<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < LEGACY_AND : "&&" >
 | < LEGACY_OR : "||" >
 | < LEGACY_NOT : "!" >
@@ -1163,7 +1184,7 @@ TOKEN_MGR_DECLS: {
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> TOKEN: {
+<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -1353,12 +1374,12 @@ private CommandTagAttribute Attribute() :
     )
 
     try {
-      // Allow this to be optional to yeild a better error message below.  Otherwise we will report
+      // Allow this to be optional to yield a better error message below.  Otherwise we will report
       // that double quotes aren't usable as soy strings.
       [
         exprList = ExprList()
       ]
-      dqToken = <DOUBLE_QUOTE>
+      dqToken = <END_EXPR_ATTR>
     } catch (ParseException e) {
       exprList = ImmutableList.<ExprNode>of(errorExpr(e.currentToken));
       dqToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
@@ -1369,7 +1390,6 @@ private CommandTagAttribute Attribute() :
         errorReporter.report(createSrcLoc(dqToken), PARSER_ERROR, "\"", "an expression");
         exprList = ImmutableList.<ExprNode>of(errorExpr(dqToken));
       }
-      token_source.SwitchTo(IN_CMD_TAG);
       return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), exprList);
     }
   )
@@ -3671,12 +3691,22 @@ private PrimitiveNode Primitive() :
     tok = <FLOAT>
     { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
   |
-    quote = <SINGLE_QUOTE>
-    tok = <STRING>
+    {QuoteStyle quoteStyle; }
+    (
+      quote = <SINGLE_QUOTE>
+      tok = <SQ_STRING>
+      { quoteStyle = QuoteStyle.SINGLE; }
+    |
+      quote = <DOUBLE_QUOTE>
+      tok = <DQ_STRING>
+      { quoteStyle = QuoteStyle.DOUBLE; }
+    )
     {
       SourceLocation loc = createSrcLoc(quote, tok);
-      String unescaped = SoyParseUtils.unescapeString(tok.image, errorReporter, loc);
-      primitive = new StringNode(unescaped, loc);
+      // strip the final character which is the closing quotation mark.
+      String rawString = tok.image.substring(0, tok.image.length() - 1);
+      String unescaped = SoyParseUtils.unescapeString(rawString, errorReporter, loc);
+      primitive = new StringNode(unescaped, quoteStyle, loc);
     }
   )
 

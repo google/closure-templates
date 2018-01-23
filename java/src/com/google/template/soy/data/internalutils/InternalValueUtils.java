@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
@@ -59,7 +60,7 @@ public class InternalValueUtils {
   public static PrimitiveNode convertPrimitiveDataToExpr(
       PrimitiveData primitiveData, SourceLocation location) {
     if (primitiveData instanceof StringData) {
-      return new StringNode(primitiveData.stringValue(), location);
+      return new StringNode(primitiveData.stringValue(), QuoteStyle.SINGLE, location);
     } else if (primitiveData instanceof BooleanData) {
       return new BooleanNode(primitiveData.booleanValue(), location);
     } else if (primitiveData instanceof IntegerData) {

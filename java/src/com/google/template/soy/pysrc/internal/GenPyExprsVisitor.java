@@ -21,6 +21,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
@@ -142,7 +143,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitRawTextNode(RawTextNode node) {
     // Escape special characters in the text before writing as a string.
-    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false);
+    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
     pyExprs.add(new PyStringExpr(exprText));
   }
 
