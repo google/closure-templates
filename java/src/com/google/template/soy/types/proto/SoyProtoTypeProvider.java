@@ -138,12 +138,13 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       }
       Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
       for (String name : nameToProtos.keySet()) {
-        walker.walkDescriptor(buildDescriptor(name, parsedDescriptors, nameToProtos));
+        walker.walkDescriptor(buildDescriptor(null, name, parsedDescriptors, nameToProtos));
       }
       walker.walkDescriptors(descriptors);
     }
 
     private static FileDescriptor buildDescriptor(
+        String requestor,
         String name,
         Map<String, FileDescriptor> descriptors,
         Map<String, FileDescriptorProto> protos)
@@ -153,9 +154,13 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
         return file;
       }
       FileDescriptorProto proto = protos.get(name);
+      if (proto == null) {
+        throw new IllegalStateException(
+            "Cannot find proto descriptor for " + name + " which is a dependency of " + requestor);
+      }
       FileDescriptor[] deps = new FileDescriptor[proto.getDependencyCount()];
       for (int i = 0; i < proto.getDependencyCount(); i++) {
-        deps[i] = buildDescriptor(proto.getDependency(i), descriptors, protos);
+        deps[i] = buildDescriptor(name, proto.getDependency(i), descriptors, protos);
       }
       file = FileDescriptor.buildFrom(proto, deps);
       descriptors.put(name, file);
