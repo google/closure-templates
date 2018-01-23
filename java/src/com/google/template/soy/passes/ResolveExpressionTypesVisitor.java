@@ -827,8 +827,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
-      // TODO(b/71386491): SoyFunctionSignatureValidator needs to guarantee that there is exactly
-      // one matched signature.
       for (Signature signature : fnSignature.value()) {
         if (signature.parameterTypes().length == node.numChildren()) {
           matchedSignature = getOrCreateFunctionSignature(signature, className, errorReporter);
