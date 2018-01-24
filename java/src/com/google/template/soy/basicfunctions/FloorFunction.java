@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -28,10 +27,12 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.objectweb.asm.Type;
@@ -42,7 +43,13 @@ import org.objectweb.asm.Type;
  */
 @Singleton
 @SoyPureFunction
-public final class FloorFunction
+@SoyFunctionSignature({
+  @Signature(
+    parameterTypes = {"number"},
+    returnType = "int"
+  )
+})
+public final class FloorFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
@@ -51,11 +58,6 @@ public final class FloorFunction
   @Override
   public String getName() {
     return "floor";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
   }
 
   @Override
