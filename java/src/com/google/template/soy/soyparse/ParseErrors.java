@@ -115,7 +115,8 @@ final class ParseErrors {
       case SoyFileParserConstants.EOF:
         // The image for this token is usually pointing at some whitespace, which is confusing
         errorToken.image = "eof";
-        if (currentLexicalState == SoyFileParserConstants.IN_ATTRIBUTE_VALUE) {
+        if (currentLexicalState == SoyFileParserConstants.IN_DQ_ATTRIBUTE_VALUE
+            || currentLexicalState == SoyFileParserConstants.IN_SQ_ATTRIBUTE_VALUE) {
           optionalAdvice = ". Did you forget to close an attribute?";
         } else if (currentLexicalState == SoyFileParserConstants.IN_MULTILINE_COMMENT
             || currentLexicalState == SoyFileParserConstants.IN_SOYDOC) {
@@ -199,13 +200,19 @@ final class ParseErrors {
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.IDENT:
         return "identifier";
-      case SoyFileParserConstants.DATA_ATTR:
-      case SoyFileParserConstants.VARIANT_ATTR:
-      case SoyFileParserConstants.GENDERS_ATTR:
-      case SoyFileParserConstants.LOGONLY_ATTR:
+      case SoyFileParserConstants.DATA_ATTR_DQ:
+      case SoyFileParserConstants.DATA_ATTR_SQ:
+      case SoyFileParserConstants.GENDERS_ATTR_DQ:
+      case SoyFileParserConstants.GENDERS_ATTR_SQ:
+      case SoyFileParserConstants.LOGONLY_ATTR_DQ:
+      case SoyFileParserConstants.LOGONLY_ATTR_SQ:
+      case SoyFileParserConstants.VARIANT_ATTR_DQ:
+      case SoyFileParserConstants.VARIANT_ATTR_SQ:
         return "attribute name";
-      case SoyFileParserConstants.ATTRIBUTE_VALUE:
-      case SoyFileParserConstants.EQ_QUOTE:
+      case SoyFileParserConstants.SQ_ATTRIBUTE_VALUE:
+      case SoyFileParserConstants.DQ_ATTRIBUTE_VALUE:
+      case SoyFileParserConstants.EQ_DOUBLE_QUOTE:
+      case SoyFileParserConstants.EQ_SINGLE_QUOTE:
         return "attribute value";
 
       case SoyFileParserConstants.CMD_FULL_SP:

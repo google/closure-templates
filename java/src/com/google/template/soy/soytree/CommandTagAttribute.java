@@ -28,6 +28,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -67,8 +68,6 @@ public final class CommandTagAttribute {
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
-  private static final String TO_STRING_FORMAT = "%s=\"%s\"";
-
   /**
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
    * {@link Iterable}.
@@ -89,22 +88,27 @@ public final class CommandTagAttribute {
 
   private final Identifier key;
   private final SourceLocation valueLocation;
+  private final QuoteStyle quoteStyle;
   // either value or valueExprList must be set, but not both.
   @Nullable private final String value;
   @Nullable private final ImmutableList<ExprNode> valueExprList;
 
-  public CommandTagAttribute(Identifier key, String value, SourceLocation valueLocation) {
+  public CommandTagAttribute(
+      Identifier key, QuoteStyle quoteStyle, String value, SourceLocation valueLocation) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     this.key = checkNotNull(key);
+    this.quoteStyle = checkNotNull(quoteStyle);
     this.valueLocation = checkNotNull(valueLocation);
     this.value = checkNotNull(value);
     this.valueExprList = null;
   }
 
-  public CommandTagAttribute(Identifier key, ImmutableList<ExprNode> valueExprList) {
+  public CommandTagAttribute(
+      Identifier key, QuoteStyle quoteStyle, ImmutableList<ExprNode> valueExprList) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     checkArgument(valueExprList.size() >= 1);
     this.key = checkNotNull(key);
+    this.quoteStyle = checkNotNull(quoteStyle);
     this.valueLocation =
         valueExprList
             .get(0)
@@ -269,7 +273,11 @@ public final class CommandTagAttribute {
   @Override
   public String toString() {
     String valueStr =
-        (value != null) ? value.replace("\"", "\\\"") : SoyTreeUtils.toSourceString(valueExprList);
-    return String.format(TO_STRING_FORMAT, key.identifier(), valueStr);
+        (value != null)
+            ? BaseUtils.escapeToSoyString(value, false, quoteStyle)
+            : quoteStyle.getQuoteChar()
+                + SoyTreeUtils.toSourceString(valueExprList)
+                + quoteStyle.getQuoteChar();
+    return key.identifier() + "=" + valueStr;
   }
 }

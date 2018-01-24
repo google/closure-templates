@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -166,23 +167,23 @@ final class SoyParseUtils {
     return (c >= '0') && (c <= '7');
   }
 
-  /** Unescapes backslash-double quote sequences in an attribute value to just double quote. */
-  static String unescapeCommandAttributeValue(String s) {
+  /** Unescapes backslash quote sequences in an attribute value to just the quote. */
+  static String unescapeCommandAttributeValue(String s, QuoteStyle quoteStyle) {
     // NOTE: we don't just use String.replace since it internally allocates/compiles a regular
     // expression.  Instead we have a handrolled loop.
-    int index = s.indexOf("\\\"");
+    int index = s.indexOf(quoteStyle == QuoteStyle.DOUBLE ? "\\\"" : "\\\'");
     if (index == -1) {
       return s;
     }
     StringBuilder buf = new StringBuilder(s.length());
     buf.append(s);
-    boolean nextIsDQ = buf.charAt(s.length() - 1) == '"';
+    boolean nextIsQ = buf.charAt(s.length() - 1) == quoteStyle.getQuoteChar();
     for (int i = s.length() - 2; i >= index; i--) {
       char c = buf.charAt(i);
-      if (c == '\\' && nextIsDQ) {
+      if (c == '\\' && nextIsQ) {
         buf.deleteCharAt(i);
       }
-      nextIsDQ = c == '"';
+      nextIsQ = c == quoteStyle.getQuoteChar();
     }
     return buf.toString();
   }
