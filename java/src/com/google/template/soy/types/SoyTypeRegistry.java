@@ -29,9 +29,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -93,6 +95,9 @@ public final class SoyTypeRegistry {
 
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
+
+  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
+      SoyErrorKind.of("''{0}'' is not allowed as a map key type.");
 
   /** A type registry that defaults all unknown types to the 'unknown' type. */
   public static final SoyTypeRegistry DEFAULT_UNKNOWN =
@@ -303,6 +308,7 @@ public final class SoyTypeRegistry {
           new GenericTypeInfo(2) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
+              // TODO(b/69050588): switch to getOrCreateMapType.
               return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
             }
           },
@@ -318,6 +324,19 @@ public final class SoyTypeRegistry {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
               return registry.getOrCreateMapType(types.get(0), types.get(1));
+            }
+
+            @Override
+            void checkPermissibleGenericTypes(
+                List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {
+              SoyType keyType = types.get(0);
+              // TODO(b/72453574): add integration tests for permissible but unusual key types
+              // (protos, lists, etc.)
+              if (keyType.getKind() == Kind.UNKNOWN
+                  || keyType.getKind() == Kind.ANY
+                  || SoyTypes.isNullable(keyType)) {
+                errorReporter.report(typeNodes.get(0).sourceLocation(), BAD_MAP_KEY_TYPE, keyType);
+              }
             }
           });
 
@@ -337,6 +356,17 @@ public final class SoyTypeRegistry {
      * Creates the given type. There are guaranteed to be exactly {@link #numParams} in the list.
      */
     abstract SoyType create(List<SoyType> types, SoyTypeRegistry registry);
+
+    /**
+     * Subclasses can override to implement custom restrictions on their generic type parameters.
+     *
+     * @param types The generic types.
+     * @param typeNodes TypeNodes corresponding to each of the generic types (for reporting source
+     *     locations in error messages)
+     * @param errorReporter For reporting an error condition.
+     */
+    void checkPermissibleGenericTypes(
+        List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {}
   }
 
   private final class TypeNodeConverter
@@ -376,30 +406,34 @@ public final class SoyTypeRegistry {
       ImmutableList<TypeNode> args = node.arguments();
       String name = node.name();
       GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-      if (genericType != null) {
-        if (args.size() < genericType.numParams) {
-          errorReporter.report(
-              // blame the '>'
-              node.sourceLocation().getEndLocation(),
-              EXPECTED_TYPE_PARAM,
-              name,
-              genericType.formatNumTypeParams());
-          return ErrorType.getInstance();
-        } else if (args.size() > genericType.numParams) {
-          errorReporter.report(
-              // blame the first unexpected argument
-              args.get(genericType.numParams).sourceLocation(),
-              UNEXPECTED_TYPE_PARAM,
-              name,
-              genericType.formatNumTypeParams());
-          return ErrorType.getInstance();
-        } else {
-          return genericType.create(Lists.transform(args, this), SoyTypeRegistry.this);
-        }
-      } else {
+      if (genericType == null) {
         errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
         return ErrorType.getInstance();
       }
+      if (args.size() < genericType.numParams) {
+        errorReporter.report(
+            // blame the '>'
+            node.sourceLocation().getEndLocation(),
+            EXPECTED_TYPE_PARAM,
+            name,
+            genericType.formatNumTypeParams());
+        return ErrorType.getInstance();
+      } else if (args.size() > genericType.numParams) {
+        errorReporter.report(
+            // blame the first unexpected argument
+            args.get(genericType.numParams).sourceLocation(),
+            UNEXPECTED_TYPE_PARAM,
+            name,
+            genericType.formatNumTypeParams());
+        return ErrorType.getInstance();
+      }
+
+      List<SoyType> genericTypes = Lists.transform(args, this);
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      genericType.checkPermissibleGenericTypes(genericTypes, args, errorReporter);
+      return errorReporter.errorsSince(checkpoint)
+          ? ErrorType.getInstance()
+          : genericType.create(genericTypes, SoyTypeRegistry.this);
     }
 
     @Override
