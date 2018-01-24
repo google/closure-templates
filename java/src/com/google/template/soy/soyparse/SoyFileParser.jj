@@ -488,10 +488,7 @@ public class SoyFileParser {
   public static ExprNode parseExpression(
       String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
     String filePath = "expression parser";
-    SoyFileParser parser = new SoyFileParser(
-        exprText, resolver, filePath, errorReporter, EXPR);
-    parser.headerInfo = SoyFileHeaderInfo.EMPTY;
-
+    SoyFileParser parser = new SoyFileParser(exprText, resolver, filePath, errorReporter);
     try {
       return parser.ExprInput();
     } catch (ParseException e) {
@@ -503,16 +500,18 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a type node. Returns null if parsing fails. */
   @Nullable
-  public static SoyType parseType(String typeText, SoyTypeRegistry typeRegistry, String filePath, ErrorReporter errorReporter) {
+  public static SoyType parseType(
+      String typeText,
+      SoyTypeRegistry typeRegistry,
+      String filePath,
+      ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(
         typeText,
         PluginResolver.nullResolver(
             PluginResolver.Mode.REQUIRE_DEFINITIONS,
             errorReporter),
         filePath,
-        errorReporter,
-        EXPR);
-    parser.headerInfo = SoyFileHeaderInfo.EMPTY;
+        errorReporter);
     try {
       return typeRegistry.getOrCreateType(parser.TypeExpr(), errorReporter);
     } catch (ParseException e) {
@@ -579,17 +578,18 @@ public class SoyFileParser {
       String input,
       PluginResolver pluginResolver,
       String filePath,
-      ErrorReporter errorReporter,
-      int lexState) {
+      ErrorReporter errorReporter) {
     // this starts the lexer in a particular state instead of DEFAULT
     this(new SoyFileParserTokenManager(
-        new SimpleCharStream(new StringReader(input), 1, 1), lexState));
+        new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
     this.filePath = filePath;
     this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
     // This ctor is for testing only, and it is okay to enable experimental_map.
     // Without setting this, NPE will be thrown for tests that only run parseExpression().
     this.experimentalFeatures = ImmutableSet.of("experimental_map");
+    // Some part of the parser assume that header info is not null.
+    this.headerInfo = SoyFileHeaderInfo.EMPTY;
   }
 
   /** Attempts to parse the given input as a Soy file. Returns null if parsing fails. */
