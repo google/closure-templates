@@ -54,4 +54,12 @@ final class Tokens {
   private static boolean endsLaterThan(Token tok, int endLine, int endCol) {
     return tok.endLine > endLine || (tok.endLine == endLine && tok.endColumn > endCol);
   }
+
+  /**
+   * Returns {@code true} if the two tokens are adjacent in the input stream with no intervening
+   * characters.
+   */
+  static boolean areAdjacent(Token first, Token second) {
+    return first.endLine == second.beginLine && first.endColumn == second.beginColumn - 1;
+  }
 }

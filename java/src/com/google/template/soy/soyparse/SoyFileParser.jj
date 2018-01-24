@@ -458,6 +458,9 @@ public class SoyFileParser {
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
+  private static final SoyErrorKind UNEXPECTED_PIPE =
+      SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
+
   private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
       "foreach loops are no longer supported, please switch to the for loop."
       , StyleAllowance.NO_CAPS);
@@ -508,7 +511,7 @@ public class SoyFileParser {
             errorReporter),
         filePath,
         errorReporter,
-        TYPE_EXPR);
+        EXPR);
     parser.headerInfo = SoyFileHeaderInfo.EMPTY;
     try {
       return typeRegistry.getOrCreateType(parser.TypeExpr(), errorReporter);
@@ -760,7 +763,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
 
-<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
+<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
   < <WS> >
 | < <LINE_COMMENT> >
 }
@@ -775,7 +778,7 @@ TOKEN_MGR_DECLS: {
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, TYPE_EXPR> SKIP: {
+<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -982,7 +985,7 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
@@ -991,32 +994,9 @@ TOKEN_MGR_DECLS: {
 
 <IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
-| < CMD_COLON: ":" >
+| < CMD_COLON: ":" > : EXPR  // for type expressions or param/let expressions
 | < CMD_EQ: "=" >
 | < CMD_DOT: "." >
-// https://www.w3.org/TR/CSS21/grammar.html
-| < CSS_SELECTOR: ( "-" | "%" )? <RAW_IDENT> ( "-" | <RAW_IDENT> | <DEC_DIGITS> )* >
-}
-
-<EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
-  < PRINT_DIRECTIVE: "|" <IDENT> >
-}
-
-
-// -------------------------------------------------------------------------------------------------
-// Type expressions.
-
-<TYPE_EXPR> TOKEN: {
-  < T_NAME: <RAW_IDENT> >
-| < T_DOT: "." >
-| < T_LANGLE: "<" >
-| < T_RANGLE: ">" >
-| < T_LBRACKET: "[" >
-| < T_RBRACKET: "]" >
-| < T_COMMA: "," >
-| < T_COLON : ":"  >
-| < T_VBAR: "|" >
-| < T_QMARK: "?" >
 }
 
 
@@ -1041,6 +1021,10 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Text.
 
+// TODO(b/63212073): Each of these tokens comprises of 1 character, so there end up being an awful
+// lot of them.  Each character of input source turns into a Token which is probably the slowest
+// part of the parser.  consider consuming sequences of raw text in single tokens.  e.g. ~["{"]
+// might work, but it would require assistence from other parts of the parser and thus measurement.
 <TEMPLATE_DEFAULT> TOKEN: {
   < TOKEN_WS: <WS> >
 | < TOKEN_NOT_WS: <NOT_WS> >
@@ -1131,6 +1115,7 @@ TOKEN_MGR_DECLS: {
 | < COMMA: "," >    // Not actually an operator, part of map/list literal syntax
 | < LPAREN: "(" >
 | < RPAREN: ")" >
+| < VBAR: "|" > // an operator for type unions
 }
 
 
@@ -1152,7 +1137,6 @@ TOKEN_MGR_DECLS: {
   < LEGACY_AND : "&&" >
 | < LEGACY_OR : "||" >
 | < LEGACY_NOT : "!" >
-| < UNEXPECTED_PIPE : "|" >
 }
 
 <TEMPLATE_DEFAULT> TOKEN: {
@@ -1184,7 +1168,7 @@ TOKEN_MGR_DECLS: {
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
+<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -1747,7 +1731,6 @@ private HeaderParam ParamDecl(@Nullable String desc) :
   name = <NAME>
 
   <CMD_COLON>
-  { token_source.SwitchTo(TYPE_EXPR); }
 
   try {
     paramTypeNode = TypeExpr()
@@ -2325,11 +2308,12 @@ private List<PrintDirectiveNode> PrintDirectives() :
  */
 private PrintDirectiveNode PrintDirective() :
 {
-  Token directive;
+  Token vbar, directive;
   ImmutableList<ExprNode> args = ImmutableList.of();
 }
 {
-  directive = <PRINT_DIRECTIVE>
+  vbar = <VBAR>
+  directive = <IDENT>
 
   [
     <COLON>
@@ -2337,11 +2321,14 @@ private PrintDirectiveNode PrintDirective() :
   ]
 
   {
-    SourceLocation loc = createSrcLoc(directive);
+    if (!Tokens.areAdjacent(vbar, directive)) {
+      errorReporter.report(createSrcLoc(vbar), UNEXPECTED_PIPE);
+    }
+    SourceLocation loc = createSrcLoc(vbar, directive);
     if (!args.isEmpty()) {
       loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
-    String name = directive.image;
+    String name = "|" + directive.image;
     return new PrintDirectiveNode(
         nodeIdGen.genId(),
         loc,
@@ -3780,7 +3767,7 @@ private Token Keyword(String keyword) :
 // handled by making our token definitions more complex, but this is generally antithetical to
 // performance.
 //
-// NOTE: all the tokens we are consuming are defined in the TYPE_EXPR lexical state.
+// NOTE: all the tokens we are consuming are defined in the EXPR lexical state.
 
 
 /**
@@ -3797,7 +3784,7 @@ private TypeNode TypeExpr() :
   first = PrimaryType()
 
   (
-    <T_VBAR>
+    <VBAR>
     next = PrimaryType()
     {
       if (members == null) {
@@ -3824,6 +3811,7 @@ private TypeNode PrimaryType() :
 {
   (
     type = NamedType()
+  | type = NullType()
   | type = UnknownType()
   | type = RecordType()
   )
@@ -3842,7 +3830,7 @@ private TypeNode RecordType() :
   RecordTypeNode.Property prop;
 }
 {
-  open = <T_LBRACKET>
+  open = <LBRACKET>
 
   (
     prop = RecordField()
@@ -3851,7 +3839,7 @@ private TypeNode RecordType() :
       properties.add(prop);
     }
     (
-      <T_COMMA>
+      <COMMA>
       prop = RecordField()
       {
         properties.add(prop);
@@ -3860,14 +3848,14 @@ private TypeNode RecordType() :
 
   )?
 
-  close = <T_RBRACKET>
+  close = <RBRACKET>
 
   { return RecordTypeNode.create(createSrcLoc(open, close), properties); }
 }
 
 
 /**
- * RecordField -> T_NAME ":" TypeExpr
+ * RecordField -> IDENT ":" TypeExpr
  */
 private RecordTypeNode.Property RecordField() :
 {
@@ -3875,8 +3863,8 @@ private RecordTypeNode.Property RecordField() :
   TypeNode fieldType;
 }
 {
-  fieldName = <T_NAME>
-  <T_COLON>
+  fieldName = <IDENT>
+  <COLON>
   fieldType = TypeExpr()
 
   {
@@ -3884,9 +3872,22 @@ private RecordTypeNode.Property RecordField() :
   }
 }
 
+/**
+ * NullType -> <NULL>
+ */
+private TypeNode NullType() : {
+  Token tok;
+}
+{
+  tok = <NULL>
+  {
+    return NamedTypeNode.create(createSrcLoc(tok), tok.image);
+  }
+}
+
 
 /**
- * NamedType -> T_NAME ( "." T_NAME )* [ "<" TypeExpr ( "," TypeExpr )* ">" ]
+ * NamedType -> IDENT ( "." IDENT )* [ "<" TypeExpr ( "," TypeExpr )* ">" ]
  *
  * <p>This includes any named type including our generic types
  */
@@ -3903,10 +3904,10 @@ private TypeNode NamedType() :
 }
 {
 
-  first = <T_NAME>
+  first = <IDENT>
   (
-    <T_DOT>
-    next = <T_NAME>
+    <DOT>
+    next = <IDENT>
     {
       if (sb == null) {
         sb = new StringBuilder(first.image);
@@ -3921,7 +3922,7 @@ private TypeNode NamedType() :
   }
 
   [
-    open = <T_LANGLE>
+    open = <LANGLE>
     [
       arg = TypeExpr()
       {
@@ -3929,14 +3930,14 @@ private TypeNode NamedType() :
         genericArgs.add(arg);
       }
       (
-        <T_COMMA>
+        <COMMA>
         arg = TypeExpr()
         {
           genericArgs.add(arg);
         }
       )*
     ]
-    close = <T_RANGLE>
+    close = <RANGLE>
     {
       if ("experimental_map".equals(ident)
         && !experimentalFeatures.contains("experimental_map")) {
@@ -3955,13 +3956,13 @@ private TypeNode NamedType() :
 
 
 /**
- * UnknownType -> T_QMARK
+ * UnknownType -> QMARK
  */
 private TypeNode UnknownType() :
 {
   Token tok;
 }
 {
-  tok = <T_QMARK>
+  tok = <QMARK>
   { return NamedTypeNode.create(createSrcLoc(tok), "?"); }
 }

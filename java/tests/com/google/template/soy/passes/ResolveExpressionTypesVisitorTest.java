@@ -26,7 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -798,21 +797,6 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(((LegacyObjectMapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
   }
 
-  @Test
-  public void testTypeParserFail() {
-    assertSoyTypeParserFail("foo", "Unknown type 'foo'");
-    assertSoyTypeParserFail("list<foo>", "Unknown type 'foo'");
-    assertSoyTypeParserFail("list<", "parse error at 'eof': expected identifier, >, [, or ?");
-  }
-
-  private void assertSoyTypeParserFail(String type, String expectedMessage) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    parseSoyType(type, errorReporter);
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    SoyError soyError = Iterables.getOnlyElement(errorReporter.getErrors());
-    assertThat(soyError.message()).contains(expectedMessage);
-    assertThat(soyError.location().getFileName()).isEqualTo("com.google.foo.bar.FakeSoyFunction");
-  }
 
   private SoyType parseSoyType(String type) {
     return parseSoyType(type, ErrorReporter.exploding());

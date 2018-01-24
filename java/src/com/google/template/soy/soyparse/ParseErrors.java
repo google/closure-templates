@@ -54,8 +54,6 @@ final class ParseErrors {
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
               + "your template.");
-  private static final SoyErrorKind UNEXPECTED_PIPE =
-      SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
   private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
       SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
@@ -97,9 +95,6 @@ final class ParseErrors {
         return;
       case SoyFileParserConstants.LEGACY_NOT:
         reporter.report(location, LEGACY_NOT_ERROR);
-        return;
-      case SoyFileParserConstants.UNEXPECTED_PIPE:
-        reporter.report(location, UNEXPECTED_PIPE);
         return;
       case SoyFileParserConstants.UNEXPECTED_DOUBLE_BRACE:
         reporter.report(location, FOUND_DOUBLE_BRACE);
@@ -202,12 +197,8 @@ final class ParseErrors {
         return "{print";
 
       case SoyFileParserConstants.NAME:
-      case SoyFileParserConstants.T_NAME:
       case SoyFileParserConstants.IDENT:
-      case SoyFileParserConstants.CSS_SELECTOR:
         return "identifier";
-      case SoyFileParserConstants.PRINT_DIRECTIVE:
-        return "print directive";
       case SoyFileParserConstants.DATA_ATTR:
       case SoyFileParserConstants.VARIANT_ATTR:
       case SoyFileParserConstants.GENDERS_ATTR:
