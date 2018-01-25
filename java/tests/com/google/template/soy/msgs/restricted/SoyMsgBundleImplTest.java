@@ -60,7 +60,7 @@ public class SoyMsgBundleImplTest {
             .setParts(
                 ImmutableList.<SoyMsgPart>of(
                     SoyMsgRawTextPart.of("Hello, "),
-                    new SoyMsgPlaceholderPart("NAME"),
+                    new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
                     SoyMsgRawTextPart.of("!")))
             .build());
     SourceLocation source2 = new SourceLocation("/path/to/source2", 20, 1, 20, 10);

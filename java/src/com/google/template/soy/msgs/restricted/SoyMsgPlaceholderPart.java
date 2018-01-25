@@ -16,7 +16,10 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 /**
  * Represents a placeholder within a message.
@@ -27,9 +30,24 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
   /** The placeholder name (as seen by translators). */
   private final String placeholderName;
 
-  /** @param placeholderName The placeholder name (as seen by translators). */
+  /** An example for the placeholder to help translators. Optional. */
+  @Nullable private final String placeholderExample;
+  /**
+   * @param placeholderName The placeholder name (as seen by translators).
+   * @deprecated use the other constructor
+   */
+  @Deprecated
   public SoyMsgPlaceholderPart(String placeholderName) {
-    this.placeholderName = placeholderName;
+    this(placeholderName, null);
+  }
+
+  /**
+   * @param placeholderName The placeholder name (as seen by translators).
+   * @param placeholderExample An optional example
+   */
+  public SoyMsgPlaceholderPart(String placeholderName, @Nullable String placeholderExample) {
+    this.placeholderName = checkNotNull(placeholderName);
+    this.placeholderExample = placeholderExample;
   }
 
   /** Returns the placeholder name (as seen by translators). */
@@ -37,14 +55,24 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
     return placeholderName;
   }
 
+  /** Returns the (optional) placeholder example (as seen by translators). */
+  @Nullable
+  public String getPlaceholderExample() {
+    return placeholderExample;
+  }
+
   @Override
   public boolean equals(Object other) {
-    return other instanceof SoyMsgPlaceholderPart
-        && placeholderName.equals(((SoyMsgPlaceholderPart) other).placeholderName);
+    if (!(other instanceof SoyMsgPlaceholderPart)) {
+      return false;
+    }
+    SoyMsgPlaceholderPart otherPlacholder = (SoyMsgPlaceholderPart) other;
+    return placeholderName.equals(otherPlacholder.placeholderName)
+        && Objects.equals(placeholderExample, otherPlacholder.placeholderExample);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName);
+    return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName, placeholderExample);
   }
 }

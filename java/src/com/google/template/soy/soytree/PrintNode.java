@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -58,6 +58,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
+  /** The user-supplied placeholder example, or null if not supplied. */
+  @Nullable private final String userSuppliedPlaceholderExample;
+
   @Nullable private HtmlContext htmlContext;
 
   // TODO(user): Consider adding static factory methods for implicit vs explicit print.
@@ -66,27 +69,38 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       SourceLocation location,
       boolean isImplicit,
       ExprNode expr,
-      @Nullable CommandTagAttribute phname,
+      Iterable<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, location, isImplicit ? "" : "print");
     this.isImplicit = isImplicit;
     this.expr = new ExprRootNode(expr);
 
-    if (phname == null) {
-      this.userSuppliedPlaceholderName = null;
-    } else {
-      if (phname.hasName("phname")) {
-        this.userSuppliedPlaceholderName = phname.getValue();
-      } else {
-        errorReporter.report(
-            phname.getName().location(),
-            UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
-            phname.getName().identifier(),
-            "print",
-            "phname");
-        this.userSuppliedPlaceholderName = null;
+    String placeholderName = null;
+    String placeholderExample = null;
+    CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
+    for (CommandTagAttribute attribute : attributes) {
+      switch (attribute.getName().identifier()) {
+        case MessagePlaceholders.PHNAME_ATTR:
+          placeholderName =
+              MessagePlaceholders.validatePlaceholderName(
+                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          break;
+        case MessagePlaceholders.PHEX_ATTR:
+          placeholderExample =
+              MessagePlaceholders.validatePlaceholderExample(
+                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          break;
+        default:
+          errorReporter.report(
+              attribute.getName().location(),
+              UNSUPPORTED_ATTRIBUTE_KEY,
+              attribute.getName().identifier(),
+              "print",
+              ImmutableList.of(MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
       }
     }
+    this.userSuppliedPlaceholderName = placeholderName;
+    this.userSuppliedPlaceholderExample = placeholderExample;
   }
 
   /**
@@ -99,6 +113,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.isImplicit = orig.isImplicit;
     this.expr = orig.expr.copy(copyState);
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.htmlContext = orig.htmlContext;
   }
 
@@ -137,6 +152,12 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return userSuppliedPlaceholderName;
   }
 
+  @Nullable
+  @Override
+  public String getUserSuppliedPhExample() {
+    return userSuppliedPlaceholderExample;
+  }
+
   @Override
   public String genBasePhName() {
 
@@ -150,8 +171,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override
   public Object genSamenessKey() {
-    // PrintNodes are considered the same placeholder if they have the same command text.
-    return getCommandText();
+    // PrintNodes are considered the same placeholder if they have the same command text ignoring
+    // the phex
+    // TODO(lukes): come up with a more structured approach.
+    return doGetCommandText(false);
   }
 
   @Override
@@ -161,6 +184,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override
   public String getCommandText() {
+    return doGetCommandText(true);
+  }
+
+  private String doGetCommandText(boolean includePhExample) {
     StringBuilder sb = new StringBuilder();
     sb.append(expr.toSourceString());
     for (PrintDirectiveNode child : getChildren()) {
@@ -168,6 +195,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     }
     if (userSuppliedPlaceholderName != null) {
       sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
+    }
+    if (includePhExample && userSuppliedPlaceholderExample != null) {
+      sb.append(" phex=\"").append(userSuppliedPlaceholderExample).append('"');
     }
     return sb.toString();
   }

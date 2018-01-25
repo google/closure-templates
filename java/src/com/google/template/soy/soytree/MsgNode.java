@@ -21,13 +21,18 @@ import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIB
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.CopyState.Listener;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -36,6 +41,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,11 +70,29 @@ public final class MsgNode extends AbstractBlockCommandNode
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
       SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
 
+  private static final SoyErrorKind INCOMPATIBLE_PLACEHOLDER_EXAMPLES =
+      SoyErrorKind.of(
+          "The example set on this placeholder is incompatible with other examples for "
+              + "the same placeholder. If a placeholder occurs multiple times in a msg, then all "
+              + "examples must be the same.");
+
   // Note that the first set of whitespace is reluctant.
   private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
 
   /** We don't use different content types. It may be a historical artifact in the TC. */
   private static final String DEFAULT_CONTENT_TYPE = "text/html";
+
+  @AutoValue
+  public abstract static class PlaceholderInfo {
+    static PlaceholderInfo create(String name, @Nullable String example) {
+      return new AutoValue_MsgNode_PlaceholderInfo(name, example);
+    }
+
+    public abstract String name();
+
+    @Nullable
+    public abstract String example();
+  }
 
   private static final class SubstUnitInfo {
 
@@ -86,13 +110,23 @@ public final class MsgNode extends AbstractBlockCommandNode
      *
      * <p>There may be multiple nodes that map to the same var name.
      */
-    public final ImmutableMap<MsgSubstUnitNode, String> nodeToVarNameMap;
+    public final ImmutableMap<MsgSubstUnitNode, PlaceholderInfo> nodeToVarNameMap;
 
     public SubstUnitInfo(
-        ImmutableMap<String, MsgSubstUnitNode> varNameToRepNodeMap,
-        ImmutableMap<MsgSubstUnitNode, String> nodeToVarNameMap) {
-      this.varNameToRepNodeMap = varNameToRepNodeMap;
-      this.nodeToVarNameMap = nodeToVarNameMap;
+        Map<String, MsgSubstUnitNode> varNameToRepNodeMap,
+        Map<MsgSubstUnitNode, PlaceholderInfo> nodeToVarNameMap) {
+      this.varNameToRepNodeMap = ImmutableMap.copyOf(varNameToRepNodeMap);
+      this.nodeToVarNameMap = ImmutableMap.copyOf(nodeToVarNameMap);
+    }
+
+    public SubstUnitInfo copy(Map<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew) {
+      Function<MsgSubstUnitNode, MsgSubstUnitNode> oldToNewFunction = Functions.forMap(oldToNew);
+      ImmutableMap.Builder<MsgSubstUnitNode, PlaceholderInfo> builder = ImmutableMap.builder();
+      for (Map.Entry<MsgSubstUnitNode, PlaceholderInfo> entry : nodeToVarNameMap.entrySet()) {
+        builder.put(oldToNew.get(entry.getKey()), entry.getValue());
+      }
+      return new SubstUnitInfo(
+          Maps.transformValues(varNameToRepNodeMap, oldToNewFunction), builder.build());
     }
   }
 
@@ -196,7 +230,23 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.meaning = orig.meaning;
     this.desc = orig.desc;
     this.isHidden = orig.isHidden;
-    this.substUnitInfo = orig.substUnitInfo;
+    if (orig.substUnitInfo != null) {
+      // we need to fix references in the substUnitInfo
+      final IdentityHashMap<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew = new IdentityHashMap<>();
+      // NOTE: because we only hold references to our children, and all our children will have been
+      // copied by the time 'super' returns, we can count on these listeners firing synchronously.
+      for (final MsgSubstUnitNode old : orig.substUnitInfo.nodeToVarNameMap.keySet()) {
+        copyState.registerRefListener(
+            old,
+            new Listener<MsgSubstUnitNode>() {
+              @Override
+              public void newVersion(MsgSubstUnitNode newObject) {
+                oldToNew.put(old, newObject);
+              }
+            });
+      }
+      this.substUnitInfo = orig.substUnitInfo.copy(oldToNew);
+    }
     this.genderExprsString = orig.genderExprsString;
   }
 
@@ -217,6 +267,21 @@ public final class MsgNode extends AbstractBlockCommandNode
     List<ExprRootNode> genderExprs = this.genderExprs;
     this.genderExprs = null;
     return genderExprs;
+  }
+
+  public void calculateSubstitutionInfo(ErrorReporter reporter) {
+    if (substUnitInfo == null) {
+      substUnitInfo = genSubstUnitInfo(this, reporter);
+    } else {
+      throw new IllegalStateException("calculateSubstitutionInfo has already been called yet.");
+    }
+  }
+
+  private SubstUnitInfo getSubstUnitInfo() {
+    if (substUnitInfo == null) {
+      throw new IllegalStateException("calculateSubstitutionInfo hasn't been called yet.");
+    }
+    return substUnitInfo;
   }
 
   @Override
@@ -289,10 +354,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The representative placeholder node for the given placeholder name.
    */
   public MsgPlaceholderNode getRepPlaceholderNode(String placeholderName) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return (MsgPlaceholderNode) substUnitInfo.varNameToRepNodeMap.get(placeholderName);
+    return (MsgPlaceholderNode) getSubstUnitInfo().varNameToRepNodeMap.get(placeholderName);
   }
 
   /**
@@ -301,11 +363,8 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @param placeholderNode The placeholder node.
    * @return The placeholder name for the given placeholder node.
    */
-  public String getPlaceholderName(MsgPlaceholderNode placeholderNode) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return substUnitInfo.nodeToVarNameMap.get(placeholderNode);
+  public PlaceholderInfo getPlaceholder(MsgPlaceholderNode placeholderNode) {
+    return getSubstUnitInfo().nodeToVarNameMap.get(placeholderNode);
   }
 
   /**
@@ -315,10 +374,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The representative plural node for the given plural variable name.
    */
   public MsgPluralNode getRepPluralNode(String pluralVarName) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return (MsgPluralNode) substUnitInfo.varNameToRepNodeMap.get(pluralVarName);
+    return (MsgPluralNode) getSubstUnitInfo().varNameToRepNodeMap.get(pluralVarName);
   }
 
   /**
@@ -328,10 +384,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The plural variable name for the given plural node.
    */
   public String getPluralVarName(MsgPluralNode pluralNode) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return substUnitInfo.nodeToVarNameMap.get(pluralNode);
+    return getSubstUnitInfo().nodeToVarNameMap.get(pluralNode).name();
   }
 
   /**
@@ -341,10 +394,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The representative select node for the given select variable name.
    */
   public MsgSelectNode getRepSelectNode(String selectVarName) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return (MsgSelectNode) substUnitInfo.varNameToRepNodeMap.get(selectVarName);
+    return (MsgSelectNode) getSubstUnitInfo().varNameToRepNodeMap.get(selectVarName);
   }
 
   /**
@@ -354,18 +404,12 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The select variable name for the given select node.
    */
   public String getSelectVarName(MsgSelectNode selectNode) {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return substUnitInfo.nodeToVarNameMap.get(selectNode);
+    return getSubstUnitInfo().nodeToVarNameMap.get(selectNode).name();
   }
 
   /** Getter for the generated map from substitution unit var name to representative node. */
   public ImmutableMap<String, MsgSubstUnitNode> getVarNameToRepNodeMap() {
-    if (substUnitInfo == null) {
-      substUnitInfo = genSubstUnitInfo(this);
-    }
-    return substUnitInfo.varNameToRepNodeMap;
+    return getSubstUnitInfo().varNameToRepNodeMap;
   }
 
   @Override
@@ -413,8 +457,9 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @param msgNode The MsgNode to process.
    * @return The generated SubstUnitInfo for the given MsgNode.
    */
-  private static SubstUnitInfo genSubstUnitInfo(MsgNode msgNode) {
-    return genFinalSubstUnitInfoMapsHelper(RepresentativeNodes.createFromNode(msgNode));
+  private static SubstUnitInfo genSubstUnitInfo(MsgNode msgNode, ErrorReporter errorReporter) {
+    return genFinalSubstUnitInfoMapsHelper(
+        RepresentativeNodes.createFromNode(msgNode, errorReporter));
   }
   /**
    * Private helper class for genSubstUnitInfo(). Determines representative nodes and builds
@@ -434,13 +479,13 @@ public final class MsgNode extends AbstractBlockCommandNode
    */
   @AutoValue
   abstract static class RepresentativeNodes {
-    static RepresentativeNodes createFromNode(MsgNode msgNode) {
+    static RepresentativeNodes createFromNode(MsgNode msgNode, ErrorReporter reporter) {
       ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
       Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
-
+      Map<MsgSubstUnitNode, String> repNodeToExample = new HashMap<>();
       Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
 
-      // Seed the traversal queue with the children of this MsgNode.
+      // Seed the traversal queue with the direct children of this MsgNode.
       for (SoyNode child : msgNode.getChildren()) {
         if (child instanceof MsgSubstUnitNode) {
           traversalQueue.add((MsgSubstUnitNode) child);
@@ -464,12 +509,20 @@ public final class MsgNode extends AbstractBlockCommandNode
         if (!baseNameToRepNodesMap.containsKey(baseName)) {
           // Case 1: First occurrence of this base name.
           baseNameToRepNodesMap.put(baseName, node);
+          String example = getPhExample(node);
+          if (example != null) {
+            repNodeToExample.put(node, example);
+          }
         } else {
           boolean isNew = true;
           for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
             if (node.shouldUseSameVarNameAs(other)) {
               // Case 2: Should use same var name as another node we've seen.
               nonRepNodeToRepNodeMap.put(node, other);
+              String example = checkCompatibleExamples(node, other, reporter);
+              if (example != null) {
+                repNodeToExample.put(other, example);
+              }
               isNew = false;
               break;
             }
@@ -478,17 +531,45 @@ public final class MsgNode extends AbstractBlockCommandNode
             // Case 3: New representative node that has the same base name as another node we've
             // seen, but should not use the same var name.
             baseNameToRepNodesMap.put(baseName, node);
+            String example = getPhExample(node);
+            if (example != null) {
+              repNodeToExample.put(node, example);
+            }
           }
         }
       }
       return new AutoValue_MsgNode_RepresentativeNodes(
           ImmutableListMultimap.copyOf(baseNameToRepNodesMap),
-          ImmutableMap.copyOf(nonRepNodeToRepNodeMap));
+          ImmutableMap.copyOf(nonRepNodeToRepNodeMap),
+          ImmutableMap.copyOf(Maps.filterValues(repNodeToExample, Predicates.notNull())));
+    }
+
+    /**
+     * Examples are compatible if either only one instance sets an example, or if they set the same
+     * example.
+     */
+    private static String checkCompatibleExamples(
+        MsgSubstUnitNode left, MsgSubstUnitNode right, ErrorReporter reporter) {
+      String leftExample = getPhExample(left);
+      String rightExample = getPhExample(right);
+      if (leftExample == null) {
+        return rightExample;
+      }
+      if (rightExample == null) {
+        return leftExample;
+      }
+      if (leftExample.equals(rightExample)) {
+        return leftExample;
+      }
+      reporter.report(left.getSourceLocation(), INCOMPATIBLE_PLACEHOLDER_EXAMPLES);
+      return null;
     }
 
     abstract ImmutableListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap();
 
     abstract ImmutableMap<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap();
+
+    abstract ImmutableMap<MsgSubstUnitNode, String> repNodeToPhExample();
   }
 
   /**
@@ -533,11 +614,14 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     // ------ Step 2: Create map of every node to its var name. ------
 
-    Map<MsgSubstUnitNode, String> substUnitNodeToVarNameMap = new LinkedHashMap<>();
+    Map<MsgSubstUnitNode, PlaceholderInfo> substUnitNodeToVarNameMap = new LinkedHashMap<>();
 
     // Reverse the map of names to representative nodes.
     for (Map.Entry<String, MsgSubstUnitNode> entry : substUnitVarNameToRepNodeMap.entrySet()) {
-      substUnitNodeToVarNameMap.put(entry.getValue(), entry.getKey());
+      substUnitNodeToVarNameMap.put(
+          entry.getValue(),
+          PlaceholderInfo.create(
+              entry.getKey(), representativeNodes.repNodeToPhExample().get(entry.getValue())));
     }
 
     // Add mappings for the non-representative nodes.
@@ -551,5 +635,12 @@ public final class MsgNode extends AbstractBlockCommandNode
     return new SubstUnitInfo(
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
+  }
+
+  private static String getPhExample(MsgSubstUnitNode node) {
+    if (node instanceof MsgPlaceholderNode) {
+      return ((MsgPlaceholderNode) node).getPhExample();
+    }
+    return null;
   }
 }

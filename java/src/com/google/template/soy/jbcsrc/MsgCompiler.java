@@ -67,7 +67,7 @@ import org.objectweb.asm.Label;
 /** A helper for compiling {@link MsgNode messages} */
 final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
-      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class);
+      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class, String.class);
   private static final ConstructorRef SOY_MSG_PLURAL_REMAINDER_PART =
       ConstructorRef.create(SoyMsgPluralRemainderPart.class, String.class);
   private static final ConstructorRef SOY_MSG_PURAL_PART =
@@ -96,18 +96,18 @@ final class MsgCompiler {
     Expression compileToString(ExprRootNode node, Label reattachPoint);
 
     /**
-     * Compiles the expression to an {@code IntegerData} valued expression.
-     *
-     * <p>If the node requires detach logic, it should use the given label as the reattach point.
-     */
-    Expression compileToInt(ExprRootNode node, Label reattachPoint);
-
-    /**
      * Compiles the print node to a {@link String} valued expression.
      *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
     Expression compileToString(PrintNode node, Label reattachPoint);
+
+    /**
+     * Compiles the expression to an {@code IntegerData} valued expression.
+     *
+     * <p>If the node requires detach logic, it should use the given label as the reattach point.
+     */
+    Expression compileToInt(ExprRootNode node, Label reattachPoint);
 
     /**
      * Compiles the given CallNode to a statement that writes the result into the given appendable.
@@ -209,7 +209,7 @@ final class MsgCompiler {
   private Expression partToPartExpression(SoyMsgPart part) {
     if (part instanceof SoyMsgPlaceholderPart) {
       return SOY_MSG_PLACEHOLDER_PART.construct(
-          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()));
+          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()), constantNull(STRING_TYPE));
     } else if (part instanceof SoyMsgPluralPart) {
       SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) part;
       List<Expression> caseExprs = new ArrayList<>(pluralPart.getCases().size());

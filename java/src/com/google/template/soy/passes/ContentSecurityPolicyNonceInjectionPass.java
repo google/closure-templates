@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -148,9 +149,9 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         new PrintNode(
             nodeIdGen.genId(),
             insertionLocation,
-            true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
+            /* isImplicit= */ true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
             referenceCspNonce(insertionLocation),
-            null, // phname
+            /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
     attributeValue.addChild(printNode);
     return ifNode;

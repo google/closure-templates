@@ -96,31 +96,31 @@ public class MsgNodeTest {
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
     List<MsgPlaceholderNode> placeholders = getAllNodesOfType(msg, MsgPlaceholderNode.class);
 
-    assertEquals("START_LINK_1", msg.getPlaceholderName(placeholders.get(0)));
-    assertEquals("BOO", msg.getPlaceholderName(placeholders.get(1)));
-    assertEquals("GOO_1", msg.getPlaceholderName(placeholders.get(2)));
-    assertEquals("XXX_1", msg.getPlaceholderName(placeholders.get(3)));
-    assertEquals("XXX_2", msg.getPlaceholderName(placeholders.get(4)));
-    assertEquals("END_LINK", msg.getPlaceholderName(placeholders.get(5)));
-    assertEquals("START_BREAK", msg.getPlaceholderName(placeholders.get(6)));
-    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(7)));
-    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(8)));
-    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(9)));
-    assertEquals("START_BREAK", msg.getPlaceholderName(placeholders.get(10)));
-    assertEquals("START_LINK_2", msg.getPlaceholderName(placeholders.get(11)));
-    assertEquals("BOO", msg.getPlaceholderName(placeholders.get(12)));
-    assertEquals("GOO_3", msg.getPlaceholderName(placeholders.get(13)));
-    assertEquals("GOO_2", msg.getPlaceholderName(placeholders.get(14)));
-    assertEquals("XXX_2", msg.getPlaceholderName(placeholders.get(15)));
-    assertEquals("END_LINK", msg.getPlaceholderName(placeholders.get(16)));
-    assertEquals("ZOO_1", msg.getPlaceholderName(placeholders.get(17)));
-    assertEquals("ZOO_1", msg.getPlaceholderName(placeholders.get(18)));
-    assertEquals("ZOO_2", msg.getPlaceholderName(placeholders.get(19)));
-    assertEquals("ZOO_3", msg.getPlaceholderName(placeholders.get(20)));
-    assertEquals("ZOO_4", msg.getPlaceholderName(placeholders.get(21)));
-    assertEquals("ZOO_4", msg.getPlaceholderName(placeholders.get(22)));
-    assertEquals("ZOO_5", msg.getPlaceholderName(placeholders.get(23)));
-    assertEquals("ZOO_6", msg.getPlaceholderName(placeholders.get(24)));
+    assertEquals("START_LINK_1", msg.getPlaceholder(placeholders.get(0)).name());
+    assertEquals("BOO", msg.getPlaceholder(placeholders.get(1)).name());
+    assertEquals("GOO_1", msg.getPlaceholder(placeholders.get(2)).name());
+    assertEquals("XXX_1", msg.getPlaceholder(placeholders.get(3)).name());
+    assertEquals("XXX_2", msg.getPlaceholder(placeholders.get(4)).name());
+    assertEquals("END_LINK", msg.getPlaceholder(placeholders.get(5)).name());
+    assertEquals("START_BREAK", msg.getPlaceholder(placeholders.get(6)).name());
+    assertEquals("BREAK", msg.getPlaceholder(placeholders.get(7)).name());
+    assertEquals("BREAK", msg.getPlaceholder(placeholders.get(8)).name());
+    assertEquals("BREAK", msg.getPlaceholder(placeholders.get(9)).name());
+    assertEquals("START_BREAK", msg.getPlaceholder(placeholders.get(10)).name());
+    assertEquals("START_LINK_2", msg.getPlaceholder(placeholders.get(11)).name());
+    assertEquals("BOO", msg.getPlaceholder(placeholders.get(12)).name());
+    assertEquals("GOO_3", msg.getPlaceholder(placeholders.get(13)).name());
+    assertEquals("GOO_2", msg.getPlaceholder(placeholders.get(14)).name());
+    assertEquals("XXX_2", msg.getPlaceholder(placeholders.get(15)).name());
+    assertEquals("END_LINK", msg.getPlaceholder(placeholders.get(16)).name());
+    assertEquals("ZOO_1", msg.getPlaceholder(placeholders.get(17)).name());
+    assertEquals("ZOO_1", msg.getPlaceholder(placeholders.get(18)).name());
+    assertEquals("ZOO_2", msg.getPlaceholder(placeholders.get(19)).name());
+    assertEquals("ZOO_3", msg.getPlaceholder(placeholders.get(20)).name());
+    assertEquals("ZOO_4", msg.getPlaceholder(placeholders.get(21)).name());
+    assertEquals("ZOO_4", msg.getPlaceholder(placeholders.get(22)).name());
+    assertEquals("ZOO_5", msg.getPlaceholder(placeholders.get(23)).name());
+    assertEquals("ZOO_6", msg.getPlaceholder(placeholders.get(24)).name());
 
     assertSame(placeholders.get(0), msg.getRepPlaceholderNode("START_LINK_1"));
     assertSame(placeholders.get(1), msg.getRepPlaceholderNode("BOO"));
@@ -291,16 +291,16 @@ public class MsgNodeTest {
     MsgPluralNode nodePlural1 = (MsgPluralNode) nodeSelect.getChild(0).getChild(0);
     assertEquals("PERSON_3", msg.getPluralVarName(nodePlural1));
     MsgPlaceholderNode phNode11 = (MsgPlaceholderNode) nodePlural1.getChild(0).getChild(0);
-    assertEquals("PERSON_5", msg.getPlaceholderName(phNode11));
+    assertEquals("PERSON_5", msg.getPlaceholder(phNode11).name());
     MsgPlaceholderNode phNode12 = (MsgPlaceholderNode) nodePlural1.getChild(1).getChild(0);
-    assertEquals("PERSON_2", msg.getPlaceholderName(phNode12));
+    assertEquals("PERSON_2", msg.getPlaceholder(phNode12).name());
 
     MsgPluralNode nodePlural2 = (MsgPluralNode) nodeSelect.getChild(1).getChild(0);
     assertEquals("PERSON_4", msg.getPluralVarName(nodePlural2));
     MsgPlaceholderNode phNode21 = (MsgPlaceholderNode) nodePlural2.getChild(0).getChild(0);
-    assertEquals("PERSON_5", msg.getPlaceholderName(phNode21));
+    assertEquals("PERSON_5", msg.getPlaceholder(phNode21).name());
     MsgPlaceholderNode phNode22 = (MsgPlaceholderNode) nodePlural2.getChild(1).getChild(0);
-    assertEquals("PERSON_2", msg.getPlaceholderName(phNode22));
+    assertEquals("PERSON_2", msg.getPlaceholder(phNode22).name());
 
     MsgPlaceholderNode repPhNode1 = msg.getRepPlaceholderNode("PERSON_5");
     assertSame(repPhNode1, phNode11);
@@ -397,7 +397,7 @@ public class MsgNodeTest {
     Set<String> placeholders = new TreeSet<>();
     for (MsgPlaceholderNode placeholder :
         SoyTreeUtils.getAllNodesOfType(msg, MsgPlaceholderNode.class)) {
-      placeholders.add(msg.getPlaceholderName(placeholder));
+      placeholders.add(msg.getPlaceholder(placeholder).name());
     }
     // These are the only placeholders generated
     assertEquals(ImmutableSet.of("PERSON", "XXX"), placeholders);

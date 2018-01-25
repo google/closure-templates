@@ -79,7 +79,8 @@ public final class CallBasicNode extends CallNode {
 
       switch (name) {
         case "data":
-        case "phname":
+        case MessagePlaceholders.PHNAME_ATTR:
+        case MessagePlaceholders.PHEX_ATTR:
           // Parsed in CallNode.
           break;
         default:
@@ -88,7 +89,8 @@ public final class CallBasicNode extends CallNode {
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
               "call",
-              ImmutableList.of("data", "phname"));
+              ImmutableList.of(
+                  "data", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
       }
     }
   }
@@ -149,6 +151,9 @@ public final class CallBasicNode extends CallNode {
     }
     if (getUserSuppliedPhName() != null) {
       commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
+    }
+    if (getUserSuppliedPhExample() != null) {
+      commandText.append(" phex=\"").append(getUserSuppliedPhExample()).append('"');
     }
 
     return commandText.toString();

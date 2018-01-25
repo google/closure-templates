@@ -108,8 +108,19 @@ class XliffGenerator {
           String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
           ilb.append(contentEscaper.escape(rawText));
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-          String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
-          ilb.appendParts("<x id=\"", attributeEscaper.escape(placeholderName), "\"/>");
+          SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) msgPart;
+          ilb.appendParts(
+              "<x id=\"",
+              attributeEscaper.escape(placeholder.getPlaceholderName()),
+              "\""
+                  // placeholder examples are not part of the xliff standard. It is an android
+                  // convention so we add it in the hope that tools will support it anyway.
+                  + (placeholder.getPlaceholderExample() != null
+                      ? " example=\""
+                          + attributeEscaper.escape(placeholder.getPlaceholderExample())
+                          + "\""
+                      : "")
+                  + "/>");
         } else {
           throw new RuntimeException(
               "Xliff doesn't support plurals or genders. " + msg.getSourceLocations());

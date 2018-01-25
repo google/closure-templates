@@ -96,9 +96,9 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
         new PrintNode(
             nodeIdGen.genId(),
             getSourceLocation(),
-            true /* implicit */,
+            /* isImplicit= */ true,
             new VarRefNode(var.name(), getSourceLocation(), false /* not ij */, var),
-            null /* phname */,
+            /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
     printNode.setHtmlContext(htmlContext);
 

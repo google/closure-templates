@@ -97,7 +97,8 @@ public final class CallDelegateNode extends CallNode {
 
       switch (name) {
         case "data":
-        case "phname":
+        case MessagePlaceholders.PHNAME_ATTR:
+        case MessagePlaceholders.PHEX_ATTR:
           // Parsed in CallNode.
           break;
         case "variant":
@@ -124,7 +125,12 @@ public final class CallDelegateNode extends CallNode {
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
               "call",
-              ImmutableList.of("data", "phname", "variant", "allowemptydefault"));
+              ImmutableList.of(
+                  "data",
+                  MessagePlaceholders.PHNAME_ATTR,
+                  MessagePlaceholders.PHEX_ATTR,
+                  "variant",
+                  "allowemptydefault"));
       }
     }
 
@@ -203,6 +209,9 @@ public final class CallDelegateNode extends CallNode {
     }
     if (getUserSuppliedPhName() != null) {
       commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
+    }
+    if (getUserSuppliedPhExample() != null) {
+      commandText.append(" phex=\"").append(getUserSuppliedPhExample()).append('"');
     }
     if (variantExpr != null) {
       commandText.append(" variant=\"").append(variantExpr.toSourceString()).append('"');

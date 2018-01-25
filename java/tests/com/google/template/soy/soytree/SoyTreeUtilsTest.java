@@ -265,7 +265,6 @@ public final class SoyTreeUtilsTest {
 
       assertEquals(clonedMsgHtmlTagNode.numChildren(), origMsgHtmlTagNode.numChildren());
       assertEquals(clonedMsgHtmlTagNode.getId(), origMsgHtmlTagNode.getId());
-      assertEquals(clonedMsgHtmlTagNode.getFullTagText(), origMsgHtmlTagNode.getFullTagText());
       assertEquals(clonedMsgHtmlTagNode.getLcTagName(), origMsgHtmlTagNode.getLcTagName());
     }
   }

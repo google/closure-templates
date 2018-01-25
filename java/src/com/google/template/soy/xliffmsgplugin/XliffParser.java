@@ -164,7 +164,7 @@ class XliffParser {
           currMsgParts.add(SoyMsgRawTextPart.of(currRawTextPart));
           currRawTextPart = null;
         }
-        currMsgParts.add(new SoyMsgPlaceholderPart(atts.getValue("id")));
+        currMsgParts.add(new SoyMsgPlaceholderPart(atts.getValue("id"), atts.getValue("example")));
       }
     }
 

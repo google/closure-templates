@@ -2332,7 +2332,8 @@ private PrintNode PrintStmt() :
   boolean isImplicit;
   ExprNode expr = null;
   List<PrintDirectiveNode> directives = ImmutableList.of();
-  CommandTagAttribute phname = null;
+  List<CommandTagAttribute> attributes = ImmutableList.of();
+  CommandTagAttribute attr;
 }
 {
   (
@@ -2343,7 +2344,8 @@ private PrintNode PrintStmt() :
   try {
     expr = Expr()
     directives = PrintDirectives()
-    [ phname = ExprAttribute() ]
+    [ attr = ExprAttribute() { attributes = new ArrayList<CommandTagAttribute>(); attributes.add(attr);} ]
+    [ attr = ExprAttribute() { attributes.add(attr);} ]
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     if (expr == null) {
@@ -2358,7 +2360,7 @@ private PrintNode PrintStmt() :
         createSrcLoc(tagBegin, tagEnd),
         isImplicit,
         expr,
-        phname,
+        attributes,
         errorReporter);
     node.addChildren(directives);
     return node;

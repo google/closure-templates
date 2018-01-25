@@ -88,9 +88,16 @@ public final class SoyMsgBundleCompactor {
       part = compactPlural((SoyMsgPluralPart) part);
     } else if (part instanceof SoyMsgSelectPart) {
       part = compactSelect((SoyMsgSelectPart) part);
+    } else if (part instanceof SoyMsgPlaceholderPart) {
+      part = compactPlaceholder((SoyMsgPlaceholderPart) part);
     }
     // Now intern the message part.
     return intern(part);
+  }
+
+  private SoyMsgPart compactPlaceholder(SoyMsgPlaceholderPart part) {
+    return new SoyMsgPlaceholderPart(
+        intern(part.getPlaceholderName()), /* placeholderExample=*/ null);
   }
 
   private SoyMsgPart compactSelect(SoyMsgSelectPart select) {

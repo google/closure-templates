@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -40,7 +41,7 @@ public final class HtmlCloseTagNodeTest {
             SourceLocation.UNKNOWN,
             true,
             new VarRefNode("tag", SourceLocation.UNKNOWN, false, null),
-            null,
+            ImmutableList.of(),
             ErrorReporter.exploding());
     closeTag = new HtmlCloseTagNode(1, new TagName(dynamicTagName), SourceLocation.UNKNOWN);
     closeTag.addChild(dynamicTagName);

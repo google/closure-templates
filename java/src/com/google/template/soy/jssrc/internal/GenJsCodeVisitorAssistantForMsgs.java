@@ -486,7 +486,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   private void genGoogMsgCodeForPlaceholder(
       MsgPlaceholderNode node, MsgNode msgNode, GoogMsgCodeGenInfo codeGenInfo) {
 
-    String placeholderName = msgNode.getPlaceholderName(node);
+    String placeholderName = msgNode.getPlaceholder(node).name();
 
     // For plural/select, the placeholder is an ICU placeholder, i.e. kept in all-caps. But for
     // goog.getMsg(), we must change the placeholder name to lower camel-case format.

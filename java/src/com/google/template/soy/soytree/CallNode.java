@@ -59,6 +59,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
+  /** The user-supplied placeholder example, or null if not supplied or not applicable. */
+  @Nullable private final String userSuppliedPlaceholderExample;
+
   /**
    * Escaping directives to apply to the return value. With strict autoescaping, the result of each
    * call site is escaped, which is potentially a no-op if the template's return value is the
@@ -81,6 +84,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     super(id, location, commandName);
 
     String phname = null;
+    String phex = null;
 
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
@@ -96,15 +100,23 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
             this.dataExpr = new ExprRootNode(dataExpr);
           }
           break;
-        case "phname":
-          phname = attr.getValue();
+        case MessagePlaceholders.PHNAME_ATTR:
+          phname =
+              MessagePlaceholders.validatePlaceholderName(
+                  attr.getValue(), attr.getValueLocation(), reporter);
+          break;
+        case MessagePlaceholders.PHEX_ATTR:
+          phex =
+              MessagePlaceholders.validatePlaceholderExample(
+                  attr.getValue(), attr.getValueLocation(), reporter);
           break;
         default:
-          // do nothing
+          // do nothing, validated by subclasses
       }
     }
 
     this.userSuppliedPlaceholderName = phname;
+    this.userSuppliedPlaceholderExample = phex;
   }
 
   /**
@@ -117,6 +129,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.isPassingAllData = orig.isPassingAllData;
     this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.escapingDirectives = orig.escapingDirectives;
     this.isPcData = orig.getIsPcData();
   }
@@ -146,6 +159,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Override
   public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
+  }
+
+  @Nullable
+  @Override
+  public String getUserSuppliedPhExample() {
+    return userSuppliedPlaceholderExample;
   }
 
   @Override

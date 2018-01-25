@@ -87,6 +87,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     super(orig, copyState);
     this.selectExpr = orig.selectExpr.copy(copyState);
     this.baseSelectVarName = orig.baseSelectVarName;
+    copyState.updateRefs(orig, this);
   }
 
   @Override

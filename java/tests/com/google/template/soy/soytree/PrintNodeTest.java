@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -76,10 +77,10 @@ public final class PrintNodeTest {
   public void testToSourceString() {
     VarRefNode boo = new VarRefNode("boo", X, false, null);
 
-    PrintNode pn = new PrintNode(0, X, true /* isImplicit */, boo, null, FAIL);
+    PrintNode pn = new PrintNode(0, X, true /* isImplicit */, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{$boo}");
 
-    pn = new PrintNode(0, X, false /* isImplicit */, boo, null, FAIL);
+    pn = new PrintNode(0, X, false /* isImplicit */, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{print $boo}");
   }
 }

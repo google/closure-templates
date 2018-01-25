@@ -21,7 +21,7 @@
         <note priority="1" from="description">Our secret location.</note>
       </trans-unit>
       <trans-unit id="6632711700686641662" datatype="html">
-        <source>Cow says <x id="MOO"/>.</source>
+        <source>Cow says <x id="MOO" example="MOOOooooOOOO"/>.</source>
         <note priority="1" from="description">Tells what a cow says.</note>
       </trans-unit>
     </body>

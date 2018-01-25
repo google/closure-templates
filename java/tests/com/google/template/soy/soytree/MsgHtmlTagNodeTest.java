@@ -71,11 +71,18 @@ public final class MsgHtmlTagNodeTest {
   }
 
   @Test
+  public void testUserSuppliedPlaceholderExample() {
+    MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<div phname=\"foo\" phex=\"example\"/>");
+    assertThat(mhtn.getUserSuppliedPhName()).isEqualTo("foo");
+    assertThat(mhtn.getUserSuppliedPhExample()).isEqualTo("example");
+  }
+
+  @Test
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("'phname' attribute is not a valid identifier.");
+        .isEqualTo("'phname' is not a valid identifier.");
   }
 
   @Test

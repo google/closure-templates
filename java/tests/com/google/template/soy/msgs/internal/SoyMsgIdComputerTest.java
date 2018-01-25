@@ -47,7 +47,7 @@ public class SoyMsgIdComputerTest {
   private static final ImmutableList<SoyMsgPart> HELLO_NAME_MSG_PARTS =
       ImmutableList.of(
           SoyMsgRawTextPart.of("Hello "),
-          new SoyMsgPlaceholderPart("NAME"),
+          new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
           SoyMsgRawTextPart.of("!"));
 
   private static final ImmutableList<SoyMsgPart> PLURAL_MSG_PARTS =
@@ -62,7 +62,8 @@ public class SoyMsgIdComputerTest {
                   SoyMsgPluralPart.Case.create(
                       new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.FEW),
                       ImmutableList.<SoyMsgPart>of(
-                          new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
+                          new SoyMsgPlaceholderPart("NUM_1", /* placeholderExample= */ null),
+                          SoyMsgRawTextPart.of(" times"))),
                   SoyMsgPluralPart.Case.create(
                       new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.OTHER),
                       ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
@@ -129,7 +130,8 @@ public class SoyMsgIdComputerTest {
 
     ImmutableList<SoyMsgPart> unicodeMsgParts =
         ImmutableList.of(
-            new SoyMsgPlaceholderPart("\u2222\uEEEE"), SoyMsgRawTextPart.of("\u9EC4\u607A"));
+            new SoyMsgPlaceholderPart("\u2222\uEEEE", /* placeholderExample= */ null),
+            SoyMsgRawTextPart.of("\u9EC4\u607A"));
     assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, null))
         .isEqualTo(7971596007260280311L);
     assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, "application/javascript"))

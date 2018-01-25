@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -39,17 +40,18 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * A compiler pass to insert {@link MsgPlaceholderNode placeholders} into {@link MsgNode messages}.
  *
- * <p>Also validates correct use of the {@code phname} attribute; {@code phname} attributes can only
- * be set within a <code>{msg ...}...{/msg}</code> context.
+ * <p>Also validates correct use of the {@code phname} and {@code phex} attributes; these attributes
+ * can only be set within a <code>{msg ...}...{/msg}</code> context.
  */
 final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
-      SoyErrorKind.of("''phname'' attributes are only valid inside '''{'msg...'' tags.");
+      SoyErrorKind.of("''{0}'' attributes are only valid inside '''{'msg...'' tags.");
 
   private static final SoyErrorKind UNEXPECTED_COMMAND_IN_MSG =
       SoyErrorKind.of(
@@ -123,17 +125,13 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     @Override
     protected void visitPrintNode(PrintNode node) {
       maybeAddAndVisitChildren(node);
-      if (!inMsgNode && node.getUserSuppliedPhName() != null) {
-        errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER);
-      }
+      checkPlaceholderNode(node);
     }
 
     @Override
     protected void visitCallNode(CallNode node) {
       maybeAddAndVisitChildren(node);
-      if (!inMsgNode && node.getUserSuppliedPhName() != null) {
-        errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER);
-      }
+      checkPlaceholderNode(node);
     }
 
     @Override
@@ -153,11 +151,13 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
       maybeAddAndVisitChildren(node);
 
       if (!inMsgNode) {
-        // phname is the only allowed close tag attribute, and even then it is only allowed inside
-        // of messages
-        HtmlAttributeNode attr = node.getPhNameNode();
-        if (attr != null) {
-          errorReporter.report(attr.getSourceLocation(), INVALID_PLACEHOLDER);
+        // phname and phex are the only allowed close tag attribute, and even then it is only
+        // allowed inside of messages
+        for (String name : Arrays.asList("phname", "phex")) {
+          HtmlAttributeNode attr = node.getDirectAttributeNamed(name);
+          if (attr != null) {
+            errorReporter.report(attr.getSourceLocation(), INVALID_PLACEHOLDER, name);
+          }
         }
       }
     }
@@ -214,13 +214,24 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
         // ifnode and ifcondnode in particular)
         return;
       }
-      if (!inMsgNode && node instanceof MsgPlaceholderInitialNode) {
-        if (((MsgPlaceholderInitialNode) node).getUserSuppliedPhName() != null) {
-          errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER);
-        }
+      if (node instanceof MsgPlaceholderInitialNode) {
+        checkPlaceholderNode((MsgPlaceholderInitialNode) node);
       }
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
+      }
+    }
+
+    private void checkPlaceholderNode(MsgPlaceholderInitialNode node) {
+      if (inMsgNode) {
+        return;
+      }
+      if (node.getUserSuppliedPhName() != null) {
+        errorReporter.report(
+            node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHNAME_ATTR);
+      } else if (node.getUserSuppliedPhExample() != null) {
+        errorReporter.report(
+            node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHEX_ATTR);
       }
     }
   }

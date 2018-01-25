@@ -59,6 +59,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -401,12 +402,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
      */
     for (HtmlCloseTagNode closeTag : SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
       List<StandaloneNode> children = closeTag.getChildren();
-      HtmlAttributeNode phNameAttribute = closeTag.getPhNameNode();
+      HtmlAttributeNode phNameAttribute =
+          closeTag.getDirectAttributeNamed(MessagePlaceholders.PHNAME_ATTR);
+      HtmlAttributeNode phExAttribute =
+          closeTag.getDirectAttributeNamed(MessagePlaceholders.PHEX_ATTR);
       // the child at index 0 is the tag name
       for (int i = 1; i < children.size(); i++) {
         StandaloneNode child = children.get(i);
-        if (child == phNameAttribute) {
-          continue; // the phname attribute is validated later
+        if (child == phNameAttribute || child == phExAttribute) {
+          continue; // the phname and phex attributes are validated later and allowed in close nodes
         }
         errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
       }

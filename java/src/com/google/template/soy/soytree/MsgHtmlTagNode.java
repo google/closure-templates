@@ -42,10 +42,10 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
   private static final SoyErrorKind DYNAMIC_TAG_NAME_IN_MSG_BLOCK =
       SoyErrorKind.of("HTML tags within within ''msg'' blocks must use constant tag names.");
-  private static final SoyErrorKind INVALID_PHNAME_ATTRIBUTE =
-      SoyErrorKind.of("''phname'' attribute is not a valid identifier.");
-  private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES =
-      SoyErrorKind.of("Multiple ''phname'' attributes in HTML tag.");
+  private static final SoyErrorKind INVALID_ATTRIBUTE =
+      SoyErrorKind.of("''{0}'' attribute is not a constant.");
+  private static final SoyErrorKind MULTIPLE_ATTRIBUTES =
+      SoyErrorKind.of("Multiple ''{0}'' attributes in HTML tag.");
 
   /**
    * Creates a {@link MsgHtmlTagNode} from a {@link HtmlTagNode}.
@@ -54,8 +54,30 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * and used as the placeholder name, it will _not_ be rendered.
    */
   public static MsgHtmlTagNode fromNode(int id, HtmlTagNode tagNode, ErrorReporter errorReporter) {
-    String fullTagText = getFullTagText(tagNode); // do this before removing the phname attribute
-    String userSpecifiedPhName = getUserSpecifiedPhName(tagNode, errorReporter);
+    RawTextNode userSpecifiedPhExample =
+        getAttributeValue(tagNode, MessagePlaceholders.PHEX_ATTR, errorReporter);
+    String phExample = null;
+
+    if (userSpecifiedPhExample != null) {
+      phExample =
+          MessagePlaceholders.validatePlaceholderExample(
+              userSpecifiedPhExample.getRawText(),
+              userSpecifiedPhExample.getSourceLocation(),
+              errorReporter);
+    }
+    RawTextNode userSpecifiedPhName =
+        getAttributeValue(tagNode, MessagePlaceholders.PHNAME_ATTR, errorReporter);
+    String phName = null;
+    if (userSpecifiedPhName != null) {
+      phName =
+          MessagePlaceholders.validatePlaceholderName(
+              userSpecifiedPhName.getRawText(),
+              userSpecifiedPhName.getSourceLocation(),
+              errorReporter);
+    }
+    // calculate after removing the attributes, since we don't care about example and the phname is
+    // part of the samenesskey
+    String fullTagText = getFullTagText(tagNode);
     String lcTagName = getLcTagName(errorReporter, tagNode.getTagName());
     if (tagNode instanceof HtmlCloseTagNode) {
       // TODO(lukes): the lcTagName logic below requires this leading '/' for close tags.  Just make
@@ -65,11 +87,11 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return new MsgHtmlTagNode(
         id,
         tagNode.getSourceLocation(),
-        userSpecifiedPhName,
+        phName,
+        phExample,
         lcTagName,
         tagNode instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tagNode).isSelfClosing(),
-        fullTagText != null,
-        fullTagText,
+        fullTagText != null ? SamenessKey.create(phName, fullTagText) : null,
         tagNode);
   }
 
@@ -114,46 +136,47 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   }
 
   /**
-   * Returns the value of the {@code phname} attribute and removes it from the tag if one exists,
-   * otherwise returns {@code null}.
+   * Returns the {@code RawTextNode} of the given attribute and removes it from the tag if it
+   * exists, otherwise returns {@code null}.
+   *
+   * @param tagNode The owning tag
+   * @param name The attribute name
+   * @param errorReporter The error reporter
    */
   @Nullable
-  private static String getUserSpecifiedPhName(HtmlTagNode tagNode, ErrorReporter errorReporter) {
-    HtmlAttributeNode phNameAttribute = tagNode.getPhNameNode();
-    if (phNameAttribute == null) {
+  private static RawTextNode getAttributeValue(
+      HtmlTagNode tagNode, String name, ErrorReporter errorReporter) {
+    HtmlAttributeNode attribute = tagNode.getDirectAttributeNamed(name);
+    if (attribute == null) {
       return null;
     }
-    String userSpecifiedPhName = getUserSpecifiedPhName(phNameAttribute, errorReporter);
+    RawTextNode value = getAttributeValue(attribute, name, errorReporter);
     // Remove it, we don't actually want to render it
-    tagNode.removeChild(phNameAttribute);
+    tagNode.removeChild(attribute);
     // see if there is more than one.
-    phNameAttribute = tagNode.getPhNameNode();
+    attribute = tagNode.getDirectAttributeNamed(name);
     // TODO(lukes): we should probably have a check that no tag contains multiple copies of an
     // attribute since it is disallowed:
     // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-    if (phNameAttribute != null) {
-      errorReporter.report(phNameAttribute.getSourceLocation(), MULTIPLE_PHNAME_ATTRIBUTES);
+    if (attribute != null) {
+      errorReporter.report(attribute.getSourceLocation(), MULTIPLE_ATTRIBUTES, name);
     }
-    return userSpecifiedPhName;
+    return value;
   }
 
-  /** Validates and returns the phname attribute, or {@code null} if there is no phname. */
+  /** Validates and returns the given attribute, or {@code null} if it doesn't exist. */
   @Nullable
-  private static String getUserSpecifiedPhName(
-      HtmlAttributeNode htmlAttributeNode, ErrorReporter errorReporter) {
+  private static RawTextNode getAttributeValue(
+      HtmlAttributeNode htmlAttributeNode, String name, ErrorReporter errorReporter) {
     StandaloneNode valueNode = htmlAttributeNode.getChild(1);
     if (valueNode instanceof HtmlAttributeValueNode) {
       HtmlAttributeValueNode attributeValueNode = (HtmlAttributeValueNode) valueNode;
       if (attributeValueNode.numChildren() == 1
           && attributeValueNode.getChild(0) instanceof RawTextNode) {
-        String attributeName = ((RawTextNode) attributeValueNode.getChild(0)).getRawText();
-        if (BaseUtils.isIdentifier(attributeName)) {
-          // delete the attribute
-          return attributeName;
-        }
+        return (RawTextNode) attributeValueNode.getChild(0);
       }
     }
-    errorReporter.report(valueNode.getSourceLocation(), INVALID_PHNAME_ATTRIBUTE);
+    errorReporter.report(valueNode.getSourceLocation(), INVALID_ATTRIBUTE, name);
     return null;
   }
 
@@ -195,30 +218,29 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   /** Whether this HTML tag is self-ending (i.e. ends with "/>") */
   private final boolean isSelfEnding;
 
-  /** Whether this HTML tag only has raw text (i.e. has only a single RawTextNode child). */
-  private final boolean isOnlyRawText;
-
-  /** Only applicable when isOnlyRawText is true. The full tag text. */
-  @Nullable private final String fullTagText;
+  @Nullable private final Object samenessKey;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
+  /** The user-supplied placeholder example, or null if not supplied or not applicable. */
+  @Nullable private final String userSuppliedPlaceholderExample;
+
   private MsgHtmlTagNode(
       int id,
       SourceLocation sourceLocation,
-      String userSuppliedPlaceholderName,
+      @Nullable String userSuppliedPlaceholderName,
+      @Nullable String userSuppliedPlaceholderExample,
       String lcTagName,
       boolean isSelfEnding,
-      boolean isOnlyRawText,
-      String fullTagText,
+      Object samenessKey,
       StandaloneNode child) {
     super(id, sourceLocation);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+    this.userSuppliedPlaceholderExample = userSuppliedPlaceholderExample;
     this.lcTagName = lcTagName;
     this.isSelfEnding = isSelfEnding;
-    this.isOnlyRawText = isOnlyRawText;
-    this.fullTagText = fullTagText;
+    this.samenessKey = samenessKey;
     addChild(child);
   }
 
@@ -231,9 +253,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     super(orig, copyState);
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;
-    this.isOnlyRawText = orig.isOnlyRawText;
-    this.fullTagText = orig.fullTagText;
+    this.samenessKey = orig.samenessKey;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
   }
 
 
@@ -247,17 +269,16 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return lcTagName;
   }
 
-
-  /** Returns tag text used to determine whether two nodes refer to the same placeholder. */
-  public @Nullable String getFullTagText() {
-    return fullTagText;
-  }
-
-
   @Nullable
   @Override
   public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
+  }
+
+  @Nullable
+  @Override
+  public String getUserSuppliedPhExample() {
+    return userSuppliedPlaceholderExample;
   }
 
   private static final CharMatcher INVALID_PLACEHOLDER_CHARS =
@@ -302,11 +323,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
 
   @Override public Object genSamenessKey() {
-    // If two MsgHtmlTagNodes are both only raw text, then they are considered the same placeholder
-    // if they both have the same user-supplied placeholder name (if any) and the same tag text.
-    // If one of the MsgHtmlTagNodes is not only raw text, then the two MsgHtmlTagNodes are never
-    // considered the same placeholder (so use the instance as the sameness key)
-    return isOnlyRawText ? SamenessKey.create(userSuppliedPlaceholderName, fullTagText) : this;
+    return samenessKey == null ? this : samenessKey;
   }
 
   @AutoValue
@@ -327,20 +344,24 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     StringBuilder sb = new StringBuilder();
 
     appendSourceStringForChildren(sb);
+    int indexBeforeClose;
+    if (isSelfEnding) {
+      indexBeforeClose = sb.length() - 2;
+      if (!sb.substring(indexBeforeClose).equals("/>")) {
+        throw new AssertionError();
+      }
+    } else {
+      indexBeforeClose = sb.length() - 1;
+      if (!sb.substring(indexBeforeClose).equals(">")) {
+        throw new AssertionError();
+      }
+    }
+
+    if (userSuppliedPlaceholderExample != null) {
+      sb.insert(indexBeforeClose, " phex=\"" + userSuppliedPlaceholderExample + "\"");
+    }
 
     if (userSuppliedPlaceholderName != null) {
-      int indexBeforeClose;
-      if (isSelfEnding) {
-        indexBeforeClose = sb.length() - 2;
-        if (! sb.substring(indexBeforeClose).equals("/>")) {
-          throw new AssertionError();
-        }
-      } else {
-        indexBeforeClose = sb.length() - 1;
-        if (! sb.substring(indexBeforeClose).equals(">")) {
-          throw new AssertionError();
-        }
-      }
       sb.insert(indexBeforeClose, " phname=\"" + userSuppliedPlaceholderName + "\"");
     }
 

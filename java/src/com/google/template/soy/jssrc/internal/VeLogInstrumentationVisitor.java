@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
@@ -108,7 +109,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             insertionLocation,
             /* isImplicit= */ true,
             /* expr= */ funcNode,
-            /* phname= */ null,
+            /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
     tag.addChild(attributeNode);
     visitChildren(node);
@@ -175,7 +176,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 insertionLocation,
                 /* isImplicit= */ true,
                 /* expr= */ new VarRefNode(varName, insertionLocation, false, letNode.getVar()),
-                /* phname= */ null,
+                /* attributes= */ ImmutableList.of(),
                 ErrorReporter.exploding()));
         letNode.addChild(attributeName);
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
@@ -188,7 +189,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               insertionLocation,
               /* isImplicit= */ true,
               /* expr= */ funcNode,
-              /* phname= */ null,
+              /* attributes= */ ImmutableList.of(),
               ErrorReporter.exploding());
       // Append the logging function attribute to its parent
       int appendIndex = node.getParent().getChildIndex(node) + 1;

@@ -58,7 +58,8 @@ public class SoyMsgBundleCompactorTest {
         .setIsPlrselMsg(false)
         .setParts(
             ImmutableList.of(
-                SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)))
+                SoyMsgRawTextPart.of("Message "),
+                new SoyMsgPlaceholderPart("ph_" + id, /* placeholderExample= */ null)))
         .build();
   }
 

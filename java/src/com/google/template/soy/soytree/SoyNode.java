@@ -327,6 +327,14 @@ public interface SoyNode extends Node {
     String getUserSuppliedPhName();
 
     /**
+     * Gets the user-supplied placeholder example, or null if not supplied or not applicable.
+     *
+     * @return The user-supplied placeholder example, or null if not supplied or not applicable.
+     */
+    @Nullable
+    String getUserSuppliedPhExample();
+
+    /**
      * Generates the base placeholder name for this node.
      *
      * @return The base placeholder name for this node.

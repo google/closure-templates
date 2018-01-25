@@ -65,6 +65,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
     this.offset = orig.offset;
     this.pluralExpr = orig.pluralExpr.copy(copyState);
     this.basePluralVarName = orig.basePluralVarName;
+    copyState.updateRefs(orig, this);
   }
 
   @Override
