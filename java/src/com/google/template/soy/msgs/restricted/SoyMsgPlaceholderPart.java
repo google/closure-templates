@@ -32,14 +32,6 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 
   /** An example for the placeholder to help translators. Optional. */
   @Nullable private final String placeholderExample;
-  /**
-   * @param placeholderName The placeholder name (as seen by translators).
-   * @deprecated use the other constructor
-   */
-  @Deprecated
-  public SoyMsgPlaceholderPart(String placeholderName) {
-    this(placeholderName, null);
-  }
 
   /**
    * @param placeholderName The placeholder name (as seen by translators).
