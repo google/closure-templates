@@ -3505,22 +3505,19 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
    // for malformed proto init literals confusing. So use a lookahead to parse the map literals
    // separately.
    (LOOKAHEAD({ident.identifier().equals("map")} )
-    ((
+    [
       key = Expr()
       <COLON>
       val = Expr()
-      {
-        kvPairs.put(key, val);
-      })?
+      { kvPairs.put(key, val); }
       (
-      <COMMA>
-      key = Expr()
-      <COLON>
-      val = Expr()
-      {kvPairs.put(key, val);}
-    )*
-    (<COMMA>)? // optional trailing comma
-    )
+        <COMMA>
+        key = Expr()
+        <COLON>
+        val = Expr()
+        { kvPairs.put(key, val); }
+      )*
+    ]
     closeParen = <RPAREN>
     {
       // Note: the case where there are no keys or values is ambiguous.
