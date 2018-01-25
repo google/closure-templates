@@ -24,10 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.exprtree.ExprEquivalence;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -84,7 +81,7 @@ public final class TagName {
 
   /**
    * A map that is used to check whether a particular optional tag can be popped (auto closed) by a
-   * following close tag. See {@link checkOptionalTagShouldBePopped} method for more information.
+   * following close tag. See {@link #checkOptionalTagShouldBePopped} method for more information.
    *
    * <p>In particular, the keys of this map are all optional tags defined in
    * https://www.w3.org/TR/html5/syntax.html#optional-tags. The values of this map are names for
@@ -242,45 +239,6 @@ public final class TagName {
     return node.getSourceLocation();
   }
 
-  private boolean comparePrintNode(PrintNode firstNode, PrintNode secondNode) {
-    ExprEquivalence exprEquivalence = ExprEquivalence.get();
-    if (!exprEquivalence.equivalent(firstNode.getExpr(), secondNode.getExpr())) {
-      return false;
-    }
-    List<PrintDirectiveNode> firstNodeDirectives = firstNode.getChildren();
-    List<PrintDirectiveNode> secondNodeDirectives = secondNode.getChildren();
-    if (firstNodeDirectives.size() != secondNodeDirectives.size()) {
-      return false;
-    }
-    for (int i = 0; i < firstNodeDirectives.size(); ++i) {
-      if (firstNodeDirectives.get(i).getName().equals(secondNodeDirectives.get(i).getName())) {
-        return false;
-      }
-      // cast ImmutableList<ExprRootNode> to List<ExprNode>
-      @SuppressWarnings("unchecked")
-      List<ExprNode> one = (List<ExprNode>) ((List<?>) firstNodeDirectives.get(i).getExprList());
-      @SuppressWarnings("unchecked")
-      List<ExprNode> two = (List<ExprNode>) ((List<?>) secondNodeDirectives.get(i).getExprList());
-      if (!exprEquivalence.pairwise().equivalent(one, two)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private static int hashPrintNode(PrintNode node) {
-    ExprEquivalence exprEquivalence = ExprEquivalence.get();
-    int hc = exprEquivalence.hash(node.getExpr());
-    for (PrintDirectiveNode child : node.getChildren()) {
-      // cast ImmutableList<ExprRootNode> to List<ExprNode>
-      @SuppressWarnings("unchecked")
-      List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
-      hc = 31 * hc + child.getName().hashCode();
-      hc = 31 * hc + exprEquivalence.pairwise().hash(list);
-    }
-    return hc;
-  }
-
   @Override
   public boolean equals(@Nullable Object other) {
     if (other instanceof TagName) {
@@ -291,14 +249,16 @@ public final class TagName {
       if (isStatic()) {
         return nameAsLowerCase.equals(tag.nameAsLowerCase);
       }
-      return comparePrintNode((PrintNode) node, (PrintNode) tag.node);
+      return PrintNode.PrintEquivalence.get().equivalent((PrintNode) node, (PrintNode) tag.node);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return isStatic() ? nameAsLowerCase.hashCode() : hashPrintNode((PrintNode) node);
+    return isStatic()
+        ? nameAsLowerCase.hashCode()
+        : PrintNode.PrintEquivalence.get().hash((PrintNode) node);
   }
 
   @Override

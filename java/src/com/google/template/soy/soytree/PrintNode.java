@@ -18,12 +18,14 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
+import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -31,6 +33,8 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -171,10 +175,30 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override
   public Object genSamenessKey() {
-    // PrintNodes are considered the same placeholder if they have the same command text ignoring
-    // the phex
-    // TODO(lukes): come up with a more structured approach.
-    return doGetCommandText(false);
+    return new SamenessKey(this);
+  }
+
+  private static final class SamenessKey {
+    final PrintNode node;
+
+    SamenessKey(PrintNode node) {
+      this.node = node;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof SamenessKey)) {
+        return false;
+      }
+      PrintNode other = ((SamenessKey) obj).node;
+      return Objects.equals(node.getUserSuppliedPhName(), other.getUserSuppliedPhName())
+          && PrintEquivalence.get().equivalent(node, other);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(node.getUserSuppliedPhName(), PrintEquivalence.get().wrap(node));
+    }
   }
 
   @Override
@@ -216,5 +240,61 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   @Override
   public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
+  }
+
+  /**
+   * Equivalence relation for print nodes.
+   *
+   * <p>Doesn't account for {@code phname} or {@code phex} attributes
+   */
+  static final class PrintEquivalence extends Equivalence<PrintNode> {
+    private static final PrintEquivalence INSTANCE = new PrintEquivalence();
+
+    static PrintEquivalence get() {
+      return INSTANCE;
+    }
+
+    @Override
+    protected boolean doEquivalent(PrintNode a, PrintNode b) {
+      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      if (!exprEquivalence.equivalent(a.getExpr(), b.getExpr())) {
+        return false;
+      }
+      List<PrintDirectiveNode> aDirectives = a.getChildren();
+      List<PrintDirectiveNode> bDirectives = b.getChildren();
+      if (aDirectives.size() != bDirectives.size()) {
+        return false;
+      }
+      for (int i = 0; i < aDirectives.size(); ++i) {
+        PrintDirectiveNode aDirective = aDirectives.get(i);
+        PrintDirectiveNode bDirective = bDirectives.get(i);
+        if (!aDirective.getName().equals(bDirective.getName())) {
+          return false;
+        }
+        // cast ImmutableList<ExprRootNode> to List<ExprNode>
+        @SuppressWarnings("unchecked")
+        List<ExprNode> one = (List<ExprNode>) ((List<?>) aDirective.getExprList());
+        @SuppressWarnings("unchecked")
+        List<ExprNode> two = (List<ExprNode>) ((List<?>) bDirective.getExprList());
+        if (!exprEquivalence.pairwise().equivalent(one, two)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    protected int doHash(PrintNode t) {
+      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      int hc = exprEquivalence.hash(t.getExpr());
+      for (PrintDirectiveNode child : t.getChildren()) {
+        // cast ImmutableList<ExprRootNode> to List<ExprNode>
+        @SuppressWarnings("unchecked")
+        List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
+        hc = 31 * hc + child.getName().hashCode();
+        hc = 31 * hc + exprEquivalence.pairwise().hash(list);
+      }
+      return hc;
+    }
   }
 }
