@@ -2344,8 +2344,10 @@ private PrintNode PrintStmt() :
   try {
     expr = Expr()
     directives = PrintDirectives()
-    [ attr = ExprAttribute() { attributes = new ArrayList<CommandTagAttribute>(); attributes.add(attr);} ]
-    [ attr = ExprAttribute() { attributes.add(attr);} ]
+    [
+      attr = ExprAttribute() { attributes = new ArrayList<CommandTagAttribute>(); attributes.add(attr);}
+      [ attr = ExprAttribute() { attributes.add(attr);} ]
+    ]
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     if (expr == null) {
