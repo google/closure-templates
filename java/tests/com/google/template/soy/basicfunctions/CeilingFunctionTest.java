@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -46,11 +45,12 @@ public class CeilingFunctionTest {
     CeilingFunction ceilingFunction = new CeilingFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
-    assertEquals(IntegerData.forValue(8), ceilingFunction.computeForJava(ImmutableList.of(float0)));
+    assertThat(ceilingFunction.computeForJava(ImmutableList.of(float0)))
+        .isEqualTo(IntegerData.forValue(8));
 
     SoyValue integer = IntegerData.forValue(14);
-    assertEquals(
-        IntegerData.forValue(14), ceilingFunction.computeForJava(ImmutableList.of(integer)));
+    assertThat(ceilingFunction.computeForJava(ImmutableList.of(integer)))
+        .isEqualTo(IntegerData.forValue(14));
   }
 
   @Test
@@ -81,9 +81,8 @@ public class CeilingFunctionTest {
   public void testComputeForJsSrc() {
     CeilingFunction ceilingFunction = new CeilingFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE),
-        ceilingFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertThat(ceilingFunction.computeForJsSrc(ImmutableList.of(expr)))
+        .isEqualTo(new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

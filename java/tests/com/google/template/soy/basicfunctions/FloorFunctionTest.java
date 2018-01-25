@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -46,10 +45,12 @@ public class FloorFunctionTest {
     FloorFunction floorFunction = new FloorFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
-    assertEquals(IntegerData.forValue(7), floorFunction.computeForJava(ImmutableList.of(float0)));
+    assertThat(floorFunction.computeForJava(ImmutableList.of(float0)))
+        .isEqualTo(IntegerData.forValue(7));
 
     SoyValue integer = IntegerData.forValue(14);
-    assertEquals(IntegerData.forValue(14), floorFunction.computeForJava(ImmutableList.of(integer)));
+    assertThat(floorFunction.computeForJava(ImmutableList.of(integer)))
+        .isEqualTo(IntegerData.forValue(14));
   }
 
   @Test
@@ -80,9 +81,8 @@ public class FloorFunctionTest {
   public void testComputeForJsSrc() {
     FloorFunction floorFunction = new FloorFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("Math.floor(JS_CODE)", Integer.MAX_VALUE),
-        floorFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertThat(floorFunction.computeForJsSrc(ImmutableList.of(expr)))
+        .isEqualTo(new JsExpr("Math.floor(JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

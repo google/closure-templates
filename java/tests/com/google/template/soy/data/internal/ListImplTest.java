@@ -16,15 +16,9 @@
 
 package com.google.template.soy.data.internal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -49,15 +43,15 @@ public class ListImplTest {
   public void testSoyValueMethods() {
 
     SoyValue val1 = ListImpl.forProviderList(EMPTY);
-    assertTrue(val1.coerceToBoolean()); // ListImpl is always truthy.
-    assertEquals("[]", val1.coerceToString());
+    assertThat(val1.coerceToBoolean()).isTrue(); // ListImpl is always truthy.
+    assertThat(val1.coerceToString()).isEqualTo("[]");
     SoyValue val2 = ListImpl.forProviderList(EMPTY);
-    assertFalse(val1.equals(val2)); // ListImpl uses object identity.
+    assertThat(val1.equals(val2)).isFalse(); // ListImpl uses object identity.
 
     SoyValue val3 =
         ListImpl.forProviderList(ImmutableList.of(IntegerData.forValue(111), BooleanData.TRUE));
-    assertTrue(val3.coerceToBoolean());
-    assertEquals("[111, true]", val3.coerceToString());
+    assertThat(val3.coerceToBoolean()).isTrue();
+    assertThat(val3.coerceToString()).isEqualTo("[111, true]");
   }
 
   @Test
@@ -68,20 +62,20 @@ public class ListImplTest {
     SoyValue BLAH_2 = StringData.forValue("blah");
 
     SoyList list = ListImpl.forProviderList(EMPTY);
-    assertEquals(0, list.length());
-    assertEquals(0, Iterables.size(list.asJavaList()));
-    assertEquals(0, Iterables.size(list.asResolvedJavaList()));
-    assertNull(list.get(0));
-    assertNull(list.getProvider(0));
+    assertThat(list.length()).isEqualTo(0);
+    assertThat(list.asJavaList()).isEmpty();
+    assertThat(list.asResolvedJavaList()).isEmpty();
+    assertThat(list.get(0)).isNull();
+    assertThat(list.getProvider(0)).isNull();
     list = ListImpl.forProviderList(ImmutableList.of(BLAH_0, PI, BLAH_2));
     // At this point, list should be [BLAH_0, PI, BLAH_2].
-    assertEquals(3, list.length());
-    assertEquals(ImmutableList.of(BLAH_0, PI, BLAH_2), list.asJavaList());
-    assertEquals(ImmutableList.of(BLAH_0, PI, BLAH_2), list.asResolvedJavaList());
-    assertSame(BLAH_0, list.get(0));
-    assertNotSame(BLAH_2, list.get(0));
-    assertEquals(BLAH_2, list.get(0)); // not same, but they compare equal
-    assertEquals(3.14, list.getProvider(1).resolve().floatValue(), 0.0);
+    assertThat(list.length()).isEqualTo(3);
+    assertThat(list.asJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
+    assertThat(list.asResolvedJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
+    assertThat(list.get(0)).isSameAs(BLAH_0);
+    assertThat(list.get(0)).isNotSameAs(BLAH_2);
+    assertThat(list.get(0)).isEqualTo(BLAH_2); // not same, but they compare equal
+    assertThat(list.getProvider(1).resolve().floatValue()).isWithin(0.0).of(3.14);
   }
 
   @Test
@@ -89,17 +83,17 @@ public class ListImplTest {
 
     SoyList list =
         ListImpl.forProviderList(ImmutableList.of(FloatData.forValue(3.14), BooleanData.TRUE));
-    assertEquals(2, list.getItemCnt());
-    assertEquals(ImmutableList.of(IntegerData.ZERO, IntegerData.ONE), list.getItemKeys());
-    assertTrue(list.hasItem(IntegerData.ONE));
-    assertEquals(3.14, list.getItem(IntegerData.ZERO).floatValue(), 0.0);
-    assertEquals(true, list.getItemProvider(IntegerData.ONE).resolve().booleanValue());
+    assertThat(list.getItemCnt()).isEqualTo(2);
+    assertThat(list.getItemKeys()).containsExactly(IntegerData.ZERO, IntegerData.ONE).inOrder();
+    assertThat(list.hasItem(IntegerData.ONE)).isTrue();
+    assertThat(list.getItem(IntegerData.ZERO).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list.getItemProvider(IntegerData.ONE).resolve().booleanValue()).isTrue();
 
     // For backwards compatibility: accept string arguments.
-    assertTrue(list.hasItem(StringData.forValue("0")));
-    assertFalse(list.hasItem(StringData.forValue("-99")));
-    assertFalse(list.hasItem(StringData.forValue("99")));
-    assertEquals(3.14, list.getItem(StringData.forValue("0")).floatValue(), 0.0);
-    assertEquals(true, list.getItemProvider(StringData.forValue("1")).resolve().booleanValue());
+    assertThat(list.hasItem(StringData.forValue("0"))).isTrue();
+    assertThat(list.hasItem(StringData.forValue("-99"))).isFalse();
+    assertThat(list.hasItem(StringData.forValue("99"))).isFalse();
+    assertThat(list.getItem(StringData.forValue("0")).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list.getItemProvider(StringData.forValue("1")).resolve().booleanValue()).isTrue();
   }
 }

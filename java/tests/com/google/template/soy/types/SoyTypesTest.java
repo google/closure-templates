@@ -18,8 +18,6 @@ package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -358,12 +356,12 @@ public class SoyTypesTest {
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       SoyType typeForContentKind = SanitizedType.getTypeForContentKind(kind);
       if (kind == SanitizedContentKind.TEXT) {
-        assertEquals(STRING_TYPE, typeForContentKind);
+        assertThat(typeForContentKind).isEqualTo(STRING_TYPE);
       } else {
-        assertEquals(kind, ((SanitizedType) typeForContentKind).getContentKind());
+        assertThat(((SanitizedType) typeForContentKind).getContentKind()).isEqualTo(kind);
       }
       // ensure there is a unique SoyType for every ContentKind
-      assertTrue(types.add(typeForContentKind));
+      assertThat(types.add(typeForContentKind)).isTrue();
     }
   }
 

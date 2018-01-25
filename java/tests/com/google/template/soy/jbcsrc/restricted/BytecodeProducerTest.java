@@ -44,7 +44,8 @@ public class BytecodeProducerTest {
       producer.gen(adaterAdapter);
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains("All bytecode producers should be constructed prior to code generation");
     }
   }

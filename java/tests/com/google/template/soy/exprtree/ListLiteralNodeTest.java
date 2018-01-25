@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -44,9 +44,9 @@ public final class ListLiteralNodeTest {
             ImmutableList.<ExprNode>of(
                 new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), dataRef),
             X);
-    assertEquals("['blah', 123, $foo]", listLit.toSourceString());
+    assertThat(listLit.toSourceString()).isEqualTo("['blah', 123, $foo]");
 
     ListLiteralNode emptyListLit = new ListLiteralNode(ImmutableList.<ExprNode>of(), X);
-    assertEquals("[]", emptyListLit.toSourceString());
+    assertThat(emptyListLit.toSourceString()).isEqualTo("[]");
   }
 }

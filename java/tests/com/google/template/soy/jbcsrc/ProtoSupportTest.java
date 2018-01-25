@@ -16,10 +16,10 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -464,7 +464,7 @@ public final class ProtoSupportTest {
     CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
-      assertEquals(RenderResult.done(), caller.render(sb, getDefaultContext(templates)));
+      assertThat(caller.render(sb, getDefaultContext(templates))).isEqualTo(RenderResult.done());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

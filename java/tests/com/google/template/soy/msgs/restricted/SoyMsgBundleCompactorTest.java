@@ -16,9 +16,8 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -134,53 +133,44 @@ public class SoyMsgBundleCompactorTest {
 
   @Test
   public void testInterning() {
-    assertSame(
-        "SoyMsgRawTextPart should be interned",
-        xxMsgBundle.getMsg(314).getParts().get(0),
-        yyMsgBundle.getMsg(314).getParts().get(0));
-    assertSame(
-        "SoyMsgRawTextPart should be interned",
-        xxMsgBundle.getMsg(159).getParts().get(0),
-        yyMsgBundle.getMsg(159).getParts().get(0));
-    assertSame(
-        "SoyMsgPlaceholderPart should be interned",
-        xxMsgBundle.getMsg(159).getParts().get(1),
-        yyMsgBundle.getMsg(159).getParts().get(1));
-    assertSame(
-        "SoyMsgSelectPart should be interned",
-        xxMsgBundle.getMsg(265).getParts().get(0),
-        yyMsgBundle.getMsg(265).getParts().get(0));
-    assertSame(
-        "SoyMsgSelectPart should be interned",
-        xxMsgBundle.getMsg(358).getParts().get(0),
-        yyMsgBundle.getMsg(358).getParts().get(0));
+    assertWithMessage("SoyMsgRawTextPart should be interned")
+        .that(yyMsgBundle.getMsg(314).getParts().get(0))
+        .isSameAs(xxMsgBundle.getMsg(314).getParts().get(0));
+    assertWithMessage("SoyMsgRawTextPart should be interned")
+        .that(yyMsgBundle.getMsg(159).getParts().get(0))
+        .isSameAs(xxMsgBundle.getMsg(159).getParts().get(0));
+    assertWithMessage("SoyMsgPlaceholderPart should be interned")
+        .that(yyMsgBundle.getMsg(159).getParts().get(1))
+        .isSameAs(xxMsgBundle.getMsg(159).getParts().get(1));
+    assertWithMessage("SoyMsgSelectPart should be interned")
+        .that(yyMsgBundle.getMsg(265).getParts().get(0))
+        .isSameAs(xxMsgBundle.getMsg(265).getParts().get(0));
+    assertWithMessage("SoyMsgSelectPart should be interned")
+        .that(yyMsgBundle.getMsg(358).getParts().get(0))
+        .isSameAs(xxMsgBundle.getMsg(358).getParts().get(0));
 
     SoyMsgSelectPart select1 = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
     SoyMsgSelectPart select2 = (SoyMsgSelectPart) xxMsgBundle.getMsg(266).getParts().get(0);
-    assertNotSame(select1, select2);
-    assertSame(
-        "Select var names should be interned",
-        select1.getSelectVarName(),
-        select2.getSelectVarName());
-    assertSame(
-        "Case values should be interned",
-        select1.getCases().get(0).spec(),
-        select2.getCases().get(0).spec());
+    assertThat(select2).isNotSameAs(select1);
+    assertWithMessage("Select var names should be interned")
+        .that(select2.getSelectVarName())
+        .isSameAs(select1.getSelectVarName());
+    assertWithMessage("Case values should be interned")
+        .that(select2.getCases().get(0).spec())
+        .isSameAs(select1.getCases().get(0).spec());
   }
 
   @Test
   public void testCaseCollapsing() {
     SoyMsgSelectPart differentSelect = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
     SoyMsgSelectPart sameSelect = (SoyMsgSelectPart) xxMsgBundle.getMsg(358).getParts().get(0);
-    assertEquals(
-        "Selects with different cases should not be collapsed",
-        3,
-        differentSelect.getCases().size());
-    assertEquals(
-        "Selects with the same case should be collapsed",
-        ImmutableList.of(
+    assertWithMessage("Selects with different cases should not be collapsed")
+        .that(differentSelect.getCases().size())
+        .isEqualTo(3);
+    assertWithMessage("Selects with the same case should be collapsed")
+        .that(sameSelect.getCases())
+        .containsExactly(
             SoyMsgPart.Case.<String>create(
-                null, ImmutableList.of(SoyMsgRawTextPart.of("Same message 358")))),
-        sameSelect.getCases());
+                null, ImmutableList.of(SoyMsgRawTextPart.of("Same message 358"))));
   }
 }

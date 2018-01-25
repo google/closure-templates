@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -45,8 +44,8 @@ public class StrSubFunctionTest {
     StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = IntegerData.forValue(2);
-    assertEquals(
-        StringData.forValue("obarfoo"), strSub.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(StringData.forValue("obarfoo"));
   }
 
   @Test
@@ -54,8 +53,8 @@ public class StrSubFunctionTest {
     StrSubFunction strSub = new StrSubFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = IntegerData.forValue(2);
-    assertEquals(
-        StringData.forValue("obarfoo"), strSub.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(StringData.forValue("obarfoo"));
   }
 
   @Test
@@ -64,8 +63,8 @@ public class StrSubFunctionTest {
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = IntegerData.forValue(2);
     SoyValue arg2 = IntegerData.forValue(7);
-    assertEquals(
-        StringData.forValue("obarf"), strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)))
+        .isEqualTo(StringData.forValue("obarf"));
   }
 
   @Test
@@ -74,8 +73,8 @@ public class StrSubFunctionTest {
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = IntegerData.forValue(2);
     SoyValue arg2 = IntegerData.forValue(7);
-    assertEquals(
-        StringData.forValue("obarf"), strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)))
+        .isEqualTo(StringData.forValue("obarf"));
   }
 
   @Test
@@ -83,9 +82,8 @@ public class StrSubFunctionTest {
     StrSubFunction strSub = new StrSubFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).substring(3)", Integer.MAX_VALUE),
-        strSub.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strSub.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(new JsExpr("('' + ('foo' + 'bar')).substring(3)", Integer.MAX_VALUE));
   }
 
   @Test
@@ -94,9 +92,8 @@ public class StrSubFunctionTest {
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
     JsExpr arg2 = new JsExpr("5", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).substring(3,5)", Integer.MAX_VALUE),
-        strSub.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
+    assertThat(strSub.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)))
+        .isEqualTo(new JsExpr("('' + ('foo' + 'bar')).substring(3,5)", Integer.MAX_VALUE));
   }
 
   @Test

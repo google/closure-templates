@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -37,6 +37,6 @@ public class ProtoInitNodeTest {
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
     fn.addChild(new StringNode("str", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
-    assertEquals("my.awesome.Proto(f: 3.14159, i: 2, s: 'str')", fn.toSourceString());
+    assertThat(fn.toSourceString()).isEqualTo("my.awesome.Proto(f: 3.14159, i: 2, s: 'str')");
   }
 }

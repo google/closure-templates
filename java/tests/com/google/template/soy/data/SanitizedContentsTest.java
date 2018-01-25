@@ -79,7 +79,7 @@ public class SanitizedContentsTest {
           SanitizedContents.emptyString(ContentKind.CSS));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).isEqualTo("Can only concat HTML");
+      assertThat(e).hasMessageThat().isEqualTo("Can only concat HTML");
     }
   }
 

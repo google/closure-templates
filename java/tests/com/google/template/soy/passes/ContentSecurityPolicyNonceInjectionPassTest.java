@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -240,10 +239,10 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             .setIj(ImmutableMap.of("csp_nonce", "\">alert('hello')</script><script data-foo=\""))
             .render()
             .get();
-    assertEquals(
-        "<script nonce=\"&quot;&gt;alert(&#39;hello&#39;)&lt;/script&gt;&lt;script "
-            + "data-foo=&quot;\">var innocentJs=\"foo\"</script>",
-        renderedValue);
+    assertThat(renderedValue)
+        .isEqualTo(
+            "<script nonce=\"&quot;&gt;alert(&#39;hello&#39;)&lt;/script&gt;&lt;script "
+                + "data-foo=&quot;\">var innocentJs=\"foo\"</script>");
   }
 
   @Test
@@ -265,7 +264,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             .render()
             .get();
     // We don't inject into inline event handlers anymore
-    assertEquals("<a href='#' onmouseover='foo()'>click me</a>", renderedValue);
+    assertThat(renderedValue).isEqualTo("<a href='#' onmouseover='foo()'>click me</a>");
   }
 
   private static String join(String... lines) {

@@ -17,7 +17,6 @@
 package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -44,7 +43,7 @@ public final class FunctionNodeTest {
     FunctionNode fn = new FunctionNode(new RoundFunction(), SourceLocation.UNKNOWN);
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
-    assertEquals("round(3.14159, 2)", fn.toSourceString());
+    assertThat(fn.toSourceString()).isEqualTo("round(3.14159, 2)");
   }
 
   /**

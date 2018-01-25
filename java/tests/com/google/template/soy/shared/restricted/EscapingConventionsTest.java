@@ -16,9 +16,9 @@
 
 package com.google.template.soy.shared.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Function;
@@ -69,7 +69,7 @@ public class EscapingConventionsTest {
         actual.add(clazz.getSimpleName());
       }
     }
-    assertEquals(expected, actual);
+    assertThat(actual).isEqualTo(expected);
   }
 
   @Test
@@ -407,10 +407,9 @@ public class EscapingConventionsTest {
   @Test
   public void testEscaperInterface() throws Exception {
     // Test the escape method.
-    assertEquals("Hello", EscapingConventions.EscapeUri.INSTANCE.escape("Hello"));
-    assertEquals(
-        "%0Aletters%C2%85%E1%88%B4%E2%80%A8",
-        EscapingConventions.EscapeUri.INSTANCE.escape("\nletters\u0085\u1234\u2028"));
+    assertThat(EscapingConventions.EscapeUri.INSTANCE.escape("Hello")).isEqualTo("Hello");
+    assertThat(EscapingConventions.EscapeUri.INSTANCE.escape("\nletters\u0085\u1234\u2028"))
+        .isEqualTo("%0Aletters%C2%85%E1%88%B4%E2%80%A8");
 
     StringBuilder sb;
 
@@ -420,7 +419,7 @@ public class EscapingConventionsTest {
         .escape(sb)
         .append("Hello")
         .append("\nletters\u0085\u1234\u2028");
-    assertEquals("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8", sb.toString());
+    assertThat(sb.toString()).isEqualTo("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8");
 
     // And the Appendable substring version.
     sb = new StringBuilder();
@@ -428,7 +427,7 @@ public class EscapingConventionsTest {
         .escape(sb)
         .append("--Hello--", 2, 7)
         .append("--\nletters\u0085\u1234\u2028--", 2, 13);
-    assertEquals("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8", sb.toString());
+    assertThat(sb.toString()).isEqualTo("Hello%0Aletters%C2%85%E1%88%B4%E2%80%A8");
 
     // And the Appendable char version.
     sb = new StringBuilder();
@@ -439,7 +438,7 @@ public class EscapingConventionsTest {
         .append('\n')
         .append('\u0085')
         .append('\u1234');
-    assertEquals("Hi%0A%C2%85%E1%88%B4", sb.toString());
+    assertThat(sb.toString()).isEqualTo("Hi%0A%C2%85%E1%88%B4");
   }
 
   private static final String SUBSTITUTION_POINT = "{$s}";
@@ -566,7 +565,7 @@ public class EscapingConventionsTest {
                 "^(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\\?([^#]*))?(?:#(.*))?",
                 Pattern.DOTALL)
             .matcher(s);
-    assertTrue(m.find());
+    assertThat(m.find()).isTrue();
     String scheme = m.group(1);
     String authority = m.group(2);
     String path = m.group(3);
@@ -719,8 +718,8 @@ public class EscapingConventionsTest {
       Iterable<String> untrustedValues,
       String... expectedTokens)
       throws Exception {
-    assertTrue(templateText, templateText.contains(SUBSTITUTION_POINT));
-    assertTrue(untrustedValues.iterator().hasNext()); // not empty
+    assertWithMessage(templateText).that(templateText).contains(SUBSTITUTION_POINT);
+    assertThat(untrustedValues).isNotEmpty();
     checkEscaping(
         templateText,
         applyDirectiveClosure(directiveName, untrustedValues),
@@ -796,7 +795,7 @@ public class EscapingConventionsTest {
       Function<String, List<String>> lexer,
       List<String> expectedTokens) {
     int numStrings = strings.size();
-    assertTrue(directiveVersion, numStrings != 0);
+    assertWithMessage(directiveVersion).that(strings).isNotEmpty();
     for (int i = 0; i < numStrings; i += 2) {
       String unescaped = strings.get(i);
       String escaped = strings.get(i + 1);

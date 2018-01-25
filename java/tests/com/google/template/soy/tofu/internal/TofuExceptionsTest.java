@@ -95,7 +95,7 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo("In 'print' tag, expression \"$foo.bad\" evaluates to undefined.");
@@ -112,7 +112,7 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
@@ -138,7 +138,7 @@ public final class TofuExceptionsTest {
           .isEqualTo("When evaluating \"$foo.boo\": Error dereferencing future");
       SoyFutureException sfe = (SoyFutureException) ste.getCause();
       assertThat(sfe).hasMessageThat().isEqualTo("Error dereferencing future");
-      assertThat(sfe.getCause()).isEqualTo(futureFailureCause);
+      assertThat(sfe).hasCauseThat().isEqualTo(futureFailureCause);
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:10)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
@@ -152,7 +152,7 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
@@ -172,7 +172,7 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste.getCause()).isNull();
+      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
@@ -196,7 +196,7 @@ public final class TofuExceptionsTest {
     } catch (SoyTofuException ste) {
       SoyFutureException sfe = (SoyFutureException) ste.getCause();
       assertThat(sfe).hasMessageThat().isEqualTo("Error dereferencing future");
-      assertThat(sfe.getCause()).isEqualTo(futureFailureCause);
+      assertThat(sfe).hasCauseThat().isEqualTo(futureFailureCause);
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo("When evaluating \"$foo\": Error dereferencing future");

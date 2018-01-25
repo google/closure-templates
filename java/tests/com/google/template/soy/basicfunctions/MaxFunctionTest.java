@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -42,13 +41,13 @@ public class MaxFunctionTest {
 
     SoyValue float0 = FloatData.forValue(7.5);
     SoyValue float1 = FloatData.forValue(7.777);
-    assertEquals(
-        FloatData.forValue(7.777), maxFunction.computeForJava(ImmutableList.of(float0, float1)));
+    assertThat(maxFunction.computeForJava(ImmutableList.of(float0, float1)))
+        .isEqualTo(FloatData.forValue(7.777));
 
     SoyValue integer0 = IntegerData.forValue(-7);
     SoyValue integer1 = IntegerData.forValue(-8);
-    assertEquals(
-        IntegerData.forValue(-7), maxFunction.computeForJava(ImmutableList.of(integer0, integer1)));
+    assertThat(maxFunction.computeForJava(ImmutableList.of(integer0, integer1)))
+        .isEqualTo(IntegerData.forValue(-7));
   }
 
   @Test
@@ -56,9 +55,8 @@ public class MaxFunctionTest {
     MaxFunction maxFunction = new MaxFunction();
     JsExpr expr0 = new JsExpr("JS_CODE_0", Integer.MAX_VALUE);
     JsExpr expr1 = new JsExpr("JS_CODE_1", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("Math.max(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE),
-        maxFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)));
+    assertThat(maxFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)))
+        .isEqualTo(new JsExpr("Math.max(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE));
   }
 
   @Test

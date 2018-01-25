@@ -17,8 +17,6 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -44,7 +42,7 @@ public class PrerenderVisitorTest {
             + "{if $boo > 4}\n"
             + "  {sp}+ 7 equals {$boo + 7}.\n"
             + "{/if}\n";
-    assertEquals("8 + 7 equals 15.", prerender(templateBody));
+    assertThat(prerender(templateBody)).isEqualTo("8 + 7 equals 15.");
   }
 
   @Test
@@ -65,7 +63,7 @@ public class PrerenderVisitorTest {
             + "01234567    "
             + "01234<wbr>56789    "
             + "01234567&lt;wbr&gt;89    ";
-    assertEquals(expectedResult, prerender(printNodesSource));
+    assertThat(prerender(printNodesSource)).isEqualTo(expectedResult);
   }
 
   @Test
@@ -77,7 +75,7 @@ public class PrerenderVisitorTest {
       prerender(templateBody);
       fail();
     } catch (RenderException re) {
-      assertTrue(re.getMessage().contains("Cannot prerender MsgFallbackGroupNode."));
+      assertThat(re).hasMessageThat().contains("Cannot prerender MsgFallbackGroupNode.");
     }
 
     // Cannot prerender Debugger.
@@ -86,12 +84,12 @@ public class PrerenderVisitorTest {
       prerender(templateBody);
       fail();
     } catch (RenderException re) {
-      assertThat(re.getMessage()).contains("Cannot prerender DebuggerNode.");
+      assertThat(re).hasMessageThat().contains("Cannot prerender DebuggerNode.");
     }
 
     // This should work because the if-condition is false, thus skipping the DebuggerNode.
     templateBody = "{let $boo: 8 /}\n" + "{$boo}\n" + "{if $boo < 4}\n" + "{debugger}" + "{/if}\n";
-    assertEquals("8", prerender(templateBody));
+    assertThat(prerender(templateBody)).isEqualTo("8");
   }
 
   @Test
@@ -114,7 +112,7 @@ public class PrerenderVisitorTest {
             + "{if $boo < 4}\n"
             + "  {$foo}\n"
             + "{/if}\n";
-    assertEquals("8", prerender(templateBody));
+    assertThat(prerender(templateBody)).isEqualTo("8");
   }
 
   @Test
@@ -124,10 +122,10 @@ public class PrerenderVisitorTest {
       prerender("  {'blah' |bidiSpanWrap}\n");
       fail();
     } catch (Exception e) {
-      assertTrue(
-          e instanceof RenderException
-              && e.getMessage()
-                  .contains("Cannot prerender a node with some impure print directive."));
+      assertThat(e).isInstanceOf(RenderException.class);
+      assertThat(e)
+          .hasMessageThat()
+          .contains("Cannot prerender a node with some impure print directive.");
     }
   }
 

@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
@@ -51,10 +50,11 @@ public class AugmentMapFunctionTest {
         (SoyDict)
             augmentMapFunction.computeForJava(ImmutableList.<SoyValue>of(origMap, additionalMap));
 
-    assertEquals("bluh", augmentedDict.getField("aaa").stringValue());
-    assertEquals("bleh", augmentedDict.getItem(StringData.forValue("bbb")).stringValue());
-    assertEquals(5, ((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue());
-    assertEquals(null, ((SoyDict) augmentedDict.getField("ccc")).getField("xxx"));
+    assertThat(augmentedDict.getField("aaa").stringValue()).isEqualTo("bluh");
+    assertThat(augmentedDict.getItem(StringData.forValue("bbb")).stringValue()).isEqualTo("bleh");
+    assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue())
+        .isEqualTo(5);
+    assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("xxx")).isEqualTo(null);
   }
 
   @Test
@@ -62,9 +62,10 @@ public class AugmentMapFunctionTest {
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     JsExpr baseMapExpr = new JsExpr("BASE_MAP_JS_CODE", Integer.MAX_VALUE);
     JsExpr additionalMapExpr = new JsExpr("ADDITIONAL_MAP_JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("soy.$$augmentMap(BASE_MAP_JS_CODE, ADDITIONAL_MAP_JS_CODE)", Integer.MAX_VALUE),
-        augmentMapFunction.computeForJsSrc(ImmutableList.of(baseMapExpr, additionalMapExpr)));
+    assertThat(augmentMapFunction.computeForJsSrc(ImmutableList.of(baseMapExpr, additionalMapExpr)))
+        .isEqualTo(
+            new JsExpr(
+                "soy.$$augmentMap(BASE_MAP_JS_CODE, ADDITIONAL_MAP_JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

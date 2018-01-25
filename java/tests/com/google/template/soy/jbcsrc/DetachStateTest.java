@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -96,16 +95,16 @@ public final class DetachStateTest {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello world");
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, context));
-    assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString()); // nothing was added
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("hello world");
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello world"); // nothing was added
   }
 
   @Test
@@ -118,14 +117,14 @@ public final class DetachStateTest {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("foo-barbaz", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("foo-barbaz");
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // css() does not detach
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("foo-barbaz", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("foo-barbaz");
   }
 
   @Test
@@ -136,14 +135,14 @@ public final class DetachStateTest {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("foo_", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("foo_");
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // xid() does not detach
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("foo_", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("foo_");
   }
 
   @Test
@@ -160,20 +159,20 @@ public final class DetachStateTest {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello world");
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, context));
-    assertEquals("hello", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, context));
-    assertEquals("hello ", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, context));
-    assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString()); // nothing was added
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("hello");
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("hello ");
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("hello world");
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello world"); // nothing was added
   }
 
   // ensure that when we call back in, locals are restored
@@ -186,17 +185,17 @@ public final class DetachStateTest {
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("0123456789", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("0123456789");
 
     output = new TestAppendable();
     output.softLimitReached = true;
     for (int i = 0; i < 10; i++) {
-      assertEquals(RenderResult.limited(), template.render(output, context));
-      assertEquals(String.valueOf(i), output.toString());
+      assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+      assertThat(output.toString()).isEqualTo(String.valueOf(i));
       output.delegate.setLength(0);
     }
-    assertEquals(RenderResult.done(), template.render(output, context));
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEmpty(); // last render was empty
   }
 
@@ -212,20 +211,20 @@ public final class DetachStateTest {
 
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertEquals(future, result.future());
-    assertEquals("prefix ", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isEqualTo(future);
+    assertThat(output.toString()).isEqualTo("prefix ");
 
     // No progress is made, our caller is an idiot and didn't wait for the future
     result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertEquals(future, result.future());
-    assertEquals("prefix ", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isEqualTo(future);
+    assertThat(output.toString()).isEqualTo("prefix ");
 
     future.set("future");
     result = template.render(output, context);
-    assertEquals(RenderResult.done(), result);
-    assertEquals("prefix future suffix", output.toString());
+    assertThat(result).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("prefix future suffix");
   }
 
   @Test
@@ -252,26 +251,26 @@ public final class DetachStateTest {
 
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertEquals(futures.get(0), result.future());
-    assertEquals("prefix\nloop-prefix\n", output.getAndClearBuffer());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isEqualTo(futures.get(0));
+    assertThat(output.getAndClearBuffer()).isEqualTo("prefix\nloop-prefix\n");
 
     futures.get(0).set("first");
     result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertEquals(futures.get(1), result.future());
-    assertEquals("first\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isEqualTo(futures.get(1));
+    assertThat(output.getAndClearBuffer()).isEqualTo("first\nloop-suffix\nloop-prefix\n");
 
     futures.get(1).set("second");
     result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertEquals(futures.get(2), result.future());
-    assertEquals("second\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isEqualTo(futures.get(2));
+    assertThat(output.getAndClearBuffer()).isEqualTo("second\nloop-suffix\nloop-prefix\n");
 
     futures.get(2).set("third");
     result = template.render(output, context);
-    assertEquals(RenderResult.done(), result);
-    assertEquals("third\nloop-suffix\nsuffix", output.toString());
+    assertThat(result).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("third\nloop-suffix\nsuffix");
   }
 
   // This test is for a bug where we were generating one detach logic block for a full expressions
@@ -290,8 +289,9 @@ public final class DetachStateTest {
     RenderContext context = getDefaultContext(templates);
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    assertEquals(RenderResult.done(), factory.create(params, EMPTY_DICT).render(output, context));
-    assertEquals("2345", output.toString());
+    assertThat(factory.create(params, EMPTY_DICT).render(output, context))
+        .isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("2345");
   }
 
   @Test
@@ -317,12 +317,13 @@ public final class DetachStateTest {
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    assertEquals(
-        RenderResult.continueAfter(param), template.render(output, getDefaultContext(templates)));
-    assertEquals("prefix ", output.toString());
+    assertThat(template.render(output, getDefaultContext(templates)))
+        .isEqualTo(RenderResult.continueAfter(param));
+    assertThat(output.toString()).isEqualTo("prefix ");
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, getDefaultContext(templates)));
-    assertEquals("prefix foo suffix", output.toString());
+    assertThat(template.render(output, getDefaultContext(templates)))
+        .isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("prefix foo suffix");
   }
 
   @Test
@@ -353,10 +354,10 @@ public final class DetachStateTest {
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    assertEquals(RenderResult.continueAfter(param), template.render(output, context));
-    assertEquals("prefix ", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
+    assertThat(output.toString()).isEqualTo("prefix ");
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("prefix foo suffix", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("prefix foo suffix");
   }
 }

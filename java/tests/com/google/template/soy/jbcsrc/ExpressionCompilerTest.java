@@ -472,13 +472,13 @@ public class ExpressionCompilerTest {
     // force the type checker to interpret the left hand side as a nullable string, the literal null
     // is rejected by the type checker.
     assertExpression("(true ? null : 'a') ?: 2").evaluatesTo(IntegerData.forValue(2));
-    assertExpression("(true ? null : 'a') ?: 'b'").evaluatesTo("b");
-    assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo("a");
+    assertExpression("(true ? null : 'a') ?: 'b'").evaluatesTo(StringData.forValue("b"));
+    assertExpression("(false ? null : 'a') ?: 'b'").evaluatesTo(StringData.forValue("a"));
 
     variables.put(
         "p1", untypedBoxedSoyExpression(SoyExpression.forString(constantNull(STRING_TYPE))));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
-    assertExpression("$p1 ?: $p2").evaluatesTo("a");
+    assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue("a"));
 
     SoyType htmlType = SanitizedType.getTypeForContentKind(SanitizedContentKind.HTML);
     variables.put(
@@ -492,7 +492,7 @@ public class ExpressionCompilerTest {
         "p1",
         SoyExpression.forSoyValue(htmlType, constantNull(Type.getType(SanitizedContent.class)))
             .asNullable());
-    assertExpression("$p1 ?: $p2").evaluatesTo("");
+    assertExpression("$p1 ?: $p2").evaluatesTo(StringData.forValue(""));
   }
 
   // null coalescing op expression have had a number of bugs due to the advanced unboxing

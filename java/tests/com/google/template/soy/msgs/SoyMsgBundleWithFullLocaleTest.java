@@ -16,7 +16,7 @@
 
 package com.google.template.soy.msgs;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.ibm.icu.util.ULocale;
 import java.util.Locale;
@@ -32,9 +32,10 @@ public final class SoyMsgBundleWithFullLocaleTest {
     SoyMsgBundle bundle =
         SoyMsgBundleWithFullLocale.preservingLocaleIfAllowed(SoyMsgBundle.EMPTY, Locale.US);
     // Expect original locale in standard formatting.
-    assertEquals("en-US", bundle.getLocaleString());
+    assertThat(bundle.getLocaleString()).isEqualTo("en-US");
     // Even though the bundle is empty.
-    assertEquals(SoyMsgBundle.EMPTY, ((SoyMsgBundleWithFullLocale) bundle).getInnerSoyMsgBundle());
+    assertThat(((SoyMsgBundleWithFullLocale) bundle).getInnerSoyMsgBundle())
+        .isEqualTo(SoyMsgBundle.EMPTY);
   }
 
   @Test
@@ -43,9 +44,9 @@ public final class SoyMsgBundleWithFullLocaleTest {
     SoyMsgBundle bundle =
         SoyMsgBundleWithFullLocale.preservingLocaleIfAllowed(SoyMsgBundle.EMPTY, Locale.FRANCE);
     // Expect SoyMsgBundle.EMPTY's locale.
-    assertEquals("en", bundle.getLocaleString());
+    assertThat(bundle.getLocaleString()).isEqualTo("en");
     // Even though the bundle is empty.
-    assertEquals(SoyMsgBundle.EMPTY, bundle);
+    assertThat(bundle).isEqualTo(SoyMsgBundle.EMPTY);
   }
 
   @Test
@@ -57,7 +58,7 @@ public final class SoyMsgBundleWithFullLocaleTest {
     // Expect the original soy bundle and locale to be preserved.
     SoyMsgBundle bundle =
         SoyMsgBundleWithFullLocale.preservingLocaleIfAllowed(iwBundle, new Locale("iw"));
-    assertEquals("iw", bundle.getLocaleString());
-    assertEquals(iwBundle, bundle);
+    assertThat(bundle.getLocaleString()).isEqualTo("iw");
+    assertThat(bundle).isEqualTo(iwBundle);
   }
 }

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -49,10 +49,10 @@ public final class LegacyObjectMapLiteralNodeTest {
                 booDataRef,
                 fooDataRef),
             X);
-    assertEquals("['aaa': 'blah', 'bbb': 123, $boo: $foo]", mapLit.toSourceString());
+    assertThat(mapLit.toSourceString()).isEqualTo("['aaa': 'blah', 'bbb': 123, $boo: $foo]");
 
     LegacyObjectMapLiteralNode emptyMapLit =
         new LegacyObjectMapLiteralNode(ImmutableList.<ExprNode>of(), X);
-    assertEquals("[:]", emptyMapLit.toSourceString());
+    assertThat(emptyMapLit.toSourceString()).isEqualTo("[:]");
   }
 }

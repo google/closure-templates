@@ -269,7 +269,7 @@ public final class RewriteGenderMsgsVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
-    assertEquals(expandedSoyCode, msgAfterRewrite.toSourceString());
+    assertThat(msgAfterRewrite.toSourceString()).isEqualTo(expandedSoyCode);
   }
 
   @Test
@@ -352,7 +352,7 @@ public final class RewriteGenderMsgsVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
-    assertEquals(expandedSoyCode, msgAfterRewrite.toSourceString());
+    assertThat(msgAfterRewrite.toSourceString()).isEqualTo(expandedSoyCode);
 
     // ------ Test that it has same msg id as equivalent msg using 'select'. ------
 

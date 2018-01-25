@@ -16,9 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.base.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,27 +33,23 @@ public class ContextTest {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
     Context expectedContext = Context.parse(expected);
-    assertEquals(
-        "Union of " + aContext + " and " + bContext,
-        Optional.of(expectedContext),
-        Context.union(aContext, bContext));
-    assertEquals(
-        "Reverse union of " + bContext + " and " + aContext,
-        Optional.of(expectedContext),
-        Context.union(bContext, aContext));
+    assertWithMessage("Union of " + aContext + " and " + bContext)
+        .that(Context.union(aContext, bContext))
+        .hasValue(expectedContext);
+    assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+        .that(Context.union(bContext, aContext))
+        .hasValue(expectedContext);
   }
 
   private static void assertUnionFails(String a, String b) {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
-    assertEquals(
-        "Union of " + aContext + " and " + bContext,
-        Optional.absent(),
-        Context.union(aContext, bContext));
-    assertEquals(
-        "Reverse union of " + bContext + " and " + aContext,
-        Optional.absent(),
-        Context.union(bContext, aContext));
+    assertWithMessage("Union of " + aContext + " and " + bContext)
+        .that(Context.union(aContext, bContext))
+        .isAbsent();
+    assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+        .that(Context.union(bContext, aContext))
+        .isAbsent();
   }
 
   @Test

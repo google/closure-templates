@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -44,23 +43,22 @@ public class StrLenFunctionTest {
   public void testComputeForJava_containsString() {
     StrLenFunction strLen = new StrLenFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
-    assertEquals(IntegerData.forValue(9), strLen.computeForJava(ImmutableList.of(arg0)));
+    assertThat(strLen.computeForJava(ImmutableList.of(arg0))).isEqualTo(IntegerData.forValue(9));
   }
 
   @Test
   public void testComputeForJava_containsSanitizedContent() {
     StrLenFunction strLen = new StrLenFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    assertEquals(IntegerData.forValue(9), strLen.computeForJava(ImmutableList.of(arg0)));
+    assertThat(strLen.computeForJava(ImmutableList.of(arg0))).isEqualTo(IntegerData.forValue(9));
   }
 
   @Test
   public void testComputeForJsSrc() {
     StrLenFunction strLen = new StrLenFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).length", Integer.MAX_VALUE),
-        strLen.computeForJsSrc(ImmutableList.of(arg0)));
+    assertThat(strLen.computeForJsSrc(ImmutableList.of(arg0)))
+        .isEqualTo(new JsExpr("('' + ('foo' + 'bar')).length", Integer.MAX_VALUE));
   }
 
   @Test

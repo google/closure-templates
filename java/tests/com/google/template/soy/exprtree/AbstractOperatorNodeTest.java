@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -84,7 +84,7 @@ public final class AbstractOperatorNodeTest {
     n5.addChild(x.copy(new CopyState()));
     n5.addChild(x.copy(new CopyState()));
 
-    assertEquals("$x - -$x - (-($x - $x) - $x)", n0.toSourceString());
+    assertThat(n0.toSourceString()).isEqualTo("$x - -$x - (-($x - $x) - $x)");
   }
 
   @Test
@@ -121,6 +121,6 @@ public final class AbstractOperatorNodeTest {
     n3.addChild(x.copy(new CopyState()));
     n3.addChild(x.copy(new CopyState()));
 
-    assertEquals("not $x ? $x != $x : $x * $x", n0.toSourceString());
+    assertThat(n0.toSourceString()).isEqualTo("not $x ? $x != $x : $x * $x");
   }
 }

@@ -17,8 +17,6 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -75,44 +73,45 @@ public class SoyMsgBundleImplTest {
             .build());
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
 
-    assertEquals("x-zz", msgBundle.getLocaleString());
+    assertThat(msgBundle.getLocaleString()).isEqualTo("x-zz");
     assertThat(msgBundle.isRtl()).isFalse();
-    assertEquals(2, msgBundle.getNumMsgs());
+    assertThat(msgBundle).hasSize(2);
 
     List<SoyMsg> outMsgs = Lists.newArrayList();
     for (SoyMsg msg : msgBundle) {
       outMsgs.add(msg);
     }
-    assertEquals(2, outMsgs.size());
+    assertThat(outMsgs).hasSize(2);
 
     SoyMsg booMsg = msgBundle.getMsg(0x123);
-    assertEquals(booMsg, outMsgs.get(0));
-    assertEquals(0x123, booMsg.getId());
-    assertEquals("x-zz", booMsg.getLocaleString());
-    assertEquals(null, booMsg.getMeaning());
-    assertEquals("Boo message.", booMsg.getDesc());
-    assertEquals(false, booMsg.isHidden());
-    assertEquals(null, booMsg.getContentType());
-    assertEquals(2, booMsg.getSourceLocations().size());
-    assertTrue(booMsg.getSourceLocations().containsAll(Lists.newArrayList(source1, source2)));
+    assertThat(outMsgs.get(0)).isEqualTo(booMsg);
+    assertThat(booMsg.getId()).isEqualTo(0x123);
+    assertThat(booMsg.getLocaleString()).isEqualTo("x-zz");
+    assertThat(booMsg.getMeaning()).isEqualTo(null);
+    assertThat(booMsg.getDesc()).isEqualTo("Boo message.");
+    assertThat(booMsg.isHidden()).isFalse();
+    assertThat(booMsg.getContentType()).isEqualTo(null);
+    assertThat(booMsg.getSourceLocations()).hasSize(2);
+    assertThat(booMsg.getSourceLocations()).containsExactly(source1, source2);
     List<SoyMsgPart> booMsgParts = booMsg.getParts();
-    assertEquals(1, booMsgParts.size());
-    assertEquals("Boo!", ((SoyMsgRawTextPart) booMsgParts.get(0)).getRawText());
+    assertThat(booMsgParts).hasSize(1);
+    assertThat(((SoyMsgRawTextPart) booMsgParts.get(0)).getRawText()).isEqualTo("Boo!");
 
     SoyMsg helloMsg = msgBundle.getMsg(0xABC);
-    assertEquals(helloMsg, outMsgs.get(1));
-    assertEquals(0xABC, helloMsg.getId());
-    assertEquals("x-zz", helloMsg.getLocaleString());
-    assertEquals("abc", helloMsg.getMeaning());
-    assertEquals("", helloMsg.getDesc());
-    assertEquals(true, helloMsg.isHidden());
-    assertEquals("text/html", helloMsg.getContentType());
-    assertEquals(0, helloMsg.getSourceLocations().size());
+    assertThat(outMsgs.get(1)).isEqualTo(helloMsg);
+    assertThat(helloMsg.getId()).isEqualTo(0xABC);
+    assertThat(helloMsg.getLocaleString()).isEqualTo("x-zz");
+    assertThat(helloMsg.getMeaning()).isEqualTo("abc");
+    assertThat(helloMsg.getDesc()).isEmpty();
+    assertThat(helloMsg.isHidden()).isTrue();
+    assertThat(helloMsg.getContentType()).isEqualTo("text/html");
+    assertThat(helloMsg.getSourceLocations()).isEmpty();
     List<SoyMsgPart> helloMsgParts = helloMsg.getParts();
-    assertEquals(3, helloMsgParts.size());
-    assertEquals("Hello, ", ((SoyMsgRawTextPart) helloMsgParts.get(0)).getRawText());
-    assertEquals("NAME", ((SoyMsgPlaceholderPart) helloMsgParts.get(1)).getPlaceholderName());
-    assertEquals("!", ((SoyMsgRawTextPart) helloMsgParts.get(2)).getRawText());
+    assertThat(helloMsgParts).hasSize(3);
+    assertThat(((SoyMsgRawTextPart) helloMsgParts.get(0)).getRawText()).isEqualTo("Hello, ");
+    assertThat(((SoyMsgPlaceholderPart) helloMsgParts.get(1)).getPlaceholderName())
+        .isEqualTo("NAME");
+    assertThat(((SoyMsgRawTextPart) helloMsgParts.get(2)).getRawText()).isEqualTo("!");
   }
 
   @Test

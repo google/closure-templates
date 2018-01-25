@@ -22,8 +22,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -90,19 +88,19 @@ public class LazyClosureCompilerTest {
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future()); // we found bar!
-    assertEquals("hello ", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isSameAs(bar); // we found bar!
+    assertThat(output.toString()).isEqualTo("hello ");
 
     // make sure no progress is made
     result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future());
-    assertEquals("hello ", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isSameAs(bar);
+    assertThat(output.toString()).isEqualTo("hello ");
     bar.set("bar");
 
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello bar", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello bar");
   }
 
   @Test
@@ -139,7 +137,7 @@ public class LazyClosureCompilerTest {
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
     innerClasses.remove(factory.getClass());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertEquals("let_bar", let.getSimpleName());
+    assertThat(let.getSimpleName()).isEqualTo("let_bar");
     // the closures capture variables as constructor parameters.
     // in this case since index() always returns an unboxed integer the parameter should be a single
     // int.  In a previous version, we passed 2 ints.
@@ -201,19 +199,19 @@ public class LazyClosureCompilerTest {
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future()); // we found bar!
-    assertEquals("before use", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isSameAs(bar); // we found bar!
+    assertThat(output.toString()).isEqualTo("before use");
 
     // make sure no progress is made
     result = template.render(output, context);
-    assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future());
-    assertEquals("before use", output.toString());
+    assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(result.future()).isSameAs(bar);
+    assertThat(output.toString()).isEqualTo("before use");
     bar.set(" bar");
 
-    assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("before use bar bar", output.toString());
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("before use bar bar");
   }
 
   @Test
@@ -224,12 +222,12 @@ public class LazyClosureCompilerTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
 
-    assertThat(template.getClass().getDeclaredClasses()).asList().hasSize(2);
+    assertThat(template.getClass().getDeclaredClasses()).hasLength(2);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
     innerClasses.remove(factory.getClass());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertEquals("let_foo", let.getSimpleName());
-    assertEquals(template.getClass(), let.getDeclaringClass());
+    assertThat(let.getSimpleName()).isEqualTo("let_foo");
+    assertThat(let.getDeclaringClass()).isEqualTo(template.getClass());
   }
 
   private static final class IdentityFunction implements SoyJavaFunction {

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.QuoteStyle;
@@ -35,21 +35,21 @@ public final class StringNodeTest {
   public void testToSourceString() {
     StringNode sn =
         new StringNode("Aa`! \n \r \t \\ ' \"", QuoteStyle.SINGLE, SourceLocation.UNKNOWN);
-    assertEquals("'Aa`! \\n \\r \\t \\\\ \\\' \"'", sn.toSourceString());
+    assertThat(sn.toSourceString()).isEqualTo("'Aa`! \\n \\r \\t \\\\ \\\' \"'");
 
     sn = new StringNode("\u2222 \uEEEE \u9EC4 \u607A", QuoteStyle.SINGLE, SourceLocation.UNKNOWN);
-    assertEquals("'\u2222 \uEEEE \u9EC4 \u607A'", sn.toSourceString());
-    assertEquals("'\\u2222 \\uEEEE \\u9EC4 \\u607A'", sn.toSourceString(true));
+    assertThat(sn.toSourceString()).isEqualTo("'\u2222 \uEEEE \u9EC4 \u607A'");
+    assertThat(sn.toSourceString(true)).isEqualTo("'\\u2222 \\uEEEE \\u9EC4 \\u607A'");
   }
 
   @Test
   public void testToSourceString_doubleQuoted() {
     StringNode sn =
         new StringNode("Aa`! \n \r \t \\ ' \"", QuoteStyle.DOUBLE, SourceLocation.UNKNOWN);
-    assertEquals("\"Aa`! \\n \\r \\t \\\\ ' \\\"\"", sn.toSourceString());
+    assertThat(sn.toSourceString()).isEqualTo("\"Aa`! \\n \\r \\t \\\\ ' \\\"\"");
 
     sn = new StringNode("\u2222 \uEEEE \u9EC4 \u607A", QuoteStyle.DOUBLE, SourceLocation.UNKNOWN);
-    assertEquals("\"\u2222 \uEEEE \u9EC4 \u607A\"", sn.toSourceString());
-    assertEquals("\"\\u2222 \\uEEEE \\u9EC4 \\u607A\"", sn.toSourceString(true));
+    assertThat(sn.toSourceString()).isEqualTo("\"\u2222 \uEEEE \u9EC4 \u607A\"");
+    assertThat(sn.toSourceString(true)).isEqualTo("\"\\u2222 \\uEEEE \\u9EC4 \\u607A\"");
   }
 }

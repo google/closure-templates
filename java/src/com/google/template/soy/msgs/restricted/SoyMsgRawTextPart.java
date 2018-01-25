@@ -80,7 +80,7 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
     public boolean equals(Object other) {
       // NOTE: Since message encoding is deterministic, we know the messages don't match if
       // the other one is encoded as chars.
-      return other.getClass() == Utf8SoyMsgRawTextPart.class
+      return other instanceof Utf8SoyMsgRawTextPart
           && Arrays.equals(utf8Bytes, ((Utf8SoyMsgRawTextPart) other).utf8Bytes);
     }
 
@@ -113,7 +113,7 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
     public boolean equals(Object other) {
       // NOTE: Since message encoding is deterministic, we know the messages don't match if
       // the other one is encoded as UTF8.
-      return other.getClass() == CharArraySoyMsgRawTextPart.class
+      return other instanceof CharArraySoyMsgRawTextPart
           && Arrays.equals(charArray, ((CharArraySoyMsgRawTextPart) other).charArray);
     }
 

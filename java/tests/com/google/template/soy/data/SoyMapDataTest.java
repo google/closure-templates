@@ -120,7 +120,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertThat(sde.getMessage()).contains("At data path 'goo.fy':");
+      assertThat(sde).hasMessageThat().contains("At data path 'goo.fy':");
     }
 
     existingMap.put("goo", ImmutableList.of(0, 1, new Object(), 3));
@@ -129,7 +129,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertThat(sde.getMessage()).contains("At data path 'goo[2]':");
+      assertThat(sde).hasMessageThat().contains("At data path 'goo[2]':");
     }
 
     existingMap.put(
@@ -141,7 +141,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertThat(sde.getMessage()).contains("At data path 'goo.fy[2]':");
+      assertThat(sde).hasMessageThat().contains("At data path 'goo.fy[2]':");
     }
 
     existingMap.put("goo", ImmutableMap.of(new Object(), "blah"));
@@ -150,7 +150,8 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertThat(sde.getMessage())
+      assertThat(sde)
+          .hasMessageThat()
           .contains(
               "At data path 'goo': "
                   + "Attempting to convert a map with non-string key to Soy data");

@@ -17,8 +17,6 @@
 package com.google.template.soy.base.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.CharMatcher;
@@ -37,7 +35,7 @@ public final class UniqueNameGeneratorTest {
       nameSet.claimName("foo<int>");
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected.getMessage()).contains("contains dangerous characters!");
+      assertThat(expected).hasMessageThat().contains("contains dangerous characters!");
     }
     assertThat(nameSet.hasName("foo<int>")).isFalse();
 
@@ -46,11 +44,11 @@ public final class UniqueNameGeneratorTest {
       nameSet.claimName("foo");
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected.getMessage()).contains("already claimed!");
+      assertThat(expected).hasMessageThat().contains("already claimed!");
     }
     assertThat(nameSet.hasName("foo")).isTrue();
-    assertEquals("foo%1", nameSet.generateName("foo"));
-    assertEquals("foo%2", nameSet.generateName("foo"));
+    assertThat(nameSet.generateName("foo")).isEqualTo("foo%1");
+    assertThat(nameSet.generateName("foo")).isEqualTo("foo%2");
   }
 
   @Test
@@ -60,7 +58,7 @@ public final class UniqueNameGeneratorTest {
       nameSet.claimName("foo$"); // '$' is considered dangerous
       fail();
     } catch (IllegalArgumentException expected) {
-      assertThat(expected.getMessage()).contains("contains dangerous characters!");
+      assertThat(expected).hasMessageThat().contains("contains dangerous characters!");
     }
     nameSet.claimName("foo");
   }
@@ -75,9 +73,9 @@ public final class UniqueNameGeneratorTest {
     assertThat(foo).isNotEqualTo(foo2);
     assertThat(foo).isNotEqualTo(foo3);
     assertThat(foo2).isNotEqualTo(foo3);
-    assertTrue(nameSet.hasName("foo"));
-    assertTrue(nameSet.hasName(foo));
-    assertTrue(nameSet.hasName(foo2));
-    assertTrue(nameSet.hasName(foo3));
+    assertThat(nameSet.hasName("foo")).isTrue();
+    assertThat(nameSet.hasName(foo)).isTrue();
+    assertThat(nameSet.hasName(foo2)).isTrue();
+    assertThat(nameSet.hasName(foo3)).isTrue();
   }
 }

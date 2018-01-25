@@ -86,7 +86,7 @@ public class SoyAbstractCachingValueProviderTest {
       badValue.resolve();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).isEqualTo("boom");
+      assertThat(e).hasMessageThat().isEqualTo("boom");
       assertThat(counter.get()).isEqualTo(1);
     }
     // Errors are not cached
@@ -94,7 +94,7 @@ public class SoyAbstractCachingValueProviderTest {
       badValue.resolve();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).isEqualTo("Caching was expected");
+      assertThat(e).hasMessageThat().isEqualTo("Caching was expected");
     }
     counter.set(0);
     TestValueProvider goodValue = new TestValueProvider(1);

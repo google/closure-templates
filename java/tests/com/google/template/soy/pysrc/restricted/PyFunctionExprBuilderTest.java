@@ -17,7 +17,6 @@
 package com.google.template.soy.pysrc.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.template.soy.exprtree.Operator;
 import java.util.ArrayList;
@@ -35,14 +34,14 @@ public final class PyFunctionExprBuilderTest {
   public void testSingleNumberArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addArg(600851475143L);
-    assertEquals("some_func(600851475143)", func.build());
+    assertThat(func.build()).isEqualTo("some_func(600851475143)");
   }
 
   @Test
   public void testSingleStringArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addArg("10");
-    assertEquals("some_func('10')", func.build());
+    assertThat(func.build()).isEqualTo("some_func('10')");
   }
 
   @Test
@@ -54,7 +53,7 @@ public final class PyFunctionExprBuilderTest {
     list.add(42);
 
     func.addArg(PyExprUtils.convertIterableToPyListExpr(list));
-    assertEquals("some_func(['foo', 'bar', 42])", func.build());
+    assertThat(func.build()).isEqualTo("some_func(['foo', 'bar', 42])");
   }
 
   @Test
@@ -66,7 +65,7 @@ public final class PyFunctionExprBuilderTest {
     list.add(42);
 
     func.addArg(PyExprUtils.convertIterableToPyTupleExpr(list));
-    assertEquals("some_func(('foo', 'bar', 42))", func.build());
+    assertThat(func.build()).isEqualTo("some_func(('foo', 'bar', 42))");
   }
 
   @Test
@@ -77,21 +76,21 @@ public final class PyFunctionExprBuilderTest {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addArg(nestedFunc.asPyExpr());
 
-    assertEquals("some_func(nested_func(10))", func.build());
+    assertThat(func.build()).isEqualTo("some_func(nested_func(10))");
   }
 
   @Test
   public void testSingleKeyedStringArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", "bar");
-    assertEquals("some_func(foo='bar')", func.build());
+    assertThat(func.build()).isEqualTo("some_func(foo='bar')");
   }
 
   @Test
   public void testSingleKeyedIntArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", 10);
-    assertEquals("some_func(foo=10)", func.build());
+    assertThat(func.build()).isEqualTo("some_func(foo=10)");
   }
 
   @Test
@@ -102,7 +101,7 @@ public final class PyFunctionExprBuilderTest {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", nestedFunc.asPyExpr());
 
-    assertEquals("some_func(foo=nested_func(10))", func.build());
+    assertThat(func.build()).isEqualTo("some_func(foo=nested_func(10))");
   }
 
   @Test
@@ -112,7 +111,7 @@ public final class PyFunctionExprBuilderTest {
     func.addArg("foobar");
     func.addKwarg("foo1", 10);
     func.addKwarg("foo", "bar");
-    assertEquals("some_func(42, 'foobar', foo1=10, foo='bar')", func.build());
+    assertThat(func.build()).isEqualTo("some_func(42, 'foobar', foo1=10, foo='bar')");
   }
 
   @Test

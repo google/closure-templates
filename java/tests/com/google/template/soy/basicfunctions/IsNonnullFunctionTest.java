@@ -18,10 +18,8 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -49,18 +47,14 @@ public class IsNonnullFunctionTest {
   public void testComputeForJava() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
 
-    assertEquals(
-        BooleanData.FALSE,
-        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(UndefinedData.INSTANCE)));
-    assertEquals(
-        BooleanData.FALSE,
-        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(NullData.INSTANCE)));
-    assertEquals(
-        BooleanData.TRUE,
-        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(IntegerData.forValue(0))));
-    assertEquals(
-        BooleanData.TRUE,
-        isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(StringData.forValue(""))));
+    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(UndefinedData.INSTANCE)))
+        .isEqualTo(BooleanData.FALSE);
+    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(NullData.INSTANCE)))
+        .isEqualTo(BooleanData.FALSE);
+    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(IntegerData.forValue(0))))
+        .isEqualTo(BooleanData.TRUE);
+    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(StringData.forValue(""))))
+        .isEqualTo(BooleanData.TRUE);
   }
 
   @Test
@@ -85,9 +79,8 @@ public class IsNonnullFunctionTest {
   public void testComputeForJsSrc() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("JS_CODE != null", Operator.NOT_EQUAL.getPrecedence()),
-        isNonnullFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertThat(isNonnullFunction.computeForJsSrc(ImmutableList.of(expr)))
+        .isEqualTo(new JsExpr("JS_CODE != null", Operator.NOT_EQUAL.getPrecedence()));
   }
 
   @Test

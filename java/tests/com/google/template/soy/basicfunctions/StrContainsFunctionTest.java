@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -46,7 +45,8 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("bar");
-    assertEquals(BooleanData.TRUE, strContains.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(BooleanData.TRUE);
   }
 
   @Test
@@ -54,7 +54,8 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
-    assertEquals(BooleanData.TRUE, strContains.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(BooleanData.TRUE);
   }
 
   @Test
@@ -62,7 +63,8 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("baz");
-    assertEquals(BooleanData.FALSE, strContains.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(BooleanData.FALSE);
   }
 
   @Test
@@ -70,7 +72,8 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
-    assertEquals(BooleanData.FALSE, strContains.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(BooleanData.FALSE);
   }
 
   @Test
@@ -78,11 +81,11 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr(
-            "('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r')) != -1",
-            Operator.NOT_EQUAL.getPrecedence()),
-        strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(
+            new JsExpr(
+                "('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r')) != -1",
+                Operator.NOT_EQUAL.getPrecedence()));
   }
 
   @Test
@@ -90,9 +93,9 @@ public class StrContainsFunctionTest {
     StrContainsFunction strContains = new StrContainsFunction();
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('foobar').indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()),
-        strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strContains.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(
+            new JsExpr("('foobar').indexOf('bar') != -1", Operator.NOT_EQUAL.getPrecedence()));
   }
 
   @Test

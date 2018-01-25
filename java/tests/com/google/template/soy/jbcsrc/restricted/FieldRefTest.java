@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,9 +46,9 @@ public class FieldRefTest {
   @Test
   public void testEnumReference() {
     FieldRef ref = FieldRef.enumReference(SimpleEnum.FOO);
-    assertEquals(SimpleEnum.class.getName(), ref.owner().className());
+    assertThat(ref.owner().className()).isEqualTo(SimpleEnum.class.getName());
 
     ref = FieldRef.enumReference(ComplexEnum.FOO);
-    assertEquals(ComplexEnum.class.getName(), ref.owner().className());
+    assertThat(ref.owner().className()).isEqualTo(ComplexEnum.class.getName());
   }
 }

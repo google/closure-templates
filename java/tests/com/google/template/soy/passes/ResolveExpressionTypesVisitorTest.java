@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -850,8 +850,9 @@ public final class ResolveExpressionTypesVisitorTest {
       if (fn.getFunctionName().equals("assertType")) {
         StringNode expected = (StringNode) fn.getChild(0);
         SoyType actualType = fn.getChild(1).getType();
-        assertEquals(
-            "assertion @ " + fn.getSourceLocation(), expected.getValue(), actualType.toString());
+        assertWithMessage("assertion @ " + fn.getSourceLocation())
+            .that(actualType.toString())
+            .isEqualTo(expected.getValue());
       }
     }
   }

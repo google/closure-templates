@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -40,16 +39,16 @@ public class LengthFunctionTest {
   public void testComputeForJava() {
     LengthFunction lengthFunction = new LengthFunction();
     SoyValue list = SoyValueConverterUtility.newList(1, 3, 5, 7);
-    assertEquals(IntegerData.forValue(4), lengthFunction.computeForJava(ImmutableList.of(list)));
+    assertThat(lengthFunction.computeForJava(ImmutableList.of(list)))
+        .isEqualTo(IntegerData.forValue(4));
   }
 
   @Test
   public void testComputeForJsSrc() {
     LengthFunction lengthFunction = new LengthFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("JS_CODE.length", Integer.MAX_VALUE),
-        lengthFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertThat(lengthFunction.computeForJsSrc(ImmutableList.of(expr)))
+        .isEqualTo(new JsExpr("JS_CODE.length", Integer.MAX_VALUE));
   }
 
   @Test

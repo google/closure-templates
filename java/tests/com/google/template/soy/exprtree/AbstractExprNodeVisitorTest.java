@@ -16,7 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
@@ -45,7 +45,7 @@ public final class AbstractExprNodeVisitorTest {
     IntegerNode expr = new IntegerNode(17, LOC);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(null);
-    assertEquals(17.0, iev.exec(expr), 0.0);
+    assertThat(iev.exec(expr)).isWithin(0.0).of(17.0);
   }
 
   @Test
@@ -58,11 +58,11 @@ public final class AbstractExprNodeVisitorTest {
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
-    assertEquals(4.0, iev.exec(expr), 0.0);
+    assertThat(iev.exec(expr)).isWithin(0.0).of(4.0);
 
     expr.replaceChild(0, new IntegerNode(34, LOC));
 
-    assertEquals(21.0, iev.exec(expr), 0.0);
+    assertThat(iev.exec(expr)).isWithin(0.0).of(21.0);
   }
 
   @Test

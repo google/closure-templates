@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,16 +29,17 @@ public final class TypeInfoTest {
 
   @Test
   public void testSimpleName() {
-    assertEquals("TypeInfoTest", TypeInfo.create(TypeInfoTest.class).simpleName());
-    assertEquals("TypeInfoTest", TypeInfo.create(TypeInfoTest.class.getName()).simpleName());
+    assertThat(TypeInfo.create(TypeInfoTest.class).simpleName()).isEqualTo("TypeInfoTest");
+    assertThat(TypeInfo.create(TypeInfoTest.class.getName()).simpleName())
+        .isEqualTo("TypeInfoTest");
 
-    assertEquals("Inner", TypeInfo.create(Inner.class).simpleName());
-    assertEquals("Inner", TypeInfo.create(Inner.class.getName()).simpleName());
+    assertThat(TypeInfo.create(Inner.class).simpleName()).isEqualTo("Inner");
+    assertThat(TypeInfo.create(Inner.class.getName()).simpleName()).isEqualTo("Inner");
   }
 
   @Test
   public void testInnerClass() {
-    assertEquals(
-        TypeInfo.create(Inner.class), TypeInfo.create(TypeInfoTest.class).innerClass("Inner"));
+    assertThat(TypeInfo.create(TypeInfoTest.class).innerClass("Inner"))
+        .isEqualTo(TypeInfo.create(Inner.class));
   }
 }

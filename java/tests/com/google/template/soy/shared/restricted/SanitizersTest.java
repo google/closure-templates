@@ -17,8 +17,8 @@
 package com.google.template.soy.shared.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -36,6 +36,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Test;
@@ -64,12 +65,11 @@ public class SanitizersTest {
   public void testEscapeJsString() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals(
-        "\\x00 \\x22 \\x27 \\\\ \\r \\n \\u2028 \\u2029",
-        Sanitizers.escapeJsString("\u0000 \" \' \\ \r \n \u2028 \u2029"));
+    assertThat(Sanitizers.escapeJsString("\u0000 \" \' \\ \r \n \u2028 \u2029"))
+        .isEqualTo("\\x00 \\x22 \\x27 \\\\ \\r \\n \\u2028 \\u2029");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.escapeJsString(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.escapeJsString(hazard)).doesNotContain(hazard);
     }
 
     // Check correctness of other Latins.
@@ -83,8 +83,8 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ\\x5b\\\\\\x5d^_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz\\x7b|\\x7d~\u007f");
-    assertEquals(escapedAscii, Sanitizers.escapeJsString(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeJsString(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeJsString(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeJsString(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
@@ -99,7 +99,7 @@ public class SanitizersTest {
         Sanitizers.escapeJsRegex("\u0000 \" \' \\ / \r \n \u2028 \u2029" + " $^*()-+{}[]|?"));
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.escapeJsRegex(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.escapeJsRegex(hazard)).doesNotContain(hazard);
     }
 
     String escapedAscii =
@@ -112,8 +112,8 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ\\x5b\\\\\\x5d\\x5e_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz\\x7b\\x7c\\x7d~\u007f");
-    assertEquals(escapedAscii, Sanitizers.escapeJsRegex(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeJsRegex(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeJsRegex(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeJsRegex(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
@@ -124,33 +124,32 @@ public class SanitizersTest {
     assertEquals( // SoyValue version does the same as String version.
         "'Don\\x27t run with \\x22scissors\\x22.\\n'",
         Sanitizers.escapeJsValue(StringData.forValue("Don't run with \"scissors\".\n")));
-    assertEquals(" 4.0 ", Sanitizers.escapeJsValue(IntegerData.forValue(4)));
-    assertEquals(" 4.5 ", Sanitizers.escapeJsValue(FloatData.forValue(4.5)));
-    assertEquals(" true ", Sanitizers.escapeJsValue(BooleanData.TRUE));
-    assertEquals(" null ", Sanitizers.escapeJsValue(NullData.INSTANCE));
-    assertEquals(
-        "foo() + bar",
-        Sanitizers.escapeJsValue(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo() + bar", SanitizedContent.ContentKind.JS)));
+    assertThat(Sanitizers.escapeJsValue(IntegerData.forValue(4))).isEqualTo(" 4.0 ");
+    assertThat(Sanitizers.escapeJsValue(FloatData.forValue(4.5))).isEqualTo(" 4.5 ");
+    assertThat(Sanitizers.escapeJsValue(BooleanData.TRUE)).isEqualTo(" true ");
+    assertThat(Sanitizers.escapeJsValue(NullData.INSTANCE)).isEqualTo(" null ");
+    assertThat(
+            Sanitizers.escapeJsValue(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo() + bar", SanitizedContent.ContentKind.JS)))
+        .isEqualTo("foo() + bar");
     // Wrong content kind should be wrapped in a string.
-    assertEquals(
-        "'foo() + bar'",
-        Sanitizers.escapeJsValue(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo() + bar", SanitizedContent.ContentKind.HTML)));
+    assertThat(
+            Sanitizers.escapeJsValue(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo() + bar", SanitizedContent.ContentKind.HTML)))
+        .isEqualTo("'foo() + bar'");
   }
 
   @Test
   public void testEscapeCssString() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals(
-        "\\0  \\22  \\27  \\5c  \\a  \\c  \\d ",
-        Sanitizers.escapeCssString("\u0000 \" \' \\ \n \u000c \r"));
+    assertThat(Sanitizers.escapeCssString("\u0000 \" \' \\ \n \u000c \r"))
+        .isEqualTo("\\0  \\22  \\27  \\5c  \\a  \\c  \\d ");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.escapeCssString(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.escapeCssString(hazard)).doesNotContain(hazard);
     }
 
     String escapedAscii =
@@ -163,98 +162,103 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[\\5c ]^_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz\\7b |\\7d ~\u007f");
-    assertEquals(escapedAscii, Sanitizers.escapeCssString(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeCssString(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeCssString(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeCssString(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
   public void testFilterCssValue() {
-    assertEquals("33px", Sanitizers.filterCssValue("33px"));
-    assertEquals("33px", Sanitizers.filterCssValue(StringData.forValue("33px")));
-    assertEquals("-.5em", Sanitizers.filterCssValue("-.5em"));
-    assertEquals("inherit", Sanitizers.filterCssValue("inherit"));
-    assertEquals("display", Sanitizers.filterCssValue("display"));
-    assertEquals("none", Sanitizers.filterCssValue("none"));
-    assertEquals("#id", Sanitizers.filterCssValue("#id"));
-    assertEquals(".class", Sanitizers.filterCssValue(".class"));
-    assertEquals("red", Sanitizers.filterCssValue("red"));
-    assertEquals("#aabbcc", Sanitizers.filterCssValue("#aabbcc"));
-    assertEquals(
-        "0px 5px 10px  rgba(0,0,0, 0.3)",
-        Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue(" "));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("expression"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue(StringData.forValue("expression")));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("Expression"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("\\65xpression"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("\\65 xpression"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("-moz-binding"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"));
-    assertEquals("zSoyz", Sanitizers.filterCssValue("color:expression('whatever')"));
-    assertEquals(
-        "color:expression('whatever')",
-        Sanitizers.filterCssValue(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "color:expression('whatever')", SanitizedContent.ContentKind.CSS)));
+    assertThat(Sanitizers.filterCssValue("33px")).isEqualTo("33px");
+    assertThat(Sanitizers.filterCssValue(StringData.forValue("33px"))).isEqualTo("33px");
+    assertThat(Sanitizers.filterCssValue("-.5em")).isEqualTo("-.5em");
+    assertThat(Sanitizers.filterCssValue("inherit")).isEqualTo("inherit");
+    assertThat(Sanitizers.filterCssValue("display")).isEqualTo("display");
+    assertThat(Sanitizers.filterCssValue("none")).isEqualTo("none");
+    assertThat(Sanitizers.filterCssValue("#id")).isEqualTo("#id");
+    assertThat(Sanitizers.filterCssValue(".class")).isEqualTo(".class");
+    assertThat(Sanitizers.filterCssValue("red")).isEqualTo("red");
+    assertThat(Sanitizers.filterCssValue("#aabbcc")).isEqualTo("#aabbcc");
+    assertThat(Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"))
+        .isEqualTo("0px 5px 10px  rgba(0,0,0, 0.3)");
+    assertThat(Sanitizers.filterCssValue(" ")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("expression")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue(StringData.forValue("expression"))).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("Expression")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("\\65xpression")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("\\65 xpression")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("-moz-binding")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"))
+        .isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("color:expression('whatever')")).isEqualTo("zSoyz");
+    assertThat(
+            Sanitizers.filterCssValue(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "color:expression('whatever')", SanitizedContent.ContentKind.CSS)))
+        .isEqualTo("color:expression('whatever')");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.filterCssValue(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.filterCssValue(hazard).contains(hazard)).isFalse();
     }
   }
 
   @Test
   public void testFilterHtmlAttributes() {
-    assertEquals("dir", Sanitizers.filterHtmlAttributes("dir"));
-    assertEquals("data-foo", Sanitizers.filterHtmlAttributes("data-foo"));
-    assertEquals("hamburger", Sanitizers.filterHtmlAttributes("hamburger"));
-    assertEquals("action-packed", Sanitizers.filterHtmlAttributes("action-packed"));
-    assertEquals("dir", Sanitizers.filterHtmlAttributes(StringData.forValue("dir")));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("><script>alert('foo')</script"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("style"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("onclick"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("href"));
+    assertThat(Sanitizers.filterHtmlAttributes("dir")).isEqualTo("dir");
+    assertThat(Sanitizers.filterHtmlAttributes("data-foo")).isEqualTo("data-foo");
+    assertThat(Sanitizers.filterHtmlAttributes("hamburger")).isEqualTo("hamburger");
+    assertThat(Sanitizers.filterHtmlAttributes("action-packed")).isEqualTo("action-packed");
+    assertThat(Sanitizers.filterHtmlAttributes(StringData.forValue("dir"))).isEqualTo("dir");
+    assertThat(Sanitizers.filterHtmlAttributes("><script>alert('foo')</script")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlAttributes("style")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlAttributes("onclick")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlAttributes("href")).isEqualTo("zSoyz");
 
-    assertEquals(
-        "a=1 b=2 dir=\"ltr\"",
-        Sanitizers.filterHtmlAttributes(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "a=1 b=2 dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES)));
-    assertEquals(
-        "Should append a space to parse correctly",
-        "foo=\"bar\" dir=ltr ",
-        Sanitizers.filterHtmlAttributes(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo=\"bar\" dir=ltr", SanitizedContent.ContentKind.ATTRIBUTES)));
-    assertEquals(
-        "Should append a space to parse correctly",
-        "foo=\"bar\" checked ",
-        Sanitizers.filterHtmlAttributes(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo=\"bar\" checked", SanitizedContent.ContentKind.ATTRIBUTES)));
-    assertEquals(
-        "No duplicate space should be added",
-        "foo=\"bar\" checked ",
-        Sanitizers.filterHtmlAttributes(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo=\"bar\" checked ", SanitizedContent.ContentKind.ATTRIBUTES)));
+    assertThat(
+            Sanitizers.filterHtmlAttributes(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "a=1 b=2 dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES)))
+        .isEqualTo("a=1 b=2 dir=\"ltr\"");
+    assertWithMessage("Should append a space to parse correctly")
+        .that(
+            Sanitizers.filterHtmlAttributes(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo=\"bar\" dir=ltr", SanitizedContent.ContentKind.ATTRIBUTES)))
+        .isEqualTo("foo=\"bar\" dir=ltr ");
+    assertWithMessage("Should append a space to parse correctly")
+        .that(
+            Sanitizers.filterHtmlAttributes(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo=\"bar\" checked", SanitizedContent.ContentKind.ATTRIBUTES)))
+        .isEqualTo("foo=\"bar\" checked ");
+    assertWithMessage("No duplicate space should be added")
+        .that(
+            Sanitizers.filterHtmlAttributes(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo=\"bar\" checked ", SanitizedContent.ContentKind.ATTRIBUTES)))
+        .isEqualTo("foo=\"bar\" checked ");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.filterHtmlAttributes(hazard).contains(hazard));
+      assertWithMessage(hazard)
+          .that(Sanitizers.filterHtmlAttributes(hazard).contains(hazard))
+          .isFalse();
     }
   }
 
   @Test
   public void testFilterHtmlElementName() {
-    assertEquals("h1", Sanitizers.filterHtmlElementName("h1"));
-    assertEquals("h1", Sanitizers.filterHtmlElementName(StringData.forValue("h1")));
-    assertEquals("zSoyz", Sanitizers.filterHtmlElementName("script"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlElementName("style"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlElementName("SCRIPT"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlElementName("><script>alert('foo')</script"));
-    assertEquals("zSoyz", Sanitizers.filterHtmlElementName(StringData.forValue("<h1>")));
+    assertThat(Sanitizers.filterHtmlElementName("h1")).isEqualTo("h1");
+    assertThat(Sanitizers.filterHtmlElementName(StringData.forValue("h1"))).isEqualTo("h1");
+    assertThat(Sanitizers.filterHtmlElementName("script")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlElementName("style")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlElementName("SCRIPT")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlElementName("><script>alert('foo')</script"))
+        .isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlElementName(StringData.forValue("<h1>"))).isEqualTo("zSoyz");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.filterHtmlElementName(hazard).contains(hazard));
+      assertWithMessage(hazard)
+          .that(Sanitizers.filterHtmlElementName(hazard))
+          .doesNotContain(hazard);
     }
   }
 
@@ -262,11 +266,11 @@ public class SanitizersTest {
   public void testEscapeUri() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals(
-        "%00%0A%0C%0D%22%23%26%27%2F%3A%3D%3F%40", Sanitizers.escapeUri("\u0000\n\f\r\"#&'/:=?@"));
+    assertThat(Sanitizers.escapeUri("\u0000\n\f\r\"#&'/:=?@"))
+        .isEqualTo("%00%0A%0C%0D%22%23%26%27%2F%3A%3D%3F%40");
 
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.escapeUri(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.escapeUri(hazard)).doesNotContain(hazard);
     }
 
     String escapedAscii =
@@ -278,25 +282,25 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ%5B%5C%5D%5E_"
             + "%60abcdefghijklmno"
             + "pqrstuvwxyz%7B%7C%7D%7E%7F");
-    assertEquals(escapedAscii, Sanitizers.escapeUri(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeUri(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeUri(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeUri(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
     // Test full-width.  The two characters at the right are a full-width '#' and ':'.
-    assertEquals("%EF%BC%83%EF%BC%9A", Sanitizers.escapeUri("\uff03\uff1a"));
+    assertThat(Sanitizers.escapeUri("\uff03\uff1a")).isEqualTo("%EF%BC%83%EF%BC%9A");
     // Test other unicode codepoints.
-    assertEquals("%C2%85%E2%80%A8", Sanitizers.escapeUri("\u0085\u2028"));
+    assertThat(Sanitizers.escapeUri("\u0085\u2028")).isEqualTo("%C2%85%E2%80%A8");
     // SanitizedUris are not special in URIs. For example, in /redirect?continue={$url}, we clearly
     // don't want ampersands in the continue URL to break out of the continue param.
-    assertEquals(
-        "foo%20%28%2527%26%27%29",
-        Sanitizers.escapeUri(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo (%27&')", SanitizedContent.ContentKind.URI)));
+    assertThat(
+            Sanitizers.escapeUri(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "foo (%27&')", SanitizedContent.ContentKind.URI)))
+        .isEqualTo("foo%20%28%2527%26%27%29");
     // Test SanitizedContent of the wrong kind -- it should be completely escaped.
-    assertEquals(
-        "%2528%2529",
-        Sanitizers.escapeUri(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "%28%29", SanitizedContent.ContentKind.HTML)));
+    assertThat(
+            Sanitizers.escapeUri(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "%28%29", SanitizedContent.ContentKind.HTML)))
+        .isEqualTo("%2528%2529");
   }
 
   @Test
@@ -305,8 +309,8 @@ public class SanitizersTest {
     // the terminal will be corrupted. As a workaround, silence logs below the WARNING level.
     Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.SEVERE);
     for (String hazard : EMBEDDING_HAZARDS) {
-      assertFalse(hazard, Sanitizers.normalizeUri(hazard).contains(hazard));
-      assertFalse(hazard, Sanitizers.filterNormalizeUri(hazard).contains(hazard));
+      assertWithMessage(hazard).that(Sanitizers.normalizeUri(hazard)).doesNotContain(hazard);
+      assertWithMessage(hazard).that(Sanitizers.filterNormalizeUri(hazard)).doesNotContain(hazard);
     }
 
     String escapedAscii =
@@ -318,15 +322,15 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[%5C]^_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz%7B|%7D~%7F");
-    assertEquals(escapedAscii, Sanitizers.normalizeUri(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.normalizeUri(ASCII_CHARS_SOYDATA));
-    assertEquals("#" + escapedAscii, Sanitizers.filterNormalizeUri("#" + ASCII_CHARS));
+    assertThat(Sanitizers.normalizeUri(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.normalizeUri(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.filterNormalizeUri("#" + ASCII_CHARS)).isEqualTo("#" + escapedAscii);
 
     // Test full-width.  The two characters at the right are a full-width '#' and ':'.
     String escapedFullWidth = "%EF%BC%83%EF%BC%9A";
     String fullWidth = "\uff03\uff1a";
-    assertEquals(escapedFullWidth, Sanitizers.normalizeUri(fullWidth));
-    assertEquals(escapedFullWidth, Sanitizers.filterNormalizeUri(fullWidth));
+    assertThat(Sanitizers.normalizeUri(fullWidth)).isEqualTo(escapedFullWidth);
+    assertThat(Sanitizers.filterNormalizeUri(fullWidth)).isEqualTo(escapedFullWidth);
 
     String[] badForAllFilters =
         new String[] {
@@ -359,20 +363,20 @@ public class SanitizersTest {
         };
 
     for (String badCase : badForAllFilters) {
-      assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri(badCase));
+      assertThat(Sanitizers.filterNormalizeUri(badCase)).isEqualTo("about:invalid#zSoyz");
       assertInvalidMediaUri(badCase);
     }
 
-    assertFalse(
-        Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);").contains("javascript\uff1a"));
+    assertThat(Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);"))
+        .doesNotContain("javascript\uff1a");
 
     // Tests of filtering hierarchy within uri path (/.. etc )
-    assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
-    assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("/..?"));
-    assertEquals(
-        "about:invalid#zSoyz", Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."));
-    assertEquals(
-        "about:invalid#zSoyz", Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"));
+    assertThat(Sanitizers.filterNormalizeUri("a/../")).isEqualTo("about:invalid#zSoyz");
+    assertThat(Sanitizers.filterNormalizeUri("/..?")).isEqualTo("about:invalid#zSoyz");
+    assertThat(Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."))
+        .isEqualTo("about:invalid#zSoyz");
+    assertThat(Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"))
+        .isEqualTo("about:invalid#zSoyz");
 
     // Things we should accept.
     String[] goodForAllFilters =
@@ -401,22 +405,22 @@ public class SanitizersTest {
         };
 
     for (String goodCase : goodForAllFilters) {
-      assertEquals(goodCase, Sanitizers.filterNormalizeUri(goodCase));
+      assertThat(Sanitizers.filterNormalizeUri(goodCase)).isEqualTo(goodCase);
       assertValidMediaUri(goodCase);
     }
 
     // Test normalization.
-    assertEquals(
-        "javascript:handleClick%28%29",
-        Sanitizers.filterNormalizeUri(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "javascript:handleClick()", SanitizedContent.ContentKind.URI)));
+    assertThat(
+            Sanitizers.filterNormalizeUri(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "javascript:handleClick()", SanitizedContent.ContentKind.URI)))
+        .isEqualTo("javascript:handleClick%28%29");
     // Except doesn't handle HTML.
-    assertEquals(
-        "about:invalid#zSoyz",
-        Sanitizers.filterNormalizeUri(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "javascript:handleClick()", SanitizedContent.ContentKind.HTML)));
+    assertThat(
+            Sanitizers.filterNormalizeUri(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "javascript:handleClick()", SanitizedContent.ContentKind.HTML)))
+        .isEqualTo("about:invalid#zSoyz");
 
     Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.INFO);
   }
@@ -431,8 +435,8 @@ public class SanitizersTest {
 
   private static void assertImageDataUri(String uri, boolean valid) {
     SanitizedContent result = Sanitizers.filterImageDataUri(uri);
-    assertEquals(valid ? uri : "data:image/gif;base64,zSoyz", result.toString());
-    assertEquals(SanitizedContent.ContentKind.URI, result.getContentKind());
+    assertThat(result.toString()).isEqualTo(valid ? uri : "data:image/gif;base64,zSoyz");
+    assertThat(result.getContentKind()).isEqualTo(SanitizedContent.ContentKind.URI);
   }
 
   private static void assertValidMediaUri(String uri) {
@@ -444,7 +448,8 @@ public class SanitizersTest {
   }
 
   private static void assertMediaUri(String uri, boolean valid) {
-    assertEquals(valid ? uri : "about:invalid#zSoyz", Sanitizers.filterNormalizeMediaUri(uri));
+    assertThat(Sanitizers.filterNormalizeMediaUri(uri))
+        .isEqualTo(valid ? uri : "about:invalid#zSoyz");
   }
 
   @Test
@@ -542,17 +547,16 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[\\]^_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz{|}~\u007f");
-    assertEquals(escapedAscii, Sanitizers.escapeHtml(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeHtml(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeHtml(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeHtml(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
   public void testEscapeHtmlAttributeNospace() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals(
-        "&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;&amp;",
-        Sanitizers.escapeHtmlAttributeNospace("\u0009\n\u000B\u000C\r \"'\u0060<>&"));
+    assertThat(Sanitizers.escapeHtmlAttributeNospace("\u0009\n\u000B\u000C\r \"'\u0060<>&"))
+        .isEqualTo("&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;&amp;");
 
     String escapedAscii =
         ("&#0;\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b&#9;&#10;&#11;&#12;&#13;\u000e\u000f"
@@ -564,15 +568,15 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[\\]^_"
             + "&#96;abcdefghijklmno"
             + "pqrstuvwxyz{|}~\u007f");
-    assertEquals(escapedAscii, Sanitizers.escapeHtmlAttributeNospace(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.escapeHtmlAttributeNospace(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.escapeHtmlAttributeNospace(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.escapeHtmlAttributeNospace(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
   public void testNormalizeHtml() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals("&quot;&#39;&lt;&gt;", Sanitizers.normalizeHtml("\"'<>"));
+    assertThat(Sanitizers.normalizeHtml("\"'<>")).isEqualTo("&quot;&#39;&lt;&gt;");
 
     String escapedAscii =
         ("&#0;\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\u000c\r\u000e\u000f"
@@ -584,17 +588,16 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[\\]^_"
             + "`abcdefghijklmno"
             + "pqrstuvwxyz{|}~\u007f");
-    assertEquals(escapedAscii, Sanitizers.normalizeHtml(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.normalizeHtml(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.normalizeHtml(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.normalizeHtml(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   @Test
   public void testNormalizeHtmlNospace() {
     // The minimal escapes.
     // Do not remove anything from this set without talking to your friendly local ise-team@.
-    assertEquals(
-        "&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;",
-        Sanitizers.normalizeHtmlNospace("\u0009\n\u000B\u000C\r \"'\u0060<>"));
+    assertThat(Sanitizers.normalizeHtmlNospace("\u0009\n\u000B\u000C\r \"'\u0060<>"))
+        .isEqualTo("&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;");
 
     String escapedAscii =
         ("&#0;\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b&#9;&#10;&#11;&#12;&#13;\u000e\u000f"
@@ -606,8 +609,8 @@ public class SanitizersTest {
             + "PQRSTUVWXYZ[\\]^_"
             + "&#96;abcdefghijklmno"
             + "pqrstuvwxyz{|}~\u007f");
-    assertEquals(escapedAscii, Sanitizers.normalizeHtmlNospace(ASCII_CHARS));
-    assertEquals(escapedAscii, Sanitizers.normalizeHtmlNospace(ASCII_CHARS_SOYDATA));
+    assertThat(Sanitizers.normalizeHtmlNospace(ASCII_CHARS)).isEqualTo(escapedAscii);
+    assertThat(Sanitizers.normalizeHtmlNospace(ASCII_CHARS_SOYDATA)).isEqualTo(escapedAscii);
   }
 
   private static final String stripHtmlTags(String html, boolean spacesOk) {
@@ -616,15 +619,17 @@ public class SanitizersTest {
 
   @Test
   public void testStripHtmlTags() {
-    assertEquals("", stripHtmlTags("", true));
-    assertEquals("Hello, World!", stripHtmlTags("Hello, World!", true));
-    assertEquals("Hello,&#32;World!", stripHtmlTags("Hello, World!", false));
-    assertEquals("Hello, World!", stripHtmlTags("<b>Hello, World!</b>", true));
-    assertEquals("Hello, &quot;World!&quot;", stripHtmlTags("<b>Hello, \"World!\"</b>", true));
-    assertEquals("Hello,&#32;&quot;World!&quot;", stripHtmlTags("<b>Hello, \"World!\"</b>", false));
-    assertEquals("42", stripHtmlTags("42", true));
+    assertThat(stripHtmlTags("", true)).isEmpty();
+    assertThat(stripHtmlTags("Hello, World!", true)).isEqualTo("Hello, World!");
+    assertThat(stripHtmlTags("Hello, World!", false)).isEqualTo("Hello,&#32;World!");
+    assertThat(stripHtmlTags("<b>Hello, World!</b>", true)).isEqualTo("Hello, World!");
+    assertThat(stripHtmlTags("<b>Hello, \"World!\"</b>", true))
+        .isEqualTo("Hello, &quot;World!&quot;");
+    assertThat(stripHtmlTags("<b>Hello, \"World!\"</b>", false))
+        .isEqualTo("Hello,&#32;&quot;World!&quot;");
+    assertThat(stripHtmlTags("42", true)).isEqualTo("42");
     // Don't merge content around tags into an entity.
-    assertEquals("&amp;amp;", stripHtmlTags("&<hr>amp;", true));
+    assertThat(stripHtmlTags("&<hr>amp;", true)).isEqualTo("&amp;amp;");
   }
 
   private static final TagWhitelist TEST_WHITELIST =
@@ -636,179 +641,200 @@ public class SanitizersTest {
 
   @Test
   public void testTagWhitelisting() {
-    assertEquals("<b>Hello, World!</b>", cleanHtml("<b>Hello, World!</b>"));
-    assertEquals("<b>Hello, World!</b>", cleanHtml("<b onclick='evil()'>Hello, World!</b>"));
-    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br/> World!</b>"));
+    assertThat(cleanHtml("<b>Hello, World!</b>")).isEqualTo("<b>Hello, World!</b>");
+    assertThat(cleanHtml("<b onclick='evil()'>Hello, World!</b>"))
+        .isEqualTo("<b>Hello, World!</b>");
+    assertThat(cleanHtml("<b>Hello, <br/> World!</b>")).isEqualTo("<b>Hello, <br> World!</b>");
     // Don't add end tags for void elements.
-    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br/> World!"));
-    assertEquals("<b>Hello, <br> World!</b>", cleanHtml("<b>Hello, <br> World!"));
+    assertThat(cleanHtml("<b>Hello, <br/> World!")).isEqualTo("<b>Hello, <br> World!</b>");
+    assertThat(cleanHtml("<b>Hello, <br> World!")).isEqualTo("<b>Hello, <br> World!</b>");
     // Missing open tag.
-    assertEquals("Hello, <br> World!", cleanHtml("Hello, <br/> World!"));
+    assertThat(cleanHtml("Hello, <br/> World!")).isEqualTo("Hello, <br> World!");
     // A truncated tag is not a tag.
-    assertEquals("Hello, &lt;br", cleanHtml("Hello, <br"));
+    assertThat(cleanHtml("Hello, <br")).isEqualTo("Hello, &lt;br");
     // Test boundary conditions at end of input.
-    assertEquals("Hello, &lt;", cleanHtml("Hello, <"));
-    assertEquals("Hello, &lt;/", cleanHtml("Hello, </"));
-    assertEquals("Hello, &lt; World", cleanHtml("Hello, < World"));
+    assertThat(cleanHtml("Hello, <")).isEqualTo("Hello, &lt;");
+    assertThat(cleanHtml("Hello, </")).isEqualTo("Hello, &lt;/");
+    assertThat(cleanHtml("Hello, < World")).isEqualTo("Hello, &lt; World");
     // Don't be confused by attributes that merge into the tag name.
-    assertEquals("", cleanHtml("<img/onload=alert(1337)>"));
-    assertEquals("foo", cleanHtml("<i/onmouseover=alert(1337)>foo</i>"));
-    assertEquals("AB", cleanHtml("A<img/onload=alert(1337)>B"));
+    assertThat(cleanHtml("<img/onload=alert(1337)>")).isEmpty();
+    assertThat(cleanHtml("<i/onmouseover=alert(1337)>foo</i>")).isEqualTo("foo");
+    assertThat(cleanHtml("A<img/onload=alert(1337)>B")).isEqualTo("AB");
     // Don't create new tags from parts that were not originally adjacent.
-    assertEquals(
-        "&lt;img onload=alert(1337)", cleanHtml("<<img/onload=alert(1337)>img onload=alert(1337)"));
+    assertThat(cleanHtml("<<img/onload=alert(1337)>img onload=alert(1337)"))
+        .isEqualTo("&lt;img onload=alert(1337)");
     // Test external layout breakers.
     // <ul><li>Foo</ul></li> would be bad since it is equivalent to
     // <ul><li>Foo</li></ul></li>
-    assertEquals("<ul><li>Foo</li></ul>", cleanHtml("<ul><li>Foo</ul>"));
+    assertThat(cleanHtml("<ul><li>Foo</ul>")).isEqualTo("<ul><li>Foo</li></ul>");
     // We put the close tags in the wrong place but in a way that is safe.
-    assertEquals("<ul><li>1<li>2</li></li></ul>", cleanHtml("<ul><li>1<li>2</ul>"));
-    assertEquals("<table><tr><td></td></tr></table>", cleanHtml("<table><tr><td>"));
+    assertThat(cleanHtml("<ul><li>1<li>2</ul>")).isEqualTo("<ul><li>1<li>2</li></li></ul>");
+    assertThat(cleanHtml("<table><tr><td>")).isEqualTo("<table><tr><td></td></tr></table>");
     // Don't merge content around tags into an entity.
-    assertEquals("&amp;amp;", cleanHtml("&<hr>amp;"));
+    assertThat(cleanHtml("&<hr>amp;")).isEqualTo("&amp;amp;");
   }
 
   @Test
   public void testCleanHtml() {
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<em>f<object>oo</em>"));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML),
-        Sanitizers.cleanHtml(StringData.forValue("<em>f<object>oo</em>")));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML, Dir.LTR),
-        Sanitizers.cleanHtml(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>f<object>oo</em>", ContentKind.CSS)));
+    assertThat(Sanitizers.cleanHtml("<em>f<object>oo</em>"))
+        .isEqualTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml(StringData.forValue("<em>f<object>oo</em>")))
+        .isEqualTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "<em>f<object>oo</em>", ContentKind.CSS)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>foo</em>", ContentKind.HTML, Dir.LTR));
 
     // Input of ContentKind.HTML is left alone.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<script>notevil()</script>", ContentKind.HTML),
-        Sanitizers.cleanHtml(
+    assertThat(
+            Sanitizers.cleanHtml(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "<script>notevil()</script>", ContentKind.HTML)))
+        .isEqualTo(
             UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "<script>notevil()</script>", ContentKind.HTML)));
+                "<script>notevil()</script>", ContentKind.HTML));
   }
 
   @Test
   public void testCleanHtml_optionalSafeTags() {
     // No OptionalSafeTags.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>ff</em>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"));
+    assertThat(Sanitizers.cleanHtml("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"))
+        .isEqualTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>ff</em>", ContentKind.HTML));
     // One OptionalSafeTag.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<em>f<span>f</span></em>", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
-            ImmutableSet.of(OptionalSafeTag.SPAN)));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
+                ImmutableSet.of(OptionalSafeTag.SPAN)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<em>f<span>f</span></em>", ContentKind.HTML));
     // All OptionalSafeTags.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<em><ul>f</ul><ol><li><span>f</span></li></ol></em>", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
-            ImmutableSet.copyOf(OptionalSafeTag.values())));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<em><ul>f</ul><ol><li><span>f</span></li></ol></em>"),
+                EnumSet.allOf(OptionalSafeTag.class)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<em><ul>f</ul><ol><li><span>f</span></li></ol></em>", ContentKind.HTML));
 
     // Does not preserve <li> which are not nested in a parent <ol> or <ul>.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<p><li>foo</li></p>"), ImmutableSet.of(OptionalSafeTag.LI)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("a<ul>f</ul><ol>o</ol>o", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<li>a</li><ul>f</ul><ol>o</ol><li>o</li>"),
-            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<ul>f<ol>o</ol></ul>o", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<ul>f<ol>o</ul><li>o</li></ol>"),
-            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<ol><li>0<ol><li>1</li></ol><li>2</li></li></ol>3", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<ol><li>0<ol><li>1</li></ol><li>2</li></ol><ul><li>3</li></ul>"),
-            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<ul>&lt;3 cookies</ul>", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<ul></ol></foo><3 cookies"),
-            ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<span>endless&lt; /span&gt;</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml(
-            StringData.forValue("<span>endless< /span>"), ImmutableSet.of(OptionalSafeTag.SPAN)));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<p><li>foo</li></p>"), ImmutableSet.of(OptionalSafeTag.LI)))
+        .isEqualTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<li>a</li><ul>f</ul><ol>o</ol><li>o</li>"),
+                ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "a<ul>f</ul><ol>o</ol>o", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<ul>f<ol>o</ul><li>o</li></ol>"),
+                ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<ul>f<ol>o</ol></ul>o", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue(
+                    "<ol><li>0<ol><li>1</li></ol><li>2</li></ol><ul><li>3</li></ul>"),
+                ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<ol><li>0<ol><li>1</li></ol><li>2</li></li></ol>3", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<ul></ol></foo><3 cookies"),
+                ImmutableSet.of(OptionalSafeTag.LI, OptionalSafeTag.OL, OptionalSafeTag.UL)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<ul>&lt;3 cookies</ul>", ContentKind.HTML));
+    assertThat(
+            Sanitizers.cleanHtml(
+                StringData.forValue("<span>endless< /span>"),
+                ImmutableSet.of(OptionalSafeTag.SPAN)))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<span>endless&lt; /span&gt;</span>", ContentKind.HTML));
   }
 
   @Test
   public void testCleanHtml_preservesDirAttribute() {
     ImmutableSet<OptionalSafeTag> treatSpanSafe = ImmutableSet.of(OptionalSafeTag.SPAN);
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<span dir=\"ltr\">foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span dir=\"ltr\" other=\"no\">f<object>oo</span>", treatSpanSafe));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<span dir=\"rtl\">foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span dir=\'Rtl\'>f<object>oo</span>", treatSpanSafe));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<span dir=\"rtl\">foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span DIR=\'RTL\'>f<object>oo</span>", treatSpanSafe));
+    assertThat(
+            Sanitizers.cleanHtml(
+                "<span dir=\"ltr\" other=\"no\">f<object>oo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<span dir=\"ltr\">foo</span>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml("<span dir=\'Rtl\'>f<object>oo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<span dir=\"rtl\">foo</span>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml("<span DIR=\'RTL\'>f<object>oo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<span dir=\"rtl\">foo</span>", ContentKind.HTML));
 
     // Doesn't preserve malformed directionality.
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span dir='ltr \"onload=alert(1337)//\"'>foo</span>", treatSpanSafe));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span d\\u0131r=ltr>foo</span>", treatSpanSafe));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span>foo</span dir=ltr>", treatSpanSafe));
-    assertEquals(
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML),
-        Sanitizers.cleanHtml("<span dir=ltr>f<object>oo</span>", treatSpanSafe));
+    assertThat(
+            Sanitizers.cleanHtml(
+                "<span dir='ltr \"onload=alert(1337)//\"'>foo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml("<span d\\u0131r=ltr>foo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml("<span>foo</span dir=ltr>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML));
+    assertThat(Sanitizers.cleanHtml("<span dir=ltr>f<object>oo</span>", treatSpanSafe))
+        .isEqualTo(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML));
   }
 
   @Test
   public void testFilterNoAutoescape() {
     // Filter out anything marked with sanitized content of kind "text" which indicates it
     // previously was constructed without any escaping.
-    assertEquals(
-        StringData.forValue("zSoyz"),
-        Sanitizers.filterNoAutoescape(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe("x", SanitizedContent.ContentKind.TEXT)));
-    assertEquals(
-        StringData.forValue("zSoyz"),
-        Sanitizers.filterNoAutoescape(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "<!@*!@(*!@(>", SanitizedContent.ContentKind.TEXT)));
+    assertThat(
+            Sanitizers.filterNoAutoescape(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "x", SanitizedContent.ContentKind.TEXT)))
+        .isEqualTo(StringData.forValue("zSoyz"));
+    assertThat(
+            Sanitizers.filterNoAutoescape(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "<!@*!@(*!@(>", SanitizedContent.ContentKind.TEXT)))
+        .isEqualTo(StringData.forValue("zSoyz"));
 
     // Everything else should be let through. Hope it's safe!
-    assertEquals(
-        StringData.forValue("<div>test</div>"),
-        Sanitizers.filterNoAutoescape(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "<div>test</div>", SanitizedContent.ContentKind.HTML)));
-    assertEquals(
-        StringData.forValue("foo='bar'"),
-        Sanitizers.filterNoAutoescape(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "foo='bar'", SanitizedContent.ContentKind.ATTRIBUTES)));
-    assertEquals(
-        StringData.forValue(".foo{color:green}"),
-        Sanitizers.filterNoAutoescape(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                ".foo{color:green}", SanitizedContent.ContentKind.CSS)));
-    assertEquals(
-        StringData.forValue("<div>test</div>"),
-        Sanitizers.filterNoAutoescape(StringData.forValue("<div>test</div>")));
-    assertEquals(StringData.forValue("null"), Sanitizers.filterNoAutoescape(NullData.INSTANCE));
-    assertEquals(
-        StringData.forValue("123"), Sanitizers.filterNoAutoescape(IntegerData.forValue(123)));
+    assertThat(
+            Sanitizers.filterNoAutoescape(
+                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                        "<div>test</div>", SanitizedContent.ContentKind.HTML))
+                .stringValue())
+        .isEqualTo("<div>test</div>");
+    assertThat(
+            Sanitizers.filterNoAutoescape(
+                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                        "foo='bar'", SanitizedContent.ContentKind.ATTRIBUTES))
+                .stringValue())
+        .isEqualTo("foo='bar'");
+    assertThat(
+            Sanitizers.filterNoAutoescape(
+                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                        ".foo{color:green}", SanitizedContent.ContentKind.CSS))
+                .stringValue())
+        .isEqualTo(".foo{color:green}");
+    assertThat(Sanitizers.filterNoAutoescape(StringData.forValue("<div>test</div>")))
+        .isEqualTo(StringData.forValue("<div>test</div>"));
+    assertThat(Sanitizers.filterNoAutoescape(NullData.INSTANCE)).isEqualTo(NullData.INSTANCE);
+    assertThat(Sanitizers.filterNoAutoescape(IntegerData.forValue(123)))
+        .isEqualTo(IntegerData.forValue(123));
   }
 
   @Test
@@ -835,18 +861,17 @@ public class SanitizersTest {
     escapingBuffer.setSanitizedContentKind(ContentKind.TEXT);
     assertThat(buffer.getAndClearBuffer()).isEqualTo("zSoyz");
     escapingBuffer.append("foo");
-    assertThat(buffer.getAndClearBuffer()).isEqualTo("");
+    assertThat(buffer.getAndClearBuffer()).isEmpty();
   }
 
   @Test
   public void testEmbedCssIntoHtml() {
-    assertEquals("", Sanitizers.embedCssIntoHtml(""));
-    assertEquals("foo", Sanitizers.embedCssIntoHtml("foo"));
-    assertEquals("a[foo]>b", Sanitizers.embedCssIntoHtml("a[foo]>b"));
-    assertEquals("/* <\\/style> */", Sanitizers.embedCssIntoHtml("/* </style> */"));
-    assertEquals(
-        Strings.repeat("/* <\\/style> */", 100),
-        Sanitizers.embedCssIntoHtml(Strings.repeat("/* </style> */", 100)));
+    assertThat(Sanitizers.embedCssIntoHtml("")).isEmpty();
+    assertThat(Sanitizers.embedCssIntoHtml("foo")).isEqualTo("foo");
+    assertThat(Sanitizers.embedCssIntoHtml("a[foo]>b")).isEqualTo("a[foo]>b");
+    assertThat(Sanitizers.embedCssIntoHtml("/* </style> */")).isEqualTo("/* <\\/style> */");
+    assertThat(Sanitizers.embedCssIntoHtml(Strings.repeat("/* </style> */", 100)))
+        .isEqualTo(Strings.repeat("/* <\\/style> */", 100));
     assertEquals(
         "content: '<\\/STYLE >'", // Semantically equivalent
         Sanitizers.embedCssIntoHtml("content: '</STYLE >'"));
@@ -855,10 +880,10 @@ public class SanitizersTest {
         Sanitizers.embedCssIntoHtml("background: url(</style/>)"));
 
     // boundary conditions, replacements at the beginning and end of the string.
-    assertEquals("]]\\>", Sanitizers.embedCssIntoHtml("]]>"));
-    assertEquals("]]\\>]]\\>]]\\>", Sanitizers.embedCssIntoHtml("]]>]]>]]>"));
-    assertEquals("<\\/", Sanitizers.embedCssIntoHtml("</"));
-    assertEquals("<\\/<\\/<\\/", Sanitizers.embedCssIntoHtml("</</</"));
+    assertThat(Sanitizers.embedCssIntoHtml("]]>")).isEqualTo("]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("]]>]]>]]>")).isEqualTo("]]\\>]]\\>]]\\>");
+    assertThat(Sanitizers.embedCssIntoHtml("</")).isEqualTo("<\\/");
+    assertThat(Sanitizers.embedCssIntoHtml("</</</")).isEqualTo("<\\/<\\/<\\/");
   }
   
 }

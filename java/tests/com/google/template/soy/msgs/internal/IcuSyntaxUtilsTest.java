@@ -89,7 +89,7 @@ public class IcuSyntaxUtilsTest {
       IcuSyntaxUtils.checkIcuEscapingIsNotNeeded(rawText);
       fail();
     } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage()).contains(expectedErrorMsgSubstr);
+      assertThat(sse).hasMessageThat().contains(expectedErrorMsgSubstr);
     }
   }
 }

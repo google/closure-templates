@@ -17,8 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -43,28 +41,28 @@ public class RandomIntFunctionTest {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
 
     SoyValue arg = IntegerData.ONE;
-    assertEquals(IntegerData.ZERO, randomIntFunction.computeForJava(ImmutableList.of(arg)));
+    assertThat(randomIntFunction.computeForJava(ImmutableList.of(arg))).isEqualTo(IntegerData.ZERO);
 
     arg = IntegerData.forValue(3);
     Set<Integer> seenResults = Sets.newHashSetWithExpectedSize(3);
     for (int i = 0; i < 100; i++) {
       int result = randomIntFunction.computeForJava(ImmutableList.of(arg)).integerValue();
-      assertTrue(0 <= result && result <= 2);
+      assertThat(result).isAtLeast(0);
+      assertThat(result).isAtMost(2);
       seenResults.add(result);
       if (seenResults.size() == 3) {
         break;
       }
     }
-    assertEquals(3, seenResults.size());
+    assertThat(seenResults).hasSize(3);
   }
 
   @Test
   public void testComputeForJsSrc() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     JsExpr argExpr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE),
-        randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)));
+    assertThat(randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)))
+        .isEqualTo(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

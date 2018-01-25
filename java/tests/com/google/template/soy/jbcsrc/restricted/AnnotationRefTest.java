@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -104,7 +104,7 @@ public class AnnotationRefTest {
     }
     Annotation ann =
         annotations[0].annotationType() == Test.class ? annotations[1] : annotations[0];
-    assertEquals(ann, createClassWithAnnotation(ann).getAnnotation(ann.annotationType()));
+    assertThat(createClassWithAnnotation(ann).getAnnotation(ann.annotationType())).isEqualTo(ann);
   }
 
   @SuppressWarnings("unchecked")

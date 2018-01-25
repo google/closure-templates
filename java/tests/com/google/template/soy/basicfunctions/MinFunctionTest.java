@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -42,13 +41,13 @@ public class MinFunctionTest {
 
     SoyValue float0 = FloatData.forValue(7.5);
     SoyValue float1 = FloatData.forValue(7.777);
-    assertEquals(
-        FloatData.forValue(7.5), minFunction.computeForJava(ImmutableList.of(float0, float1)));
+    assertThat(minFunction.computeForJava(ImmutableList.of(float0, float1)))
+        .isEqualTo(FloatData.forValue(7.5));
 
     SoyValue integer0 = IntegerData.forValue(-7);
     SoyValue integer1 = IntegerData.forValue(-8);
-    assertEquals(
-        IntegerData.forValue(-8), minFunction.computeForJava(ImmutableList.of(integer0, integer1)));
+    assertThat(minFunction.computeForJava(ImmutableList.of(integer0, integer1)))
+        .isEqualTo(IntegerData.forValue(-8));
   }
 
   @Test
@@ -56,9 +55,8 @@ public class MinFunctionTest {
     MinFunction minFunction = new MinFunction();
     JsExpr expr0 = new JsExpr("JS_CODE_0", Integer.MAX_VALUE);
     JsExpr expr1 = new JsExpr("JS_CODE_1", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("Math.min(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE),
-        minFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)));
+    assertThat(minFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)))
+        .isEqualTo(new JsExpr("Math.min(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE));
   }
 
   @Test

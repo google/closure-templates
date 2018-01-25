@@ -17,11 +17,9 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.List;
@@ -106,9 +104,9 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   @Test
   public void testBasic() {
-    assertEquals(LOCALE, bundle.getLocaleString());
+    assertThat(bundle.getLocaleString()).isEqualTo(LOCALE);
     assertThat(bundle.isRtl()).isFalse();
-    assertEquals(testMessages.size(), bundle.getNumMsgs());
+    assertThat(bundle.getNumMsgs()).isEqualTo(testMessages.size());
   }
 
   @Test
@@ -123,7 +121,7 @@ public class RenderOnlySoyMsgBundleImplTest {
   public void testGetMsg() {
     for (SoyMsg message : testMessages) {
       SoyMsg actual = bundle.getMsg(message.getId());
-      assertEquals(message, actual);
+      assertThat(actual).isEqualTo(message);
     }
   }
 
@@ -133,24 +131,22 @@ public class RenderOnlySoyMsgBundleImplTest {
     long lastId = -1;
     for (SoyMsg message : bundle) {
       actualMessages.add(message);
-      assertTrue("Messages should be in ID order.", message.getId() > lastId);
+      assertWithMessage("Messages should be in ID order.").that(message.getId() > lastId).isTrue();
       lastId = message.getId();
     }
     // Test the size first, to protect against dupes.
-    assertEquals(testMessages.size(), actualMessages.size());
-    assertEquals(testMessages.size(), (int) actualMessages.stream().distinct().count());
+    assertThat(actualMessages).hasSize(testMessages.size());
+    assertThat((int) actualMessages.stream().distinct().count()).isEqualTo(testMessages.size());
     // Now assert they contain the same messages.
-    assertEquals(ImmutableSet.copyOf(testMessages), ImmutableSet.copyOf(actualMessages));
+    assertThat(actualMessages).containsExactlyElementsIn(testMessages);
   }
 
   @Test
   public void testCopy() {
     // Take advantage of the fact that SoyMsgBundle actually implements Iterable<SoyMsg>.
     SoyMsgBundle copy = new RenderOnlySoyMsgBundleImpl(LOCALE, bundle);
-    assertEquals(LOCALE, copy.getLocaleString());
-    assertEquals(testMessages.size(), bundle.getNumMsgs());
-    // Test they contain the same elements in the same order, while also taking advantage of the
-    // fact it implements Iterable<SoyMsg>.
-    assertEquals(ImmutableList.copyOf(bundle), ImmutableList.copyOf(copy));
+    assertThat(copy.getLocaleString()).isEqualTo(LOCALE);
+    assertThat(bundle).hasSize(testMessages.size());
+    assertThat(copy).containsExactlyElementsIn(bundle).inOrder();
   }
 }

@@ -106,33 +106,6 @@ public final class ExpressionTester {
       return this;
     }
 
-    /**
-     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
-     * coupled tests.
-     */
-    public ExpressionSubject hasCode(String... instructions) {
-      compile();
-      String formatted = Joiner.on('\n').join(instructions);
-      if (!formatted.equals(actual().trace().trim())) {
-        fail("hasCode", formatted);
-      }
-      return this;
-    }
-
-    /**
-     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
-     * coupled tests.
-     */
-    public ExpressionSubject doesNotContainCode(String... instructions) {
-      compile();
-      String formatted = Joiner.on('\n').join(instructions);
-      String actual = actual().trace().trim();
-      if (actual.contains(formatted)) {
-        failWithBadResults("doesNotContainCode", formatted, "evaluates to", actual);
-      }
-      return this;
-    }
-
     public ExpressionSubject evaluatesTo(boolean expected) {
       compile();
       boolean actual;
@@ -199,11 +172,38 @@ public final class ExpressionTester {
       try {
         actual = ((ObjectInvoker) invoker).invoke();
       } catch (Throwable t) {
-        failWithBadResults("evalutes to", expected, "fails with", t);
+        failWithBadResults("evaluates to", expected, "fails with", t);
         return this;
       }
       if (!Objects.equal(actual, expected)) {
         failWithBadResults("evaluates to", expected, "evaluates to", actual);
+      }
+      return this;
+    }
+
+    /**
+     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
+     * coupled tests.
+     */
+    public ExpressionSubject hasCode(String... instructions) {
+      compile();
+      String formatted = Joiner.on('\n').join(instructions);
+      if (!formatted.equals(actual().trace().trim())) {
+        fail("hasCode", formatted);
+      }
+      return this;
+    }
+
+    /**
+     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
+     * coupled tests.
+     */
+    public ExpressionSubject doesNotContainCode(String... instructions) {
+      compile();
+      String formatted = Joiner.on('\n').join(instructions);
+      String actual = actual().trace().trim();
+      if (actual.contains(formatted)) {
+        failWithBadResults("doesNotContainCode", formatted, "evaluates to", actual);
       }
       return this;
     }

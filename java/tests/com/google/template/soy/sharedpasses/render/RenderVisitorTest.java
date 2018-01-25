@@ -227,7 +227,7 @@ public class RenderVisitorTest {
               + "\n result was:\n"
               + result);
     } catch (RenderException e) {
-      assertThat(e.getMessage()).contains(errorMessage);
+      assertThat(e).hasMessageThat().contains(errorMessage);
     }
   }
 

@@ -18,8 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -58,15 +56,15 @@ public class KeysFunctionTest {
             "boo", "bar", "foo", 2, "goo", SoyValueConverterUtility.newDict("moo", 4));
     SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
 
-    assertTrue(result instanceof SoyList);
+    assertThat(result).isInstanceOf(SoyList.class);
     SoyList resultAsList = (SoyList) result;
-    assertEquals(3, resultAsList.length());
+    assertThat(resultAsList.length()).isEqualTo(3);
 
     Set<String> resultItems = Sets.newHashSet();
     for (SoyValueProvider itemProvider : resultAsList.asJavaList()) {
       resultItems.add(itemProvider.resolve().stringValue());
     }
-    assertEquals(Sets.newHashSet("boo", "foo", "goo"), resultItems);
+    assertThat(resultItems).containsExactly("boo", "foo", "goo");
   }
 
   @Test
@@ -103,9 +101,8 @@ public class KeysFunctionTest {
   public void testComputeForJsSrc() {
     KeysFunction keysFunction = new KeysFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("soy.$$getMapKeys(JS_CODE)", Integer.MAX_VALUE),
-        keysFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertThat(keysFunction.computeForJsSrc(ImmutableList.of(expr)))
+        .isEqualTo(new JsExpr("soy.$$getMapKeys(JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

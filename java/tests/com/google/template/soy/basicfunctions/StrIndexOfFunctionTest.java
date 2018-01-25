@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -45,7 +44,8 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("bar");
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(3));
   }
 
   @Test
@@ -53,7 +53,8 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(3));
   }
 
   @Test
@@ -61,7 +62,8 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("baz");
-    assertEquals(IntegerData.forValue(-1), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(-1));
   }
 
   @Test
@@ -69,7 +71,8 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
-    assertEquals(IntegerData.forValue(-1), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(-1));
   }
 
   @Test
@@ -77,9 +80,9 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE),
-        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(
+            new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE));
   }
 
   @Test
@@ -87,9 +90,8 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE),
-        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE));
   }
 
   @Test

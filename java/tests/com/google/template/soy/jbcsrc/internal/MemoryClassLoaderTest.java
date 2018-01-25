@@ -19,8 +19,6 @@ package com.google.template.soy.jbcsrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.FALSE;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.TRUE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
@@ -46,7 +44,7 @@ public class MemoryClassLoaderTest {
   @Test
   public void testCollectable() {
     BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
-    assertFalse(invoker.invoke()); // sanity, the invoker works
+    assertThat(invoker.invoke()).isFalse(); // sanity, the invoker works
     MemoryClassLoader loader = (MemoryClassLoader) invoker.getClass().getClassLoader();
     WeakReference<MemoryClassLoader> loaderRef = new WeakReference<MemoryClassLoader>(loader);
     invoker = null; // unpin
@@ -65,7 +63,7 @@ public class MemoryClassLoaderTest {
                 .getResourceAsStream(invoker.getClass().getName().replace('.', '/') + ".class"));
     ClassNode node = new ClassNode();
     new ClassReader(classBytes).accept(node, 0);
-    assertEquals(Type.getInternalName(invoker.getClass()), node.name);
+    assertThat(node.name).isEqualTo(Type.getInternalName(invoker.getClass()));
   }
 
   @Test
@@ -75,7 +73,7 @@ public class MemoryClassLoaderTest {
     ClassData parentClass = ExpressionTester.createClass(BooleanInvoker.class, FALSE);
     ClassData childClass = ExpressionTester.createClass(BooleanInvoker.class, TRUE);
     // sanity check,  they have the same fully qualified class name
-    assertEquals(childClass.type(), parentClass.type());
+    assertThat(parentClass.type()).isEqualTo(childClass.type());
     TypeInfo type = childClass.type();
 
     MemoryClassLoader parentLoader = new MemoryClassLoader(ImmutableList.of(parentClass));

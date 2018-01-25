@@ -19,7 +19,6 @@ package com.google.template.soy.base.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import java.util.Arrays;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,8 +49,7 @@ public final class SanitizedContentKindTest {
   public void testGetAttributeValues() {
     Set<String> attributeValues = SanitizedContentKind.attributeValues();
     assertThat(attributeValues)
-        .containsExactlyElementsIn(
-            Arrays.asList("attributes", "css", "html", "js", "text", "trusted_resource_uri", "uri"))
+        .containsExactly("attributes", "css", "html", "js", "text", "trusted_resource_uri", "uri")
         .inOrder();
   }
 }

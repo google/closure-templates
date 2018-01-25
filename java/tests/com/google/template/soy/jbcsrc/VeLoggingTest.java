@@ -17,7 +17,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
-import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -197,7 +196,7 @@ public final class VeLoggingTest {
             + "{velog Foo logonly=\"true\"}<div data-id=1>"
             + "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}"
             + "</div>{/velog}</div>{/velog}</div>{/velog}");
-    assertThat(sb.toString()).isEqualTo("");
+    assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString())
         .isEqualTo(
             "velog{id=1, logonly}\n"
@@ -229,7 +228,7 @@ public final class VeLoggingTest {
         "{let $html kind=\"html\"}{velog Foo}<div data-depth={depth()}></div>{/velog}{/let}"
             + "<script>{$html}</script>");
     // nothing is logged because no elements were rendered
-    assertThat(testLogger.builder.toString()).isEqualTo("");
+    assertThat(testLogger.builder.toString()).isEmpty();
     // everything is escaped, and the placeholder is used instead of a 'real value'
     assertThat(sb.toString()).contains("depth_placeholder");
   }
@@ -269,6 +268,6 @@ public final class VeLoggingTest {
             .getTemplateFactory("ns.foo")
             .create(TemplateTester.asRecord(params), EMPTY_DICT)
             .render(output, ctx);
-    assertEquals(RenderResult.done(), result);
+    assertThat(result).isEqualTo(RenderResult.done());
   }
 }

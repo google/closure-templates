@@ -16,8 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
@@ -44,12 +43,12 @@ public final class PreevalVisitorTest {
   @Test
   public void testPreevalNoData() {
 
-    assertEquals(-210, preeval("-99+-111").integerValue());
-    assertEquals("-99-111", preeval("-99 + '-111'").stringValue());
-    assertEquals(false, preeval("false or 0 or 0.0 or ''").booleanValue());
-    assertEquals(true, preeval("0 <= 0").booleanValue());
-    assertEquals(true, preeval("'22' == 22").booleanValue());
-    assertEquals(true, preeval("'22' == '' + 22").booleanValue());
+    assertThat(preeval("-99+-111").integerValue()).isEqualTo(-210);
+    assertThat(preeval("-99 + '-111'").stringValue()).isEqualTo("-99-111");
+    assertThat(preeval("false or 0 or 0.0 or ''").booleanValue()).isFalse();
+    assertThat(preeval("0 <= 0").booleanValue()).isTrue();
+    assertThat(preeval("'22' == 22").booleanValue()).isTrue();
+    assertThat(preeval("'22' == '' + 22").booleanValue()).isTrue();
 
     // With functions.
     // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
@@ -61,17 +60,17 @@ public final class PreevalVisitorTest {
       preeval("randomInt(1000)");
       fail();
     } catch (RenderException re) {
-      assertTrue(re.getMessage().equals("Cannot preevaluate impure function."));
+      assertThat(re).hasMessageThat().isEqualTo("Cannot preevaluate impure function.");
     }
   }
 
   @Test
   public void testPreevalWithData() {
 
-    assertEquals(8, preeval("$boo", "boo").integerValue());
-    assertEquals(2, preeval("$boo % 3", "boo").integerValue());
-    assertEquals(2, preeval("not $boo ? 1 : 2", "boo").integerValue());
-    assertEquals("8", preeval("$boo + ''", "boo").stringValue());
+    assertThat(preeval("$boo", "boo").integerValue()).isEqualTo(8);
+    assertThat(preeval("$boo % 3", "boo").integerValue()).isEqualTo(2);
+    assertThat(preeval("not $boo ? 1 : 2", "boo").integerValue()).isEqualTo(2);
+    assertThat(preeval("$boo + ''", "boo").stringValue()).isEqualTo("8");
 
     // With functions.
     // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.

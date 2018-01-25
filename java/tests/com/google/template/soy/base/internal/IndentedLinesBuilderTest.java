@@ -16,7 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,9 +42,9 @@ public final class IndentedLinesBuilderTest {
     ilb.sb().append("Line 4 not indented\n");
     ilb.appendLine("Line 5");
 
-    assertEquals(2, ilb.getIndentIncrementLen());
-    assertEquals(4, ilb.getCurrIndentLen());
-    assertEquals(
-        "Line 1\n  Line 2\n      Line 3\nLine 4 not indented\n    Line 5\n", ilb.toString());
+    assertThat(ilb.getIndentIncrementLen()).isEqualTo(2);
+    assertThat(ilb.getCurrIndentLen()).isEqualTo(4);
+    assertThat(ilb.toString())
+        .isEqualTo("Line 1\n  Line 2\n      Line 3\nLine 4 not indented\n    Line 5\n");
   }
 }

@@ -230,7 +230,7 @@ public class EvalVisitorTest {
 
     } catch (RenderException re) {
       if (errorMsgSubstring != null) {
-        assertThat(re.getMessage()).contains(errorMsgSubstring);
+        assertThat(re).hasMessageThat().contains(errorMsgSubstring);
       }
       // Test passes.
     }
@@ -251,7 +251,7 @@ public class EvalVisitorTest {
 
     } catch (SoyDataException e) {
       if (errorMsgSubstring != null) {
-        assertThat(e.getMessage()).contains(errorMsgSubstring);
+        assertThat(e).hasMessageThat().contains(errorMsgSubstring);
       }
       // Test passes.
     }
