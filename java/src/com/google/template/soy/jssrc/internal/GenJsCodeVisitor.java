@@ -847,7 +847,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return CodeChunk.statements(paramDeclarations, bodyAndReturn);
   }
 
-  private CodeChunk.WithValue sanitize(
+  protected final CodeChunk.WithValue sanitize(
       CodeChunk.WithValue templateBody, @Nullable SanitizedContentKind contentKind) {
     if (contentKind != null) {
       // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:

@@ -108,7 +108,8 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
               nodeIdGen.genId(),
               getSourceLocation(),
               ImmutableList.<ExprNode>of(),
-              escapingDirective);
+              escapingDirective,
+              /* isSynthetic= */ true);
       printNode.addChild(printDirectiveNode);
     }
     return printNode;

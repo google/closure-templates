@@ -103,6 +103,9 @@ public class IncrementalDomSrcMain {
 
       new UnescapingVisitor().exec(soyTree);
 
+      // must run before the ExtractMsgVariablesVisitor so that when it transforms the msg to a
+      // print node, the right set of escaping modes are preserved.
+      new RemoveUnnecessaryEscapingDirectives().run(soyTree);
       // Must happen after HtmlContextVisitor, so it can infer context for {msg} nodes.
       new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
       // some of the above passes may slice up raw text nodes, recombine them.
