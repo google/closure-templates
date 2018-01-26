@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -167,21 +165,6 @@ public abstract class CodeChunk {
     escaped = escaped.replace("</script", "<\\/script");
 
     return Leaf.create(escaped, /* isCheap= */ true);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript regular expression literal.
-   *
-   * @param contents The regex literal (including the opening and closing slashes).
-   */
-  public static WithValue regexLiteral(String contents) {
-    int firstSlash = contents.indexOf('/');
-    int lastSlash = contents.lastIndexOf('/');
-    checkArgument(
-        firstSlash < lastSlash && firstSlash != -1,
-        "expected regex to start with a '/' and have a second '/' near the end, got %s",
-        contents);
-    return Leaf.create(contents, /* isCheap= */ false);
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
@@ -561,45 +544,23 @@ public abstract class CodeChunk {
   }
 
   /**
-   * {@link #doFormatInitialStatements} and {@link CodeChunk.WithValue#doFormatOutputExpr} are the
-   * main methods subclasses should override to control their formatting. Subclasses should only
-   * override this method in the special case that a code chunk needs to control its formatting when
-   * it is the only chunk being serialized. TODO(brndn): only one override, can probably be declared
-   * final.
+   * Returns a sequence of JavaScript statements suitable for inserting into JS code
+   * that is not managed by the CodeChunk DSL. The string is guaranteed to end in a newline.
    *
-   * @param startingIndent The indent level of the foreign code into which this code will be
-   *     inserted. This doesn't affect the correctness of the composed code, only its readability.
-   */
-  @ForOverride
-  String getCode(int startingIndent) {
-    FormattingContext initialStatements = new FormattingContext(startingIndent);
-    initialStatements.appendInitialStatements(this);
-
-    FormattingContext outputExprs = new FormattingContext(startingIndent);
-    if (this instanceof WithValue) {
-      outputExprs.appendOutputExpression((WithValue) this);
-      outputExprs.append(';').endLine();
-    }
-
-    return initialStatements.concat(outputExprs).toString();
-  }
-
-  /**
-   * Returns a sequence of JavaScript statements suitable for inserting into JS code that is not
-   * managed by the CodeChunk DSL. The string is guaranteed to end in a newline.
-   *
-   * <p>Callers should use {@link #getCode()} when the CodeChunk DSL is managing the entire code
-   * generation. getCode may drop variable declarations if there is no other code referencing those
-   * variables.
+   * <p>Callers should use {@link #getCode()} when the CodeChunk DSL is managing the entire
+   * code generation. getCode may drop variable declarations if there is no other code referencing
+   * those variables.
    *
    * <p>By contrast, this method is provided for incremental migration to the CodeChunk DSL.
    * Variable declarations will not be dropped, since there may be gencode not managed by the
    * CodeChunk DSL that references them.
    *
-   * <p>TODO(b/33382980): remove.
+   * TODO(user): remove.
    *
-   * @param startingIndent The indent level of the foreign code into which this code will be
-   *     inserted. This doesn't affect the correctness of the composed code, only its readability.
+   * @param startingIndent The indent level of the foreign code into which this code
+   *     will be inserted. This doesn't affect the correctness of the composed code,
+   *     only its readability.
+   *
    */
   public final String getStatementsForInsertingIntoForeignCodeAtIndent(int startingIndent) {
     String code = getCode(startingIndent);
@@ -648,6 +609,30 @@ public abstract class CodeChunk {
     }
     collectRequires(collector);
     return withValue.singleExprOrName();
+  }
+
+  /**
+   * {@link #doFormatInitialStatements} and {@link CodeChunk.WithValue#doFormatOutputExpr} are the
+   * main methods subclasses should override to control their formatting. Subclasses should only
+   * override this method in the special case that a code chunk needs to control its formatting when
+   * it is the only chunk being serialized. TODO(brndn): only one override, can probably be declared
+   * final.
+   *
+   * @param startingIndent The indent level of the foreign code into which this code will be
+   *     inserted. This doesn't affect the correctness of the composed code, only its readability.
+   */
+  @ForOverride
+  String getCode(int startingIndent) {
+    FormattingContext initialStatements = new FormattingContext(startingIndent);
+    initialStatements.appendInitialStatements(this);
+
+    FormattingContext outputExprs = new FormattingContext(startingIndent);
+    if (this instanceof WithValue) {
+      outputExprs.appendOutputExpression((WithValue) this);
+      outputExprs.append(';').endLine();
+    }
+
+    return initialStatements.concat(outputExprs).toString();
   }
 
   /**

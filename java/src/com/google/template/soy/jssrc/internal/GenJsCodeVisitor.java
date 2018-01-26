@@ -230,14 +230,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     visit(node);
   }
 
-  /**
-   * This method must only be called by assistant visitors, in particular
-   * GenJsCodeVisitorAssistantForMsgs.
-   */
-  public CodeChunk visitForUseByAssistantsAsCodeChunk(SoyNode node) {
-    return doVisitReturningCodeChunk(node, false);
-  }
-
   /** TODO: tests should use {@link #gen} instead. */
   @VisibleForTesting
   void visitForTesting(SoyNode node, TemplateRegistry registry, ErrorReporter errorReporter) {
@@ -262,7 +254,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // is preferable to
     // output += 'a';
     // output += 'b';
-    // This is because it is actually easier for the jscompiler to optimize.
 
     List<CodeChunk.WithValue> consecChunks = new ArrayList<>();
 
@@ -889,11 +880,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    // TODO(b/33382980): This is not ideal and leads to less than optimal code generation.
-    // ideally genJsExprsVisitor could be used here, but it doesn't work due to the way we need
-    // to handle placeholder generation.
-    CodeChunk.WithValue msgVar = getAssistantForMsgs().generateMsgGroupVariable(node);
-    getJsCodeBuilder().addChunkToOutputVar(msgVar);
+    throw new AssertionError("Inconceivable! LetContentNode should catch this directly.");
   }
 
   @Override
@@ -953,6 +940,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitLetContentNode(LetContentNode node) {
+    // Optimization: {msg} nodes emit statements and result in a JsExpr with a single variable.  Use
+    // that variable (typically the MSG_* from getMsg) as-is instead of wrapping a new var around it
+    if (node.getChildren().size() == 1 && node.getChild(0) instanceof MsgFallbackGroupNode) {
+      String msgVar =
+          getAssistantForMsgs().generateMsgGroupVariable((MsgFallbackGroupNode) node.getChild(0));
+      templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), id(msgVar));
+      return;
+    }
+
     String generatedVarName = node.getUniqueVarName();
     CodeChunk.WithValue generatedVar = id(generatedVarName);
 

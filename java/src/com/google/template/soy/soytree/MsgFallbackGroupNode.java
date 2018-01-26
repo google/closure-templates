@@ -21,7 +21,12 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -83,6 +88,31 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
 
   public void setHtmlContext(HtmlContext value) {
     this.htmlContext = value;
+  }
+
+  /** Creates a print node that corresponds to this node, for tree rewriting. */
+  public PrintNode makePrintNode(IdGenerator nodeIdGen, VarDefn var) {
+    PrintNode printNode =
+        new PrintNode(
+            nodeIdGen.genId(),
+            getSourceLocation(),
+            /* isImplicit= */ true,
+            new VarRefNode(var.name(), getSourceLocation(), false /* not ij */, var),
+            /* attributes= */ ImmutableList.of(),
+            ErrorReporter.exploding());
+    printNode.setHtmlContext(htmlContext);
+
+    for (SoyPrintDirective escapingDirective : getEscapingDirectives()) {
+      PrintDirectiveNode printDirectiveNode =
+          new PrintDirectiveNode(
+              nodeIdGen.genId(),
+              getSourceLocation(),
+              ImmutableList.<ExprNode>of(),
+              escapingDirective,
+              /* isSynthetic= */ true);
+      printNode.addChild(printDirectiveNode);
+    }
+    return printNode;
   }
 
   @Override

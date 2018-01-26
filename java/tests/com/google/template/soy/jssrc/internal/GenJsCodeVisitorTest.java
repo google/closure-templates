@@ -2628,6 +2628,7 @@ public final class GenJsCodeVisitorTest {
             .errorReporter(errorReporter)
             .allowUnboundGlobals(true)
             .parse();
+    new ExtractMsgVariablesVisitor().exec(parseResult.fileSet());
     if (errorReporter.errorsSince(checkPoint)) {
       return null;
     }

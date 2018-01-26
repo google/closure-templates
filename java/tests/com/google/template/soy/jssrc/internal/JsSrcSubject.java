@@ -171,6 +171,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     }
     ParseResult parse = builder.parse();
     // genjscodevisitor depends on this having been run
+    new ExtractMsgVariablesVisitor().exec(parse.fileSet());
     return parse;
   }
 
