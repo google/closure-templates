@@ -104,8 +104,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
               nodeIdGen.genId(),
               node.getSourceLocation(),
               ImmutableList.<ExprNode>of(),
-              new EscapeHtmlDirective(),
-              /* isSynthetic= */ true);
+              new EscapeHtmlDirective());
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

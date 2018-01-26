@@ -41,22 +41,14 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
 
-  /**
-   * This means that the directive was inserted by the compiler, typically the autoescaper.
-   * Otherwise it means that a user wrote it.
-   */
-  private final boolean isSynthetic;
-
   public PrintDirectiveNode(
       int id,
       SourceLocation location,
       ImmutableList<ExprNode> args,
-      SoyPrintDirective printDirective,
-      boolean isSynthetic) {
+      SoyPrintDirective printDirective) {
     super(id, location);
     this.args = ExprRootNode.wrap(args);
     this.printDirective = checkNotNull(printDirective);
-    this.isSynthetic = isSynthetic;
   }
 
   /**
@@ -72,7 +64,6 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     }
     this.args = ImmutableList.copyOf(tempArgs);
     this.printDirective = orig.printDirective;
-    this.isSynthetic = orig.isSynthetic;
   }
 
   @Override
@@ -83,11 +74,6 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   /** Returns the directive name (including vertical bar). */
   public String getName() {
     return printDirective.getName();
-  }
-
-  /** Returns true if this node was inserted by the autoescaper. */
-  public boolean isSynthetic() {
-    return isSynthetic;
   }
 
   /** The parsed args. */

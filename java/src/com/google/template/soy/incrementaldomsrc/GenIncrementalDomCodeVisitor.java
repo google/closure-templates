@@ -56,7 +56,6 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
-import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
@@ -169,12 +168,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected String getTemplateReturnType(TemplateNode node) {
-    if (isTextContent(node.getContentKind())) {
-      return super.getTemplateReturnType(node);
+    // TODO(sparhami) need to deal with URI types properly (like the JS code gen does) so that the
+    // usage is safe. For now, don't include any return type so compilation will fail if someone
+    // tries to create a template of kind="uri".
+    if (node.getContentKind() == SanitizedContentKind.TEXT) {
+      return "string";
     }
 
-    // This template does not return any content but rather contains Incremental DOM
-    // instructions.
+    // This template does not return any content but rather contains Incremental DOM instructions.
     return "void";
   }
 
@@ -203,10 +204,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (isTextTemplate) {
       VariableDeclaration declare =
           VariableDeclaration.builder("output").setRhs(LITERAL_EMPTY_STRING).build();
+      body = CodeChunk.statements(declare, body, return_(declare.ref()));
       jsCodeBuilder.popOutputVar();
-      body =
-          CodeChunk.statements(
-              declare, body, return_(sanitize(declare.ref(), node.getContentKind())));
     }
     return CodeChunk.statements(typeChecks, body);
   }
@@ -229,46 +228,40 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * other kinds of let statements are generated as a simple variable.
    */
   private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
-    // The html transform step, performed by HTMLTransformVisitor, ensures that
-    // we always have a content kind specified.
-    Preconditions.checkState(node.getContentKind() != null);
-
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
 
+    // We do our own initialization, so mark it as such.
+    jsCodeBuilder.pushOutputVar(generatedVarName).setOutputVarInited();
     jsCodeBuilder.setContentKind(node.getContentKind());
 
+    // The html transform step, performed by HTMLTransformVisitor, ensures that
+    // we always have a content kind specified.
+    Preconditions.checkState(node.getContentKind() != null);
+    VariableDeclaration declaration;
     CodeChunk definition;
+    CodeChunk children = visitChildrenReturningCodeChunk(node);
     switch (node.getContentKind()) {
       case HTML:
       case ATTRIBUTES:
-        definition =
+        declaration =
             VariableDeclaration.builder(generatedVarName)
-                .setRhs(
-                    CodeChunk.function(
-                        ImmutableList.<String>of(), visitChildrenReturningCodeChunk(node)))
+                .setRhs(CodeChunk.function(ImmutableList.<String>of(), children))
                 .build();
+        definition = declaration;
         break;
       default:
-        // We do our own initialization, so mark it as such.
-        String outputVarName = generatedVarName + "_output";
-        jsCodeBuilder.pushOutputVar(outputVarName).setOutputVarInited();
-
-        definition =
-            CodeChunk.statements(
-                VariableDeclaration.builder(outputVarName).setRhs(LITERAL_EMPTY_STRING).build(),
-                visitChildrenReturningCodeChunk(node),
-                VariableDeclaration.builder(generatedVarName)
-                    .setRhs(
-                        JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
-                                node.getContentKind())
-                            .call(id(outputVarName)))
-                    .build());
-        jsCodeBuilder.popOutputVar();
+        // N.B. because incrementaldomsrc doesn't run the autoescaper, the normal |text directives
+        // are not inserted and so we can't rely on non string expressions being coerced to strings
+        // so we must start the output var off with a string.
+        declaration =
+            VariableDeclaration.builder(generatedVarName).setRhs(LITERAL_EMPTY_STRING).build();
+        definition = CodeChunk.statements(declaration, children);
         break;
     }
 
     jsCodeBuilder.setContentKind(prevContentKind);
+    jsCodeBuilder.popOutputVar();
     jsCodeBuilder.append(definition);
   }
 
@@ -419,7 +412,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsCodeBuilder.append(
           INCREMENTAL_DOM_ATTR.call(
               stringLiteral(attrName.getRawText()),
-              CodeChunkUtils.concatChunksForceString(getAttributeValues(node))));
+              CodeChunkUtils.concatChunks(getAttributeValues(node))));
     } else {
       visitChildren(node); // visit dynamic children
     }
@@ -633,7 +626,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitPrintNode(PrintNode node) {
     ExprNode firstNode = node.getExpr().getRoot();
 
-    // TODO(b/71896143): directives are not handled correctly in the html_tag case.
+    // TODO(sparhami): Raise an error if there are any directives.
     switch (node.getHtmlContext()) {
       case HTML_TAG:
         if (tryGenerateFunctionCall(SoyType.Kind.ATTRIBUTES, firstNode)

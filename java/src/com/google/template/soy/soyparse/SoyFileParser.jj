@@ -2423,8 +2423,7 @@ private PrintDirectiveNode PrintDirective() :
         nodeIdGen.genId(),
         loc,
         args,
-        pluginResolver.lookupPrintDirective(name, args.size(), loc),
-        /* isSynthetic= */ false);
+        pluginResolver.lookupPrintDirective(name, args.size(), loc));
   }
 }
 
