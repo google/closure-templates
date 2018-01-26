@@ -86,6 +86,7 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -129,6 +130,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyRecord ijData,
         @Nullable SoyCssRenamingMap cssRenamingMap,
         @Nullable SoyIdRenamingMap xidRenamingMap,
+        @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo);
   }
 
@@ -137,6 +139,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   /** The current injected data. */
   @Nullable private final SoyRecord ijData;
+
+  @Nullable private final SoyMsgBundle msgBundle;
 
   /** The current CSS renaming map. */
   private final SoyCssRenamingMap cssRenamingMap;
@@ -156,9 +160,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo) {
     this.env = checkNotNull(env);
     this.ijData = ijData;
+    this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
@@ -610,12 +616,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
+        case IS_PRIMARY_MSG_IN_USE:
+          return visitIsPrimaryMsgInUseFunction(node);
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");
-        default:
+        case MSG_ID:
+        case REMAINDER:
+          // should have been removed earlier in the compiler
           throw new AssertionError();
       }
+      throw new AssertionError();
     } else if (soyFunction instanceof SoyJavaFunction) {
       List<SoyValue> args = this.visitChildren(node);
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
@@ -746,6 +757,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
   }
 
+  private SoyValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {
+    if (msgBundle == null) {
+      return BooleanData.TRUE;
+    }
+    // if the primary message id is available or the fallback message is not available, then we
+    // are using the primary message.
+    long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
+    if (!msgBundle.getMsgParts(primaryMsgId).isEmpty()) {
+      return BooleanData.TRUE;
+    }
+    long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+    return BooleanData.forValue(msgBundle.getMsgParts(fallbackMsgId).isEmpty());
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Private helpers.

@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -42,7 +43,9 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo) {
-    return new EvalVisitor(env, ijData, cssRenamingMap, xidRenamingMap, debugSoyTemplateInfo);
+    return new EvalVisitor(
+        env, ijData, cssRenamingMap, xidRenamingMap, msgBundle, debugSoyTemplateInfo);
   }
 }

@@ -47,6 +47,7 @@ final class PreevalVisitor extends EvalVisitor {
         /* ijData= */ null,
         /* cssRenamingMap= */ null,
         /* xidRenamingMap= */ null,
+        /* msgBundle= */ null,
         /* debugSoyTemplateInfo= */ false);
   }
 

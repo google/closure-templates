@@ -114,7 +114,9 @@ public final class PassManager {
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            .add(new ResolveNamesPass());
+            .add(new ResolveNamesPass())
+            .add(new CheckNonEmptyMsgNodesPass(errorReporter))
+            .add(new MsgIdFunctionPass(errorReporter));
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
@@ -129,8 +131,6 @@ public final class PassManager {
     }
     singleFilePassesBuilder
         .add(new ValidateAliasesPass(registry, errorReporter, options))
-        // could run anywhere
-        .add(new CheckNonEmptyMsgNodesPass(errorReporter))
         .add(new CheckSyntaxVersionPass());
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
