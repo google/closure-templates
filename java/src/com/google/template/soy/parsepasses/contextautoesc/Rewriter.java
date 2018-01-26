@@ -106,7 +106,8 @@ final class Rewriter {
                 inferences.getIdGenerator().genId(),
                 printNode.getSourceLocation(),
                 ImmutableList.<ExprNode>of(),
-                printDirectives.get(escapingMode.directiveName));
+                printDirectives.get(escapingMode.directiveName),
+                /* isSynthetic= */ true);
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
         // but if there are SanitizedContentOperators at the end, then make sure that their input

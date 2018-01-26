@@ -56,6 +56,7 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
+import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
@@ -78,7 +79,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SoyType;
@@ -168,14 +168,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected String getTemplateReturnType(TemplateNode node) {
-    // TODO(sparhami) need to deal with URI types properly (like the JS code gen does) so that the
-    // usage is safe. For now, don't include any return type so compilation will fail if someone
-    // tries to create a template of kind="uri".
-    if (node.getContentKind() == SanitizedContentKind.TEXT) {
-      return "string";
+    if (isTextContent(node.getContentKind())) {
+      return super.getTemplateReturnType(node);
     }
 
-    // This template does not return any content but rather contains Incremental DOM instructions.
+    // This template does not return any content but rather contains Incremental DOM
+    // instructions.
     return "void";
   }
 
@@ -204,8 +202,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (isTextTemplate) {
       VariableDeclaration declare =
           VariableDeclaration.builder("output").setRhs(LITERAL_EMPTY_STRING).build();
-      body = CodeChunk.statements(declare, body, return_(declare.ref()));
       jsCodeBuilder.popOutputVar();
+      body =
+          CodeChunk.statements(
+              declare, body, return_(sanitize(declare.ref(), node.getContentKind())));
     }
     return CodeChunk.statements(typeChecks, body);
   }
@@ -228,40 +228,46 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * other kinds of let statements are generated as a simple variable.
    */
   private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
-
-    // We do our own initialization, so mark it as such.
-    jsCodeBuilder.pushOutputVar(generatedVarName).setOutputVarInited();
-    jsCodeBuilder.setContentKind(node.getContentKind());
-
     // The html transform step, performed by HTMLTransformVisitor, ensures that
     // we always have a content kind specified.
     Preconditions.checkState(node.getContentKind() != null);
-    VariableDeclaration declaration;
+
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
+
+    jsCodeBuilder.setContentKind(node.getContentKind());
+
     CodeChunk definition;
-    CodeChunk children = visitChildrenReturningCodeChunk(node);
     switch (node.getContentKind()) {
       case HTML:
       case ATTRIBUTES:
-        declaration =
+        definition =
             VariableDeclaration.builder(generatedVarName)
-                .setRhs(CodeChunk.function(ImmutableList.<String>of(), children))
+                .setRhs(
+                    CodeChunk.function(
+                        ImmutableList.<String>of(), visitChildrenReturningCodeChunk(node)))
                 .build();
-        definition = declaration;
         break;
       default:
-        // N.B. because incrementaldomsrc doesn't run the autoescaper, the normal |text directives
-        // are not inserted and so we can't rely on non string expressions being coerced to strings
-        // so we must start the output var off with a string.
-        declaration =
-            VariableDeclaration.builder(generatedVarName).setRhs(LITERAL_EMPTY_STRING).build();
-        definition = CodeChunk.statements(declaration, children);
+        // We do our own initialization, so mark it as such.
+        String outputVarName = generatedVarName + "_output";
+        jsCodeBuilder.pushOutputVar(outputVarName).setOutputVarInited();
+
+        definition =
+            CodeChunk.statements(
+                VariableDeclaration.builder(outputVarName).setRhs(LITERAL_EMPTY_STRING).build(),
+                visitChildrenReturningCodeChunk(node),
+                VariableDeclaration.builder(generatedVarName)
+                    .setRhs(
+                        JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
+                                node.getContentKind())
+                            .call(id(outputVarName)))
+                    .build());
+        jsCodeBuilder.popOutputVar();
         break;
     }
 
     jsCodeBuilder.setContentKind(prevContentKind);
-    jsCodeBuilder.popOutputVar();
     jsCodeBuilder.append(definition);
   }
 
@@ -412,7 +418,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsCodeBuilder.append(
           INCREMENTAL_DOM_ATTR.call(
               stringLiteral(attrName.getRawText()),
-              CodeChunkUtils.concatChunks(getAttributeValues(node))));
+              CodeChunkUtils.concatChunksForceString(getAttributeValues(node))));
     } else {
       visitChildren(node); // visit dynamic children
     }
@@ -525,29 +531,22 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Nullable
   private CodeChunk.WithValue maybeGetKeyNodeValue(HtmlOpenTagNode parentNode) {
-    for (StandaloneNode childNode : parentNode.getChildren()) {
-      if (!(childNode instanceof HtmlAttributeNode)) {
-        continue;
+    // TODO(lukes): it seems like we should be able to support conditional keys
+    HtmlAttributeNode keyAttr = parentNode.getDirectAttributeNamed(KEY_ATTRIBUTE_NAME);
+    if (keyAttr != null) {
+      List<CodeChunk.WithValue> chunks = ImmutableList.of();
+      if (keyAttr.hasValue()) {
+        HtmlAttributeValueNode value = (HtmlAttributeValueNode) keyAttr.getChild(1);
+        // TODO(lukes): this limitation is arbitrary.  fix it.
+        Preconditions.checkState(
+            isComputableAsJsExprsVisitor.execOnChildren(value),
+            "Attribute values that cannot be evalutated to simple expressions is not yet"
+                + " supported  for Incremental DOM code generation");
+        chunks = genJsExprsVisitor.execOnChildren(value);
       }
-
-      HtmlAttributeNode htmlAttributeNode = (HtmlAttributeNode) childNode;
-      if (htmlAttributeNode.definitelyMatchesAttributeName(KEY_ATTRIBUTE_NAME)) {
-        List<CodeChunk.WithValue> chunks = ImmutableList.of();
-        if (htmlAttributeNode.hasValue()) {
-          // TODO(lukes): add a dedicated method for this to HtmlAttributeNode?  if there is a value
-          // it should _always_ be an HtmlAttributeValueNode
-          HtmlAttributeValueNode value = (HtmlAttributeValueNode) htmlAttributeNode.getChild(1);
-          Preconditions.checkState(
-              isComputableAsJsExprsVisitor.execOnChildren(value),
-              "Attribute values that cannot be evalutated to simple expressions is not yet"
-                  + " supported  for Incremental DOM code generation");
-          chunks = genJsExprsVisitor.execOnChildren(value);
-        }
-
-        // OK to use concatChunks() instead of concatChunksForceString(), children are guaranteed
-        // to be string (RawTextNode or PrintNode)
-        return CodeChunkUtils.concatChunks(chunks);
-      }
+      // OK to use concatChunks() instead of concatChunksForceString(), children are guaranteed
+      // to be string (RawTextNode or PrintNode)
+      return CodeChunkUtils.concatChunksForceString(chunks);
     }
     return null;
   }
@@ -626,7 +625,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitPrintNode(PrintNode node) {
     ExprNode firstNode = node.getExpr().getRoot();
 
-    // TODO(sparhami): Raise an error if there are any directives.
+    // TODO(b/71896143): directives are not handled correctly in the html_tag case.
     switch (node.getHtmlContext()) {
       case HTML_TAG:
         if (tryGenerateFunctionCall(SoyType.Kind.ATTRIBUTES, firstNode)
