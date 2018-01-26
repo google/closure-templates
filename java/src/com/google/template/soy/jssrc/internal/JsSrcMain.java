@@ -113,7 +113,7 @@ public class JsSrcMain {
         Preconditions.checkState(
             bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
-        new InsertMsgsVisitor(msgBundle, errorReporter).insertMsgs(soyTree);
+        new InsertMsgsVisitor(msgBundle, errorReporter).exec(soyTree);
       }
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);

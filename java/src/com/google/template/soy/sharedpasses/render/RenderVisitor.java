@@ -745,7 +745,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (evalVisitor == null) {
       evalVisitor =
           evalVisitorFactory.create(
-              env, ijData, cssRenamingMap, xidRenamingMap, msgBundle, debugSoyTemplateInfo);
+              env, ijData, cssRenamingMap, xidRenamingMap, debugSoyTemplateInfo);
     }
 
     try {

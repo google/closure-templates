@@ -168,9 +168,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     String tmpVarName = translationContext.nameGenerator().generateName("msg_s");
     CodeChunk.WithValue msg;
     if (node.numChildren() == 1) {
-      translationContext
-          .soyToJsVariableMappings()
-          .setIsPrimaryMsgInUse(node, CodeChunk.WithValue.LITERAL_TRUE);
       msg = generateSingleMsgVariable(node.getChild(0), tmpVarName);
     } else { // has fallbackmsg children
       msg = generateMsgGroupVariable(node, tmpVarName);
@@ -236,14 +233,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
                     .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
             .build()
             .ref();
-
-    // We use id() here instead of using the corresponding code chunks because the stupid
-    // jscodebuilder system causes us to regenerate the msg vars multiple times because it doesn't
-    // detect that they were already generated.
-    // TODO(b/33382980): clean this up
-    CodeChunk.WithValue isPrimaryMsgInUse =
-        CodeChunk.id(tmpVarName).doubleEquals(CodeChunk.id(primaryCodeGenInfo.googMsgVarName));
-    translationContext.soyToJsVariableMappings().setIsPrimaryMsgInUse(node, isPrimaryMsgInUse);
     if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
       // all placeholders have already been substituted, just return
       return selectedMsg;
@@ -328,14 +317,13 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       builder.setRhs(GOOG_GET_MSG.call(googMsgContent));
       return new GoogMsgCodeGenInfo(
           builder.build().ref(),
-          googMsgVarName,
           msgNode.isPlrselMsg()
               ? placeholderInfo.pluralsAndSelects.putAll(placeholderInfo.placeholders).build()
               : null);
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
       builder.setRhs(GOOG_GET_MSG.call(googMsgContent, placeholderInfo.placeholders.build()));
-      return new GoogMsgCodeGenInfo(builder.build().ref(), googMsgVarName, null);
+      return new GoogMsgCodeGenInfo(builder.build().ref(), null);
     }
   }
 
@@ -399,12 +387,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
      */
     @Nullable final CodeChunk.WithValue placeholders;
 
-    final String googMsgVarName;
-
-    GoogMsgCodeGenInfo(
-        CodeChunk.WithValue googMsgVar, String varName, CodeChunk.WithValue placeholders) {
+    GoogMsgCodeGenInfo(CodeChunk.WithValue googMsgVar, CodeChunk.WithValue placeholders) {
       this.googMsgVar = googMsgVar;
-      this.googMsgVarName = varName;
       this.placeholders = placeholders;
     }
   }

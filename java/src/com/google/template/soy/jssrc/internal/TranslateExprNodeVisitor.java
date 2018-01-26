@@ -91,9 +91,6 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.UnionType;
@@ -661,15 +658,9 @@ public class TranslateExprNodeVisitor
           return visitXidFunction(node);
         case V1_EXPRESSION:
           return visitV1ExpressionFunction(node);
-        case IS_PRIMARY_MSG_IN_USE:
-          return visitIsPrimaryMsgInUseFunction(node);
-        case REMAINDER:
-        case MSG_ID:
-          // should have been removed earlier in the compiler
+        default:
           throw new AssertionError();
       }
-      throw new AssertionError();
-
     } else if (soyFunction instanceof LoggingFunction) {
       return stringLiteral(((LoggingFunction) soyFunction).getPlaceholder());
     } else {
@@ -736,19 +727,6 @@ public class TranslateExprNodeVisitor
 
   private CodeChunk.WithValue visitXidFunction(FunctionNode node) {
     return XID.call(visitChildren(node));
-  }
-
-  private CodeChunk.WithValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {
-    // we need to find the msgfallbackgroupnode that we are referring to.  It is a bit tedious to
-    // navigate the AST, but we know that all these checks will succeed because it is validated by
-    // the MsgIdFunctionPass
-    MsgFallbackGroupNode msgNode =
-        (MsgFallbackGroupNode)
-            ((LetContentNode)
-                    ((LocalVar) ((VarRefNode) node.getChild(0)).getDefnDecl()).declaringNode())
-                .getChild(0);
-
-    return variableMappings.isPrimaryMsgInUse(msgNode);
   }
 
   private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {

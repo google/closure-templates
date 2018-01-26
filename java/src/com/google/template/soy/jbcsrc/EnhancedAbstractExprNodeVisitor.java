@@ -97,13 +97,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
-        case IS_PRIMARY_MSG_IN_USE:
-          return visitIsPrimaryMsgInUse(node);
-        case MSG_ID:
-        case REMAINDER:
-          // should have been removed earlier in the compiler
         case V1_EXPRESSION:
           // V1 expressions should not exist in jbcsrc
+          throw new AssertionError();
+        default:
           throw new AssertionError();
       }
     }
@@ -148,10 +145,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitXidFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-
-  T visitIsPrimaryMsgInUse(FunctionNode node) {
     return visitExprNode(node);
   }
 

@@ -92,7 +92,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
     IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
 
     Set<String> allParamNames = new HashSet<>();
-    List<TemplateParam> unusedParams = new ArrayList<>();
+    List<String> unusedParams = new ArrayList<>();
     for (TemplateParam param : node.getAllParams()) {
       allParamNames.add(param.name());
       if (dataKeys.containsKey(param.name())) {
@@ -108,7 +108,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
         // verify).
       } else {
         // Bad: Declared in SoyDoc but not referenced in template.
-        unusedParams.add(param);
+        unusedParams.add(param.name());
       }
     }
 
@@ -122,8 +122,8 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
     // Delegate templates can declare unused params because other implementations
     // of the same delegate may need to use those params.
     if (node instanceof TemplateBasicNode) {
-      for (TemplateParam unusedParam : unusedParams) {
-        errorReporter.report(unusedParam.nameLocation(), UNUSED_PARAM, unusedParam.name());
+      for (String unusedParam : unusedParams) {
+        errorReporter.report(node.getSourceLocation(), UNUSED_PARAM, unusedParam);
       }
     }
   }

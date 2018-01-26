@@ -1247,10 +1247,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // cleanup of all broken templates.
           node.setType(UnknownType.getInstance());
           break;
-        case IS_PRIMARY_MSG_IN_USE:
-          // don't bother checking the args, they are only ever set by the MsgIdFunctionPass
-          node.setType(BoolType.getInstance());
-          break;
         case IS_FIRST:
         case IS_LAST:
           requireLoopVariableInScope(node, arg1);
@@ -1268,8 +1264,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           checkArgIsStringLiteral(arg1, "v1Expression");
           node.setType(UnknownType.getInstance());
           break;
-        case REMAINDER:
-        case MSG_ID: // should have already been removed from the tree
+        default:
           throw new AssertionError();
       }
     }

@@ -20,9 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -33,13 +31,6 @@ import javax.annotation.Nullable;
 public final class SoyToJsVariableMappings {
   /** TODO(brndn): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
   private final Map<String, CodeChunk.WithValue> mappings;
-
-  /**
-   * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
-   * is in use.
-   */
-  private final Map<MsgFallbackGroupNode, CodeChunk.WithValue> isPrimaryMsgInUseForFallbackGroup =
-      new IdentityHashMap<>();
 
   private SoyToJsVariableMappings(
       ImmutableMap<String, ? extends CodeChunk.WithValue> initialMappings) {
@@ -69,19 +60,9 @@ public final class SoyToJsVariableMappings {
     return this;
   }
 
-  public SoyToJsVariableMappings setIsPrimaryMsgInUse(
-      MsgFallbackGroupNode msg, CodeChunk.WithValue var) {
-    isPrimaryMsgInUseForFallbackGroup.put(msg, var);
-    return this;
-  }
-
   /** Returns the JavaScript translation for the Soy variable with the given name, */
   public CodeChunk.WithValue get(String name) {
     return Preconditions.checkNotNull(mappings.get(name));
-  }
-
-  public CodeChunk.WithValue isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
-    return isPrimaryMsgInUseForFallbackGroup.get(msg);
   }
 
   /**

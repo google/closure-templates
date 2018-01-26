@@ -44,8 +44,6 @@ public enum BuiltinFunction implements SoyFunction {
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
   REMAINDER("remainder"),
-  MSG_ID("msgId"),
-  IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -90,8 +88,6 @@ public enum BuiltinFunction implements SoyFunction {
     switch (this) {
       case CSS:
         return ImmutableSet.of(1, 2);
-      case IS_PRIMARY_MSG_IN_USE:
-        return ImmutableSet.of(3);
       default:
         return ImmutableSet.of(1);
     }
