@@ -16,6 +16,7 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_OPEN;
@@ -33,7 +34,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESC
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -100,11 +100,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           "For Incremental DOM, '{print}' statements in attributes context can only be "
               + "of kind attributes (since they must compile to semantic attribute declarations)."
               + "{0} is not allowed.");
-
-  private static final SoyErrorKind PRINT_ATTR_INVALID_VALUE =
-      SoyErrorKind.of(
-          "Attribute values that cannot be evalutated to simple expressions are not yet supported "
-              + "for Incremental DOM code generation.");
 
   private static final SoyErrorKind NULL_COALESCING_NON_EMPTY =
       SoyErrorKind.of(
@@ -231,7 +226,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
     // The html transform step, performed by HTMLTransformVisitor, ensures that
     // we always have a content kind specified.
-    Preconditions.checkState(node.getContentKind() != null);
+    checkState(node.getContentKind() != null);
 
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
@@ -439,8 +434,21 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     HtmlAttributeValueNode value = (HtmlAttributeValueNode) node.getChild(1);
     if (!isComputableAsJsExprsVisitor.execOnChildren(value)) {
-      errorReporter.report(value.getSourceLocation(), PRINT_ATTR_INVALID_VALUE);
-      return ImmutableList.of();
+      String outputVar = "html_attribute_" + node.getId();
+      getJsCodeBuilder().pushOutputVar(outputVar).setOutputVarInited();
+      SanitizedContentKind prev = getJsCodeBuilder().getContentKind();
+      getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
+      CodeChunk appends = visitChildrenReturningCodeChunk(value);
+      getJsCodeBuilder().popOutputVar();
+      getJsCodeBuilder().setContentKind(prev);
+      return ImmutableList.of(
+          CodeChunk.id(outputVar)
+              .withInitialStatements(
+                  ImmutableList.<CodeChunk>of(
+                      VariableDeclaration.builder(outputVar)
+                          .setRhs(CodeChunk.LITERAL_EMPTY_STRING)
+                          .build(),
+                      appends)));
     }
 
     return genJsExprsVisitor.execOnChildren(value);
@@ -544,7 +552,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           // TODO(lukes): add a dedicated method for this to HtmlAttributeNode?  if there is a value
           // it should _always_ be an HtmlAttributeValueNode
           HtmlAttributeValueNode value = (HtmlAttributeValueNode) htmlAttributeNode.getChild(1);
-          Preconditions.checkState(
+          checkState(
               isComputableAsJsExprsVisitor.execOnChildren(value),
               "Attribute values that cannot be evalutated to simple expressions is not yet"
                   + " supported  for Incremental DOM code generation");
@@ -736,20 +744,22 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    String msgExpression;
+    CodeChunk.WithValue msgExpression;
     switch (node.getHtmlContext()) {
       case HTML_PCDATA:
-        new AssistantForHtmlMsgs(
-                this /* master */,
-                jsSrcOptions,
-                jsExprTranslator,
-                genCallCodeUtils,
-                isComputableAsJsExprsVisitor,
-                templateAliases,
-                genJsExprsVisitor,
-                templateTranslationContext,
-                errorReporter)
-            .generateMsgGroupCode(node);
+        CodeChunk chunk =
+            new AssistantForHtmlMsgs(
+                    this /* master */,
+                    jsSrcOptions,
+                    jsExprTranslator,
+                    genCallCodeUtils,
+                    isComputableAsJsExprsVisitor,
+                    templateAliases,
+                    genJsExprsVisitor,
+                    templateTranslationContext,
+                    errorReporter)
+                .generateMsgGroupCode(node);
+        getJsCodeBuilder().append(chunk);
         break;
         // Messages in attribute values are plain text. However, since the translated content
         // includes entities (because other Soy backends treat these messages as HTML source), we
@@ -767,12 +777,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     templateTranslationContext,
                     errorReporter)
                 .generateMsgGroupVariable(node);
-        getJsCodeBuilder()
-            .addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(id(msgExpression)));
+        getJsCodeBuilder().addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(msgExpression));
         break;
       default:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
-        getJsCodeBuilder().addChunkToOutputVar(id(msgExpression));
+        getJsCodeBuilder().addChunkToOutputVar(msgExpression);
         break;
     }
   }

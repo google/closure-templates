@@ -40,33 +40,25 @@ public class CanInitOutputVarVisitorTest {
 
     runTestHelper("Blah blah.", true);
 
-    runTestHelper("{msg desc=\"\"}Blah{/msg}", true, 0); // LetNode
-    runTestHelper("{msg desc=\"\"}Blah{/msg}", true, 0, 0); // MsgFallbackGroupNode
-
-    runTestHelper("{msg desc=\"\"}Blah{/msg}", true, 1); // PrintNode
-
     runTestHelper(
         "{@param url: ? }\n{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         true,
-        0,
-        0,
-        0,
+        0, // MsgFallbackGroupNode
+        0, // MsgNode
         0); // MsgHtmlTagNode
 
     runTestHelper(
         "{@param url: ? }\n{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         true,
-        0,
-        0,
-        0,
+        0, // MsgFallbackGroupNode
+        0, // MsgNode
         2); // MsgHtmlTagNode
 
     runTestHelper(
         "{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}",
         true,
-        0,
-        0,
-        0,
+        0, // MsgFallbackGroupNode
+        0, // MsgNode
         0); // MsgHtmlTagNode
 
     runTestHelper("{@param boo: ? }\n{$boo.foo}", true);
@@ -110,9 +102,10 @@ public class CanInitOutputVarVisitorTest {
                 "{@param boo : ?}",
                 "{@param moose : ?}",
                 "{call .foo data=\"$boo\"}",
-                "{param goo}{for $moo in $moose}{$moo}{/for}{/param}",
+                "  {param goo}{for $moo in $moose}{$moo}{/for}{/param}",
                 "{/call}"),
         false);
+    runTestHelper("{msg desc=\"\"}hello{/msg}", false);
   }
 
   private static void runTestHelper(
@@ -126,7 +119,6 @@ public class CanInitOutputVarVisitorTest {
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
-    new ExtractMsgVariablesVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor();

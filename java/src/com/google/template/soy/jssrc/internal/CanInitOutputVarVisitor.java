@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.SoyNode;
 
 /**
@@ -46,6 +47,12 @@ public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisit
   @Override
   protected Boolean visitCallNode(CallNode node) {
     // The call is a JS expression that returns its output as a string.
+    return true;
+  }
+
+  @Override
+  protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    // the msg is a variable that is a string (possibly with some escaping directives)
     return true;
   }
 
