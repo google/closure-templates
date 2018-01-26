@@ -69,4 +69,13 @@ public final class ValidatedLoggingConfigTest {
           .isEqualTo("Found 2 LoggableElements with the same id 1: Foo and Bar");
     }
   }
+
+  @Test
+  public void testLoggingValidation_perfectDuplicates() {
+    ValidatedLoggingConfig.create(
+        LoggingConfig.newBuilder()
+            .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
+            .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
+            .build());
+  }
 }

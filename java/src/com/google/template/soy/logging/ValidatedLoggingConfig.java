@@ -44,7 +44,8 @@ public final class ValidatedLoggingConfig {
   public static ValidatedLoggingConfig create(LoggingConfig configProto) {
     Map<String, ValidatedLoggableElement> elementsByName = new LinkedHashMap<>();
     Map<Long, ValidatedLoggableElement> elementsById = new LinkedHashMap<>();
-    for (LoggableElement element : configProto.getElementList()) {
+    // perfect duplicates are allowed, though not encouraged.
+    for (LoggableElement element : ImmutableSet.copyOf(configProto.getElementList())) {
       String name = element.getName();
       checkArgument(BaseUtils.isDottedIdentifier(name), "'%s' is not a valid identifier", name);
       ValidatedLoggableElement elementConfig = ValidatedLoggableElement.create(element);
