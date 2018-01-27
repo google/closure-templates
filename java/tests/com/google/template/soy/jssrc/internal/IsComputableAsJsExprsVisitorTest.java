@@ -40,7 +40,8 @@ public final class IsComputableAsJsExprsVisitorTest {
 
     runTestHelper("Blah blah.", true);
 
-    runTestHelper("{msg desc=\"\"}Blah{/msg}", true, 1); // GoogMsgRefNode
+    runTestHelper(
+        "{let $foo kind=\"text\"}{msg desc=\"\"}Blah{/msg}{/let}{$foo}", true, 1); // PrintNode
 
     runTestHelper("{@param boo: ?}\n{$boo.foo}", true);
 
@@ -70,7 +71,6 @@ public final class IsComputableAsJsExprsVisitorTest {
         true,
         0,
         0,
-        0,
         0);
 
     runTestHelper(
@@ -78,11 +78,10 @@ public final class IsComputableAsJsExprsVisitorTest {
         true,
         0,
         0,
-        0,
         2);
 
     runTestHelper(
-        "{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}", false, 0, 0, 0, 0);
+        "{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}", false, 0, 0, 0);
   }
 
   @Test
@@ -142,8 +141,6 @@ public final class IsComputableAsJsExprsVisitorTest {
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
-    // Several tests have msg nodes.
-    new ExtractMsgVariablesVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
     assertThat(new IsComputableAsJsExprsVisitor().exec(node)).isEqualTo(expectedResult);
   }

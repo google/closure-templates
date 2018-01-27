@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.ifStatement;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
@@ -25,19 +25,22 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE_FORMAT;
 
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
+import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
+import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -60,19 +63,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * Assistant visitor for GenJsCodeVisitor to handle messages.
  *
- * <p> Precondition: MsgNode should not exist in the tree.
+ * <p>Precondition: MsgNode should not exist in the tree.
  *
  */
 public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
-
   /** Regex pattern for an underscore-number suffix. */
   private static final Pattern UNDERSCORE_NUMBER_SUFFIX = Pattern.compile("_[0-9]+$");
-
 
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
@@ -130,22 +132,15 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     this.errorReporter = errorReporter;
   }
 
-
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
     throw new AssertionError();
   }
 
-  /** The JsCodeBuilder to build the current JS file being generated (during a run). */
-  protected JsCodeBuilder jsCodeBuilder() {
-    return master.jsCodeBuilder;
-  }
-
   /**
-   * Generates Javascript statements that declare a translated variable, returning the variable name
-   * for the caller to output (as an expression). MsgFallbackGroupNodes can only appear in let
-   * blocks, which seems like unnecesary overhead since this already generates a perfectly usable
-   * variable. However, this design makes incremental DOM codegen, which needs to apply complex
-   * transforms on the translated variable, much simpler. Example:
+   * Returns a code chunk representing a translated variable.
+   *
+   * <p>Example:
    *
    * <pre>
    *   {msg desc="Link to help content."}Learn more{/msg}
@@ -154,7 +149,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *   {/msg}
    * </pre>
    *
-   * might generate
+   * might return the following code chunk:
    *
    * <pre>
    *   /** @desc Link to help content. *{@literal /}
@@ -168,26 +163,32 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *        endLink: '&lt;/a&gt;',
    *        productName: opt_data.productName});
    * </pre>
-   *
-   * and return {@code "MSG_UNNAMED_10"}.
    */
-  public String generateMsgGroupVariable(MsgFallbackGroupNode node) {
+  public CodeChunk.WithValue generateMsgGroupVariable(MsgFallbackGroupNode node) {
     String tmpVarName = translationContext.nameGenerator().generateName("msg_s");
+    CodeChunk.WithValue msg;
     if (node.numChildren() == 1) {
-      return generateSingleMsgVariable(node.getChild(0), tmpVarName);
+      msg = generateSingleMsgVariable(node.getChild(0), tmpVarName);
     } else { // has fallbackmsg children
-      generateMsgGroupVariable(node, tmpVarName);
-      return tmpVarName;
+      msg = generateMsgGroupVariable(node, tmpVarName);
     }
+    // handle escaping
+    for (SoyPrintDirective printDirective : node.getEscapingDirectives()) {
+      msg =
+          SoyJsPluginUtils.applyDirective(
+              translationContext.codeGenerator(),
+              msg,
+              (SoyJsSrcPrintDirective) printDirective,
+              /* args= */ ImmutableList.<CodeChunk.WithValue>of());
+    }
+    return msg;
   }
 
   /**
-   * Generates an initialized variable declaration for an {@link MsgNode} with no fallback messages.
-   *
-   * @return The variable name, which will be the actual MSG_BLAH variable if no temporary variables
-   *     are needed for additional formatting.
+   * Returns a code chunk representing a variable declaration for an {@link MsgNode} with no
+   * fallback messages.
    */
-  private String generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
+  private CodeChunk.WithValue generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
     String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
 
     // Generate the goog.getMsg call.
@@ -195,62 +196,67 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
     if (!msgNode.isPlrselMsg()) {
       // No postprocessing is needed. Simply use the original goog.getMsg var.
-      return googMsgVarName;
+      return googMsgCodeGenInfo.googMsgVar;
     }
     // For plural/select messages, generate the goog.i18n.MessageFormat call.
     // We don't want to output the result of goog.getMsg() directly. Instead, we send that
     // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
     // handling all placeholder replacements, even ones that have nothing to do with
     // plural/select.
-    jsCodeBuilder()
-        .append(
-            VariableDeclaration.builder(tmpVarName)
-                .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
-                .build());
-    return tmpVarName;
+    return VariableDeclaration.builder(tmpVarName)
+        .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
+        .build()
+        .ref();
   }
 
   /**
-   * Generates an initialized variable declaration for an {@link MsgFallbackGroupNode} that contains
-   * fallback(s).
+   * Returns a code chunk representing a variable declaration for an {@link MsgFallbackGroupNode}
+   * that contains fallback(s).
    */
-  private void generateMsgGroupVariable(MsgFallbackGroupNode node, String tmpVarName) {
-    List<GoogMsgCodeGenInfo> childGoogMsgCodeGenInfos = new ArrayList<>(node.numChildren());
+  private CodeChunk.WithValue generateMsgGroupVariable(
+      MsgFallbackGroupNode node, String tmpVarName) {
+    checkState(node.numChildren() == 2);
 
     // Generate the goog.getMsg calls for all children.
-    for (MsgNode msgNode : node.getChildren()) {
-      String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
-      childGoogMsgCodeGenInfos.add(genGoogGetMsgCallHelper(googMsgVarName, msgNode));
-    }
+    GoogMsgCodeGenInfo primaryCodeGenInfo =
+        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(0)), node.getChild(0));
+    GoogMsgCodeGenInfo fallbackCodeGenInfo =
+        genGoogGetMsgCallHelper(buildGoogMsgVarNameHelper(node.getChild(1)), node.getChild(1));
 
     // Declare a temporary variable to hold the getMsgWithFallback() call so that we can apply any
     // MessageFormats from any of the fallbacks.  This is also the variable name that we return to
     // the caller.
-    jsCodeBuilder().appendLineStart("var ", tmpVarName, " = goog.getMsgWithFallback(");
-    boolean isFirst = true;
-    for (GoogMsgCodeGenInfo childGoogMsgCodeGenInfo : childGoogMsgCodeGenInfos) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        jsCodeBuilder().append(", ");
-      }
-      jsCodeBuilder().append(childGoogMsgCodeGenInfo.googMsgVarName);
+    CodeChunk.WithValue selectedMsg =
+        VariableDeclaration.builder(tmpVarName)
+            .setRhs(
+                CodeChunk.dottedIdNoRequire("goog.getMsgWithFallback")
+                    .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
+            .build()
+            .ref();
+    if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
+      // all placeholders have already been substituted, just return
+      return selectedMsg;
     }
-    jsCodeBuilder().appendLineEnd(");");
-
     // Generate the goog.i18n.MessageFormat calls for child plural/select messages (if any), each
     // wrapped in an if-block that will only execute if that child is the chosen message.
-    for (GoogMsgCodeGenInfo childGoogMsgCodeGenInfo : childGoogMsgCodeGenInfos) {
-      if (childGoogMsgCodeGenInfo.isPlrselMsg) {
-        CodeChunk.WithValue tmpVar = id(tmpVarName);
-        jsCodeBuilder()
-            .append(
-                ifStatement(
-                        tmpVar.doubleEquals(id(childGoogMsgCodeGenInfo.googMsgVarName)),
-                        tmpVar.assign(getMessageFormatCall(childGoogMsgCodeGenInfo)))
-                    .build());
+    CodeChunk condition;
+    if (primaryCodeGenInfo.placeholders != null) {
+      ConditionalBuilder builder =
+          CodeChunk.ifStatement(
+              selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
+              selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)));
+      if (fallbackCodeGenInfo.placeholders != null) {
+        builder.else_(selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)));
       }
+      condition = builder.build();
+    } else {
+      condition =
+          CodeChunk.ifStatement(
+                  selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
+                  selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)))
+              .build();
     }
+    return CodeChunk.id(tmpVarName).withInitialStatement(condition);
   }
 
   /** Builds the googMsgVarName for an MsgNode. */
@@ -264,7 +270,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
             : "MSG_UNNAMED";
     return translationContext.nameGenerator().generateName(desiredName);
   }
-
 
   /**
    * Generates the goog.getMsg call for an MsgNode. The goog.getMsg call (including JsDoc) will be
@@ -287,10 +292,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
     // Build the individual code bits for each placeholder (i.e. "<placeholderName>: <exprCode>")
     // and each plural/select (i.e. "<varName>: <exprCode>").
-    GoogMsgCodeGenInfo googMsgCodeGenInfo =
-        new GoogMsgCodeGenInfo(googMsgVarName, msgNode.isPlrselMsg());
-    genGoogMsgCodeForChildren(msgNode, msgNode, googMsgCodeGenInfo);
-
+    GoogMsgPlaceholderCodeGenInfo placeholderInfo =
+        new GoogMsgPlaceholderCodeGenInfo(msgNode.isPlrselMsg());
+    genGoogMsgCodeForChildren(msgNode, msgNode, placeholderInfo);
     // Generate JS comment (JSDoc) block for the goog.getMsg() call.
     StringBuilder jsDocBuilder = new StringBuilder();
     jsDocBuilder.append("/** ");
@@ -305,19 +309,22 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
     // Generate goog.getMsg() call.
     VariableDeclaration.Builder builder =
-        VariableDeclaration.builder(googMsgCodeGenInfo.googMsgVarName)
-            .setJsDoc(jsDocBuilder.toString());
-    if (msgNode.isPlrselMsg() || googMsgCodeGenInfo.placeholders.isEmpty()) {
+        VariableDeclaration.builder(googMsgVarName).setJsDoc(jsDocBuilder.toString());
+    if (msgNode.isPlrselMsg() || placeholderInfo.placeholders.isEmpty()) {
       // For plural/select msgs, we're letting goog.i18n.MessageFormat handle all placeholder
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case
       // is the same as having no placeholder replacements.
       builder.setRhs(GOOG_GET_MSG.call(googMsgContent));
+      return new GoogMsgCodeGenInfo(
+          builder.build().ref(),
+          msgNode.isPlrselMsg()
+              ? placeholderInfo.pluralsAndSelects.putAll(placeholderInfo.placeholders).build()
+              : null);
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
-      builder.setRhs(GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build()));
+      builder.setRhs(GOOG_GET_MSG.call(googMsgContent, placeholderInfo.placeholders.build()));
+      return new GoogMsgCodeGenInfo(builder.build().ref(), null);
     }
-    jsCodeBuilder().append(builder.build());
-    return googMsgCodeGenInfo;
   }
 
   /**
@@ -366,19 +373,28 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * message.
    */
   private static CodeChunk.WithValue getMessageFormatCall(GoogMsgCodeGenInfo codeGenInfo) {
-    MapLiteralBuilder builder = codeGenInfo.pluralsAndSelects;
-    builder.putAll(codeGenInfo.placeholders);
     return new_(GOOG_I18N_MESSAGE_FORMAT)
-        .call(id(codeGenInfo.googMsgVarName))
+        .call(codeGenInfo.googMsgVar)
         .dotAccess("formatIgnoringPound")
-        .call(builder.build());
+        .call(codeGenInfo.placeholders);
+  }
+
+  private static final class GoogMsgCodeGenInfo {
+    final CodeChunk.WithValue googMsgVar;
+    /**
+     * Placeholders that still need to be applied, if any. This is only relevant in plrsel messages
+     * which require a different formatting method to be called.
+     */
+    @Nullable final CodeChunk.WithValue placeholders;
+
+    GoogMsgCodeGenInfo(CodeChunk.WithValue googMsgVar, CodeChunk.WithValue placeholders) {
+      this.googMsgVar = googMsgVar;
+      this.placeholders = placeholders;
+    }
   }
 
   /** Stores the data required for generating {@code goog.getMsg()} calls. */
-  private static final class GoogMsgCodeGenInfo {
-
-    /** The name of the {@code goog.getMsg()} msg var, i.e. MSG_EXTERNAL_### or MSG_UNNAMED_###. */
-    final String googMsgVarName;
+  private static final class GoogMsgPlaceholderCodeGenInfo {
 
     /** Whether the message is a plural/select message. */
     final boolean isPlrselMsg;
@@ -389,8 +405,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     /** Key-value entries for plural and select variables. */
     final MapLiteralBuilder pluralsAndSelects = new MapLiteralBuilder();
 
-    GoogMsgCodeGenInfo(String googMsgVarName, boolean isPlrselMsg) {
-      this.googMsgVarName = googMsgVarName;
+    GoogMsgPlaceholderCodeGenInfo(boolean isPlrselMsg) {
       this.isPlrselMsg = isPlrselMsg;
     }
   }
@@ -408,7 +423,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *     names, and select variable names to be used for message code generation.
    */
   private void genGoogMsgCodeForChildren(
-      BlockNode parentNode, MsgNode msgNode, GoogMsgCodeGenInfo codeGenInfo) {
+      BlockNode parentNode, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     for (StandaloneNode child : parentNode.getChildren()) {
       if (child instanceof RawTextNode) {
@@ -430,7 +445,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
   }
 
-
   /**
    * Generates code bits for a {@code MsgPluralNode} subtree inside a message.
    *
@@ -440,18 +454,17 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *     variable names, and select variable names to be used for message code generation.
    */
   private void genGoogMsgCodeForPluralNode(
-      MsgPluralNode pluralNode, MsgNode msgNode, GoogMsgCodeGenInfo googMsgCodeGenInfo) {
+      MsgPluralNode pluralNode, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
-    googMsgCodeGenInfo.pluralsAndSelects.put(
+    codeGenInfo.pluralsAndSelects.put(
         stringLiteral(msgNode.getPluralVarName(pluralNode)),
         jsExprTranslator.translateToCodeChunk(
             pluralNode.getExpr(), translationContext, errorReporter));
 
     for (CaseOrDefaultNode child : pluralNode.getChildren()) {
-      genGoogMsgCodeForChildren(child, msgNode, googMsgCodeGenInfo);
+      genGoogMsgCodeForChildren(child, msgNode, codeGenInfo);
     }
   }
-
 
   /**
    * Generates code bits for a {@code MsgSelectNode} subtree inside a message.
@@ -462,7 +475,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *     names, and select variable names to be used for message code generation.
    */
   private void genGoogMsgCodeForSelectNode(
-      MsgSelectNode selectNode, MsgNode msgNode, GoogMsgCodeGenInfo codeGenInfo) {
+      MsgSelectNode selectNode, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     codeGenInfo.pluralsAndSelects.put(
         stringLiteral(msgNode.getSelectVarName(selectNode)),
@@ -474,7 +487,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
   }
 
-
   /**
    * Generates code bits for a normal {@code MsgPlaceholderNode} inside a message.
    *
@@ -484,7 +496,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *     names, and select variable names to be used for message code generation.
    */
   private void genGoogMsgCodeForPlaceholder(
-      MsgPlaceholderNode node, MsgNode msgNode, GoogMsgCodeGenInfo codeGenInfo) {
+      MsgPlaceholderNode node, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     String placeholderName = msgNode.getPlaceholder(node).name();
 
@@ -497,20 +509,16 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         stringLiteral(googMsgPlaceholderName), genGoogMsgPlaceholder(node));
   }
 
-
   /**
-   * <p>
    * Converts a Soy placeholder name (in upper underscore format) into a JS variable name (in lower
-   * camel case format) used by goog.getMsg(). If the original name has a numeric suffix, it will
-   * be preserved with an underscore.
-   * </p>
-   * <p>
-   * For example, the following transformations happen:
-   * <li> N : n
-   * <li> NUM_PEOPLE : numPeople
-   * <li> PERSON_2 : person_2
+   * camel case format) used by goog.getMsg(). If the original name has a numeric suffix, it will be
+   * preserved with an underscore.
+   *
+   * <p>For example, the following transformations happen:
+   * <li>N : n
+   * <li>NUM_PEOPLE : numPeople
+   * <li>PERSON_2 : person_2
    * <li>GENDER_OF_THE_MAIN_PERSON_3 : genderOfTheMainPerson_3
-   * </p>
    *
    * @param placeholderName The placeholder name to convert.
    * @return The generated goog.getMsg name for the given (standard) Soy name.
@@ -527,7 +535,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
   }
 
-
   /** Returns a code chunk for the given placeholder node. */
   protected CodeChunk.WithValue genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
 
@@ -535,8 +542,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
     for (StandaloneNode contentNode : msgPhNode.getChildren()) {
 
-      if (contentNode instanceof MsgHtmlTagNode &&
-          !isComputableAsJsExprsVisitor.exec(contentNode)) {
+      if (contentNode instanceof MsgHtmlTagNode
+          && !isComputableAsJsExprsVisitor.exec(contentNode)) {
         // This is a MsgHtmlTagNode that is not computable as JS expressions. Visit it to
         // generate code to define the 'htmlTag<n>' variable.
         visit(contentNode);
@@ -548,8 +555,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
         CallNode callNode = (CallNode) contentNode;
         for (CallParamNode grandchild : callNode.getChildren()) {
-          if (grandchild instanceof CallParamContentNode &&
-              !isComputableAsJsExprsVisitor.exec(grandchild)) {
+          if (grandchild instanceof CallParamContentNode
+              && !isComputableAsJsExprsVisitor.exec(grandchild)) {
             visit(grandchild);
           }
         }
@@ -566,13 +573,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     return CodeChunkUtils.concatChunks(contentChunks);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for other specific nodes.
 
-
   /**
    * Example:
+   *
    * <pre>
    *   &lt;a href="http://www.google.com/search?hl=en
    *     {for $i in range(3)}
@@ -581,14 +587,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *   "&gt;
    * might generate
    * </pre>
-   *   var htmlTag84 = (new soy.StringBuilder()).append('&lt;a href="');
-   *   for (var i80 = 1; i80 &lt; 3; i80++) {
-   *     htmlTag84.append('&amp;param', i80, '=', i80);
-   *   }
-   *   htmlTag84.append('"&gt;');
-   * </pre>
+   *
+   * var htmlTag84 = (new soy.StringBuilder()).append('&lt;a href="'); for (var i80 = 1; i80 &lt; 3;
+   * i80++) { htmlTag84.append('&amp;param', i80, '=', i80); } htmlTag84.append('"&gt;'); </pre>
    */
-  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  @Override
+  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
 
     // This node should only be visited when it's not computable as JS expressions, because this
     // method just generates the code to define the temporary 'htmlTag<n>' variable.
@@ -597,17 +601,16 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           "Should only define 'htmlTag<n>' when not computable as JS expressions.");
     }
 
-    jsCodeBuilder().pushOutputVar("htmlTag" + node.getId());
+    master.getJsCodeBuilder().pushOutputVar("htmlTag" + node.getId());
     visitChildren(node);
-    jsCodeBuilder().popOutputVar();
+    master.getJsCodeBuilder().popOutputVar();
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     master.visitForUseByAssistants(node);
   }
 
@@ -637,8 +640,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     MapLiteralBuilder putAll(MapLiteralBuilder other) {
       ImmutableList<CodeChunk.WithValue> keys = other.keys.build();
       ImmutableList<CodeChunk.WithValue> values = other.values.build();
-      Preconditions.checkState(keys.size() == values.size());
-      Preconditions.checkState(Sets.intersection(knownKeys, other.knownKeys).isEmpty());
+      checkState(keys.size() == values.size());
+      checkState(Sets.intersection(knownKeys, other.knownKeys).isEmpty());
       for (int i = 0; i < keys.size(); ++i) {
         put(keys.get(i), values.get(i));
       }

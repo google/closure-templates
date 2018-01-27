@@ -105,7 +105,6 @@ public final class GenJsExprsVisitorTest {
         ImmutableList.of(new JsExpr("'</a>'", Integer.MAX_VALUE)),
         0,
         0,
-        0,
         2);
   }
 
@@ -298,8 +297,6 @@ public final class GenJsExprsVisitorTest {
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
-    // Required by testPrintGoogMsg.
-    new ExtractMsgVariablesVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();

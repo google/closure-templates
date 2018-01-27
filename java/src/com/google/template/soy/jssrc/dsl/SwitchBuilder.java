@@ -40,6 +40,12 @@ public final class SwitchBuilder {
     return this;
   }
 
+  /** Adds a case clause to this switch statement. */
+  public SwitchBuilder case_(CodeChunk.WithValue caseLabel, CodeChunk body) {
+    clauses.add(new Switch.CaseClause(ImmutableList.of(caseLabel), body));
+    return this;
+  }
+
   /** Adds a {@code default} clause to this switch statement. */
   public SwitchBuilder default_(CodeChunk body) {
     Preconditions.checkState(defaultCaseBody == null);
