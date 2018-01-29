@@ -15,11 +15,14 @@
  */
 package com.google.template.soy.bididirectives;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -150,6 +153,14 @@ public final class BidiDirectivesRuntime {
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       commandBuffer.exitLoggableElement();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      commandBuffer.appendLoggingFunctionInvocation(funCall, escapers);
       return this;
     }
 
