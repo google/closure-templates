@@ -216,17 +216,14 @@ public final class PassManager {
       return templateRegistry;
     }
     if (autoescaper != null) {
-      boolean newTemplatesAdded = doContextualEscaping(soyTree);
+      doContextualEscaping(soyTree, templateRegistry);
       if (errorReporter.hasErrors()) {
         return templateRegistry;
       }
 
-      // contextual autoescaping may actually add new templates to the tree so check if we need to
-      // reconstruct the registry.  Note. constructing the registry is kind of expensive so we
-      // should avoid doing it if possible
-      if (newTemplatesAdded) {
-        templateRegistry = new TemplateRegistry(soyTree, errorReporter);
-      }
+      // contextual autoescaping may actually add new templates to the tree so we need to
+      // reconstruct the registry
+      templateRegistry = new TemplateRegistry(soyTree, errorReporter);
     }
     for (CompilerFileSetPass pass : simplificationPasses) {
       pass.run(soyTree, templateRegistry);
@@ -234,9 +231,8 @@ public final class PassManager {
     return templateRegistry;
   }
 
-  /** Runs the autoescaper and returns whether or not new contextual templates have been added. */
-  private boolean doContextualEscaping(SoyFileSetNode soyTree) {
-    List<TemplateNode> extraTemplates = autoescaper.rewrite(soyTree, errorReporter);
+  private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry) {
+    List<TemplateNode> extraTemplates = autoescaper.rewrite(soyTree, registry, errorReporter);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
     if (!extraTemplates.isEmpty()) {
       // TODO: pull out somewhere else.  Ideally do the merge as part of the redundant template
@@ -258,9 +254,7 @@ public final class PassManager {
                 : extraTemplate.getTemplateName();
         containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
       }
-      return true;
     }
-    return false;
   }
 
   /** A builder for configuring the pass manager. */

@@ -492,6 +492,7 @@ final class InferenceEngine {
 
         List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
         Context prev = context;
+        context = context.getContextBeforeDynamicValue();
         if (escapingModes.isEmpty()) { // None specified.
           // The inferences set below specify which nodes to change. In the non-contextual modes,
           // we leave escapingModesToSet null since no changes are to be made to this print node.
@@ -588,6 +589,9 @@ final class InferenceEngine {
 
     @Override
     protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+      // TODO(b/31770394): do we still need 'before_attribute_value' after the migration to the new
+      // html nodes?  i think not.
+      context = context.transitionToState(HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE);
       Context.AttributeEndDelimiter delim;
       switch (node.getQuotes()) {
         case DOUBLE:
@@ -625,7 +629,7 @@ final class InferenceEngine {
      * in content kind.
      */
     private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
-      if (templates.isEmpty()) {
+      if (templates == null || templates.isEmpty()) {
         return null;
       }
       SanitizedContentKind contentKind = templates.get(0).getContentKind();
@@ -663,7 +667,8 @@ final class InferenceEngine {
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
           return DerivedNameAndContext.create(
               templateName, getContextAfterDynamicValue(callNode, startContext));
-        } else if (calleeStrictContentKind != null || targets.isEmpty()) {
+        } else if (calleeStrictContentKind != null || targets == null || targets.isEmpty()) {
+          Context callContext = startContext.getContextBeforeDynamicValue();
           // If a strict template calls another strict template (or an unknown extern), the result
           // will be escaped, so the call statement behaves effectively like a print statement.
           // No re-contextualization of the callee is done.
@@ -673,8 +678,8 @@ final class InferenceEngine {
           // bad existing templates.
           inferences.setEscapingDirectives(
               callNode,
-              startContext,
-              startContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
+              callContext,
+              callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return DerivedNameAndContext.create(
               templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == HtmlContext.TEXT) {
@@ -694,7 +699,7 @@ final class InferenceEngine {
 
       } else {
         // In a non-strict mode template.
-        if (targets.isEmpty()) {
+        if (targets == null || targets.isEmpty()) {
           // External template not visible to compiler -- let's pray for the best! We might end up
           // calling a Javascript-escaping template from HTML or vice versa.
           return DerivedNameAndContext.create(templateName, startContext);
@@ -740,7 +745,7 @@ final class InferenceEngine {
       String newCalleeName = baseName + suffix;
 
       // Clone the templates for this new context if needed.
-      if (inferences.lookupTemplates(newCalleeName).isEmpty()) {
+      if (inferences.lookupTemplates(newCalleeName) == null) {
         if (ILLEGAL_RECONTEXTUALIZATIONS.contains(startContext.state)) {
           throw SoyAutoescapeException.createWithNode(
               "Attempting to call non-strict template '"

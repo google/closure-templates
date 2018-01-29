@@ -20,7 +20,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -308,7 +309,8 @@ public final class InferenceEngineTest {
 
     Inferences inferences =
         new Inferences(
-            new IncrementingIdGenerator(), ImmutableListMultimap.<String, TemplateNode>of());
+            new IncrementingIdGenerator(),
+            ImmutableMap.<String, ImmutableList<TemplateNode>>of());
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),
