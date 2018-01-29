@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.restricted.Expression.areAllCheap;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
@@ -36,6 +37,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -92,7 +94,7 @@ public abstract class MethodRef {
           .asNonNullable();
 
   public static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
-      create(DictImpl.class, "forProviderMap", Map.class).asNonNullable();
+      create(DictImpl.class, "forProviderMap", Map.class, RuntimeType.class).asNonNullable();
 
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP =
       create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();
@@ -134,6 +136,31 @@ public abstract class MethodRef {
     }
     IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
     IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods);
+  }
+
+  /**
+   * A list of all the {@link ImmutableMap#of} overloads, indexed by number of key-value pairs.
+   * (Note that this is a different indexing scheme than {@link #IMMUTABLE_LIST_OF}.)
+   */
+  public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
+
+  static {
+    MethodRef[] immutableMapOfMethods = new MethodRef[6];
+    for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
+      if (m.getName().equals("of")) {
+        Class<?>[] params = m.getParameterTypes();
+        MethodRef ref = MethodRef.create(m).asNonNullable();
+        int arity = params.length;
+        checkState(arity % 2 == 0);
+        int numEntries = arity >> 1;
+        if (numEntries == 0) {
+          // the zero arg one is 'cheap'
+          ref = ref.asCheap();
+        }
+        immutableMapOfMethods[numEntries] = ref;
+      }
+    }
+    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods);
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
@@ -304,10 +331,10 @@ public abstract class MethodRef {
       create(SoyList.class, "asJavaList").asNonNullable();
 
   public static final MethodRef SOY_DICT_IMPL_AS_JAVA_MAP =
-      create(DictImpl.class, "asJavaStringMap").asNonNullable();
+      create(DictImpl.class, "asJavaMap").asNonNullable();
 
   public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP =
-      create(SoyNewMap.class, "asJavaStringMap").asNonNullable();
+      create(SoyNewMap.class, "asJavaMap").asNonNullable();
 
   public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();

@@ -86,7 +86,8 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 
-  public static final CodeChunk.WithValue SOY_CHECK_MAP_KEY = SOY.dotAccess("$$checkMapKey");
+  public static final CodeChunk.WithValue SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY =
+      SOY.dotAccess("$$checkMapKey");
 
   public static final CodeChunk.WithValue SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
 
@@ -101,6 +102,9 @@ public final class JsRuntime {
       SOY.dotAccess("$$getDelTemplateId");
 
   public static final CodeChunk.WithValue SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
+
+  public static final CodeChunk.WithValue SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =
+      SOY_MAP.dotAccess("$$maybeCoerceKeyToString");
 
   public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
       dottedIdNoRequire("window.console.log");

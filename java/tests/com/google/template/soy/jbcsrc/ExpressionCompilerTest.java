@@ -38,6 +38,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -209,7 +210,8 @@ public class ExpressionCompilerTest {
                         "a", IntegerData.forValue(1),
                         "b", FloatData.forValue(1.0),
                         "c", StringData.forValue("asdf"),
-                        "d", BooleanData.FALSE))
+                        "d", BooleanData.FALSE),
+                    RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
                 .toString());
   }
 
@@ -445,14 +447,14 @@ public class ExpressionCompilerTest {
   public void testConditionalOpNode_advanced() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody("{@param? p : string}", "{$p ? $p : '' }");
-    tester.rendersAs("", ImmutableMap.<String, Object>of());
+    tester.rendersAs("", ImmutableMap.of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
     tester =
         assertThatTemplateBody(
             "{@param? p : map<string, string>}", "{if $p}", "  {$p['key']}", "{/if}");
-    tester.rendersAs("", ImmutableMap.<String, Object>of());
+    tester.rendersAs("", ImmutableMap.of());
     tester = assertThatTemplateBody("{@param? p : string}", "{$p ? $p : 1 }");
-    tester.rendersAs("1", ImmutableMap.<String, Object>of());
+    tester.rendersAs("1", ImmutableMap.of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
 
     tester = assertThatTemplateBody("{@param p : int}", "{$p ? 1 : $p }");
@@ -462,8 +464,8 @@ public class ExpressionCompilerTest {
     tester =
         assertThatTemplateBody(
             "{@param b : bool}", "{@param v : list<int>}", "{$b ? $v[0] : $v[1] + 1}");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of("b", true, "v", Arrays.asList()));
-    tester.rendersAs("3", ImmutableMap.<String, Object>of("b", false, "v", Arrays.asList(1, 2)));
+    tester.rendersAs("null", ImmutableMap.of("b", true, "v", Arrays.asList()));
+    tester.rendersAs("3", ImmutableMap.of("b", false, "v", Arrays.asList(1, 2)));
   }
 
   @Test

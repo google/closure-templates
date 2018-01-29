@@ -29,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -62,7 +63,8 @@ public final class SoyValueConverter {
   public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
 
   /** An immutable empty dict. */
-  public static final SoyDict EMPTY_DICT = DictImpl.forProviderMap(ImmutableMap.of());
+  public static final SoyDict EMPTY_DICT =
+      DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN);
 
   /** An immutable empty list. */
   public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
@@ -181,13 +183,20 @@ public final class SoyValueConverter {
             return convert(input.getSoyGlobalValue());
           }
         });
-
     expensiveConverterMap.put(
         Map.class,
         new Converter<Map<String, ?>>() {
           @Override
           public SoyValueProvider apply(Map<String, ?> input) {
             return newDictFromMap(input);
+          }
+        });
+    expensiveConverterMap.put(
+        ThisIsASoyMap.class,
+        new Converter<ThisIsASoyMap<?, ?>>() {
+          @Override
+          public SoyValueProvider apply(ThisIsASoyMap input) {
+            return newSoyMapFromJavaMap(input.delegate());
           }
         });
     expensiveConverterMap.put(
@@ -212,11 +221,8 @@ public final class SoyValueConverter {
   // Creating.
 
   /**
-   * Creates a Soy dictionary from a Java string map. While this is O(N) with the map's shallow
-   * size, the values are converted into Soy values lazily and only once.
-   *
-   * @param javaStringMap The map backing the dict.
-   * @return A new SoyDict initialized from the given Java string-keyed map.
+   * Creates a Soy dictionary from a Java string map. While this is O(n) in the map's shallow size,
+   * the Java values are converted into Soy values lazily and only once.
    */
   public SoyDict newDictFromMap(Map<String, ?> javaStringMap) {
     // Create a dictionary backed by a map which has eagerly converted each value into a lazy
@@ -226,7 +232,24 @@ public final class SoyValueConverter {
     for (Map.Entry<String, ?> entry : javaStringMap.entrySet()) {
       builder.put(entry.getKey(), convertLazy(entry.getValue()));
     }
-    return DictImpl.forProviderMap(builder.build());
+    return DictImpl.forProviderMap(
+        builder.build(),
+        // This Java map could represent a Soy legacy_object_map, a Soy map, or a Soy record.
+        // We don't know which until one of the SoyMap, SoyNewMap, or SoyRecord methods
+        // is invoked on it.
+        RuntimeType.UNKNOWN);
+  }
+
+  /**
+   * Creates a Soy map from a Java map. While this is O(n) in the map's shallow size, the Java
+   * values are converted into Soy values lazily and only once. The keys are converted eagerly.
+   */
+  private SoyNewMap newSoyMapFromJavaMap(Map<?, ?> javaMap) {
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+    for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
+      builder.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));
+    }
+    return SoyMapImpl.forProviderMap(builder.build());
   }
 
   /**

@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
@@ -27,11 +28,14 @@ import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +47,7 @@ public final class BasicFunctionsRuntime {
         Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
     map.putAll(first.asJavaStringMap());
     map.putAll(second.asJavaStringMap());
-    return DictImpl.forProviderMap(map);
+    return DictImpl.forProviderMap(map, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
   }
 
   /**
@@ -83,11 +87,20 @@ public final class BasicFunctionsRuntime {
   }
 
   public static SoyMapImpl legacyObjectMapToMap(SoyDict map) {
-    return SoyMapImpl.forProviderMap(map.asJavaStringMap());
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyValueProvider> entry : map.asJavaStringMap().entrySet()) {
+      builder.put(StringData.forValue(entry.getKey()), entry.getValue());
+    }
+    return SoyMapImpl.forProviderMap(builder.build());
   }
 
   public static SoyDict mapToLegacyObjectMap(SoyMapImpl map) {
-    return DictImpl.forProviderMap(map.asJavaStringMap());
+    Map<String, SoyValueProvider> keysCoercedToStrings = new LinkedHashMap<>();
+    for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
+        map.asJavaMap().entrySet()) {
+      keysCoercedToStrings.put(entry.getKey().coerceToString(), entry.getValue());
+    }
+    return DictImpl.forProviderMap(keysCoercedToStrings, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
   }
 
   /** Returns the numeric maximum of the two arguments. */

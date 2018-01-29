@@ -80,21 +80,12 @@ public interface SoyNewMap extends SoyValue {
   SoyValueProvider getProvider(SoyValue key);
 
   /**
-   * Gets a Java map of all items in this SoyNewMap, where mappings are string to value provider.
+   * Gets a Java map of all items in this SoyNewMap, where mappings are value to value provider.
    * Note that value providers are often just the values themselves, since all values are also
    * providers.
    *
-   * @return A Java map of all items, where mappings are string to value provider.
+   * @return A Java map of all items, where mappings are value to value provider.
    */
   @Nonnull
-  Map<String, ? extends SoyValueProvider> asJavaStringMap();
-
-  /**
-   * Gets a Java map of all items in this SoyNewMap, where mappings are string to value. All value
-   * providers will be eagerly resolved.
-   *
-   * @return A Java map of all items, where mappings are string to value.
-   */
-  @Nonnull
-  Map<String, ? extends SoyValue> asResolvedJavaStringMap();
+  Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap();
 }

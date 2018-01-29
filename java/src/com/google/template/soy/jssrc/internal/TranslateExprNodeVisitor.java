@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
@@ -35,8 +34,9 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
@@ -345,7 +345,7 @@ public class TranslateExprNodeVisitor
         // cannot be included in the JS object literal.
 
         CodeChunk.WithValue rawKey = visit(keyNode);
-        assignments.put(SOY_CHECK_MAP_KEY.call(rawKey), visit(valueNode));
+        assignments.put(SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY.call(rawKey), visit(valueNode));
       }
     }
 
@@ -381,11 +381,37 @@ public class TranslateExprNodeVisitor
         codeGenerator.declarationBuilder().setRhs(CodeChunk.new_(id("Map")).call()).build().ref();
     ImmutableList.Builder<CodeChunk> setCalls = ImmutableList.builder();
     for (int i = 0; i < node.numChildren(); i += 2) {
-      CodeChunk.WithValue key = visit(node.getChild(i));
+      ExprNode keyNode = node.getChild(i);
+      // Constructing a map literal with a null key is a runtime error.
+      CodeChunk.WithValue key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
       CodeChunk.WithValue value = visit(node.getChild(i + 1));
-      setCalls.add(map.dotAccess("set").call(key.plus(LITERAL_EMPTY_STRING), value));
+      setCalls.add(map.dotAccess("set").call(key, value));
     }
     return map.withInitialStatements(setCalls.build());
+  }
+
+  /**
+   * Soy strings can be represented by SanitizedContent objects at runtime, so care needs to be
+   * taken when indexing into a map with a Soy "string". For pre-ES6 object maps, this isn't a
+   * problem, since bracket access implicitly calls toString() on the key, and SanitizedContent
+   * overrides toString appropriately. But ES6 Maps and jspb.Maps don't do this automatically, so we
+   * need to set it up.
+   */
+  private CodeChunk.WithValue genMapKeyCode(ExprNode keyNode) {
+    CodeChunk.WithValue key = visit(keyNode);
+    // We need to coerce if the value could possibly a sanitizedcontent object
+    boolean needsRuntimeCoercionLogic = false;
+    SoyType type = keyNode.getType();
+    for (SoyType member :
+        (type instanceof UnionType ? ((UnionType) type).getMembers() : ImmutableList.of(type))) {
+      Kind kind = member.getKind();
+      needsRuntimeCoercionLogic |=
+          kind.isKnownStringOrSanitizedContent()
+              || kind == Kind.UNKNOWN
+              || kind == Kind.UNION
+              || kind == Kind.ANY;
+    }
+    return needsRuntimeCoercionLogic ? SOY_MAP_MAYBE_COERCE_KEY_TO_STRING.call(key) : key;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -436,7 +462,7 @@ public class TranslateExprNodeVisitor
         {
           ItemAccessNode itemAccess = (ItemAccessNode) node;
           NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
-          CodeChunk.WithValue key = visit(itemAccess.getKeyExprChild());
+          ExprNode keyNode = itemAccess.getKeyExprChild();
           SoyType baseType = itemAccess.getBaseExprChild().getType();
           SoyType.Kind baseKind = baseType.getKind();
           boolean shouldUseGetter =
@@ -445,17 +471,10 @@ public class TranslateExprNodeVisitor
                       && ((UnionType) baseType).removeNullability().getKind() == Kind.MAP);
           return shouldUseGetter
               ? base.dotAccess(
-                  FieldAccess.call(
-                      "get",
-                      // Soy strings can be represented by SanitizedContent objects at runtime,
-                      // so care needs to be taken when indexing into a map with a Soy "string".
-                      // For pre-ES6 object maps, this isn't a problem, since bracket access
-                      // implicitly calls toString() on the key, and SanitizedContent overrides
-                      // toString appropriately. But ES6 Maps and jspb.Maps don't do this
-                      // automatically, so we need to set it up.
-                      key.plus(WithValue.LITERAL_EMPTY_STRING)),
+                  FieldAccess.call("get", genMapKeyCode(keyNode)),
                   itemAccess.isNullSafe()) // jspb.Map
-              : base.bracketAccess(key, itemAccess.isNullSafe()); // vanilla bracket access
+              : base.bracketAccess(
+                  visit(keyNode), itemAccess.isNullSafe()); // vanilla bracket access
         }
 
       default:

@@ -888,7 +888,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       MapType actualArgType = (MapType) argType;
       node.setType(
           typeRegistry.getOrCreateLegacyObjectMapType(
-              actualArgType.getKeyType(), actualArgType.getValueType()));
+              // Converting a map to a legacy object map coerces all the keys to strings
+              StringType.getInstance(), actualArgType.getValueType()));
     }
 
     @Override

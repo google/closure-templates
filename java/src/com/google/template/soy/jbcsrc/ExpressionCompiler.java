@@ -34,6 +34,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -344,15 +345,16 @@ final class ExpressionCompiler {
         // keys for types but none of the implementations support this.  So we don't support it
         // either.
         // b/20468013
-        // TODO(b/69794482): support non-string keys in map literals
         SoyExpression key = visit(node.getChild(2 * i));
-        keys.add(key.unboxAs(String.class));
+        keys.add(useLegacyMap ? key.unboxAs(String.class) : key.box());
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression soyDict =
           useLegacyMap
               ? MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
-                  BytecodeUtils.newLinkedHashMap(keys, values))
+                  BytecodeUtils.newLinkedHashMap(keys, values),
+                  FieldRef.enumReference(DictImpl.RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                      .accessor())
               : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
                   BytecodeUtils.newLinkedHashMap(keys, values));
       return SoyExpression.forSoyValue(node.getType(), soyDict);

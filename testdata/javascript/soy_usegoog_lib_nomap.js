@@ -23795,11 +23795,12 @@ soy.$$assignDefaults = function(obj, defaults) {
 
 /**
  * Checks that the given map key is a string.
+ * Used only for legacy object map literals.
+ * TODO(b/72547235): rename to $$checkLegacyObjectMapLiteralKey.
  * @param {*} key Key to check.
  * @return {string} The given key.
  */
 soy.$$checkMapKey = function(key) {
-  // TODO: Support map literal with nonstring key.
   if ((typeof key) != 'string') {
     throw Error(
         'Map literal\'s key expression must evaluate to string' +

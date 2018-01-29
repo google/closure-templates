@@ -18,18 +18,13 @@ package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -44,18 +39,18 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @ParametersAreNonnullByDefault
 public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
-  // TODO(b/69794482)): Support non-string keys in the new map implementation.
   /** Creates a SoyDict implementation for a particular underlying provider map. */
-  public static SoyMapImpl forProviderMap(Map<String, ? extends SoyValueProvider> providerMap) {
+  public static SoyMapImpl forProviderMap(
+      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
     return new SoyMapImpl(providerMap);
   }
 
-  private SoyMapImpl(Map<String, ? extends SoyValueProvider> providerMap) {
+  private SoyMapImpl(Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
     this.providerMap = ImmutableMap.copyOf(checkNotNull(providerMap));
   }
 
   /** Map containing each data provider. */
-  private final ImmutableMap<String, ? extends SoyValueProvider> providerMap;
+  private final ImmutableMap<? extends SoyValue, ? extends SoyValueProvider> providerMap;
 
   @Override
   public int size() {
@@ -65,19 +60,12 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
   @Override
   @Nonnull
   public final Iterable<? extends SoyValue> keys() {
-    return Iterables.transform(
-        providerMap.keySet(),
-        new Function<String, SoyValue>() {
-          @Override
-          public SoyValue apply(String key) {
-            return StringData.forValue(key);
-          }
-        });
+    return providerMap.keySet();
   }
 
   @Override
   public boolean containsKey(SoyValue key) {
-    return providerMap.containsKey(key.stringValue());
+    return providerMap.containsKey(key);
   }
 
   @Override
@@ -88,19 +76,13 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
 
   @Override
   public SoyValueProvider getProvider(SoyValue key) {
-    return providerMap.get(key.stringValue());
+    return providerMap.get(key);
   }
 
   @Nonnull
   @Override
-  public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
-    return Collections.unmodifiableMap(providerMap);
-  }
-
-  @Nonnull
-  @Override
-  public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
-    return Maps.transformValues(asJavaStringMap(), Transforms.RESOLVE_FUNCTION);
+  public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+    return providerMap;
   }
 
   @Override

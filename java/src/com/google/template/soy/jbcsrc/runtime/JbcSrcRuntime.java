@@ -238,6 +238,9 @@ public final class JbcSrcRuntime {
     if (soyMap == null) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }
+    if (key == null) {
+      key = NullData.INSTANCE;
+    }
     SoyValueProvider soyValueProvider = soyMap.getProvider(key);
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }

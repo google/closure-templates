@@ -42,6 +42,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -82,7 +83,7 @@ abstract class FieldInterpreter {
   private static FieldInterpreter getListType(final FieldInterpreter local) {
     return new FieldInterpreter() {
       @Override
-      public SoyValueProvider soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<?> entries = (List<?>) field;
         ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
@@ -124,13 +125,12 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      SoyValueProvider soyFromProto(Object field) {
-        // TODO(b/69794482): Support non-string key.
+      SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<Message> entries = (List<Message>) field;
-        ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
         for (Message message : entries) {
-          String key = (String) message.getField(keyDescriptor);
+          SoyValue key = keyField.soyFromProto(message.getField(keyDescriptor)).resolve();
           builder.put(key, valueField.soyFromProto(message.getField(valueDescriptor)));
         }
         return SoyMapImpl.forProviderMap(builder.build());
@@ -139,18 +139,17 @@ abstract class FieldInterpreter {
       @Override
       Object protoFromSoy(SoyValue field) {
         SoyNewMap map = (SoyNewMap) field;
-        // TODO(b/69794482): Support non-string key.
         // Proto map fields use a non-standard API. A protobuf map is actually a repeated list of
         // MapEntry quasi-messages, which one cannot mutate in-place inside a map.
         ImmutableList.Builder<Message> mapEntries = ImmutableList.builder();
-        @SuppressWarnings("unchecked")
-        Map<String, SoyValue> resolvedMap = (Map<String, SoyValue>) map.asResolvedJavaStringMap();
         Message.Builder defaultInstance =
             DynamicMessage.newBuilder(messageDescriptor.getContainingType());
-        for (String key : resolvedMap.keySet()) {
+        for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
+            map.asJavaMap().entrySet()) {
           Message.Builder entryBuilder = defaultInstance.newBuilderForField(fieldDescriptor);
-          entryBuilder.setField(keyDescriptor, key);
-          entryBuilder.setField(valueDescriptor, valueField.protoFromSoy(resolvedMap.get(key)));
+          entryBuilder.setField(keyDescriptor, keyField.protoFromSoy(entry.getKey()));
+          entryBuilder.setField(
+              valueDescriptor, valueField.protoFromSoy(entry.getValue().resolve()));
           mapEntries.add(entryBuilder.build());
         }
         return mapEntries.build();
@@ -178,7 +177,7 @@ abstract class FieldInterpreter {
     }
     return new FieldInterpreter() {
       @Override
-      public SoyValueProvider soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<Message> entries = (List<Message>) field;
         ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
@@ -190,7 +189,7 @@ abstract class FieldInterpreter {
           }
           builder.put(key, scalarImpl.soyFromProto(message));
         }
-        return DictImpl.forProviderMap(builder.build());
+        return DictImpl.forProviderMap(builder.build(), RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
       }
 
       @Override
@@ -289,7 +288,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter BYTES =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return StringData.forValue(
               BaseEncoding.base64().encode(((ByteString) field).toByteArray()));
         }
@@ -309,7 +308,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter BOOL =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return BooleanData.forValue((Boolean) field);
         }
 
@@ -328,7 +327,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter INT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(((Number) field).longValue());
         }
 
@@ -347,7 +346,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter UNSIGNED_INT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(UnsignedInts.toLong(((Number) field).intValue()));
         }
 
@@ -366,7 +365,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter LONG_AS_INT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(((Long) field).longValue());
         }
 
@@ -385,7 +384,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter LONG_AS_STRING =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return StringData.forValue(field.toString());
         }
 
@@ -408,7 +407,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter UNSIGNEDLONG_AS_STRING =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return StringData.forValue(UnsignedLongs.toString((Long) field));
         }
 
@@ -427,7 +426,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter FLOAT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return FloatData.forValue(((Float) field).floatValue());
         }
 
@@ -446,7 +445,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter DOUBLE_AS_FLOAT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return FloatData.forValue(((Double) field).doubleValue());
         }
 
@@ -465,7 +464,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter STRING =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(Object field) {
+        public SoyValue soyFromProto(Object field) {
           return StringData.forValue(field.toString());
         }
 
@@ -493,7 +492,7 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyValueProvider soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         int value;
         if (field instanceof ProtocolMessageEnum) {
           value = ((ProtocolMessageEnum) field).getNumber();
@@ -529,7 +528,7 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyValueProvider soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         return SafeStringTypes.convertToSoyValue(field);
       }
 
@@ -548,7 +547,7 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyValueProvider soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         return SoyProtoValueImpl.create((Message) field);
       }
 
@@ -564,8 +563,8 @@ abstract class FieldInterpreter {
   /** Returns the SoyType of the field. */
   abstract SoyType type(SoyTypeRegistry registry);
 
-  /** Returns the SoyValueProvider for the Tofu representation of the given field. */
-  abstract SoyValueProvider soyFromProto(Object field);
+  /** Returns the SoyValue for the Tofu representation of the given field. */
+  abstract SoyValue soyFromProto(Object field);
 
   /**
    * Returns an object that can be assigned to a proto field via the proto reflection APIs.

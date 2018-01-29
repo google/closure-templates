@@ -644,11 +644,13 @@ final class ProtoUtils {
         final SoyExpression keyArg, final SoyExpression valueArg, final FieldDescriptor field) {
       final MethodRef putMethod = getPutMethod(field);
       List<FieldDescriptor> descriptors = field.getMessageType().getFields();
+      final FieldDescriptor keyDescriptor = descriptors.get(0);
       final FieldDescriptor valueDescriptor = descriptors.get(1);
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
           keyArg.gen(cb);
+          unboxAndCoerce(cb, keyArg, keyDescriptor);
           valueArg.gen(cb);
           unboxAndCoerce(cb, valueArg, valueDescriptor);
           putMethod.invokeUnchecked(cb);
@@ -701,7 +703,7 @@ final class ProtoUtils {
     private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
       Preconditions.checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
-      // mapArg.asJavaStringMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
+      // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       Expression resolved =
           detacher
               .get()
@@ -726,20 +728,20 @@ final class ProtoUtils {
       final Statement scopeExit = scope.exitScope();
 
       // Get type info of the map key/value
-      // TODO(b/69794482): For now, we only check value type since key is always string.
-      SoyType valueType = ((MapType) mapArg.soyType()).getValueType();
+      MapType mapType = (MapType) mapArg.soyType();
+      SoyType keyType = mapType.getKeyType();
+      SoyRuntimeType keyRuntimeType = SoyRuntimeType.getBoxedType(keyType);
+      SoyType valueType = mapType.getValueType();
       SoyRuntimeType valueRuntimeType = SoyRuntimeType.getBoxedType(valueType);
 
-      // iter.hasNext()
-      final Expression iterHasNext = iter.local().invoke(MethodRef.ITERATOR_HAS_NEXT);
-
-      // TODO(b/69794482): Support non-string key.
-      // In ResolveExpressionTypesVisitor we already enforce that key is not nullable.
-      // (String) mapEntry.getKey()
-      SoyExpression mapKey =
-          SoyExpression.forString(
-                  mapEntry.local().invoke(MethodRef.MAP_GET_KEY).checkedCast(STRING_TYPE))
+      Expression getMapKey =
+          mapEntry
+              .local()
+              .invoke(MethodRef.MAP_GET_KEY)
+              .checkedCast(keyRuntimeType.runtimeType())
+              // In ResolveExpressionTypesVisitor we already enforce that key is not nullable.
               .asNonNullable();
+      SoyExpression mapKey = SoyExpression.forSoyValue(keyType, getMapKey);
 
       // resolve() is safe since we called ExpressionDetacher at the very beginning of this method
       // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
@@ -751,11 +753,15 @@ final class ProtoUtils {
               .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
               .checkedCast(valueRuntimeType.runtimeType());
 
-      // Converts the soy value to java type
+      // Convert the soy value to java type
+
       // CheckProtoInitCallsPass already enforces that the value is not nullable. If the value is
       // null, it reports a type mismatch error.
       SoyExpression mapValue =
           SoyExpression.forSoyValue(valueType, getAndResolveMapValue).asNonNullable();
+
+      // iter.hasNext()
+      final Expression iterHasNext = iter.local().invoke(MethodRef.ITERATOR_HAS_NEXT);
 
       // Invokes the putFooFieldMap method in proto message builder
       final Statement putOne = handleMapSetter(mapKey, mapValue, field);

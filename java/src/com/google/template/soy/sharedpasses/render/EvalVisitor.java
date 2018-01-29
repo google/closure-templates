@@ -28,9 +28,9 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -41,6 +41,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -92,10 +93,14 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import com.google.template.soy.types.proto.SoyProtoValueImpl;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -246,22 +251,31 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       values.add(visit(node.getChild(2 * i + 1)));
     }
 
-    if (isStringKeyed) {
+    if (node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE) {
+      if (!isStringKeyed) {
+        throw RenderException.create(
+            String.format(
+                "Currently, map literals must have string keys (key \"%s\" in map %s does not "
+                    + "evaluate to a string).",
+                firstNonstringKeyNode.toSourceString(), node.toSourceString()));
+      }
       // Not an ImmutableMap, because map literals allow duplicate keys (last one wins).
-      Map<String, SoyValue> map = Maps.newLinkedHashMap();
+      Map<String, SoyValue> map = new LinkedHashMap<>();
       for (int i = 0; i < numItems; i++) {
         map.put(keys.get(i).stringValue(), values.get(i));
       }
-      return node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
-          ? DictImpl.forProviderMap(map)
-          : SoyMapImpl.forProviderMap(map);
+      return DictImpl.forProviderMap(map, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
     } else {
-      // TODO: Support map literals with nonstring keys.
-      throw RenderException.create(
-          String.format(
-              "Currently, map literals must have string keys (key \"%s\" in map %s does not "
-                  + "evaluate to a string). Support for nonstring keys is a todo.",
-              firstNonstringKeyNode.toSourceString(), node.toSourceString()));
+      ImmutableMap.Builder<SoyValue, SoyValue> builder = ImmutableMap.builder();
+      for (int i = 0; i < numItems; ++i) {
+        SoyValue key = keys.get(i);
+        SoyValue value = values.get(i);
+        if (isNullOrUndefinedBase(key)) {
+          throw RenderException.create(String.format("null key in entry: null=%s", value));
+        }
+        builder.put(key, value);
+      }
+      return SoyMapImpl.forProviderMap(builder.build());
     }
   }
 
@@ -431,8 +445,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // base is a valid SoyMap or SoyNewMap: get value
     maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
-    SoyValue value =
-        base instanceof SoyMap ? ((SoyMap) base).getItem(key) : ((SoyNewMap) base).get(key);
+
+    SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
+
+    // We need to know whether to invoke the SoyMap or SoyNewMap method.
+    // An instanceof check on the runtime value of base is insufficient, since
+    // DictImpl implements both interfaces. Instead, look at the declared type of the base
+    // expression.
+    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFrom(baseType);
+    SoyValue value = shouldUseNewMap ? ((SoyNewMap) base).get(key) : ((SoyMap) base).getItem(key);
 
     if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(
@@ -441,7 +462,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               itemAccess.getType(), value.getClass().getSimpleName()));
     }
 
-    return (value != null) ? value : UndefinedData.INSTANCE;
+    if (value != null) {
+      return value;
+    } else if (shouldUseNewMap) {
+      // UndefinedData is a misfeature. The new map type should return null for failed lookups.
+      return NullData.INSTANCE;
+    } else {
+      return UndefinedData.INSTANCE;
+    }
   }
 
   /**

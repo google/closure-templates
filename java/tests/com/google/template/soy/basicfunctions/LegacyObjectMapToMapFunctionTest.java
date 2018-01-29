@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
+import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -52,7 +53,8 @@ public final class LegacyObjectMapToMapFunctionTest {
     SoyMapImpl map =
         SoyMapImpl.forProviderMap(
             ImmutableMap.of(
-                "x", CONVERTER.convert("y"), "z", SoyValueConverterUtility.newDict("xx", 2)));
+                StringData.forValue("x"), CONVERTER.convert("y"),
+                StringData.forValue("z"), SoyValueConverterUtility.newDict("xx", 2)));
     SoyMapImpl convertedMap =
         (SoyMapImpl) LEGACY_OBJECT_MAP_TO_MAP.computeForJava(ImmutableList.of(legacyObjectMap));
     assertThat(map.get(StringData.forValue("x")))
@@ -87,7 +89,9 @@ public final class LegacyObjectMapToMapFunctionTest {
                                     BytecodeUtils.constant("a"), BytecodeUtils.constant("b")),
                                 ImmutableList.of(
                                     FieldRef.NULL_PROVIDER.accessor(),
-                                    FieldRef.NULL_PROVIDER.accessor())))))))
+                                    FieldRef.NULL_PROVIDER.accessor())),
+                            FieldRef.enumReference(RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                                .accessor())))))
         .evaluatesToInstanceOf(SoyMapImpl.class);
   }
 }

@@ -17,15 +17,17 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
@@ -50,14 +52,15 @@ public final class MapToLegacyObjectMapFunctionTest {
   public void computeForJava() {
     SoyMapImpl map =
         SoyMapImpl.forProviderMap(
-            ImmutableSortedMap.of(
-                "x", CONVERTER.convert("y"), "z", SoyValueConverterUtility.newDict("xx", 2)));
+            ImmutableMap.of(
+                IntegerData.forValue(42), CONVERTER.convert("y"),
+                StringData.forValue("z"), SoyValueConverterUtility.newDict("xx", 2)));
     SoyDict expectedMap =
-        SoyValueConverterUtility.newDict("x", "y", "z", SoyValueConverterUtility.newDict("xx", 2));
+        SoyValueConverterUtility.newDict("42", "y", "z", SoyValueConverterUtility.newDict("xx", 2));
     SoyDict convertedMap = (SoyDict) MAP_TO_LEGACY_OBJECT_MAP.computeForJava(ImmutableList.of(map));
-    // maps use instance equality to match Javascript behavior
-    assertThat(expectedMap.getItem(StringData.forValue("x")))
-        .isEqualTo(convertedMap.getItem(StringData.forValue("x")));
+    // Keys are coerced to strings in the legacy object map.
+    assertThat(expectedMap.getItem(StringData.forValue("42")))
+        .isEqualTo(convertedMap.getItem(StringData.forValue("42")));
   }
 
   @Test
@@ -71,7 +74,7 @@ public final class MapToLegacyObjectMapFunctionTest {
   public void computeForPySrc() {
     PyExpr map = new PyExpr("map", Integer.MAX_VALUE);
     PyExpr legacyObjectMap = MAP_TO_LEGACY_OBJECT_MAP.computeForPySrc(ImmutableList.of(map));
-    assertThat(legacyObjectMap).isEqualTo(map); // TODO(b/69064788): fix
+    assertThat(legacyObjectMap.getText()).isEqualTo("runtime.map_to_legacy_object_map(map)");
   }
 
   @Test
@@ -85,7 +88,8 @@ public final class MapToLegacyObjectMapFunctionTest {
                         MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
                             BytecodeUtils.newLinkedHashMap(
                                 ImmutableList.of(
-                                    BytecodeUtils.constant("a"), BytecodeUtils.constant("b")),
+                                    SoyExpression.forString(constant("a")).box(),
+                                    SoyExpression.forInt(constant(101L)).box()),
                                 ImmutableList.of(
                                     FieldRef.NULL_PROVIDER.accessor(),
                                     FieldRef.NULL_PROVIDER.accessor())))))))

@@ -108,15 +108,9 @@ public final class MapToLegacyObjectMapFunction
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
-    // TODO(b/69064788): The runtime representations of legacy_object_map and
-    // experimental_map should be different in every backend, just as they are different in JS.
-    // However, based on the low usage of pysrc and its existing incompatibilities, we are going
-    // to try to complete the map migration without touching the pysrc implementation.
-    // If this is feasible, there will be a brief period where legacy_object_map and map are wrongly
-    // interoperable in pysrc in limited situations (the type checker will still rule out many
-    // situations). If this turns out to be infeasible and we need two map types for a long time,
-    // we will need to change pysrc after all.
-    return Iterables.getOnlyElement(args);
+    String map = Iterables.getOnlyElement(args).getText();
+    return new PyExpr(
+        String.format("runtime.map_to_legacy_object_map(%s)", map), Integer.MAX_VALUE);
   }
 
   @Override

@@ -34,7 +34,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.primitive.SanitizedType;
 import java.lang.reflect.Modifier;
 import javax.annotation.Nullable;
@@ -61,7 +61,7 @@ final class SafeStringTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
-  private interface Converter extends Function<Object, SoyValueProvider> {}
+  private interface Converter extends Function<Object, SoyValue> {}
 
   private static final ImmutableMap<Class<?>, Converter> TO_SOY_VALUE =
       ImmutableMap.<Class<?>, Converter>builder()
@@ -69,7 +69,7 @@ final class SafeStringTypes {
               SafeHtml.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeHtml((SafeHtml) obj);
                 }
               })
@@ -77,7 +77,7 @@ final class SafeStringTypes {
               SafeHtmlProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeHtmlProto((SafeHtmlProto) obj);
                 }
               })
@@ -85,7 +85,7 @@ final class SafeStringTypes {
               SafeScript.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeScript((SafeScript) obj);
                 }
               })
@@ -93,7 +93,7 @@ final class SafeStringTypes {
               SafeScriptProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeScriptProto((SafeScriptProto) obj);
                 }
               })
@@ -101,7 +101,7 @@ final class SafeStringTypes {
               SafeStyle.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeStyle((SafeStyle) obj);
                 }
               })
@@ -109,7 +109,7 @@ final class SafeStringTypes {
               SafeStyleProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeStyleProto((SafeStyleProto) obj);
                 }
               })
@@ -117,7 +117,7 @@ final class SafeStringTypes {
               SafeStyleSheet.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeStyleSheet((SafeStyleSheet) obj);
                 }
               })
@@ -125,7 +125,7 @@ final class SafeStringTypes {
               SafeStyleSheetProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeStyleSheetProto((SafeStyleSheetProto) obj);
                 }
               })
@@ -133,7 +133,7 @@ final class SafeStringTypes {
               SafeUrl.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeUrl((SafeUrl) obj);
                 }
               })
@@ -141,7 +141,7 @@ final class SafeStringTypes {
               SafeUrlProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromSafeUrlProto((SafeUrlProto) obj);
                 }
               })
@@ -149,7 +149,7 @@ final class SafeStringTypes {
               TrustedResourceUrl.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromTrustedResourceUrl((TrustedResourceUrl) obj);
                 }
               })
@@ -157,7 +157,7 @@ final class SafeStringTypes {
               TrustedResourceUrlProto.class,
               new Converter() {
                 @Override
-                public SoyValueProvider apply(Object obj) {
+                public SoyValue apply(Object obj) {
                   return SanitizedContents.fromTrustedResourceUrlProto(
                       (TrustedResourceUrlProto) obj);
                 }
@@ -180,7 +180,7 @@ final class SafeStringTypes {
   }
 
   @Nullable
-  static SoyValueProvider convertToSoyValue(Object obj) {
+  static SoyValue convertToSoyValue(Object obj) {
     if (obj == null) {
       return null;
     }

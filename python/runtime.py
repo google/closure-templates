@@ -470,6 +470,21 @@ def parse_float(s):
 def unsupported(str):
   raise Exception("unsupported feature: " + str)
 
+
+def map_to_legacy_object_map(m):
+  """Converts a Soy map to a Soy legacy_object_map.
+
+  legacy_object_maps must have string keys, but maps do not have this
+  restriction.
+
+  Args:
+    m: Map to convert.
+
+  Returns:
+    An equivalent legacy_object_map, with keys coerced to strings.
+  """
+  return {str(key): m[key] for key in m}
+
 ######################
 # Utility functions. #
 ######################

@@ -23378,6 +23378,7 @@ goog.loadModule(function(exports) {'use strict';/*
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
+const SanitizedContent = goog.require('goog.soy.data.SanitizedContent');
 const {assertString} = goog.require('goog.asserts');
 
 /**
@@ -23469,7 +23470,6 @@ function $$legacyObjectMapToMap(obj) {
 
 /**
  * Gets the keys in a map as an array. There are no guarantees on the order.
- * TODO(b/69794482): Support non-string key.
  * @param {!SoyMap<K, V>} map The map to get the keys of.
  * @return {!Array<K>} The array of keys in the given map.
  * @template K, V
@@ -23493,9 +23493,22 @@ function $$populateMap(jspbMap, map) {
   }
 }
 
+/**
+ * SoyMaps, like ES6 Maps and proto maps, allow non-string values as map keys.
+ * But SanitizedContent keys still need to be coerced to strings so that
+ * instances with identical textual content are considered identical for map
+ * lookups.
+ * @param {?} key The key that is being inserted into or looked up in the map.
+ * @return {?} The key, coerced to a string if it is a SanitizedContent object.
+ */
+function $$maybeCoerceKeyToString(key) {
+  return key instanceof SanitizedContent ? '' + key : key;
+}
+
 exports = {
   $$legacyObjectMapToMap,
   $$mapToLegacyObjectMap,
+  $$maybeCoerceKeyToString,
   $$populateMap,
   $$getMapKeys,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
@@ -23949,11 +23962,12 @@ soy.$$assignDefaults = function(obj, defaults) {
 
 /**
  * Checks that the given map key is a string.
+ * Used only for legacy object map literals.
+ * TODO(b/72547235): rename to $$checkLegacyObjectMapLiteralKey.
  * @param {*} key Key to check.
  * @return {string} The given key.
  */
 soy.$$checkMapKey = function(key) {
-  // TODO: Support map literal with nonstring key.
   if ((typeof key) != 'string') {
     throw Error(
         'Map literal\'s key expression must evaluate to string' +

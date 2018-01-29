@@ -161,11 +161,16 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
+    boolean needsRuntimeNullCheck = node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE;
 
     for (int i = 0, n = node.numChildren(); i < n; i += 2) {
       ExprNode keyNode = node.getChild(i);
+      PyExpr key = visit(keyNode);
+      if (needsRuntimeNullCheck) {
+        key = new PyFunctionExprBuilder("runtime.check_not_null").addArg(key).asPyExpr();
+      }
       ExprNode valueNode = node.getChild(i + 1);
-      dict.put(visit(keyNode), visit(valueNode));
+      dict.put(key, visit(valueNode));
     }
 
     // TODO(b/69064788): OrderedDict is being used to represent both legacy object map literals
