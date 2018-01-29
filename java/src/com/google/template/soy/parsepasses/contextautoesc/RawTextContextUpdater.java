@@ -16,10 +16,13 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.internal.base.UnescapeUtils;
+import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDelimiter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriType;
 import com.google.template.soy.soytree.HtmlContext;
@@ -82,141 +85,26 @@ final class RawTextContextUpdater {
    */
   public static Context processRawText(RawTextNode rawTextNode, Context context) {
     String rawText = rawTextNode.getRawText();
+    // If we are in an attribute value, then decode the text.
+    if (context.delimType != AttributeEndDelimiter.NONE) {
+      // this text is part of an attribute value,  so we should unescape it.
+      // NOTE: our caller guarantees (by way of the html parser) that this text cannot exceed the
+      // bounds of the attribute, so we can just unescape the whole thing.
+      rawText = UnescapeUtils.unescapeHtml(rawText);
+    }
     int offset = 0;
     int length = rawText.length();
+    RawTextContextUpdater cu = new RawTextContextUpdater(context);
     while (offset < length) {
-      String unprocessedRawText = rawText.substring(offset);
-      int endOffset;
-      Context startContext = context;
-      Context endContext;
-
-      // If we are in an attribute value, then decode the remaining text
-      // (except for the delimiter) up to the next occurrence of delimiter.
-
-      // The end of the section to decode.  Either before a delimiter or > symbol that closes an
-      // attribute, at the end of the rawText, or -1 if no decoding needs to happen.
-      int attrValueEnd = findEndOfAttributeValue(unprocessedRawText, context.delimType);
-      if (attrValueEnd == -1) {
-        // Outside an attribute value.  No need to decode.
-        RawTextContextUpdater cu = new RawTextContextUpdater();
-        cu.processNextToken(rawTextNode, offset, unprocessedRawText, context);
-        endOffset = offset + cu.numCharsConsumed;
-        endContext = cu.next;
-
-      } else {
-        // Inside an attribute value.  Find the end and decode up to it.
-
-        // All of the languages we deal with (HTML, CSS, and JS) use quotes as delimiters.
-        // When one language is embedded in the other, we need to decode delimiters before trying
-        // to parse the content in the embedded language.
-        //
-        // For example, in
-        //       <a onclick="alert(&quot;Hello {$world}&quot;)">
-        // the decoded value of the event handler is
-        //       alert("Hello {$world}")
-        // so to determine the appropriate escaping convention we decode the attribute value
-        // before delegating to processNextToken.
-        //
-        // We could take the cross-product of two languages to avoid decoding but that leads to
-        // either an explosion in the number of states, or the amount of lookahead required.
-        int unprocessedRawTextLen = unprocessedRawText.length();
-
-        // The end of the attribute value relative to offset.
-        // At attrValueEnd, or attrValueend + 1 if a delimiter
-        // needs to be consumed.
-        int attrEnd =
-            attrValueEnd < unprocessedRawTextLen
-                ? attrValueEnd + context.delimType.text.length()
-                : -1;
-
-        // Decode so that the JavaScript rules work on attribute values like
-        //     <a onclick='alert(&quot;{$msg}!&quot;)'>
-        // If we've already processed the tokens "<a", " onclick='" to get into the
-        // single quoted JS attribute context, then we do three things:
-        //   (1) This class will decode "&quot;" to "\"" and work below to go from State.JS to
-        //       State.JS_DQ_STRING.
-        //   (2) Then the caller checks {$msg} and realizes that $msg is part of a JS string.
-        //   (3) Then, the above will identify the "'" as the end, and so we reach here with:
-        //       r a w T e x t = " ! & q u o t ; ) ' > "
-        //                                         ^ ^
-        //                              attrValueEnd attrEnd
-
-        // We use this example more in the comments below.
-
-        String attrValueTail =
-            UnescapeUtils.unescapeHtml(unprocessedRawText.substring(0, attrValueEnd));
-        // attrValueTail is "!\")" in the example above.
-
-        // Recurse on the decoded value.
-        RawTextContextUpdater cu = new RawTextContextUpdater();
-        Context attrContext = startContext;
-        while (attrValueTail.length() != 0) {
-          cu.processNextToken(rawTextNode, offset, attrValueTail, attrContext);
-          attrValueTail = attrValueTail.substring(cu.numCharsConsumed);
-          attrContext = cu.next;
-        }
-
-        // TODO: Maybe check that context is legal to leave an attribute in.  Throw if the attribute
-        // ends inside a quoted string.
-
-        if (attrEnd != -1) {
-          endOffset = offset + attrEnd;
-          // rawText.charAt(endOffset) is now ">" in the example above.
-
-          // When an attribute ends, we're back in the tag.
-          endContext =
-              context.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
-        } else {
-          // Whole tail is part of an unterminated attribute.
-          if (attrValueEnd != unprocessedRawTextLen) {
-            throw new IllegalStateException();
-          }
-          endOffset = length;
-          endContext = attrContext;
-        }
-      }
-
-      context = endContext;
-      offset = endOffset;
+      offset += cu.processNextToken(rawTextNode, offset, rawText.substring(offset));
     }
-    return context;
+    return cu.context;
   }
 
-  /**
-   * @return The end of the attribute value of -1 if delim indicates we are not in an attribute.
-   *     {@code rawText.length()} if we are in an attribute but the end does not appear in rawText.
-   */
-  private static int findEndOfAttributeValue(String rawText, Context.AttributeEndDelimiter delim) {
-    int rawTextLen = rawText.length();
-    switch (delim) {
-      case DOUBLE_QUOTE:
-      case SINGLE_QUOTE:
-        int quote = rawText.indexOf(delim.text.charAt(0));
-        return quote >= 0 ? quote : rawTextLen;
+  private Context context;
 
-      case SPACE_OR_TAG_END:
-        for (int i = 0; i < rawTextLen; ++i) {
-          char ch = rawText.charAt(i);
-          if (ch == '>' || Character.isWhitespace(ch)) {
-            return i;
-          }
-        }
-        return rawTextLen;
-
-      case NONE:
-        return -1;
-    }
-    throw new AssertionError("Unrecognized delimiter " + delim);
-  }
-
-  /** The amount of rawText consumed. */
-  private int numCharsConsumed;
-
-  /** The context to which we transition. */
-  private Context next;
-
-  private RawTextContextUpdater() {
-    // NOP
+  private RawTextContextUpdater(Context context) {
+    this.context = checkNotNull(context);
   }
 
   /**
@@ -225,10 +113,12 @@ final class RawTextContextUpdater {
    * @param node The node currently being processed
    * @param offset The offset into the node where text starts
    * @param text Non empty.
-   * @param context the current contex
+   * @return the number of characters consumed
    */
-  private void processNextToken(RawTextNode node, int offset, String text, Context context) {
+  private int processNextToken(RawTextNode node, int offset, String text) {
     // Find the transition whose pattern matches earliest in the raw text (and is applicable)
+    int numCharsConsumed;
+    Context next;
     int earliestStart = Integer.MAX_VALUE;
     int earliestEnd = -1;
     Transition earliestTransition = null;
@@ -297,9 +187,9 @@ final class RawTextContextUpdater {
       if (earliestStart < text.length()) {
         transitionOffset += earliestStart;
       }
-      this.next =
+      next =
           earliestTransition.computeNextContext(node, transitionOffset, context, earliestMatcher);
-      this.numCharsConsumed = earliestEnd;
+      numCharsConsumed = earliestEnd;
     } else {
       throw SoyAutoescapeException.createWithNode(
           "Error determining next state when encountering \"" + text + "\" in " + context,
@@ -307,9 +197,11 @@ final class RawTextContextUpdater {
           // bet matched.
           node.substring(Integer.MAX_VALUE /* bogus id */, offset));
     }
-    if (numCharsConsumed == 0 && this.next.state == context.state) {
+    if (numCharsConsumed == 0 && next.state == context.state) {
       throw new IllegalStateException("Infinite loop at `" + text + "` / " + context);
     }
+    this.context = next;
+    return numCharsConsumed;
   }
 
   /**

@@ -17,15 +17,13 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -37,38 +35,24 @@ import java.util.Set;
 final class TemplateCallGraph {
 
   /** The edges. */
-  private final Multimap<TemplateNode, TemplateNode> callers = LinkedHashMultimap.create();
+  private final ListMultimap<TemplateNode, TemplateNode> callers =
+      MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
   /**
    * @param templatesByName A map whose values are the vertices for the call graph, and whose keys
    *     are matched against {@link CallBasicNode#getCalleeName()} to come up with the edges.
    */
-  TemplateCallGraph(final Map<String, ImmutableList<TemplateNode>> templatesByName) {
+  TemplateCallGraph(final ImmutableListMultimap<String, TemplateNode> templatesByName) {
     // Visit each template's body to find call nodes and build the edge multimap.
-    for (ImmutableList<TemplateNode> templateNodes : templatesByName.values()) {
-      for (final TemplateNode tn : templateNodes) {
-        /** Finds calls in templates to build a call graph. */
-        class CallGraphBuilder extends AbstractSoyNodeVisitor<Void> {
-
-          @Override
-          public void visitCallBasicNode(CallBasicNode call) {
-            ImmutableList<TemplateNode> callees = templatesByName.get(call.getCalleeName());
-            if (callees != null) { // Might be a call to an external template.
-              for (TemplateNode callee : callees) {
-                callers.put(callee, tn);
-              }
-            }
-          }
-
-          @Override
-          protected void visitSoyNode(SoyNode node) {
-            if (node instanceof ParentSoyNode<?>) {
-              visitChildren((ParentSoyNode<?>) node);
-            }
+    for (TemplateNode tn : templatesByName.values()) {
+      /** Finds calls in templates to build a call graph. */
+      for (CallBasicNode call : SoyTreeUtils.getAllNodesOfType(tn, CallBasicNode.class)) {
+        ImmutableList<TemplateNode> callees = templatesByName.get(call.getCalleeName());
+        if (callees != null) { // Might be a call to an external template.
+          for (TemplateNode callee : callees) {
+            callers.put(callee, tn);
           }
         }
-
-        new CallGraphBuilder().exec(tn);
       }
     }
   }

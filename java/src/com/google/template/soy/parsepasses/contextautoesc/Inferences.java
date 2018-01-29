@@ -19,7 +19,10 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -69,7 +72,8 @@ final class Inferences {
   private final IdGenerator idGen;
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
-  private final Map<String, List<TemplateNode>> templatesByName = Maps.newLinkedHashMap();
+  private final ListMultimap<String, TemplateNode> templatesByName =
+      MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
   /** The types of templates. */
   private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
@@ -102,7 +106,8 @@ final class Inferences {
    * @param templatesByName Map of template names to instances used to type <code>{call}</code>
    *     commands.
    */
-  public Inferences(IdGenerator idGen, Map<String, ImmutableList<TemplateNode>> templatesByName) {
+  public Inferences(
+      IdGenerator idGen, ImmutableListMultimap<String, TemplateNode> templatesByName) {
     this.parent = null;
     this.idGen = idGen;
     this.templatesByName.putAll(templatesByName);
@@ -118,16 +123,17 @@ final class Inferences {
 
   /**
    * Finds the named templates.
+   *
    * @param templateName A qualified template name.
    */
-  public List<TemplateNode> lookupTemplates(String templateName) {
+  List<TemplateNode> lookupTemplates(String templateName) {
     for (Inferences inferences = this; inferences != null; inferences = inferences.parent) {
       List<TemplateNode> tn = inferences.templatesByName.get(templateName);
-      if (tn != null) {
+      if (!tn.isEmpty()) {
         return tn;
       }
     }
-    return null;
+    return ImmutableList.of();
   }
 
   /**
@@ -231,8 +237,9 @@ final class Inferences {
    *     templates will be available via {@link #lookupTemplates} with the given name.
    */
   public List<TemplateNode> cloneTemplates(String baseName, String derivedName, CallNode callNode) {
-    if (lookupTemplates(derivedName) != null) {
-      throw new AssertionError(derivedName);
+    if (!lookupTemplates(derivedName).isEmpty()) {
+      throw new AssertionError(
+          derivedName + " already has templates: " + lookupTemplates(derivedName));
     }
 
     ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
@@ -321,7 +328,7 @@ final class Inferences {
     }
 
     ImmutableList<TemplateNode> clones = b.build();
-    templatesByName.put(derivedName, clones);
+    templatesByName.putAll(derivedName, clones);
     return clones;
   }
 
@@ -341,11 +348,7 @@ final class Inferences {
    * All known templates.
    */
   public List<TemplateNode> getAllTemplates() {
-    ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
-    for (List<TemplateNode> templates : templatesByName.values()) {
-      b.addAll(templates);
-    }
-    return b.build();
+    return ImmutableList.copyOf(templatesByName.values());
   }
 
   /**
