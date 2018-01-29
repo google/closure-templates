@@ -3136,6 +3136,7 @@ private ExprNode Expr() :
 private ExprNode PrecExpr1() :
 {
   ExprNode expr1, expr2;
+  Token op, op2;
 }
 {
   { ExprNode expr; }
@@ -3145,17 +3146,19 @@ private ExprNode PrecExpr1() :
   // These operators are right associative, the right recursion on PrecExpr1
   // accomplishes this
   [
-    <QCOLON>
+    op = <QCOLON>
     expr1 = PrecExpr1()
 
-    { expr = Operator.NULL_COALESCING.createNode(expr, expr1); }
+    { expr = Operator.NULL_COALESCING.createNode(createSrcLoc(op), expr, expr1); }
   |
     <QMARK>
     expr1 = PrecExpr1()
     <COLON>
     expr2 = PrecExpr1()
 
-    { expr = Operator.CONDITIONAL.createNode(expr, expr1, expr2); }
+    { expr = Operator.CONDITIONAL.createNode(
+        expr.getSourceLocation().extend(expr2.getSourceLocation()), expr, expr1, expr2);
+    }
   ]
 
   { return expr; }
@@ -3178,7 +3181,12 @@ private ExprNode PrecExpr2() :
     op = <OR>
     rightHand = PrecExpr3()
 
-    { expr = createOperatorNode(op.image, 2, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        2,
+        expr,
+        rightHand); }
   )*
 
   { return expr; }
@@ -3201,7 +3209,13 @@ private ExprNode PrecExpr3() :
     op = <AND>
     rightHand = PrecExpr4()
 
-    { expr = createOperatorNode(op.image, 3, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        3,
+        expr,
+        rightHand);
+    }
   )*
 
   { return expr; }
@@ -3228,7 +3242,13 @@ private ExprNode PrecExpr4() :
     )
     rightHand = PrecExpr5()
 
-    { expr = createOperatorNode(op.image, 4, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        4,
+        expr,
+        rightHand);
+    }
   )*
 
   { return expr; }
@@ -3259,7 +3279,13 @@ private ExprNode PrecExpr5() :
     )
     rightHand = PrecExpr6()
 
-    { expr = createOperatorNode(op.image, 5, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        5,
+        expr,
+        rightHand);
+    }
   )*
 
   { return expr; }
@@ -3286,7 +3312,13 @@ private ExprNode PrecExpr6() :
     )
     rightHand = PrecExpr7()
 
-    { expr = createOperatorNode(op.image, 6, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        6,
+        expr,
+        rightHand);
+    }
   )*
 
   { return expr; }
@@ -3315,7 +3347,13 @@ private ExprNode PrecExpr7() :
     )
     rightHand = PrecExpr8()
 
-    { expr = createOperatorNode(op.image, 7, expr, rightHand); }
+    { expr = createOperatorNode(
+        createSrcLoc(op),
+        op.image,
+        7,
+        expr,
+        rightHand);
+    }
   )*
 
   { return expr; }
@@ -3329,7 +3367,7 @@ private ExprNode PrecExpr7() :
  */
 private ExprNode PrecExpr8() :
 {
-  Token unaryOp;
+  Token op;
 }
 {
   { ExprNode expr; }
@@ -3338,23 +3376,27 @@ private ExprNode PrecExpr8() :
     expr = PrecExpr9()
   |
     (
-      unaryOp = <NOT>
+      op = <NOT>
     |
-      unaryOp = <MINUS>
+      op = <MINUS>
     )
     expr = PrecExpr8()
 
     {
-      if (unaryOp.kind == MINUS && expr instanceof IntegerNode) {
-        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+      if (op.kind == MINUS && expr instanceof IntegerNode) {
+        SourceLocation newLoc = createSrcLoc(op).extend(expr.getSourceLocation());
         long value = -1 * ((IntegerNode) expr).getValue();
         expr = new IntegerNode(value, newLoc);
-      } else if (unaryOp.kind == MINUS && expr instanceof FloatNode) {
-        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+      } else if (op.kind == MINUS && expr instanceof FloatNode) {
+        SourceLocation newLoc = createSrcLoc(op).extend(expr.getSourceLocation());
         double value = -1 * ((FloatNode) expr).getValue();
         expr = new FloatNode(value, newLoc);
       } else {
-        expr = createOperatorNode(unaryOp.image, 8, expr);
+        expr = createOperatorNode(
+            createSrcLoc(op),
+            op.image,
+            8,
+            expr);
       }
     }
   )

@@ -219,8 +219,6 @@ public class ExpressionCompilerTest {
   public void testNegativeOpNode() {
     assertExpression("-1").evaluatesTo(-1L);
     assertExpression("-1.0").evaluatesTo(-1.0);
-    // TODO(user): this should be rejected by the type checker
-    assertExpression("-'asdf'").throwsException(SoyDataException.class);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("-$foo").evaluatesTo(IntegerData.forValue(-1));

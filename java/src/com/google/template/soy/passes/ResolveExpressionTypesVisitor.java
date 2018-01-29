@@ -180,8 +180,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
-  private static final SoyErrorKind INCOMPATIBLE_AIRTHMETIC_OP =
+  private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
+  private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
+      SoyErrorKind.of("Using arithmetic operators on the Soy type ''{0}'' is illegal.");
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
@@ -580,7 +582,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (SoyTypes.isNumericOrUnknown(childType)) {
         node.setType(childType);
       } else {
-        // TODO(lukes): consider making this an error -'string' doesn't make much sense
+        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP_UNARY, childType);
         node.setType(UnknownType.getInstance());
       }
       tryApplySubstitution(node);
@@ -615,7 +617,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_AIRTHMETIC_OP, left, right);
+        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
         result = UnknownType.getInstance();
       }
       node.setType(result);
@@ -956,7 +958,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_AIRTHMETIC_OP, left, right);
+        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
         result = UnknownType.getInstance();
       }
       // Division is special. it is always coerced to a float. For other operators, use the value

@@ -201,14 +201,15 @@ public enum Operator {
    * @return The matching OperatorNode.
    * @throws IllegalArgumentException If there is no Soy operator matching the given data.
    */
-  public static final OperatorNode createOperatorNode(String op, int prec, ExprNode... children) {
+  public static final OperatorNode createOperatorNode(
+      SourceLocation location, String op, int prec, ExprNode... children) {
     checkArgument(OPERATOR_TABLE.containsRow(op));
 
     Operator operator = OPERATOR_TABLE.get(op, children.length);
     if (operator.getPrecedence() != prec) {
       throw new IllegalArgumentException("invalid precedence " + prec + " for operator " + op);
     }
-    return operator.createNode(children);
+    return operator.createNode(location, children);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -321,12 +322,9 @@ public enum Operator {
   public abstract OperatorNode createNode(SourceLocation location);
 
   /** Creates a node representing this operator, with the given children. */
-  public final OperatorNode createNode(ExprNode... children) {
+  public final OperatorNode createNode(SourceLocation location, ExprNode... children) {
     checkArgument(children.length == getNumOperands());
-    // TODO(lukes): the source locations for all ExprNodes are pretty much a joke, currently all
-    // ParentExprNodes just use the source location of their first child, so that is what we do here
-    // but it is just wrong.
-    OperatorNode node = createNode(children[0].getSourceLocation());
+    OperatorNode node = createNode(location);
     for (ExprNode child : children) {
       node.addChild(child);
     }

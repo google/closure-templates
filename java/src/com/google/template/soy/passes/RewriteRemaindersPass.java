@@ -133,7 +133,9 @@ final class RewriteRemaindersPass extends CompilerFilePass {
       ExprNode plural = currPluralNode.getExpr().getRoot().copy(new CopyState());
       ExprNode offset =
           new IntegerNode(currPluralNode.getOffset(), functionNode.getSourceLocation());
-      ExprNode remainder = Operator.MINUS.createNode(plural, offset);
+      ExprNode remainder =
+          Operator.MINUS.createNode(
+              plural.getSourceLocation().extend(offset.getSourceLocation()), plural, offset);
       functionNode.getParent().replaceChild(functionNode, remainder);
     }
 
