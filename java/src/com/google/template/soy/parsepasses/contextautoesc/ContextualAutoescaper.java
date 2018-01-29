@@ -21,8 +21,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -40,11 +40,9 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -99,13 +97,11 @@ public final class ContextualAutoescaper {
    *     compiled with fileSet to produce a correct output. See {@link DerivedTemplateUtils} for an
    *     explanation of these.
    */
-  public List<TemplateNode> rewrite(
-      SoyFileSetNode fileSet, TemplateRegistry registry, ErrorReporter errorReporter) {
+  public List<TemplateNode> rewrite(SoyFileSetNode fileSet, ErrorReporter errorReporter) {
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
 
-    // TODO(lukes): why aren't we just using the TemplateRegistry?
-    Map<String, ImmutableList<TemplateNode>> templatesByName = findTemplates(files);
+    ImmutableListMultimap<String, TemplateNode> templatesByName = findTemplates(files);
 
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
     // we choose.
@@ -221,10 +217,9 @@ public final class ContextualAutoescaper {
    *
    * @param files Modified in place.
    */
-  private static Map<String, ImmutableList<TemplateNode>> findTemplates(
+  private static ImmutableListMultimap<String, TemplateNode> findTemplates(
       Iterable<? extends SoyFileNode> files) {
-    final Map<String, ImmutableList.Builder<TemplateNode>> templatesByName =
-        Maps.newLinkedHashMap();
+    ImmutableListMultimap.Builder<String, TemplateNode> builder = ImmutableListMultimap.builder();
     for (SoyFileNode file : files) {
       for (TemplateNode template : file.getChildren()) {
         String templateName;
@@ -233,18 +228,10 @@ public final class ContextualAutoescaper {
         } else {
           templateName = ((TemplateDelegateNode) template).getDelTemplateName();
         }
-        if (!templatesByName.containsKey(templateName)) {
-          templatesByName.put(templateName, ImmutableList.<TemplateNode>builder());
-        }
-        templatesByName.get(templateName).add(template);
+        builder.put(templateName, template);
       }
     }
-    final ImmutableMap.Builder<String, ImmutableList<TemplateNode>> templatesByNameBuilder =
-        ImmutableMap.builder();
-    for (Map.Entry<String, ImmutableList.Builder<TemplateNode>> e : templatesByName.entrySet()) {
-      templatesByNameBuilder.put(e.getKey(), e.getValue().build());
-    }
-    return templatesByNameBuilder.build();
+    return builder.build();
   }
 
   private static final Predicate<TemplateNode> REQUIRES_INFERENCE =

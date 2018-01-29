@@ -57,9 +57,6 @@ public enum HtmlContext {
   /** Inside an HTML attribute name. */
   HTML_ATTRIBUTE_NAME(EscapingMode.FILTER_HTML_ATTRIBUTES),
 
-  /** Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag. */
-  HTML_BEFORE_ATTRIBUTE_VALUE("(unexpected state)"),
-
   /** Inside an HTML comment. */
   HTML_COMMENT(EscapingMode.ESCAPE_HTML_RCDATA),
 

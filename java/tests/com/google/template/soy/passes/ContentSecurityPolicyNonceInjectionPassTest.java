@@ -60,9 +60,6 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
 
   @Test
   public void testManyScripts() {
-    // TODO(b/31770394): some of these tests are disabled in stricthtml mode because the autoescaper
-    // rejects the code injected even though it is safe.  It is better to wait for when the
-    // autoescaper is rewritten to account for the html nodes than to try to make it compatible.
     assertInjected(
         join(
             "{template .foo}\n",

@@ -216,27 +216,6 @@ public final class Context {
     return this;
   }
 
-  // TODO(lukes): see if this method makes sense after the migration to the html tag nodes
-  /** Returns a context that can be used to compute the escaping mode for a dynamic value. */
-  Context getContextBeforeDynamicValue() {
-    // Some epsilon transitions need to be delayed until we get into a branch.
-    // For example, we do not transition into an unquoted attribute value context just because
-    // the raw text node that contained the "=" did not contain a quote character because the
-    // quote character may appear inside branches as in
-    //     <a href={if ...}"..."{else}"..."{/if}>
-    // which was derived from production code.
-
-    // But we need to force epsilon transitions to happen consistentky before a dynamic value is
-    // considered as in
-    //    <a href={print $x}>
-    // where we consider $x as happening in an unquoted attribute value context, not as occurring
-    // before an attribute value.
-    if (state == HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE) {
-      return computeContextAfterAttributeDelimiter(
-          elType, attrType, AttributeEndDelimiter.SPACE_OR_TAG_END, uriType, templateNestDepth);
-    }
-    return this;
-  }
 
   /**
    * Computes the context after an attribute delimiter is seen.
@@ -1130,6 +1109,7 @@ public final class Context {
         case "xmp":
           elType = ElementType.XMP;
           break;
+        default: // fall out
       }
     }
     return toBuilder()
