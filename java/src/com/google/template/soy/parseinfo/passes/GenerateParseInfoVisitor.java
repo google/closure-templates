@@ -33,7 +33,6 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -296,13 +295,6 @@ public final class GenerateParseInfoVisitor
   protected void visitSoyFileNode(SoyFileNode node) {
     if (node.getSoyFileKind() != SoyFileKind.SRC) {
       return; // don't generate code for deps
-    }
-
-    if (node.getFilePath() == null) {
-      throw LegacyInternalSyntaxException.createWithMetaInfo(
-          "In order to generate parse info, all Soy files must have paths (file name is"
-              + " extracted from the path).",
-          node.getSourceLocation());
     }
 
     String javaClassName = soyFileToJavaClassNameMap.get(node);

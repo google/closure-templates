@@ -160,8 +160,7 @@ public final class SoyGeneralOptions implements Cloneable {
    *
    * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
    *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-   * @throws com.google.template.soy.base.SoySyntaxException If one of the values is not a valid Soy
-   *     primitive type.
+   * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
    */
   public SoyGeneralOptions setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
     setCompileTimeGlobalsInternal(

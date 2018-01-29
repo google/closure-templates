@@ -198,7 +198,7 @@ public final class ContextualAutoescaper {
       ErrorReporter errorReporter, Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
     // First, get to the root cause of the exception, and assemble an error message indicating
     // the full call stack that led to the failure.
-    String message = "- " + e.getMessage();
+    String message = "- " + e.getOriginalMessage();
     while (e.getCause() instanceof SoyAutoescapeException) {
       e = (SoyAutoescapeException) e.getCause();
       message += "\n- " + e.getMessage();
@@ -209,10 +209,9 @@ public final class ContextualAutoescaper {
     // because a single template was called by multiple other contextual templates.)
     // TODO(gboyer): Delete this logic once deprecated-contextual is removed.
     SourceLocation location = Preconditions.checkNotNull(e.getSourceLocation());
-    if (errorLocations.contains(location)) {
+    if (!errorLocations.add(location)) {
       return;
     }
-    errorLocations.add(location);
     errorReporter.report(location, AUTOESCAPE_ERROR, message);
   }
 

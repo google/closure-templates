@@ -19,7 +19,6 @@ package com.google.template.soy.soyparse;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -244,15 +243,6 @@ final class ParseErrors {
       default:
         return SoyFileParserConstants.tokenImage[tokenId];
     }
-  }
-
-  static void reportLegacyInternalSyntaxException(
-      ErrorReporter reporter, String filePath, LegacyInternalSyntaxException exception) {
-    SourceLocation sourceLocation = exception.getSourceLocation();
-    if (!sourceLocation.isKnown()) {
-      sourceLocation = new SourceLocation(filePath);
-    }
-    reporter.report(sourceLocation, PLAIN_ERROR, exception.getOriginalMessage());
   }
 
   static void reportTokenMgrError(

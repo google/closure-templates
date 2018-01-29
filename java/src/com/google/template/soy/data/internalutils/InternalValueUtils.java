@@ -18,8 +18,6 @@ package com.google.template.soy.data.internalutils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
@@ -110,7 +108,7 @@ public class InternalValueUtils {
    * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
    *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @return An equivalent map in the internal format.
-   * @throws SoySyntaxException If the map contains an invalid value.
+   * @throws IllegalArgumentException If the map contains an invalid value.
    */
   public static ImmutableMap<String, PrimitiveData> convertCompileTimeGlobalsMap(
       Map<String, ?> compileTimeGlobalsMap) {
@@ -133,8 +131,11 @@ public class InternalValueUtils {
         value = null; // make compiler happy
       }
       if (!isValidValue) {
-        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
-            "Compile-time globals map contains invalid value: " + valueObj + ".");
+        throw new IllegalArgumentException(
+            "Compile-time globals map contains invalid value: "
+                + valueObj
+                + " for key: "
+                + entry.getKey());
       }
 
       resultMapBuilder.put(entry.getKey(), value);

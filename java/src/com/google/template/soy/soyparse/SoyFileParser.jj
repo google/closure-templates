@@ -56,7 +56,6 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
@@ -603,8 +602,6 @@ public class SoyFileParser {
       soyFileNode = SoyFile();
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(errorReporter, filePath, e, token_source.curLexState);
-    } catch (LegacyInternalSyntaxException e) {
-      ParseErrors.reportLegacyInternalSyntaxException(errorReporter, filePath, e);
     } catch (TokenMgrError e) {
       ParseErrors.reportTokenMgrError(errorReporter, filePath, e);
     }

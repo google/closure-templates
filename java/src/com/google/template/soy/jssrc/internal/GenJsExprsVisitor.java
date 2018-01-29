@@ -91,8 +91,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     }
   }
 
-  private static final SoyErrorKind ARITY_MISMATCH =
-      SoyErrorKind.of("Print directive ''{0}'' called with {1} arguments, expected {2}.");
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
@@ -226,16 +224,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
 
       // Get directive args.
       List<ExprRootNode> argNodes = directiveNode.getArgs();
-      if (!directive.getValidArgsSizes().contains(argNodes.size())) {
-        // TODO(lukes): this should be dead, delete it
-        errorReporter.report(
-            node.getSourceLocation(),
-            ARITY_MISMATCH,
-            directiveNode.getName(),
-            argNodes.size(),
-            directive.getValidArgsSizes());
-        return;
-      }
 
       // Convert args to CodeChunks.
       List<CodeChunk.WithValue> argChunks = new ArrayList<>(argNodes.size());

@@ -20,9 +20,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -54,6 +54,8 @@ import java.util.List;
  *
  */
 public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
+  private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =
+      SoyErrorKind.of("Unknown SoyPySrcPrintDirective ''{0}''.");
 
   /** Injectable factory for creating an instance of this class. */
   public static final class GenPyExprsVisitorFactory {
@@ -180,29 +182,15 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
       // Get directive.
       SoyPrintDirective directive = directiveNode.getPrintDirective();
       if (!(directive instanceof SoyPySrcPrintDirective)) {
-        throw LegacyInternalSyntaxException.createWithMetaInfo(
-            "Failed to find SoyPySrcPrintDirective with name '"
-                + directiveNode.getName()
-                + "'"
-                + " (tag "
-                + node.toSourceString()
-                + ")",
-            directiveNode.getSourceLocation());
+        errorReporter.report(
+            directiveNode.getSourceLocation(),
+            UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE,
+            directiveNode.getName());
+        continue;
       }
 
       // Get directive args.
       List<ExprRootNode> args = directiveNode.getArgs();
-      if (!directive.getValidArgsSizes().contains(args.size())) {
-        throw LegacyInternalSyntaxException.createWithMetaInfo(
-            "Print directive '"
-                + directiveNode.getName()
-                + "' used with the wrong number of"
-                + " arguments (tag "
-                + node.toSourceString()
-                + ").",
-            directiveNode.getSourceLocation());
-      }
-
       // Translate directive args.
       List<PyExpr> argsPyExprs = new ArrayList<>(args.size());
       for (ExprRootNode arg : args) {

@@ -102,8 +102,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictModeIsDefault() {
     assertRewriteFails(
-        "In file no-path:5:4, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -156,7 +155,7 @@ public final class ContextualAutoescaperTest {
     // The old autoescaper allowed this because it delayed deciding on the quoting for the attribute
     // until later.
     assertRewriteFails(
-        "In file no-path:4:9, template ns.foo: Error while re-contextualizing template ns.uri "
+        "Error while re-contextualizing template ns.uri "
             + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
             + "- In file no-path:8:2, template ns.uri__C1136f8: Soy can't prove this URI has a "
             + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
@@ -524,7 +523,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testPrintInsideJsCommentRejected() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:12, template ns.foo: " + "JS comments cannot contain dynamic values.",
+        "JS comments cannot contain dynamic values.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -538,9 +537,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testJsStringInsideQuotesRejected() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:22, template ns.foo: "
-            + "Escaping modes [ESCAPE_JS_VALUE] not compatible with"
-            + " (Context JS_SQ_STRING).",
+        "Escaping modes [ESCAPE_JS_VALUE] not compatible with" + " (Context JS_SQ_STRING).",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -593,7 +590,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:4:13, template ns.foo: Js template literals cannot contain dynamic values",
+        "Js template literals cannot contain dynamic values",
         join(
             "{namespace ns}\n\n",
             "{template .foo kind=\"js\"}\n",
@@ -602,7 +599,7 @@ public final class ContextualAutoescaperTest {
 
     // can't merge across different template depths
     assertRewriteFails(
-        "In file no-path:4:23, template ns.foo: {if} command branch ends in a different context "
+        "{if} command branch ends in a different context "
             + "than preceding branches: {else}</div>",
         join(
             "{namespace ns}\n\n",
@@ -662,8 +659,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testBrokenForLoop() throws Exception {
     assertRewriteFails(
-        "In file no-path:6:5, template ns.bar: "
-            + "{for} body does not end in the same context after repeated entries.",
+        "{for} body does not end in the same context after repeated entries.",
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
@@ -907,8 +903,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTemplateUnknownJsSlashMatters() throws Exception {
     assertRewriteFails(
-        "In file no-path:8:5, template ns.foo: "
-            + "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
+        "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
             + " is a RegExp literal or division operator."
             + "  Please add parentheses in the branches leading to `/ 2  `",
         join(
@@ -949,7 +944,7 @@ public final class ContextualAutoescaperTest {
             "\">\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:6:50, template ns.foo: Cannot determine which part of the URL this dynamic"
+        "Cannot determine which part of the URL this dynamic"
             + " value is in. Most likely, a preceding conditional block began a ?query or "
             + "#fragment, but only on one branch.",
         join(
@@ -971,7 +966,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testUrlMaybeVariableSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:6:14, template ns.foo: Soy can't prove this URI concatenation has a safe"
+        "Soy can't prove this URI concatenation has a safe"
             + " scheme at compile time. Either combine adjacent print statements (e.g. {$x + $y}"
             + " instead of {$x}{$y}), or introduce disambiguating characters"
             + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
@@ -987,7 +982,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testUrlMaybeVariableSchemeColon() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:14, template ns.foo: Soy can't safely process a URI that might start "
+        "Soy can't safely process a URI that might start "
             + "with a variable scheme. For example, {$x}:{$y} could have an XSS if $x is "
             + "'javascript' and $y is attacker-controlled. Either use a hard-coded scheme, or "
             + "introduce disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, "
@@ -1003,8 +998,8 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testUrlMaybeSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:13, template ns.foo:"
-            + " Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
+        ""
+            + "Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
             + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
             + " print statement to the start of the URI to enable runtime validation"
             + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
@@ -1024,7 +1019,7 @@ public final class ContextualAutoescaperTest {
             + " Otherwise, hardcode the full URI in the template or pass a complete"
             + " SanitizedContent or SafeUri object.";
     assertRewriteFails(
-        "In file no-path:5:26, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1032,7 +1027,7 @@ public final class ContextualAutoescaperTest {
             "<a href=\"javas{nil}cript:{$x}\"></a>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:29, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1040,7 +1035,7 @@ public final class ContextualAutoescaperTest {
             "<style>url('javas{nil}cript:{$x}')</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:24, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1048,7 +1043,7 @@ public final class ContextualAutoescaperTest {
             "<style>url(\"javascript:{$x}\")</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:30, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1056,7 +1051,7 @@ public final class ContextualAutoescaperTest {
             "<style>url(\"javascript:alert({$x})\")</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:23, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1065,7 +1060,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:17, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1073,7 +1068,7 @@ public final class ContextualAutoescaperTest {
             "<style>url(data:{$x})</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:15, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1081,7 +1076,7 @@ public final class ContextualAutoescaperTest {
             "<a href=\"data:{$x}\"></a>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:15, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1089,7 +1084,7 @@ public final class ContextualAutoescaperTest {
             "<a href=\"blob:{$x}\"></a>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:21, template ns.foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
@@ -1152,7 +1147,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testRecursiveTemplateGuessFails() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:5, template ns.foo: Error while re-contextualizing template ns.quot in"
+        "Error while re-contextualizing template ns.quot in"
             + " context (Context JS REGEX):"
             + "\n- In file no-path:10:27, template ns.quot__C4011: Error while re-contextualizing"
             + " template ns.quot in context (Context JS_DQ_STRING):"
@@ -1803,8 +1798,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTypedLetBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
-        "In file no-path:6:4, template ns.t: "
-            + "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
             + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
             + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
@@ -1817,8 +1811,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:6:4, template ns.t: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -1831,8 +1824,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:6:9, template ns.t: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"js\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -1845,8 +1837,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:4, template ns.t: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -1860,8 +1851,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:4, template ns.t: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -1971,8 +1961,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTypedParamBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
-        "In file no-path:5:44, template ns.caller: "
-            + "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
             + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
             + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
@@ -1992,8 +1981,7 @@ public final class ContextualAutoescaperTest {
 
     // noAutoescape has a special error message.
     assertRewriteFails(
-        "In file no-path:5:44, template ns.caller: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2012,8 +2000,7 @@ public final class ContextualAutoescaperTest {
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "In file no-path:5:41, template ns.caller: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -2103,8 +2090,7 @@ public final class ContextualAutoescaperTest {
 
     // Other escape-cancelling directives are still not allowed.
     assertRewriteFails(
-        "In file no-path:5:44, template ns.caller: "
-            + "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
             + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
             + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
@@ -2124,8 +2110,7 @@ public final class ContextualAutoescaperTest {
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "In file no-path:4:41, template ns.caller: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -2248,8 +2233,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictModeRejectsAutoescapeCancellingDirectives() {
     assertRewriteFails(
-        "In file no-path:5:4, template ns.main: "
-            + "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
             + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
             + "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
         join(
@@ -2260,8 +2244,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:4, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2271,8 +2254,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:10, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"uri\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2282,8 +2264,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:6, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"attributes\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2293,8 +2274,7 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:9, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"js\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2305,8 +2285,7 @@ public final class ContextualAutoescaperTest {
 
     // NOTE: There's no recommended context for textarea, since it's really essentially text.
     assertRewriteFails(
-        "In file no-path:5:11, template ns.main: "
-            + "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with appropriate kind=\"...\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
@@ -2319,8 +2298,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictModeRejectsNonStrictCalls() {
     assertRewriteFails(
-        "In file no-path:4:4, template ns.main: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -2330,8 +2308,7 @@ public final class ContextualAutoescaperTest {
             "Hello World\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:1, template ns.main: "
-            + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
@@ -2360,8 +2337,7 @@ public final class ContextualAutoescaperTest {
   public void testContextualCannotCallStrictOfWrongContext() {
     // Can't call a text template ns.from a strict context.
     assertRewriteFails(
-        "In file no-path:4:1, template ns.main: "
-            + "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
+        "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
             + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
             + "templates of other content kinds, but non-strict templates do not.",
         join(
@@ -2376,8 +2352,7 @@ public final class ContextualAutoescaperTest {
             "<b>{$x}</b>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:1, template ns.main: "
-            + "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
+        "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
             + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
             + "templates of other content kinds, but non-strict templates do not.",
         join(
@@ -2423,8 +2398,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictModeRequiresStartAndEndToBeCompatible() {
     assertRewriteFails(
-        "In file no-path:3:1, template ns.main: "
-            + "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
+        "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
             + "Likely cause is an unterminated string literal.",
         join("{namespace ns}\n\n", "{template .main kind=\"js\"}\nvar x='\n{/template}\n"));
   }
@@ -2432,8 +2406,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictUriMustNotBeEmpty() {
     assertRewriteFails(
-        "In file no-path:3:1, template ns.main: "
-            + "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
+        "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
             + "Likely cause is an unterminated or empty URI.",
         join("{namespace ns}\n\n", "{template .main kind=\"uri\"}\n", "{/template}"));
   }
@@ -2639,14 +2612,9 @@ public final class ContextualAutoescaperTest {
     return escapingDirectives.stream().map(SoyPrintDirective::getName).collect(toImmutableList());
   }
 
-  private static String getForbiddenMsgError(String path, String template, String context) {
-    return "In file "
-        + path
-        + ", template ns."
-        + template
-        + ": "
-        + "Messages are not supported in this context, because it would mean asking translators to "
-        + "write source code; if this is desired, try factoring the message into a {let} block: "
+  private static String getForbiddenMsgError(String context) {
+    return "Messages are not supported in this context, because it would mean asking translators "
+        + "to write source code; if this is desired, try factoring the message into a {let} block: "
         + "(Context "
         + context
         + ")";
@@ -2655,21 +2623,21 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testMsgForbiddenUriStartContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
+        getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
+        getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "URI START NORMAL"),
+        getForbiddenMsgError("URI START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main kind=\"uri\"}\n",
@@ -2680,21 +2648,21 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testMsgForbiddenJsContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
             "{template .main kind=\"js\"}\n",
@@ -2705,14 +2673,14 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testMsgForbiddenHtmlContexts() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:8", "main", "HTML_TAG NORMAL"),
+        getForbiddenMsgError("HTML_TAG NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
             "  <div {msg desc=\"foo\"}attributes{/msg}>Test</div>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "HTML_TAG"),
+        getForbiddenMsgError("HTML_TAG"),
         join(
             "{namespace ns}\n\n",
             "{template .main kind=\"attributes\"}\n",
@@ -2723,21 +2691,21 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testMsgForbiddenCssContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
             "{template .main kind=\"css\"}\n",

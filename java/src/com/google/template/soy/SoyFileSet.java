@@ -35,7 +35,6 @@ import com.google.inject.Inject;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
@@ -481,7 +480,7 @@ public final class SoyFileSet {
      * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
      *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
      * @return This builder.
-     * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
+     * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
      */
     public Builder setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
       getGeneralOptions().setCompileTimeGlobals(compileTimeGlobalsMap);

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.io.CharSource;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
@@ -63,7 +62,7 @@ public final class SoyUtils {
    * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
    *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @param output The object to append the generated text to.
-   * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
+   * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
    */
   public static void generateCompileTimeGlobalsFile(
