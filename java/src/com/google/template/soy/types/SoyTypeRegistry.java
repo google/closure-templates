@@ -96,8 +96,22 @@ public final class SoyTypeRegistry {
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
-  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
-      SoyErrorKind.of("''{0}'' is not allowed as a map key type.");
+  // TODO(b/72409542): consider allowing string|int
+  private static final ImmutableSet<SoyType.Kind> ALLOWED_MAP_KEY_TYPES =
+      ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.STRING, Kind.PROTO_ENUM);
+
+  private static final SoyErrorKind BAD_MAP_KEY_TYPE;
+
+  static {
+    StringBuilder sb =
+        new StringBuilder("''{0}'' is not allowed as a map key type. Allowed map key types: ");
+    ImmutableList<SoyType.Kind> allowed = ALLOWED_MAP_KEY_TYPES.asList();
+    for (int i = 0; i < allowed.size() - 1; ++i) {
+      sb.append(allowed.get(i).toString().toLowerCase()).append(", ");
+    }
+    sb.append(allowed.get(allowed.size() - 1).toString().toLowerCase()).append(".");
+    BAD_MAP_KEY_TYPE = SoyErrorKind.of(sb.toString());
+  }
 
   /** A type registry that defaults all unknown types to the 'unknown' type. */
   public static final SoyTypeRegistry DEFAULT_UNKNOWN =
@@ -330,11 +344,7 @@ public final class SoyTypeRegistry {
             void checkPermissibleGenericTypes(
                 List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {
               SoyType keyType = types.get(0);
-              // TODO(b/72453574): add integration tests for permissible but unusual key types
-              // (protos, lists, etc.)
-              if (keyType.getKind() == Kind.UNKNOWN
-                  || keyType.getKind() == Kind.ANY
-                  || SoyTypes.isNullable(keyType)) {
+              if (!ALLOWED_MAP_KEY_TYPES.contains(keyType.getKind())) {
                 errorReporter.report(typeNodes.get(0).sourceLocation(), BAD_MAP_KEY_TYPE, keyType);
               }
             }
