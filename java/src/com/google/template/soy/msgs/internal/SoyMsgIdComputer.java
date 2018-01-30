@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
  * Static methods to compute the unique message id for a message.
  *
  */
-public class SoyMsgIdComputer {
+final class SoyMsgIdComputer {
 
   private SoyMsgIdComputer() {}
 
@@ -46,7 +46,7 @@ public class SoyMsgIdComputer {
    *     text/html}", or null if not used.
    * @return The computed message id.
    */
-  public static long computeMsgId(
+  static long computeMsgId(
       ImmutableList<SoyMsgPart> msgParts, @Nullable String meaning, @Nullable String contentType) {
     return computeMsgIdHelper(msgParts, false, meaning, contentType);
   }
@@ -67,7 +67,7 @@ public class SoyMsgIdComputer {
    *     text/html}", or null if not used..
    * @return The computed message id.
    */
-  public static long computeMsgIdUsingBracedPhs(
+  static long computeMsgIdUsingBracedPhs(
       ImmutableList<SoyMsgPart> msgParts, @Nullable String meaning, @Nullable String contentType) {
     return computeMsgIdHelper(msgParts, true, meaning, contentType);
   }
