@@ -294,8 +294,8 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
           logger.log(
               Level.WARNING,
               String.format(
-                  "Accessing a proto of type %s as a %s is deprecated and won't work in "
-                      + "Javascript. Switch to strict types: go/soystatic",
+                  "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+                  ,
                   fullName, type),
               e);
         } else {
@@ -303,8 +303,8 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
           logger.log(
               Level.WARNING,
               String.format(
-                  "Accessing a proto of type %s as a %s is deprecated and won't work in "
-                      + "Javascript. Switch to strict types: go/soystatic\n\t%s",
+                  "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+                      + "\n\t%s",
                   fullName, type, locationKey));
         }
       }
