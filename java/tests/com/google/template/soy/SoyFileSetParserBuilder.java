@@ -72,7 +72,7 @@ public final class SoyFileSetParserBuilder {
   private boolean runAutoescaper = false;
   // By default, do not modify the AST to add the HTML comments, since many unit tests depend on
   // the order of the nodes in the AST.
-  private boolean addHtmlAttributesForDebugging = false;
+  private boolean addHtmlCommentsForDebug = false;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -215,13 +215,12 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
-   * Tests can use this method to force running {@code AddDebugAttributesPass}. By default, this
-   * compiler pass is disabled for tests, since it modifies the AST structure and will break a lot
-   * of unit tests that rely on particular structure.
+   * Tests can use this method to force running {@code AddHtmlCommentsForDebugPass}. By default,
+   * this compiler pass is disabled for tests, since it modifies the AST structure and will break a
+   * lot of unit tests that rely on particular structure.
    */
-  public SoyFileSetParserBuilder addHtmlAttributesForDebugging(
-      boolean addHtmlAttributesForDebugging) {
-    this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
+  public SoyFileSetParserBuilder addHtmlCommentsForDebug(boolean addHtmlCommentsForDebug) {
+    this.addHtmlCommentsForDebug = addHtmlCommentsForDebug;
     return this;
   }
 
@@ -258,7 +257,7 @@ public final class SoyFileSetParserBuilder {
             .setGeneralOptions(options)
             .setConformanceConfig(conformanceConfig)
             .setAutoescaperEnabled(runAutoescaper)
-            .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
+            .addHtmlCommentsForDebug(addHtmlCommentsForDebug)
             .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();

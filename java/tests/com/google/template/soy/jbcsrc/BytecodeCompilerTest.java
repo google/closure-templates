@@ -182,7 +182,7 @@ public class BytecodeCompilerTest {
                 "{/template}");
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .addHtmlAttributesForDebugging(true)
+            .addHtmlCommentsForDebug(true)
             .parse()
             .fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
@@ -195,7 +195,7 @@ public class BytecodeCompilerTest {
         .isEqualTo("<div>foo</div>");
     // If debugSoyTemplateInfo is enabled, we should render additional HTML comments.
     assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
-        .isEqualTo("<div data-debug-soy=\"ns.html no-path:4\">foo</div>");
+        .isEqualTo("<!--dta_of(ns.html, no-path, 3)--><div>foo</div><!--dta_cf(ns.html)-->");
 
     // We should never render these comments for templates with kind="text".
     factory = templates.getTemplateFactory("ns.text");

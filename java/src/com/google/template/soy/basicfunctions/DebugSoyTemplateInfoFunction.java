@@ -25,11 +25,9 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Soy special function for internal usages.
@@ -38,12 +36,7 @@ import java.util.List;
  * inspecting the Soy template information from the rendered page, and should not be used in any
  * templates.
  */
-@SoyFunctionSignature(
-    @Signature(
-      returnType = "bool",
-      parameterTypes = {}
-    ))
-public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
+public final class DebugSoyTemplateInfoFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -60,6 +53,11 @@ public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
   @Override
   public String getName() {
     return NAME;
+  }
+
+  @Override
+  public Set<Integer> getValidArgsSizes() {
+    return ImmutableSet.of(0);
   }
 
   @Override

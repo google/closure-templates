@@ -109,18 +109,12 @@ public final class PassManager {
             // needs to run after htmlrewriting, before resolvenames and autoescaping
             .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
             // Needs to run after HtmlRewritePass
-            .add(new MsgsPass(errorReporter));
-    if (builder.addHtmlAttributesForDebugging) {
-      // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
-      // before ResolveExpressionTypesPass (since we insert expressions).
-      singleFilePassesBuilder.add(new AddDebugAttributesPass());
-    }
-    // Needs to run after inserting msg placeholders to ensure that genders="..."
-    // expressions do not introduce extra placeholders for call and print nodes.
-    singleFilePassesBuilder
-        .add(new StrictHtmlValidationPass(errorReporter))
-        .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-        .add(new ResolveNamesPass());
+            .add(new MsgsPass(errorReporter))
+            // Needs to run after inserting msg placeholders to ensure that genders="..."
+            // expressions do not introduce extra placeholders for call and print nodes.
+            .add(new StrictHtmlValidationPass(errorReporter))
+            .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
+            .add(new ResolveNamesPass());
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
@@ -177,6 +171,9 @@ public final class PassManager {
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
     beforeAutoescaperFileSetPassBuilder.add(new CombineConsecutiveRawTextNodesPass());
 
+    if (builder.addHtmlCommentsForDebug) {
+      beforeAutoescaperFileSetPassBuilder.add(new AddHtmlCommentsForDebugPass());
+    }
     this.crossTemplateCheckingPasses = beforeAutoescaperFileSetPassBuilder.build();
 
     // Simplification passes
@@ -280,7 +277,7 @@ public final class PassManager {
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
-    private boolean addHtmlAttributesForDebugging = true;
+    private boolean addHtmlCommentsForDebug = true;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -350,8 +347,8 @@ public final class PassManager {
       return this;
     }
 
-    public Builder addHtmlAttributesForDebugging(boolean addHtmlAttributesForDebugging) {
-      this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
+    public Builder addHtmlCommentsForDebug(boolean addHtmlCommentsForDebug) {
+      this.addHtmlCommentsForDebug = addHtmlCommentsForDebug;
       return this;
     }
 
