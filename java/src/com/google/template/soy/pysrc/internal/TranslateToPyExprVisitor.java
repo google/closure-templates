@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -407,12 +408,17 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitCssFunction(node);
       case XID:
         return visitXidFunction(node);
+      case IS_PRIMARY_MSG_IN_USE:
+        return visitIsPrimaryMsgInUseFunction(node);
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
-      default:
+      case MSG_ID:
+      case REMAINDER:
+        // should have been removed earlier in the compiler
         throw new AssertionError();
     }
+    throw new AssertionError();
   }
 
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
@@ -435,6 +441,21 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return new PyFunctionExprBuilder("runtime.get_xid_name")
         .addArg(visit(node.getChild(0)))
         .asPyExpr();
+  }
+
+  private PyExpr visitIsPrimaryMsgInUseFunction(FunctionNode node) {
+    long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
+    long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+    return new PyExpr(
+        PyExprUtils.TRANSLATOR_NAME
+            + ".is_msg_available("
+            + primaryMsgId
+            + ") or not "
+            + PyExprUtils.TRANSLATOR_NAME
+            + ".is_msg_available("
+            + fallbackMsgId
+            + ")",
+        PyExprUtils.pyPrecedenceForOperator(Operator.OR));
   }
 
   /**

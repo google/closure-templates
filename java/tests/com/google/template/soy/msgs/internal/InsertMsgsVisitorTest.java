@@ -92,7 +92,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(((RawTextNode) msgHtmlTag4.getChild(0)).getRawText()).isEqualTo("</a>");
 
     // Execute the visitor.
-    new InsertMsgsVisitor(null /* msgBundle */, FAIL).exec(template);
+    new InsertMsgsVisitor(null /* msgBundle */, FAIL).insertMsgs(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(12);
@@ -149,7 +149,7 @@ public final class InsertMsgsVisitorTest {
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
     // Execute the visitor.
-    new InsertMsgsVisitor(msgBundle, FAIL).exec(template);
+    new InsertMsgsVisitor(msgBundle, FAIL).insertMsgs(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(12);
@@ -202,7 +202,7 @@ public final class InsertMsgsVisitorTest {
 
     // Execute the visitor.
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    new InsertMsgsVisitor(null /* msgBundle */, errorReporter).exec(template);
+    new InsertMsgsVisitor(null /* msgBundle */, errorReporter).insertMsgs(template);
 
     assertThat(errorReporter.getErrors()).hasSize(2);
     assertThat(errorReporter.getErrors().get(0).toString())
@@ -264,7 +264,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(((MsgFallbackGroupNode) template.getChild(3)).numChildren()).isEqualTo(2);
 
     // Execute the visitor.
-    new InsertMsgsVisitor(null /* msgBundle */, FAIL).exec(template);
+    new InsertMsgsVisitor(null /* msgBundle */, FAIL).insertMsgs(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(4);
@@ -306,7 +306,7 @@ public final class InsertMsgsVisitorTest {
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
     // Execute the visitor.
-    new InsertMsgsVisitor(msgBundle, FAIL).exec(template);
+    new InsertMsgsVisitor(msgBundle, FAIL).insertMsgs(template);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(4);

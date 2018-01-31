@@ -42,11 +42,13 @@ final class MsgsPass extends CompilerFilePass {
   private final ErrorReporter errorReporter;
   private final InsertMsgPlaceholderNodesPass insertMsgPlaceholderNodesPass;
   private final RewriteRemaindersPass rewriteRemainders;
+  private final CheckNonEmptyMsgNodesPass checkNonEmptyPass;
 
   MsgsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.rewriteRemainders = new RewriteRemaindersPass(errorReporter);
     this.insertMsgPlaceholderNodesPass = new InsertMsgPlaceholderNodesPass(errorReporter);
+    this.checkNonEmptyPass = new CheckNonEmptyMsgNodesPass(errorReporter);
   }
 
   @Override
@@ -61,5 +63,6 @@ final class MsgsPass extends CompilerFilePass {
     for (MsgNode msg : allMsgs) {
       msg.calculateSubstitutionInfo(errorReporter);
     }
+    checkNonEmptyPass.run(file, nodeIdGen);
   }
 }

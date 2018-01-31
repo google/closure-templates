@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -38,6 +39,7 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo) {
 
     // PreevalVisitor cannot handle ijData references.

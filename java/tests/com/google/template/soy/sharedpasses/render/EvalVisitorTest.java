@@ -167,6 +167,7 @@ public class EvalVisitorTest {
                 TEST_IJ_DATA,
                 cssRenamingMap,
                 xidRenamingMap,
+                null,
                 /* debugSoyTemplateInfo= */ false);
     return evalVisitor.exec(expr);
   }
