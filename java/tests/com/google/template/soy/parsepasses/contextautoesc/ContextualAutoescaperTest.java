@@ -1270,6 +1270,23 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
+  public void testTrustedResourceUrlKindBlocks() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
+            "<script src='{$src |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
+            "<script src='{$src}'></script>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testCss() throws Exception {
     assertContextualRewriting(
         join(

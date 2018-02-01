@@ -257,8 +257,6 @@ def filter_normalize_media_uri(value):
 def filter_trusted_resource_uri(value):
   if is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI):
     return value.content
-  if isinstance(value, str):
-    return value
   return 'about:invalid#' + _INNOCUOUS_OUTPUT
 
 

@@ -314,6 +314,41 @@ public final class RawTextContextUpdaterTest {
   }
 
   @Test
+  public void testUri_TrustedResourceBlock() throws Exception {
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK",
+        "https://bar/", // NOTYPO
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK",
+        "//foo/bar",
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK", "/bar?baz=foo", "URI QUERY TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK",
+        "/bar?baz=foo#frag",
+        "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
+
+    // test starting from AUTHORITY_OR_PATH because that is what will happen following a dynamic
+    // node
+    assertTransition(
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK",
+        "/bar",
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK", "?a", "URI QUERY TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK", "#", "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
+    assertTransition(
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK",
+        "/bar/baz/#?foo",
+        "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
+  }
+
+  @Test
   public void testUri() throws Exception {
     assertTransition("URI START NORMAL", "", "URI START NORMAL");
     assertTransition("URI START NORMAL", ".", "URI MAYBE_SCHEME NORMAL");

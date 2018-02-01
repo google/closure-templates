@@ -207,6 +207,9 @@ public final class Context {
           .withAttrType(AttributeType.PLAIN_TEXT)
           .build();
     } else if (uriPart == UriPart.START) {
+      if (uriType == UriType.TRUSTED_RESOURCE_BLOCK) {
+        return derive(UriPart.AUTHORITY_OR_PATH);
+      }
       // TODO(gboyer): When we start enforcing strict URI syntax, make it an error to call this if
       // we're already in MAYBE*_SCHEME, because it is possible in a non-strict contextual template
       // that someone would use noAutoescape to try and get around the requirement of no print
@@ -317,12 +320,24 @@ public final class Context {
           if (escapingMode != EscapingMode.NORMALIZE_URI) {
             extraEscapingMode = escapingMode;
           }
-          // Use a different escaping mode depending on what kind of URL is being used.
-          if (uriType == UriType.MEDIA) {
-            escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
-          } else {
-            escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+          switch (uriType) {
+            case MEDIA:
+              escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
+              break;
+            case TRUSTED_RESOURCE_BLOCK:
+              escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
+              break;
+            default:
+              escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+              break;
           }
+        }
+        break;
+
+      case AUTHORITY_OR_PATH:
+      case FRAGMENT:
+        if (uriType == UriType.TRUSTED_RESOURCE_BLOCK) {
+          escapingMode = EscapingMode.ESCAPE_URI;
         }
         break;
       case UNKNOWN:
@@ -551,7 +566,8 @@ public final class Context {
         && this.slashType == that.slashType
         && this.uriPart == that.uriPart
         && this.uriType == that.uriType
-        && this.templateNestDepth == that.templateNestDepth;
+        && this.templateNestDepth == that.templateNestDepth
+        && this.jsTemplateLiteralNestDepth == that.jsTemplateLiteralNestDepth;
   }
 
   @Override
@@ -594,7 +610,7 @@ public final class Context {
   private static final int N_URI_PART_BITS = 4;
 
   /** The number of bits needed to store a {@link UriType} value. */
-  private static final int N_URI_TYPE_BITS = 2;
+  private static final int N_URI_TYPE_BITS = 3;
 
   static {
     // We'd better have enough bits in an int.
@@ -992,9 +1008,15 @@ public final class Context {
         return state == HtmlContext.URI && uriType == UriType.NORMAL && uriPart != UriPart.START;
       case TEXT:
         return state == HtmlContext.TEXT;
-      default:
-        throw new IllegalArgumentException("Specified content kind has no associated end context.");
+      case TRUSTED_RESOURCE_URI:
+        // Ensure that the URI content is non-empty and the URI type remains normal (which is
+        // the assumed type of the URI content kind).
+        return state == HtmlContext.URI
+            && uriType == UriType.TRUSTED_RESOURCE_BLOCK
+            && uriPart != UriPart.START;
     }
+    throw new IllegalArgumentException(
+        "Specified content kind " + contentKind + " has no associated end context.");
   }
 
   /**
@@ -1240,11 +1262,11 @@ public final class Context {
       attr = Context.AttributeType.STYLE;
     } else if (elType == Context.ElementType.MEDIA
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
-      // TODO(gboyer): We should treat script srcs as trusted and impose additional
-      // restrictions.
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
     } else if (elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
+      // TODO(b/36212457): this should handle iframe.src, style.src and probably several kinds of
+      // link attributes
       attr = Context.AttributeType.URI;
       uriType = Context.UriType.TRUSTED_RESOURCE;
     } else if (URI_ATTR_NAMES.contains(localName)
@@ -1431,7 +1453,12 @@ public final class Context {
      */
     MAYBE_SCHEME,
 
-    /** In the scheme, authority, or path. Between ^s in {@code h^ttp://host/path^?k=v#frag}. */
+    /**
+     * In the scheme, authority, or path. Between ^s in {@code h^ttp://host/path^?k=v#frag}.
+     *
+     * <p>In the specific case of {@link UriType#TRUSTED_RESOURCE_BLOCK}, this must be a part of the
+     * path
+     */
     AUTHORITY_OR_PATH,
 
     /** In the query portion. Between ^s in {@code http://host/path?^k=v^#frag} */
@@ -1494,10 +1521,30 @@ public final class Context {
     MEDIA,
 
     /**
-     * A URI which loads resources. This is intended to be used in scrips, stylesheets, etc which
+     * A URI which loads resources. This is intended to be used in scripts, stylesheets, etc which
      * should not be in attacker control.
      */
-    TRUSTED_RESOURCE
+    TRUSTED_RESOURCE,
+    /**
+     * Same as {@link #TRUSTED_RESOURCE} but with slightly different semantics.
+     *
+     * <p>This is applied to {@code kind="trusted_resource_uri"} blocks/templates and it changes the
+     * semantics for composing a trusted resource uri.
+     *
+     * <ul>
+     *   <li>Constant strings are allowed
+     *   <li>If the uri has a fixed scheme+host+path, then we can allow the remaining parts to be
+     *       interpolated as long as they are percent encoded.
+     *   <li>If the prefix is dynamic then we require it to be a trusted_resource_uri.
+     * </ul>
+     *
+     * <p>These semantics are not compatible with the current {@link #TRUSTED_RESOURCE} because that
+     * mode requires every part to be a trusted_resource_uri even though concatenating multiple such
+     * URIs is not obviously safe.
+     *
+     * <p>TODO(b/72493024): apply these same, superior semantics to TRUSTED_RESOURCE
+     */
+    TRUSTED_RESOURCE_BLOCK;
   }
 
   /** A mutable builder for {@link Context}s. */
@@ -1585,8 +1632,8 @@ public final class Context {
 
     /**
      * Reset to a {@link Context} such that contextual autoescaping of a block of Soy code with the
-     * corresponding {@link ContentKind} results in a value that adheres to the contract of {@link
-     * com.google.template.soy.data.SanitizedContent} of this kind.
+     * corresponding {@link SanitizedContentKind} results in a value that adheres to the contract of
+     * {@link com.google.template.soy.data.SanitizedContent} of this kind.
      */
     Builder withStartKind(SanitizedContentKind contentKind) {
       boolean inTag = false;
@@ -1615,8 +1662,13 @@ public final class Context {
         case TEXT:
           withState(HtmlContext.TEXT);
           break;
-        default:
+        case TRUSTED_RESOURCE_URI:
+          withState(HtmlContext.URI);
+          withUriPart(UriPart.START);
+          withUriType(UriType.TRUSTED_RESOURCE_BLOCK);
           break;
+        default:
+          throw new AssertionError();
       }
       if (!inTag) {
         withElType(ElementType.NONE);
