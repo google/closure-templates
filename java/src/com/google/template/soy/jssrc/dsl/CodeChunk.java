@@ -500,7 +500,9 @@ public abstract class CodeChunk {
      * before this value (for example, they could contain declarations of variables referenced in
      * this value).
      *
-     * <p>These are direct dependencies only, not transitive.
+     * <p>TODO(b/33382980): If we have this method, why do we need doFormatInitialStatements? should
+     * doFormatInitialStatements be implemented in terms of this method? is this method supposed to
+     * contain all initial statements? even from conditional branches?
      */
     public abstract ImmutableList<CodeChunk> initialStatements();
 

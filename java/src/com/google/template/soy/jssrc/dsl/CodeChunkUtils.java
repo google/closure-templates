@@ -57,16 +57,7 @@ public final class CodeChunkUtils {
    * TODO(user): make that go away.
    */
   public static CodeChunk.WithValue concatChunks(List<? extends CodeChunk.WithValue> chunks) {
-
-    if (chunks.isEmpty()) {
-      return LITERAL_EMPTY_STRING;
-    }
-
-    CodeChunk.WithValue accum = chunks.get(0);
-    for (CodeChunk.WithValue chunk : chunks.subList(1, chunks.size())) {
-      accum = accum.plus(chunk);
-    }
-    return accum;
+    return Concatenation.create(chunks);
   }
 
   /**

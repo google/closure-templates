@@ -9509,6 +9509,7 @@ goog.debug.exposeArray = function(arr) {
  *    fileName: (?|undefined),
  *    stack: (?|undefined)
  * }} Normalized error object.
+ * @suppress {strictMissingProperties} properties not defined on err
  */
 goog.debug.normalizeErrorObject = function(err) {
   var href = goog.getObjectByName('window.location.href');
@@ -14138,7 +14139,9 @@ goog.html.TrustedResourceUrl.prototype.cloneWithParams = function(params) {
   var url = goog.html.TrustedResourceUrl.unwrap(this);
   var separator = /\?/.test(url) ? '&' : '?';
   for (var key in params) {
-    var values = goog.isArray(params[key]) ? params[key] : [params[key]];
+    var values = goog.isArray(params[key]) ?
+        /** @type {!Array<*>} */ (params[key]) :
+        [params[key]];
     for (var i = 0; i < values.length; i++) {
       if (values[i] == null) {
         continue;
@@ -19836,6 +19839,7 @@ goog.structs.Map.hasKey_ = function(obj, key) {
  * This file contains functions to work with collections. It supports using
  * Map, Set, Array and Object and other classes that implement collection-like
  * methods.
+ * @suppress {strictMissingProperties}
  */
 
 
