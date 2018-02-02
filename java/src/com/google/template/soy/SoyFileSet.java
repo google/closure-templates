@@ -255,6 +255,59 @@ public final class SoyFileSet {
     }
 
     /**
+     * Adds an input Soy file, given a {@code File}.
+     *
+     * @param inputFile The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @return This builder.
+     */
+    public Builder addWithKind(File inputFile, SoyFileKind soyFileKind) {
+      return addFile(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
+    }
+
+    /**
+     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
+     * messages.
+     *
+     * @param inputFileUrl The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
+    }
+
+    /**
+     * Adds an input Soy file, given a resource {@code URL}.
+     *
+     * <p>Important: This function assumes that the desired file path is returned by {@code
+     * inputFileUrl.toString()}. If this is not the case, please use {@link #addWithKind(URL,
+     * SoyFileKind, String)} instead.
+     *
+     * @see #addWithKind(URL, SoyFileKind, String)
+     * @param inputFileUrl The Soy file.
+     * @param soyFileKind The kind of this input Soy file.
+     * @return This builder.
+     */
+    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind) {
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
+    }
+
+    /**
+     * Adds an input Soy file, given the file content provided as a string, as well as the desired
+     * file path for messages.
+     *
+     * @param content The Soy file content.
+     * @param soyFileKind The kind of this input Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder addWithKind(CharSequence content, SoyFileKind soyFileKind, String filePath) {
+      return addFile(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
+    }
+
+    /**
      * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
      * desired file path for messages.
      *
@@ -267,14 +320,42 @@ public final class SoyFileSet {
     }
 
     /**
-     * Adds an input Soy file, given a {@code File}.
+     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
+     * messages.
      *
-     * @param inputFile The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
+     * @param inputFileUrl The Soy file.
+     * @param filePath The path to the Soy file (used for messages only).
      * @return This builder.
      */
-    public Builder addWithKind(File inputFile, SoyFileKind soyFileKind) {
-      return addFile(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
+    public Builder add(URL inputFileUrl, String filePath) {
+      return addWithKind(inputFileUrl, SoyFileKind.SRC, filePath);
+    }
+
+    /**
+     * Adds an input Soy file, given a resource {@code URL}.
+     *
+     * <p>Important: This function assumes that the desired file path is returned by {@code
+     * inputFileUrl.toString()}. If this is not the case, please use {@link #add(URL, String)}
+     * instead.
+     *
+     * @see #add(URL, String)
+     * @param inputFileUrl The Soy file.
+     * @return This builder.
+     */
+    public Builder add(URL inputFileUrl) {
+      return addWithKind(inputFileUrl, SoyFileKind.SRC);
+    }
+
+    /**
+     * Adds an input Soy file, given the file content provided as a string, as well as the desired
+     * file path for messages.
+     *
+     * @param content The Soy file content.
+     * @param filePath The path to the Soy file (used for messages only).
+     * @return This builder.
+     */
+    public Builder add(CharSequence content, String filePath) {
+      return addWithKind(content, SoyFileKind.SRC, filePath);
     }
 
     /**
@@ -314,87 +395,6 @@ public final class SoyFileSet {
      */
     public Builder addVolatile(File inputFile) {
       return addVolatileWithKind(inputFile, SoyFileKind.SRC);
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
-     * messages.
-     *
-     * @param inputFileUrl The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
-     * messages.
-     *
-     * @param inputFileUrl The Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder add(URL inputFileUrl, String filePath) {
-      return addWithKind(inputFileUrl, SoyFileKind.SRC, filePath);
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}.
-     *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
-     * inputFileUrl.toString()}. If this is not the case, please use {@link #addWithKind(URL,
-     * SoyFileKind, String)} instead.
-     *
-     * @see #addWithKind(URL, SoyFileKind, String)
-     * @param inputFileUrl The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @return This builder.
-     */
-    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}.
-     *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
-     * inputFileUrl.toString()}. If this is not the case, please use {@link #add(URL, String)}
-     * instead.
-     *
-     * @see #add(URL, String)
-     * @param inputFileUrl The Soy file.
-     * @return This builder.
-     */
-    public Builder add(URL inputFileUrl) {
-      return addWithKind(inputFileUrl, SoyFileKind.SRC);
-    }
-
-    /**
-     * Adds an input Soy file, given the file content provided as a string, as well as the desired
-     * file path for messages.
-     *
-     * @param content The Soy file content.
-     * @param soyFileKind The kind of this input Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder addWithKind(CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
-    }
-
-    /**
-     * Adds an input Soy file, given the file content provided as a string, as well as the desired
-     * file path for messages.
-     *
-     * @param content The Soy file content.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder add(CharSequence content, String filePath) {
-      return addWithKind(content, SoyFileKind.SRC, filePath);
     }
 
     /**
@@ -1192,12 +1192,7 @@ public final class SoyFileSet {
         "Incremental DOM code generation only supports syntax version of V2 or higher.");
     requireStrictAutoescaping();
     // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
-    // Also, we don't add HTML comments, since idom library does not support HTML comments.
-    ParseResult result =
-        parse(
-            passManagerBuilder(SyntaxVersion.V2_0)
-                .desugarHtmlNodes(false)
-                .addHtmlCommentsForDebug(false));
+    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).desugarHtmlNodes(false));
     throwIfErrorsPresent();
     return result;
   }
@@ -1233,16 +1228,6 @@ public final class SoyFileSet {
     return parse(passManagerBuilder(defaultVersion));
   }
 
-  private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
-    return new PassManager.Builder()
-        .setGeneralOptions(generalOptions)
-        .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
-        .setSoyPrintDirectiveMap(printDirectives)
-        .setErrorReporter(errorReporter)
-        .setConformanceConfig(conformanceConfig)
-        .setLoggingConfig(loggingConfig);
-  }
-
   private ParseResult parse(PassManager.Builder builder) {
     return parse(
         builder,
@@ -1268,6 +1253,16 @@ public final class SoyFileSet {
         .setGeneralOptions(generalOptions)
         .build()
         .parse();
+  }
+
+  private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
+    return new PassManager.Builder()
+        .setGeneralOptions(generalOptions)
+        .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
+        .setSoyPrintDirectiveMap(printDirectives)
+        .setErrorReporter(errorReporter)
+        .setConformanceConfig(conformanceConfig)
+        .setLoggingConfig(loggingConfig);
   }
 
   /**

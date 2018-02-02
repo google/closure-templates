@@ -117,6 +117,11 @@ public final class PassManager {
             .add(new ResolveNamesPass())
             // needs to be after ResolveNames and MsgsPass
             .add(new MsgIdFunctionPass(errorReporter));
+    if (builder.addHtmlAttributesForDebugging) {
+      // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
+      // before ResolveExpressionTypesPass (since we insert expressions).
+      singleFilePassesBuilder.add(new AddDebugAttributesPass());
+    }
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
@@ -171,9 +176,6 @@ public final class PassManager {
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
     beforeAutoescaperFileSetPassBuilder.add(new CombineConsecutiveRawTextNodesPass());
 
-    if (builder.addHtmlCommentsForDebug) {
-      beforeAutoescaperFileSetPassBuilder.add(new AddHtmlCommentsForDebugPass());
-    }
     this.crossTemplateCheckingPasses = beforeAutoescaperFileSetPassBuilder.build();
 
     // Simplification passes
@@ -277,7 +279,7 @@ public final class PassManager {
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
-    private boolean addHtmlCommentsForDebug = true;
+    private boolean addHtmlAttributesForDebugging = true;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -347,8 +349,8 @@ public final class PassManager {
       return this;
     }
 
-    public Builder addHtmlCommentsForDebug(boolean addHtmlCommentsForDebug) {
-      this.addHtmlCommentsForDebug = addHtmlCommentsForDebug;
+    public Builder addHtmlAttributesForDebugging(boolean addHtmlAttributesForDebugging) {
+      this.addHtmlAttributesForDebugging = addHtmlAttributesForDebugging;
       return this;
     }
 
