@@ -197,9 +197,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** This template's partial name. Only applicable for V2. */
   @Nullable private final String partialTemplateName;
 
-  /** A string suitable for display in user msgs as the template name. */
-  private final String templateNameForUserMsgs;
-
   /** Visibility of this template. */
   private final Visibility visibility;
 
@@ -256,7 +253,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
-    this.templateNameForUserMsgs = nodeBuilder.getTemplateNameForUserMsgs();
     this.visibility = visibility;
     this.autoescapeMode = nodeBuilder.getAutoescapeMode();
     this.contentKind = nodeBuilder.getContentKind();
@@ -292,7 +288,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.soyFileHeaderInfo = orig.soyFileHeaderInfo; // immutable
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
-    this.templateNameForUserMsgs = orig.templateNameForUserMsgs;
     this.visibility = orig.visibility;
     this.autoescapeMode = orig.autoescapeMode;
     this.contentKind = orig.contentKind;
@@ -320,9 +315,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   }
 
   /** Returns a template name suitable for display in user msgs. */
-  public String getTemplateNameForUserMsgs() {
-    return templateNameForUserMsgs;
-  }
+  public abstract String getTemplateNameForUserMsgs();
 
   /** Returns this template's name. */
   public String getTemplateName() {

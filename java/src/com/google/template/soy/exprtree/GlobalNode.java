@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -30,6 +31,10 @@ import com.google.template.soy.types.primitive.UnknownType;
  *
  */
 public final class GlobalNode extends AbstractExprNode {
+  /** Simple callback interface for hooking into globals resolution. */
+  public interface ResolutionCallback {
+    void onResolve(PrimitiveNode value);
+  }
 
   public static GlobalNode error(SourceLocation location) {
     return new GlobalNode("error", location);
@@ -41,6 +46,7 @@ public final class GlobalNode extends AbstractExprNode {
 
   private PrimitiveNode value = null;
   private SoyType soyType = UnknownType.getInstance();
+  private ResolutionCallback resolveCallback;
 
   /**
    * @param name The name of the global.
@@ -61,6 +67,7 @@ public final class GlobalNode extends AbstractExprNode {
     this.name = orig.name;
     this.soyType = orig.soyType;
     this.value = orig.value;
+    this.resolveCallback = orig.resolveCallback;
   }
 
   @Override
@@ -74,8 +81,24 @@ public final class GlobalNode extends AbstractExprNode {
   }
 
   public void resolve(SoyType soyType, PrimitiveNode value) {
+    checkState(this.value == null, "value has already been set");
     this.soyType = checkNotNull(soyType);
     this.value = checkNotNull(value);
+    if (this.resolveCallback != null) {
+      this.resolveCallback.onResolve(value);
+      this.resolveCallback = null;
+    }
+  }
+
+  /**
+   * Registers a callback that is invoked when this global is resolved to its actual value.
+   *
+   * <p>NOTE: there is no guarantee that this will ever be called.
+   */
+  public void onResolve(ResolutionCallback callback) {
+    checkState(this.resolveCallback == null, "callback has already been set.");
+    checkState(this.value == null, "value is resolved.");
+    this.resolveCallback = checkNotNull(callback);
   }
 
   public boolean isResolved() {
@@ -114,4 +137,5 @@ public final class GlobalNode extends AbstractExprNode {
   public GlobalNode copy(CopyState copyState) {
     return new GlobalNode(this, copyState);
   }
+
 }

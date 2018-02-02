@@ -81,9 +81,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
     setTemplateNames(
         soyFileHeaderInfo.namespace + templateName.identifier(),
-        templateName.location(),
         templateName.identifier());
-    this.templateNameForUserMsgs = getTemplateName();
     return this;
   }
 
@@ -115,8 +113,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
         partialTemplateName == null || BaseUtils.isIdentifierWithLeadingDot(partialTemplateName));
     Preconditions.checkArgument((contentKind != null) == (autoescapeMode == AutoescapeMode.STRICT));
 
-    setTemplateNames(templateName, sourceLocation, partialTemplateName);
-    this.templateNameForUserMsgs = templateName;
+    setTemplateNames(templateName, partialTemplateName);
     this.visibility = visibility;
     setAutoescapeInfo(autoescapeMode, contentKind, sourceLocation);
     setRequiredCssNamespaces(requiredCssNamespaces);

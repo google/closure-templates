@@ -22,14 +22,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -42,6 +44,10 @@ import java.util.List;
  *
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
+  private static final SoyErrorKind INVALID_VARIANT_STRING =
+      SoyErrorKind.of("Invalid variant ''{0}'' value must be an identifier.");
+  private static final SoyErrorKind INVALID_VARIANT_INTEGER =
+      SoyErrorKind.of("Invalid variant ''{0}'' value must non-negative.");
 
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
@@ -51,14 +57,8 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   /** The delegate template name. */
   private String delTemplateName;
 
-  /** Value of a delegate template variant. */
-  private String delTemplateVariant = null;
-
   /** Expression that will evaluate to the value of a delegate template variant. */
-  private ExprRootNode delTemplateVariantExpr = null;
-
-  /** The delegate template key (name and variant). */
-  private DelTemplateKey delTemplateKey;
+  private ExprRootNode delTemplateVariantExpr;
 
   /** The delegate priority. */
   private Priority delPriority;
@@ -86,7 +86,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     setCommonCommandValues(attrs);
 
     this.delTemplateName = templateName.identifier();
-    this.delTemplateVariant = "";
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
@@ -96,23 +95,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
         case "variant":
           // need to get variant parsing out of this.  maybe we can expose some sort of limited
           // primitiveOrGlobal parsing solution?
-          this.delTemplateVariant = null;
           ExprNode variantExpr = attribute.valueAsExpr(errorReporter);
-          if (variantExpr instanceof StringNode) {
-            // A string literal is being used as template variant, so the expression value can
-            // immediately be evaluated.
-            this.delTemplateVariant = ((StringNode) variantExpr).getValue();
-            TemplateDelegateNode.verifyVariantName(
-                delTemplateVariant, attribute.getValueLocation());
-          } else if (variantExpr instanceof GlobalNode) {
-            // A global expression was used as template variant. The expression will be stored and
-            // later resolved into a value when the global expressions are resolved.
-            this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
-            this.templateNameForUserMsgs =
-                delTemplateName + ":" + (((GlobalNode) variantExpr).getName());
-          } else {
-            errorReporter.report(attribute.getValueLocation(), INVALID_VARIANT_EXPR);
-          }
+          validateVariantExpression(variantExpr, errorReporter);
+          this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
           break;
         default:
           errorReporter.report(
@@ -124,16 +109,43 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       }
     }
 
-    if (delTemplateVariant != null) {
-      // The variant value is already available (i.e. we either have a string literal or no variant
-      // was defined). In these cases we can already define a template key.
-      this.delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
-      this.templateNameForUserMsgs = delTemplateKey.toString();
-    }
-
     this.delPriority = soyFileHeaderInfo.priority;
-    genInternalTemplateNameHelper(templateName.location());
+    genInternalTemplateNameHelper();
     return this;
+  }
+
+  private static void validateVariantExpression(
+      ExprNode primitiveNode, final ErrorReporter reporter) {
+    switch (primitiveNode.getKind()) {
+      case STRING_NODE:
+        StringNode sn = (StringNode) primitiveNode;
+        if (sn.getValue().length() > 0 && !(BaseUtils.isIdentifier(sn.getValue()))) {
+          reporter.report(sn.getSourceLocation(), INVALID_VARIANT_STRING, sn.getValue());
+        }
+        break;
+      case INTEGER_NODE:
+        IntegerNode in = (IntegerNode) primitiveNode;
+        if (in.getValue() < 0) {
+          reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.getValue());
+        }
+        break;
+      case GLOBAL_NODE:
+        GlobalNode gn = (GlobalNode) primitiveNode;
+        if (gn.isResolved()) {
+          validateVariantExpression(gn.getValue(), reporter);
+        } else {
+          gn.onResolve(
+              new GlobalNode.ResolutionCallback() {
+                @Override
+                public void onResolve(PrimitiveNode value) {
+                  validateVariantExpression(value, reporter);
+                }
+              });
+        }
+        break;
+      default:
+        reporter.report(primitiveNode.getSourceLocation(), INVALID_VARIANT_EXPR);
+    }
   }
 
   /**
@@ -165,9 +177,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     Preconditions.checkArgument((contentKind != null) == (autoescapeMode == AutoescapeMode.STRICT));
 
     this.delTemplateName = delTemplateName;
-    this.delTemplateVariant = delTemplateVariant;
-    this.delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
-    this.templateNameForUserMsgs = delTemplateKey.toString();
+    this.delTemplateVariantExpr =
+        new ExprRootNode(
+            new StringNode(delTemplateVariant, QuoteStyle.SINGLE, this.sourceLocation));
     this.delPriority = delPriority;
     setAutoescapeInfo(autoescapeMode, contentKind, sourceLocation);
     setRequiredCssNamespaces(requiredCssNamespaces);
@@ -185,7 +197,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     }
     this.cmdText = cmdText;
 
-    genInternalTemplateNameHelper(sourceLocation);
+    genInternalTemplateNameHelper();
 
     return this;
   }
@@ -194,24 +206,32 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    * Private helper for both setCmdText() and setCmdTextInfo() to generate and set the internal-use
    * partial template name and template name.
    */
-  private void genInternalTemplateNameHelper(SourceLocation nameLocation) {
+  private void genInternalTemplateNameHelper() {
     Preconditions.checkState(id != null);
     // encode all the deltemplate information into the name to get a unique string
     // though... it might make more sense for this to not have a user visible name given that the
     // calling convention is indirect.
+    String variant = "";
+    if (delTemplateVariantExpr != null) {
+      // this is hacky.  perhaps we should come up with a less ambiguous strategy
+      ExprNode expr = delTemplateVariantExpr.getRoot();
+      if (expr instanceof StringNode) {
+        variant = ((StringNode) expr).getValue();
+      } else {
+        variant = expr.toSourceString();
+      }
+    }
     String delPackageTemplateAndVariantStr =
         (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName)
             + "_"
             + delTemplateName.replace('.', '_')
             + "_"
-            + (delTemplateVariant == null
-                ? delTemplateVariantExpr.toSourceString()
-                : delTemplateVariant);
+            + variant;
     delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
     String generatedPartialTemplateName = ".__deltemplate_" + delPackageTemplateAndVariantStr;
     String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
-    setTemplateNames(generatedTemplateName, nameLocation, generatedPartialTemplateName);
+    setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
   }
 
   @Override
@@ -232,9 +252,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
         this,
         soyFileHeaderInfo,
         delTemplateName,
-        delTemplateVariant,
         delTemplateVariantExpr,
-        delTemplateKey,
         delPriority,
         params);
   }

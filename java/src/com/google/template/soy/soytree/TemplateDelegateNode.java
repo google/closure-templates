@@ -16,12 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -30,6 +29,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a delegate template.
@@ -66,11 +66,8 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   /** The delegate template name. */
   private final String delTemplateName;
 
-  /** The delegate template variant. */
-  private String delTemplateVariant;
-
   /** An expression that defines a delegate template variant. */
-  private final ExprRootNode delTemplateVariantExpr;
+  @Nullable private final ExprRootNode delTemplateVariantExpr;
 
   /** The delegate template key (name and variant). */
   private DelTemplateKey delTemplateKey;
@@ -85,9 +82,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * @param nodeBuilder Builder containing template initialization params.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param delTemplateName The delegate template name.
-   * @param delTemplateVariant The delegate template variant.
    * @param delTemplateVariantExpr An expression that references a delegate template variant.
-   * @param delTemplateKey The delegate template key (name and variant).
    * @param delPriority The delegate priority.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
@@ -95,9 +90,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       String delTemplateName,
-      String delTemplateVariant,
-      ExprRootNode delTemplateVariantExpr,
-      DelTemplateKey delTemplateKey,
+      @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
       ImmutableList<TemplateParam> params) {
 
@@ -107,11 +100,9 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
         soyFileHeaderInfo,
         Visibility.PUBLIC /* deltemplate always has public visibility */,
         params);
-    this.delTemplateName = delTemplateName;
-    this.delTemplateVariant = delTemplateVariant;
+    this.delTemplateName = checkNotNull(delTemplateName);
     this.delTemplateVariantExpr = delTemplateVariantExpr;
-    this.delTemplateKey = delTemplateKey;
-    this.delPriority = delPriority;
+    this.delPriority = checkNotNull(delPriority);
   }
 
   /**
@@ -122,22 +113,12 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   private TemplateDelegateNode(TemplateDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delTemplateName = orig.delTemplateName;
-    this.delTemplateVariant = orig.delTemplateVariant;
-    this.delTemplateVariantExpr = orig.delTemplateVariantExpr;
+    this.delTemplateVariantExpr =
+        orig.delTemplateVariantExpr == null ? null : orig.delTemplateVariantExpr.copy(copyState);
     this.delTemplateKey = orig.delTemplateKey;
     this.delPriority = orig.delPriority;
   }
 
-  static void verifyVariantName(String delTemplateVariant, SourceLocation srcLoc) {
-    if (delTemplateVariant.length() > 0 && !(BaseUtils.isIdentifier(delTemplateVariant))) {
-      throw LegacyInternalSyntaxException.createWithMetaInfo(
-          "Invalid variant \""
-              + delTemplateVariant
-              + "\" in 'deltemplate'"
-              + " (when a string literal is used, value must be an identifier).",
-          srcLoc);
-    }
-  }
 
   @Override
   public Kind getKind() {
@@ -149,16 +130,19 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     return delTemplateName;
   }
 
+  @Override
+  public String getTemplateNameForUserMsgs() {
+    return getDelTemplateKey().toString();
+  }
+
   /** Returns the delegate template variant. */
   public String getDelTemplateVariant() {
-    if (delTemplateVariant != null) {
-      return delTemplateVariant;
-    }
-    return resolveVariantExpression().variant();
+    return getDelTemplateKey().variant();
   }
 
   /** Returns the delegate template key (name and variant). */
-  public DelTemplateKey getDelTemplateKey() {
+  @VisibleForTesting
+  DelTemplateKey getDelTemplateKey() {
     if (delTemplateKey != null) {
       return delTemplateKey;
     }
@@ -184,13 +168,18 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   }
 
   /**
-   * When a variant value is not defined at parsing time (e.g. when a global constant is used) the
-   * deltemplate variant and deltemplate key fields in this node have null value. To fetch their
-   * values, we must lazily resolve the expression, after globals are substituted.
+   * Calculate a DeltemplateKey for the variant.
+   *
+   * <p>This is done lazily so that global references can be resolved. This is not ideal since
+   * nothing guarantees that resolution happens before access.
+   *
+   * <p>Note we don't do validation of the variant values since that is handled by the
+   * TemplateDelegateNodeBuilder during construction
    */
   private DelTemplateKey resolveVariantExpression() {
-    if (delTemplateVariantExpr == null || delTemplateVariantExpr.numChildren() != 1) {
-      throw invalidExpressionError();
+    if (delTemplateVariantExpr == null) {
+      delTemplateKey = DelTemplateKey.create(delTemplateName, "");
+      return delTemplateKey;
     }
     ExprNode exprNode = delTemplateVariantExpr.getRoot();
     if (exprNode instanceof GlobalNode) {
@@ -202,6 +191,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
         // message extraction and parseinfo generation.  To make this 'work' we just use the Global
         // name for the variant value.  This is fine and will help catch some errors.
         // Because these nodes won't be used for code generation this should be safe.
+        // For this reason we also don't store the key, instead we just return it.
         return DelTemplateKey.create(delTemplateName, globalNode.getName());
       }
     }
@@ -209,26 +199,15 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       // Globals were already substituted: We may now create the definitive variant and key fields
       // on this node.
       long variantValue = ((IntegerNode) exprNode).getValue();
-      Preconditions.checkArgument(
-          variantValue >= 0,
-          "Globals used as deltemplate variants must not evaluate to negative numbers.");
-      delTemplateVariant = String.valueOf(variantValue);
-      delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
-      return delTemplateKey;
+      delTemplateKey = DelTemplateKey.create(delTemplateName, String.valueOf(variantValue));
     } else if (exprNode instanceof StringNode) {
       // Globals were already substituted: We may now create the definitive variant and key fields
       // on this node.
-      delTemplateVariant = ((StringNode) exprNode).getValue();
-      TemplateDelegateNode.verifyVariantName(delTemplateVariant, exprNode.getSourceLocation());
-      delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
-      return delTemplateKey;
+      delTemplateKey = DelTemplateKey.create(delTemplateName, ((StringNode) exprNode).getValue());
     } else {
-      throw invalidExpressionError();
+      // We must have already reported an error, just create an arbitrary variant expr.
+      delTemplateKey = DelTemplateKey.create(delTemplateName, exprNode.toSourceString());
     }
-  }
-
-  private AssertionError invalidExpressionError() {
-    return new AssertionError(
-        "Invalid expression for deltemplate variant for " + delTemplateName + " template");
+    return delTemplateKey;
   }
 }

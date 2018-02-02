@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -130,7 +130,10 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @return This same SoyAutoescapeException object, for convenience.
    */
   public SoyAutoescapeException associateNode(SoyNode node) {
-    SoySyntaxExceptionUtils.associateNode(this, node);
+    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
+    // This special case is just for unit tests
+    String templateName = (template != null) ? template.getTemplateNameForUserMsgs() : null;
+    this.associateMetaInfo(node.getSourceLocation(), templateName);
     return this;
   }
 

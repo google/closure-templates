@@ -102,9 +102,6 @@ public abstract class TemplateNodeBuilder {
    */
   private String partialTemplateName;
 
-  /** A string suitable for display in user msgs as the template name. */
-  protected String templateNameForUserMsgs;
-
   /** This template's visibility level. */
   protected Visibility visibility;
 
@@ -216,15 +213,6 @@ public abstract class TemplateNodeBuilder {
     setAutoescapeInfo(autoescapeMode, kind, kindLocation);
   }
 
-  /**
-   * Returns a template name suitable for display in user msgs.
-   *
-   * <p>Note: This public getter exists because this info is needed by SoyFileParser for error
-   * reporting before the TemplateNode is ready to be built.
-   */
-  public String getTemplateNameForUserMsgs() {
-    return templateNameForUserMsgs;
-  }
 
   /**
    * Sets the SoyDoc for the node to be built. The SoyDoc will be parsed to fill in SoyDoc param
@@ -375,8 +363,7 @@ public abstract class TemplateNodeBuilder {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(
-      String templateName, SourceLocation nameLocation, @Nullable String partialTemplateName) {
+  protected final void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
     this.templateName = templateName;
     this.partialTemplateName = partialTemplateName;
   }

@@ -19,17 +19,14 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -280,48 +277,6 @@ public class TemplateNodeTest {
         .replaceChild(0, new StringNode("variant", QuoteStyle.SINGLE, node.getSourceLocation()));
     assertEquals("variant", node.getDelTemplateVariant());
     assertEquals("variant", node.getDelTemplateKey().variant());
-  }
-
-  @Test
-  public void testInvalidVariant() {
-    // Try to resolve a global to an invalid type.
-    TemplateDelegateNode node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    node.getExprList().get(0).replaceChild(0, new BooleanNode(true, node.getSourceLocation()));
-    boolean succeeded = false;
-    try {
-      node.getDelTemplateVariant();
-      succeeded = true;
-    } catch (AssertionError e) {
-      assertTrue(e.getMessage().contains("Invalid expression for deltemplate"));
-    }
-    if (succeeded) {
-      fail("expected getDelTemplateVariant() to fail");
-    }
-
-    // Try to resolve a global to an invalid string
-    node =
-        (TemplateDelegateNode)
-            parse(
-                join(
-                    "{namespace ns}",
-                    "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
-                    "{/deltemplate}"));
-    node.getExprList()
-        .get(0)
-        .replaceChild(
-            0, new StringNode("Not and Identifier!", QuoteStyle.SINGLE, node.getSourceLocation()));
-    try {
-      node.getDelTemplateVariant();
-      fail("An error is expected when a global string value is not an identifier.");
-    } catch (SoySyntaxException e) {
-      assertTrue(e.getMessage().contains("a string literal is used, value must be an identifier"));
-    }
   }
 
   @Test

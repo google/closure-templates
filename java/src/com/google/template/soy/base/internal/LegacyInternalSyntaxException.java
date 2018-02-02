@@ -16,6 +16,8 @@
 
 package com.google.template.soy.base.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
@@ -59,48 +61,12 @@ public class LegacyInternalSyntaxException extends SoySyntaxException {
     return new LegacyInternalSyntaxException(message);
   }
 
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message.
-   * @param srcLoc The source location of the error, or null if unknown. At most one of srcLoc and
-   *     filePath may be nonnull (prefer srcLoc since it contains more info).
-   * @param filePath The file path of the file containing the error. At most one of srcLoc and
-   *     filePath may be nonnull (prefer srcLoc since it contains more info).
-   * @param templateName The name of the template containing the error, or null if not available.
-   * @return The new SoySyntaxException object.
-   */
-  public static LegacyInternalSyntaxException createWithMetaInfo(
-      String message,
-      @Nullable SourceLocation srcLoc,
-      @Nullable String filePath,
-      @Nullable String templateName) {
-
-    return createWithoutMetaInfo(message).associateMetaInfo(srcLoc, filePath, templateName);
-  }
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message.
-   * @param srcLoc The source location of the error, or null if unknown.
-   * @return The new SoySyntaxException object.
-   */
-  public static LegacyInternalSyntaxException createWithMetaInfo(
-      String message, SourceLocation srcLoc) {
-    return createWithoutMetaInfo(message)
-        .associateMetaInfo(srcLoc, null /* filePath */, null /* templateName */);
-  }
-
   /** The location in the soy file at which the error occurred. */
-  protected SourceLocation srcLoc = SourceLocation.UNKNOWN;
+  private SourceLocation srcLoc = SourceLocation.UNKNOWN;
 
   /** The name of the template with the syntax error if any. */
   protected String templateName;
 
-  protected LegacyInternalSyntaxException(Throwable cause) {
-    super(cause);
-  }
 
   protected LegacyInternalSyntaxException(String message, Throwable cause) {
     super(message, cause);
@@ -110,25 +76,14 @@ public class LegacyInternalSyntaxException extends SoySyntaxException {
     super(message);
   }
 
-  public LegacyInternalSyntaxException associateMetaInfo(
-      @Nullable SourceLocation srcLoc, @Nullable String filePath, @Nullable String templateName) {
-    if (srcLoc != null) {
-      Preconditions.checkArgument(filePath == null); // srcLoc and filePath can't both be nonnull
-      // If srcLoc not yet set, then set it, else assert existing value equals new value.
-      if (this.srcLoc == SourceLocation.UNKNOWN) {
-        this.srcLoc = srcLoc;
-      } else {
-        Preconditions.checkState(this.srcLoc.equals(srcLoc));
-      }
-    }
-    if (filePath != null) {
-      // If srcLoc not yet set, then set it (with line number -1), else assert existing file path
-      // equals new file path.
-      if (this.srcLoc == SourceLocation.UNKNOWN) {
-        this.srcLoc = new SourceLocation(filePath);
-      } else {
-        Preconditions.checkState(this.srcLoc.getFilePath().equals(filePath));
-      }
+  protected LegacyInternalSyntaxException associateMetaInfo(
+      SourceLocation srcLoc, @Nullable String templateName) {
+    checkNotNull(srcLoc);
+    // If srcLoc not yet set, then set it, else assert existing value equals new value.
+    if (!this.srcLoc.isKnown()) {
+      this.srcLoc = srcLoc;
+    } else {
+      Preconditions.checkState(this.srcLoc.equals(srcLoc));
     }
 
     if (templateName != null) {
