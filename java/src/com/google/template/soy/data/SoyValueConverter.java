@@ -192,10 +192,10 @@ public final class SoyValueConverter {
           }
         });
     expensiveConverterMap.put(
-        ThisIsASoyMap.class,
-        new Converter<ThisIsASoyMap<?, ?>>() {
+        MarkAsSoyMap.class,
+        new Converter<MarkAsSoyMap>() {
           @Override
-          public SoyValueProvider apply(ThisIsASoyMap input) {
+          public SoyValueProvider apply(MarkAsSoyMap input) {
             return newSoyMapFromJavaMap(input.delegate());
           }
         });
@@ -250,6 +250,23 @@ public final class SoyValueConverter {
       builder.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));
     }
     return SoyMapImpl.forProviderMap(builder.build());
+  }
+
+  /**
+   * Signals to the Java rendering API that the wrapped {@code java.util.Map} represents a Soy
+   * {@code map}, and not a {@code legacy_object_map} or record. In particular, this allows the map
+   * to contain non-string keys. See discussion in {@link DictImpl}.
+   *
+   * <p>If you want to use non-string keys in a map in Soy, you need to do three things:
+   *
+   * <ul>
+   *   <li>Change the type of your map from {@code legacy_object_map} to {@code map}
+   *   <li>Change the map passed in from JS from a plain JS object to an ES6 Map
+   *   <li>Wrap the map passed in from Java with {@code markAsSoyMap}
+   * </ul>
+   */
+  public static Object markAsSoyMap(Map<?, ?> delegate) {
+    return new MarkAsSoyMap(delegate);
   }
 
   /**
@@ -425,6 +442,20 @@ public final class SoyValueConverter {
       // future lookups
       map.put(clazz, c);
       return c;
+    }
+  }
+
+  /** See discussion at {@link #markAsSoyMap}. */
+  private static final class MarkAsSoyMap {
+
+    final Map<?, ?> delegate;
+
+    MarkAsSoyMap(Map<?, ?> delegate) {
+      this.delegate = delegate;
+    }
+
+    Map<?, ?> delegate() {
+      return delegate;
     }
   }
 }

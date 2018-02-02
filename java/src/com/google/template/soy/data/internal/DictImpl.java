@@ -29,7 +29,6 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.ThisIsASoyMap;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collections;
@@ -69,7 +68,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * It should not require any changes to Java renderers: every java.util.Map becomes a DictImpl
  * instance that can act as a {@code map}. After the migration, Java renderers that want to take
  * advantage of nonstring keys must wrap their java.util.Maps in {@link
- * ThisIsASoyMap#thisIsASoyMap}.
+ * com.google.template.soy.data.SoyValueConverter#markAsSoyMap}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
