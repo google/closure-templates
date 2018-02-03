@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared.internal;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
