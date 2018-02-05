@@ -23459,22 +23459,6 @@ function $$mapToLegacyObjectMap(map) {
 }
 
 /**
- * Converts a legacy object map with string keys into an equivalent SoyMap.
- * @param {!Object<V>} obj
- * @return {!SoyMap<string, V>}
- * @template V
- */
-function $$legacyObjectMapToMap(obj) {
-  const map = new Map();
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      map.set(key, obj[key]);
-    }
-  }
-  return map;
-}
-
-/**
  * Gets the keys in a map as an array. There are no guarantees on the order.
  * @param {!SoyMap<K, V>} map The map to get the keys of.
  * @return {!Array<K>} The array of keys in the given map.
@@ -23512,7 +23496,6 @@ function $$maybeCoerceKeyToString(key) {
 }
 
 exports = {
-  $$legacyObjectMapToMap,
   $$mapToLegacyObjectMap,
   $$maybeCoerceKeyToString,
   $$populateMap,
@@ -23521,6 +23504,41 @@ exports = {
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,
 };
+
+;return exports;});
+
+//javascript/template/soy/legacy_object_map_to_map.js
+goog.loadModule(function(exports) {'use strict';/**
+ * @fileoverview Map-related functions that can't live in soyutils_map.js
+ * due to b/72879961.
+ */
+goog.module('soy.$$legacyObjectMapToMap');
+goog.module.declareLegacyNamespace();
+
+const {Map: SoyMap} = goog.require('soy.map');
+
+/**
+ * Converts a legacy object map with string keys into an equivalent SoyMap.
+ * @param {!Object<V>} obj
+ * @return {!SoyMap<string, V>}
+ * @template V
+ */
+function $$legacyObjectMapToMap(obj) {
+  // TODO(b/72879961): the Map instantiation causes JSCompiler to be more
+  // conservative in dead code elimination. The result is a uniform 100-200 byte
+  // increase in the transitive size of every module, even if no Soy template
+  // uses legacyObjectMapToMap(). As a workaround, put this function in its own
+  // file so that it is DCE'd by AJD instead of JSCompiler.
+  const map = new Map();
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      map.set(key, obj[key]);
+    }
+  }
+  return map;
+}
+
+exports = $$legacyObjectMapToMap;
 
 ;return exports;});
 
