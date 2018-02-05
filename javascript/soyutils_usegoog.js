@@ -112,8 +112,8 @@ soydata.getContentDir = function(value) {
 
 
 /**
- * This class is only a holder for {@code soydata.SanitizedHtml.from}. Do not
- * instantiate or extend it. Use {@code goog.soy.data.SanitizedHtml} instead.
+ * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
+ * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
  *
  * @constructor
  * @extends {goog.soy.data.SanitizedHtml}
@@ -283,9 +283,9 @@ soydata.markUnsanitizedText = function(content, opt_contentDir) {
  *
  * @param {*} content A string of HTML that can safely be embedded in
  *     a PCDATA context in your app. If you would be surprised to find that an
- *     HTML sanitizer produced {@code s} (e.g. it runs code or fetches bad URLs)
- *     and you wouldn't write a template that produces {@code s} on security or
- *     privacy grounds, then don't pass {@code s} here.
+ *     HTML sanitizer produced `s` (e.g. it runs code or fetches bad URLs)
+ *     and you wouldn't write a template that produces `s` on security or
+ *     privacy grounds, then don't pass `s` here.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
  * @return {!goog.soy.data.SanitizedHtml} Sanitized content wrapper that
@@ -953,7 +953,7 @@ soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
  * @param {*} value The HTML to be escaped. May not be a string, but the
  *     value will be coerced to a string.
  * @param {Object<string, boolean>=} opt_tagWhitelist Has an own property whose
- *     name is a lower-case tag name and whose value is {@code 1} for
+ *     name is a lower-case tag name and whose value is `1` for
  *     each element that is allowed in the output.
  * @return {string} A representation of value without disallowed tags,
  *     HTML comments, or other non-text content.
@@ -1497,8 +1497,8 @@ soy.$$filterNoAutoescape = function(value) {
 /**
  * Converts \r\n, \r, and \n to <br>s
  * @param {*} value The string in which to convert newlines.
- * @return {string|!goog.soy.data.SanitizedHtml} A copy of {@code value} with
- *     converted newlines. If {@code value} is SanitizedHtml, the return value
+ * @return {string|!goog.soy.data.SanitizedHtml} A copy of `value` with
+ *     converted newlines. If `value` is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  */
 soy.$$changeNewlineToBr = function(value) {
@@ -1522,7 +1522,7 @@ soy.$$changeNewlineToBr = function(value) {
  * @param {number} maxCharsBetweenWordBreaks Maximum number of non-space
  *     characters to allow before adding a word break.
  * @return {string|!goog.soy.data.SanitizedHtml} The string including word
- *     breaks. If {@code value} is SanitizedHtml, the return value
+ *     breaks. If `value` is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  * @deprecated The |insertWordBreaks directive is deprecated.
  *     Prefer wrapping with CSS white-space: break-word.
