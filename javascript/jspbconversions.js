@@ -1,5 +1,5 @@
 /**
- * @fileoverview Functions to convert safe HTML types under {@code goog.html}
+ * @fileoverview Functions to convert safe HTML types under `goog.html`
  * to/from their JSPB protocol message representation.
  *
  * @visibility {//visibility:public}

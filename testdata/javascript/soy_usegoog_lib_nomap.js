@@ -52,9 +52,9 @@ goog.global = this;
 /**
  * A hook for overriding the define values in uncompiled mode.
  *
- * In uncompiled mode, {@code CLOSURE_UNCOMPILED_DEFINES} may be defined before
- * loading base.js.  If a key is defined in {@code CLOSURE_UNCOMPILED_DEFINES},
- * {@code goog.define} will use the value instead of the default value.  This
+ * In uncompiled mode, `CLOSURE_UNCOMPILED_DEFINES` may be defined before
+ * loading base.js.  If a key is defined in `CLOSURE_UNCOMPILED_DEFINES`,
+ * `goog.define` will use the value instead of the default value.  This
  * allows flags to be overwritten without compilation (this is normally
  * accomplished with the compiler's "define" flag).
  *
@@ -766,7 +766,7 @@ goog.abstractMethod = function() {
 
 
 /**
- * Adds a {@code getInstance} static method that always returns the same
+ * Adds a `getInstance` static method that always returns the same
  * instance object.
  * @param {!Function} ctor The constructor for the class to add the static
  *     method to.
@@ -793,7 +793,7 @@ goog.addSingletonGetter = function(ctor) {
 
 /**
  * All singleton classes that have been instantiated, for testing. Don't read
- * it directly, use the {@code goog.testing.singleton} module. The compiler
+ * it directly, use the `goog.testing.singleton` module. The compiler
  * removes this variable if unused.
  * @type {!Array<!Function>}
  * @private
@@ -802,10 +802,10 @@ goog.instantiatedSingletons_ = [];
 
 
 /**
- * @define {boolean} Whether to load goog.modules using {@code eval} when using
+ * @define {boolean} Whether to load goog.modules using `eval` when using
  * the debug loader.  This provides a better debugging experience as the
  * source is unmodified and can be edited using Chrome Workspaces or similar.
- * However in some environments the use of {@code eval} is banned
+ * However in some environments the use of `eval` is banned
  * so we provide an alternative.
  */
 goog.define('goog.LOAD_MODULE_USING_EVAL', true);
@@ -909,7 +909,7 @@ goog.loadModule = function(moduleDef) {
   // NOTE: we allow function definitions to be either in the from
   // of a string to eval (which keeps the original source intact) or
   // in a eval forbidden environment (CSP) we allow a function definition
-  // which in its body must call {@code goog.module}, and return the exports
+  // which in its body must call `goog.module`, and return the exports
   // of the module.
   var previousState = goog.moduleLoaderState_;
   try {
@@ -1272,7 +1272,7 @@ goog.isObject = function(val) {
  * Gets a unique ID for an object. This mutates the object so that further calls
  * with the same object as a parameter returns the same value. The unique ID is
  * guaranteed to be unique across the current session amongst objects that are
- * passed into {@code getUid}. There is no guarantee that the ID is unique or
+ * passed into `getUid`. There is no guarantee that the ID is unique or
  * consistent across sessions. It is unsafe to generate unique ID for function
  * prototypes.
  *
@@ -1305,7 +1305,7 @@ goog.hasUid = function(obj) {
 
 /**
  * Removes the unique ID from an object. This is useful if the object was
- * previously mutated using {@code goog.getUid} in which case the mutation is
+ * previously mutated using `goog.getUid` in which case the mutation is
  * undone.
  * @param {Object} obj The object to remove the unique ID field from.
  */
@@ -2821,7 +2821,7 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
   /**
-   * Writes a new script pointing to {@code src} directly into the DOM.
+   * Writes a new script pointing to `src` directly into the DOM.
    *
    * NOTE: This method is not CSP-compliant. @see this.appendScriptSrcNode_ for
    * the fallback mechanism.
@@ -3294,8 +3294,8 @@ goog.asserts.errorHandler_ = goog.asserts.DEFAULT_ERROR_HANDLER;
  * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
  * @param {string} pattern The string containing the pattern.
  * @param {!Array<*>} subs The items to substitute into the pattern.
- * @return {string} A copy of {@code str} in which each occurrence of
- *     {@code %s} has been replaced an argument from {@code var_args}.
+ * @return {string} A copy of `str` in which each occurrence of
+ *     {@code %s} has been replaced an argument from `var_args`.
  * @private
  */
 goog.asserts.subs_ = function(pattern, subs) {
@@ -5380,8 +5380,8 @@ goog.string.Unicode = {
 /**
  * Fast prefix-checker.
  * @param {string} str The string to check.
- * @param {string} prefix A string to look for at the start of {@code str}.
- * @return {boolean} True if {@code str} begins with {@code prefix}.
+ * @param {string} prefix A string to look for at the start of `str`.
+ * @return {boolean} True if `str` begins with `prefix`.
  */
 goog.string.startsWith = function(str, prefix) {
   return str.lastIndexOf(prefix, 0) == 0;
@@ -5391,8 +5391,8 @@ goog.string.startsWith = function(str, prefix) {
 /**
  * Fast suffix-checker.
  * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of {@code str}.
- * @return {boolean} True if {@code str} ends with {@code suffix}.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix`.
  */
 goog.string.endsWith = function(str, suffix) {
   var l = str.length - suffix.length;
@@ -5403,8 +5403,8 @@ goog.string.endsWith = function(str, suffix) {
 /**
  * Case-insensitive prefix-checker.
  * @param {string} str The string to check.
- * @param {string} prefix  A string to look for at the end of {@code str}.
- * @return {boolean} True if {@code str} begins with {@code prefix} (ignoring
+ * @param {string} prefix  A string to look for at the end of `str`.
+ * @return {boolean} True if `str` begins with `prefix` (ignoring
  *     case).
  */
 goog.string.caseInsensitiveStartsWith = function(str, prefix) {
@@ -5416,8 +5416,8 @@ goog.string.caseInsensitiveStartsWith = function(str, prefix) {
 /**
  * Case-insensitive suffix-checker.
  * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of {@code str}.
- * @return {boolean} True if {@code str} ends with {@code suffix} (ignoring
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix` (ignoring
  *     case).
  */
 goog.string.caseInsensitiveEndsWith = function(str, suffix) {
@@ -5431,7 +5431,7 @@ goog.string.caseInsensitiveEndsWith = function(str, suffix) {
  * Case-insensitive equality checker.
  * @param {string} str1 First string to check.
  * @param {string} str2 Second string to check.
- * @return {boolean} True if {@code str1} and {@code str2} are the same string,
+ * @return {boolean} True if `str1` and `str2` are the same string,
  *     ignoring case.
  */
 goog.string.caseInsensitiveEquals = function(str1, str2) {
@@ -5444,8 +5444,8 @@ goog.string.caseInsensitiveEquals = function(str1, str2) {
  * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
  * @param {string} str The string containing the pattern.
  * @param {...*} var_args The items to substitute into the pattern.
- * @return {string} A copy of {@code str} in which each occurrence of
- *     {@code %s} has been replaced an argument from {@code var_args}.
+ * @return {string} A copy of `str` in which each occurrence of
+ *     {@code %s} has been replaced an argument from `var_args`.
  */
 goog.string.subs = function(str, var_args) {
   var splitParts = str.split('%s');
@@ -5467,7 +5467,7 @@ goog.string.subs = function(str, var_args) {
  * Converts multiple whitespace chars (spaces, non-breaking-spaces, new lines
  * and tabs) to a single space, and strips leading and trailing whitespace.
  * @param {string} str Input string.
- * @return {string} A copy of {@code str} with collapsed whitespace.
+ * @return {string} A copy of `str` with collapsed whitespace.
  */
 goog.string.collapseWhitespace = function(str) {
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
@@ -5480,7 +5480,7 @@ goog.string.collapseWhitespace = function(str) {
 /**
  * Checks if a string is empty or contains only whitespaces.
  * @param {string} str The string to check.
- * @return {boolean} Whether {@code str} is empty or whitespace only.
+ * @return {boolean} Whether `str` is empty or whitespace only.
  */
 goog.string.isEmptyOrWhitespace = function(str) {
   // testing length == 0 first is actually slower in all browsers (about the
@@ -5495,7 +5495,7 @@ goog.string.isEmptyOrWhitespace = function(str) {
 /**
  * Checks if a string is empty.
  * @param {string} str The string to check.
- * @return {boolean} Whether {@code str} is empty.
+ * @return {boolean} Whether `str` is empty.
  */
 goog.string.isEmptyString = function(str) {
   return str.length == 0;
@@ -5506,7 +5506,7 @@ goog.string.isEmptyString = function(str) {
  * Checks if a string is empty or contains only whitespaces.
  *
  * @param {string} str The string to check.
- * @return {boolean} Whether {@code str} is empty or whitespace only.
+ * @return {boolean} Whether `str` is empty or whitespace only.
  * @deprecated Use goog.string.isEmptyOrWhitespace instead.
  */
 goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
@@ -5515,7 +5515,7 @@ goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
 /**
  * Checks if a string is null, undefined, empty or contains only whitespaces.
  * @param {*} str The string to check.
- * @return {boolean} Whether {@code str} is null, undefined, empty, or
+ * @return {boolean} Whether `str` is null, undefined, empty, or
  *     whitespace only.
  * @deprecated Use goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str))
  *     instead.
@@ -5529,7 +5529,7 @@ goog.string.isEmptyOrWhitespaceSafe = function(str) {
  * Checks if a string is null, undefined, empty or contains only whitespaces.
  *
  * @param {*} str The string to check.
- * @return {boolean} Whether {@code str} is null, undefined, empty, or
+ * @return {boolean} Whether `str` is null, undefined, empty, or
  *     whitespace only.
  * @deprecated Use goog.string.isEmptyOrWhitespace instead.
  */
@@ -5549,7 +5549,7 @@ goog.string.isBreakingWhitespace = function(str) {
 /**
  * Checks if a string contains all letters.
  * @param {string} str string to check.
- * @return {boolean} True if {@code str} consists entirely of letters.
+ * @return {boolean} True if `str` consists entirely of letters.
  */
 goog.string.isAlpha = function(str) {
   return !/[^a-zA-Z]/.test(str);
@@ -5560,7 +5560,7 @@ goog.string.isAlpha = function(str) {
  * Checks if a string contains only numbers.
  * @param {*} str string to check. If not a string, it will be
  *     casted to one.
- * @return {boolean} True if {@code str} is numeric.
+ * @return {boolean} True if `str` is numeric.
  */
 goog.string.isNumeric = function(str) {
   return !/[^0-9]/.test(str);
@@ -5570,7 +5570,7 @@ goog.string.isNumeric = function(str) {
 /**
  * Checks if a string contains only numbers or letters.
  * @param {string} str string to check.
- * @return {boolean} True if {@code str} is alphanumeric.
+ * @return {boolean} True if `str` is alphanumeric.
  */
 goog.string.isAlphaNumeric = function(str) {
   return !/[^a-zA-Z0-9]/.test(str);
@@ -5580,7 +5580,7 @@ goog.string.isAlphaNumeric = function(str) {
 /**
  * Checks if a character is a space character.
  * @param {string} ch Character to check.
- * @return {boolean} True if {@code ch} is a space.
+ * @return {boolean} True if `ch` is a space.
  */
 goog.string.isSpace = function(ch) {
   return ch == ' ';
@@ -5590,7 +5590,7 @@ goog.string.isSpace = function(ch) {
 /**
  * Checks if a character is a valid unicode character.
  * @param {string} ch Character to check.
- * @return {boolean} True if {@code ch} is a valid unicode character.
+ * @return {boolean} True if `ch` is a valid unicode character.
  */
 goog.string.isUnicodeChar = function(ch) {
   return ch.length == 1 && ch >= ' ' && ch <= '~' ||
@@ -5602,7 +5602,7 @@ goog.string.isUnicodeChar = function(ch) {
  * Takes a string and replaces newlines with a space. Multiple lines are
  * replaced with a single space.
  * @param {string} str The string from which to strip newlines.
- * @return {string} A copy of {@code str} stripped of newlines.
+ * @return {string} A copy of `str` stripped of newlines.
  */
 goog.string.stripNewlines = function(str) {
   return str.replace(/(\r\n|\r|\n)+/g, ' ');
@@ -5612,7 +5612,7 @@ goog.string.stripNewlines = function(str) {
 /**
  * Replaces Windows and Mac new lines with unix style: \r or \r\n with \n.
  * @param {string} str The string to in which to canonicalize newlines.
- * @return {string} {@code str} A copy of {@code} with canonicalized newlines.
+ * @return {string} `str` A copy of {@code} with canonicalized newlines.
  */
 goog.string.canonicalizeNewlines = function(str) {
   return str.replace(/(\r\n|\r|\n)/g, '\n');
@@ -5623,7 +5623,7 @@ goog.string.canonicalizeNewlines = function(str) {
  * Normalizes whitespace in a string, replacing all whitespace chars with
  * a space.
  * @param {string} str The string in which to normalize whitespace.
- * @return {string} A copy of {@code str} with all whitespace normalized.
+ * @return {string} A copy of `str` with all whitespace normalized.
  */
 goog.string.normalizeWhitespace = function(str) {
   return str.replace(/\xa0|\s/g, ' ');
@@ -5634,7 +5634,7 @@ goog.string.normalizeWhitespace = function(str) {
  * Normalizes spaces in a string, replacing all consecutive spaces and tabs
  * with a single space. Replaces non-breaking space with a space.
  * @param {string} str The string in which to normalize spaces.
- * @return {string} A copy of {@code str} with all consecutive spaces and tabs
+ * @return {string} A copy of `str` with all consecutive spaces and tabs
  *    replaced with a single space.
  */
 goog.string.normalizeSpaces = function(str) {
@@ -5658,7 +5658,7 @@ goog.string.collapseBreakingSpaces = function(str) {
 /**
  * Trims white spaces to the left and right of a string.
  * @param {string} str The string to trim.
- * @return {string} A trimmed copy of {@code str}.
+ * @return {string} A trimmed copy of `str`.
  */
 goog.string.trim =
     (goog.TRUSTED_SITE && String.prototype.trim) ? function(str) {
@@ -5677,7 +5677,7 @@ goog.string.trim =
 /**
  * Trims whitespaces at the left end of a string.
  * @param {string} str The string to left trim.
- * @return {string} A trimmed copy of {@code str}.
+ * @return {string} A trimmed copy of `str`.
  */
 goog.string.trimLeft = function(str) {
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
@@ -5690,7 +5690,7 @@ goog.string.trimLeft = function(str) {
 /**
  * Trims whitespaces at the right end of a string.
  * @param {string} str The string to right trim.
- * @return {string} A trimmed copy of {@code str}.
+ * @return {string} A trimmed copy of `str`.
  */
 goog.string.trimRight = function(str) {
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
@@ -5707,7 +5707,7 @@ goog.string.trimRight = function(str) {
  *  1 = str1 greater than str2
  *
  * @param {string} str1 The string to compare.
- * @param {string} str2 The string to compare {@code str1} to.
+ * @param {string} str2 The string to compare `str1` to.
  * @return {number} The comparator result, as described above.
  */
 goog.string.caseInsensitiveCompare = function(str1, str2) {
@@ -5798,7 +5798,7 @@ goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
  * with a reasonable delay.
  *
  * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare {@code str1} to.
+ * @param {string} str2 The string to compare `str1` to.
  * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
  *     0 if str1 > str2.
  */
@@ -5815,7 +5815,7 @@ goog.string.intAwareCompare = function(str1, str2) {
  * dots.
  *
  * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare {@code str1} to.
+ * @param {string} str2 The string to compare `str1` to.
  * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
  *     0 if str1 > str2.
  */
@@ -5837,7 +5837,7 @@ goog.string.numerateCompare = goog.string.floatAwareCompare;
 /**
  * URL-encodes a string
  * @param {*} str The string to url-encode.
- * @return {string} An encoded copy of {@code str} that is safe for urls.
+ * @return {string} An encoded copy of `str` that is safe for urls.
  *     Note that '#', ':', and other characters used to delimit portions
  *     of URLs *will* be encoded.
  */
@@ -5850,7 +5850,7 @@ goog.string.urlEncode = function(str) {
  * URL-decodes the string. We need to specially handle '+'s because
  * the javascript library doesn't convert them to spaces.
  * @param {string} str The string to url decode.
- * @return {string} The decoded {@code str}.
+ * @return {string} The decoded `str`.
  */
 goog.string.urlDecode = function(str) {
   return decodeURIComponent(str.replace(/\+/g, ' '));
@@ -5861,7 +5861,7 @@ goog.string.urlDecode = function(str) {
  * Converts \n to <br>s or <br />s.
  * @param {string} str The string in which to convert newlines.
  * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} A copy of {@code str} with converted newlines.
+ * @return {string} A copy of `str` with converted newlines.
  */
 goog.string.newLineToBr = function(str, opt_xml) {
   return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
@@ -5910,7 +5910,7 @@ goog.string.newLineToBr = function(str, opt_xml) {
  *     if the character needs replacing - use this option if you expect each of
  *     the characters to appear often. Leave false if you expect few html
  *     characters to occur in your strings, such as if you are escaping HTML.
- * @return {string} An escaped copy of {@code str}.
+ * @return {string} An escaped copy of `str`.
  */
 goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
 
@@ -6027,7 +6027,7 @@ goog.string.ALL_RE_ =
  * Unescapes an HTML string.
  *
  * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of {@code str}.
+ * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapeEntities = function(str) {
   if (goog.string.contains(str, '&')) {
@@ -6050,7 +6050,7 @@ goog.string.unescapeEntities = function(str) {
  *
  * @param {string} str The string to unescape.
  * @param {!Document} document A document to use in escaping the string.
- * @return {string} An unescaped copy of {@code str}.
+ * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapeEntitiesWithDocument = function(str, document) {
   if (goog.string.contains(str, '&')) {
@@ -6068,7 +6068,7 @@ goog.string.unescapeEntitiesWithDocument = function(str, document) {
  * @param {Document=} opt_document An optional document to use for creating
  *     elements. If this is not specified then the default window.document
  *     will be used.
- * @return {string} The unescaped {@code str} string.
+ * @return {string} The unescaped `str` string.
  */
 goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
   /** @type {!Object<string, string>} */
@@ -6116,7 +6116,7 @@ goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
  * Unescapes XML entities.
  * @private
  * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of {@code str}.
+ * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapePureXmlEntities_ = function(str) {
   return str.replace(/&([^;]+);/g, function(s, entity) {
@@ -6158,7 +6158,7 @@ goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
  * entity #160 to make it safer for xml.
  * @param {string} str The string in which to escape whitespace.
  * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} An escaped copy of {@code str}.
+ * @return {string} An escaped copy of `str`.
  */
 goog.string.whitespaceEscape = function(str, opt_xml) {
   // This doesn't use goog.string.preserveSpaces for backwards compatibility.
@@ -6170,7 +6170,7 @@ goog.string.whitespaceEscape = function(str, opt_xml) {
  * Preserve spaces that would be otherwise collapsed in HTML by replacing them
  * with non-breaking space Unicode characters.
  * @param {string} str The string in which to preserve whitespace.
- * @return {string} A copy of {@code str} with preserved whitespace.
+ * @return {string} A copy of `str` with preserved whitespace.
  */
 goog.string.preserveSpaces = function(str) {
   return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
@@ -6190,7 +6190,7 @@ goog.string.preserveSpaces = function(str) {
  *
  * @param {string} str The string to strip.
  * @param {string} quoteChars The quote characters to strip.
- * @return {string} A copy of {@code str} without the quotes.
+ * @return {string} A copy of `str` without the quotes.
  */
 goog.string.stripQuotes = function(str, quoteChars) {
   var length = quoteChars.length;
@@ -6212,7 +6212,7 @@ goog.string.stripQuotes = function(str, quoteChars) {
  * @param {number} chars Max number of characters.
  * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
  *     characters from being cut off in the middle.
- * @return {string} The truncated {@code str} string.
+ * @return {string} The truncated `str` string.
  */
 goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
   if (opt_protectEscapedCharacters) {
@@ -6241,7 +6241,7 @@ goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
  * @param {number=} opt_trailingChars Optional number of trailing characters to
  *     leave at the end of the string, instead of truncating as close to the
  *     middle as possible.
- * @return {string} A truncated copy of {@code str}.
+ * @return {string} A truncated copy of `str`.
  */
 goog.string.truncateMiddle = function(
     str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
@@ -6309,7 +6309,7 @@ goog.string.jsEscapeCache_ = {
  * string is a valid JS string. The resulting string is safe to embed in
  * `<script>` tags as "<" is escaped.
  * @param {string} s The string to quote.
- * @return {string} A copy of {@code s} surrounded by double quotes.
+ * @return {string} A copy of `s` surrounded by double quotes.
  */
 goog.string.quote = function(s) {
   s = String(s);
@@ -6328,7 +6328,7 @@ goog.string.quote = function(s) {
 /**
  * Takes a string and returns the escaped string for that input string.
  * @param {string} str The string to escape.
- * @return {string} An escaped string representing {@code str}.
+ * @return {string} An escaped string representing `str`.
  */
 goog.string.escapeString = function(str) {
   var sb = [];
@@ -6343,7 +6343,7 @@ goog.string.escapeString = function(str) {
  * Takes a character and returns the escaped string for that character. For
  * example escapeChar(String.fromCharCode(15)) -> "\\x0E".
  * @param {string} c The character to escape.
- * @return {string} An escaped string representing {@code c}.
+ * @return {string} An escaped string representing `c`.
  */
 goog.string.escapeChar = function(c) {
   if (c in goog.string.jsEscapeCache_) {
@@ -6382,7 +6382,7 @@ goog.string.escapeChar = function(c) {
  * Determines whether a string contains a substring.
  * @param {string} str The string to search.
  * @param {string} subString The substring to search for.
- * @return {boolean} Whether {@code str} contains {@code subString}.
+ * @return {boolean} Whether `str` contains `subString`.
  */
 goog.string.contains = function(str, subString) {
   return str.indexOf(subString) != -1;
@@ -6393,7 +6393,7 @@ goog.string.contains = function(str, subString) {
  * Determines whether a string contains a substring, ignoring case.
  * @param {string} str The string to search.
  * @param {string} subString The substring to search for.
- * @return {boolean} Whether {@code str} contains {@code subString}.
+ * @return {boolean} Whether `str` contains `subString`.
  */
 goog.string.caseInsensitiveContains = function(str, subString) {
   return goog.string.contains(str.toLowerCase(), subString.toLowerCase());
@@ -6418,7 +6418,7 @@ goog.string.countOf = function(s, ss) {
  * @param {string} s The base string from which to remove.
  * @param {number} index The index at which to remove the substring.
  * @param {number} stringLength The length of the substring to remove.
- * @return {string} A copy of {@code s} with the substring removed or the full
+ * @return {string} A copy of `s` with the substring removed or the full
  *     string if nothing is removed or the input is invalid.
  */
 goog.string.removeAt = function(s, index, stringLength) {
@@ -6436,7 +6436,7 @@ goog.string.removeAt = function(s, index, stringLength) {
  * Removes the first occurrence of a substring from a string.
  * @param {string} str The base string from which to remove.
  * @param {string} substr The string to remove.
- * @return {string} A copy of {@code str} with {@code substr} removed or the
+ * @return {string} A copy of `str` with `substr` removed or the
  *     full string if nothing is removed.
  */
 goog.string.remove = function(str, substr) {
@@ -6448,7 +6448,7 @@ goog.string.remove = function(str, substr) {
  *  Removes all occurrences of a substring from a string.
  *  @param {string} s The base string from which to remove.
  *  @param {string} ss The string to remove.
- *  @return {string} A copy of {@code s} with {@code ss} removed or the full
+ *  @return {string} A copy of `s` with `ss` removed or the full
  *      string if nothing is removed.
  */
 goog.string.removeAll = function(s, ss) {
@@ -6462,8 +6462,8 @@ goog.string.removeAll = function(s, ss) {
  *  @param {string} s The base string from which to remove.
  *  @param {string} ss The string to replace.
  *  @param {string} replacement The replacement string.
- *  @return {string} A copy of {@code s} with {@code ss} replaced by
- *      {@code replacement} or the original string if nothing is replaced.
+ *  @return {string} A copy of `s` with `ss` replaced by
+ *      `replacement` or the original string if nothing is replaced.
  */
 goog.string.replaceAll = function(s, ss, replacement) {
   var re = new RegExp(goog.string.regExpEscape(ss), 'g');
@@ -6475,7 +6475,7 @@ goog.string.replaceAll = function(s, ss, replacement) {
  * Escapes characters in the string that are not safe to use in a RegExp.
  * @param {*} s The string to escape. If not a string, it will be casted
  *     to one.
- * @return {string} A RegExp safe, escaped copy of {@code s}.
+ * @return {string} A RegExp safe, escaped copy of `s`.
  */
 goog.string.regExpEscape = function(s) {
   return String(s)
@@ -6488,8 +6488,8 @@ goog.string.regExpEscape = function(s) {
  * Repeats a string n times.
  * @param {string} string The string to repeat.
  * @param {number} length The number of times to repeat.
- * @return {string} A string containing {@code length} repetitions of
- *     {@code string}.
+ * @return {string} A string containing `length` repetitions of
+ *     `string`.
  */
 goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
   // The native method is over 100 times faster than the alternative.
@@ -6510,7 +6510,7 @@ goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
  * @param {number} num The number to pad.
  * @param {number} length The desired length.
  * @param {number=} opt_precision The desired precision.
- * @return {string} {@code num} as a string with the given options.
+ * @return {string} `num` as a string with the given options.
  */
 goog.string.padNumber = function(num, length, opt_precision) {
   var s = goog.isDef(opt_precision) ? num.toFixed(opt_precision) : String(num);
@@ -6527,7 +6527,7 @@ goog.string.padNumber = function(num, length, opt_precision) {
  * null and undefined being returned as the empty string.
  *
  * @param {*} obj The object to convert.
- * @return {string} A string representation of the {@code obj}.
+ * @return {string} A string representation of the `obj`.
  */
 goog.string.makeSafe = function(obj) {
   return obj == null ? '' : String(obj);
@@ -6546,7 +6546,7 @@ goog.string.makeSafe = function(obj) {
  * </pre>
  * @param {...*} var_args A list of strings to concatenate. If not a string,
  *     it will be casted to one.
- * @return {string} The concatenation of {@code var_args}.
+ * @return {string} The concatenation of `var_args`.
  */
 goog.string.buildString = function(var_args) {
   return Array.prototype.join.call(arguments, '');
@@ -6575,9 +6575,9 @@ goog.string.getRandomString = function() {
  * @param {string|number} version1 Version of first item.
  * @param {string|number} version2 Version of second item.
  *
- * @return {number}  1 if {@code version1} is higher.
+ * @return {number}  1 if `version1` is higher.
  *                   0 if arguments are equal.
- *                  -1 if {@code version2} is higher.
+ *                  -1 if `version2` is higher.
  */
 goog.string.compareVersions = function(version1, version2) {
   var order = 0;
@@ -6633,9 +6633,9 @@ goog.string.compareVersions = function(version1, version2) {
  * @param {string|number|boolean} left An element from a version number.
  * @param {string|number|boolean} right An element from a version number.
  *
- * @return {number}  1 if {@code left} is higher.
+ * @return {number}  1 if `left` is higher.
  *                   0 if arguments are equal.
- *                  -1 if {@code right} is higher.
+ *                  -1 if `right` is higher.
  * @private
  */
 goog.string.compareElements_ = function(left, right) {
@@ -6656,7 +6656,7 @@ goog.string.compareElements_ = function(left, right) {
  * the string. We mod the result to make it between 0 (inclusive) and 2^32
  * (exclusive).
  * @param {string} str A string.
- * @return {number} Hash value for {@code str}, between 0 (inclusive) and 2^32
+ * @return {number} Hash value for `str`, between 0 (inclusive) and 2^32
  *  (exclusive). The empty string returns 0.
  */
 goog.string.hashCode = function(str) {
@@ -7729,7 +7729,7 @@ goog.object.PROTOTYPE_FIELDS_ = [
  *
  * @param {Object} target The object to modify. Existing properties will be
  *     overwritten if they are also present in one of the objects in
- *     {@code var_args}.
+ *     `var_args`.
  * @param {...Object} var_args The objects from which values will be copied.
  */
 goog.object.extend = function(target, var_args) {
@@ -7839,15 +7839,15 @@ goog.object.isImmutableView = function(obj) {
 /**
  * Get all properties names on a given Object regardless of enumerability.
  *
- * <p> If the browser does not support {@code Object.getOwnPropertyNames} nor
- * {@code Object.getPrototypeOf} then this is equivalent to using {@code
+ * <p> If the browser does not support `Object.getOwnPropertyNames` nor
+ * `Object.getPrototypeOf` then this is equivalent to using {@code
  * goog.object.getKeys}
  *
  * @param {?Object} obj The object to get the properties of.
  * @param {boolean=} opt_includeObjectPrototype Whether properties defined on
- *     {@code Object.prototype} should be included in the result.
+ *     `Object.prototype` should be included in the result.
  * @param {boolean=} opt_includeFunctionPrototype Whether properties defined on
- *     {@code Function.prototype} should be included in the result.
+ *     `Function.prototype` should be included in the result.
  * @return {!Array<string>}
  * @public
  */
@@ -8651,20 +8651,20 @@ goog.reflect.canAccessProperty = function(obj, prop) {
 /**
  * Retrieves a value from a cache given a key. The compiler provides special
  * consideration for this call such that it is generally considered side-effect
- * free. However, if the {@code opt_keyFn} or {@code valueFn} have side-effects
+ * free. However, if the `opt_keyFn` or `valueFn` have side-effects
  * then the entire call is considered to have side-effects.
  *
  * Conventionally storing the value on the cache would be considered a
  * side-effect and preclude unused calls from being pruned, ie. even if
  * the value was never used, it would still always be stored in the cache.
  *
- * Providing a side-effect free {@code valueFn} and {@code opt_keyFn}
- * allows unused calls to {@code goog.reflect.cache} to be pruned.
+ * Providing a side-effect free `valueFn` and `opt_keyFn`
+ * allows unused calls to `goog.reflect.cache` to be pruned.
  *
  * @param {!Object<K, V>} cacheObj The object that contains the cached values.
  * @param {?} key The key to lookup in the cache. If it is not string or number
- *     then a {@code opt_keyFn} should be provided. The key is also used as the
- *     parameter to the {@code valueFn}.
+ *     then a `opt_keyFn` should be provided. The key is also used as the
+ *     parameter to the `valueFn`.
  * @param {function(?):V} valueFn The value provider to use to calculate the
  *     value to store in the cache. This function should be side-effect free
  *     to take advantage of the optimization.
@@ -8759,7 +8759,7 @@ goog.define('goog.userAgent.ASSUME_OPERA', false);
 
 /**
  * @define {boolean} Whether the
- *     {@code goog.userAgent.isVersionOrHigher}
+ *     `goog.userAgent.isVersionOrHigher`
  *     function will return true for any version.
  */
 goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
@@ -9216,7 +9216,7 @@ goog.userAgent.isVersionOrHigher = function(version) {
 
 
 /**
- * Deprecated alias to {@code goog.userAgent.isVersionOrHigher}.
+ * Deprecated alias to `goog.userAgent.isVersionOrHigher`.
  * @param {string|number} version The version to check.
  * @return {boolean} Whether the user agent version is higher or the same as
  *     the given version.
@@ -9240,7 +9240,7 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
 
 
 /**
- * Deprecated alias to {@code goog.userAgent.isDocumentModeOrHigher}.
+ * Deprecated alias to `goog.userAgent.isDocumentModeOrHigher`.
  * @param {number} version The version to check.
  * @return {boolean} Whether the IE effective document mode is higher or the
  *      same as the given version.
@@ -9375,7 +9375,7 @@ goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
  * @param {Object|null|undefined} obj Object to expose.
  * @param {boolean=} opt_showFn Show the functions as well as the properties,
  *     default is false.
- * @return {string} The string representation of {@code obj}.
+ * @return {string} The string representation of `obj`.
  */
 goog.debug.expose = function(obj, opt_showFn) {
   if (typeof obj == 'undefined') {
@@ -9411,7 +9411,7 @@ goog.debug.expose = function(obj, opt_showFn) {
  * @param {*} obj Object to expose.
  * @param {boolean=} opt_showFn Also show properties that are functions (by
  *     default, functions are omitted).
- * @return {string} A string representation of {@code obj}.
+ * @return {string} A string representation of `obj`.
  */
 goog.debug.deepExpose = function(obj, opt_showFn) {
   var str = [];
@@ -10763,13 +10763,13 @@ goog.i18n.uChar.fromCharCode = function(code) {
  * Returns the Unicode code point at the specified index.
  *
  * If the char value specified at the given index is in the leading-surrogate
- * range, and the following index is less than the length of {@code string}, and
+ * range, and the following index is less than the length of `string`, and
  * the char value at the following index is in the trailing-surrogate range,
  * then the supplementary code point corresponding to this surrogate pair is
  * returned.
  *
  * If the char value specified at the given index is in the trailing-surrogate
- * range, and the preceding index is not before the start of {@code string}, and
+ * range, and the preceding index is not before the start of `string`, and
  * the char value at the preceding index is in the leading-surrogate range, then
  * the negated supplementary code point corresponding to this surrogate pair is
  * returned.
@@ -11450,7 +11450,7 @@ goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
  * Legacy function. Does not cover cases where a sequence of code points is
  * required in order to decide if there is a grapheme cluster boundary, such as
  * emoji modifier sequences and emoji flag sequences. To cover all cases please
- * use {@code hasGraphemeBreakStrings}.
+ * use `hasGraphemeBreakStrings`.
  *
  * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
  * is to check for both using a boolean flag to switch between them. If no flag
@@ -12402,7 +12402,7 @@ goog.functions.not = function(f) {
  *
  * @param {function(new:T, ...)} constructor The constructor for the Object.
  * @param {...*} var_args The arguments to be passed to the constructor.
- * @return {T} A new instance of the class given in {@code constructor}.
+ * @return {T} A new instance of the class given in `constructor`.
  * @template T
  */
 goog.functions.create = function(constructor, var_args) {
@@ -12626,9 +12626,9 @@ goog.provide('goog.string.TypedString');
  * Implementations of this interface are wrappers for strings, and typically
  * associate a type contract with the wrapped string.  Concrete implementations
  * of this interface may choose to implement additional run-time type checking,
- * see for example {@code goog.html.SafeHtml}. If available, client code that
+ * see for example `goog.html.SafeHtml`. If available, client code that
  * needs to ensure type membership of an object should use the type's function
- * to assert type membership, such as {@code goog.html.SafeHtml.unwrap}.
+ * to assert type membership, such as `goog.html.SafeHtml.unwrap`.
  * @interface
  */
 goog.string.TypedString = function() {};
@@ -12639,7 +12639,7 @@ goog.string.TypedString = function() {};
  *
  * This property can be used to determine at runtime whether or not an object
  * implements this interface.  All implementations of this interface set this
- * property to {@code true}.
+ * property to `true`.
  * @type {boolean}
  */
 goog.string.TypedString.prototype.implementsGoogStringTypedString;
@@ -12678,7 +12678,7 @@ goog.require('goog.string.TypedString');
  *
  * Const is a wrapper for strings that can only be created from program
  * constants (i.e., string literals).  This property relies on a custom Closure
- * compiler check that {@code goog.string.Const.from} is only invoked on
+ * compiler check that `goog.string.Const.from` is only invoked on
  * compile-time-constant expressions.
  *
  * Const is useful in APIs whose correct and secure use requires that certain
@@ -12687,7 +12687,7 @@ goog.require('goog.string.TypedString');
  * attackers, and hence are safe to use in such contexts.
  *
  * Instances of this type must be created via its factory method
- * {@code goog.string.Const.from} and not by invoking its constructor.  The
+ * `goog.string.Const.from` and not by invoking its constructor.  The
  * constructor intentionally takes no parameters and the type is immutable;
  * hence only a default instance corresponding to the empty string can be
  * obtained via constructor invocation.
@@ -12729,7 +12729,7 @@ goog.string.Const.prototype.implementsGoogStringTypedString = true;
  * Returns this Const's value a string.
  *
  * IMPORTANT: In code where it is security-relevant that an object's type is
- * indeed {@code goog.string.Const}, use {@code goog.string.Const.unwrap}
+ * indeed `goog.string.Const`, use `goog.string.Const.unwrap`
  * instead of this method.
  *
  * @see goog.string.Const#unwrap
@@ -12744,7 +12744,7 @@ goog.string.Const.prototype.getTypedStringValue = function() {
  * Returns a debug-string representation of this value.
  *
  * To obtain the actual string value wrapped inside an object of this type,
- * use {@code goog.string.Const.unwrap}.
+ * use `goog.string.Const.unwrap`.
  *
  * @see goog.string.Const#unwrap
  * @override
@@ -12758,12 +12758,12 @@ goog.string.Const.prototype.toString = function() {
 
 /**
  * Performs a runtime check that the provided object is indeed an instance
- * of {@code goog.string.Const}, and returns its value.
+ * of `goog.string.Const`, and returns its value.
  * @param {!goog.string.Const} stringConst The object to extract from.
  * @return {string} The Const object's contained string, unless the run-time
- *     type check fails. In that case, {@code unwrap} returns an innocuous
+ *     type check fails. In that case, `unwrap` returns an innocuous
  *     string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.string.Const.unwrap = function(stringConst) {
   // Perform additional run-time type-checking to ensure that stringConst is
@@ -12875,7 +12875,7 @@ goog.require('goog.string.TypedString');
  * in a browser.
  *
  * Instances of this type must be created via the factory method
- * {@code goog.html.SafeScript.fromConstant} and not by invoking its
+ * `goog.html.SafeScript.fromConstant` and not by invoking its
  * constructor. The constructor intentionally takes no parameters and the type
  * is immutable; hence only a default instance corresponding to the empty string
  * can be obtained via constructor invocation.
@@ -12897,7 +12897,7 @@ goog.require('goog.string.TypedString');
  * always be forbidden or JavaScript escaped in user controlled input. For
  * example, if {@code &lt;/script&gt;&lt;script&gt;evil&lt;/script&gt;"} were
  * interpolated inside a JavaScript string, it would break out of the context
- * of the original script element and {@code evil} would execute. Also note
+ * of the original script element and `evil` would execute. Also note
  * that within an HTML script (raw text) element, HTML character references,
  * such as "&lt;" are not allowed. See
  * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements.
@@ -12950,7 +12950,7 @@ goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
  * @param {!goog.string.Const} script A compile-time-constant string from which
  *     to create a SafeScript.
  * @return {!goog.html.SafeScript} A SafeScript object initialized to
- *     {@code script}.
+ *     `script`.
  */
 goog.html.SafeScript.fromConstant = function(script) {
   var scriptString = goog.string.Const.unwrap(script);
@@ -12997,7 +12997,7 @@ goog.html.SafeScript.fromConstantAndArgs = function(code, var_args) {
  * Returns this SafeScript's value as a string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code SafeScript}, use {@code goog.html.SafeScript.unwrap} instead of
+ * indeed `SafeScript`, use `goog.html.SafeScript.unwrap` instead of
  * this method. If in doubt, assume that it's security relevant. In particular,
  * note that goog.html functions which return a goog.html type do not guarantee
  * the returned instance is of the right type. For example:
@@ -13024,7 +13024,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a SafeScript, use
-   * {@code goog.html.SafeScript.unwrap}.
+   * `goog.html.SafeScript.unwrap`.
    *
    * @see goog.html.SafeScript#unwrap
    * @override
@@ -13042,9 +13042,9 @@ if (goog.DEBUG) {
  *
  * @param {!goog.html.SafeScript} safeScript The object to extract from.
  * @return {string} The safeScript object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     the run-time type check fails. In that case, `unwrap` returns an
  *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeScript.unwrap = function(safeScript) {
   // Perform additional Run-time type-checking to ensure that
@@ -13880,7 +13880,7 @@ goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
  * @param {string} str The string to be checked.
  * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
  *     Default: false.
- * @return {goog.i18n.bidi.Dir} Estimated overall directionality of {@code str}.
+ * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
  */
 goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
   var rtlCount = 0;
@@ -13985,7 +13985,7 @@ goog.i18n.bidi.DirectionalString = function() {};
  *
  * This property can be used to determine at runtime whether or not an object
  * implements this interface.  All implementations of this interface set this
- * property to {@code true}.
+ * property to `true`.
  * @type {boolean}
  */
 goog.i18n.bidi.DirectionalString.prototype
@@ -14041,7 +14041,7 @@ goog.require('goog.string.TypedString');
  * this type.
  *
  * Instances of this type must be created via the factory method,
- * ({@code fromConstant}, {@code fromConstants}, {@code format} or {@code
+ * (`fromConstant`, `fromConstants`, `format` or {@code
  * formatWithParams}), and not by invoking its constructor. The constructor
  * intentionally takes no parameters and the type is immutable; hence only a
  * default instance corresponding to the empty string can be obtained via
@@ -14085,8 +14085,8 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
  * Returns this TrustedResourceUrl's value as a string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code TrustedResourceUrl}, use
- * {@code goog.html.TrustedResourceUrl.unwrap} instead of this method. If in
+ * indeed `TrustedResourceUrl`, use
+ * `goog.html.TrustedResourceUrl.unwrap` instead of this method. If in
  * doubt, assume that it's security relevant. In particular, note that
  * goog.html functions which return a goog.html type do not guarantee that
  * the returned instance is of the right type. For example:
@@ -14117,7 +14117,7 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
 
 
 /**
- * Returns this URLs directionality, which is always {@code LTR}.
+ * Returns this URLs directionality, which is always `LTR`.
  * @override
  */
 goog.html.TrustedResourceUrl.prototype.getDirection = function() {
@@ -14128,7 +14128,7 @@ goog.html.TrustedResourceUrl.prototype.getDirection = function() {
 /**
  * Creates a new TrustedResourceUrl with params added to URL.
  * @param {!Object<string, *>} params Parameters to add to URL. Parameters with
- *     value {@code null} or {@code undefined} are skipped. Both keys and values
+ *     value `null` or `undefined` are skipped. Both keys and values
  *     are encoded. If the value is an array then the same parameter is added
  *     for every element in the array. Note that JavaScript doesn't guarantee
  *     the order of values in an object which might result in non-deterministic
@@ -14161,7 +14161,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a TrustedResourceUrl, use
-   * {@code goog.html.TrustedResourceUrl.unwrap}.
+   * `goog.html.TrustedResourceUrl.unwrap`.
    *
    * @see goog.html.TrustedResourceUrl#unwrap
    * @override
@@ -14180,9 +14180,9 @@ if (goog.DEBUG) {
  * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl The object to
  *     extract from.
  * @return {string} The trustedResourceUrl object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     the run-time type check fails. In that case, `unwrap` returns an
  *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
   // Perform additional Run-time type-checking to ensure that
@@ -14337,7 +14337,7 @@ goog.html.TrustedResourceUrl.BASE_URL_ =
  *     of labels to values to be interpolated into the format string.
  *     goog.string.Const values are interpolated without encoding.
  * @param {!Object<string, *>} params Parameters to add to URL. Parameters with
- *     value {@code null} or {@code undefined} are skipped. Both keys and values
+ *     value `null` or `undefined` are skipped. Both keys and values
  *     are encoded. If the value is an array then the same parameter is added
  *     for every element in the array. Note that JavaScript doesn't guarantee
  *     the order of values in an object which might result in non-deterministic
@@ -14361,7 +14361,7 @@ goog.html.TrustedResourceUrl.formatWithParams = function(format, args, params) {
  * @param {!goog.string.Const} url A compile-time-constant string from which to
  *     create a TrustedResourceUrl.
  * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
- *     initialized to {@code url}.
+ *     initialized to `url`.
  */
 goog.html.TrustedResourceUrl.fromConstant = function(url) {
   return goog.html.TrustedResourceUrl
@@ -14379,7 +14379,7 @@ goog.html.TrustedResourceUrl.fromConstant = function(url) {
  * @param {!Array<!goog.string.Const>} parts Compile-time-constant strings from
  *     which to create a TrustedResourceUrl.
  * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
- *     initialized to concatenation of {@code parts}.
+ *     initialized to concatenation of `parts`.
  */
 goog.html.TrustedResourceUrl.fromConstants = function(parts) {
   var unwrapped = '';
@@ -14465,7 +14465,7 @@ goog.require('goog.string.TypedString');
  * inside a href attribute). However, appropriate HTML-escaping must still be
  * applied.
  *
- * Note that, as documented in {@code goog.html.SafeUrl.unwrap}, this type's
+ * Note that, as documented in `goog.html.SafeUrl.unwrap`, this type's
  * contract does not guarantee that instances are safe to interpolate into HTML
  * without appropriate escaping.
  *
@@ -14475,7 +14475,7 @@ goog.require('goog.string.TypedString');
  * trusted code, e.g., as the src of a script tag.
  *
  * Instances of this type must be created via the factory methods
- * ({@code goog.html.SafeUrl.fromConstant}, {@code goog.html.SafeUrl.sanitize}),
+ * (`goog.html.SafeUrl.fromConstant`, `goog.html.SafeUrl.sanitize`),
  * etc and not by invoking its constructor.  The constructor intentionally
  * takes no parameters and the type is immutable; hence only a default instance
  * corresponding to the empty string can be obtained via constructor invocation.
@@ -14543,7 +14543,7 @@ goog.html.SafeUrl.prototype.implementsGoogStringTypedString = true;
  * Returns this SafeUrl's value a string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code SafeUrl}, use {@code goog.html.SafeUrl.unwrap} instead of this
+ * indeed `SafeUrl`, use `goog.html.SafeUrl.unwrap` instead of this
  * method. If in doubt, assume that it's security relevant. In particular, note
  * that goog.html functions which return a goog.html type do not guarantee that
  * the returned instance is of the right type. For example:
@@ -14580,7 +14580,7 @@ goog.html.SafeUrl.prototype.implementsGoogI18nBidiDirectionalString = true;
 
 
 /**
- * Returns this URLs directionality, which is always {@code LTR}.
+ * Returns this URLs directionality, which is always `LTR`.
  * @override
  */
 goog.html.SafeUrl.prototype.getDirection = function() {
@@ -14593,7 +14593,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a SafeUrl, use
-   * {@code goog.html.SafeUrl.unwrap}.
+   * `goog.html.SafeUrl.unwrap`.
    *
    * @see goog.html.SafeUrl#unwrap
    * @override
@@ -14618,9 +14618,9 @@ if (goog.DEBUG) {
  *
  * @param {!goog.html.SafeUrl} safeUrl The object to extract from.
  * @return {string} The SafeUrl object's contained string, unless the run-time
- *     type check fails. In that case, {@code unwrap} returns an innocuous
+ *     type check fails. In that case, `unwrap` returns an innocuous
  *     string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeUrl.unwrap = function(safeUrl) {
   // Perform additional Run-time type-checking to ensure that safeUrl is indeed
@@ -14653,7 +14653,7 @@ goog.html.SafeUrl.unwrap = function(safeUrl) {
  *
  * @param {!goog.string.Const} url A compile-time-constant string from which to
  *         create a SafeUrl.
- * @return {!goog.html.SafeUrl} A SafeUrl object initialized to {@code url}.
+ * @return {!goog.html.SafeUrl} A SafeUrl object initialized to `url`.
  */
 goog.html.SafeUrl.fromConstant = function(url) {
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
@@ -14680,10 +14680,10 @@ goog.html.SAFE_MIME_TYPE_PATTERN_ = new RegExp(
 
 
 /**
- * Creates a SafeUrl wrapping a blob URL for the given {@code blob}.
+ * Creates a SafeUrl wrapping a blob URL for the given `blob`.
  *
- * The blob URL is created with {@code URL.createObjectURL}. If the MIME type
- * for {@code blob} is not of a known safe audio, image or video MIME type,
+ * The blob URL is created with `URL.createObjectURL`. If the MIME type
+ * for `blob` is not of a known safe audio, image or video MIME type,
  * then the SafeUrl will wrap {@link #INNOCUOUS_STRING}.
  *
  * @see http://www.w3.org/TR/FileAPI/#url
@@ -14786,11 +14786,11 @@ goog.html.SAFE_URL_PATTERN_ =
 
 
 /**
- * Creates a SafeUrl object from {@code url}. If {@code url} is a
+ * Creates a SafeUrl object from `url`. If `url` is a
  * goog.html.SafeUrl then it is simply returned. Otherwise the input string is
  * validated to match a pattern of commonly used safe URLs.
  *
- * {@code url} may be a URL with the http, https, mailto or ftp scheme,
+ * `url` may be a URL with the http, https, mailto or ftp scheme,
  * or a relative URL (i.e., a URL without a scheme; specifically, a
  * scheme-relative, absolute-path-relative, or path-relative URL).
  *
@@ -14813,11 +14813,11 @@ goog.html.SafeUrl.sanitize = function(url) {
 };
 
 /**
- * Creates a SafeUrl object from {@code url}. If {@code url} is a
+ * Creates a SafeUrl object from `url`. If `url` is a
  * goog.html.SafeUrl then it is simply returned. Otherwise the input string is
  * validated to match a pattern of commonly used safe URLs.
  *
- * {@code url} may be a URL with the http, https, mailto or ftp scheme,
+ * `url` may be a URL with the http, https, mailto or ftp scheme,
  * or a relative URL (i.e., a URL without a scheme; specifically, a
  * scheme-relative, absolute-path-relative, or path-relative URL).
  *
@@ -14917,8 +14917,8 @@ goog.require('goog.string.TypedString');
  * browser.
  *
  * Instances of this type must be created via the factory methods
- * ({@code goog.html.SafeStyle.create} or
- * {@code goog.html.SafeStyle.fromConstant}) and not by invoking its
+ * (`goog.html.SafeStyle.create` or
+ * `goog.html.SafeStyle.fromConstant`) and not by invoking its
  * constructor. The constructor intentionally takes no parameters and the type
  * is immutable; hence only a default instance corresponding to the empty string
  * can be obtained via constructor invocation.
@@ -14952,11 +14952,11 @@ goog.require('goog.string.TypedString');
  * would escape from the style attribute).
  *
  * Values of this type must be composable, i.e. for any two values
- * {@code style1} and {@code style2} of this type,
+ * `style1` and `style2` of this type,
  * {@code goog.html.SafeStyle.unwrap(style1) +
  * goog.html.SafeStyle.unwrap(style2)} must itself be a value that satisfies
  * the SafeStyle type constraint. This requirement implies that for any value
- * {@code style} of this type, {@code goog.html.SafeStyle.unwrap(style)} must
+ * `style` of this type, {@code goog.html.SafeStyle.unwrap(style)} must
  * not end in a "property value" or "property name" context. For example,
  * a value of {@code background:url("} or {@code font-} would not satisfy the
  * SafeStyle contract. This is because concatenating such strings with a
@@ -15034,21 +15034,21 @@ goog.html.SafeStyle.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 /**
  * Creates a SafeStyle object from a compile-time constant string.
  *
- * {@code style} should be in the format
+ * `style` should be in the format
  * {@code name: value; [name: value; ...]} and must not have any < or >
  * characters in it. This is so that SafeStyle's contract is preserved,
  * allowing the SafeStyle to correctly be interpreted as a sequence of CSS
  * declarations and without affecting the syntactic structure of any
  * surrounding CSS and HTML.
  *
- * This method performs basic sanity checks on the format of {@code style}
- * but does not constrain the format of {@code name} and {@code value}, except
+ * This method performs basic sanity checks on the format of `style`
+ * but does not constrain the format of `name` and `value`, except
  * for disallowing tag characters.
  *
  * @param {!goog.string.Const} style A compile-time-constant string from which
  *     to create a SafeStyle.
  * @return {!goog.html.SafeStyle} A SafeStyle object initialized to
- *     {@code style}.
+ *     `style`.
  */
 goog.html.SafeStyle.fromConstant = function(style) {
   var styleString = goog.string.Const.unwrap(style);
@@ -15083,7 +15083,7 @@ goog.html.SafeStyle.checkStyle_ = function(style) {
  * Returns this SafeStyle's value as a string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code SafeStyle}, use {@code goog.html.SafeStyle.unwrap} instead of
+ * indeed `SafeStyle`, use `goog.html.SafeStyle.unwrap` instead of
  * this method. If in doubt, assume that it's security relevant. In particular,
  * note that goog.html functions which return a goog.html type do not guarantee
  * the returned instance is of the right type. For example:
@@ -15110,7 +15110,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a SafeStyle, use
-   * {@code goog.html.SafeStyle.unwrap}.
+   * `goog.html.SafeStyle.unwrap`.
    *
    * @see goog.html.SafeStyle#unwrap
    * @override
@@ -15128,9 +15128,9 @@ if (goog.DEBUG) {
  *
  * @param {!goog.html.SafeStyle} safeStyle The object to extract from.
  * @return {string} The safeStyle object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     the run-time type check fails. In that case, `unwrap` returns an
  *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeStyle.unwrap = function(safeStyle) {
   // Perform additional Run-time type-checking to ensure that
@@ -15478,7 +15478,7 @@ goog.require('goog.string.TypedString');
  * script execution (XSS) when evaluated as CSS in a browser.
  *
  * Instances of this type must be created via the factory method
- * {@code goog.html.SafeStyleSheet.fromConstant} and not by invoking its
+ * `goog.html.SafeStyleSheet.fromConstant` and not by invoking its
  * constructor. The constructor intentionally takes no parameters and the type
  * is immutable; hence only a default instance corresponding to the empty string
  * can be obtained via constructor invocation.
@@ -15488,11 +15488,11 @@ goog.require('goog.string.TypedString');
  * not be escaped before interpolation.
  *
  * Values of this type must be composable, i.e. for any two values
- * {@code styleSheet1} and {@code styleSheet2} of this type,
+ * `styleSheet1` and `styleSheet2` of this type,
  * {@code goog.html.SafeStyleSheet.unwrap(styleSheet1) +
  * goog.html.SafeStyleSheet.unwrap(styleSheet2)} must itself be a value that
  * satisfies the SafeStyleSheet type constraint. This requirement implies that
- * for any value {@code styleSheet} of this type,
+ * for any value `styleSheet` of this type,
  * {@code goog.html.SafeStyleSheet.unwrap(styleSheet1)} must end in
  * "beginning of rule" context.
 
@@ -15503,7 +15503,7 @@ goog.require('goog.string.TypedString');
  * always be forbidden or CSS-escaped in user controlled input. For example, if
  * {@code &lt;/style&gt;&lt;script&gt;evil&lt;/script&gt;"} were interpolated
  * inside a CSS string, it would break out of the context of the original
- * style element and {@code evil} would execute. Also note that within an HTML
+ * style element and `evil` would execute. Also note that within an HTML
  * style (raw text) element, HTML character references, such as
  * {@code &amp;lt;}, are not allowed. See
  *
@@ -15646,13 +15646,13 @@ goog.html.SafeStyleSheet.concat = function(var_args) {
 /**
  * Creates a SafeStyleSheet object from a compile-time constant string.
  *
- * {@code styleSheet} must not have any &lt; characters in it, so that
+ * `styleSheet` must not have any &lt; characters in it, so that
  * the syntactic structure of the surrounding HTML is not affected.
  *
  * @param {!goog.string.Const} styleSheet A compile-time-constant string from
  *     which to create a SafeStyleSheet.
  * @return {!goog.html.SafeStyleSheet} A SafeStyleSheet object initialized to
- *     {@code styleSheet}.
+ *     `styleSheet`.
  */
 goog.html.SafeStyleSheet.fromConstant = function(styleSheet) {
   var styleSheetString = goog.string.Const.unwrap(styleSheet);
@@ -15673,7 +15673,7 @@ goog.html.SafeStyleSheet.fromConstant = function(styleSheet) {
  * Returns this SafeStyleSheet's value as a string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code SafeStyleSheet}, use {@code goog.html.SafeStyleSheet.unwrap}
+ * indeed `SafeStyleSheet`, use `goog.html.SafeStyleSheet.unwrap`
  * instead of this method. If in doubt, assume that it's security relevant. In
  * particular, note that goog.html functions which return a goog.html type do
  * not guarantee the returned instance is of the right type. For example:
@@ -15700,7 +15700,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a SafeStyleSheet, use
-   * {@code goog.html.SafeStyleSheet.unwrap}.
+   * `goog.html.SafeStyleSheet.unwrap`.
    *
    * @see goog.html.SafeStyleSheet#unwrap
    * @override
@@ -15718,9 +15718,9 @@ if (goog.DEBUG) {
  *
  * @param {!goog.html.SafeStyleSheet} safeStyleSheet The object to extract from.
  * @return {string} The safeStyleSheet object's contained string, unless
- *     the run-time type check fails. In that case, {@code unwrap} returns an
+ *     the run-time type check fails. In that case, `unwrap` returns an
  *     innocuous string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeStyleSheet.unwrap = function(safeStyleSheet) {
   // Perform additional Run-time type-checking to ensure that
@@ -15841,7 +15841,7 @@ goog.require('goog.string.TypedString');
  * result in a Cross-Site-Scripting vulnerability.
  *
  * Instances of this type must be created via the factory methods
- * ({@code goog.html.SafeHtml.create}, {@code goog.html.SafeHtml.htmlEscape}),
+ * (`goog.html.SafeHtml.create`, `goog.html.SafeHtml.htmlEscape`),
  * etc and not by invoking its constructor.  The constructor intentionally
  * takes no parameters and the type is immutable; hence only a default instance
  * corresponding to the empty string can be obtained via constructor invocation.
@@ -15904,7 +15904,7 @@ goog.html.SafeHtml.prototype.implementsGoogStringTypedString = true;
  * Returns this SafeHtml's value as string.
  *
  * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed {@code SafeHtml}, use {@code goog.html.SafeHtml.unwrap} instead of
+ * indeed `SafeHtml`, use `goog.html.SafeHtml.unwrap` instead of
  * this method. If in doubt, assume that it's security relevant. In particular,
  * note that goog.html functions which return a goog.html type do not guarantee
  * that the returned instance is of the right type. For example:
@@ -15931,7 +15931,7 @@ if (goog.DEBUG) {
    * Returns a debug string-representation of this value.
    *
    * To obtain the actual string value wrapped in a SafeHtml, use
-   * {@code goog.html.SafeHtml.unwrap}.
+   * `goog.html.SafeHtml.unwrap`.
    *
    * @see goog.html.SafeHtml#unwrap
    * @override
@@ -15948,9 +15948,9 @@ if (goog.DEBUG) {
  * object, and returns its value.
  * @param {!goog.html.SafeHtml} safeHtml The object to extract from.
  * @return {string} The SafeHtml object's contained string, unless the run-time
- *     type check fails. In that case, {@code unwrap} returns an innocuous
+ *     type check fails. In that case, `unwrap` returns an innocuous
  *     string, or, if assertions are enabled, throws
- *     {@code goog.asserts.AssertionError}.
+ *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeHtml.unwrap = function(safeHtml) {
   // Perform additional run-time type-checking to ensure that safeHtml is indeed
@@ -15989,10 +15989,10 @@ goog.html.SafeHtml.TextOrHtml_;
  * Returns HTML-escaped text as a SafeHtml object.
  *
  * If text is of a type that implements
- * {@code goog.i18n.bidi.DirectionalString}, the directionality of the new
- * {@code SafeHtml} object is set to {@code text}'s directionality, if known.
+ * `goog.i18n.bidi.DirectionalString`, the directionality of the new
+ * `SafeHtml` object is set to `text`'s directionality, if known.
  * Otherwise, the directionality of the resulting SafeHtml is unknown (i.e.,
- * {@code null}).
+ * `null`).
  *
  * @param {!goog.html.SafeHtml.TextOrHtml_} textOrHtml The text to escape. If
  *     the parameter is of type SafeHtml it is returned directly (no escaping
@@ -16061,10 +16061,10 @@ goog.html.SafeHtml.htmlEscapePreservingNewlinesAndSpaces = function(
 /**
  * Coerces an arbitrary object into a SafeHtml object.
  *
- * If {@code textOrHtml} is already of type {@code goog.html.SafeHtml}, the same
- * object is returned. Otherwise, {@code textOrHtml} is coerced to string, and
- * HTML-escaped. If {@code textOrHtml} is of a type that implements
- * {@code goog.i18n.bidi.DirectionalString}, its directionality, if known, is
+ * If `textOrHtml` is already of type `goog.html.SafeHtml`, the same
+ * object is returned. Otherwise, `textOrHtml` is coerced to string, and
+ * HTML-escaped. If `textOrHtml` is of a type that implements
+ * `goog.i18n.bidi.DirectionalString`, its directionality, if known, is
  * preserved.
  *
  * @param {!goog.html.SafeHtml.TextOrHtml_} textOrHtml The text or SafeHtml to
@@ -16840,7 +16840,7 @@ goog.require('goog.string.Const');
  * known to satisfy the SafeHtml type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code html} satisfies the SafeHtml type contract in all
+ * that the value of `html` satisfies the SafeHtml type contract in all
  * possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16877,7 +16877,7 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  * known to satisfy the SafeScript type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code script} satisfies the SafeScript type contract in
+ * that the value of `script` satisfies the SafeScript type contract in
  * all possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16888,7 +16888,7 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} script The string to wrap as a SafeScript.
- * @return {!goog.html.SafeScript} The value of {@code script}, wrapped in a
+ * @return {!goog.html.SafeScript} The value of `script`, wrapped in a
  *     SafeScript object.
  */
 goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
@@ -16910,7 +16910,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  * known to satisfy the SafeStyle type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code style} satisfies the SafeStyle type contract in all
+ * that the value of `style` satisfies the SafeStyle type contract in all
  * possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16921,7 +16921,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} style The string to wrap as a SafeStyle.
- * @return {!goog.html.SafeStyle} The value of {@code style}, wrapped in a
+ * @return {!goog.html.SafeStyle} The value of `style`, wrapped in a
  *     SafeStyle object.
  */
 goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
@@ -16943,7 +16943,7 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  * that is known to satisfy the SafeStyleSheet type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code styleSheet} satisfies the SafeStyleSheet type
+ * that the value of `styleSheet` satisfies the SafeStyleSheet type
  * contract in all possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16954,7 +16954,7 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} styleSheet The string to wrap as a SafeStyleSheet.
- * @return {!goog.html.SafeStyleSheet} The value of {@code styleSheet}, wrapped
+ * @return {!goog.html.SafeStyleSheet} The value of `styleSheet`, wrapped
  *     in a SafeStyleSheet object.
  */
 goog.html.uncheckedconversions
@@ -16977,7 +16977,7 @@ goog.html.uncheckedconversions
  * known to satisfy the SafeUrl type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code url} satisfies the SafeUrl type contract in all
+ * that the value of `url` satisfies the SafeUrl type contract in all
  * possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16988,7 +16988,7 @@ goog.html.uncheckedconversions
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} url The string to wrap as a SafeUrl.
- * @return {!goog.html.SafeUrl} The value of {@code url}, wrapped in a SafeUrl
+ * @return {!goog.html.SafeUrl} The value of `url`, wrapped in a SafeUrl
  *     object.
  */
 goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
@@ -17009,7 +17009,7 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  * that is known to satisfy the TrustedResourceUrl type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code url} satisfies the TrustedResourceUrl type contract
+ * that the value of `url` satisfies the TrustedResourceUrl type contract
  * in all possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -17020,7 +17020,7 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  *     this use of this method is safe. May include a security review ticket
  *     number.
  * @param {string} url The string to wrap as a TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl} The value of {@code url}, wrapped in
+ * @return {!goog.html.TrustedResourceUrl} The value of `url`, wrapped in
  *     a TrustedResourceUrl object.
  */
 goog.html.uncheckedconversions
@@ -17185,13 +17185,13 @@ goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
 
 
 /**
- * Returns the directionality of input argument {@code str}.
+ * Returns the directionality of input argument `str`.
  * Identical to {@link goog.i18n.bidi.estimateDirection}.
  *
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
- * @return {goog.i18n.bidi.Dir} Estimated overall directionality of {@code str}.
+ * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
  */
 goog.i18n.BidiFormatter.prototype.estimateDirection =
     goog.i18n.bidi.estimateDirection;
@@ -17214,13 +17214,13 @@ goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
 
 /**
  * Returns a unicode BiDi mark matching the context directionality (LRM or
- * RLM) if {@code opt_dirReset}, and if either the directionality or the exit
- * directionality of {@code str} is opposite to the context directionality.
+ * RLM) if `opt_dirReset`, and if either the directionality or the exit
+ * directionality of `str` is opposite to the context directionality.
  * Otherwise returns the empty string.
  *
  * @param {string} str The input text.
- * @param {goog.i18n.bidi.Dir} dir {@code str}'s overall directionality.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @param {boolean=} opt_dirReset Whether to perform the reset. Default: false.
  * @return {string} A unicode BiDi mark or the empty string.
@@ -17245,7 +17245,7 @@ goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
 
 
 /**
- * Returns "rtl" if {@code str}'s estimated directionality is RTL, and "ltr" if
+ * Returns "rtl" if `str`'s estimated directionality is RTL, and "ltr" if
  * it is LTR. In case it's NEUTRAL, returns "rtl" if the context directionality
  * is RTL, and "ltr" otherwise.
  * Needed for GXP, which can't handle dirAttr.
@@ -17255,7 +17255,7 @@ goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
  * &lt;/td&gt;
  *
  * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @return {string} "rtl" or "ltr", according to the logic described above.
  */
@@ -17279,12 +17279,12 @@ goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
 
 
 /**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on {@code str}'s estimated
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on `str`'s estimated
  * directionality, if it is not the same as the context directionality.
  * Otherwise, returns the empty string.
  *
  * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
  *     LTR text in non-LTR context; else, the empty string.
@@ -17317,21 +17317,21 @@ goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
  * Formats a string of unknown directionality for use in HTML output of the
  * context directionality, so an opposite-directionality string is neither
  * garbled nor garbles what follows it.
- * The algorithm: estimates the directionality of input argument {@code html}.
+ * The algorithm: estimates the directionality of input argument `html`.
  * In case its directionality doesn't match the context directionality, wraps it
  * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
  * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
  * with 'span', skipping just the dir attribute when it's not needed.
  *
- * If {@code opt_dirReset}, and if the overall directionality or the exit
- * directionality of {@code str} are opposite to the context directionality, a
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
  * trailing unicode BiDi mark matching the context directionality is appened
  * (LRM or RLM).
  *
  * @param {!goog.html.SafeHtml} html The input HTML.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code html}. Default: true.
+ *     garbling of whatever may follow `html`. Default: true.
  * @return {!goog.html.SafeHtml} Input text after applying the processing.
  */
 goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
@@ -17344,21 +17344,21 @@ goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
  * Formats a string of given directionality for use in HTML output of the
  * context directionality, so an opposite-directionality string is neither
  * garbled nor garbles what follows it.
- * The algorithm: If {@code dir} doesn't match the context directionality, wraps
- * {@code html} with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `html` with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
  * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
  * with 'span', skipping just the dir attribute when it's not needed.
  *
- * If {@code opt_dirReset}, and if {@code dir} or the exit directionality of
- * {@code html} are opposite to the context directionality, a trailing unicode
+ * If `opt_dirReset`, and if `dir` or the exit directionality of
+ * `html` are opposite to the context directionality, a trailing unicode
  * BiDi mark matching the context directionality is appened (LRM or RLM).
  *
- * @param {?goog.i18n.bidi.Dir} dir {@code html}'s overall directionality, or
+ * @param {?goog.i18n.bidi.Dir} dir `html`'s overall directionality, or
  *     null if unknown and needs to be estimated.
  * @param {!goog.html.SafeHtml} html The input HTML.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code html}. Default: true.
+ *     garbling of whatever may follow `html`. Default: true.
  * @return {!goog.html.SafeHtml} Input text after applying the processing.
  */
 goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
@@ -17374,11 +17374,11 @@ goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
  * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
  * to help the compiler optimize.
  *
- * @param {goog.i18n.bidi.Dir} dir {@code str}'s overall directionality.
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
  * @param {!goog.html.SafeHtml} html The input HTML.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code str}. Default: true.
+ *     garbling of whatever may follow `str`. Default: true.
  * @return {!goog.html.SafeHtml} Input text after applying the above processing.
  * @private
  */
@@ -17414,25 +17414,25 @@ goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
  * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
  * characters. In HTML, its *only* valid use is inside of elements that do not
  * allow mark-up, e.g. an 'option' tag.
- * The algorithm: estimates the directionality of input argument {@code str}.
+ * The algorithm: estimates the directionality of input argument `str`.
  * In case it doesn't match  the context directionality, wraps it with Unicode
- * BiDi formatting characters: RLE{@code str}PDF for RTL text, and
- * LRE{@code str}PDF for LTR text.
+ * BiDi formatting characters: RLE`str`PDF for RTL text, and
+ * LRE`str`PDF for LTR text.
  *
- * If {@code opt_dirReset}, and if the overall directionality or the exit
- * directionality of {@code str} are opposite to the context directionality, a
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
  * trailing unicode BiDi mark matching the context directionality is appended
  * (LRM or RLM).
  *
- * Does *not* do HTML-escaping regardless of the value of {@code opt_isHtml}.
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
  * The return value can be HTML-escaped as necessary.
  *
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code str}. Default: true.
+ *     garbling of whatever may follow `str`. Default: true.
  * @return {string} Input text after applying the above processing.
  */
 goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
@@ -17448,26 +17448,26 @@ goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
  * As opposed to {@link #spanWrapWithKnownDir}, makes use of unicode BiDi
  * formatting characters. In HTML, its *only* valid use is inside of elements
  * that do not allow mark-up, e.g. an 'option' tag.
- * The algorithm: If {@code dir} doesn't match the context directionality, wraps
- * {@code str} with Unicode BiDi formatting characters: RLE{@code str}PDF for
- * RTL text, and LRE{@code str}PDF for LTR text.
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `str` with Unicode BiDi formatting characters: RLE`str`PDF for
+ * RTL text, and LRE`str`PDF for LTR text.
  *
- * If {@code opt_dirReset}, and if the overall directionality or the exit
- * directionality of {@code str} are opposite to the context directionality, a
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
  * trailing unicode BiDi mark matching the context directionality is appended
  * (LRM or RLM).
  *
- * Does *not* do HTML-escaping regardless of the value of {@code opt_isHtml}.
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
  * The return value can be HTML-escaped as necessary.
  *
- * @param {?goog.i18n.bidi.Dir} dir {@code str}'s overall directionality, or
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
  *     null if unknown and needs to be estimated.
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code str}. Default: true.
+ *     garbling of whatever may follow `str`. Default: true.
  * @return {string} Input text after applying the above processing.
  */
 goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
@@ -17483,13 +17483,13 @@ goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
  * The internal implementation of unicodeWrapWithKnownDir for non-null dir, to
  * help the compiler optimize.
  *
- * @param {goog.i18n.bidi.Dir} dir {@code str}'s overall directionality.
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
  *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow {@code str}. Default: true.
+ *     garbling of whatever may follow `str`. Default: true.
  * @return {string} Input text after applying the above processing.
  * @private
  */
@@ -17514,11 +17514,11 @@ goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
 
 /**
  * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the directionality or the exit directionality of {@code str} are opposite
+ * if the directionality or the exit directionality of `str` are opposite
  * to the context directionality. Otherwise returns the empty string.
  *
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching the global directionality or
  *     the empty string.
@@ -17530,13 +17530,13 @@ goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
 
 /**
  * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the given directionality or the exit directionality of {@code str} are
+ * if the given directionality or the exit directionality of `str` are
  * opposite to the context directionality. Otherwise returns the empty string.
  *
- * @param {?goog.i18n.bidi.Dir} dir {@code str}'s overall directionality, or
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
  *     null if unknown and needs to be estimated.
  * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether {@code str} is HTML / HTML-escaped.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
  *     Default: false.
  * @return {string} A Unicode bidi mark matching the global directionality or
  *     the empty string.
@@ -17622,7 +17622,7 @@ goog.require('goog.asserts');
 
 
 /**
- * Returns a random integer greater than or equal to 0 and less than {@code a}.
+ * Returns a random integer greater than or equal to 0 and less than `a`.
  * @param {number} a  The upper bound for the random integer (exclusive).
  * @return {number} A random integer N such that 0 <= N < a.
  */
@@ -17632,8 +17632,8 @@ goog.math.randomInt = function(a) {
 
 
 /**
- * Returns a random number greater than or equal to {@code a} and less than
- * {@code b}.
+ * Returns a random number greater than or equal to `a` and less than
+ * `b`.
  * @param {number} a  The lower bound for the random number (inclusive).
  * @param {number} b  The upper bound for the random number (exclusive).
  * @return {number} A random number N such that a <= N < b.
@@ -17697,7 +17697,7 @@ goog.math.lerp = function(a, b, x) {
  * @param {number} b A number.
  * @param {number=} opt_tolerance Optional tolerance range. Defaults
  *     to 0.000001. If specified, should be greater than 0.
- * @return {boolean} Whether {@code a} and {@code b} are nearly equal.
+ * @return {boolean} Whether `a` and `b` are nearly equal.
  */
 goog.math.nearlyEquals = function(a, b, opt_tolerance) {
   return Math.abs(a - b) <= (opt_tolerance || 0.000001);
@@ -17905,7 +17905,7 @@ goog.math.longestCommonSubsequence = function(
  * Returns the sum of the arguments.
  * @param {...number} var_args Numbers to add.
  * @return {number} The sum of the arguments (0 if no arguments were provided,
- *     {@code NaN} if any of the arguments is not a valid number).
+ *     `NaN` if any of the arguments is not a valid number).
  */
 goog.math.sum = function(var_args) {
   return /** @type {number} */ (
@@ -17917,7 +17917,7 @@ goog.math.sum = function(var_args) {
 /**
  * Returns the arithmetic mean of the arguments.
  * @param {...number} var_args Numbers to average.
- * @return {number} The average of the arguments ({@code NaN} if no arguments
+ * @return {number} The average of the arguments (`NaN` if no arguments
  *     were provided or any of the arguments is not a valid number).
  */
 goog.math.average = function(var_args) {
@@ -17930,7 +17930,7 @@ goog.math.average = function(var_args) {
  * see e.g. http://en.wikipedia.org/wiki/Variance
  * @param {...number} var_args Number samples to analyze.
  * @return {number} The unbiased sample variance of the arguments (0 if fewer
- *     than two samples were provided, or {@code NaN} if any of the samples is
+ *     than two samples were provided, or `NaN` if any of the samples is
  *     not a valid number).
  */
 goog.math.sampleVariance = function(var_args) {
@@ -17955,7 +17955,7 @@ goog.math.sampleVariance = function(var_args) {
  * http://en.wikipedia.org/wiki/Standard_deviation
  * @param {...number} var_args Number samples to analyze.
  * @return {number} The sample standard deviation of the arguments (0 if fewer
- *     than two samples were provided, or {@code NaN} if any of the samples is
+ *     than two samples were provided, or `NaN` if any of the samples is
  *     not a valid number).
  */
 goog.math.standardDeviation = function(var_args) {
@@ -17967,7 +17967,7 @@ goog.math.standardDeviation = function(var_args) {
  * Returns whether the supplied number represents an integer, i.e. that is has
  * no fractional component.  No range-checking is performed on the number.
  * @param {number} num The number to test.
- * @return {boolean} Whether {@code num} is an integer.
+ * @return {boolean} Whether `num` is an integer.
  */
 goog.math.isInt = function(num) {
   return isFinite(num) && num % 1 == 0;
@@ -17977,7 +17977,7 @@ goog.math.isInt = function(num) {
 /**
  * Returns whether the supplied number is finite and not NaN.
  * @param {number} num The number to test.
- * @return {boolean} Whether {@code num} is a finite number.
+ * @return {boolean} Whether `num` is a finite number.
  * @deprecated Use {@link isFinite} instead.
  */
 goog.math.isFiniteNumber = function(num) {
@@ -18017,7 +18017,7 @@ goog.math.log10Floor = function(num) {
 
 
 /**
- * A tweaked variant of {@code Math.floor} which tolerates if the passed number
+ * A tweaked variant of `Math.floor` which tolerates if the passed number
  * is infinitesimally smaller than the closest integer. It often happens with
  * the results of floating point calculations because of the finite precision
  * of the intermediate results. For example {@code Math.floor(Math.log(1000) /
@@ -18025,7 +18025,7 @@ goog.math.log10Floor = function(num) {
  * @param {number} num A number.
  * @param {number=} opt_epsilon An infinitesimally small positive number, the
  *     rounding error to tolerate.
- * @return {number} The largest integer less than or equal to {@code num}.
+ * @return {number} The largest integer less than or equal to `num`.
  */
 goog.math.safeFloor = function(num, opt_epsilon) {
   goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
@@ -18034,12 +18034,12 @@ goog.math.safeFloor = function(num, opt_epsilon) {
 
 
 /**
- * A tweaked variant of {@code Math.ceil}. See {@code goog.math.safeFloor} for
+ * A tweaked variant of `Math.ceil`. See `goog.math.safeFloor` for
  * details.
  * @param {number} num A number.
  * @param {number=} opt_epsilon An infinitesimally small positive number, the
  *     rounding error to tolerate.
- * @return {number} The smallest integer greater than or equal to {@code num}.
+ * @return {number} The smallest integer greater than or equal to `num`.
  */
 goog.math.safeCeil = function(num, opt_epsilon) {
   goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
@@ -18096,9 +18096,9 @@ goog.iter.StopIteration = ('StopIteration' in goog.global) ?
 
 
 /**
- * Class/interface for iterators.  An iterator needs to implement a {@code next}
- * method and it needs to throw a {@code goog.iter.StopIteration} when the
- * iteration passes beyond the end.  Iterators have no {@code hasNext} method.
+ * Class/interface for iterators.  An iterator needs to implement a `next`
+ * method and it needs to throw a `goog.iter.StopIteration` when the
+ * iteration passes beyond the end.  Iterators have no `hasNext` method.
  * It is recommended to always use the helper functions to iterate over the
  * iterator or in case you are only targeting JavaScript 1.7 for in loops.
  * @constructor
@@ -18118,7 +18118,7 @@ goog.iter.Iterator.prototype.next = function() {
 
 
 /**
- * Returns the {@code Iterator} object itself.  This is used to implement
+ * Returns the `Iterator` object itself.  This is used to implement
  * the iterator protocol in JavaScript 1.7
  * @param {boolean=} opt_keys  Whether to return the keys or values. Default is
  *     to only return the values.  This is being used by the for-in loop (true)
@@ -18136,11 +18136,11 @@ goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
  * Returns an iterator that knows how to iterate over the values in the object.
  * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  If the
  *     object is an iterator it will be returned as is.  If the object has an
- *     {@code __iterator__} method that will be called to get the value
+ *     `__iterator__` method that will be called to get the value
  *     iterator.  If the object is an array-like object we create an iterator
  *     for that.
  * @return {!goog.iter.Iterator<VALUE>} An iterator that knows how to iterate
- *     over the values in {@code iterable}.
+ *     over the values in `iterable`.
  * @template VALUE
  */
 goog.iter.toIterator = function(iterable) {
@@ -18180,7 +18180,7 @@ goog.iter.toIterator = function(iterable) {
  * iterator passed as argument.
  *
  * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  The iterator
- *     to iterate over. If the iterable is an object {@code toIterator} will be
+ *     to iterate over. If the iterable is an object `toIterator` will be
  *     called on it.
  * @param {function(this:THIS,VALUE,?,!goog.iter.Iterator<VALUE>)} f
  *     The function to call for every element.  This function takes 3 arguments
@@ -18190,7 +18190,7 @@ goog.iter.toIterator = function(iterable) {
  *     well as others.  The third parameter is of type "number" for
  *     arraylike objects, undefined, otherwise.
  * @param {THIS=} opt_obj  The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @template THIS, VALUE
  */
 goog.iter.forEach = function(iterable, f, opt_obj) {
@@ -18235,7 +18235,7 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
  *     If the return value is true the element will be included in the returned
  *     iterator.  If it is false the element is not included.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
  *     that passed the test are present.
  * @template THIS, VALUE
@@ -18268,7 +18268,7 @@ goog.iter.filter = function(iterable, f, opt_obj) {
  *     If the return value is false the element will be included in the returned
  *     iterator.  If it is true the element is not included.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
  *     that did not pass the test are present.
  * @template THIS, VALUE
@@ -18345,7 +18345,7 @@ goog.iter.join = function(iterable, deliminator) {
  *     The function to call for every element.  This function takes 3 arguments
  *     (the element, undefined, and the iterator) and should return a new value.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
  *     results of applying the function to each element in the original
  *     iterator.
@@ -18400,7 +18400,7 @@ goog.iter.reduce = function(iterable, f, val, opt_obj) {
  *     The function to call for every value. This function takes 3 arguments
  *     (the value, undefined, and the iterator) and should return a boolean.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {boolean} true if any value passes the test.
  * @template THIS, VALUE
  */
@@ -18434,7 +18434,7 @@ goog.iter.some = function(iterable, f, opt_obj) {
  *     The function to call for every value. This function takes 3 arguments
  *     (the value, undefined, and the iterator) and should return a boolean.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {boolean} true if every value passes the test.
  * @template THIS, VALUE
  */
@@ -18477,7 +18477,7 @@ goog.iter.chain = function(var_args) {
  * @param {goog.iter.Iterable} iterable The iterable of iterables to chain.
  * @return {!goog.iter.Iterator<VALUE>} Returns a new iterator that will
  *     iterate over all the contents of the iterables contained within
- *     {@code iterable}.
+ *     `iterable`.
  * @template VALUE
  */
 goog.iter.chainFromIterable = function(iterable) {
@@ -18516,9 +18516,9 @@ goog.iter.chainFromIterable = function(iterable) {
  *     The function to call for every value. This function takes 3 arguments
  *     (the value, undefined, and the iterator) and should return a boolean.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator that drops elements from
- *     the original iterator as long as {@code f} is true.
+ *     the original iterator as long as `f` is true.
  * @template THIS, VALUE
  */
 goog.iter.dropWhile = function(iterable, f, opt_obj) {
@@ -18706,7 +18706,7 @@ goog.iter.product = function(var_args) {
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable object.
  * @return {!goog.iter.Iterator<VALUE>} An iterator that iterates indefinitely
- *     over the values in {@code iterable}.
+ *     over the values in `iterable`.
  * @template VALUE
  */
 goog.iter.cycle = function(iterable) {
@@ -18799,7 +18799,7 @@ goog.iter.repeat = function(value) {
 
 /**
  * Creates an iterator that returns running totals from the numbers in
- * {@code iterable}. For example, the array {@code [1, 2, 3, 4, 5]} yields
+ * `iterable`. For example, the array {@code [1, 2, 3, 4, 5]} yields
  * {@code 1 -> 3 -> 6 -> 10 -> 15}.
  * @see http://docs.python.org/3.2/library/itertools.html#itertools.accumulate
  * @param {!goog.iter.Iterable} iterable The iterable of numbers to
@@ -18824,9 +18824,9 @@ goog.iter.accumulate = function(iterable) {
 /**
  * Creates an iterator that returns arrays containing the ith elements from the
  * provided iterables. The returned arrays will be the same size as the number
- * of iterables given in {@code var_args}. Once the shortest iterable is
+ * of iterables given in `var_args`. Once the shortest iterable is
  * exhausted, subsequent calls to {@code next()} will throw
- * {@code goog.iter.StopIteration}.
+ * `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.izip
  * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
  *     number of iterable objects.
@@ -18853,9 +18853,9 @@ goog.iter.zip = function(var_args) {
 /**
  * Creates an iterator that returns arrays containing the ith elements from the
  * provided iterables. The returned arrays will be the same size as the number
- * of iterables given in {@code var_args}. Shorter iterables will be extended
- * with {@code fillValue}. Once the longest iterable is exhausted, subsequent
- * calls to {@code next()} will throw {@code goog.iter.StopIteration}.
+ * of iterables given in `var_args`. Shorter iterables will be extended
+ * with `fillValue`. Once the longest iterable is exhausted, subsequent
+ * calls to {@code next()} will throw `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.izip_longest
  * @param {VALUE} fillValue The object or value used to fill shorter iterables.
  * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
@@ -18901,19 +18901,19 @@ goog.iter.zipLongest = function(fillValue, var_args) {
 
 
 /**
- * Creates an iterator that filters {@code iterable} based on a series of
- * {@code selectors}. On each call to {@code next()}, one item is taken from
- * both the {@code iterable} and {@code selectors} iterators. If the item from
- * {@code selectors} evaluates to true, the item from {@code iterable} is given.
- * Otherwise, it is skipped. Once either {@code iterable} or {@code selectors}
+ * Creates an iterator that filters `iterable` based on a series of
+ * `selectors`. On each call to {@code next()}, one item is taken from
+ * both the `iterable` and `selectors` iterators. If the item from
+ * `selectors` evaluates to true, the item from `iterable` is given.
+ * Otherwise, it is skipped. Once either `iterable` or `selectors`
  * is exhausted, subsequent calls to {@code next()} will throw
- * {@code goog.iter.StopIteration}.
+ * `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.compress
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to filter.
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} selectors An
  *     iterable of items to be evaluated in a boolean context to determine if
- *     the corresponding element in {@code iterable} should be included in the
+ *     the corresponding element in `iterable` should be included in the
  *     result.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator that returns the
  *     filtered values.
@@ -18929,11 +18929,11 @@ goog.iter.compress = function(iterable, selectors) {
 
 
 /**
- * Implements the {@code goog.iter.groupBy} iterator.
+ * Implements the `goog.iter.groupBy` iterator.
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to group.
  * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
- *     determining the key value for each group in the {@code iterable}. Default
+ *     determining the key value for each group in the `iterable`. Default
  *     is the identity function.
  * @constructor
  * @extends {goog.iter.Iterator<!Array<?>>}
@@ -19014,16 +19014,16 @@ goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
 
 /**
  * Creates an iterator that returns arrays containing elements from the
- * {@code iterable} grouped by a key value. For iterables with repeated
+ * `iterable` grouped by a key value. For iterables with repeated
  * elements (i.e. sorted according to a particular key function), this function
- * has a {@code uniq}-like effect. For example, grouping the array:
+ * has a `uniq`-like effect. For example, grouping the array:
  * {@code [A, B, B, C, C, A]} produces
  * {@code [A, [A]], [B, [B, B]], [C, [C, C]], [A, [A]]}.
  * @see http://docs.python.org/2/library/itertools.html#itertools.groupby
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to group.
  * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
- *     determining the key value for each group in the {@code iterable}. Default
+ *     determining the key value for each group in the `iterable`. Default
  *     is the identity function.
  * @return {!goog.iter.Iterator<!Array<?>>} A new iterator that returns
  *     arrays of consecutive key and groups.
@@ -19050,7 +19050,7 @@ goog.iter.groupBy = function(iterable, opt_keyFunc) {
  *     additional arguments passed to the function are undefined and the
  *     iterator itself. The function should return a new value.
  * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     {@code f}.
+ *     `f`.
  * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
  *     results of applying the function to each element in the original
  *     iterator.
@@ -19071,7 +19071,7 @@ goog.iter.starMap = function(iterable, f, opt_obj) {
 
 /**
  * Returns an array of iterators each of which can iterate over the values in
- * {@code iterable} without advancing the others.
+ * `iterable` without advancing the others.
  * @see http://docs.python.org/2/library/itertools.html#itertools.tee
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to tee.
@@ -19115,7 +19115,7 @@ goog.iter.tee = function(iterable, opt_num) {
 
 /**
  * Creates an iterator that returns arrays containing a count and an element
- * obtained from the given {@code iterable}.
+ * obtained from the given `iterable`.
  * @see http://docs.python.org/2/library/functions.html#enumerate
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to enumerate.
@@ -19130,7 +19130,7 @@ goog.iter.enumerate = function(iterable, opt_start) {
 
 
 /**
- * Creates an iterator that returns the first {@code limitSize} elements from an
+ * Creates an iterator that returns the first `limitSize` elements from an
  * iterable. If this number is greater than the number of elements in the
  * iterable, all the elements are returned.
  * @see http://goo.gl/V0sihp Inspired by the limit iterator in Guava.
@@ -19138,7 +19138,7 @@ goog.iter.enumerate = function(iterable, opt_start) {
  *     iterable to limit.
  * @param {number} limitSize  The maximum number of elements to return.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator containing
- *     {@code limitSize} elements.
+ *     `limitSize` elements.
  * @template VALUE
  */
 goog.iter.limit = function(iterable, limitSize) {
@@ -19161,10 +19161,10 @@ goog.iter.limit = function(iterable, limitSize) {
 
 
 /**
- * Creates an iterator that is advanced {@code count} steps ahead. Consumed
- * values are silently discarded. If {@code count} is greater than the number
- * of elements in {@code iterable}, an empty iterator is returned. Subsequent
- * calls to {@code next()} will throw {@code goog.iter.StopIteration}.
+ * Creates an iterator that is advanced `count` steps ahead. Consumed
+ * values are silently discarded. If `count` is greater than the number
+ * of elements in `iterable`, an empty iterator is returned. Subsequent
+ * calls to {@code next()} will throw `goog.iter.StopIteration`.
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to consume.
  * @param {number} count  The number of elements to consume from the iterator.
@@ -19192,7 +19192,7 @@ goog.iter.consume = function(iterable, count) {
  *     iterable to slice.
  * @param {number} start  The index of the first element to return.
  * @param {number=} opt_end  The index after the last element to return. If
- *     defined, must be greater than or equal to {@code start}.
+ *     defined, must be greater than or equal to `start`.
  * @return {!goog.iter.Iterator<VALUE>} A new iterator containing a slice of
  *     the original.
  * @template VALUE
@@ -19229,19 +19229,19 @@ goog.iter.hasDuplicates_ = function(arr) {
 
 /**
  * Creates an iterator that returns permutations of elements in
- * {@code iterable}.
+ * `iterable`.
  *
  * Permutations are obtained by taking the Cartesian product of
- * {@code opt_length} iterables and filtering out those with repeated
+ * `opt_length` iterables and filtering out those with repeated
  * elements. For example, the permutations of {@code [1,2,3]} are
  * {@code [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]}.
  * @see http://docs.python.org/2/library/itertools.html#itertools.permutations
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable from which to generate permutations.
  * @param {number=} opt_length Length of each permutation. If omitted, defaults
- *     to the length of {@code iterable}.
+ *     to the length of `iterable`.
  * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing the
- *     permutations of {@code iterable}.
+ *     permutations of `iterable`.
  * @template VALUE
  */
 goog.iter.permutations = function(iterable, opt_length) {
@@ -19258,18 +19258,18 @@ goog.iter.permutations = function(iterable, opt_length) {
 
 /**
  * Creates an iterator that returns combinations of elements from
- * {@code iterable}.
+ * `iterable`.
  *
  * Combinations are obtained by taking the {@see goog.iter#permutations} of
- * {@code iterable} and filtering those whose elements appear in the order they
- * are encountered in {@code iterable}. For example, the 3-length combinations
+ * `iterable` and filtering those whose elements appear in the order they
+ * are encountered in `iterable`. For example, the 3-length combinations
  * of {@code [0,1,2,3]} are {@code [[0,1,2], [0,1,3], [0,2,3], [1,2,3]]}.
  * @see http://docs.python.org/2/library/itertools.html#itertools.combinations
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable from which to generate combinations.
  * @param {number} length The length of each combination.
  * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
- *     combinations from the {@code iterable}.
+ *     combinations from the `iterable`.
  * @template VALUE
  */
 goog.iter.combinations = function(iterable, length) {
@@ -19295,11 +19295,11 @@ goog.iter.combinations = function(iterable, length) {
 
 /**
  * Creates an iterator that returns combinations of elements from
- * {@code iterable}, with repeated elements possible.
+ * `iterable`, with repeated elements possible.
  *
- * Combinations are obtained by taking the Cartesian product of {@code length}
+ * Combinations are obtained by taking the Cartesian product of `length`
  * iterables and filtering those whose elements appear in the order they are
- * encountered in {@code iterable}. For example, the 2-length combinations of
+ * encountered in `iterable`. For example, the 2-length combinations of
  * {@code [1,2,3]} are {@code [[1,1], [1,2], [1,3], [2,2], [2,3], [3,3]]}.
  * @see https://goo.gl/C0yXe4
  * @see https://goo.gl/djOCsk
@@ -19307,7 +19307,7 @@ goog.iter.combinations = function(iterable, length) {
  *     iterable to combine.
  * @param {number} length The length of each combination.
  * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
- *     combinations from the {@code iterable}.
+ *     combinations from the `iterable`.
  * @template VALUE
  */
 goog.iter.combinationsWithReplacement = function(iterable, length) {
@@ -19641,7 +19641,7 @@ goog.structs.Map.prototype.cleanupKeysArray_ = function() {
 
 /**
  * Returns the value for the given key.  If the key is not found and the default
- * value is not given this will return {@code undefined}.
+ * value is not given this will return `undefined`.
  * @param {*} key The key to get the value for.
  * @param {DEFAULT=} opt_val The value to return if no item is found for the
  *     given key, defaults to undefined.
@@ -19988,7 +19988,7 @@ goog.structs.clear = function(col) {
  *     3 arguments (the value, the key or undefined if the collection has no
  *     notion of keys, and the collection) and the return value is irrelevant.
  * @param {T=} opt_obj The object to be used as the value of 'this'
- *     within {@code f}.
+ *     within `f`.
  * @template T,S
  * @deprecated Use a more specific method, e.g. goog.array.forEach,
  *     goog.object.forEach, or for-of.
@@ -20021,7 +20021,7 @@ goog.structs.forEach = function(col, f, opt_obj) {
  *     return value is true the value is added to the result collection. If it
  *     is false the value is not included.
  * @param {T=} opt_obj The object to be used as the value of 'this'
- *     within {@code f}.
+ *     within `f`.
  * @return {!Object|!Array<?>} A new collection where the passed values are
  *     present. If col is a key-less collection an array is returned.  If col
  *     has keys and values a plain old JS object is returned.
@@ -20071,7 +20071,7 @@ goog.structs.filter = function(col, f, opt_obj) {
  *     collection has no notion of keys, and the collection) and should return
  *     something. The result will be used as the value in the new collection.
  * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within {@code f}.
+ *     within `f`.
  * @return {!Object<V>|!Array<V>} A new collection with the new values.  If
  *     col is a key-less collection an array is returned.  If col has keys and
  *     values a plain old JS object is returned.
@@ -20117,7 +20117,7 @@ goog.structs.map = function(col, f, opt_obj) {
  *     if the collection has no notion of keys, and the collection) and should
  *     return a boolean.
  * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within {@code f}.
+ *     within `f`.
  * @return {boolean} True if any value passes the test.
  * @template T,S
  */
@@ -20151,7 +20151,7 @@ goog.structs.some = function(col, f, opt_obj) {
  *     undefined if the collection has no notion of keys, and the collection)
  *     and should return a boolean.
  * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within {@code f}.
+ *     within `f`.
  * @return {boolean} True if all key-value pairs pass the test.
  * @template T,S
  */
@@ -23068,9 +23068,9 @@ goog.soy.data.UnsanitizedText.prototype.contentKind =
  *
  * The content is a string of HTML that can safely be embedded in a PCDATA
  * context in your app.  If you would be surprised to find that an HTML
- * sanitizer produced {@code s} (e.g.  it runs code or fetches bad URLs) and
- * you wouldn't write a template that produces {@code s} on security or privacy
- * grounds, then don't pass {@code s} here. The default content direction is
+ * sanitizer produced `s` (e.g.  it runs code or fetches bad URLs) and
+ * you wouldn't write a template that produces `s` on security or privacy
+ * grounds, then don't pass `s` here. The default content direction is
  * unknown, i.e. to be estimated when necessary.
  *
  * @extends {goog.soy.data.SanitizedContent}
