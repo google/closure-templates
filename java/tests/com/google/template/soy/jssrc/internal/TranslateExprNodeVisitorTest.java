@@ -81,14 +81,15 @@ public final class TranslateExprNodeVisitorTest {
 
     assertThatSoyExpr("quoteKeysIfJs(['aaa': 123, $boo: $foo])")
         .generatesCode(
-            "var $tmp = {'aaa': 123};", "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;");
+            "var $tmp = {'aaa': 123};",
+            "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = opt_data.foo;");
 
     assertThatSoyExpr("quoteKeysIfJs([$boo: $foo, $goo[0]: 123])")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode(
             "var $tmp = {};",
-            "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
-            "$tmp[soy.$$checkMapKey(gooData8[0])] = 123;");
+            "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = opt_data.foo;",
+            "$tmp[soy.$$checkLegacyObjectMapLiteralKey(gooData8[0])] = 123;");
 
     assertThatSoyExpr("quoteKeysIfJs(['aaa': ['bbb': 'blah']])")
         .generatesCode("{'aaa': {bbb: 'blah'}};");
@@ -120,7 +121,8 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("['aaa': 123, $boo: $foo]")
         .withJsSrcOptions(noCompiler)
         .generatesCode(
-            "var $tmp = {aaa: 123};", "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;");
+            "var $tmp = {aaa: 123};",
+            "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = opt_data.foo;");
 
     assertThatSoyExpr("['aaa': 123, $boo: $foo, $moo: $goo]")
         .withJsSrcOptions(withCompiler)

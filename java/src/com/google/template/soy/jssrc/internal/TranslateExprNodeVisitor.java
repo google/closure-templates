@@ -289,8 +289,9 @@ public class TranslateExprNodeVisitor
     //
     // Key-value pairs with StringNode keys can be included in the JS object literal.
     // Key-value pairs that are not StringNodes (VarRefs, IJ values, etc.) must be passed through
-    // the soy.$$checkMapKey() function, cannot be included in the JS object literal, and must
-    // generate code in the form of:  $$map[soy.$$checkMapKey(key)] = value
+    // the soy.$$checkLegacyObjectMapLiteralKey() function, cannot be included in the JS object
+    // literal, and must generate code in the form of:
+    //   $$map[soy.$$checkLegacyObjectMapLiteralKey(key)] = value
 
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> objLiteral = new LinkedHashMap<>();
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> assignments = new LinkedHashMap<>();
@@ -344,8 +345,9 @@ public class TranslateExprNodeVisitor
           }
         }
       } else {
-        // key is not a StringNode; key must be passed through soy.$$checkMapKey() and the pair
-        // cannot be included in the JS object literal.
+        // key is not a StringNode; key must be passed through
+        // soy.$$checkLegacyObjectMapLiteralKey() and the pair cannot be included in the JS object
+        // literal.
 
         CodeChunk.WithValue rawKey = visit(keyNode);
         assignments.put(SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY.call(rawKey), visit(valueNode));

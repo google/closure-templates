@@ -128,7 +128,7 @@ public final class GenJsExprsVisitorTest {
     String expectedGenCode =
         JOINER.join(
             "var $tmp = {a: 'b'};",
-            "$tmp[soy.$$checkMapKey(opt_data.boo)] = 'c';",
+            "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = 'c';",
             "$tmp[opt_data.boo];");
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }
