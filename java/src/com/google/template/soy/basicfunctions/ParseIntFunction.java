@@ -55,7 +55,7 @@ import javax.inject.Singleton;
 @SoyFunctionSignature(
     @Signature(
       parameterTypes = {"string"},
-      returnType = "int|null"
+      returnType = "int"
     ))
 public final class ParseIntFunction extends TypedSoyFunction
     implements SoyJavaFunction,

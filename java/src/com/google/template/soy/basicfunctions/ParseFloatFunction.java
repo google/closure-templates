@@ -56,7 +56,7 @@ import javax.inject.Singleton;
 @SoyFunctionSignature(
     @Signature(
       parameterTypes = {"string"},
-      returnType = "float|null"
+      returnType = "float"
     ))
 public final class ParseFloatFunction extends TypedSoyFunction
     implements SoyJavaFunction,
