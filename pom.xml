@@ -683,6 +683,7 @@
                 <argument>
                   ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated.js
                 </argument>
+                <argument>--srcs</argument>
                 <argument>${soy.examples}/simple.soy</argument>
               </arguments>
             </configuration>
@@ -713,8 +714,8 @@
                 </argument>
                 <argument>--inputPrefix</argument>
                 <argument>${soy.examples}/</argument>
-                <argument>simple.soy</argument>
-                <argument>features.soy</argument>
+                <argument>--srcs</argument>
+                <argument>simple.soy,features.soy</argument>
               </arguments>
             </configuration>
             <goals>
@@ -770,6 +771,7 @@
                 <argument>com.google.template.soy.examples</argument>
                 <argument>--javaClassNameSource</argument>
                 <argument>filename</argument>
+                <argument>--srcs</argument>
                 <argument>${soy.examples}/features.soy</argument>
               </arguments>
             </configuration>
@@ -792,8 +794,8 @@
                 </argument>
                 <argument>--inputPrefix</argument>
                 <argument>${soy.examples}/</argument>
-                <argument>simple.soy</argument>
-                <argument>features.soy</argument>
+                <argument>--srcs</argument>
+                <argument>simple.soy,features.soy</argument>
               </arguments>
             </configuration>
             <goals>

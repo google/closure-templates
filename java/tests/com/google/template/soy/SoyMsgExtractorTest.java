@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import java.io.File;
 import org.junit.Rule;
@@ -50,7 +51,10 @@ public class SoyMsgExtractorTest {
         new SoyMsgExtractor()
             .run(
                 new String[] {
-                  "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString()
+                  "--outputFile",
+                  xmlFile.toString(),
+                  "--srcs",
+                  Joiner.on(',').join(soyFile1.toString(), soyFile2.toString())
                 },
                 System.err);
     assertThat(exitCode).isEqualTo(0);
