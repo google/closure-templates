@@ -43,22 +43,20 @@ import org.objectweb.asm.Type;
  */
 @Singleton
 @SoyPureFunction
-@SoyFunctionSignature({
-  @Signature(
-    parameterTypes = {"number"},
-    returnType = "int"
-  )
-})
+@SoyFunctionSignature(
+  name = "ceiling",
+  value = {
+    @Signature(
+      parameterTypes = {"number"},
+      returnType = "int"
+    )
+  }
+)
 public final class CeilingFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   CeilingFunction() {}
-
-  @Override
-  public String getName() {
-    return "ceiling";
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

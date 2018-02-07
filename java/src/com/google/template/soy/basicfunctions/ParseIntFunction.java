@@ -53,10 +53,14 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-    @Signature(
-      parameterTypes = {"string"},
-      returnType = "int"
-    ))
+  name = "parseInt",
+  value =
+      @Signature(
+        parameterTypes = {"string"},
+        // TODO(lukes): should be nullable
+        returnType = "int"
+      )
+)
 public final class ParseIntFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,

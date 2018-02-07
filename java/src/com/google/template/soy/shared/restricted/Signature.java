@@ -27,7 +27,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Signature {
+  /**
+   * Defines the positional parameter types of the parameters as strings using the Soy type syntax.
+   */
   String[] parameterTypes();
 
+  /** Defines the return type of the function using the Soy type syntax. */
   String returnType();
 }

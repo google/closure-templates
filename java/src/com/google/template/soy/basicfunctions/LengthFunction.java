@@ -46,20 +46,18 @@ import org.objectweb.asm.Type;
 @Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-    @Signature(
-      parameterTypes = {"list<any>"},
-      returnType = "int"
-    ))
+  name = "length",
+  value =
+      @Signature(
+        parameterTypes = {"list<any>"},
+        returnType = "int"
+      )
+)
 public final class LengthFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   LengthFunction() {}
-
-  @Override
-  public String getName() {
-    return "length";
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

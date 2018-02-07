@@ -56,20 +56,23 @@ import org.objectweb.asm.Type;
  * </ul>
  */
 @Singleton
-@SoyFunctionSignature({
-  @Signature(
-    parameterTypes = {"number"},
-    returnType = "list<int>"
-  ),
-  @Signature(
-    parameterTypes = {"number", "number"},
-    returnType = "list<int>"
-  ),
-  @Signature(
-    parameterTypes = {"number", "number", "number"},
-    returnType = "list<int>"
-  )
-})
+@SoyFunctionSignature(
+  name = "range",
+  value = {
+    @Signature(
+      parameterTypes = {"number"},
+      returnType = "list<int>"
+    ),
+    @Signature(
+      parameterTypes = {"number", "number"},
+      returnType = "list<int>"
+    ),
+    @Signature(
+      parameterTypes = {"number", "number", "number"},
+      returnType = "list<int>"
+    )
+  }
+)
 public final class RangeFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
@@ -77,11 +80,6 @@ public final class RangeFunction extends TypedSoyFunction
         SoyJbcSrcFunction {
   @Inject
   RangeFunction() {}
-
-  @Override
-  public String getName() {
-    return "range";
-  }
 
   private static final class JbcSrcMethods {
     static final MethodRef RANGE_1 =

@@ -43,22 +43,20 @@ import org.objectweb.asm.Type;
  */
 @Singleton
 @SoyPureFunction
-@SoyFunctionSignature({
-  @Signature(
-    parameterTypes = {"number"},
-    returnType = "int"
-  )
-})
+@SoyFunctionSignature(
+  name = "floor",
+  value = {
+    @Signature(
+      parameterTypes = {"number"},
+      returnType = "int"
+    )
+  }
+)
 public final class FloorFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   FloorFunction() {}
-
-  @Override
-  public String getName() {
-    return "floor";
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

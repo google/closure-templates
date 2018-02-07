@@ -54,10 +54,14 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-    @Signature(
-      parameterTypes = {"string"},
-      returnType = "float"
-    ))
+  name = "parseFloat",
+  value =
+      @Signature(
+        parameterTypes = {"string"},
+        // TODO(lukes): should be nullable
+        returnType = "float"
+      )
+)
 public final class ParseFloatFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
@@ -66,11 +70,6 @@ public final class ParseFloatFunction extends TypedSoyFunction
 
   @Inject
   ParseFloatFunction() {}
-
-  @Override
-  public String getName() {
-    return "parseFloat";
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

@@ -24,14 +24,22 @@ import java.util.Set;
 /** A soy function that carries type information. */
 public abstract class TypedSoyFunction implements SoyFunction {
 
+  // TODO(b/31714800): make this temporarily non-final while we migrate names from this method to
+  // the signature.
+  @Override
+  public String getName() {
+    String name = getSignature().name();
+    if (name.isEmpty()) {
+      throw new AbstractMethodError(
+          getClass() + "should either override getName() or specify a name in the signature.");
+    }
+    return name;
+  }
+
   @Override
   public final Set<Integer> getValidArgsSizes() {
-    if (!this.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
-      throw new IllegalStateException(
-          "TypedSoyFunction must set @SoyFunctionSignature annotation.");
-    }
     Map<Integer, Signature> validArgs = new HashMap<>();
-    for (Signature signature : this.getClass().getAnnotation(SoyFunctionSignature.class).value()) {
+    for (Signature signature : getSignature().value()) {
       int argSize = signature.parameterTypes().length;
       if (validArgs.containsKey(argSize)) {
         throw new IllegalArgumentException(
@@ -44,5 +52,14 @@ public abstract class TypedSoyFunction implements SoyFunction {
       validArgs.put(argSize, signature);
     }
     return ImmutableSortedSet.copyOf(validArgs.keySet());
+  }
+
+  private SoyFunctionSignature getSignature() {
+    SoyFunctionSignature signature = getClass().getAnnotation(SoyFunctionSignature.class);
+    if (signature == null) {
+      throw new IllegalStateException(
+          "TypedSoyFunction must set @SoyFunctionSignature annotation.");
+    }
+    return signature;
   }
 }

@@ -39,10 +39,13 @@ import java.util.List;
  * templates.
  */
 @SoyFunctionSignature(
-    @Signature(
-      returnType = "bool",
-      parameterTypes = {}
-    ))
+  name = DebugSoyTemplateInfoFunction.NAME,
+  value =
+      @Signature(
+        returnType = "bool",
+        parameterTypes = {}
+      )
+)
 public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
@@ -57,10 +60,6 @@ public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
   // Do not @Inject; should not be used outside of {@link AddHtmlCommentsForDebugPass}.
   private DebugSoyTemplateInfoFunction() {}
 
-  @Override
-  public String getName() {
-    return NAME;
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
