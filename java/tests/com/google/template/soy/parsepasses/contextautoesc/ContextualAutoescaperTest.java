@@ -28,6 +28,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -2813,7 +2814,8 @@ public final class ContextualAutoescaperTest {
             .fileSet();
 
     if (!reporter.getErrors().isEmpty()) {
-      String message = reporter.getErrors().get(0).message();
+      SoyError soyError = reporter.getErrors().get(0);
+      String message = soyError.message();
       if (message.startsWith(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX)) {
         // Grab the part after the prefix (and the "- " used for indentation).
         message = message.substring(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX.length() + 2);
@@ -2823,12 +2825,19 @@ public final class ContextualAutoescaperTest {
         // this with two things to check.
         // TODO(gboyer): Once 100% of the contextual autoescaper's errors are migrated to the error
         // reporter, we can stop throwing and simply add explicit checks in the cases.
-        throw SoyAutoescapeException.createWithoutMetaInfo(message);
+        throw new RewriteError(message);
       } else {
         throw new IllegalStateException("Unexpected error: " + message);
       }
     }
     return soyTree.getChild(0);
+  }
+
+  private static final class RewriteError extends RuntimeException {
+
+    RewriteError(String error) {
+      super(error);
+    }
   }
 
   private static final String NONCE =
@@ -2845,14 +2854,11 @@ public final class ContextualAutoescaperTest {
     try {
       rewrite(inputs);
       fail();
-    } catch (SoyAutoescapeException ex) {
-      // Find the root cause; during contextualization, we re-wrap exceptions on the path to a
-      // template.
-      while (ex.getCause() instanceof SoyAutoescapeException) {
-        ex = (SoyAutoescapeException) ex.getCause();
-      }
+    } catch (RewriteError ex) {
       if (msg != null && !msg.equals(ex.getMessage())) {
-        throw (ComparisonFailure) new ComparisonFailure("", msg, ex.getMessage()).initCause(ex);
+        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, ex.getMessage());
+        comparisonFailure.initCause(ex);
+        throw comparisonFailure;
       }
     }
   }

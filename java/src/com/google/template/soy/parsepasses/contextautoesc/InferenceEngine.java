@@ -116,21 +116,13 @@ final class InferenceEngine {
       Inferences inferences,
       ErrorReporter errorReporter) {
     Context endContext;
-    try {
-      AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
-      InferenceEngine inferenceEngine =
-          new InferenceEngine(
-              autoescapeMode,
-              autoescapeMode,
-              inferences,
-              errorReporter);
-      // Context started off as startContext and we have propagated context through all of
-      // template's children, so now context is the template's end context.
-      endContext = inferenceEngine.infer(templateNode, startContext);
-      inferences.recordTemplateEndContext(templateNode.getTemplateName(), endContext);
-    } catch (SoyAutoescapeException e) {
-      throw e.maybeAssociateNode(templateNode);
-    }
+    AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
+    InferenceEngine inferenceEngine =
+        new InferenceEngine(autoescapeMode, autoescapeMode, inferences, errorReporter);
+    // Context started off as startContext and we have propagated context through all of
+    // template's children, so now context is the template's end context.
+    endContext = inferenceEngine.infer(templateNode, startContext);
+    inferences.recordTemplateEndContext(templateNode.getTemplateName(), endContext);
     return endContext;
   }
 
@@ -268,13 +260,7 @@ final class InferenceEngine {
     /** Propagates context across raw chunks of HTML text. */
     @Override
     protected void visitRawTextNode(RawTextNode rawTextNode) {
-      Context newContext;
-      try {
-        newContext = RawTextContextUpdater.processRawText(rawTextNode, context);
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(rawTextNode);
-      }
-      context = newContext;
+      context = RawTextContextUpdater.processRawText(rawTextNode, context);
     }
 
     @Override
@@ -282,7 +268,7 @@ final class InferenceEngine {
       if (autoescapeMode == AutoescapeMode.STRICT || autoescapeMode == AutoescapeMode.CONTEXTUAL) {
         // (1) Determine the escaping we should do on the node itself, and the context we should
         // parse the children in.
-        Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy();
+        Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy(node);
         if (!maybeStrategy.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               "Messages are not supported in this context, because it would mean asking "
@@ -324,24 +310,20 @@ final class InferenceEngine {
      */
     @Override
     protected void visitCallNode(CallNode callNode) {
-      try {
-        String calleeName;
-        if (callNode instanceof CallBasicNode) {
-          calleeName = ((CallBasicNode) callNode).getCalleeName();
-        } else {
-          calleeName = ((CallDelegateNode) callNode).getDelCalleeName();
-        }
-
-        DerivedNameAndContext derivedNameAndContext =
-            inferCallSite(callNode, context, calleeName, inferences);
-        String derivedCalleeName = derivedNameAndContext.derivedName();
-        if (!calleeName.equals(derivedCalleeName)) {
-          inferences.retargetCall(callNode, derivedCalleeName);
-        }
-        context = derivedNameAndContext.context();
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(callNode);
+      String calleeName;
+      if (callNode instanceof CallBasicNode) {
+        calleeName = ((CallBasicNode) callNode).getCalleeName();
+      } else {
+        calleeName = ((CallDelegateNode) callNode).getDelCalleeName();
       }
+
+      DerivedNameAndContext derivedNameAndContext =
+          inferCallSite(callNode, context, calleeName, inferences);
+      String derivedCalleeName = derivedNameAndContext.derivedName();
+      if (!calleeName.equals(derivedCalleeName)) {
+        inferences.retargetCall(callNode, derivedCalleeName);
+      }
+      context = derivedNameAndContext.context();
 
       visitChildren(callNode);
     }
@@ -405,43 +387,39 @@ final class InferenceEngine {
       } else {
         throw new AssertionError();
       }
-      try {
-        Context afterBody = context;
-        if (neNode != null) {
-          afterBody = infer(neNode, context);
-          // Make sure that repeated invocations of the body end up in the same state.
-          Context elseContext = infer(neNode, afterBody);
-          Optional<Context> combined = Context.union(elseContext, afterBody);
-          if (!combined.isPresent()) {
-            throw SoyAutoescapeException.createWithNode(
-                "{"
-                    + forNode.getCommandName()
-                    + "} body does not end in the same context after repeated entries.",
-                forNode);
-          }
-          afterBody = combined.get();
-        }
-        Context ifemptyContext;
-        if (ieNode != null) {
-          ifemptyContext = infer(ieNode, context);
-        } else {
-          ifemptyContext = context;
-        }
-        Optional<Context> combined = Context.union(ifemptyContext, afterBody);
+      Context afterBody = context;
+      if (neNode != null) {
+        afterBody = infer(neNode, context);
+        // Make sure that repeated invocations of the body end up in the same state.
+        Context elseContext = infer(neNode, afterBody);
+        Optional<Context> combined = Context.union(elseContext, afterBody);
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               "{"
                   + forNode.getCommandName()
-                  + "} body "
-                  + (ieNode == null
-                      ? "changes context."
-                      : "does not end in the same context as {ifempty}."),
-              ieNode == null ? forNode : ieNode);
+                  + "} body does not end in the same context after repeated entries.",
+              forNode);
         }
-        context = combined.get();
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(forNode);
+        afterBody = combined.get();
       }
+      Context ifemptyContext;
+      if (ieNode != null) {
+        ifemptyContext = infer(ieNode, context);
+      } else {
+        ifemptyContext = context;
+      }
+      Optional<Context> combined = Context.union(ifemptyContext, afterBody);
+      if (!combined.isPresent()) {
+        throw SoyAutoescapeException.createWithNode(
+            "{"
+                + forNode.getCommandName()
+                + "} body "
+                + (ieNode == null
+                    ? "changes context."
+                    : "does not end in the same context as {ifempty}."),
+            ieNode == null ? forNode : ieNode);
+      }
+      context = combined.get();
     }
 
     /**
@@ -450,85 +428,81 @@ final class InferenceEngine {
      */
     @Override
     protected void visitPrintNode(PrintNode printNode) {
-      try {
-        // It is an error to use autoescape-canceling print directives in strict mode unless in a
-        // block of kind text.
-        if (autoescapeMode == AutoescapeMode.STRICT && context.state != HtmlContext.TEXT) {
-          for (PrintDirectiveNode printDirective : printNode.getChildren()) {
-            if (printDirective.getName().equals("|noAutoescape")) {
-              // Treat noAutoescape specially:
-              // - It is allowed in strict sub-contexts if the surrounding template is non-strict,
-              // to help with migration. This does not apply to other escaping directives since
-              // they are just as dangerous, but less obvious to auditors.
-              // - It deserves a more useful error message.
-              if (templateAutoescapeMode == AutoescapeMode.STRICT) {
-                // Help the user figure out the best content kind to use, using existing heuristics.
-                SanitizedContentKind recommendedKind = context.getMostAppropriateContentKind();
-                String recommendedKindStr =
-                    (recommendedKind == SanitizedContentKind.TEXT)
-                        ? "appropriate kind=\"...\""
-                        : ("kind=\"" + recommendedKind.asAttributeValue() + "\"");
-                throw SoyAutoescapeException.createWithNode(
-                    "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a "
-                        + "{param} with "
-                        + recommendedKindStr
-                        + " or SanitizedContent.",
-                    printNode);
-              }
-            } else if (printDirective.getPrintDirective() != null
-                && printDirective.getPrintDirective().shouldCancelAutoescape()) {
+      // It is an error to use autoescape-canceling print directives in strict mode unless in a
+      // block of kind text.
+      if (autoescapeMode == AutoescapeMode.STRICT && context.state != HtmlContext.TEXT) {
+        for (PrintDirectiveNode printDirective : printNode.getChildren()) {
+          if (printDirective.getName().equals("|noAutoescape")) {
+            // Treat noAutoescape specially:
+            // - It is allowed in strict sub-contexts if the surrounding template is non-strict,
+            // to help with migration. This does not apply to other escaping directives since
+            // they are just as dangerous, but less obvious to auditors.
+            // - It deserves a more useful error message.
+            if (templateAutoescapeMode == AutoescapeMode.STRICT) {
+              // Help the user figure out the best content kind to use, using existing heuristics.
+              SanitizedContentKind recommendedKind = context.getMostAppropriateContentKind();
+              String recommendedKindStr =
+                  (recommendedKind == SanitizedContentKind.TEXT)
+                      ? "appropriate kind=\"...\""
+                      : ("kind=\"" + recommendedKind.asAttributeValue() + "\"");
               throw SoyAutoescapeException.createWithNode(
-                  "Autoescape-cancelling print directives like "
-                      + printDirective.getName()
-                      + " are only allowed in kind=\"text\" blocks. If you really want to "
-                      + "over-escape, try using a let block: "
-                      + "{let $foo kind=\"text\"}"
-                      + printNode.toSourceString()
-                      + "{/let}{$foo}.",
+                  "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a "
+                      + "{param} with "
+                      + recommendedKindStr
+                      + " or SanitizedContent.",
                   printNode);
             }
+          } else if (printDirective.getPrintDirective() != null
+              && printDirective.getPrintDirective().shouldCancelAutoescape()) {
+            throw SoyAutoescapeException.createWithNode(
+                "Autoescape-cancelling print directives like "
+                    + printDirective.getName()
+                    + " are only allowed in kind=\"text\" blocks. If you really want to "
+                    + "over-escape, try using a let block: "
+                    + "{let $foo kind=\"text\"}"
+                    + printNode.toSourceString()
+                    + "{/let}{$foo}.",
+                printNode);
           }
         }
+      }
 
-        List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
-        Context prev = context;
-        if (escapingModes.isEmpty()) { // None specified.
-          // The inferences set below specify which nodes to change. In the non-contextual modes,
-          // we leave escapingModesToSet null since no changes are to be made to this print node.
-          List<EscapingMode> escapingModesToSet = null;
-          switch (autoescapeMode) {
-            case STRICT:
-            case CONTEXTUAL:
-              // Infer one.
-              escapingModes =
-                  escapingModesToSet = context.getEscapingModes(printNode.getChildren());
-              break;
-            case NONCONTEXTUAL:
-              escapingModes = ImmutableList.of(defaultEscapingMode);
-              break;
-          }
-          inferences.setEscapingDirectives(printNode, prev, escapingModesToSet);
-        } else if (!context.isCompatibleWith(escapingModes.get(0))) {
-          String msg =
-              String.format("Escaping modes %s not compatible with %s.", escapingModes, context);
-          throw SoyAutoescapeException.createWithNode(msg, printNode);
+      List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
+      Context prev = context;
+      if (escapingModes.isEmpty()) { // None specified.
+        // The inferences set below specify which nodes to change. In the non-contextual modes,
+        // we leave escapingModesToSet null since no changes are to be made to this print node.
+        List<EscapingMode> escapingModesToSet = null;
+        switch (autoescapeMode) {
+          case STRICT:
+          case CONTEXTUAL:
+            // Infer one.
+            escapingModes =
+                escapingModesToSet = context.getEscapingModes(printNode, printNode.getChildren());
+            break;
+          case NONCONTEXTUAL:
+            escapingModes = ImmutableList.of(defaultEscapingMode);
+            break;
         }
+        inferences.setEscapingDirectives(printNode, prev, escapingModesToSet);
+      } else if (!context.isCompatibleWith(escapingModes.get(0))) {
+        String msg =
+            String.format("Escaping modes %s not compatible with %s.", escapingModes, context);
+        throw SoyAutoescapeException.createWithNode(msg, printNode);
+      }
 
-        // Figure out the context at the end.
-        if (!escapingModes.isEmpty()
-            || autoescapeMode == AutoescapeMode.CONTEXTUAL
-            || autoescapeMode == AutoescapeMode.STRICT) {
-          // If we know the escaping mode or we're supposed to choose one, then use that.
-          context = getContextAfterEscaping(printNode, context);
-        } else {
-          // If we are not in an autoescaping template, assume that the author knows what they're
-          // doing and simulate an innocuous value.
-          context =
-              RawTextContextUpdater.processRawText(
-                  new RawTextNode(-1, "z", printNode.getSourceLocation()), context);
-        }
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(printNode);
+      // Figure out the context at the end.
+      if (!escapingModes.isEmpty()
+          || autoescapeMode == AutoescapeMode.CONTEXTUAL
+          || autoescapeMode == AutoescapeMode.STRICT) {
+        // If we know the escaping mode or we're supposed to choose one, then use that.
+        context = context.getContextAfterDynamicValue();
+      } else {
+        // If we are not in an autoescaping template, assume that the author knows what they're
+        // doing and simulate an innocuous value.
+        context =
+            RawTextContextUpdater.processRawText(
+                new RawTextNode(-1, "z", printNode.getSourceLocation()), context);
       }
     }
 
@@ -557,7 +531,7 @@ final class InferenceEngine {
                   : HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
       // if the tag name is a constant, transition to an appropriate tag state
       if (tag.getTagName().isStatic()) {
-        context = context.transitionToTagName(tag.getTagName().getStaticTagNameAsLowerCase());
+        context = context.transitionToTagName(tag);
       } else {
         // dynamic tag name
         visit(tag.getChild(0));
@@ -662,7 +636,7 @@ final class InferenceEngine {
           // kind. Since all deltemplates with the same name must be of the same kind (checked
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
           return DerivedNameAndContext.create(
-              templateName, getContextAfterDynamicValue(callNode, startContext));
+              templateName, startContext.getContextAfterDynamicValue());
         } else if (calleeStrictContentKind != null || targets.isEmpty()) {
           // If a strict template calls another strict template (or an unknown extern), the result
           // will be escaped, so the call statement behaves effectively like a print statement.
@@ -674,9 +648,9 @@ final class InferenceEngine {
           inferences.setEscapingDirectives(
               callNode,
               startContext,
-              startContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
+              startContext.getEscapingModes(callNode, ImmutableList.<PrintDirectiveNode>of()));
           return DerivedNameAndContext.create(
-              templateName, getContextAfterDynamicValue(callNode, startContext));
+              templateName, startContext.getContextAfterDynamicValue());
         } else if (startContext.state == HtmlContext.TEXT) {
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
           // since TEXT doesn't make any safety guarantees.
@@ -868,49 +842,46 @@ final class InferenceEngine {
 
     /** Consider the various branches separately and compute a union context for each branch. */
     private void propagateAcrossDisjunction(ParentSoyNode<?> node) {
-      try {
-        // All the branches of an {if} or {switch} should return compatible contexts, so that we can
-        // figure out the end context of the branch as a whole.
-        Iterator<? extends SoyNode> childIt = node.getChildren().iterator();
-        SoyNode firstBranch = childIt.next();
-        Context out = infer(firstBranch, context);
-        boolean sawElseOrDefault = false;
-        while (childIt.hasNext()) {
-          SoyNode branch = childIt.next();
-          Context brOut = infer(branch, context);
-          Optional<Context> combined = Context.union(out, brOut);
-          if (!combined.isPresent()) {
-            throw SoyAutoescapeException.createWithNode(
-                (node instanceof IfNode
-                        ? "{if} command branch ends in a different context than preceding branches:"
-                        : "{switch} command case ends in a different context than preceding cases:")
-                    + " " + branch.toSourceString(),
-                branch);
-          }
-          out = combined.get();
-          if (branch instanceof IfElseNode || branch instanceof SwitchDefaultNode) {
-            sawElseOrDefault = true;
-          }
+      // All the branches of an {if} or {switch} should return compatible contexts, so that we can
+      // figure out the end context of the branch as a whole.
+      Iterator<? extends SoyNode> childIt = node.getChildren().iterator();
+      SoyNode firstBranch = childIt.next();
+      Context out = infer(firstBranch, context);
+      boolean sawElseOrDefault = false;
+      while (childIt.hasNext()) {
+        SoyNode branch = childIt.next();
+        Context brOut = infer(branch, context);
+        Optional<Context> combined = Context.union(out, brOut);
+        if (!combined.isPresent()) {
+          throw SoyAutoescapeException.createWithNode(
+              (node instanceof IfNode
+                      ? "{if} command branch ends in a different context than preceding branches:"
+                      : "{switch} command case ends in a different context than preceding cases:")
+                  + " "
+                  + branch.toSourceString(),
+              branch);
         }
-
-        // If there is no else or default, then the end context has to be the compatible with the
-        // start context.
-        if (!sawElseOrDefault) {
-          Optional<Context> combined = Context.union(context, out);
-          if (!combined.isPresent()) {
-            throw SoyAutoescapeException.createWithNode(
-                (node instanceof IfNode
-                    ? "{if} command without {else} changes context."
-                    : "{switch} command without {default} changes context."),
-                node);
-          }
-          out = combined.get();
+        out = combined.get();
+        if (branch instanceof IfElseNode || branch instanceof SwitchDefaultNode) {
+          sawElseOrDefault = true;
         }
-
-        context = out;
-      } catch (SoyAutoescapeException ex) {
-        throw ex.maybeAssociateNode(node);
       }
+
+      // If there is no else or default, then the end context has to be the compatible with the
+      // start context.
+      if (!sawElseOrDefault) {
+        Optional<Context> combined = Context.union(context, out);
+        if (!combined.isPresent()) {
+          throw SoyAutoescapeException.createWithNode(
+              (node instanceof IfNode
+                  ? "{if} command without {else} changes context."
+                  : "{switch} command without {default} changes context."),
+              node);
+        }
+        out = combined.get();
+      }
+
+      context = out;
     }
 
     private void inferInStrictMode(RenderUnitNode node) {
@@ -941,34 +912,6 @@ final class InferenceEngine {
 
   //
   // Static helper methods (cannot be part of inner class).
-
-  /**
-   * Returns the end context after a properly escaped dynamic value was inserted.
-   *
-   * @param node Node to print out in case of an error.
-   * @param startContext The context after which a dynamic value is inserted.
-   */
-  private static Context getContextAfterDynamicValue(SoyNode node, Context startContext) {
-    // TODO: If the context is JS, perhaps this should return JsFollowingSlash.UNKNOWN. Right now
-    // we assume that the dynamic value is also an expression, but JsFollowingSlash.UNKNOWN would
-    // account for things that end in semicolons (since the next slash could be either a regex OR a
-    // division op).
-    return getContextAfterEscaping(node, startContext);
-  }
-
-  /**
-   * Returns the end context after a dynamic value was inserted with specific escaping modes.
-   *
-   * @param node The node to print in case of an error.
-   * @param startContext The start context -- must be a "context before dynamic value".
-   */
-  private static Context getContextAfterEscaping(SoyNode node, Context startContext) {
-    try {
-      return startContext.getContextAfterDynamicValue();
-    } catch (SoyAutoescapeException e) {
-      throw e.maybeAssociateNode(node);
-    }
-  }
 
   @AutoValue
   abstract static class DerivedNameAndContext {

@@ -30,7 +30,9 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlContext;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
+import com.google.template.soy.soytree.SoyNode;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
@@ -182,6 +184,10 @@ public final class Context {
    * in the worse case, we'll just produce JavaScript that doesn't compile (which is safe).
    */
   public Context getContextAfterDynamicValue() {
+    // TODO: If the context is JS, perhaps this should return JsFollowingSlash.UNKNOWN. Right now
+    // we assume that the dynamic value is also an expression, but JsFollowingSlash.UNKNOWN would
+    // account for things that end in semicolons (since the next slash could be either a regex OR a
+    // division op).
     if (state == HtmlContext.JS) {
       switch (slashType) {
         case DIV_OP:
@@ -276,12 +282,13 @@ public final class Context {
    * @return Empty if there is no appropriate escaping convention to use, e.g. for comments which do
    *     not have escaping conventions.
    */
-  public ImmutableList<EscapingMode> getEscapingModes(List<PrintDirectiveNode> printDirectives) {
+  public ImmutableList<EscapingMode> getEscapingModes(
+      SoyNode node, List<PrintDirectiveNode> printDirectives) {
     EscapingMode escapingMode = state.getEscapingMode();
 
     // Short circuit on the error case first.
     if (escapingMode == null) {
-      throw SoyAutoescapeException.createWithoutMetaInfo(state.getErrorMessage());
+      throw SoyAutoescapeException.createWithNode(state.getErrorMessage(), node);
     }
 
     // Any additional mode that allows the primary escaping mode's output language to be
@@ -354,33 +361,37 @@ public final class Context {
         // Is {$baz} part of a query or part of a path?
         // TODO(gboyer): In these unknown states, it might be interesting to indicate what the two
         // contexts were.
-        throw SoyAutoescapeException.createWithoutMetaInfo(
+        throw SoyAutoescapeException.createWithNode(
             "Cannot determine which part of the URL this dynamic value is in. Most likely, a"
                 + " preceding conditional block began a ?query or #fragment, "
-                + "but only on one branch.");
+                + "but only on one branch.",
+            node);
       case MAYBE_VARIABLE_SCHEME:
         // Is $y in the scheme, path, query, or fragment below?
         //   <a href="{$x}{$y}">
-        throw SoyAutoescapeException.createWithoutMetaInfo(
+        throw SoyAutoescapeException.createWithNode(
             "Soy can't prove this URI concatenation has a safe scheme at compile time."
                 + " Either combine adjacent print statements (e.g. {$x + $y} instead of {$x}{$y}),"
                 + " or introduce disambiguating characters"
-                + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})");
+                + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
+            node);
       case MAYBE_SCHEME:
         // Could $x cause a bad scheme, e.g. if it's "script:deleteMyAccount()"?
         //   <a href="java{$x}">
-        throw SoyAutoescapeException.createWithoutMetaInfo(
+        throw SoyAutoescapeException.createWithNode(
             "Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
                 + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or"
                 + " move the print statement to the start of the URI to enable runtime validation"
-                + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").");
+                + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
+            node);
       case DANGEROUS_SCHEME:
         // After javascript: or other dangerous schemes.
-        throw SoyAutoescapeException.createWithoutMetaInfo(
+        throw SoyAutoescapeException.createWithNode(
             "Soy can't properly escape for this URI scheme. For image sources, you can print full"
                 + " data and blob URIs directly (e.g. src=\"{$someDataUri}\")."
                 + " Otherwise, hardcode the full URI in the template or pass a complete"
-                + " SanitizedContent or SafeUri object.");
+                + " SanitizedContent or SafeUri object.",
+            node);
       default:
         break;
     }
@@ -472,10 +483,11 @@ public final class Context {
    * translation machinery, especially in Javascript, doesn't offer a way to escape just the bits
    * that come from the translation database without also re-escaping the substitutions.
    *
+   * @param node The node, for error messages
    * @return relevant strategy, or absent in case there's no valid strategy and it is an error to
    *     have a message in this context
    */
-  Optional<MsgEscapingStrategy> getMsgEscapingStrategy() {
+  Optional<MsgEscapingStrategy> getMsgEscapingStrategy(SoyNode node) {
     switch (state) {
       case HTML_PCDATA:
         // In normal HTML PCDATA context, it makes sense to escape all of the print nodes, but not
@@ -498,7 +510,7 @@ public final class Context {
         return Optional.of(
             new MsgEscapingStrategy(
                 new Context(HtmlContext.TEXT),
-                getEscapingModes(ImmutableList.<PrintDirectiveNode>of())));
+                getEscapingModes(node, ImmutableList.<PrintDirectiveNode>of())));
 
       case HTML_RCDATA:
       case HTML_NORMAL_ATTR_VALUE:
@@ -613,6 +625,13 @@ public final class Context {
   private static final int N_URI_TYPE_BITS = 3;
 
   static {
+    // extracted to another method to scope the unused suppression, which warns about the dead
+    // condition (the point is that it is dead)
+    checkEnoughBits();
+  }
+
+  @SuppressWarnings("unused")
+  private static void checkEnoughBits() {
     // We'd better have enough bits in an int.
     if ((N_STATE_BITS
             + N_ELEMENT_BITS
@@ -1092,20 +1111,20 @@ public final class Context {
    *
    * <p>This mostly handles special context changing tags like {@code <script>}.
    *
-   * @param tagName The name of the tag
+   * @param node The name of the tag
    */
   @CheckReturnValue
-  Context transitionToTagName(String tagName) {
+  Context transitionToTagName(HtmlTagNode node) {
     // according to spec ascii case is not meaningful for tag names.
-    tagName = Ascii.toLowerCase(tagName);
+    String tagName = node.getTagName().getStaticTagNameAsLowerCase();
     boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
     Context.ElementType elType = ElementType.NORMAL;
     int newTemplateNestDepth = templateNestDepth;
     if (tagName.equals("template")) {
       newTemplateNestDepth += isEndTag ? -1 : 1;
       if (newTemplateNestDepth < 0) {
-        throw SoyAutoescapeException.createWithoutMetaInfo(
-            "Saw an html5 </template> without encountering <template>.");
+        throw SoyAutoescapeException.createWithNode(
+            "Saw an html5 </template> without encountering <template>.", node);
       }
     } else if (!isEndTag) {
       // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
