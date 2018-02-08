@@ -24,10 +24,8 @@ import java.util.Set;
 /** A soy function that carries type information. */
 public abstract class TypedSoyFunction implements SoyFunction {
 
-  // TODO(b/31714800): make this temporarily non-final while we migrate names from this method to
-  // the signature.
   @Override
-  public String getName() {
+  public final String getName() {
     String name = getSignature().name();
     if (name.isEmpty()) {
       throw new AbstractMethodError(

@@ -71,11 +71,6 @@ public final class ParseIntFunction extends TypedSoyFunction
   ParseIntFunction() {}
 
   @Override
-  public String getName() {
-    return "parseInt";
-  }
-
-  @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     String toParse = args.get(0).stringValue();
 

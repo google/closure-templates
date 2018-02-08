@@ -30,9 +30,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface SoyFunctionSignature {
-  // TODO(b/31714800): make this required
   /** The Name of the function. Should be a Soy identifier. */
-  String name() default "";
+  String name();
 
   /**
    * The different signatures that this function supports. There should only be one signature for
