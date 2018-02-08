@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -68,7 +68,7 @@ public class TofuTypeChecksTest {
   private static final SanitizedContent JS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
   private static final SoyList LIST_DATA = SoyValueConverterUtility.newList();
-  private static final SoyMap MAP_DATA = SoyValueConverterUtility.newDict();
+  private static final SoyLegacyObjectMap MAP_DATA = SoyValueConverterUtility.newDict();
   private static final SoyDict DICT_DATA = SoyValueConverterUtility.newDict();
 
   @Test

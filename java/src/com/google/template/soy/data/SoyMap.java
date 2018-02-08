@@ -26,7 +26,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * <p>Important: Until this API is more stable and this note is removed, users must not define
  * classes that implement this interface.
  *
+ * @deprecated Use {@link SoyLegacyObjectMap} instead. TODO(b/69965643): migrate all users to
+ *     SoyLegacyObjectMap and merge the two interfaces.
  */
+@Deprecated
 @ParametersAreNonnullByDefault
 public interface SoyMap extends SoyValue {
 

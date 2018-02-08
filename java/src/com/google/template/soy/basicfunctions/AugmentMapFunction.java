@@ -19,7 +19,7 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -77,9 +77,11 @@ public final class AugmentMapFunction
     SoyValue arg1 = args.get(1);
 
     Preconditions.checkArgument(
-        arg0 instanceof SoyMap, "First argument to augmentMap() function is not SoyMap.");
+        arg0 instanceof SoyLegacyObjectMap,
+        "First argument to augmentMap() function is not SoyLegacyObjectMap.");
     Preconditions.checkArgument(
-        arg1 instanceof SoyMap, "Second argument to augmentMap() function is not SoyMap.");
+        arg1 instanceof SoyLegacyObjectMap,
+        "Second argument to augmentMap() function is not SoyLegacyObjectMap.");
 
     // TODO: Support map with nonstring key.
     Preconditions.checkArgument(

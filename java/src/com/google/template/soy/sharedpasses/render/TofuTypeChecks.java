@@ -18,8 +18,8 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
@@ -73,7 +73,7 @@ final class TofuTypeChecks {
       case MAP:
         return value instanceof SoyNewMap;
       case LEGACY_OBJECT_MAP:
-        return value instanceof SoyMap;
+        return value instanceof SoyLegacyObjectMap;
       case NULL:
         return value == NullData.INSTANCE || value == UndefinedData.INSTANCE;
       case PROTO:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,8 @@
 
 package com.google.template.soy.data;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-
 /**
- * A mutable list with additional methods for ease-of-use.
- *
- * <p>Important: Do not use. Use java.util.List instead.
- *
+ * TODO(b/69965643): migrate all {@link SoyMap} usages to SoyLegacyObjectMap, then merge the two
+ * interfaces.
  */
-@Deprecated
-@ParametersAreNonnullByDefault
-public interface SoyEasyList extends SoyList, SoyLegacyObjectMap {
-
-  /**
-   * Adds a value to the end of this SoyList.
-   *
-   * @param valueProvider A provider of the value to add. Note that this is often just the value
-   *     itself, since all values are also providers.
-   */
-  @Deprecated
-  public void add(SoyValueProvider valueProvider);
-}
+public interface SoyLegacyObjectMap extends SoyMap {}

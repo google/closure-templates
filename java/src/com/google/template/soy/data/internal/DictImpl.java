@@ -48,13 +48,14 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * map, a map, or a record. (Data can be passed transitively down a template call chain, so
  * inspecting the immediate callee's signature is not sufficient.)
  *
- * <p>This class implements all three interfaces ({@link com.google.template.soy.data.SoyMap},
- * {@link SoyNewMap}, and {@link com.google.template.soy.data.SoyRecord} respectively). It would be
- * easy to allow a DictImpl instance to behave as one type (say, a legacy object map) and then
- * another (say, a map) at different points during a single rendering. But this would break Soy's
- * cross-platform compatibility. In JavaScript, legacy object maps and maps have different calling
- * conventions (plain JS objects and ES6 Maps, respectively). Indexing into a plain JS object as
- * though it were an ES6 Map is a runtime error. Soy's Java runtime must preserve this behavior.
+ * <p>This class implements all three interfaces ({@link
+ * com.google.template.soy.data.SoyLegacyObjectMap}, {@link SoyNewMap}, and {@link
+ * com.google.template.soy.data.SoyRecord} respectively). It would be easy to allow a DictImpl
+ * instance to behave as one type (say, a legacy object map) and then another (say, a map) at
+ * different points during a single rendering. But this would break Soy's cross-platform
+ * compatibility. In JavaScript, legacy object maps and maps have different calling conventions
+ * (plain JS objects and ES6 Maps, respectively). Indexing into a plain JS object as though it were
+ * an ES6 Map is a runtime error. Soy's Java runtime must preserve this behavior.
  *
  * <p>{@link RuntimeType} exists to provide this non-compatibility. DictImpl instances begin life in
  * an {@link RuntimeType#UNKNOWN} state. If a SoyNewMap method is first invoked on it, it

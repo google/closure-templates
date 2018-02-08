@@ -33,8 +33,8 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
@@ -557,7 +557,7 @@ public class ExpressionCompilerTest {
         "nullMap",
         SoyExpression.forSoyValue(
             LegacyObjectMapType.of(StringType.getInstance(), IntType.getInstance()),
-            BytecodeUtils.constantNull(Type.getType(SoyMap.class))));
+            BytecodeUtils.constantNull(Type.getType(SoyLegacyObjectMap.class))));
     assertExpression("$nullMap['a']").throwsException(NullPointerException.class);
     assertExpression("$nullMap?['a']").evaluatesTo(null);
   }

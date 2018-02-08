@@ -21,7 +21,7 @@ import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.DictImpl.RuntimeType;
@@ -48,7 +48,7 @@ public final class LegacyObjectMapToMapFunctionTest {
 
   @Test
   public void computeForJava() {
-    SoyMap legacyObjectMap =
+    SoyLegacyObjectMap legacyObjectMap =
         SoyValueConverterUtility.newDict("x", "y", "z", SoyValueConverterUtility.newDict("xx", 2));
     SoyMapImpl map =
         SoyMapImpl.forProviderMap(

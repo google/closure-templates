@@ -25,7 +25,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -245,11 +245,12 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
-  public static SoyValueProvider getSoyLegacyObjectMapItem(SoyMap soyMap, SoyValue key) {
-    if (soyMap == null) {
+  public static SoyValueProvider getSoyLegacyObjectMapItem(
+      SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
+    if (legacyObjectMap == null) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }
-    SoyValueProvider soyValueProvider = soyMap.getItemProvider(key);
+    SoyValueProvider soyValueProvider = legacyObjectMap.getItemProvider(key);
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 

@@ -30,7 +30,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -1072,7 +1072,7 @@ final class ExpressionCompiler {
           // Box and do a map style lookup.
           soyValueProvider =
               MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
-                  baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
+                  baseExpr.box().checkedCast(SoyLegacyObjectMap.class), keyExpr.box());
         }
         Expression soyValue =
             detacher

@@ -24,9 +24,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * A map containing key-to-value mappings referred to as items. Each key is a SoyValue (must be
  * already resolved) and each value is a SoyValue (can be unresolved).
  *
- * <p>This is a new interface (compared to {@link SoyMap}) that was designed for supporting proto
- * map. There are two different Soy map types, one uses ES6 map in JS, and another uses plain
- * object. This interface tries to use the same APIs as regular Java maps.
+ * <p>This is a new interface (compared to {@link SoyLegacyObjectMap}) that was designed for
+ * supporting proto map. There are two different Soy map types, one uses ES6 map in JS, and another
+ * uses plain object. This interface tries to use the same APIs as regular Java maps.
  *
  * <p>Notably this interface and SoyMap has completely different APIs. In JS backends, these two
  * different Soy map types are not interoperable during the runtime. We need to mimic this behavior

@@ -29,8 +29,8 @@ import com.google.protobuf.Message;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -284,7 +284,11 @@ public abstract class MethodRef {
       create(JbcSrcRuntime.class, "getMapStatus", Map.class);
 
   public static final MethodRef RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM =
-      create(JbcSrcRuntime.class, "getSoyLegacyObjectMapItem", SoyMap.class, SoyValue.class);
+      create(
+          JbcSrcRuntime.class,
+          "getSoyLegacyObjectMapItem",
+          SoyLegacyObjectMap.class,
+          SoyValue.class);
 
   public static final MethodRef RUNTIME_GET_MAP_ITEM =
       create(JbcSrcRuntime.class, "getSoyMapItem", SoyNewMap.class, SoyValue.class);

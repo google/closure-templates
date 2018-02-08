@@ -17,7 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -81,11 +81,11 @@ public final class KeysFunction
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    if (!(arg instanceof SoyMap)) {
-      throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
+    if (!(arg instanceof SoyLegacyObjectMap)) {
+      throw new IllegalArgumentException("Argument to keys() function is not SoyLegacyObjectMap.");
     }
 
-    return ListImpl.forProviderList(BasicFunctionsRuntime.keys((SoyMap) arg));
+    return ListImpl.forProviderList(BasicFunctionsRuntime.keys((SoyLegacyObjectMap) arg));
   }
 
   @Override
@@ -110,7 +110,7 @@ public final class KeysFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
     static final MethodRef KEYS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyMap.class);
+        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
   }
 
   @Override
@@ -128,6 +128,6 @@ public final class KeysFunction
     }
     return SoyExpression.forList(
         ListType.of(listElementType),
-        JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
+        JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyLegacyObjectMap.class)));
   }
 }

@@ -30,7 +30,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  */
 @ParametersAreNonnullByDefault
-public interface SoyDict extends SoyRecord, SoyMap {
+public interface SoyDict extends SoyRecord, SoyLegacyObjectMap {
 
   /**
    * Gets a Java map of all items in this SoyDict, where mappings are string to value provider. Note

@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyNewMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -75,7 +75,7 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns a list of all the keys in the given map. */
-  public static List<SoyValue> keys(SoyMap map) {
+  public static List<SoyValue> keys(SoyLegacyObjectMap map) {
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
     Iterables.addAll(list, map.getItemKeys());
     return list;

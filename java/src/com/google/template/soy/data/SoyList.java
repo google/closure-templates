@@ -31,7 +31,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  */
 @ParametersAreNonnullByDefault
-public interface SoyList extends SoyMap {
+public interface SoyList extends SoyLegacyObjectMap {
 
   /**
    * Gets the length of this SoyList.

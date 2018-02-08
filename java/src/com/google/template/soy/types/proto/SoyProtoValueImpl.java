@@ -31,7 +31,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -62,7 +62,7 @@ import java.util.logging.Logger;
  *
  */
 public final class SoyProtoValueImpl extends SoyAbstractValue
-    implements SoyProtoValue, SoyMap, SoyRecord {
+    implements SoyProtoValue, SoyLegacyObjectMap, SoyRecord {
   // The minumum amount of time between logging for map/record access to a particular proto.
   private static final long LOGGING_FREQUENCY = TimeUnit.MILLISECONDS.toMinutes(1);
   private static final Logger logger = Logger.getLogger(SoyProtoValueImpl.class.getName());

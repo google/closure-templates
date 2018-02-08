@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
@@ -40,10 +40,10 @@ public class AugmentMapFunctionTest {
   @Test
   public void testComputeForJava() {
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
-    SoyMap origMap =
+    SoyLegacyObjectMap origMap =
         SoyValueConverterUtility.newDict(
             "aaa", "blah", "bbb", "bleh", "ccc", SoyValueConverterUtility.newDict("xxx", 2));
-    SoyMap additionalMap =
+    SoyLegacyObjectMap additionalMap =
         SoyValueConverterUtility.newDict(
             "aaa", "bluh", "ccc", SoyValueConverterUtility.newDict("yyy", 5));
     SoyDict augmentedDict =
