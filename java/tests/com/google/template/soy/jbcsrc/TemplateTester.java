@@ -271,8 +271,7 @@ public final class TemplateTester {
       try (SystemOutRestorer restorer = logOutput.enter()) {
         result = template.render(builder, context);
       } catch (Throwable e) {
-        failWithRawMessageAndCause(
-            String.format("Unexpected failure for %s", getDisplaySubject()), e);
+        failWithRawMessageAndCause(String.format("Unexpected failure for %s", actualAsString()), e);
         result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
