@@ -151,7 +151,8 @@ public final class MsgFuncGenerator {
     for (Case<SoyMsgPluralCaseSpec> pluralCase : pluralPart.getCases()) {
       caseSpecStrToMsgTexts.put(
           new PyStringExpr("'" + pluralCase.spec() + "'"),
-          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.parts(), nullEscaper) + "'"));
+          new PyStringExpr(
+              "'" + processMsgPartsHelper(pluralCase.parts(), escaperForIcuSection) + "'"));
     }
 
     prepareFunc
@@ -174,8 +175,8 @@ public final class MsgFuncGenerator {
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
 
     ImmutableList<SoyMsgPart> msgPartsInIcuSyntax =
-        IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts, true);
-    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax, nullEscaper);
+        IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts);
+    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax, escaperForIcuSection);
 
     prepareFunc
         .addArg(msgId)
@@ -280,12 +281,15 @@ public final class MsgFuncGenerator {
         }
       };
 
-  /** A mapper which does nothing. */
-  private static final Function<String, String> nullEscaper =
+  /**
+   * ICU messages use single quotes for escaping internal parts. This will escape the single quotes
+   * so they can be embedded in a python string literal.
+   */
+  private static final Function<String, String> escaperForIcuSection =
       new Function<String, String>() {
         @Override
         public String apply(String str) {
-          return str;
+          return str.replace("'", "\\\'");
         }
       };
 }

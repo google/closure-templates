@@ -18,7 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.Objects;
@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  * Indicates failure to propagate contexts through a template or an existing escaping directive on a
  * 'print' tag that is inconsistent with the contexts in which it appears.
  */
-public final class SoyAutoescapeException extends LegacyInternalSyntaxException {
+final class SoyAutoescapeException extends SoySyntaxException {
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -38,7 +38,7 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @deprecated
    */
   @Deprecated
-  public static SoyAutoescapeException createWithoutMetaInfo(String message) {
+  static SoyAutoescapeException createWithoutMetaInfo(String message) {
     return new SoyAutoescapeException(message);
   }
 
@@ -51,7 +51,7 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @deprecated
    */
   @Deprecated
-  public static SoyAutoescapeException createCausedWithoutMetaInfo(
+  static SoyAutoescapeException createCausedWithoutMetaInfo(
       @Nullable String message, Throwable cause) {
 
     Preconditions.checkNotNull(cause);
@@ -71,7 +71,7 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @param node The node from which to derive the exception meta info.
    * @return The new SoyAutoescapeException object.
    */
-  public static SoyAutoescapeException createWithNode(String message, SoyNode node) {
+  static SoyAutoescapeException createWithNode(String message, SoyNode node) {
 
     return SoyAutoescapeException.createWithoutMetaInfo(message).associateNode(node);
   }
@@ -86,11 +86,17 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @param node The node from which to derive the exception meta info.
    * @return The new SoyAutoescapeException object.
    */
-  public static SoyAutoescapeException createCausedWithNode(
+  static SoyAutoescapeException createCausedWithNode(
       @Nullable String message, Throwable cause, SoyNode node) {
 
     return SoyAutoescapeException.createCausedWithoutMetaInfo(message, cause).associateNode(node);
   }
+
+  /** The location in the soy file at which the error occurred. */
+  private SourceLocation srcLoc = SourceLocation.UNKNOWN;
+
+  /** The name of the template with the syntax error if any. */
+  private String templateName;
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
@@ -129,12 +135,55 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @param node The node from which to derive the exception meta info.
    * @return This same SoyAutoescapeException object, for convenience.
    */
-  public SoyAutoescapeException associateNode(SoyNode node) {
+  SoyAutoescapeException associateNode(SoyNode node) {
     TemplateNode template = node.getNearestAncestor(TemplateNode.class);
     // This special case is just for unit tests
+    SourceLocation nodeLocation = node.getSourceLocation();
+    // If srcLoc not yet set, then set it, else assert existing value equals new value.
+    if (!this.srcLoc.isKnown()) {
+      this.srcLoc = nodeLocation;
+    } else {
+      Preconditions.checkState(this.srcLoc.equals(nodeLocation));
+    }
+
     String templateName = (template != null) ? template.getTemplateNameForUserMsgs() : null;
-    this.associateMetaInfo(node.getSourceLocation(), templateName);
+    if (templateName != null) {
+      // If templateName not yet set, then set it, else assert existing value equals new value.
+      if (this.templateName == null) {
+        this.templateName = templateName;
+      } else {
+        Preconditions.checkState(this.templateName.equals(templateName));
+      }
+    }
     return this;
+  }
+
+  /** The source location at which the error occurred or {@link SourceLocation#UNKNOWN}. */
+  SourceLocation getSourceLocation() {
+    return srcLoc;
+  }
+
+  /** Returns the original exception message, without any source location formatting. */
+  String getOriginalMessage() {
+    return super.getMessage();
+  }
+
+  @Override
+  public String getMessage() {
+    boolean locationKnown = srcLoc.isKnown();
+    boolean templateKnown = templateName != null;
+    String message = super.getMessage();
+    if (locationKnown) {
+      if (templateKnown) {
+        return "In file " + srcLoc + ", template " + templateName + ": " + message;
+      } else {
+        return "In file " + srcLoc + ": " + message;
+      }
+    } else if (templateKnown) {
+      return "In template " + templateName + ": " + message;
+    } else {
+      return message;
+    }
   }
 
   /**
@@ -143,8 +192,8 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
    * @param node The node from which to derive the exception meta info.
    * @return This same SoyAutoescapeException object, for convenience.
    */
-  public SoyAutoescapeException maybeAssociateNode(SoyNode node) {
-    if (Objects.equals(getSourceLocation(), SourceLocation.UNKNOWN)) {
+  SoyAutoescapeException maybeAssociateNode(SoyNode node) {
+    if (Objects.equals(srcLoc, SourceLocation.UNKNOWN)) {
       associateNode(node);
     }
     return this;

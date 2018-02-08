@@ -349,8 +349,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   private static String buildGoogMsgContentStr(
       ImmutableList<SoyMsgPart> msgParts, boolean doUseBracedPhs) {
 
-    // Note: For source messages, disallow ICU syntax chars that need escaping in raw text.
-    msgParts = IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts, false);
+    msgParts = IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts);
 
     StringBuilder msgStrSb = new StringBuilder();
 

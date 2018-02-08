@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
@@ -51,14 +50,11 @@ public class IcuSyntaxUtils {
    * original msg parts instead of creating a new list of identical msg parts.
    *
    * @param origMsgParts The msg parts to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    * @return A new list of msg parts with embedded ICU syntax if the original msg parts contain
    *     plural/select parts, otherwise the original msg parts.
    */
   public static ImmutableList<SoyMsgPart> convertMsgPartsToEmbeddedIcuSyntax(
-      ImmutableList<SoyMsgPart> origMsgParts, boolean allowIcuEscapingInRawText) {
+      ImmutableList<SoyMsgPart> origMsgParts) {
 
     // If origMsgParts doesn't have plural/select parts, simply return it.
     if (!MsgPartUtils.hasPlrselPart(origMsgParts)) {
@@ -70,7 +66,7 @@ public class IcuSyntaxUtils {
     StringBuilder currRawTextSb = new StringBuilder();
 
     convertMsgPartsHelper(
-        newMsgPartsBuilder, currRawTextSb, origMsgParts, false, allowIcuEscapingInRawText);
+        newMsgPartsBuilder, currRawTextSb, origMsgParts, /* isInPlrselPart= */ false);
     if (currRawTextSb.length() > 0) {
       newMsgPartsBuilder.add(SoyMsgRawTextPart.of(currRawTextSb.toString()));
     }
@@ -86,27 +82,19 @@ public class IcuSyntaxUtils {
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origMsgParts The msg parts to convert.
    * @param isInPlrselPart Whether we're currently within a plural/select part's subtree.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertMsgPartsHelper(
-      Builder<SoyMsgPart> newMsgPartsBuilder,
+      ImmutableList.Builder<SoyMsgPart> newMsgPartsBuilder,
       StringBuilder currRawTextSb,
       List<SoyMsgPart> origMsgParts,
-      boolean isInPlrselPart,
-      boolean allowIcuEscapingInRawText) {
+      boolean isInPlrselPart) {
 
     for (SoyMsgPart origMsgPart : origMsgParts) {
 
       if (origMsgPart instanceof SoyMsgRawTextPart) {
         String rawText = ((SoyMsgRawTextPart) origMsgPart).getRawText();
         if (isInPlrselPart) {
-          if (allowIcuEscapingInRawText) {
-            rawText = icuEscape(rawText);
-          } else {
-            checkIcuEscapingIsNotNeeded(rawText);
-          }
+          rawText = icuEscape(rawText);
         }
         currRawTextSb.append(rawText);
 
@@ -124,18 +112,10 @@ public class IcuSyntaxUtils {
         currRawTextSb.append(getPluralRemainderString());
 
       } else if (origMsgPart instanceof SoyMsgPluralPart) {
-        convertPluralPartHelper(
-            newMsgPartsBuilder,
-            currRawTextSb,
-            (SoyMsgPluralPart) origMsgPart,
-            allowIcuEscapingInRawText);
+        convertPluralPartHelper(newMsgPartsBuilder, currRawTextSb, (SoyMsgPluralPart) origMsgPart);
 
       } else if (origMsgPart instanceof SoyMsgSelectPart) {
-        convertSelectPartHelper(
-            newMsgPartsBuilder,
-            currRawTextSb,
-            (SoyMsgSelectPart) origMsgPart,
-            allowIcuEscapingInRawText);
+        convertSelectPartHelper(newMsgPartsBuilder, currRawTextSb, (SoyMsgSelectPart) origMsgPart);
       }
     }
   }
@@ -147,15 +127,11 @@ public class IcuSyntaxUtils {
    * @param currRawTextSb The collector for the current raw text, which hasn't yet been turned into
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origPluralPart The plural part to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertPluralPartHelper(
       Builder<SoyMsgPart> newMsgPartsBuilder,
       StringBuilder currRawTextSb,
-      SoyMsgPluralPart origPluralPart,
-      boolean allowIcuEscapingInRawText) {
+      SoyMsgPluralPart origPluralPart) {
 
     currRawTextSb.append(
         getPluralOpenString(origPluralPart.getPluralVarName(), origPluralPart.getOffset()));
@@ -163,7 +139,7 @@ public class IcuSyntaxUtils {
     for (Case<SoyMsgPluralCaseSpec> pluralCase : origPluralPart.getCases()) {
       currRawTextSb.append(getPluralCaseOpenString(pluralCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder, currRawTextSb, pluralCase.parts(), true, allowIcuEscapingInRawText);
+          newMsgPartsBuilder, currRawTextSb, pluralCase.parts(), /* isInPlrselPart= */ true);
       currRawTextSb.append(getPluralCaseCloseString());
     }
 
@@ -177,26 +153,18 @@ public class IcuSyntaxUtils {
    * @param currRawTextSb The collector for the current raw text, which hasn't yet been turned into
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origSelectPart The select part to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertSelectPartHelper(
       Builder<SoyMsgPart> newMsgPartsBuilder,
       StringBuilder currRawTextSb,
-      SoyMsgSelectPart origSelectPart,
-      boolean allowIcuEscapingInRawText) {
+      SoyMsgSelectPart origSelectPart) {
 
     currRawTextSb.append(getSelectOpenString(origSelectPart.getSelectVarName()));
 
     for (Case<String> selectCase : origSelectPart.getCases()) {
       currRawTextSb.append(getSelectCaseOpenString(selectCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder,
-          currRawTextSb,
-          selectCase.parts(),
-          true /* isInPlrselPart */,
-          allowIcuEscapingInRawText);
+          newMsgPartsBuilder, currRawTextSb, selectCase.parts(), /* isInPlrselPart= */ true);
       currRawTextSb.append(getSelectCaseCloseString());
     }
 
@@ -263,12 +231,6 @@ public class IcuSyntaxUtils {
       ImmutableMap.of("'", "''", "{", "'{'", "}", "'}'");
 
   /**
-   * Regex pattern for ICU syntax chars other than single quote. Used in
-   * checkIcuEscapingIsNotNeeded() to provide better error messages in some cases.
-   */
-  private static final Pattern ICU_SYNTAX_CHAR_NOT_SINGLE_QUOTE_PATTERN = Pattern.compile("[{}]");
-
-  /**
    * Escapes ICU syntax characters in raw text.
    *
    * @param rawText The raw text to escaped.
@@ -292,52 +254,6 @@ public class IcuSyntaxUtils {
     return escapedTextSb.toString();
   }
 
-  /**
-   * Checks that there are no ICU syntax characters needing escaping in the given raw text. Throws a
-   * SoySyntaxException if the check fails.
-   *
-   * @param rawText The raw text to check.
-   */
-  @VisibleForTesting
-  static void checkIcuEscapingIsNotNeeded(String rawText) {
-
-    Matcher matcher = ICU_SYNTAX_CHAR_NEEDING_ESCAPE_PATTERN.matcher(rawText);
-    if (!matcher.find()) {
-      return;
-    }
-
-    if (ICU_SYNTAX_CHAR_NOT_SINGLE_QUOTE_PATTERN.matcher(rawText).find()) {
-      throw LegacyInternalSyntaxException.createWithoutMetaInfo(
-          "Apologies, Soy currently does not support open/close brace characters in plural/gender"
-              + " source msgs.");
-    } else {
-      if (!matcher.group().equals("'")) {
-        throw new AssertionError();
-      }
-      String errorMsgSuffix =
-          " One possible workaround is to use the Unicode RIGHT SINGLE QUOTATION MARK character"
-              + " (\\u2019) instead of a basic apostrophe.";
-      if (matcher.end() == rawText.length()) {
-        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character at the end of a"
-                + " text part in plural/gender source msgs (including immediately preceding an HTML"
-                + " tag or Soy tag)."
-                + errorMsgSuffix);
-      } else if (rawText.charAt(matcher.end()) == '#') {
-        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character preceding a hash"
-                + " character in plural/gender source msgs."
-                + errorMsgSuffix);
-      } else if (rawText.charAt(matcher.end()) == '\'') {
-        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support consecutive single quote characters in"
-                + " plural/gender source msgs."
-                + errorMsgSuffix);
-      } else {
-        throw new AssertionError();
-      }
-    }
-  }
 
   // ------ Plural related strings. ------
 
