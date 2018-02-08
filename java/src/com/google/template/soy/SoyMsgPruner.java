@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.inject.Injector;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -72,7 +71,6 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(String[] args) throws IOException {
     new SoyMsgPruner().runMain(args);

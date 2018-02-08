@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -136,7 +135,6 @@ public class JsSrcMain {
    *     corresponding to an input file path.
    * @param inputPathsPrefix The input path prefix, or empty string if none.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
-   * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output JS file.
    */
   public void genJsFiles(

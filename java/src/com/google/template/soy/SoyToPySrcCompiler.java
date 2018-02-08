@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import java.io.File;
@@ -120,7 +119,6 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException {
     new SoyToPySrcCompiler().runMain(args);

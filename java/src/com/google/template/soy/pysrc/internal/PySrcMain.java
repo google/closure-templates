@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -69,7 +68,6 @@ public final class PySrcMain {
    * @return A list of strings where each string represents the Python source code that belongs in
    *     one Python file. The generated Python files correspond one-to-one to the original Soy
    *     source files.
-   * @throws SoySyntaxException If a syntax error is found.
    */
   public List<String> genPySrc(
       SoyFileSetNode soyTree,
@@ -96,7 +94,6 @@ public final class PySrcMain {
    *     corresponding to an input file path.
    * @param inputPathsPrefix The input path prefix, or empty string if none.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
-   * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
   public void genPyFiles(

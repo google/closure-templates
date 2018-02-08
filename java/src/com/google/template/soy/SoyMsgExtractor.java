@@ -84,7 +84,6 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws com.google.template.soy.base.SoySyntaxException If a syntax error is detected.
    */
   public static void main(String... args) throws IOException {
     new SoyMsgExtractor().runMain(args);

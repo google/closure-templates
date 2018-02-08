@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -121,7 +120,6 @@ public class IncrementalDomSrcMain {
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
-   * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output JS file.
    */
   public void genJsFiles(

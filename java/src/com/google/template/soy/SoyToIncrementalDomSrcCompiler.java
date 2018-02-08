@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.common.annotations.Beta;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import java.io.IOException;
 import org.kohsuke.args4j.Option;
@@ -55,7 +54,6 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException {
     new SoyToIncrementalDomSrcCompiler().runMain(args);

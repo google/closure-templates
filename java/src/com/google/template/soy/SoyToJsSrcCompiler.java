@@ -16,7 +16,6 @@
 
 package com.google.template.soy;
 
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
@@ -180,7 +179,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException {
     new SoyToJsSrcCompiler().runMain(args);
