@@ -21,7 +21,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
-import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 
 /**
@@ -31,7 +30,7 @@ import com.google.template.soy.soytree.defn.LoopVar;
  *
  */
 public final class ForNonemptyNode extends AbstractBlockNode
-    implements ConditionalBlockNode, LoopNode, LocalVarBlockNode {
+    implements ConditionalBlockNode, LocalVarBlockNode {
 
   private final LoopVar var;
 

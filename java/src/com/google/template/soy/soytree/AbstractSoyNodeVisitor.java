@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -341,10 +340,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitForNonemptyNode(ForNonemptyNode node) {
-    visitLoopNode(node);
-  }
-
-  protected void visitLoopNode(LoopNode node) {
     visitSoyNode(node);
   }
 

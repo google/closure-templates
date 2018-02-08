@@ -223,15 +223,6 @@ public interface SoyNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /**
-   * A node that represents a block of code that is executed in a loop.
-   *
-   * <p>Includes nodes such as ForNonemptyNode and ForNode.
-   */
-  interface LoopNode extends BlockNode {}
-
-  // -----------------------------------------------------------------------------------------------
-
-  /**
    * A node that adds a new local variable. The scope of the new local variable comprises either the
    * children of this node or the younger siblings of this node.
    */

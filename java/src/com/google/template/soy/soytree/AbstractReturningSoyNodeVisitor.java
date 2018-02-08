@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.AbstractReturningNodeVisitor;
-import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 
 /**
@@ -271,10 +270,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitForNonemptyNode(ForNonemptyNode node) {
-    return visitLoopNode(node);
-  }
-
-  protected R visitLoopNode(LoopNode node) {
     return visitSoyNode(node);
   }
 
