@@ -64,7 +64,7 @@ import java.util.logging.Logger;
 public final class SoyProtoValueImpl extends SoyAbstractValue
     implements SoyProtoValue, SoyLegacyObjectMap, SoyRecord {
   // The minumum amount of time between logging for map/record access to a particular proto.
-  private static final long LOGGING_FREQUENCY = TimeUnit.MILLISECONDS.toMinutes(1);
+  private static final long LOGGING_FREQUENCY = TimeUnit.MINUTES.toMillis(1);
   private static final Logger logger = Logger.getLogger(SoyProtoValueImpl.class.getName());
 
   private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForRecordAccess =
