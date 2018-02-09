@@ -31,9 +31,11 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -46,8 +48,20 @@ import javax.inject.Singleton;
  * nothing is inserted.
  *
  */
+@SoyFunctionSignature(
+  name = "bidiDirAttr",
+  value = {
+    // TODO(b/70946095): should take a string
+    @Signature(returnType = "attributes", parameterTypes = "?"),
+    @Signature(
+      returnType = "attributes",
+      // TODO(b/70946095): should take a string and a bool
+      parameterTypes = {"?", "?"}
+    )
+  }
+)
 @Singleton
-final class BidiDirAttrFunction
+final class BidiDirAttrFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -60,16 +74,6 @@ final class BidiDirAttrFunction
   @Inject
   BidiDirAttrFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
-  }
-
-  @Override
-  public String getName() {
-    return "bidiDirAttr";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1, 2);
   }
 
   @Override

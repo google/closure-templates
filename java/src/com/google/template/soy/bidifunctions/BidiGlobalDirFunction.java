@@ -31,9 +31,11 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -43,8 +45,9 @@ import org.objectweb.asm.Type;
  * Soy function that returns the current global bidi directionality (1 for LTR or -1 for RTL).
  *
  */
+@SoyFunctionSignature(name = "bidiGlobalDir", value = @Signature(returnType = "int"))
 @Singleton
-final class BidiGlobalDirFunction
+final class BidiGlobalDirFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -57,16 +60,6 @@ final class BidiGlobalDirFunction
   @Inject
   BidiGlobalDirFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
-  }
-
-  @Override
-  public String getName() {
-    return "bidiGlobalDir";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(0);
   }
 
   @Override

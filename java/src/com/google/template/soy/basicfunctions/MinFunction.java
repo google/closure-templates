@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -29,10 +28,12 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,23 +41,23 @@ import javax.inject.Singleton;
  * Soy function that takes the min of two numbers.
  *
  */
+@SoyFunctionSignature(
+  name = "min",
+  value =
+      // TODO(b/70946095):these should all be number
+      @Signature(
+        returnType = "?",
+        parameterTypes = {"?", "?"}
+      )
+)
 @Singleton
 @SoyPureFunction
-public final class MinFunction
+public final class MinFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   MinFunction() {}
 
-  @Override
-  public String getName() {
-    return "min";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

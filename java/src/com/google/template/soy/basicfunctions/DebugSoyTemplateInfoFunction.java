@@ -40,11 +40,7 @@ import java.util.List;
  */
 @SoyFunctionSignature(
   name = DebugSoyTemplateInfoFunction.NAME,
-  value =
-      @Signature(
-        returnType = "bool",
-        parameterTypes = {}
-      )
+  value = @Signature(returnType = "bool")
 )
 public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
     implements SoyJavaFunction,

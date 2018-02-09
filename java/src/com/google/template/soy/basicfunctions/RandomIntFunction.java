@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -30,9 +29,11 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,22 +41,16 @@ import javax.inject.Singleton;
  * Soy function that generates a random integer in the range [0, n-1].
  *
  */
+@SoyFunctionSignature(
+  name = "randomInt",
+  value = @Signature(returnType = "int", parameterTypes = "number")
+)
 @Singleton
-public final class RandomIntFunction
+public final class RandomIntFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   public RandomIntFunction() {}
-
-  @Override
-  public String getName() {
-    return "randomInt";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

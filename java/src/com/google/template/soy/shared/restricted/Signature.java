@@ -30,7 +30,7 @@ public @interface Signature {
   /**
    * Defines the positional parameter types of the parameters as strings using the Soy type syntax.
    */
-  String[] parameterTypes();
+  String[] parameterTypes() default {};
 
   /** Defines the return type of the function using the Soy type syntax. */
   String returnType();

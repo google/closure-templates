@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -35,10 +34,12 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.objectweb.asm.Label;
@@ -48,23 +49,22 @@ import org.objectweb.asm.Type;
  * Soy function that checks whether its argument is a defined nonnull value.
  *
  */
+@SoyFunctionSignature(
+  name = "isNonnull",
+  value =
+      @Signature(
+        // TODO(b/70946095): should return bool
+        returnType = "?",
+        parameterTypes = {"?"}
+      )
+)
 @Singleton
 @SoyPureFunction
-class IsNonnullFunction
+class IsNonnullFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   IsNonnullFunction() {}
-
-  @Override
-  public String getName() {
-    return "isNonnull";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

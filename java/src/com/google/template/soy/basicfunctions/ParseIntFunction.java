@@ -57,7 +57,7 @@ import javax.inject.Singleton;
   value =
       @Signature(
         parameterTypes = {"string"},
-        // TODO(lukes): should be nullable
+        // TODO(b/70946095): should be nullable
         returnType = "int"
       )
 )

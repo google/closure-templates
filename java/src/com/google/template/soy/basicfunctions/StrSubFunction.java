@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -33,10 +32,12 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.objectweb.asm.Type;
@@ -54,23 +55,28 @@ import org.objectweb.asm.Type;
  * to the character at index <code>expr3 - 1</code>.
  *
  */
+@SoyFunctionSignature(
+  name = "strSub",
+  value = {
+    @Signature(
+      returnType = "string",
+      // TODO(b/62134073): should be string, int
+      parameterTypes = {"?", "?"}
+    ),
+    @Signature(
+      returnType = "string",
+      // TODO(b/62134073): should be string, int, int
+      parameterTypes = {"?", "?", "?"}
+    ),
+  }
+)
 @Singleton
 @SoyPureFunction
-final class StrSubFunction
+final class StrSubFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   StrSubFunction() {}
-
-  @Override
-  public String getName() {
-    return "strSub";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2, 3);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

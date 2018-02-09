@@ -31,8 +31,11 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
@@ -40,7 +43,6 @@ import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -49,9 +51,19 @@ import javax.inject.Singleton;
  * mappings.
  *
  */
+@SoyFunctionSignature(
+  name = "augmentMap",
+  value =
+      // TODO(b/70946095): should be map<?, ?>, but due to the map migration we are leaving it as
+      // unknown for now.
+      @Signature(
+        returnType = "?",
+        parameterTypes = {"?", "?"}
+      )
+)
 @Singleton
 @SoyPureFunction
-public final class AugmentMapFunction
+public final class AugmentMapFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -59,16 +71,6 @@ public final class AugmentMapFunction
 
   @Inject
   AugmentMapFunction() {}
-
-  @Override
-  public String getName() {
-    return "augmentMap";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2);
-  }
 
   @SuppressWarnings("ConstantConditions") // IntelliJ
   @Override

@@ -48,6 +48,8 @@ import javax.inject.Singleton;
  * <p>This enables iteration over the keys in a map, e.g. {@code {foreach $key in keys($myMap)} ...
  * {/foreach}}
  *
+ * <p>NOTE: this function has special support in the type checker for calculating the return type
+ *
  */
 @Singleton
 @SoyPureFunction

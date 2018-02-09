@@ -29,9 +29,11 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -41,8 +43,9 @@ import javax.inject.Singleton;
  * directionality.
  *
  */
+@SoyFunctionSignature(name = "bidiMark", value = @Signature(returnType = "string"))
 @Singleton
-final class BidiMarkFunction
+final class BidiMarkFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -55,16 +58,6 @@ final class BidiMarkFunction
   @Inject
   BidiMarkFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
-  }
-
-  @Override
-  public String getName() {
-    return "bidiMark";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(0);
   }
 
   @Override

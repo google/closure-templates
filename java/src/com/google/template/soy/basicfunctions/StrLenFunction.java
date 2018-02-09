@@ -17,11 +17,9 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -32,10 +30,12 @@ import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.objectweb.asm.Type;
@@ -50,30 +50,30 @@ import org.objectweb.asm.Type;
  * comes to astral plane codepoints. Python is the only backend doing it right.
  *
  */
+@SoyFunctionSignature(
+  name = "strLen",
+  value = {
+    @Signature(
+      returnType = "int",
+      // TODO(b/62134073): should be string
+      parameterTypes = {"?"}
+    ),
+  }
+)
 @Singleton
 @SoyPureFunction
-final class StrLenFunction
+final class StrLenFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   StrLenFunction() {}
 
   @Override
-  public String getName() {
-    return "strLen";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
-
-  @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
 
     Preconditions.checkArgument(
-        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
+        arg0 instanceof SoyString,
         "First argument to strLen() function is not StringData or SanitizedContent: %s",
         arg0);
 

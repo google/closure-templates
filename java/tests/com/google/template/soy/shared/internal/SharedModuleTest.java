@@ -33,6 +33,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,6 +46,11 @@ public final class SharedModuleTest {
   // pysrc has intentionally not implemented a few directives.
   private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
       ImmutableSet.of(NoAutoescapeDirective.NAME, IdDirective.NAME);
+
+  // These functions have special handling in the ResolveExpressionTypesVisitor and so don't
+  // implement TypedSoyFunction
+  private static final ImmutableSet<String> FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING =
+      ImmutableSet.of("mapKeys", "legacyObjectMapToMap", "mapToLegacyObjectMap");
 
   private Injector injector;
 
@@ -68,6 +74,9 @@ public final class SharedModuleTest {
   @Test
   public void testFunctionsSupportAllBackends() {
     for (SoyFunction function : injector.getInstance(new Key<Set<SoyFunction>>() {})) {
+      if (!FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING.contains(function.getName())) {
+        assertThat(function).isInstanceOf(TypedSoyFunction.class);
+      }
       assertThat(function).isInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isInstanceOf(SoyJavaFunction.class);
       assertThat(function).isInstanceOf(SoyJbcSrcFunction.class);

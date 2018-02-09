@@ -29,8 +29,11 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
@@ -38,7 +41,6 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,9 +58,15 @@ import javax.inject.Singleton;
  * {/for}}
  *
  */
+@SoyFunctionSignature(
+  name = "keys",
+  // TODO(b/70946095): should take a map, or maybe we should add special support in the type
+  // checker in order to infer the returned list type
+  value = @Signature(returnType = "?", parameterTypes = "?")
+)
 @Singleton
 @SoyPureFunction
-public final class KeysFunction
+public final class KeysFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -66,16 +74,6 @@ public final class KeysFunction
 
   @Inject
   KeysFunction() {}
-
-  @Override
-  public String getName() {
-    return "keys";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

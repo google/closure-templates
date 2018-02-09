@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -27,10 +26,12 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import org.objectweb.asm.Type;
 
 /**
@@ -40,8 +41,12 @@ import org.objectweb.asm.Type;
  * to enable adding return types to commonly used functions without breaking type-checking for
  * existing templates. It is not meant to be used directly in Soy templates.
  */
+@SoyFunctionSignature(
+  name = FloatFunction.NAME,
+  value = @Signature(returnType = "float", parameterTypes = "int")
+)
 @SoyPureFunction
-public final class FloatFunction
+public final class FloatFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   // $$ prefix ensures that the function cannot be used directly
@@ -51,16 +56,6 @@ public final class FloatFunction
 
   // Do not @Inject; should not be used outside of {@link CheckTemplateCallsPass}.
   private FloatFunction() {}
-
-  @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {

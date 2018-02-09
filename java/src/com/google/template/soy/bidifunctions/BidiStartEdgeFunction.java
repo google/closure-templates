@@ -30,9 +30,11 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -42,8 +44,9 @@ import javax.inject.Singleton;
  * directionality.
  *
  */
+@SoyFunctionSignature(name = "bidiStartEdge", value = @Signature(returnType = "string"))
 @Singleton
-final class BidiStartEdgeFunction
+final class BidiStartEdgeFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
@@ -56,16 +59,6 @@ final class BidiStartEdgeFunction
   @Inject
   BidiStartEdgeFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
-  }
-
-  @Override
-  public String getName() {
-    return "bidiStartEdge";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(0);
   }
 
   @Override

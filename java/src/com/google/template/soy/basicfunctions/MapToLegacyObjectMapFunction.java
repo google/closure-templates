@@ -48,6 +48,8 @@ import javax.inject.Inject;
  * migrations of {@code legacy_object_map} parameters to {@code experimental_map}, we need plugins
  * to convert between the two maps, so that converting one template doesn't require converting its
  * transitive callees.
+ *
+ * <p>NOTE: this function has special support in the type checker for calculating the return type
  */
 public final class MapToLegacyObjectMapFunction
     implements SoyJavaFunction,
