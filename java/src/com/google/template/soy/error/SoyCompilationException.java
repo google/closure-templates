@@ -19,13 +19,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
-import com.google.template.soy.base.SoySyntaxException;
 
 /**
  * Reports on all Soy compilation errors and allows for programmatic inspection via {@link
  * #getErrors()}.
  */
-public final class SoyCompilationException extends SoySyntaxException {
+public final class SoyCompilationException extends RuntimeException {
   private final ImmutableList<SoyError> errors;
 
   public SoyCompilationException(Iterable<SoyError> errors) {
