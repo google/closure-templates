@@ -402,10 +402,6 @@ import javax.annotation.Nullable;
 public class SoyFileParser {
 
   // Template errors:
-  private static final SoyErrorKind EXPERIMENTAL_MAP_NOT_ALLOWED =
-      SoyErrorKind.of("The experimental_map type is not available for general use.");
-  private static final SoyErrorKind EXPERIMENTAL_MAP_LITERAL_NOT_ALLOWED =
-      SoyErrorKind.of("The map() syntax is not available for general use.");
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
   private static final SoyErrorKind INVALID_CALLEE_NAME =
@@ -581,9 +577,6 @@ public class SoyFileParser {
     this.filePath = filePath;
     this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
-    // This ctor is for testing only, and it is okay to enable experimental_map.
-    // Without setting this, NPE will be thrown for tests that only run parseExpression().
-    this.experimentalFeatures = ImmutableSet.of("experimental_map");
     // Some part of the parser assume that header info is not null.
     this.headerInfo = SoyFileHeaderInfo.EMPTY;
   }
@@ -3558,9 +3551,6 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
       // (positional vs. named), but that's not helpful when there are no params.)
       // TODO(b/69433057): ban functions named "map".
        SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-       if (!experimentalFeatures.contains("experimental_map")) {
-         errorReporter.report(srcLoc, EXPERIMENTAL_MAP_LITERAL_NOT_ALLOWED);
-       }
        return new MapLiteralNode(kvPairs.build(), srcLoc);
     }
     |
@@ -4056,10 +4046,6 @@ private TypeNode NamedType() :
     ]
     close = <RANGLE>
     {
-      if ("experimental_map".equals(ident)
-        && !experimentalFeatures.contains("experimental_map")) {
-         errorReporter.report(fullLocation.extend(createSrcLoc(close)), EXPERIMENTAL_MAP_NOT_ALLOWED);
-      }
       return GenericTypeNode.create(
           fullLocation.extend(createSrcLoc(close)),
           ident,

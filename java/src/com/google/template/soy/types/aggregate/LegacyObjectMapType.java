@@ -89,8 +89,7 @@ public final class LegacyObjectMapType extends AbstractMapType {
 
   @Override
   public String toString() {
-    // TODO(b/69046843): string representation should be legacy_object_map
-    return "map<" + keyType + "," + valueType + ">";
+    return "legacy_object_map<" + keyType + "," + valueType + ">";
   }
 
   @Override

@@ -86,8 +86,7 @@ public final class MapType extends AbstractMapType {
 
   @Override
   public String toString() {
-    // TODO(b/69050588): rename to map.
-    return "experimental_map<" + keyType + "," + valueType + ">";
+    return "map<" + keyType + "," + valueType + ">";
   }
 
   @Override

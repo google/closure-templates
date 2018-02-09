@@ -423,7 +423,7 @@ public class BytecodeCompilerTest {
   public void testForNode_mapKeys() {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",
-            "{for $key in keys($map)}",
+            "{for $key in mapKeys($map)}",
             "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
             "{/for}")
         .rendersAs("a - 1\nb - 2", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));

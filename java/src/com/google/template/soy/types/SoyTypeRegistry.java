@@ -322,21 +322,6 @@ public final class SoyTypeRegistry {
           new GenericTypeInfo(2) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              // TODO(b/69050588): switch to getOrCreateMapType.
-              return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
-            }
-          },
-          // Experimental syntax allowing Soy integration tests to represent the new SoyMap type
-          // without making it generally available. This is a parse error unless you run the
-          // compiler with the experimental_map feature.
-          // TODO(b/69050588): The Soy `map` keyword is currently an alias for `legacy_object_map`;
-          // both create LegacyObjectMapTypes. Once all users of `map` are switched to
-          // `legacy_object_map`, we can change `map` to create MapTypes. `experimental_map`
-          // will no longer be necessary.
-          "experimental_map",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
               return registry.getOrCreateMapType(types.get(0), types.get(1));
             }
 

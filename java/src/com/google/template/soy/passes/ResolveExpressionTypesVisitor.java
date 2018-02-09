@@ -70,7 +70,6 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
@@ -149,8 +148,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Cannot iterate over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
-  private static final SoyErrorKind EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED =
-      SoyErrorKind.of("Function ''{0}'' is not allowed for general use yet.");
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
       SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
   private static final SoyErrorKind LIST_LENGTH_ERROR =
@@ -169,11 +166,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind PROTO_MAP_FIELDS_DONT_WORK =
-      SoyErrorKind.of(
-          "Field ''{0}'' on proto ''{1}'' is a map field. Proto map fields are broken in Soy. "
-              + "While we are fixing them, you can''t use them."
-          );
   private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
       SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
@@ -195,7 +187,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final SyntaxVersion declaredSyntaxVersion;
 
   private final ErrorReporter errorReporter;
-  private final SoyGeneralOptions generalOptions;
   /** Type registry. */
   private final SoyTypeRegistry typeRegistry;
   /** Cached map that converts a string representation of types to actual soy types. */
@@ -207,11 +198,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   ResolveExpressionTypesVisitor(
       SoyTypeRegistry typeRegistry,
       SyntaxVersion declaredSyntaxVersion,
-      SoyGeneralOptions generalOptions,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
-    this.generalOptions = generalOptions;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -846,10 +835,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     private void visitMapKeysFunction(FunctionNode node) {
-      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-        errorReporter.report(
-            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "mapKeys");
-      }
       SoyType argType = node.getChild(0).getType();
       if (argType.equals(MapType.EMPTY_MAP)) {
         node.setType(ListType.EMPTY_LIST);
@@ -859,10 +844,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
-      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-        errorReporter.report(
-            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "legacyObjectMapToMap");
-      }
       SoyType argType = node.getChild(0).getType();
       // Allow the type of the arg to be unknown.
       // This is mostly for integration tests: legacy_object_map literals will string-literal keys
@@ -882,10 +863,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
-      if (!generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-        errorReporter.report(
-            node.getSourceLocation(), EXPERIMENTAL_MAP_PLUGIN_NOT_ALLOWED, "mapToLegacyObjectMap");
-      }
       SoyType argType = node.getChild(0).getType();
       MapType actualArgType = (MapType) argType;
       node.setType(
@@ -1041,12 +1018,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             SoyProtoType protoType = (SoyProtoType) baseType;
             SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
-              if (protoType.getFieldDescriptor(fieldName).isMapField()
-                  && !generalOptions.getExperimentalFeatures().contains("experimental_map")) {
-                errorReporter.report(
-                    sourceLocation, PROTO_MAP_FIELDS_DONT_WORK, fieldName, baseType);
-                return ErrorType.getInstance();
-              }
               return fieldType;
             } else {
               String extraErrorMessage =

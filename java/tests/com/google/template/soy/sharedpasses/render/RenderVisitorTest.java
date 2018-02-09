@@ -745,7 +745,7 @@ public class RenderVisitorTest {
   }
 
   @Test
-  public void testRenderForeachStmt() throws Exception {
+  public void testRenderForStmt1() throws Exception {
     String templateBody =
         ""
             + "{@param goo : list<?> }\n"
@@ -790,7 +790,7 @@ public class RenderVisitorTest {
     templateBody =
         ""
             + "{@param myMap : map<string, ?> }\n"
-            + "  {for $key in keys($myMap)}\n"
+            + "  {for $key in mapKeys($myMap)}\n"
             + "    {if isFirst($key)}\n"
             + "      [\n"
             + "    {/if}\n"
@@ -810,7 +810,7 @@ public class RenderVisitorTest {
   }
 
   @Test
-  public void testRenderForStmt() throws Exception {
+  public void testRenderForStmt2() throws Exception {
     String templateBody =
         "{@param goo : list<?> }\n"
             + "  {for $n in $goo}\n"

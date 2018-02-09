@@ -25,6 +25,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.AnyType;
@@ -118,7 +119,9 @@ public class TypeParserTest {
     assertTypeEquals(ListType.of(StringType.getInstance()), "list<string>");
     assertTypeEquals(ListType.of(StringType.getInstance()), "list < string > ");
     assertTypeEquals(
-        LegacyObjectMapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
+        LegacyObjectMapType.of(IntType.getInstance(), BoolType.getInstance()),
+        "legacy_object_map<int, bool>");
+    assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
   }
 
   // -----------------------------------------------------------------------------------------------

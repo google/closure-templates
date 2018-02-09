@@ -38,16 +38,15 @@ import java.util.Set;
 import javax.inject.Inject;
 
 /**
- * Converts values of type {@code experimental_map} to values of type {@code legacy_object_map}.
+ * Converts values of type {@code map} to values of type {@code legacy_object_map}.
  *
  * <p>(This is the inverse of {@link LegacyObjectMapToMapFunction}.)
  *
  * <p>The two map types are designed to be incompatible in the Soy type system; the long-term plan
- * is to migrate all {@code legacy_object_map}s to {@code experimental_map}s, rename {@code
- * experimental_map} to {@code map}, and delete {@code legacy_object_map}. To allow template-level
- * migrations of {@code legacy_object_map} parameters to {@code experimental_map}, we need plugins
- * to convert between the two maps, so that converting one template doesn't require converting its
- * transitive callees.
+ * is to migrate all {@code legacy_object_map}s to {@code map}s and delete {@code
+ * legacy_object_map}. To allow template-level migrations of {@code legacy_object_map} parameters to
+ * {@code map}, we need plugins to convert between the two maps, so that converting one template
+ * doesn't require converting its transitive callees.
  *
  * <p>NOTE: this function has special support in the type checker for calculating the return type
  */

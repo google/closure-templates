@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -28,7 +27,6 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -36,10 +34,11 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.aggregate.LegacyObjectMapType;
 import com.google.template.soy.types.aggregate.ListType;
+import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
@@ -71,13 +70,10 @@ public final class ResolveExpressionTypesVisitorTest {
 
   private static final SoyTypeRegistry TYPE_REGISTRY =
       new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of());
-  private static final SoyGeneralOptions EXPERIMENTAL_MAP_OPTIONS =
-      new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("experimental_map"));
-
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveExpressionTypesVisitor(
-        TYPE_REGISTRY, declaredSyntaxVersion, new SoyGeneralOptions(), ErrorReporter.exploding());
+        TYPE_REGISTRY, declaredSyntaxVersion, ErrorReporter.exploding());
   }
 
   @Test
@@ -376,11 +372,10 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{let $map: map(1: $pi, 2:$pf)/}",
-                    "{assertType('experimental_map<int,float|int>', $map)}"))
+                    "{assertType('map<int,float|int>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .options(EXPERIMENTAL_MAP_OPTIONS)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -394,7 +389,7 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pi: int}",
                     "{@param pf: float}",
                     "{let $map: [1: $pi, 2:$pf]/}",
-                    "{assertType('map<int,float|int>', $map)}"))
+                    "{assertType('legacy_object_map<int,float|int>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
@@ -412,11 +407,10 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param v2: string}",
                     "{@param k1: string}",
                     "{let $map: map($k1: $v1, 'b': $v2) /}",
-                    "{assertType('experimental_map<string,int|string>', $map)}"))
+                    "{assertType('map<string,int|string>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .options(EXPERIMENTAL_MAP_OPTIONS)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -431,7 +425,7 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param v2: string}",
                     "{@param k1: string}",
                     "{let $map: [$k1: $v1, 'b': $v2] /}",
-                    "{assertType('map<string,int|string>', $map)}"))
+                    "{assertType('legacy_object_map<string,int|string>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
@@ -449,10 +443,9 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pf: float}",
                     // With the old map syntax, this would create a record type (see next test)
                     "{let $map: map('a': $pi, 'b':$pf)/}",
-                    "{assertType('experimental_map<string,float|int>', $map)}"))
+                    "{assertType('map<string,float|int>', $map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
-            .options(EXPERIMENTAL_MAP_OPTIONS)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -484,7 +477,6 @@ public final class ResolveExpressionTypesVisitorTest {
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
-        .options(EXPERIMENTAL_MAP_OPTIONS)
         .parse()
         .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
@@ -792,9 +784,9 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(type.getKind()).isEqualTo(SoyType.Kind.LIST);
     assertThat(((ListType) type).getElementType()).isEqualTo(AnyType.getInstance());
     type = parseSoyType("map<string, ?>");
-    assertThat(type.getKind()).isEqualTo(SoyType.Kind.LEGACY_OBJECT_MAP);
-    assertThat(((LegacyObjectMapType) type).getKeyType()).isEqualTo(StringType.getInstance());
-    assertThat(((LegacyObjectMapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
+    assertThat(type.getKind()).isEqualTo(Kind.MAP);
+    assertThat(((MapType) type).getKeyType()).isEqualTo(StringType.getInstance());
+    assertThat(((MapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
   }
 
 
