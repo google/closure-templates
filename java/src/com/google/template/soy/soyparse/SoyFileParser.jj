@@ -429,9 +429,6 @@ public class SoyFileParser {
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
-  private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
-      SoyErrorKind.of("Invalid value for select ''case'', "
-          + "expected ''female'', ''male'', or ''other''.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -2280,14 +2277,7 @@ private MsgSelectNode MsgSelect() :
       caseExpr = Expr()
       tagEnd = <CMD_END>
       {
-        String value;
-        if (!(caseExpr instanceof StringNode)) {
-          errorReporter.report(caseExpr.getSourceLocation(), SELECT_CASE_INVALID_VALUE);
-          value = "";
-        } else {
-          value = ((StringNode) caseExpr).getValue();
-        }
-
+        String value = ParseErrors.validateSelectCaseLabel(caseExpr, errorReporter);
         MsgSelectCaseNode caseNode =
             new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
         selectNode.addChild(caseNode);

@@ -22,6 +22,11 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FloatNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.ibm.icu.text.MessagePattern;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -274,7 +279,7 @@ final class ParseErrors {
   }
 
   /**
-   * A helper method for formating javacc ParseExceptions.
+   * A helper method for formatting javacc ParseExceptions.
    *
    * @param errorToken The piece of text that we were unable to parse.
    * @param expectedTokens The set of formatted tokens that we were expecting next.
@@ -325,6 +330,53 @@ final class ParseErrors {
     }
 
     return escapeWhitespaceForErrorPrinting(token);
+  }
+
+  private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
+      SoyErrorKind.of(
+          "Invalid value for select ''case'', "
+              + "expected an identifier (most commonly, a gender).{0}",
+          StyleAllowance.NO_PUNCTUATION);
+
+  /** Validates an expression being used as a {@code case} label in a {@code select}. */
+  static String validateSelectCaseLabel(ExprNode caseValue, ErrorReporter reporter) {
+    boolean isNumeric;
+    boolean isError;
+    String value;
+    if (caseValue instanceof StringNode) {
+      value = ((StringNode) caseValue).getValue();
+      // Validate that our select cases are argument names as required by the ICU MessageFormat
+      // library. We can offer a much better user experience by doing this validation eagerly.
+      // NOTE: in theory we could allow numeric select cases, but this is almost always an error
+      // (they should have used plural), if there turns out to be some good reason for this (e.g.
+      // the numbers are reflect ordinals instead of cardinals), then we can revisit this error.
+      int argNumber = MessagePattern.validateArgumentName(value);
+      if (argNumber != MessagePattern.ARG_NAME_NOT_NUMBER) {
+        try {
+          // there are more efficient ways to do this, but we are already in an error case so who
+          // cares
+          Long.parseLong(value);
+          isNumeric = true;
+        } catch (NumberFormatException nfe) {
+          isNumeric = false;
+        }
+        isError = true;
+      } else {
+        isNumeric = false;
+        isError = false;
+      }
+    } else {
+      isNumeric = caseValue instanceof FloatNode || caseValue instanceof IntegerNode;
+      isError = true;
+      value = "";
+    }
+    if (isError) {
+      reporter.report(
+          caseValue.getSourceLocation(),
+          SELECT_CASE_INVALID_VALUE,
+          isNumeric ? "  Did you mean to use {plural} instead of {select}?" : "");
+    }
+    return value;
   }
 
   private static String escapeWhitespaceForErrorPrinting(String s) {
