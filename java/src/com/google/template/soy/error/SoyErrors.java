@@ -47,9 +47,11 @@ public final class SoyErrors {
    */
   public static String getDidYouMeanMessageForProtoFields(
       ImmutableSet<String> fields, String fieldName) {
-    // TODO(lukes): when we have map/case enum support add more cases here.
+    // TODO(b/27616446): when we have case enum support add a case here.
     if (fields.contains(fieldName + "List")) {
       return String.format(" Did you mean '%sList'?", fieldName);
+    } else if (fields.contains(fieldName + "Map")) {
+      return String.format(" Did you mean '%sMap'?", fieldName);
     } else {
       return getDidYouMeanMessage(fields, fieldName);
     }
