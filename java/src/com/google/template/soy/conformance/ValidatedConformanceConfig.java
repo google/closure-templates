@@ -93,6 +93,8 @@ public final class ValidatedConformanceConfig {
         return new RequireStrictAutoescaping(error);
       case REQUIRE_STRONGLY_TYPED_IJ_PARAMS:
         return new RequireStronglyTypedIjParams(error);
+      case BAN_XID_FOR_CSS_OBFUSCATION:
+        return new BanXidForCssObfuscation(error);
       case REQUIREMENTTYPE_NOT_SET:
       default:
         throw new AssertionError(

@@ -7840,8 +7840,8 @@ goog.object.isImmutableView = function(obj) {
  * Get all properties names on a given Object regardless of enumerability.
  *
  * <p> If the browser does not support `Object.getOwnPropertyNames` nor
- * `Object.getPrototypeOf` then this is equivalent to using {@code
- * goog.object.getKeys}
+ * `Object.getPrototypeOf` then this is equivalent to using
+ * `goog.object.getKeys`
  *
  * @param {?Object} obj The object to get the properties of.
  * @param {boolean=} opt_includeObjectPrototype Whether properties defined on
@@ -14041,8 +14041,8 @@ goog.require('goog.string.TypedString');
  * this type.
  *
  * Instances of this type must be created via the factory method,
- * (`fromConstant`, `fromConstants`, `format` or {@code
- * formatWithParams}), and not by invoking its constructor. The constructor
+ * (`fromConstant`, `fromConstants`, `format` or
+ * `formatWithParams`), and not by invoking its constructor. The constructor
  * intentionally takes no parameters and the type is immutable; hence only a
  * default instance corresponding to the empty string can be obtained via
  * constructor invocation.
@@ -15493,7 +15493,7 @@ goog.require('goog.string.TypedString');
  * goog.html.SafeStyleSheet.unwrap(styleSheet2)} must itself be a value that
  * satisfies the SafeStyleSheet type constraint. This requirement implies that
  * for any value `styleSheet` of this type,
- * {@code goog.html.SafeStyleSheet.unwrap(styleSheet1)} must end in
+ * `goog.html.SafeStyleSheet.unwrap(styleSheet1)` must end in
  * "beginning of rule" context.
 
  * A SafeStyleSheet can be constructed via security-reviewed unchecked
@@ -18825,7 +18825,7 @@ goog.iter.accumulate = function(iterable) {
  * Creates an iterator that returns arrays containing the ith elements from the
  * provided iterables. The returned arrays will be the same size as the number
  * of iterables given in `var_args`. Once the shortest iterable is
- * exhausted, subsequent calls to {@code next()} will throw
+ * exhausted, subsequent calls to `next()` will throw
  * `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.izip
  * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
@@ -18855,7 +18855,7 @@ goog.iter.zip = function(var_args) {
  * provided iterables. The returned arrays will be the same size as the number
  * of iterables given in `var_args`. Shorter iterables will be extended
  * with `fillValue`. Once the longest iterable is exhausted, subsequent
- * calls to {@code next()} will throw `goog.iter.StopIteration`.
+ * calls to `next()` will throw `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.izip_longest
  * @param {VALUE} fillValue The object or value used to fill shorter iterables.
  * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
@@ -18902,11 +18902,11 @@ goog.iter.zipLongest = function(fillValue, var_args) {
 
 /**
  * Creates an iterator that filters `iterable` based on a series of
- * `selectors`. On each call to {@code next()}, one item is taken from
+ * `selectors`. On each call to `next()`, one item is taken from
  * both the `iterable` and `selectors` iterators. If the item from
  * `selectors` evaluates to true, the item from `iterable` is given.
  * Otherwise, it is skipped. Once either `iterable` or `selectors`
- * is exhausted, subsequent calls to {@code next()} will throw
+ * is exhausted, subsequent calls to `next()` will throw
  * `goog.iter.StopIteration`.
  * @see http://docs.python.org/2/library/itertools.html#itertools.compress
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
@@ -19164,7 +19164,7 @@ goog.iter.limit = function(iterable, limitSize) {
  * Creates an iterator that is advanced `count` steps ahead. Consumed
  * values are silently discarded. If `count` is greater than the number
  * of elements in `iterable`, an empty iterator is returned. Subsequent
- * calls to {@code next()} will throw `goog.iter.StopIteration`.
+ * calls to `next()` will throw `goog.iter.StopIteration`.
  * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
  *     iterable to consume.
  * @param {number} count  The number of elements to consume from the iterator.
@@ -23262,7 +23262,7 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
 /**
  * Content of type {@link goog.soy.data.SanitizedContentKind.STYLE}.
  *
- * The content is non-attacker-exploitable CSS, such as {@code color:#c3d9ff}.
+ * The content is non-attacker-exploitable CSS, such as `color:#c3d9ff`.
  * The content direction is LTR.
  *
  * @extends {goog.soy.data.SanitizedContent}
