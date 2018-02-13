@@ -3656,7 +3656,7 @@ goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);
 
 /**
  * @define {boolean} If true, JSCompiler will use the native implementation of
- * array functions where appropriate (e.g., {@code Array#filter}) and remove the
+ * array functions where appropriate (e.g., `Array#filter`) and remove the
  * unused pure JS implementation.
  */
 goog.define('goog.array.ASSUME_NATIVE_FUNCTIONS', false);
@@ -12500,8 +12500,8 @@ goog.functions.once = function(f) {
  * autocomplete pop-up every so often rather than updating with every keystroke,
  * since the final text typed by the user is the one that should produce the
  * final autocomplete results. For more stateful debouncing with support for
- * pausing, resuming, and canceling debounced actions, use {@code
- * goog.async.Debouncer}.
+ * pausing, resuming, and canceling debounced actions, use
+ * `goog.async.Debouncer`.
  *
  * @param {function(this:SCOPE, ...?)} f Function to call.
  * @param {number} interval Interval over which to debounce. The function will
@@ -14956,7 +14956,7 @@ goog.require('goog.string.TypedString');
  * {@code goog.html.SafeStyle.unwrap(style1) +
  * goog.html.SafeStyle.unwrap(style2)} must itself be a value that satisfies
  * the SafeStyle type constraint. This requirement implies that for any value
- * `style` of this type, {@code goog.html.SafeStyle.unwrap(style)} must
+ * `style` of this type, `goog.html.SafeStyle.unwrap(style)` must
  * not end in a "property value" or "property name" context. For example,
  * a value of {@code background:url("} or {@code font-} would not satisfy the
  * SafeStyle contract. This is because concatenating such strings with a
