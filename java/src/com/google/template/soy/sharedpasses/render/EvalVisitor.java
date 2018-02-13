@@ -397,9 +397,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     // If the static type is a proto, access it using proto semantics
-    // TODO(lukes): add warnings for accessing protos dynamically.  need to come up with a rate
-    // limiting strategy.
-    if (fieldAccess.getBaseExprChild().getType().getKind() == Kind.PROTO) {
+    // the base type is possibly nullable, so remove null before testing for being a proto
+    if (SoyTypes.tryRemoveNull(fieldAccess.getBaseExprChild().getType()).getKind() == Kind.PROTO) {
       return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
     }
     maybeMarkBadProtoAccess(fieldAccess, base);
