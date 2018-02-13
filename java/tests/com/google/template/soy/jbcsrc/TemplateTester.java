@@ -290,19 +290,13 @@ public final class TemplateTester {
     }
 
     @Override
-    protected String getDisplaySubject() {
+    protected String actualCustomStringRepresentation() {
       if (classData == null) {
         // hasn't been compiled yet.  just use the source text
         return actual();
       }
 
-      String customName = super.internalCustomName();
-      return (customName != null ? customName : "")
-          + " (<\n"
-          + actual()
-          + "\n Compiled as: \n"
-          + Joiner.on('\n').join(classData)
-          + "\n>)";
+      return "(<\n" + actual() + "\n Compiled as: \n" + Joiner.on('\n').join(classData) + "\n>)";
     }
 
     private void compile() {
