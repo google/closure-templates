@@ -31,7 +31,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
@@ -1067,7 +1067,7 @@ final class ExpressionCompiler {
           // Box and do a map style lookup.
           soyValueProvider =
               MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
-                  baseExpr.box().checkedCast(SoyNewMap.class), keyExpr.box());
+                  baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
         } else {
           // Box and do a map style lookup.
           soyValueProvider =

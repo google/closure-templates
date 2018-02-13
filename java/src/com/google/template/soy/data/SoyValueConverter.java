@@ -235,7 +235,7 @@ public final class SoyValueConverter {
     return DictImpl.forProviderMap(
         builder.build(),
         // This Java map could represent a Soy legacy_object_map, a Soy map, or a Soy record.
-        // We don't know which until one of the SoyMap, SoyNewMap, or SoyRecord methods
+        // We don't know which until one of the SoyMap, SoyLegacyObjectMap, or SoyRecord methods
         // is invoked on it.
         RuntimeType.UNKNOWN);
   }
@@ -244,7 +244,7 @@ public final class SoyValueConverter {
    * Creates a Soy map from a Java map. While this is O(n) in the map's shallow size, the Java
    * values are converted into Soy values lazily and only once. The keys are converted eagerly.
    */
-  private SoyNewMap newSoyMapFromJavaMap(Map<?, ?> javaMap) {
+  private SoyMap newSoyMapFromJavaMap(Map<?, ?> javaMap) {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
     for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
       builder.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));

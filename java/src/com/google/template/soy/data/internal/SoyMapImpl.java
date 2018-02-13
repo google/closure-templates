@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
@@ -38,7 +38,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * object.
  */
 @ParametersAreNonnullByDefault
-public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
+public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   public static SoyMapImpl forProviderMap(
       Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {

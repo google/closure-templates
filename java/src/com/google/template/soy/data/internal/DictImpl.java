@@ -26,7 +26,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
@@ -49,7 +49,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * inspecting the immediate callee's signature is not sufficient.)
  *
  * <p>This class implements all three interfaces ({@link
- * com.google.template.soy.data.SoyLegacyObjectMap}, {@link SoyNewMap}, and {@link
+ * com.google.template.soy.data.SoyLegacyObjectMap}, {@link SoyMap}, and {@link
  * com.google.template.soy.data.SoyRecord} respectively). It would be easy to allow a DictImpl
  * instance to behave as one type (say, a legacy object map) and then another (say, a map) at
  * different points during a single rendering. But this would break Soy's cross-platform
@@ -58,11 +58,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * an ES6 Map is a runtime error. Soy's Java runtime must preserve this behavior.
  *
  * <p>{@link RuntimeType} exists to provide this non-compatibility. DictImpl instances begin life in
- * an {@link RuntimeType#UNKNOWN} state. If a SoyNewMap method is first invoked on it, it
- * transitions to the {@link RuntimeType#MAP} state, and later invocations of SoyMap or SoyRecord
- * methods cause runtime errors. Likewise, if a SoyMap or SoyRecord method is first invoked on the
- * DictImpl instance, it transitions to the {@link RuntimeType#LEGACY_OBJECT_MAP_OR_RECORD} state,
- * and later invocations of SoyNewMap methods cause runtime errors.
+ * an {@link RuntimeType#UNKNOWN} state. If a SoyMap method is first invoked on it, it transitions
+ * to the {@link RuntimeType#MAP} state, and later invocations of SoyMap or SoyRecord methods cause
+ * runtime errors. Likewise, if a SoyMap or SoyRecord method is first invoked on the DictImpl
+ * instance, it transitions to the {@link RuntimeType#LEGACY_OBJECT_MAP_OR_RECORD} state, and later
+ * invocations of SoyMap methods cause runtime errors.
  *
  * every {@code legacy_object_map} to {@code map} and delete {@code legacy_object_map}. This will
  * require changing every plain JS object passed in to Soy to be an ES6 Map with the same entries.
@@ -75,7 +75,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  *
  */
 @ParametersAreNonnullByDefault
-public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyNewMap {
+public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap {
 
   /**
    * Represents the runtime type of this DictImpl. The runtime type can only be set once. Changing
@@ -86,8 +86,8 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyNewM
      * This DictImpl could represent a Soy {@code legacy_object_map}, a Soy {@code map}, or a Soy
      * record ({@code [field1: type1, ...]}). The first {@link SoyDict} or {@link
      * com.google.template.soy.data.SoyRecord} method invoked on this object will transition the
-     * state to {@link #LEGACY_OBJECT_MAP_OR_RECORD}, while the first {@link SoyNewMap} method
-     * invoked on this object will transition the state to {@link #MAP}.
+     * state to {@link #LEGACY_OBJECT_MAP_OR_RECORD}, while the first {@link SoyMap} method invoked
+     * on this object will transition the state to {@link #MAP}.
      */
     UNKNOWN,
     /** This DictImpl represents a Soy {@code legacy_object_map} or record at runtime. */

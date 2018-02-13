@@ -26,7 +26,7 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -234,7 +234,7 @@ public final class JbcSrcRuntime {
     return RenderResult.done();
   }
 
-  public static SoyValueProvider getSoyMapItem(SoyNewMap soyMap, SoyValue key) {
+  public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
     if (soyMap == null) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
     }

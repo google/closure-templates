@@ -37,7 +37,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -138,7 +138,7 @@ abstract class FieldInterpreter {
 
       @Override
       Object protoFromSoy(SoyValue field) {
-        SoyNewMap map = (SoyNewMap) field;
+        SoyMap map = (SoyMap) field;
         // Proto map fields use a non-standard API. A protobuf map is actually a repeated list of
         // MapEntry quasi-messages, which one cannot mutate in-place inside a map.
         ImmutableList.Builder<Message> mapEntries = ImmutableList.builder();

@@ -17,7 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -76,11 +76,11 @@ public final class MapKeysFunction
   public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    if (!(arg instanceof SoyNewMap)) {
-      throw new IllegalArgumentException("Argument to mapKeys() function is not a SoyNewMap.");
+    if (!(arg instanceof SoyMap)) {
+      throw new IllegalArgumentException("Argument to mapKeys() function is not a SoyMap.");
     }
 
-    return ListImpl.forProviderList(BasicFunctionsRuntime.mapKeys((SoyNewMap) arg));
+    return ListImpl.forProviderList(BasicFunctionsRuntime.mapKeys((SoyMap) arg));
   }
 
   @Override
@@ -105,7 +105,7 @@ public final class MapKeysFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
     static final MethodRef MAP_KEYS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "mapKeys", SoyNewMap.class);
+        MethodRef.create(BasicFunctionsRuntime.class, "mapKeys", SoyMap.class);
   }
 
   @Override
@@ -115,6 +115,6 @@ public final class MapKeysFunction
     SoyType keyType = ((MapType) argType).getKeyType();
     return SoyExpression.forList(
         keyType == null ? ListType.EMPTY_LIST : ListType.of(keyType),
-        JbcSrcMethods.MAP_KEYS_FN.invoke(soyExpression.box().checkedCast(SoyNewMap.class)));
+        JbcSrcMethods.MAP_KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 }

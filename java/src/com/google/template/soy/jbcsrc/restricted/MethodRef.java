@@ -31,7 +31,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -291,7 +291,7 @@ public abstract class MethodRef {
           SoyValue.class);
 
   public static final MethodRef RUNTIME_GET_MAP_ITEM =
-      create(JbcSrcRuntime.class, "getSoyMapItem", SoyNewMap.class, SoyValue.class);
+      create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
@@ -338,7 +338,7 @@ public abstract class MethodRef {
       create(DictImpl.class, "asJavaMap").asNonNullable();
 
   public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP =
-      create(SoyNewMap.class, "asJavaMap").asNonNullable();
+      create(SoyMap.class, "asJavaMap").asNonNullable();
 
   public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();

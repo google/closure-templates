@@ -36,7 +36,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyNewMap;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -424,7 +424,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     SoyValue base = visitNullSafeNodeRecurse(itemAccess.getBaseExprChild());
 
     // attempting item access on non-SoyMap
-    if (!(base instanceof SoyLegacyObjectMap || base instanceof SoyNewMap)) {
+    if (!(base instanceof SoyLegacyObjectMap || base instanceof SoyMap)) {
       if (base == NullSafetySentinel.INSTANCE) {
         // Bail out if base expression failed a null-safety check.
         return NullSafetySentinel.INSTANCE;
@@ -447,19 +447,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return UndefinedData.INSTANCE;
     }
 
-    // base is a valid SoyMap or SoyNewMap: get value
+    // base is a valid SoyMap or SoyLegacyObjectMap: get value
     maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
 
     SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
 
-    // We need to know whether to invoke the SoyMap or SoyNewMap method.
+    // We need to know whether to invoke the SoyMap or SoyLegacyObjectMap method.
     // An instanceof check on the runtime value of base is insufficient, since
     // DictImpl implements both interfaces. Instead, look at the declared type of the base
     // expression.
     boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFrom(baseType);
     SoyValue value =
-        shouldUseNewMap ? ((SoyNewMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
+        shouldUseNewMap ? ((SoyMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
 
     if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(
