@@ -142,7 +142,6 @@ public final class GenerateParseInfoVisitor
 
         case SOY_NAMESPACE_LAST_PART:
           String namespace = soyFile.getNamespace();
-          assert namespace != null; // suppress warnings
           String namespaceLastPart = namespace.substring(namespace.lastIndexOf('.') + 1);
           return makeUpperCamelCase(namespaceLastPart);
 

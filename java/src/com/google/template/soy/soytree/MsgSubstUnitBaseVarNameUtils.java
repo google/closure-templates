@@ -204,7 +204,6 @@ public final class MsgSubstUnitBaseVarNameUtils {
             break;
           }
         }
-        assert collidingExprRoot != null;
         errorReporter.report(
             collidingExprRoot.getSourceLocation(),
             COLLIDING_EXPRESSIONS,

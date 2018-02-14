@@ -18,6 +18,7 @@ package com.google.template.soy.shared.restricted;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -83,7 +84,7 @@ public final class TagWhitelist {
 
   TagWhitelist(Collection<String> tagNames) {
     this.safeTagNames = ImmutableSet.copyOf(tagNames);
-    assert requireLowerCaseTagNames(this.safeTagNames);
+    requireLowerCaseTagNames(this.safeTagNames);
   }
 
   TagWhitelist(String... tagNames) {
@@ -120,12 +121,10 @@ public final class TagWhitelist {
     return safeTagNames;
   }
 
-  private static boolean requireLowerCaseTagNames(Iterable<String> strs) {
+  private static void requireLowerCaseTagNames(Iterable<String> strs) {
     for (String str : strs) {
-      assert str.equals(Ascii.toLowerCase(str)) && VALID_TAG_NAME.matcher(str).matches() : str;
+      Preconditions.checkArgument(
+          str.equals(Ascii.toLowerCase(str)) && VALID_TAG_NAME.matcher(str).matches(), str);
     }
-    // We assert above instead of returning false so that the assertion error contains the
-    // offending tag name.
-    return true;
   }
 }
