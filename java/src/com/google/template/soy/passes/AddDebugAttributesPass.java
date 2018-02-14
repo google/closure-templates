@@ -21,7 +21,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.shared.restricted.Sanitizers;
+import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;

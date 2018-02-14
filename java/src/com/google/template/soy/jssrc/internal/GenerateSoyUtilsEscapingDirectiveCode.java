@@ -18,10 +18,10 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.shared.internal.AbstractGenerateSoyEscapingDirectiveCode;
 import com.google.template.soy.shared.internal.DirectiveDigest;
-import com.google.template.soy.shared.restricted.EscapingConventions;
-import com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage;
-import com.google.template.soy.shared.restricted.Sanitizers;
-import com.google.template.soy.shared.restricted.TagWhitelist;
+import com.google.template.soy.shared.internal.EscapingConventions;
+import com.google.template.soy.shared.internal.EscapingConventions.EscapingLanguage;
+import com.google.template.soy.shared.internal.Sanitizers;
+import com.google.template.soy.shared.internal.TagWhitelist;
 import java.io.IOException;
 import java.util.regex.Pattern;
 import javax.annotation.ParametersAreNonnullByDefault;

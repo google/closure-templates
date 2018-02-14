@@ -26,7 +26,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
-import com.google.template.soy.shared.restricted.Sanitizers;
+import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.types.primitive.SanitizedType;

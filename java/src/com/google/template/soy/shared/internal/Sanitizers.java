@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared.internal;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
@@ -40,7 +40,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;

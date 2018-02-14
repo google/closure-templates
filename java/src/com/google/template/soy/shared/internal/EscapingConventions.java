@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

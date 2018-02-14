@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -34,7 +34,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.logging.Level;

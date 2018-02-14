@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
-import com.google.template.soy.shared.restricted.EscapingConventions.CrossLanguageStringXform;
+import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
 
 /**

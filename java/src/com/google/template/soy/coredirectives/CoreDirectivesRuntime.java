@@ -26,8 +26,8 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.shared.restricted.AbstractStreamingHtmlEscaper;
-import com.google.template.soy.shared.restricted.EscapingConventions;
+import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
+import com.google.template.soy.shared.internal.EscapingConventions;
 import java.io.IOException;
 
 /** Runtime functions for implementing the directives in this package. */

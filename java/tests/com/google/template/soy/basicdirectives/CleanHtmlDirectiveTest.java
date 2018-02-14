@@ -30,7 +30,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-import com.google.template.soy.shared.restricted.TagWhitelist.OptionalSafeTag;
+import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;

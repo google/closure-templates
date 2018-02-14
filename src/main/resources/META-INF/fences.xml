@@ -27,7 +27,7 @@
         <trusts>com.google.template.soy.jbcsrc.api.Continuations</trusts>
         <trusts>com.google.template.soy.jbcsrc.runtime.DetachableContentProvider</trusts>
         <trusts>com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime$EscapedCompiledTemplate</trusts>
-        <trusts>com.google.template.soy.shared.restricted.Sanitizers</trusts>
+        <trusts>com.google.template.soy.shared.internal.Sanitizers</trusts>
         <trusts>com.google.template.soy.sharedpasses.render.RenderVisitor</trusts>
         <trusts>com.google.template.soy.tofu.internal.BaseTofu$RendererImpl</trusts>
         <trusts>com.google.template.soy.tofu.internal.BaseTofu</trusts>
