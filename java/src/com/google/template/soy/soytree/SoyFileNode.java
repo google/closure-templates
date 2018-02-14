@@ -102,8 +102,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return delPackageName;
   }
 
-  /** Returns this Soy file's namespace, or null if syntax version V1. */
-  @Nullable
+  /** Returns this Soy file's namespace. */
   public String getNamespace() {
     return namespaceDeclaration.getNamespace();
   }
