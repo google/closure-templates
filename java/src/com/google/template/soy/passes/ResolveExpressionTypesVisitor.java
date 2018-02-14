@@ -864,11 +864,15 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
       SoyType argType = node.getChild(0).getType();
-      MapType actualArgType = (MapType) argType;
-      node.setType(
-          typeRegistry.getOrCreateLegacyObjectMapType(
-              // Converting a map to a legacy object map coerces all the keys to strings
-              StringType.getInstance(), actualArgType.getValueType()));
+      if (argType.equals(MapType.EMPTY_MAP)) {
+        node.setType(LegacyObjectMapType.EMPTY_MAP);
+      } else {
+        MapType actualArgType = (MapType) argType;
+        node.setType(
+            typeRegistry.getOrCreateLegacyObjectMapType(
+                // Converting a map to a legacy object map coerces all the keys to strings
+                StringType.getInstance(), actualArgType.getValueType()));
+      }
     }
 
     @Override
@@ -1260,6 +1264,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      * basic functions provided by Soy.
      */
     private void visitSoyFunction(SoyFunction fn, FunctionNode node) {
+      // Here we have special handling for a variety of 'generic' function.
       if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
@@ -1271,13 +1276,15 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       } else if (fn instanceof MapToLegacyObjectMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
-        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node)) {
+        // We disallow unknown for this function in order to ensure that maps remain strongly typed
+        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
           visitMapToLegacyObjectMapFunction(node);
         } else {
           node.setType(UnknownType.getInstance());
         }
       } else if (fn instanceof MapKeysFunction) {
-        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node)) {
+        // We disallow unknown for this function in order to ensure that maps remain strongly typed
+        if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
           visitMapKeysFunction(node);
         } else {
           node.setType(UnknownType.getInstance());
@@ -1303,8 +1310,17 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */
     private boolean checkArgType(ExprNode arg, SoyType expectedType, FunctionNode node) {
+      return checkArgType(arg, expectedType, node, UnknownPolicy.ALLOWED);
+    }
+
+    /** Checks the argument type. Returns false if an incorrect arg type error was reported. */
+    private boolean checkArgType(
+        ExprNode arg, SoyType expectedType, FunctionNode node, UnknownPolicy policy) {
       SoyType.Kind argTypeKind = arg.getType().getKind();
-      if (argTypeKind == SoyType.Kind.UNKNOWN || argTypeKind == SoyType.Kind.ERROR) {
+      if (argTypeKind == SoyType.Kind.ERROR) {
+        return false;
+      }
+      if (policy == UnknownPolicy.ALLOWED && argTypeKind == SoyType.Kind.UNKNOWN) {
         return true;
       }
       if (!expectedType.isAssignableFrom(arg.getType())) {
@@ -1559,6 +1575,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       return result;
     }
+  }
+
+  /** Whether or not we allow unknown values to be accepted implicitly. */
+  private enum UnknownPolicy {
+    ALLOWED,
+    DISALLOWED;
   }
 
   /**

@@ -751,6 +751,36 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
+  public void testMapKeys() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param m: map<string, int>}",
+                    "{assertType('list<string>', mapKeys($m))}",
+                    "{assertType('list<null>', mapKeys(map()))}",
+                    ""))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testMapToLegacyObjectMap() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param m: map<string, int>}",
+                    "{assertType('legacy_object_map<string,int>', mapToLegacyObjectMap($m))}",
+                    "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
+                    ""))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testErrorMessagesInUnionTypes() {
     assertResolveExpressionTypesFails(
         "Type float does not support bracket access.",
