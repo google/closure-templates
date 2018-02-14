@@ -51,11 +51,6 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   SoyToJbcSrcCompiler() {}
 
   @Override
-  boolean acceptsSourcesAsArguments() {
-    return false;
-  }
-
-  @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     Optional<ByteSink> srcJarSink = Optional.absent();
     if (outputSrcJar != null) {

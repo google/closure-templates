@@ -83,11 +83,6 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   SoyMsgPruner() {}
 
   @Override
-  boolean acceptsSourcesAsArguments() {
-    return false;
-  }
-
-  @Override
   void validateFlags() {
     if (inputMsgFiles.size() != outputMsgFiles.size()) {
       exitWithError("Must provide exactly one input file for every output file.");

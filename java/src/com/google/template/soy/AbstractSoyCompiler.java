@@ -212,15 +212,13 @@ abstract class AbstractSoyCompiler {
     }
 
     validateFlags();
-    // TODO(lukes): Stop supporting old style (srcs from command line args) at some point.
-    if (!arguments.isEmpty() && !acceptsSourcesAsArguments()) {
-      exitWithError("Found old style sources passed on the command line, use --srcs=... instead");
+    if (!arguments.isEmpty()) {
+      exitWithError(
+          "Found extra arguments passed on the command line. If these are sources, use --srcs=..."
+              + " instead.");
     }
-    if (srcs.isEmpty() && arguments.isEmpty()) {
+    if (srcs.isEmpty()) {
       exitWithError("Must provide list of source Soy files (--srcs).");
-    }
-    if (!srcs.isEmpty() && !arguments.isEmpty()) {
-      exitWithError("Found source Soy files from --srcs and from args (please use --srcs only).");
     }
 
     List<Module> modules = new ArrayList<>();
@@ -241,12 +239,7 @@ abstract class AbstractSoyCompiler {
     if (!protoFileDescriptors.isEmpty()) {
       sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
     }
-    addSoyFilesToBuilder(
-        sfsBuilder,
-        inputPrefix,
-        ImmutableSet.<String>builder().addAll(srcs).addAll(arguments).build(),
-        deps,
-        indirectDeps);
+    addSoyFilesToBuilder(sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), deps, indirectDeps);
     if (globalsFile != null) {
       sfsBuilder.setCompileTimeGlobals(globalsFile);
     }
@@ -293,19 +286,6 @@ abstract class AbstractSoyCompiler {
     } else {
       return ValidatedLoggingConfig.EMPTY;
     }
-  }
-
-  /**
-   * Returns {@code true} if old style sources should be supported. {@code true} is the default.
-   *
-   * <p>Old style srcs are for when source files are passed as arguments directly, rather than
-   * passed to the {@code --srcs} flag.
-   *
-   * <p>TODO(lukes): eliminate support for old-style srcs
-   */
-  @ForOverride
-  boolean acceptsSourcesAsArguments() {
-    return true;
   }
 
   /**
