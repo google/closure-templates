@@ -79,84 +79,14 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
   }
 
   private static final class ProtoClass {
-    final ImmutableMap<String, FieldWithInterpreter> fields;
+    final ImmutableMap<String, Field> fields;
     final Message defaultInstance;
     final String fullName;
 
-    ProtoClass(Message defaultInstance, ImmutableMap<String, FieldWithInterpreter> fields) {
+    ProtoClass(Message defaultInstance, ImmutableMap<String, Field> fields) {
       this.fullName = defaultInstance.getDescriptorForType().getFullName();
       this.defaultInstance = checkNotNull(defaultInstance);
       this.fields = checkNotNull(fields);
-    }
-  }
-
-  private abstract static class FieldWithInterpreter extends Field {
-    FieldWithInterpreter(FieldDescriptor fieldDesc) {
-      super(fieldDesc);
-    }
-
-    abstract SoyValue interpretField(Message owner);
-
-    abstract void assignField(Message.Builder builder, SoyValue value);
-
-    abstract boolean hasField(Message proto);
-  }
-
-  private static final class NormalFieldWithInterpreter extends FieldWithInterpreter {
-    final FieldInterpreter interpreter;
-
-    NormalFieldWithInterpreter(FieldDescriptor fieldDesc) {
-      super(fieldDesc);
-      this.interpreter = FieldInterpreter.create(fieldDesc);
-    }
-
-    @Override
-    public SoyValue interpretField(Message message) {
-      return interpreter.soyFromProto(message.getField(getDescriptor()));
-    }
-
-    @Override
-    public void assignField(Message.Builder builder, SoyValue value) {
-      builder.setField(getDescriptor(), interpreter.protoFromSoy(value));
-    }
-
-    @Override
-    boolean hasField(Message proto) {
-      // TODO(lukes):  Currently we assume that a field is present if it is repeated, has an
-      // explicit default value or is set.  However, the type of fields is not generally nullable,
-      // so we can return null for a non-nullable field type.  Given the current ToFu implementation
-      // this is not a problem, but modifying the field types to be nullable for non-repeated fields
-      // with non explicit defaults should probably happen.
-      return !shouldCheckFieldPresenceToEmulateJspbNullability() || proto.hasField(getDescriptor());
-    }
-  }
-
-  private static final class AmbiguousFieldWithInterpreter extends FieldWithInterpreter {
-    final Set<FieldWithInterpreter> fields;
-
-    AmbiguousFieldWithInterpreter(Set<FieldWithInterpreter> fields) {
-      super(fields.iterator().next().getDescriptor());
-      this.fields = fields;
-    }
-
-    @Override
-    SoyValue interpretField(Message owner) {
-      throw ambiguousFieldsError(getName(), fields);
-    }
-
-    @Override
-    void assignField(com.google.protobuf.Message.Builder builder, SoyValue value) {
-      throw ambiguousFieldsError(getName(), fields);
-    }
-
-    @Override
-    boolean hasField(Message proto) {
-      for (FieldWithInterpreter field : fields) {
-        if (field.hasField(proto)) {
-          return true;
-        }
-      }
-      return false;
     }
   }
 
@@ -165,26 +95,12 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
           .weakKeys()
           .build(
               new CacheLoader<Descriptor, ProtoClass>() {
-                final Field.Factory<FieldWithInterpreter> factory =
-                    new Field.Factory<FieldWithInterpreter>() {
-                      @Override
-                      public FieldWithInterpreter create(FieldDescriptor fieldDescriptor) {
-                        return new NormalFieldWithInterpreter(fieldDescriptor);
-                      }
-
-                      @Override
-                      public FieldWithInterpreter createAmbiguousFieldSet(
-                          Set<FieldWithInterpreter> fields) {
-                        return new AmbiguousFieldWithInterpreter(fields);
-                      }
-                    };
-
                 @Override
                 public ProtoClass load(Descriptor descriptor) throws Exception {
                   Set<FieldDescriptor> extensions = new LinkedHashSet<>();
                   return new ProtoClass(
                       getDefaultInstance(descriptor),
-                      Field.getFieldsForType(descriptor, extensions, factory));
+                      Field.getFieldsForType(/* typeRegistry= */ null, descriptor, extensions));
                 }
               });
 
@@ -236,7 +152,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
 
   @Override
   public SoyValue getProtoField(String name) {
-    FieldWithInterpreter field = clazz().fields.get(name);
+    Field field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
@@ -266,7 +182,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
     // TODO(user): hasField(name) should really be two separate checks:
     // if (type.getField(name) == null) { throw new IllegalArgumentException(); }
     // if (!type.getField(name).hasField(proto)) { return null; }
-    FieldWithInterpreter field = clazz().fields.get(name);
+    Field field = clazz().fields.get(name);
     if (field == null) {
       return false;
     }
@@ -322,7 +238,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
     // but filters ones that need to be ignored or lack a suitable value.
     ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
     for (String key : clazz().fields.keySet()) {
-      if (doHasField(key)) {
+      if (hasField(key)) {
         builder.add(StringData.forValue(key));
       }
     }
