@@ -16,26 +16,29 @@
 
 package com.google.template.soy.types.proto;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -62,22 +65,119 @@ import java.util.Map;
 
 /** A collaborator for {@link SoyProtoType} that handles the interpretation of proto fields. */
 abstract class FieldInterpreter {
+  private static final FieldVisitor<FieldInterpreter> VISITOR =
+      new FieldVisitor<FieldInterpreter>() {
+        @Override
+        protected FieldInterpreter visitLongAsInt() {
+          return LONG_AS_INT;
+        }
+
+        @Override
+        protected FieldInterpreter visitUnsignedInt() {
+          return UNSIGNED_INT;
+        }
+
+        @Override
+        protected FieldInterpreter visitUnsignedLongAsString() {
+          return UNSIGNEDLONG_AS_STRING;
+        }
+
+        @Override
+        protected FieldInterpreter visitLongAsString() {
+          return LONG_AS_STRING;
+        }
+
+        @Override
+        protected FieldInterpreter visitBool() {
+          return BOOL;
+        }
+
+        @Override
+        protected FieldInterpreter visitBytes() {
+          return BYTES;
+        }
+
+        @Override
+        protected FieldInterpreter visitString() {
+          return STRING;
+        }
+
+        @Override
+        protected FieldInterpreter visitDoubleAsFloat() {
+          return DOUBLE_AS_FLOAT;
+        }
+
+        @Override
+        protected FieldInterpreter visitFloat() {
+          return FLOAT;
+        }
+
+        @Override
+        protected FieldInterpreter visitInt() {
+          return INT;
+        }
+
+        @Override
+        protected FieldInterpreter visitSafeHtml() {
+          return SAFE_HTML_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitSafeScript() {
+          return SAFE_SCRIPT_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitSafeStyle() {
+          return SAFE_STYLE_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitSafeStyleSheet() {
+          return SAFE_STYLE_SHEET_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitSafeUrl() {
+          return SAFE_URL_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitTrustedResourceUrl() {
+          return TRUSTED_RESOURCE_URI_PROTO;
+        }
+
+        @Override
+        protected FieldInterpreter visitMessage(Descriptor messageType) {
+          return messageTypeField(messageType);
+        }
+
+        @Override
+        protected FieldInterpreter visitEnum(EnumDescriptor enumType) {
+          return enumTypeField(enumType);
+        }
+
+        @Override
+        protected FieldInterpreter visitMap(
+            FieldDescriptor mapField, FieldInterpreter keyValue, FieldInterpreter valueValue) {
+          return getMapType(mapField, keyValue, valueValue);
+        }
+
+        @Override
+        protected FieldInterpreter visitJspbMap(
+            FieldDescriptor keyField, FieldInterpreter scalarInterpreter) {
+          return getJspbMapType(scalarInterpreter, keyField);
+        }
+
+        @Override
+        protected FieldInterpreter visitRepeated(FieldInterpreter value) {
+          return getListType(value);
+        }
+      };
+
   /** Creates a {@link FieldInterpreter} for the given field. */
   static FieldInterpreter create(FieldDescriptor fieldDescriptor) {
-    FieldInterpreter field = getScalarType(fieldDescriptor);
-    if (fieldDescriptor.isMapField()) {
-      List<FieldDescriptor> mapFields = fieldDescriptor.getMessageType().getFields();
-      checkState(mapFields.size() == 2, "proto representation of map fields changed");
-      FieldInterpreter keyField = getScalarType(mapFields.get(0));
-      FieldInterpreter valueField = getScalarType(mapFields.get(1));
-      return getMapType(keyField, valueField, fieldDescriptor);
-    } else if (fieldDescriptor.isRepeated()) {
-      return ProtoUtils.hasJsMapKey(fieldDescriptor)
-          ? getJspbMapType(field, fieldDescriptor)
-          : getListType(field);
-    } else {
-      return field;
-    }
+    return FieldVisitor.visitField(fieldDescriptor, VISITOR);
   }
 
   private static FieldInterpreter getListType(final FieldInterpreter local) {
@@ -111,10 +211,10 @@ abstract class FieldInterpreter {
   }
 
   private static FieldInterpreter getMapType(
+      final FieldDescriptor mapField,
       final FieldInterpreter keyField,
-      final FieldInterpreter valueField,
-      final FieldDescriptor fieldDescriptor) {
-    final Descriptor messageDescriptor = fieldDescriptor.getMessageType();
+      final FieldInterpreter valueField) {
+    final Descriptor messageDescriptor = mapField.getMessageType();
     final FieldDescriptor keyDescriptor = messageDescriptor.getFields().get(0);
     final FieldDescriptor valueDescriptor = messageDescriptor.getFields().get(1);
     return new FieldInterpreter() {
@@ -146,7 +246,7 @@ abstract class FieldInterpreter {
             DynamicMessage.newBuilder(messageDescriptor.getContainingType());
         for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
             map.asJavaMap().entrySet()) {
-          Message.Builder entryBuilder = defaultInstance.newBuilderForField(fieldDescriptor);
+          Message.Builder entryBuilder = defaultInstance.newBuilderForField(mapField);
           entryBuilder.setField(keyDescriptor, keyField.protoFromSoy(entry.getKey()));
           entryBuilder.setField(
               valueDescriptor, valueField.protoFromSoy(entry.getValue().resolve()));
@@ -165,16 +265,7 @@ abstract class FieldInterpreter {
    * <p>TODO(b/70671325): Investigate if we can drop support for this.
    */
   private static FieldInterpreter getJspbMapType(
-      final FieldInterpreter scalarImpl, FieldDescriptor fieldDescriptor) {
-    String keyFieldName = ProtoUtils.getJsMapKeyFieldName(fieldDescriptor);
-    final FieldDescriptor keyDescriptor =
-        fieldDescriptor.getMessageType().findFieldByName(keyFieldName);
-    if (keyDescriptor == null) {
-      throw new IllegalArgumentException("Cannot find field with name \"" + keyFieldName + "\".");
-    } else if (keyDescriptor.getJavaType() != JavaType.STRING || keyDescriptor.isRepeated()) {
-      throw new IllegalArgumentException(
-          "\"" + keyFieldName + "\" must be an optional/required string field.");
-    }
+      final FieldInterpreter scalarImpl, final FieldDescriptor keyFieldDescriptor) {
     return new FieldInterpreter() {
       @Override
       public SoyValue soyFromProto(Object field) {
@@ -182,7 +273,7 @@ abstract class FieldInterpreter {
         List<Message> entries = (List<Message>) field;
         ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
         for (Message message : entries) {
-          String key = (String) message.getField(keyDescriptor);
+          String key = (String) message.getField(keyFieldDescriptor);
           if (key.isEmpty()) {
             // Ignore empty keys.
             continue;
@@ -206,82 +297,6 @@ abstract class FieldInterpreter {
             "assigning to mapkey fields is not currently supported");
       }
     };
-  }
-
-  private static FieldInterpreter getScalarType(FieldDescriptor fieldDescriptor) {
-    // Field definition includes an option that overrides normal type.
-    if (ProtoUtils.hasJsType(fieldDescriptor)) {
-      JSType jsType = ProtoUtils.getJsType(fieldDescriptor);
-      switch (jsType) {
-        case JS_NORMAL:
-        case JS_NUMBER:
-          // in java soy ints are big enough, to work for both cases.  except for unsigned, but we
-          // can't really support that in javascript anyway.
-          return LONG_AS_INT;
-        case JS_STRING:
-          if (ProtoUtils.isUnsigned(fieldDescriptor)) {
-            return UNSIGNEDLONG_AS_STRING;
-          }
-          return LONG_AS_STRING;
-      }
-    }
-
-    switch (fieldDescriptor.getType()) {
-      case BOOL:
-        return BOOL;
-
-      case DOUBLE:
-        return DOUBLE_AS_FLOAT;
-
-      case FLOAT:
-        return FLOAT;
-
-      case BYTES:
-        return BYTES;
-
-      case GROUP:
-        throw new UnsupportedOperationException(
-            "soy doesn't support proto groups: " + fieldDescriptor.getFullName());
-
-      case INT64:
-        return LONG_AS_INT;
-      case INT32:
-      case SINT32:
-      case SFIXED32:
-        return INT;
-      case UINT32:
-      case FIXED32:
-        return UNSIGNED_INT;
-
-      case FIXED64:
-      case SINT64:
-      case SFIXED64:
-      case UINT64:
-        throw new IllegalArgumentException(
-            fieldDescriptor.getFullName()
-                + ": 64-bit integer types are not supported.  "
-                + "Instead, add [(jspb.jstype) = INT52] to the field.");
-
-        // For enums and messages we delegate to the converter for interpretation to resolve a
-        // circular dep between SoyProtoType and SoyProtoValue.
-        // TODO(user): Remove the circular dependency.
-      case ENUM:
-        return enumTypeField(fieldDescriptor);
-
-      case MESSAGE:
-        SanitizedType sanitizedType =
-            SafeStringTypes.getSafeStringType(fieldDescriptor.getMessageType());
-        if (sanitizedType != null) {
-          return safeStringTypeField(sanitizedType, fieldDescriptor.getMessageType());
-        }
-        return messageTypeField(fieldDescriptor.getMessageType());
-
-      case STRING:
-        return STRING;
-
-      default:
-        throw new AssertionError("Unexpected field type in proto");
-    }
   }
 
   /** A {@link FieldInterpreter} for bytes typed fields. */
@@ -479,16 +494,121 @@ abstract class FieldInterpreter {
         }
       };
 
+  private static final FieldInterpreter SAFE_HTML_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromSafeHtmlProto((SafeHtmlProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.HtmlType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toSafeHtmlProto();
+        }
+      };
+
+  private static final FieldInterpreter SAFE_SCRIPT_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromSafeScriptProto((SafeScriptProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.JsType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toSafeScriptProto();
+        }
+      };
+
+  private static final FieldInterpreter SAFE_STYLE_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromSafeStyleProto((SafeStyleProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.CssType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toSafeStyleProto();
+        }
+      };
+
+  private static final FieldInterpreter SAFE_STYLE_SHEET_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromSafeStyleSheetProto((SafeStyleSheetProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.CssType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toSafeStyleSheetProto();
+        }
+      };
+
+  private static final FieldInterpreter SAFE_URL_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromSafeUrlProto((SafeUrlProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.UriType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toSafeUrlProto();
+        }
+      };
+  private static final FieldInterpreter TRUSTED_RESOURCE_URI_PROTO =
+      new FieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          return SanitizedContents.fromTrustedResourceUrlProto((TrustedResourceUrlProto) field);
+        }
+
+        @Override
+        public SoyType type(SoyTypeRegistry registry) {
+          return SanitizedType.TrustedResourceUriType.getInstance();
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          return ((SanitizedContent) field).toTrustedResourceUrlProto();
+        }
+      };
   /**
    * Returns a {@link FieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static final FieldInterpreter enumTypeField(final FieldDescriptor fieldDescriptor) {
-    final EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
+  private static final FieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
     return new FieldInterpreter() {
       @Override
       public SoyType type(SoyTypeRegistry registry) {
-        return registry.getType(fieldDescriptor.getEnumType().getFullName());
+        return registry.getType(enumDescriptor.getFullName());
       }
 
       @Override
@@ -511,30 +631,10 @@ abstract class FieldInterpreter {
         // in proto3 we preserve unknown enum values (for consistency with jbcsrc), but for proto2
         // we don't, and so if the field is unknown we will return null which will trigger an NPE
         // again, for consistency with jbcsrc.
-        if (fieldDescriptor.getFile().getSyntax() == Syntax.PROTO3) {
+        if (enumDescriptor.getFile().getSyntax() == Syntax.PROTO3) {
           return enumDescriptor.findValueByNumberCreatingIfUnknown(value);
         }
         return enumDescriptor.findValueByNumber(value);
-      }
-    };
-  }
-
-  private static final FieldInterpreter safeStringTypeField(
-      final SanitizedType type, final Descriptor fieldType) {
-    return new FieldInterpreter() {
-      @Override
-      public SoyType type(SoyTypeRegistry registry) {
-        return type;
-      }
-
-      @Override
-      public SoyValue soyFromProto(Object field) {
-        return SafeStringTypes.convertToSoyValue(field);
-      }
-
-      @Override
-      Object protoFromSoy(SoyValue field) {
-        return SafeStringTypes.convertToProto((SanitizedContent) field, fieldType.getFullName());
       }
     };
   }

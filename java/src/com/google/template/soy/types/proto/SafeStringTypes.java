@@ -30,9 +30,6 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Message;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.primitive.SanitizedType;
@@ -175,10 +172,6 @@ final class SafeStringTypes {
     }
   }
 
-  static SanitizedType getSafeStringType(Descriptor descriptor) {
-    return SAFE_PROTO_TO_SANITIZED_TYPE.get(descriptor.getFullName());
-  }
-
   @Nullable
   static SoyValue convertToSoyValue(Object obj) {
     if (obj == null) {
@@ -189,33 +182,5 @@ final class SafeStringTypes {
       return converter.apply(obj);
     }
     return null;
-  }
-
-  static Message convertToProto(SanitizedContent value, String protoName) {
-    switch (value.getContentKind()) {
-      case HTML:
-        return value.toSafeHtmlProto();
-      case ATTRIBUTES:
-        throw new IllegalStateException("ContentKind.ATTRIBUTES is incompatible with " + protoName);
-      case JS:
-        return value.toSafeScriptProto();
-      case CSS:
-        // We use ContentKind.CSS for both SafeStyleProto (list of property: value pairs) and
-        // SafeStyleSheetProto (a complete CSS style sheet).
-        // Use the full name of the message descriptor to disambiguate.
-        if (SafeStyleProto.getDescriptor().getFullName().equals(protoName)) {
-          return value.toSafeStyleProto();
-        } else if (SafeStyleSheetProto.getDescriptor().getFullName().equals(protoName)) {
-          return value.toSafeStyleSheetProto();
-        }
-
-        throw new AssertionError("unexpected proto name: " + protoName);
-      case URI:
-        return value.toSafeUrlProto();
-      case TRUSTED_RESOURCE_URI:
-        return value.toTrustedResourceUrlProto();
-      default:
-        throw new AssertionError("unexpected ContentKind: " + value.getContentKind());
-    }
   }
 }
