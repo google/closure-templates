@@ -30,7 +30,7 @@ import java.util.List;
  * An abstract visitor that handles all the proto field cases that are important to the soy
  * compiler.
  *
- * @param T the return type of the visit methods
+ * @param <T> the return type of the visit methods
  */
 public abstract class FieldVisitor<T> {
   /** Applies the visitor to the given field. */
