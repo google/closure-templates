@@ -37,10 +37,11 @@ import java.util.logging.Logger;
  * <p>This is used to calculate field names and handle ambiguous extensions. Additional logic should
  * be handled by subclasses.
  */
-abstract class Field {
+public abstract class Field {
   private static final Logger logger = Logger.getLogger(Field.class.getName());
 
-  interface Factory<T extends Field> {
+  /** A factory for field types. */
+  public interface Factory<T extends Field> {
     /** Returns a field. */
     T create(FieldDescriptor fieldDescriptor);
 
@@ -53,7 +54,7 @@ abstract class Field {
   }
 
   /** Returns the set of fields indexed by soy accessor name for the given type. */
-  static <T extends Field> ImmutableMap<String, T> getFieldsForType(
+  public static <T extends Field> ImmutableMap<String, T> getFieldsForType(
       Descriptor descriptor, Set<FieldDescriptor> extensions, Factory<T> factory) {
     ImmutableMap.Builder<String, T> fields = ImmutableMap.builder();
     for (FieldDescriptor fieldDescriptor : descriptor.getFields()) {
@@ -96,7 +97,7 @@ abstract class Field {
   private final boolean shouldCheckFieldPresenceToEmulateJspbNullability;
   private final String name;
 
-  Field(FieldDescriptor fieldDesc) {
+  protected Field(FieldDescriptor fieldDesc) {
     this.fieldDesc = checkNotNull(fieldDesc);
     this.name = computeSoyName(fieldDesc);
     this.shouldCheckFieldPresenceToEmulateJspbNullability =
@@ -104,7 +105,7 @@ abstract class Field {
   }
 
   /** Return the name of this member field. */
-  final String getName() {
+  public final String getName() {
     return name;
   }
 
@@ -112,11 +113,11 @@ abstract class Field {
    * Returns whether or not we need to check for field presence to handle nullability semantics on
    * the server.
    */
-  final boolean shouldCheckFieldPresenceToEmulateJspbNullability() {
+  public final boolean shouldCheckFieldPresenceToEmulateJspbNullability() {
     return shouldCheckFieldPresenceToEmulateJspbNullability;
   }
 
-  final FieldDescriptor getDescriptor() {
+  public final FieldDescriptor getDescriptor() {
     return fieldDesc;
   }
 
@@ -135,7 +136,7 @@ abstract class Field {
     }
   }
 
-  static RuntimeException ambiguousFieldsError(String name, Set<? extends Field> fields) {
+  protected static RuntimeException ambiguousFieldsError(String name, Set<? extends Field> fields) {
     return new IllegalStateException(
         String.format(
             "Cannot access %s. It may refer to any one of the following extensions, "

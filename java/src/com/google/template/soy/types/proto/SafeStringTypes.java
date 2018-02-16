@@ -16,25 +16,14 @@
 
 package com.google.template.soy.types.proto;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
-import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeScriptProto;
-import com.google.common.html.types.SafeStyle;
 import com.google.common.html.types.SafeStyleProto;
-import com.google.common.html.types.SafeStyleSheet;
 import com.google.common.html.types.SafeStyleSheetProto;
-import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
-import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.primitive.SanitizedType;
-import java.lang.reflect.Modifier;
-import javax.annotation.Nullable;
 
 /** A relation between safe string types and sanitized content types. */
 final class SafeStringTypes {
@@ -58,129 +47,4 @@ final class SafeStringTypes {
               SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
-  private interface Converter extends Function<Object, SoyValue> {}
-
-  private static final ImmutableMap<Class<?>, Converter> TO_SOY_VALUE =
-      ImmutableMap.<Class<?>, Converter>builder()
-          .put(
-              SafeHtml.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeHtml((SafeHtml) obj);
-                }
-              })
-          .put(
-              SafeHtmlProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeHtmlProto((SafeHtmlProto) obj);
-                }
-              })
-          .put(
-              SafeScript.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeScript((SafeScript) obj);
-                }
-              })
-          .put(
-              SafeScriptProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeScriptProto((SafeScriptProto) obj);
-                }
-              })
-          .put(
-              SafeStyle.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeStyle((SafeStyle) obj);
-                }
-              })
-          .put(
-              SafeStyleProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeStyleProto((SafeStyleProto) obj);
-                }
-              })
-          .put(
-              SafeStyleSheet.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeStyleSheet((SafeStyleSheet) obj);
-                }
-              })
-          .put(
-              SafeStyleSheetProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeStyleSheetProto((SafeStyleSheetProto) obj);
-                }
-              })
-          .put(
-              SafeUrl.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeUrl((SafeUrl) obj);
-                }
-              })
-          .put(
-              SafeUrlProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromSafeUrlProto((SafeUrlProto) obj);
-                }
-              })
-          .put(
-              TrustedResourceUrl.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromTrustedResourceUrl((TrustedResourceUrl) obj);
-                }
-              })
-          .put(
-              TrustedResourceUrlProto.class,
-              new Converter() {
-                @Override
-                public SoyValue apply(Object obj) {
-                  return SanitizedContents.fromTrustedResourceUrlProto(
-                      (TrustedResourceUrlProto) obj);
-                }
-              })
-          .build();
-
-  static {
-    // If our class lookup table includes classes that can be extended,
-    // then the .get(...) call below may spuriously return null.
-    for (Class<?> cl : TO_SOY_VALUE.keySet()) {
-      if (!Modifier.isFinal(cl.getModifiers())) {
-        throw new AssertionError(
-            cl + " is not final so there might be subclasses that aren't keyed in this map");
-      }
-    }
-  }
-
-  @Nullable
-  static SoyValue convertToSoyValue(Object obj) {
-    if (obj == null) {
-      return null;
-    }
-    Converter converter = TO_SOY_VALUE.get(obj.getClass());
-    if (converter != null) {
-      return converter.apply(obj);
-    }
-    return null;
-  }
 }

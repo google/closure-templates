@@ -212,9 +212,11 @@ public abstract class FieldVisitor<T> {
       case SFIXED64:
       case UINT64:
         throw new IllegalArgumentException(
-            fieldDescriptor.getFullName()
+            "Cannot access "
+                + fieldDescriptor.getFullName()
                 + ": 64-bit integer types are not supported.  "
-                + "Instead, add [(jspb.jstype) = INT52] to the field.");
+                + "Consider, adding [(jspb.jstype) = INT52] or [(jspb.jstype) = STRING] to the "
+                + "field.");
 
       case ENUM:
         return visitor.visitEnum(fieldDescriptor.getEnumType());

@@ -99,3 +99,8 @@ message Map {
   map<string, string> map_field = 1;
   map<int32, InnerMessage> map_message_field = 2;
 }
+
+message ProtoWithInaccessibleField {
+  optional uint64 cant_touch_this = 1;
+  optional int32 can_touch_this = 2;
+}

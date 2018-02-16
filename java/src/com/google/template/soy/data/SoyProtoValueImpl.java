@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -30,16 +30,11 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyProtoValue;
-import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.types.proto.Field;
+import com.google.template.soy.types.proto.JavaQualifiedNames;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
@@ -104,7 +99,6 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
   }
 
   private static final class NormalFieldWithInterpreter extends FieldWithInterpreter {
-    // allocate lazily so we don't issue errors on fields that aren't accessed.
     @LazyInit FieldInterpreter interpreter;
 
     NormalFieldWithInterpreter(FieldDescriptor fieldDesc) {
