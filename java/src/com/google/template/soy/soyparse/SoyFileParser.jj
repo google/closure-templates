@@ -3523,107 +3523,108 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
 
   [
     openParen = <LPAREN>
-   // A simple approach to parsing map literals would be to parse a sequence of comma-delimited
-   // Expr <COLON> Exprs. At the end, if ident is "map", it's a map literal, otherwise it's a proto
-   // init literal. Proto init literals require simple identifiers as keys, while map literals
-   // allow any expression. Parsing them using the same rules makes the error messages
-   // for malformed proto init literals confusing. So use a lookahead to parse the map literals
-   // separately.
-   (LOOKAHEAD({ident.identifier().equals("map")} )
-    [
-      key = Expr()
-      <COLON>
-      val = Expr()
-      { kvPairs.put(key, val); }
-      (
-        <COMMA>
+    // A simple approach to parsing map literals would be to parse a sequence of comma-delimited
+    // Expr <COLON> Exprs. At the end, if ident is "map", it's a map literal, otherwise it's a proto
+    // init literal. Proto init literals require simple identifiers as keys, while map literals
+    // allow any expression. Parsing them using the same rules makes the error messages
+    // for malformed proto init literals confusing. So use a lookahead to parse the map literals
+    // separately.
+    (
+      LOOKAHEAD( {ident.identifier().equals("map")} )
+      [
         key = Expr()
         <COLON>
         val = Expr()
         { kvPairs.put(key, val); }
-      )*
-    ]
-    closeParen = <RPAREN>
-    {
-      // Note: the case where there are no keys or values is ambiguous.
-      // It could be a 0-arg function call to a function called "map".
-      // (Function calls and map literals are usually distinguished by their parameter syntax
-      // (positional vs. named), but that's not helpful when there are no params.)
-      // TODO(b/69433057): ban functions named "map".
-       SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-       return new MapLiteralNode(kvPairs.build(), srcLoc);
-    }
-    |
-
-        [
-          // this can be any expr, for a function call; for proto init, must be a single-ident global
-          key = Expr()
-
-          (
-            // parens contain a list of ident : expr pairs - this is a proto init call
-            <COLON>
-            val = Expr()
-            {
-              if (!(key instanceof GlobalNode)
-                  || !BaseUtils.isIdentifier(((GlobalNode) key).getName())) {
-                errorReporter.report(
-                    key.getSourceLocation(), INVALID_PARAM_NAME, key.toSourceString());
-                key = GlobalNode.error(key.getSourceLocation());
-              }
-
-          paramNames = new LinkedHashSet<String>();
-
-          paramNames.add(((GlobalNode) key).getName());
-          params.add(val);
-        }
-
         (
           <COMMA>
-
-          paramName = <IDENT>
-          {
-            if (!paramNames.add(paramName.image)) {
-              errorReporter.report(createSrcLoc(paramName), DUPLICATE_PARAM_NAME, paramName.image);
-            }
-          }
+          key = Expr()
           <COLON>
           val = Expr()
-          { params.add(val); }
+          { kvPairs.put(key, val); }
         )*
-
-        closeParen = <RPAREN>
-        {
-          // TODO(user): Add source locations to paramNames
-          // TODO(user): Also add type, then remove code from RETV
-          ProtoInitNode pNode = new ProtoInitNode(
-              headerInfo.resolveAlias(ident.identifier()), paramNames,
-              ident.location().extend(createSrcLoc(closeParen)));
-          pNode.addChildren(params);
-          return pNode;
-        }
-      |
-        // parens contain a list of exprs - this is a function
-        { params.add(key); }
+      ]
+      closeParen = <RPAREN>
+      {
+        // Note: the case where there are no keys or values is ambiguous.
+        // It could be a 0-arg function call to a function called "map".
+        // (Function calls and map literals are usually distinguished by their parameter syntax
+        // (positional vs. named), but that's not helpful when there are no params.)
+        // TODO(b/69433057): ban functions named "map".
+        SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
+        return new MapLiteralNode(kvPairs.build(), srcLoc);
+      }
+    |
+      [
+        // this can be any expr, for a function call; for proto init, must be a single-ident global
+        key = Expr()
 
         (
-          <COMMA>
+          // parens contain a list of ident : expr pairs - this is a proto init call
+          <COLON>
           val = Expr()
-          { params.add(val); }
-        )*
+          {
+            if (!(key instanceof GlobalNode)
+                || !BaseUtils.isIdentifier(((GlobalNode) key).getName())) {
+              errorReporter.report(
+                  key.getSourceLocation(), INVALID_PARAM_NAME, key.toSourceString());
+              key = GlobalNode.error(key.getSourceLocation());
+            }
 
-        closeParen = <RPAREN>
+            paramNames = new LinkedHashSet<String>();
 
-        {
-          SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
-          FunctionNode fnNode =
-              new FunctionNode(
-                  pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
-                  loc);
-          fnNode.addChildren(params);
-          return fnNode;
-        }
-      )
-    ]
+            paramNames.add(((GlobalNode) key).getName());
+            params.add(val);
+          }
+
+          (
+            <COMMA>
+
+            paramName = <IDENT>
+            {
+              if (!paramNames.add(paramName.image)) {
+                errorReporter.report(
+                    createSrcLoc(paramName), DUPLICATE_PARAM_NAME, paramName.image);
+              }
+            }
+            <COLON>
+            val = Expr()
+            { params.add(val); }
+          )*
+
+          closeParen = <RPAREN>
+          {
+            // TODO(user): Add source locations to paramNames
+            // TODO(user): Also add type, then remove code from RETV
+            ProtoInitNode pNode = new ProtoInitNode(
+                headerInfo.resolveAlias(ident.identifier()), paramNames,
+                ident.location().extend(createSrcLoc(closeParen)));
+            pNode.addChildren(params);
+            return pNode;
+          }
+        |
+          // parens contain a list of exprs - this is a function
+          { params.add(key); }
+
+          (
+            <COMMA>
+            val = Expr()
+            { params.add(val); }
+          )*
+
+          closeParen = <RPAREN>
+
+          {
+            SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
+            FunctionNode fnNode =
+                new FunctionNode(
+                    pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
+                    loc);
+            fnNode.addChildren(params);
+            return fnNode;
+          }
+        )
+      ]
     )
     closeParen = <RPAREN>
   ]
