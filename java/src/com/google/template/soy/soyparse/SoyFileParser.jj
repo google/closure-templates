@@ -3537,12 +3537,15 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
         val = Expr()
         { kvPairs.put(key, val); }
         (
+          // Disambiguate with a trailing comma
+          LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
           <COMMA>
           key = Expr()
           <COLON>
           val = Expr()
           { kvPairs.put(key, val); }
         )*
+        [ <COMMA> ]  // trailing comma
       ]
       closeParen = <RPAREN>
       {

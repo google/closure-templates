@@ -816,6 +816,18 @@ public final class TemplateParserTest {
             + " {/msg}\n");
   }
 
+  @Test
+  public void testMapTrailingComma() throws Exception {
+    assertValidTemplate("{map(1:2,)}");
+    assertValidTemplate("{map(1:2,2:3,3:4,)}");
+
+    assertInvalidTemplate("{map(,)}");
+    assertInvalidTemplate("{map(,1:2)}");
+    assertInvalidTemplate("{map(,1:2,)}");
+    assertInvalidTemplate("{map(,1:2,2:3,4:5)}");
+    assertInvalidTemplate("{map(,1:2,2:3,4:5,)}");
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Tests for recognition and parse results.
 
