@@ -388,6 +388,9 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
     ilb.appendLine("import com.google.common.collect.ImmutableSortedSet;");
+    if (!protoTypes.isEmpty()) {
+      ilb.appendLine("import com.google.protobuf.Descriptors.GenericDescriptor;");
+    }
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyFileInfo;");
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyTemplateInfo;");
 
@@ -409,13 +412,12 @@ public final class GenerateParseInfoVisitor
       ilb.appendLine();
       ilb.appendLine();
       ilb.appendLine("/** Protocol buffer types used by these templates. */");
-      // TODO(lukes): fix the generic type param here.
-      ilb.appendLine("@Override public ImmutableList<Object> getProtoTypes() {");
+      ilb.appendLine("@Override public ImmutableList<GenericDescriptor> getProtoDescriptors() {");
       ilb.increaseIndent();
       // Note we use fully-qualified names instead of imports to avoid potential collisions.
       List<String> defaultInstances = Lists.newArrayList();
       defaultInstances.addAll(protoTypes);
-      appendListOrSetHelper(ilb, "return ImmutableList.<Object>of", defaultInstances);
+      appendListOrSetHelper(ilb, "return ImmutableList.<GenericDescriptor>of", defaultInstances);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
       ilb.appendLine("}");

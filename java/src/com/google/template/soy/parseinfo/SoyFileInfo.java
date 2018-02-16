@@ -18,6 +18,7 @@ package com.google.template.soy.parseinfo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 
 /**
  * Parsed info about a Soy file.
@@ -103,6 +104,15 @@ public class SoyFileInfo {
    * the default object for a given proto type.
    */
   public ImmutableList<Object> getProtoTypes() {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ImmutableList<Object> typed = (ImmutableList) getProtoDescriptors();
+    return typed;
+  }
+  /**
+   * Returns a list of any protocol buffer types used by the templates. The elements of the list are
+   * the default object for a given proto type.
+   */
+  public ImmutableList<GenericDescriptor> getProtoDescriptors() {
     return ImmutableList.of();
   }
 
