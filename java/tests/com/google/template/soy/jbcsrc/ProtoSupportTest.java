@@ -31,7 +31,6 @@ import com.google.protobuf.ByteString;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
-import com.google.template.soy.data.SoyCustomValueConverter;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
@@ -50,7 +49,6 @@ import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
-import com.google.template.soy.types.proto.SoyProtoValueConverter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,12 +88,6 @@ public final class ProtoSupportTest {
                         Example.getDescriptor(),
                         Proto3.getDescriptor())
                     .buildNoFiles();
-              }
-
-              @Provides
-              List<SoyCustomValueConverter> provideCustomValueConverters(
-                  SoyProtoValueConverter protoValueConverter) {
-                return ImmutableList.<SoyCustomValueConverter>of(protoValueConverter);
               }
             })
         .injectMembers(this);
