@@ -17,13 +17,21 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
+import com.google.inject.Binder;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -109,5 +117,53 @@ public class SoyValueConverterTest {
                 .resolve()
                 .stringValue())
         .isEqualTo("foo");
+  }
+
+  @Test
+  public void testConvertWithCustomConverter() {
+    Module guiceModuleWithSoyCustomValueConverters =
+        new Module() {
+          @Override
+          public void configure(Binder binder) {
+            // Do nothing.
+          }
+
+          @Provides
+          List<SoyCustomValueConverter> provideSoyCustomValueConverters() {
+            return ImmutableList.<SoyCustomValueConverter>of(
+                // This converter converts non-primitive arrays to SoyList.
+                new SoyCustomValueConverter() {
+                  @Override
+                  public SoyValueProvider convert(SoyValueConverter valueConverter, Object obj) {
+                    if (obj instanceof Object[]) {
+                      return valueConverter.convert(Arrays.asList((Object[]) obj));
+                    } else {
+                      return null;
+                    }
+                  }
+                });
+          }
+        };
+
+    Injector injector = Guice.createInjector(guiceModuleWithSoyCustomValueConverters);
+    SoyValueConverter converter = injector.getInstance(SoyValueConverter.class);
+
+    // Test convert non-primitive arrays.
+    assertThat(((SoyList) converter.convert(new String[] {"boo", "foo"})).get(1).stringValue())
+        .isEqualTo("foo");
+    assertThat(((SoyList) converter.convert(new Integer[] {1, 3, 5, 7})).get(2).integerValue())
+        .isEqualTo(5);
+
+    // Test convert primitive arrays (expected to error).
+    try {
+      converter.convert(new int[] {1, 3, 5, 7});
+      fail();
+    } catch (SoyDataException expected) {
+    }
+
+    // Test that basic conversions still work.
+    assertThat(converter.convert(null)).isEqualTo(NullData.INSTANCE);
+    assertThat(converter.convert("boo").resolve().stringValue()).isEqualTo("boo");
+    assertThat(converter.convert(3.14).resolve().floatValue()).isWithin(0.0).of(3.14);
   }
 }

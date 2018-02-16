@@ -23,23 +23,10 @@ import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.html.types.SafeHtml;
-import com.google.common.html.types.SafeHtmlProto;
-import com.google.common.html.types.SafeScript;
-import com.google.common.html.types.SafeScriptProto;
-import com.google.common.html.types.SafeStyle;
-import com.google.common.html.types.SafeStyleProto;
-import com.google.common.html.types.SafeStyleSheet;
-import com.google.common.html.types.SafeStyleSheetProto;
-import com.google.common.html.types.SafeUrl;
-import com.google.common.html.types.SafeUrlProto;
-import com.google.common.html.types.TrustedResourceUrl;
-import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.io.BaseEncoding;
 import com.google.inject.Inject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
-import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.DictImpl.RuntimeType;
@@ -53,6 +40,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -74,8 +62,6 @@ public final class SoyValueConverter {
   /** Static instance of this class that does not include any custom value converters. */
   public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
 
-  public static final SoyValueConverter INSTANCE = UNCUSTOMIZED_INSTANCE;
-
   /** An immutable empty dict. */
   public static final SoyDict EMPTY_DICT =
       DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN);
@@ -88,6 +74,11 @@ public final class SoyValueConverter {
 
   private final TypeMap cheapConverterMap = new TypeMap();
   private final TypeMap expensiveConverterMap = new TypeMap();
+
+  /** List of user-provided custom value converters. */
+  // Note: Using field injection instead of constructor injection because we want optional = true.
+  @Inject(optional = true)
+  private List<SoyCustomValueConverter> customValueConverters;
 
   @Inject
   SoyValueConverter() {
@@ -103,7 +94,7 @@ public final class SoyValueConverter {
         String.class,
         new Converter<String>() {
           @Override
-          public SoyValue apply(String input) {
+          public SoyValueProvider apply(String input) {
             return StringData.forValue(input);
           }
         });
@@ -111,7 +102,7 @@ public final class SoyValueConverter {
         Boolean.class,
         new Converter<Boolean>() {
           @Override
-          public SoyValue apply(Boolean input) {
+          public SoyValueProvider apply(Boolean input) {
             return BooleanData.forValue(input);
           }
         });
@@ -119,7 +110,7 @@ public final class SoyValueConverter {
         Integer.class,
         new Converter<Integer>() {
           @Override
-          public SoyValue apply(Integer input) {
+          public SoyValueProvider apply(Integer input) {
             return IntegerData.forValue(input.longValue());
           }
         });
@@ -127,7 +118,7 @@ public final class SoyValueConverter {
         Long.class,
         new Converter<Long>() {
           @Override
-          public SoyValue apply(Long input) {
+          public SoyValueProvider apply(Long input) {
             return IntegerData.forValue(input.longValue());
           }
         });
@@ -136,7 +127,7 @@ public final class SoyValueConverter {
         Float.class,
         new Converter<Float>() {
           @Override
-          public SoyValue apply(Float input) {
+          public SoyValueProvider apply(Float input) {
             return FloatData.forValue(input.doubleValue());
           }
         });
@@ -144,7 +135,7 @@ public final class SoyValueConverter {
         Double.class,
         new Converter<Double>() {
           @Override
-          public SoyValue apply(Double input) {
+          public SoyValueProvider apply(Double input) {
             return FloatData.forValue(input.doubleValue());
           }
         });
@@ -161,7 +152,7 @@ public final class SoyValueConverter {
         EnumValueDescriptor.class,
         new Converter<EnumValueDescriptor>() {
           @Override
-          public SoyValue apply(@Nullable EnumValueDescriptor input) {
+          public SoyValueProvider apply(@Nullable EnumValueDescriptor input) {
             // / Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
             return IntegerData.forValue(input.getNumber());
           }
@@ -170,121 +161,9 @@ public final class SoyValueConverter {
         ProtocolMessageEnum.class,
         new Converter<ProtocolMessageEnum>() {
           @Override
-          public SoyValue apply(@Nullable ProtocolMessageEnum input) {
+          public SoyValueProvider apply(@Nullable ProtocolMessageEnum input) {
             // Proto enum that was directly passed into the template
             return IntegerData.forValue(input.getNumber());
-          }
-        });
-    cheapConverterMap.put(
-        SafeHtml.class,
-        new Converter<SafeHtml>() {
-          @Override
-          public SoyValue apply(SafeHtml obj) {
-            return SanitizedContents.fromSafeHtml(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeHtmlProto.class,
-        new Converter<SafeHtmlProto>() {
-          @Override
-          public SoyValue apply(SafeHtmlProto obj) {
-            return SanitizedContents.fromSafeHtmlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeScript.class,
-        new Converter<SafeScript>() {
-          @Override
-          public SoyValue apply(SafeScript obj) {
-            return SanitizedContents.fromSafeScript(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeScriptProto.class,
-        new Converter<SafeScriptProto>() {
-          @Override
-          public SoyValue apply(SafeScriptProto obj) {
-            return SanitizedContents.fromSafeScriptProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyle.class,
-        new Converter<SafeStyle>() {
-          @Override
-          public SoyValue apply(SafeStyle obj) {
-            return SanitizedContents.fromSafeStyle(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleProto.class,
-        new Converter<SafeStyleProto>() {
-          @Override
-          public SoyValue apply(SafeStyleProto obj) {
-            return SanitizedContents.fromSafeStyleProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleSheet.class,
-        new Converter<SafeStyleSheet>() {
-          @Override
-          public SoyValue apply(SafeStyleSheet obj) {
-            return SanitizedContents.fromSafeStyleSheet(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleSheetProto.class,
-        new Converter<SafeStyleSheetProto>() {
-          @Override
-          public SoyValue apply(SafeStyleSheetProto obj) {
-            return SanitizedContents.fromSafeStyleSheetProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeUrl.class,
-        new Converter<SafeUrl>() {
-          @Override
-          public SoyValue apply(SafeUrl obj) {
-            return SanitizedContents.fromSafeUrl(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeUrlProto.class,
-        new Converter<SafeUrlProto>() {
-          @Override
-          public SoyValue apply(SafeUrlProto obj) {
-            return SanitizedContents.fromSafeUrlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        TrustedResourceUrl.class,
-        new Converter<TrustedResourceUrl>() {
-          @Override
-          public SoyValue apply(TrustedResourceUrl obj) {
-            return SanitizedContents.fromTrustedResourceUrl(obj);
-          }
-        });
-    cheapConverterMap.put(
-        TrustedResourceUrlProto.class,
-        new Converter<TrustedResourceUrlProto>() {
-          @Override
-          public SoyValue apply(TrustedResourceUrlProto obj) {
-            return SanitizedContents.fromTrustedResourceUrlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        Message.Builder.class,
-        new Converter<Message.Builder>() {
-          @Override
-          public SoyValueProvider apply(Message.Builder input) {
-            return SoyProtoValueImpl.create(input.build());
-          }
-        });
-    cheapConverterMap.put(
-        Message.class,
-        new Converter<Message>() {
-          @Override
-          public SoyValueProvider apply(Message input) {
-            return SoyProtoValueImpl.create(input);
           }
         });
 
@@ -292,7 +171,7 @@ public final class SoyValueConverter {
         ByteString.class,
         new Converter<ByteString>() {
           @Override
-          public SoyValue apply(ByteString input) {
+          public SoyValueProvider apply(ByteString input) {
             return StringData.forValue(BaseEncoding.base64().encode(input.toByteArray()));
           }
         });
@@ -308,7 +187,7 @@ public final class SoyValueConverter {
         Map.class,
         new Converter<Map<String, ?>>() {
           @Override
-          public SoyValue apply(Map<String, ?> input) {
+          public SoyValueProvider apply(Map<String, ?> input) {
             return newDictFromMap(input);
           }
         });
@@ -316,7 +195,7 @@ public final class SoyValueConverter {
         MarkAsSoyMap.class,
         new Converter<MarkAsSoyMap>() {
           @Override
-          public SoyValue apply(MarkAsSoyMap input) {
+          public SoyValueProvider apply(MarkAsSoyMap input) {
             return newSoyMapFromJavaMap(input.delegate());
           }
         });
@@ -324,7 +203,7 @@ public final class SoyValueConverter {
         Collection.class,
         new Converter<Collection<?>>() {
           @Override
-          public SoyValue apply(Collection<?> input) {
+          public SoyValueProvider apply(Collection<?> input) {
             return newListFromIterable(input);
           }
         });
@@ -332,7 +211,7 @@ public final class SoyValueConverter {
         FluentIterable.class,
         new Converter<FluentIterable<?>>() {
           @Override
-          public SoyValue apply(FluentIterable<?> input) {
+          public SoyValueProvider apply(FluentIterable<?> input) {
             return newListFromIterable(input);
           }
         });
@@ -450,6 +329,14 @@ public final class SoyValueConverter {
       return converted;
     }
 
+    if (customValueConverters != null) {
+      for (SoyCustomValueConverter customConverter : customValueConverters) {
+        converted = customConverter.convert(this, obj);
+        if (converted != null) {
+          return converted;
+        }
+      }
+    }
     throw new SoyDataException(
         "Attempting to convert unrecognized object to Soy value (object type "
             + obj.getClass().getName()
@@ -507,7 +394,7 @@ public final class SoyValueConverter {
       return null;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     <T> Converter<T> getConverter(Class<T> clz) {
       Object o = resolveConverter(checkNotNull(clz));
       if (o == NULL_MARKER) {

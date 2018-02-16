@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.data;
+package com.google.template.soy.types.proto;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -37,6 +37,13 @@ import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
@@ -45,8 +52,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.types.proto.FieldVisitor;
-import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

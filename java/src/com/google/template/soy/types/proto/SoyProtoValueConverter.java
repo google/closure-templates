@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types.proto;
 
+import com.google.protobuf.Message;
 import com.google.template.soy.data.SoyCustomValueConverter;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -34,7 +35,23 @@ public final class SoyProtoValueConverter implements SoyCustomValueConverter {
 
   @Override
   public SoyValueProvider convert(SoyValueConverter valueConverter, Object obj) {
-    // some people are calling this directly,
-    return valueConverter.convert(obj);
+    if (obj instanceof Message.Builder) {
+      // Eagerly convert MessageBuilders into Messages.
+      // This requires eagerly copying the entire proto at the moment, but allowing Builders
+      // directly in SoyProtoValueImpl slightly increases the risk of threading issues.
+      obj = ((Message.Builder) obj).build();
+    }
+
+    // Special case for protos that encode typed strings, instead of treating them as records.
+    SoyValueProvider safeStringProvider = SafeStringTypes.convertToSoyValue(obj);
+    if (safeStringProvider != null) {
+      return safeStringProvider;
+    }
+
+    if (obj instanceof Message) {
+      Message message = (Message) obj;
+      return SoyProtoValueImpl.create(message);
+    }
+    return null;
   }
 }
