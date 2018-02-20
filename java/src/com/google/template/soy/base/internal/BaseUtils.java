@@ -19,6 +19,7 @@ package com.google.template.soy.base.internal;
 import com.google.common.base.Ascii;
 import com.google.common.collect.Sets;
 import java.io.File;
+import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,8 @@ public class BaseUtils {
   private BaseUtils() {}
 
   /** Used by {@code ensureDirsExistInPath()}. Keeps track of known existing directory paths. */
-  private static final Set<String> KNOWN_EXISTING_DIRS = Sets.newHashSet();
+  private static final Set<String> knownExistingDirs =
+      Collections.synchronizedSet(Sets.newHashSet());
 
   /** Regular expression for an identifier. */
   public static final String IDENT_RE = "[a-zA-Z_][a-zA-Z_0-9]*";
@@ -92,11 +94,11 @@ public class BaseUtils {
         (path.charAt(path.length() - 1) == File.separatorChar)
             ? path.substring(0, path.length() - 1)
             : (new File(path)).getParent();
-    if (dirPath == null || KNOWN_EXISTING_DIRS.contains(dirPath)) {
+    if (dirPath == null || knownExistingDirs.contains(dirPath)) {
       return; // known to exist
     } else {
       (new File(dirPath)).mkdirs();
-      KNOWN_EXISTING_DIRS.add(dirPath);
+      knownExistingDirs.add(dirPath);
     }
   }
 
