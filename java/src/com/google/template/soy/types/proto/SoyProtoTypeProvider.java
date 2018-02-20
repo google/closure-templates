@@ -52,9 +52,12 @@ import javax.annotation.concurrent.GuardedBy;
 /**
  * SoyTypeProvider implementation which handles protocol buffer message types.
  *
+ * <p>TODO(user): inline this class into SoyTypeRegistry
+ *
+ * @deprecated Please use SoyFileSet.Builder#addProtoDescriptors to add descriptors directly to
+ *     SoyFileSet.Builder.
  */
-// TODO(user): Please use SoyFileSet.Builder#addProtoDescriptors to add descriptors directly to
-// SoyFileSet.Builder.
+@Deprecated
 public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
   private static final ExtensionRegistry REGISTRY = createRegistry();
@@ -65,26 +68,20 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     return instance;
   }
 
-  /**
-   * Helper class that assists in the construction of SoyTypeProviders.
-   */
+  /** Helper class that assists in the construction of SoyTypeProviders. */
   public static final class Builder {
     private final List<ByteSource> descriptorSources = new ArrayList<>();
     private final List<FileDescriptorSet> descriptorSets = new ArrayList<>();
     private final List<GenericDescriptor> descriptors = new ArrayList<>();
 
-    public Builder() {
-    }
+    public Builder() {}
 
     /** Read a file descriptor set from a file and register any proto types found within. */
     public Builder addFileDescriptorSetFromFile(File descriptorFile) {
       return addFileDescriptorSetFromByteSource(Files.asByteSource(descriptorFile));
     }
 
-    /**
-     * Read a file descriptor set from a byte source and register any proto types found
-     * within.
-     */
+    /** Read a file descriptor set from a byte source and register any proto types found within. */
     public Builder addFileDescriptorSetFromByteSource(ByteSource descriptorSource) {
       descriptorSources.add(descriptorSource);
       return this;
@@ -111,8 +108,8 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     }
 
     /**
-     * Assumes there are no empty descriptor files and descriptor sets which is mostly true
-     * in practice.
+     * Assumes there are no empty descriptor files and descriptor sets which is mostly true in
+     * practice.
      */
     public boolean isEmpty() {
       return descriptorSources.isEmpty() && descriptorSets.isEmpty() && descriptors.isEmpty();
@@ -167,9 +164,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       return file;
     }
 
-    /**
-     * Builds the type provider and returns it.
-     */
+    /** Builds the type provider and returns it. */
     public SoyProtoTypeProvider build()
         throws FileNotFoundException, IOException, DescriptorValidationException {
       DescriptorAddingDescriptorTreeWalker walker = new DescriptorAddingDescriptorTreeWalker();
@@ -202,8 +197,8 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
   private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
 
   /**
-   * Map of SoyTypes that have been created from the type descriptors. Gets filled in
-   * lazily as types are requested.
+   * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
+   * types are requested.
    */
   @GuardedBy("lock")
   private final Map<String, SoyType> typeCache;
@@ -234,8 +229,8 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     return descriptors.keySet();
   }
 
-  private SoyType doGetType(String name, SoyTypeRegistry typeRegistry,
-      GenericDescriptor descriptor) {
+  private SoyType doGetType(
+      String name, SoyTypeRegistry typeRegistry, GenericDescriptor descriptor) {
     SoyType type;
     synchronized (lock) {
       type = typeCache.get(name);
