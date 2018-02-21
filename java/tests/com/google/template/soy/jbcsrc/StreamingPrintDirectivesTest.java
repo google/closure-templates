@@ -317,7 +317,7 @@ public final class StreamingPrintDirectivesTest {
     RenderResult result =
         templates
             .getTemplateFactory(name)
-            .create(SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDictFromMap(params), EMPTY_DICT)
+            .create(SoyValueConverter.INSTANCE.newDictFromMap(params), EMPTY_DICT)
             .render(output, context);
     assertThat(result.isDone()).isTrue();
     return output.getAndClearBuffer();

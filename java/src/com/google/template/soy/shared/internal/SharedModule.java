@@ -24,7 +24,6 @@ import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -70,8 +69,6 @@ public final class SharedModule extends AbstractModule {
     bind(BidiGlobalDir.class)
         .toProvider(GuiceSimpleScope.<BidiGlobalDir>getUnscopedProvider())
         .in(ApiCallScope.class);
-
-    bind(SoyValueConverter.class).in(Singleton.class);
   }
 
   /**

@@ -31,7 +31,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -81,7 +80,6 @@ public final class TofuExceptionsTest {
   public void setUp() throws Exception {
     tofu =
         new BaseTofu(
-            INJECTOR.getInstance(SoyValueConverter.class),
             INJECTOR.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class)),
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
             ImmutableMap.<String, ImmutableSortedSet<String>>of());

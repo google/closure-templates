@@ -52,8 +52,6 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
         }
       };
 
-  /** The instance of SoyValueConverter to use for converting the future value (after retrieval). */
-  private final SoyValueConverter valueConverter;
 
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;
@@ -68,8 +66,7 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
    *     (after retrieval).
    * @param future The underlying Future object.
    */
-  public SoyFutureValueProvider(SoyValueConverter valueConverter, Future<?> future) {
-    this.valueConverter = valueConverter;
+  public SoyFutureValueProvider(Future<?> future) {
     this.future = future;
   }
 
@@ -89,7 +86,7 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
       if (!future.isDone()) {
         futureBlockCallback.get().beforeBlock();
       }
-      return valueConverter.convert(future.get()).resolve();
+      return SoyValueConverter.INSTANCE.convert(future.get()).resolve();
     } catch (ExecutionException e) {
       throw new SoyFutureException(e.getCause());
     } catch (Throwable e) {

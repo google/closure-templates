@@ -24,7 +24,6 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -53,7 +52,6 @@ public final class PrecompiledSoyModule extends AbstractModule {
   @Singleton
   @Precompiled
   SoySauce provideSoySauce(
-      SoyValueConverter converter,
       @ApiCall GuiceSimpleScope scope,
       @Deltemplates Optional<ImmutableSet<String>> allDeltemplates,
       ImmutableMap<String, ? extends SoyFunction> functions,
@@ -61,7 +59,6 @@ public final class PrecompiledSoyModule extends AbstractModule {
     return new SoySauceImpl(
         new CompiledTemplates(allDeltemplates.or(ImmutableSet.<String>of())),
         scope,
-        converter,
         functions,
         printDirectives);
   }

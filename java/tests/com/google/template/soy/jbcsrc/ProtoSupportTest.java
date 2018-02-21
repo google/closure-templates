@@ -17,16 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Provides;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -46,14 +43,11 @@ import com.google.template.soy.testing.Proto3;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -67,31 +61,14 @@ public final class ProtoSupportTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
 
-  @Inject SoyValueConverter converter;
-  @Inject SoyTypeRegistry types;
-
-  @Before
-  public void setUp() throws Exception {
-    Guice.createInjector(
-            new AbstractModule() {
-              @Override
-              public void configure() {
-                newSetBinder(binder(), SoyTypeProvider.class)
-                    .addBinding()
-                    .to(SoyProtoTypeProvider.class);
-              }
-
-              @Provides
-              SoyProtoTypeProvider provideProtoTypeProvider() {
-                return new SoyProtoTypeProvider.Builder()
-                    .addDescriptors(
-                        Example.getDescriptor(),
-                        Proto3.getDescriptor())
-                    .buildNoFiles();
-              }
-            })
-        .injectMembers(this);
-  }
+  final SoyTypeRegistry types =
+      new SoyTypeRegistry(
+          ImmutableSet.of(
+              new SoyProtoTypeProvider.Builder()
+                  .addDescriptors(
+                      Example.getDescriptor(),
+                      Proto3.getDescriptor())
+                  .buildNoFiles()));
 
   @Test
   public void testSimpleProto() {
@@ -279,7 +256,8 @@ public final class ProtoSupportTest {
         templates,
         "ns.caller",
         (SoyRecord)
-            converter.convert(ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2))));
+            SoyValueConverter.INSTANCE.convert(
+                ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2))));
   }
 
   @Test
@@ -447,9 +425,7 @@ public final class ProtoSupportTest {
   }
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
-    return TemplateTester.assertThatTemplateBody(body)
-        .withTypeRegistry(types)
-        .withValueConverter(converter);
+    return TemplateTester.assertThatTemplateBody(body).withTypeRegistry(types);
   }
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {

@@ -53,19 +53,16 @@ import java.util.Map;
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
   private final GuiceSimpleScope apiCallScope;
-  private final SoyValueConverter converter;
   private final ImmutableMap<String, SoyJavaFunction> functions;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
       CompiledTemplates templates,
       GuiceSimpleScope apiCallScope,
-      SoyValueConverter converter,
       ImmutableMap<String, ? extends SoyFunction> functions,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
-    this.converter = checkNotNull(converter);
     // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
     // (it generates Java source code implementing BuiltinFunctions).
     // Filter them out.
@@ -131,13 +128,13 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
-      this.ij = converter.newDictFromMap(checkNotNull(record));
+      this.ij = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
       return this;
     }
 
     @Override
     public RendererImpl setData(Map<String, ?> record) {
-      this.data = converter.newDictFromMap(checkNotNull(record));
+      this.data = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
       return this;
     }
 

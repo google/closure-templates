@@ -152,16 +152,15 @@ public final class SoyValueConverter {
         Future.class,
         new Converter<Future<?>>() {
           @Override
-          @Nullable
-          public SoyValueProvider apply(@Nullable Future<?> input) {
-            return new SoyFutureValueProvider(SoyValueConverter.this, input);
+          public SoyValueProvider apply(Future<?> input) {
+            return new SoyFutureValueProvider(input);
           }
         });
     cheapConverterMap.put(
         EnumValueDescriptor.class,
         new Converter<EnumValueDescriptor>() {
           @Override
-          public SoyValue apply(@Nullable EnumValueDescriptor input) {
+          public SoyValue apply(EnumValueDescriptor input) {
             // / Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
             return IntegerData.forValue(input.getNumber());
           }
@@ -170,7 +169,7 @@ public final class SoyValueConverter {
         ProtocolMessageEnum.class,
         new Converter<ProtocolMessageEnum>() {
           @Override
-          public SoyValue apply(@Nullable ProtocolMessageEnum input) {
+          public SoyValue apply(ProtocolMessageEnum input) {
             // Proto enum that was directly passed into the template
             return IntegerData.forValue(input.getNumber());
           }

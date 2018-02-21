@@ -77,13 +77,11 @@ public abstract class AbstractSoyPrintDirectiveTestCase {
       SoyValue expectedOutput, Object value, SoyJavaPrintDirective directive, Object... args) {
     ImmutableList.Builder<SoyValue> argsData = ImmutableList.builder();
     for (Object arg : args) {
-      argsData.add(SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(arg).resolve());
+      argsData.add(SoyValueConverter.INSTANCE.convert(arg).resolve());
     }
     assertThat(
             directive
-                .applyForJava(
-                    SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(value).resolve(),
-                    argsData.build())
+                .applyForJava(SoyValueConverter.INSTANCE.convert(value).resolve(), argsData.build())
                 .toString())
         .isEqualTo(expectedOutput.toString());
   }

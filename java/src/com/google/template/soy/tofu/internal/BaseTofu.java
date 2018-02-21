@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
  */
 public final class BaseTofu implements SoyTofu {
 
-  private final SoyValueConverter valueConverter;
 
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
@@ -62,15 +61,12 @@ public final class BaseTofu implements SoyTofu {
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
   /**
-   * @param valueConverter Instance of SoyValueConverter to use.
    * @param apiCallScope The scope object that manages the API call scope.
    */
   public BaseTofu(
-      SoyValueConverter valueConverter,
       GuiceSimpleScope apiCallScope,
       TemplateRegistry templates,
       ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
-    this.valueConverter = valueConverter;
     this.apiCallScope = apiCallScope;
     this.templateRegistry = templates;
     this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
@@ -262,7 +258,7 @@ public final class BaseTofu implements SoyTofu {
 
     @Override
     public Renderer setData(Map<String, ?> data) {
-      this.data = (data == null) ? null : baseTofu.valueConverter.newDictFromMap(data);
+      this.data = (data == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(data);
       return this;
     }
 
@@ -274,7 +270,7 @@ public final class BaseTofu implements SoyTofu {
 
     @Override
     public Renderer setIjData(Map<String, ?> ijData) {
-      this.ijData = (ijData == null) ? null : baseTofu.valueConverter.newDictFromMap(ijData);
+      this.ijData = (ijData == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(ijData);
       return this;
     }
 

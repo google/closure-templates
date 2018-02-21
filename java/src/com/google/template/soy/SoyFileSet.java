@@ -42,7 +42,6 @@ import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -127,7 +126,6 @@ public final class SoyFileSet {
   // Implementation detail of SoyFileSet.Builder.
   // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
-    private final SoyValueConverter soyValueConverter;
     private final GuiceSimpleScope apiCallScope;
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
@@ -135,12 +133,10 @@ public final class SoyFileSet {
 
     @Inject
     CoreDependencies(
-        SoyValueConverter soyValueConverter,
         @ApiCall GuiceSimpleScope apiCallScope,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
-      this.soyValueConverter = soyValueConverter;
       this.apiCallScope = apiCallScope;
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
@@ -229,7 +225,6 @@ public final class SoyFileSet {
       }
       return new SoyFileSet(
           coreDependencies.apiCallScope,
-          coreDependencies.soyValueConverter,
           localTypeRegistry == null ? coreDependencies.typeRegistry : localTypeRegistry,
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
@@ -626,7 +621,6 @@ public final class SoyFileSet {
   }
 
   private final GuiceSimpleScope apiCallScopeProvider;
-  private final SoyValueConverter soyValueConverter;
 
   private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
@@ -652,7 +646,6 @@ public final class SoyFileSet {
 
   SoyFileSet(
       GuiceSimpleScope apiCallScopeProvider,
-      SoyValueConverter soyValueConverter,
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -663,7 +656,6 @@ public final class SoyFileSet {
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
     this.apiCallScopeProvider = apiCallScopeProvider;
-    this.soyValueConverter = soyValueConverter;
 
     Preconditions.checkArgument(
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
@@ -882,7 +874,6 @@ public final class SoyFileSet {
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
     return new BaseTofu(
-        soyValueConverter,
         apiCallScopeProvider,
         primitives.registry,
         getTransitiveIjs(primitives.soyTree, primitives.registry));
@@ -941,8 +932,7 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
 
-    return new SoySauceImpl(
-        templates.get(), apiCallScopeProvider, soyValueConverter, soyFunctionMap, printDirectives);
+    return new SoySauceImpl(templates.get(), apiCallScopeProvider, soyFunctionMap, printDirectives);
   }
 
   /**

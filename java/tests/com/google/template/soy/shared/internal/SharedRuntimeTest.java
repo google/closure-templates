@@ -75,7 +75,7 @@ public class SharedRuntimeTest {
         .isEqualTo("HelloWorld");
 
     // Even arrays:
-    SoyValueConverter converter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
+    SoyValueConverter converter = SoyValueConverter.INSTANCE;
     assertThat(
             plus(
                     converter.convert(ImmutableList.of("Hello")).resolve(),

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.data;
 
-import static com.google.template.soy.data.SoyValueConverter.UNCUSTOMIZED_INSTANCE;
+import static com.google.template.soy.data.SoyValueConverter.INSTANCE;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -42,10 +42,10 @@ public final class SoyValueConverterUtility {
     for (int i = 0, n = alternatingKeysAndValues.length / 2; i < n; i++) {
       String key = (String) alternatingKeysAndValues[2 * i];
       SoyValueProvider value =
-          UNCUSTOMIZED_INSTANCE.convert(alternatingKeysAndValues[2 * i + 1]); // convert eagerly
+          INSTANCE.convert(alternatingKeysAndValues[2 * i + 1]); // convert eagerly
       insertIntoNestedMap(map, key, value);
     }
-    return UNCUSTOMIZED_INSTANCE.newDictFromMap(map);
+    return INSTANCE.newDictFromMap(map);
   }
 
   /**
@@ -57,7 +57,7 @@ public final class SoyValueConverterUtility {
   public static SoyList newList(Object... items) {
     ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
     for (Object o : items) {
-      builder.add(UNCUSTOMIZED_INSTANCE.convert(o));
+      builder.add(INSTANCE.convert(o));
     }
     return ListImpl.forProviderList(builder.build());
   }

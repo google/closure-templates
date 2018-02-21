@@ -46,7 +46,7 @@ public final class MapToLegacyObjectMapFunctionTest {
 
   private static final MapToLegacyObjectMapFunction MAP_TO_LEGACY_OBJECT_MAP =
       new MapToLegacyObjectMapFunction();
-  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
+  private static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
   @Test
   public void computeForJava() {

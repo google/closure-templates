@@ -158,7 +158,7 @@ public final class TemplateTester {
   }
 
   static SoyRecord asRecord(Map<String, ?> params) {
-    return (SoyRecord) SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(params);
+    return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
   }
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
@@ -168,7 +168,6 @@ public final class TemplateTester {
     private Iterable<ClassData> classData;
     private CompiledTemplate.Factory factory;
     private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
-    private SoyValueConverter converter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
     private SoyGeneralOptions generalOptions = new SoyGeneralOptions();
     private RenderContext defaultContext;
 
@@ -180,13 +179,6 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.typeRegistry = typeRegistry;
-      return this;
-    }
-
-    CompiledTemplateSubject withValueConverter(SoyValueConverter converter) {
-      classData = null;
-      factory = null;
-      this.converter = converter;
       return this;
     }
 
@@ -255,7 +247,7 @@ public final class TemplateTester {
     }
 
     private SoyRecord asRecord(Map<String, ?> params) {
-      return (SoyRecord) converter.convert(params);
+      return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
     }
 
     private CompiledTemplateSubject rendersAndLogs(

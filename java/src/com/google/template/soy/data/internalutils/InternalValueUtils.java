@@ -121,7 +121,7 @@ public class InternalValueUtils {
       PrimitiveData value;
       boolean isValidValue = true;
       try {
-        SoyValue value0 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(valueObj).resolve();
+        SoyValue value0 = SoyValueConverter.INSTANCE.convert(valueObj).resolve();
         if (!(value0 instanceof PrimitiveData)) {
           isValidValue = false;
         }

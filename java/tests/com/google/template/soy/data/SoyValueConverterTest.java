@@ -35,7 +35,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SoyValueConverterTest {
 
-  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
+  private static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
   @Test
   public void testDictCreation() {
