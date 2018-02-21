@@ -171,20 +171,6 @@ public class TranslateExprNodeVisitor
           "Cannot access field ''{0}'' of type ''{1}'', "
               + "because the different union member types have different access methods.");
 
-  /** Injectable factory for creating an instance of this class. */
-  public static final class TranslateExprNodeVisitorFactory {
-    private final SoyJsSrcOptions jsSrcOptions;
-
-    public TranslateExprNodeVisitorFactory(SoyJsSrcOptions jsSrcOptions) {
-      this.jsSrcOptions = jsSrcOptions;
-    }
-
-    TranslateExprNodeVisitor create(
-        TranslationContext translationContext, ErrorReporter errorReporter) {
-      return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter);
-    }
-  }
-
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
 

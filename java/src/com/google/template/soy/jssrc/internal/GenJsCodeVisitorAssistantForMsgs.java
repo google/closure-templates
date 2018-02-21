@@ -28,6 +28,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -82,9 +83,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   /** Master instance of GenJsCodeVisitor. */
   protected final GenJsCodeVisitor master;
 
-  /** Instance of JsExprTranslator to use. */
-  private final JsExprTranslator jsExprTranslator;
-
   /** Instance of GenCallCodeUtils to use. */
   private final GenCallCodeUtils genCallCodeUtils;
 
@@ -104,17 +102,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
 
   private final ErrorReporter errorReporter;
 
-  /**
-   * @param master The master GenJsCodeVisitor instance.
-   * @param jsExprTranslator Instance of JsExprTranslator to use.
-   * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
-   * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to use.
-   * @param genJsExprsVisitor The current GenJsExprsVisitor.
-   */
   protected GenJsCodeVisitorAssistantForMsgs(
       GenJsCodeVisitor master,
       SoyJsSrcOptions jsSrcOptions,
-      JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       TemplateAliases functionAliases,
@@ -123,7 +113,6 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       ErrorReporter errorReporter) {
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
-    this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.templateAliases = functionAliases;
@@ -472,14 +461,13 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       MsgPluralNode pluralNode, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     codeGenInfo.pluralsAndSelects.put(
-        stringLiteral(msgNode.getPluralVarName(pluralNode)),
-        jsExprTranslator.translateToCodeChunk(
-            pluralNode.getExpr(), translationContext, errorReporter));
+        stringLiteral(msgNode.getPluralVarName(pluralNode)), translateExpr(pluralNode.getExpr()));
 
     for (CaseOrDefaultNode child : pluralNode.getChildren()) {
       genGoogMsgCodeForChildren(child, msgNode, codeGenInfo);
     }
   }
+
 
   /**
    * Generates code bits for a {@code MsgSelectNode} subtree inside a message.
@@ -493,13 +481,15 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       MsgSelectNode selectNode, MsgNode msgNode, GoogMsgPlaceholderCodeGenInfo codeGenInfo) {
 
     codeGenInfo.pluralsAndSelects.put(
-        stringLiteral(msgNode.getSelectVarName(selectNode)),
-        jsExprTranslator.translateToCodeChunk(
-            selectNode.getExpr(), translationContext, errorReporter));
+        stringLiteral(msgNode.getSelectVarName(selectNode)), translateExpr(selectNode.getExpr()));
 
     for (CaseOrDefaultNode child : selectNode.getChildren()) {
       genGoogMsgCodeForChildren(child, msgNode, codeGenInfo);
     }
+  }
+
+  private CodeChunk.WithValue translateExpr(ExprNode expr) {
+    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter).exec(expr);
   }
 
   /**

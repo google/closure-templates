@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.base.Supplier;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 
 /**
  * Utilities for unit tests in the Js Src backend.
@@ -37,25 +36,22 @@ final class JsSrcTestUtils {
     return createObjects(options).utils.get();
   }
 
-  private static Objects createObjects(SoyJsSrcOptions options) {
+  private static Objects createObjects(final SoyJsSrcOptions options) {
     final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
-    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
-        new TranslateExprNodeVisitorFactory(options);
-    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
     class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
       GenJsExprsVisitorFactory factory;
 
       @Override
       public GenCallCodeUtils get() {
         return new GenCallCodeUtils(
-            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new Objects(supplier, genJsExprsVisitorFactory);

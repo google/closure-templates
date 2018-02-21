@@ -55,7 +55,6 @@ import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
-import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.JsRuntime;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
@@ -110,7 +109,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   GenIncrementalDomCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
-      JsExprTranslator jsExprTranslator,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
       IncrementalDomGenCallCodeUtils genCallCodeUtils,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
@@ -119,7 +117,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       SoyTypeRegistry typeRegistry) {
     super(
         jsSrcOptions,
-        jsExprTranslator,
         incrementalDomDelTemplateNamer,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
@@ -745,7 +742,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             new AssistantForHtmlMsgs(
                     this /* master */,
                     jsSrcOptions,
-                    jsExprTranslator,
                     genCallCodeUtils,
                     isComputableAsJsExprsVisitor,
                     templateAliases,
@@ -763,7 +759,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             new AssistantForAttributeMsgs(
                     this /* master */,
                     jsSrcOptions,
-                    jsExprTranslator,
                     genCallCodeUtils,
                     isComputableAsJsExprsVisitor,
                     templateAliases,
@@ -797,7 +792,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     AssistantForAttributeMsgs(
         GenIncrementalDomCodeVisitor master,
         SoyJsSrcOptions jsSrcOptions,
-        JsExprTranslator jsExprTranslator,
         GenCallCodeUtils genCallCodeUtils,
         IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
         TemplateAliases functionAliases,
@@ -807,7 +801,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       super(
           master,
           jsSrcOptions,
-          jsExprTranslator,
           genCallCodeUtils,
           isComputableAsJsExprsVisitor,
           functionAliases,

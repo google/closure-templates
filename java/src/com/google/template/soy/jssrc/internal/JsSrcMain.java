@@ -29,7 +29,6 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
@@ -187,15 +186,13 @@ public class JsSrcMain {
     }
   }
 
-  static GenJsCodeVisitor createVisitor(SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
+  static GenJsCodeVisitor createVisitor(
+      final SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
     final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
-    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
-        new TranslateExprNodeVisitorFactory(options);
-    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
     // This supplier is used to break a circular dependency between GenCallCodeUtils and
     // GenJsExprsVisitorFactory.  The reason this cycle exists is due complex, but could be
     // eliminated if we got rid of the whole 'iscomputableasjsexprs' concept in this backend.
@@ -206,17 +203,16 @@ public class JsSrcMain {
       @Override
       public GenCallCodeUtils get() {
         return new GenCallCodeUtils(
-            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new GenJsCodeVisitor(
         options,
-        jsExprTranslator,
         delTemplateNamer,
         supplier.get(),
         isComputableAsJsExprsVisitor,

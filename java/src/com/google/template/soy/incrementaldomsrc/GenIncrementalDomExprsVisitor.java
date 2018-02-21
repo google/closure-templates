@@ -19,9 +19,9 @@ package com.google.template.soy.incrementaldomsrc;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
-import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.PrintNode;
@@ -37,10 +37,10 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
 
     @SuppressWarnings("unchecked")
     GenIncrementalDomExprsVisitorFactory(
-        JsExprTranslator jsExprTranslator,
+        SoyJsSrcOptions options,
         Supplier<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
         IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor) {
-      super(jsExprTranslator, (Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
+      super(options, (Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
     }
 
     @Override
@@ -49,7 +49,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
         TemplateAliases templateAliases,
         ErrorReporter errorReporter) {
       return new GenIncrementalDomExprsVisitor(
-          jsExprTranslator,
+          options,
           (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
           (IsComputableAsIncrementalDomExprsVisitor) isComputableAsJsExprsVisitor,
           this,
@@ -60,7 +60,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
   }
 
   public GenIncrementalDomExprsVisitor(
-      JsExprTranslator jsExprTranslator,
+      SoyJsSrcOptions options,
       IncrementalDomGenCallCodeUtils genCallCodeUtils,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
@@ -68,7 +68,7 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
       ErrorReporter errorReporter,
       TemplateAliases templateAliases) {
     super(
-        jsExprTranslator,
+        options,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         genIncrementalDomExprsVisitorFactory,

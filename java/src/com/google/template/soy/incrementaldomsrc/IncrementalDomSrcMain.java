@@ -29,8 +29,6 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
-import com.google.template.soy.jssrc.internal.JsExprTranslator;
-import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -172,15 +170,12 @@ public class IncrementalDomSrcMain {
   }
 
   static GenIncrementalDomCodeVisitor createVisitor(
-      SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
+      final SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
     final IncrementalDomDelTemplateNamer delTemplateNamer = new IncrementalDomDelTemplateNamer();
     final IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsIncrementalDomExprsVisitor();
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
-    TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory =
-        new TranslateExprNodeVisitorFactory(options);
-    final JsExprTranslator jsExprTranslator = new JsExprTranslator(translateExprNodeVisitorFactory);
     // TODO(lukes): eliminate this supplier.  See commend in JsSrcMain for more information.
     class GenCallCodeUtilsSupplier implements Supplier<IncrementalDomGenCallCodeUtils> {
       GenIncrementalDomExprsVisitorFactory factory;
@@ -188,18 +183,16 @@ public class IncrementalDomSrcMain {
       @Override
       public IncrementalDomGenCallCodeUtils get() {
         return new IncrementalDomGenCallCodeUtils(
-            jsExprTranslator, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenIncrementalDomExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenIncrementalDomExprsVisitorFactory(
-            jsExprTranslator, supplier, isComputableAsJsExprsVisitor);
+        new GenIncrementalDomExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new GenIncrementalDomCodeVisitor(
         options,
-        jsExprTranslator,
         delTemplateNamer,
         supplier.get(),
         isComputableAsJsExprsVisitor,

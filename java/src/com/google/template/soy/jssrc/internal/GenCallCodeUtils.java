@@ -31,6 +31,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -54,8 +55,7 @@ import java.util.List;
  */
 public class GenCallCodeUtils {
 
-  /** Instance of JsExprTranslator to use. */
-  private final JsExprTranslator jsExprTranslator;
+  private final SoyJsSrcOptions options;
 
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
@@ -66,18 +66,12 @@ public class GenCallCodeUtils {
   /** Factory for creating an instance of GenJsExprsVisitor. */
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
-  /**
-   * @param jsExprTranslator Instance of JsExprTranslator to use.
-   * @param delTemplateNamer Renamer for delegate templates.
-   * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
-   * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
-   */
   protected GenCallCodeUtils(
-      JsExprTranslator jsExprTranslator,
+      SoyJsSrcOptions options,
       DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.jsExprTranslator = jsExprTranslator;
+    this.options = options;
     this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -150,10 +144,9 @@ public class GenCallCodeUtils {
         variant = LITERAL_EMPTY_STRING;
       } else {
         // Case 2b: Delegate call with variant expression.
-        variant = jsExprTranslator.translateToCodeChunk(
-            variantSoyExpr,
-            translationContext,
-            errorReporter);
+        variant =
+            new TranslateExprNodeVisitor(options, translationContext, errorReporter)
+                .exec(variantSoyExpr);
       }
 
       callee =
@@ -251,8 +244,8 @@ public class GenCallCodeUtils {
       dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.isPassingData()) {
       dataToPass =
-          jsExprTranslator.translateToCodeChunk(
-              callNode.getDataExpr(), translationContext, errorReporter);
+          new TranslateExprNodeVisitor(options, translationContext, errorReporter)
+              .exec(callNode.getDataExpr());
     } else {
       dataToPass = LITERAL_NULL;
     }
@@ -272,8 +265,8 @@ public class GenCallCodeUtils {
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
         CodeChunk.WithValue value =
-            jsExprTranslator.translateToCodeChunk(
-                cpvn.getExpr(), translationContext, errorReporter);
+            new TranslateExprNodeVisitor(options, translationContext, errorReporter)
+                .exec(cpvn.getExpr());
         values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;

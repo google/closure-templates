@@ -30,7 +30,6 @@ import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
-import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
@@ -69,7 +68,6 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   AssistantForHtmlMsgs(
       GenIncrementalDomCodeVisitor master,
       SoyJsSrcOptions jsSrcOptions,
-      JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       TemplateAliases functionAliases,
@@ -79,7 +77,6 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     super(
         master,
         jsSrcOptions,
-        jsExprTranslator,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         functionAliases,

@@ -136,9 +136,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
 
-  /** Instance of JsExprTranslator to use. */
-  protected final JsExprTranslator jsExprTranslator;
-
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
@@ -181,7 +178,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
-      JsExprTranslator jsExprTranslator,
       DelTemplateNamer delTemplateNamer,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -189,7 +185,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       SoyTypeRegistry typeRegistry) {
     this.jsSrcOptions = jsSrcOptions;
-    this.jsExprTranslator = jsExprTranslator;
     this.delTemplateNamer = delTemplateNamer;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -876,7 +871,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           new GenJsCodeVisitorAssistantForMsgs(
               this /* master */,
               jsSrcOptions,
-              jsExprTranslator,
               genCallCodeUtils,
               isComputableAsJsExprsVisitor,
               templateAliases,
@@ -925,9 +919,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String generatedVarName = node.getUniqueVarName();
 
     // Generate code to define the local var.
-    CodeChunk.WithValue value =
-        jsExprTranslator.translateToCodeChunk(
-            node.getExpr(), templateTranslationContext, errorReporter);
+    CodeChunk.WithValue value = translateExpr(node.getExpr());
     jsCodeBuilder.append(VariableDeclaration.builder(generatedVarName).setRhs(value).build());
 
     // Add a mapping for generating future references to this local var.
@@ -1027,9 +1019,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         IfCondNode condNode = (IfCondNode) child;
 
         // Convert predicate.
-        CodeChunk.WithValue predicate =
-            jsExprTranslator.translateToCodeChunk(
-                condNode.getExpr(), templateTranslationContext, errorReporter);
+        CodeChunk.WithValue predicate = translateExpr(condNode.getExpr());
         // Convert body.
         CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
@@ -1092,9 +1082,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         SwitchCaseNode scn = (SwitchCaseNode) child;
         ImmutableList.Builder<CodeChunk.WithValue> caseChunks = ImmutableList.builder();
         for (ExprNode caseExpr : scn.getExprList()) {
-          CodeChunk.WithValue caseChunk =
-              jsExprTranslator.translateToCodeChunk(
-                  caseExpr, templateTranslationContext, errorReporter);
+          CodeChunk.WithValue caseChunk = translateExpr(caseExpr);
           caseChunks.add(caseChunk);
         }
         CodeChunk body = visitChildrenReturningCodeChunk(scn);
@@ -1113,8 +1101,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   // soy equality semantics for sanitized content objects we need to coerce cases and switch exprs
   // to strings.
   private CodeChunk.WithValue coerceTypeForSwitchComparison(ExprRootNode expr) {
-    CodeChunk.WithValue switchOn =
-        jsExprTranslator.translateToCodeChunk(expr, templateTranslationContext, errorReporter);
+    CodeChunk.WithValue switchOn = translateExpr(expr);
     SoyType type = expr.getType();
     // If the type is possibly a sanitized content type then we need to toString it.
     if (SoyTypes.makeNullable(StringType.getInstance()).isAssignableFrom(type)
@@ -1129,6 +1116,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // For everything else just pass through.  switching on objects/collections is unlikely to
     // have reasonably defined behavior.
     return switchOn;
+  }
+
+  private CodeChunk.WithValue translateExpr(ExprNode expr) {
+    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
+        .exec(expr);
   }
 
   /**
@@ -1180,23 +1172,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // if any of the expressions are too expensive, allocate local variables for them
       final CodeChunk.WithValue start =
           maybeStashInLocal(
-              range.start().isPresent()
-                  ? jsExprTranslator.translateToCodeChunk(
-                      range.start().get(), templateTranslationContext, errorReporter)
-                  : CodeChunk.number(0),
+              range.start().isPresent() ? translateExpr(range.start().get()) : CodeChunk.number(0),
               varPrefix + "_RangeStart",
               statements);
       final CodeChunk.WithValue end =
-          maybeStashInLocal(
-              jsExprTranslator.translateToCodeChunk(
-                  range.limit(), templateTranslationContext, errorReporter),
-              varPrefix + "_RangeEnd",
-              statements);
+          maybeStashInLocal(translateExpr(range.limit()), varPrefix + "_RangeEnd", statements);
       final CodeChunk.WithValue step =
           maybeStashInLocal(
               range.increment().isPresent()
-                  ? jsExprTranslator.translateToCodeChunk(
-                      range.increment().get(), templateTranslationContext, errorReporter)
+                  ? translateExpr(range.increment().get())
                   : CodeChunk.number(1),
               varPrefix + "_RangeStep",
               statements);
@@ -1219,9 +1203,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           };
     } else {
       // Define list var and list-len var.
-      CodeChunk.WithValue dataRef =
-          jsExprTranslator.translateToCodeChunk(
-              node.getExpr(), templateTranslationContext, errorReporter);
+      CodeChunk.WithValue dataRef = translateExpr(node.getExpr());
       final String listVarName = varPrefix + "List";
       CodeChunk.WithValue listVar =
           VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
