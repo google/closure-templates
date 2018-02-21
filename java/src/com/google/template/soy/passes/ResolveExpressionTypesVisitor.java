@@ -1317,7 +1317,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     private boolean checkArgType(
         ExprNode arg, SoyType expectedType, FunctionNode node, UnknownPolicy policy) {
       SoyType.Kind argTypeKind = arg.getType().getKind();
-      if (argTypeKind == SoyType.Kind.ERROR) {
+      if (argTypeKind == SoyType.Kind.ERROR || expectedType.getKind() == SoyType.Kind.ERROR) {
         return false;
       }
       if (policy == UnknownPolicy.ALLOWED && argTypeKind == SoyType.Kind.UNKNOWN) {
