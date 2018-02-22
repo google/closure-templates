@@ -69,7 +69,7 @@ public final class PySrcMain {
    *     one Python file. The generated Python files correspond one-to-one to the original Soy
    *     source files.
    */
-  public List<String> genPySrc(
+  private List<String> genPySrc(
       SoyFileSetNode soyTree,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,

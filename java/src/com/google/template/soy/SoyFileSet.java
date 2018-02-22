@@ -687,8 +687,7 @@ public final class SoyFileSet {
    *     content.
    * @throws SoyCompilationException If compilation fails.
    */
-  public ImmutableMap<String, String> generateParseInfo(
-      String javaPackage, String javaClassNameSource) {
+  ImmutableMap<String, String> generateParseInfo(String javaPackage, String javaClassNameSource) {
     resetErrorReporter();
     // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
     // types have to be, this should be possible.  Currently it is disabled for backwards
@@ -1198,7 +1197,7 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  public void compileToPySrcFiles(
+  void compileToPySrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
       throws IOException {
     resetErrorReporter();
