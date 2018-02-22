@@ -19,10 +19,8 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
-import com.google.template.soy.testing.Foo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -137,25 +135,6 @@ public final class NullSafeAccumulatorTest {
         .generates("a.b(c);");
     assertThat(accum.dotAccess(FieldAccess.call("d", CodeChunk.id("e")), true /* nullSafe */))
         .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
-  }
-
-  @Test
-  public void testMap() {
-    FieldDescriptor desc = Foo.getDescriptor().findFieldByName("map_field");
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
-    assertThat(accum.dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */))
-        .generates("a.getMapFieldMap();");
-  }
-
-  @Test
-  public void testMapGet() {
-    FieldDescriptor desc = Foo.getDescriptor().findFieldByName("map_field");
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
-    assertThat(
-            accum
-                .dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */)
-                .mapGetAccess(CodeChunk.id("key"), false /* nullSafe */))
-        .generates("a.getMapFieldMap().get(key);");
   }
 
   private static final Subject.Factory<AccumulatorSubject, NullSafeAccumulator> FACTORY =

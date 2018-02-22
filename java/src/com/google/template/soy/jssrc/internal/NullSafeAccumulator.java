@@ -16,21 +16,15 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.common.base.CaseFormat.LOWER_CAMEL;
-import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
-import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
-import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.ForOverride;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.types.proto.ProtoUtils;
+import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -60,14 +54,14 @@ final class NullSafeAccumulator {
   @Nullable private CodeChunk.WithValue unpackFunction;
 
   /**
-   * A chain of dot accesses can end in a reference to a repeated or map {@link
-   * com.google.common.html.types.SafeHtmlProto} field (SafeStyleProto field, etc.). The array/map
-   * representing the field needs to be unpacked by running it through the appropriate {@link
-   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpack} function
-   * to produce SanitizedContent objects before it can be used in the JS runtime. This tracks the
-   * type of the field so we know if/how to unpack it.
+   * A chain of dot accesses can end in a reference to a repeated {@link
+   * com.google.common.html.types.SafeHtmlProto} field (SafeStyleProto field, etc.). The array
+   * representing the repeated field needs to be unpacked by mapping it through the appropriate
+   * {@link com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction } unpack
+   * function to produce an array of SanitizedContent objects before it can be used in the JS
+   * runtime.
    */
-  @Nullable private AccessType accessType;
+  private boolean isRepeated = false;
 
   /** Creates a NullSafeAccumulator with the given base chunk. */
   NullSafeAccumulator(CodeChunk.WithValue base) {
@@ -75,31 +69,21 @@ final class NullSafeAccumulator {
     this.chain = new ArrayList<>();
   }
 
+
   /**
    * Extends the access chain with a dot access to the given value.
-   *
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
-   *     dereferencing {@code access}.
+   * dereferencing {@code arg}.
    */
-  NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe) {
-    if (access instanceof ProtoCall) {
-      ProtoCall protoCall = (ProtoCall) access;
-      CodeChunk.WithValue maybeUnpack = protoCall.getUnpackFunction();
-      if (maybeUnpack != null) {
-        Preconditions.checkState(
-            unpackFunction == null, "this chain will already unpack with %s", unpackFunction);
-        unpackFunction = maybeUnpack;
-        accessType = AccessType.get(protoCall.desc());
-      }
+  NullSafeAccumulator dotAccess(FieldAccess arg, boolean nullSafe) {
+    if (arg instanceof CallAndUnpack) {
+      Preconditions.checkState(
+          unpackFunction == null, "this chain will already unpack with", unpackFunction);
+      CallAndUnpack callAndUnpack = (CallAndUnpack) arg;
+      unpackFunction = callAndUnpack.unpackFunctionName();
+      isRepeated = callAndUnpack.isRepeated();
     }
-    chain.add(access.toChainAccess(nullSafe));
-    return this;
-  }
-
-  NullSafeAccumulator mapGetAccess(CodeChunk.WithValue mapKeyCode, boolean nullSafe) {
-    chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe));
-    // With a .get call we no longer need to unpack the entire map, just a singular object.
-    accessType = AccessType.SINGULAR;
+    chain.add(arg.toChainAccess(nullSafe));
     return this;
   }
 
@@ -110,8 +94,10 @@ final class NullSafeAccumulator {
    */
   NullSafeAccumulator bracketAccess(CodeChunk.WithValue arg, boolean nullSafe) {
     chain.add(new Bracket(arg, nullSafe));
-    // With a bracket access we no longer need to unpack the entire list, just a singular object.
-    accessType = AccessType.SINGULAR;
+    // if the isRepeated flag is true it is because we ended with a CallAndUnpack on a repeated
+    // field.  If that is followed by a bracket access, then we don't need to handle the repeated
+    // aspect.
+    isRepeated = false;
     return this;
   }
 
@@ -124,8 +110,11 @@ final class NullSafeAccumulator {
 
     if (unpackFunction == null) {
       return accessChain;
+    } else if (!isRepeated) {
+      // It's okay if the whole chain evals to null. The unpack functions accept null.
+      return unpackFunction.call(accessChain);
     } else {
-      return accessType.unpackResult(accessChain, unpackFunction);
+      return GOOG_ARRAY_MAP.call(accessChain, unpackFunction);
     }
   }
 
@@ -222,7 +211,7 @@ final class NullSafeAccumulator {
     }
 
     @Override
-    CodeChunk.WithValue extend(CodeChunk.WithValue prevTip) {
+    WithValue extend(WithValue prevTip) {
       return arg == null
           ? prevTip.dotAccess(getter).call()
           : prevTip.dotAccess(getter).call(arg);
@@ -230,13 +219,13 @@ final class NullSafeAccumulator {
   }
 
   /**
-   * {@link NullSafeAccumulator} works by extending the tip of a chain of accesses. In some
-   * situations (e.g. {@link ProtoCall}), the tip is "extended" by a dot access followed by a
-   * function call. Because dot accesses have higher precedence in JS than function calls, the
-   * extension cannot be represented by a single {@link CodeChunk.WithValue} that is attached to the
-   * previous tip; that would generate an incorrect pair of parens around the function call, e.g.
-   * {@code proto.(getFoo())} instead of {@code proto.getFoo()}. This tuple is a workaround for that
-   * precedence issue.
+   * {@link NullSafeAccumulator} works by extending the tip of a chain of accesses.
+   * In some situations (e.g. {@link TranslateExprNodeVisitor#genCodeForProtoAccess}),
+   * the tip is "extended" by a dot access followed by a function call. Because dot accesses
+   * have higher precedence in JS than function calls, the extension cannot be represented by a
+   * single {@link CodeChunk.WithValue} that is attached to the previous tip; that would generate
+   * an incorrect pair of parens around the function call, e.g. {@code proto.(getFoo())} instead of
+   * {@code proto.getFoo()}. This tuple is a workaround for that precedence issue.
    */
   abstract static class FieldAccess {
 
@@ -251,8 +240,12 @@ final class NullSafeAccumulator {
       return new AutoValue_NullSafeAccumulator_Call(getter, arg);
     }
 
-    static FieldAccess protoCall(String fieldName, FieldDescriptor desc) {
-      return new AutoValue_NullSafeAccumulator_ProtoCall(fieldName, desc);
+    static FieldAccess call(String getter) {
+      return new AutoValue_NullSafeAccumulator_Call(getter, null /* arg */);
+    }
+
+    static CallAndUnpack.Builder callAndUnpack() {
+      return new AutoValue_NullSafeAccumulator_CallAndUnpack.Builder();
     }
   }
 
@@ -278,83 +271,28 @@ final class NullSafeAccumulator {
   }
 
   @AutoValue
-  abstract static class ProtoCall extends FieldAccess {
-    /**
-     * We need this instead of using desc.getName() because we need the soyFieldName, not the
-     * proto_field_name.
-     */
-    abstract String fieldName();
-
-    abstract FieldDescriptor desc();
+  abstract static class CallAndUnpack extends FieldAccess {
+    abstract String getter();
+    @Nullable abstract CodeChunk.WithValue arg();
+    abstract CodeChunk.WithValue unpackFunctionName();
+    abstract boolean isRepeated();
 
     @Override
     ChainAccess toChainAccess(boolean nullSafe) {
-      String getter;
-      CodeChunk.WithValue arg;
-      if (desc().isExtension()) {
-        getter = "getExtension";
-        arg = extensionField(desc());
-      } else {
-        getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName());
-        arg = null;
-      }
-
-      return new DotCall(getter, arg, nullSafe);
+      return new DotCall(getter(), arg(), nullSafe);
     }
 
-    @Nullable
-    CodeChunk.WithValue getUnpackFunction() {
-      if (ProtoUtils.isSanitizedContentField(desc())) {
-        return protoToSanitizedContentConverterFunction(desc().getMessageType());
-      } else if (ProtoUtils.isSanitizedContentMap(desc())) {
-        return protoToSanitizedContentConverterFunction(ProtoUtils.getMapValueMessageType(desc()));
-      } else {
-        return null;
-      }
-    }
-  }
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder getter(String getter);
 
-  /** The underlying data structure this chain is accessing. */
-  private enum AccessType {
-    /** This isn't accessing a data structure, just a singular value. */
-    SINGULAR {
-      @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
-        // It's okay if the whole chain evals to null. The unpack functions accept null.
-        return unpackFunction.call(accessChain);
-      }
-    },
-    /** This is accessing a repeated value. */
-    REPEATED {
-      @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
-        return GOOG_ARRAY_MAP.call(accessChain, unpackFunction);
-      }
-    },
-    /** This is access a map value. */
-    MAP {
-      @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
-        return SOY_NEWMAPS_TRANSFORM_VALUES.call(accessChain, unpackFunction);
-      }
-    };
+      abstract Builder arg(CodeChunk.WithValue arg);
 
-    abstract CodeChunk.WithValue unpackResult(
-        CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction);
+      abstract Builder unpackFunctionName(CodeChunk.WithValue unpackFunctionName);
 
-    private static AccessType get(FieldDescriptor desc) {
-      if (desc.isMapField()) {
-        // Check map first because proto map fields are represented as repeated in the descriptor
-        // even though map fields cannot have a "repeated" qualifier in the proto language.
-        return MAP;
-      } else if (desc.isRepeated()) {
-        return REPEATED;
-      } else {
-        return SINGULAR;
-      }
+      abstract Builder isRepeated(boolean isRepeated);
+
+      abstract CallAndUnpack build();
     }
   }
 }

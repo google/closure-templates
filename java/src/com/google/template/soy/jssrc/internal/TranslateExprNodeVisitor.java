@@ -38,10 +38,10 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_LEGACY_
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 
@@ -461,7 +461,9 @@ public class TranslateExprNodeVisitor
                   || (baseKind == Kind.UNION
                       && ((UnionType) baseType).removeNullability().getKind() == Kind.MAP);
           return shouldUseGetter
-              ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // jspb.Map
+              ? base.dotAccess(
+                  FieldAccess.call("get", genMapKeyCode(keyNode)),
+                  itemAccess.isNullSafe()) // jspb.Map
               : base.bracketAccess(
                   visit(keyNode), itemAccess.isNullSafe()); // vanilla bracket access
         }
@@ -503,17 +505,44 @@ public class TranslateExprNodeVisitor
     }
 
     if (baseType.getKind() == SoyType.Kind.PROTO) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
-      Preconditions.checkNotNull(
-          desc,
-          "Error in proto %s, field not found: %s",
-          protoType.getDescriptor().getFullName(),
-          fieldName);
-      return FieldAccess.protoCall(fieldName, desc);
+      return genCodeForProtoAccess((SoyProtoType) baseType, fieldName);
     }
 
     return FieldAccess.id(fieldName);
+  }
+
+  private static FieldAccess genCodeForProtoAccess(SoyProtoType type, String fieldName) {
+    FieldDescriptor desc = type.getFieldDescriptor(fieldName);
+    boolean isSanitizedContent = ProtoUtils.isSanitizedContentField(desc);
+    Preconditions.checkNotNull(
+        desc,
+        "Error in proto %s, field not found: %s",
+        type.getDescriptor().getFullName(),
+        fieldName);
+    if (desc.isExtension()) {
+      return isSanitizedContent
+          ? FieldAccess.callAndUnpack()
+              .getter("getExtension")
+              .arg(extensionField(desc))
+              .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
+              // proto map fields are represented as repeated in the descriptor even though map
+              // fields cannot have a "repeated" qualifier in the proto language. Annoying.
+              .isRepeated(desc.isRepeated() && !desc.isMapField())
+              .build()
+          : FieldAccess.call("getExtension", extensionField(desc));
+    }
+
+    String getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+    return isSanitizedContent
+        ? FieldAccess.callAndUnpack()
+            .getter(getter)
+            .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
+            // proto map fields are represented as repeated in the descriptor even though map fields
+            // cannot have a "repeated" qualifier in the proto language. Annoying.
+            // TODO(b/69461136): support SafeHtmlProtos as values in proto maps
+            .isRepeated(desc.isRepeated() && !desc.isMapField())
+            .build()
+        : FieldAccess.call(getter);
   }
 
   @Override
@@ -603,12 +632,6 @@ public class TranslateExprNodeVisitor
         CodeChunk.WithValue protoMap = protoVar.dotAccess(getFn).call();
         CodeChunk.WithValue protoMapVar =
             codeGenerator.declarationBuilder().setRhs(protoMap).build().ref();
-        if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
-          CodeChunk.WithValue sanitizedContentPackFn =
-              sanitizedContentToProtoConverterFunction(
-                  ProtoUtils.getMapValueMessageType(fieldDesc));
-          fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
-        }
         initialStatements.add(SOY_MAP_POPULATE.call(protoMapVar, fieldValue));
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
