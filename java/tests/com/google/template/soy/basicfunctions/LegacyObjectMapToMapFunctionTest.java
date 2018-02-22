@@ -65,7 +65,7 @@ public final class LegacyObjectMapToMapFunctionTest {
   public void computeForJsSrc() {
     JsExpr legacyObjectMap = new JsExpr("legacyObjectMap", Integer.MAX_VALUE);
     JsExpr map = LEGACY_OBJECT_MAP_TO_MAP.computeForJsSrc(ImmutableList.of(legacyObjectMap));
-    assertThat(map.getText()).isEqualTo("soy.$$legacyObjectMapToMap(legacyObjectMap)");
+    assertThat(map.getText()).isEqualTo("soy.newmaps.$$legacyObjectMapToMap(legacyObjectMap)");
   }
 
   @Test

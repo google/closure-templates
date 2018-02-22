@@ -73,7 +73,7 @@ public final class LegacyObjectMapToMapFunction
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy.$$legacyObjectMapToMap");
+    return ImmutableSet.of("soy.newmaps");
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
@@ -108,7 +108,7 @@ public final class LegacyObjectMapToMapFunction
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
-        "soy.$$legacyObjectMapToMap(" + args.get(0).getText() + ")", Integer.MAX_VALUE);
+        "soy.newmaps.$$legacyObjectMapToMap(" + args.get(0).getText() + ")", Integer.MAX_VALUE);
   }
 
   @Override

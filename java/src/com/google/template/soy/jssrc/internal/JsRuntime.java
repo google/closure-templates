@@ -41,6 +41,7 @@ public final class JsRuntime {
 
   private static final GoogRequire SOY = GoogRequire.create("soy");
   private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
+  private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
   private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
@@ -105,6 +106,9 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =
       SOY_MAP.dotAccess("$$maybeCoerceKeyToString");
+
+  public static final CodeChunk.WithValue SOY_NEWMAPS_TRANSFORM_VALUES =
+      SOY_NEWMAPS.dotAccess("$$transformValues");
 
   public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
       dottedIdNoRequire("window.console.log");
