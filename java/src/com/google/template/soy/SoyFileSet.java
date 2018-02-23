@@ -580,12 +580,6 @@ public final class SoyFileSet {
       return this;
     }
 
-    /** Override the global type registry with one that is local to this file set. */
-    public Builder setLocalTypeRegistry(SoyTypeRegistry typeRegistry) {
-      this.localTypeRegistry = typeRegistry;
-      return this;
-    }
-
     private Builder addFile(SoyFileSupplier supplier) {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
