@@ -625,6 +625,24 @@ public final class Sanitizers {
         SanitizedContent.ContentKind.URI);
   }
 
+  /** Makes sure that the given input is a sip URI. */
+  public static SanitizedContent filterSipUri(SoyValue value) {
+    value = normalizeNull(value);
+    return filterSipUri(value.coerceToString());
+  }
+
+  /** Makes sure that the given input is a sip URI. */
+  public static SanitizedContent filterSipUri(String value) {
+    if (EscapingConventions.FilterSipUri.INSTANCE.getValueFilter().matcher(value).find()) {
+      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
+    }
+    logger.log(Level.WARNING, "|filterSipUri received bad value ''{0}''", value);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        EscapingConventions.FilterSipUri.INSTANCE.getInnocuousOutput(),
+        SanitizedContent.ContentKind.URI);
+  }
+
   /** Makes sure that the given input is a tel URI. */
   public static SanitizedContent filterTelUri(SoyValue value) {
     value = normalizeNull(value);

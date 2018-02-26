@@ -136,6 +136,7 @@ public final class SharedModuleTest {
             "|filterNormalizeMediaUri",
             "|filterTrustedResourceUri",
             "|filterImageDataUri",
+            "|filterSipUri",
             "|filterTelUri",
             // These two could be made streaming, it would require some refactoring of the
             // Sanitizers.stripHtmlTags method but it is probably a good idea.

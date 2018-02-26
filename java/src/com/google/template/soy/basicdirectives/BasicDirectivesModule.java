@@ -65,6 +65,7 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(TextDirective.class);
     soyDirectivesSetBinder.addBinding().to(CleanHtmlDirective.class);
     soyDirectivesSetBinder.addBinding().to(FilterImageDataUriDirective.class);
+    soyDirectivesSetBinder.addBinding().to(FilterSipUriDirective.class);
     soyDirectivesSetBinder.addBinding().to(FilterTelUriDirective.class);
     soyDirectivesSetBinder.addBinding().to(BlessStringAsTrustedResourceUrlForLegacyDirective.class);
   }

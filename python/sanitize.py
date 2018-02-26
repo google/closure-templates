@@ -224,6 +224,13 @@ def filter_image_data_uri(value):
       generated_sanitize.filter_image_data_uri_helper(value), approval=approval)
 
 
+def filter_sip_uri(value):
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Filtered URIs are by nature sanitized.')
+  return SanitizedUri(
+      generated_sanitize.filter_sip_uri_helper(value), approval=approval)
+
+
 def filter_tel_uri(value):
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Filtered URIs are by nature sanitized.')

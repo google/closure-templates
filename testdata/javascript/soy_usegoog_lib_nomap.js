@@ -24776,6 +24776,20 @@ soy.$$filterImageDataUri = function(value) {
 
 
 /**
+ * Allows only sip URIs.
+ *
+ * @param {*} value The value to process. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {!goog.soy.data.SanitizedUri} An escaped version of value.
+ */
+soy.$$filterSipUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return soydata.VERY_UNSAFE.ordainSanitizedUri(
+      soy.esc.$$filterSipUriHelper(value));
+};
+
+
+/**
  * Allows only tel URIs.
  *
  * @param {*} value The value to process. May not be a string, but the value
@@ -25529,6 +25543,12 @@ soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_ = /^data:image\/(?:bmp|gif|jpe?g|png
  * A pattern that vets values produced by the named directives.
  * @private {!RegExp}
  */
+soy.esc.$$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @private {!RegExp}
+ */
 soy.esc.$$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
@@ -25683,6 +25703,20 @@ soy.esc.$$filterImageDataUriHelper = function(value) {
   if (!soy.esc.$$FILTER_FOR_FILTER_IMAGE_DATA_URI_.test(str)) {
     goog.asserts.fail('Bad value `%s` for |filterImageDataUri', [str]);
     return 'data:image/gif;base64,zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterSipUri
+ * @param {*} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+soy.esc.$$filterSipUriHelper = function(value) {
+  var str = String(value);
+  if (!soy.esc.$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterSipUri', [str]);
+    return 'about:invalid#zSoyz';
   }
   return str;
 };
