@@ -32,7 +32,6 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -88,16 +87,13 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -127,18 +123,15 @@ public final class SoyFileSet {
   // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
     private final GuiceSimpleScope apiCallScope;
-    private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
     @Inject
     CoreDependencies(
         @ApiCall GuiceSimpleScope apiCallScope,
-        SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
       this.apiCallScope = apiCallScope;
-      this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
     }
@@ -159,13 +152,11 @@ public final class SoyFileSet {
 
     /** The general compiler options. */
     private SoyGeneralOptions lazyGeneralOptions;
-    /** Type registry for this fileset only. */
-    private SoyTypeRegistry localTypeRegistry;
 
     private final CoreDependencies coreDependencies;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
-    private final SoyProtoTypeProvider.Builder protoTypeProviderBuilder;
+    private final SoyTypeRegistry.Builder typeRegistryBuilder = new SoyTypeRegistry.Builder();
 
     @Nullable private Appendable warningSink;
 
@@ -176,7 +167,6 @@ public final class SoyFileSet {
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
       this.filesBuilder = ImmutableMap.builder();
-      this.protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
       this.cache = null;
       this.lazyGeneralOptions = null;
     }
@@ -214,18 +204,9 @@ public final class SoyFileSet {
      * @return The new {@code SoyFileSet}.
      */
     public SoyFileSet build() {
-      try {
-        if (!protoTypeProviderBuilder.isEmpty()) {
-          Set<SoyTypeProvider> typeProviders =
-              ImmutableSet.<SoyTypeProvider>of(protoTypeProviderBuilder.build());
-          localTypeRegistry = new SoyTypeRegistry(typeProviders);
-        }
-      } catch (DescriptorValidationException | IOException ex) {
-        throw new RuntimeException("Malformed descriptor set", ex);
-      }
       return new SoyFileSet(
           coreDependencies.apiCallScope,
-          localTypeRegistry == null ? coreDependencies.typeRegistry : localTypeRegistry,
+          typeRegistryBuilder.build(),
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
           filesBuilder.build(),
@@ -539,7 +520,7 @@ public final class SoyFileSet {
      *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
      */
     public Builder addProtoDescriptorsFromFile(File descriptorFile) {
-      protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
+      typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
       return this;
     }
 
@@ -551,7 +532,7 @@ public final class SoyFileSet {
      */
     public Builder addProtoDescriptorsFromFiles(Iterable<File> descriptorFiles) {
       for (File descriptorFile : descriptorFiles) {
-        protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
+        typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
       }
       return this;
     }
@@ -569,7 +550,7 @@ public final class SoyFileSet {
      * the provided descriptors available to use in soy.
      */
     public Builder addProtoDescriptors(Iterable<? extends GenericDescriptor> descriptors) {
-      protoTypeProviderBuilder.addDescriptors(descriptors);
+      typeRegistryBuilder.addDescriptors(descriptors);
       return this;
     }
 

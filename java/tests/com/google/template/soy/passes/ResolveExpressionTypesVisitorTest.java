@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -43,7 +42,6 @@ import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,8 +66,8 @@ public final class ResolveExpressionTypesVisitorTest {
         }
       };
 
-  private static final SoyTypeRegistry TYPE_REGISTRY =
-      new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of());
+  private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
+
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveExpressionTypesVisitor(
@@ -704,11 +702,7 @@ public final class ResolveExpressionTypesVisitorTest {
   @Test
   public void testProtoInitTyping() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry(
-            ImmutableSet.<SoyTypeProvider>of(
-                new SoyProtoTypeProvider.Builder()
-                    .addDescriptors(ExampleExtendable.getDescriptor())
-                    .buildNoFiles()));
+        new SoyTypeRegistry.Builder().addDescriptors(ExampleExtendable.getDescriptor()).build();
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(

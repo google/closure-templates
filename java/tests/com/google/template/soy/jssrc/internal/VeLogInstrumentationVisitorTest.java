@@ -29,9 +29,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -258,11 +256,9 @@ public final class VeLogInstrumentationVisitorTest {
             // Disable desguaring pass and manually run it later
             .desugarHtmlNodes(false)
             .typeRegistry(
-                new SoyTypeRegistry(
-                    ImmutableSet.<SoyTypeProvider>of(
-                        new SoyProtoTypeProvider.Builder()
-                            .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
-                            .buildNoFiles())))
+                new SoyTypeRegistry.Builder()
+                    .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                    .build())
             .setLoggingConfig(LOGGING_CONFIG)
             .addSoyFunction(new TestLoggingFunction())
             .errorReporter(ErrorReporter.exploding())

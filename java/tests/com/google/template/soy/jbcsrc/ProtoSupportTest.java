@@ -23,7 +23,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -44,7 +43,6 @@ import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,13 +60,11 @@ public final class ProtoSupportTest {
   private static final Joiner JOINER = Joiner.on('\n');
 
   final SoyTypeRegistry types =
-      new SoyTypeRegistry(
-          ImmutableSet.of(
-              new SoyProtoTypeProvider.Builder()
-                  .addDescriptors(
-                      Example.getDescriptor(),
-                      Proto3.getDescriptor())
-                  .buildNoFiles()));
+      new SoyTypeRegistry.Builder()
+          .addDescriptors(
+              Example.getDescriptor(),
+              Proto3.getDescriptor())
+          .build();
 
   @Test
   public void testSimpleProto() {

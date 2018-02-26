@@ -21,7 +21,6 @@ import static com.google.template.soy.exprtree.Operator.TIMES;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -37,9 +36,7 @@ import com.google.template.soy.testing.KvMap;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,19 +54,17 @@ import org.junit.runners.JUnit4;
 public final class JspbTest {
 
   private static final SoyTypeRegistry REGISTRY =
-      new SoyTypeRegistry(
-          ImmutableSet.<SoyTypeProvider>of(
-              new SoyProtoTypeProvider.Builder()
-                  .addDescriptors(
-                      Example.getDescriptor(),
-                      ExampleExtendable.getDescriptor(),
-                      ExampleExtendable.InnerMessage.getDescriptor(),
-                      KvMap.getDescriptor(),
-                      KvPair.getDescriptor(),
-                      Proto3Message.getDescriptor(),
-                      SomeExtension.getDescriptor(),
-                      Foo.getDescriptor())
-                  .buildNoFiles()));
+      new SoyTypeRegistry.Builder()
+          .addDescriptors(
+              Example.getDescriptor(),
+              ExampleExtendable.getDescriptor(),
+              ExampleExtendable.InnerMessage.getDescriptor(),
+              KvMap.getDescriptor(),
+              KvPair.getDescriptor(),
+              Proto3Message.getDescriptor(),
+              SomeExtension.getDescriptor(),
+              Foo.getDescriptor())
+          .build();
 
   // Proto field access tests
 

@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -35,7 +34,6 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -49,8 +47,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ResolveNamesVisitorTest {
 
-  private static final SoyTypeRegistry typeRegistry =
-      new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of());
+  private static final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
 
   @Test
   public void testParamNameLookupSuccess() {

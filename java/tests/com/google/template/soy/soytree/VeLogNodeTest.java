@@ -17,7 +17,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.CopyState;
@@ -26,9 +25,7 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.AutoEscapingType;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -103,11 +100,9 @@ public final class VeLogNodeTest {
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, veLog)
                 .typeRegistry(
-                    new SoyTypeRegistry(
-                        ImmutableSet.<SoyTypeProvider>of(
-                            new SoyProtoTypeProvider.Builder()
-                                .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
-                                .buildNoFiles())))
+                    new SoyTypeRegistry.Builder()
+                        .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                        .build())
                 .setLoggingConfig(
                     ValidatedLoggingConfig.create(
                         LoggingConfig.newBuilder()

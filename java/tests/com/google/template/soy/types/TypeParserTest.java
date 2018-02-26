@@ -19,7 +19,6 @@ package com.google.template.soy.types;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.TemplateNode;
@@ -43,40 +42,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class TypeParserTest {
 
-  private static final SoyType FOO_BAR_TYPE =
-      new SoyType() {
-        @Override
-        public Kind getKind() {
-          return null;
-        }
-
-        @Override
-        public boolean isAssignableFrom(SoyType srcType) {
-          return false;
-        }
-      };
-
-  private static final SoyTypeProvider TYPE_PROVIDER =
-      new SoyTypeProvider() {
-        @Override
-        public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
-          if (typeName.equals("foo.bar")) {
-            return FOO_BAR_TYPE;
-          }
-          return null;
-        }
-
-        @Override
-        public Iterable<String> getAllTypeNames() {
-          return ImmutableSet.of("foo.bar");
-        }
-      };
-
   private SoyTypeRegistry typeRegistry;
 
   @Before
   public void setUp() throws Exception {
-    typeRegistry = new SoyTypeRegistry(ImmutableSet.of(TYPE_PROVIDER));
+    typeRegistry = new SoyTypeRegistry();
   }
 
   @Test
@@ -85,9 +55,6 @@ public class TypeParserTest {
     assertTypeEquals(AnyType.getInstance(), " any ");
     assertTypeEquals(IntType.getInstance(), "int");
     assertTypeEquals(BoolType.getInstance(), "bool");
-    assertTypeEquals(FOO_BAR_TYPE, "foo.bar");
-    assertTypeEquals(FOO_BAR_TYPE, " foo.bar ");
-    assertTypeEquals(FOO_BAR_TYPE, " foo . bar ");
     assertTypeEquals(UnknownType.getInstance(), "?");
   }
 

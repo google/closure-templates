@@ -201,7 +201,7 @@ public final class SoyProtoType implements SoyType {
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
 
-  SoyProtoType(
+  public SoyProtoType(
       final SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
     this.typeDescriptor = descriptor;
     this.fields =

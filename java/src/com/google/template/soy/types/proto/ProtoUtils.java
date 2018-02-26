@@ -20,6 +20,12 @@ package com.google.template.soy.types.proto;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
@@ -37,11 +43,19 @@ public final class ProtoUtils {
     // Static only.
   }
 
+  private static final ImmutableSet<String> SAFE_PROTO_TYPES =
+      ImmutableSet.of(
+          SafeHtmlProto.getDescriptor().getFullName(),
+          SafeScriptProto.getDescriptor().getFullName(),
+          SafeStyleProto.getDescriptor().getFullName(),
+          SafeStyleSheetProto.getDescriptor().getFullName(),
+          SafeUrlProto.getDescriptor().getFullName(),
+          TrustedResourceUrlProto.getDescriptor().getFullName());
+
   /** Returns true if fieldDescriptor holds a sanitized proto type. */
   public static boolean isSanitizedContentField(FieldDescriptor fieldDescriptor) {
     return fieldDescriptor.getType() == Type.MESSAGE
-        && SafeStringTypes.SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(
-            fieldDescriptor.getMessageType().getFullName());
+        && SAFE_PROTO_TYPES.contains(fieldDescriptor.getMessageType().getFullName());
   }
 
   /** Returns the proper .getDescriptor() call for parse info generation in Tofu. */
@@ -100,7 +114,7 @@ public final class ProtoUtils {
     return "proto";
   }
 
-  static boolean shouldJsIgnoreField(FieldDescriptor fieldDescriptor) {
+  public static boolean shouldJsIgnoreField(FieldDescriptor fieldDescriptor) {
     return false;
   }
 

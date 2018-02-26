@@ -46,12 +46,11 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.proto.FieldVisitor;
-import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** A collaborator for {@link SoyProtoType} that handles the interpretation of proto fields. */
+/** A collaborator for {@link SoyProtoValue} that handles the interpretation of proto fields. */
 abstract class FieldInterpreter {
   private static final FieldVisitor<FieldInterpreter> VISITOR =
       new FieldVisitor<FieldInterpreter>() {

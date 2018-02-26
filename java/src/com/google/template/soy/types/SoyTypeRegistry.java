@@ -16,18 +16,39 @@
 
 package com.google.template.soy.types;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
+import com.google.common.io.ByteSource;
+import com.google.common.io.Files;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor.Type;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -51,6 +72,7 @@ import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
+import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.SanitizedType.AttributesType;
 import com.google.template.soy.types.primitive.SanitizedType.CssType;
 import com.google.template.soy.types.primitive.SanitizedType.HtmlType;
@@ -59,14 +81,26 @@ import com.google.template.soy.types.primitive.SanitizedType.TrustedResourceUriT
 import com.google.template.soy.types.primitive.SanitizedType.UriType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.proto.ProtoUtils;
+import com.google.template.soy.types.proto.SoyProtoEnumType;
+import com.google.template.soy.types.proto.SoyProtoType;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import javax.annotation.concurrent.GuardedBy;
 
 /**
  * Registry of types which can be looked up by name.
@@ -74,8 +108,15 @@ import javax.inject.Singleton;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Singleton
-public final class SoyTypeRegistry {
+public class SoyTypeRegistry {
+
+  private static final ExtensionRegistry REGISTRY = createRegistry();
+
+  private static final ExtensionRegistry createRegistry() {
+    ExtensionRegistry instance = ExtensionRegistry.newInstance();
+    // Add extensions needed for parsing descriptors here.
+    return instance;
+  }
 
   private static final SoyErrorKind UNKNOWN_TYPE =
       SoyErrorKind.of("Unknown type ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
@@ -113,22 +154,6 @@ public final class SoyTypeRegistry {
     BAD_MAP_KEY_TYPE = SoyErrorKind.of(sb.toString());
   }
 
-  /** A type registry that defaults all unknown types to the 'unknown' type. */
-  public static final SoyTypeRegistry DEFAULT_UNKNOWN =
-      new SoyTypeRegistry(
-          ImmutableSet.<SoyTypeProvider>of(
-              new SoyTypeProvider() {
-                @Override
-                public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
-                  return UnknownType.getInstance();
-                }
-
-                @Override
-                public Iterable<String> getAllTypeNames() {
-                  return ImmutableList.of();
-                }
-              }));
-
   // TODO(shwetakarwa): Rename consistently to use "URL".
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
@@ -148,22 +173,73 @@ public final class SoyTypeRegistry {
           .put("js", JsType.getInstance())
           .build();
 
-  private final ImmutableSet<SoyTypeProvider> typeProviders;
+  private static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
+      ImmutableMap.<String, SanitizedType>builder()
+          .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
+          .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
+          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.CssType.getInstance())
+          .put(
+              SafeStyleSheetProto.getDescriptor().getFullName(),
+              SanitizedType.CssType.getInstance())
+          .put(SafeUrlProto.getDescriptor().getFullName(), SanitizedType.UriType.getInstance())
+          .put(
+              TrustedResourceUrlProto.getDescriptor().getFullName(),
+              SanitizedType.TrustedResourceUriType.getInstance())
+          .build();
+
+  /** A type registry that defaults all unknown types to the 'unknown' type. */
+  public static final SoyTypeRegistry DEFAULT_UNKNOWN =
+      new SoyTypeRegistry() {
+        @Override
+        @Nullable
+        public SoyType getType(String typeName) {
+          SoyType type = super.getType(typeName);
+          if (type == null) {
+            return UnknownType.getInstance();
+          }
+          return type;
+        }
+      };
+
+  private final Object lock = new Object();
+
   private final Interner<ListType> listTypes = Interners.newStrongInterner();
   private final Interner<MapType> mapTypes = Interners.newStrongInterner();
   private final Interner<LegacyObjectMapType> legacyObjectMapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
+
+  @GuardedBy("lock")
   private ImmutableList<String> lazyAllSortedTypeNames;
 
-  @Inject
-  public SoyTypeRegistry(Set<SoyTypeProvider> typeProviders) {
-    this.typeProviders = ImmutableSet.copyOf(typeProviders);
+  /**
+   * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
+   * types are requested.
+   */
+  @GuardedBy("lock")
+  private final Map<String, SoyType> protoTypeCache;
+
+  /** Map of all the protobuf type descriptors that we've discovered. */
+  private final ImmutableMap<String, GenericDescriptor> descriptors;
+
+  /* Multimap of all known extensions of a given proto */
+  private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
+
+  private SoyTypeRegistry(Builder builder) {
+    DescriptorVisitor visitor = new DescriptorVisitor();
+    try {
+      builder.accept(visitor);
+    } catch (IOException | DescriptorValidationException e) {
+      throw new RuntimeException("Malformed descriptor set", e);
+    }
+    this.descriptors = ImmutableMap.copyOf(visitor.descriptors);
+    this.extensions = ImmutableSetMultimap.copyOf(visitor.extensions);
+    // TODO(lukes): this is wrong.  The safe string protos should not be usable as types
+    this.protoTypeCache = new HashMap<>(SAFE_PROTO_TO_SANITIZED_TYPE);
   }
 
-  @VisibleForTesting
   public SoyTypeRegistry() {
-    this.typeProviders = ImmutableSet.of();
+    this(new Builder());
   }
 
   /**
@@ -178,13 +254,22 @@ public final class SoyTypeRegistry {
     if (result != null) {
       return result;
     }
-    for (SoyTypeProvider provider : typeProviders) {
-      result = provider.getType(typeName, this);
-      if (result != null) {
-        return result;
+    synchronized (lock) {
+      result = protoTypeCache.get(typeName);
+      if (result == null) {
+        GenericDescriptor descriptor = descriptors.get(typeName);
+        if (descriptor == null) {
+          return null;
+        }
+        if (descriptor instanceof EnumDescriptor) {
+          result = new SoyProtoEnumType((EnumDescriptor) descriptor);
+        } else {
+          result = new SoyProtoType(this, (Descriptor) descriptor, extensions.get(typeName));
+        }
+        protoTypeCache.put(typeName, result);
       }
     }
-    return null;
+    return result;
   }
 
   /** Finds a type whose top-level namespace is a specified prefix, or null if there are none. */
@@ -199,19 +284,16 @@ public final class SoyTypeRegistry {
     return null;
   }
 
-  private synchronized Iterable<String> getAllSortedTypeNames() {
-    if (lazyAllSortedTypeNames == null) {
-      lazyAllSortedTypeNames = Ordering.natural().immutableSortedCopy(getAllTypeNames());
+  private Iterable<String> getAllSortedTypeNames() {
+    synchronized (lock) {
+      if (lazyAllSortedTypeNames == null) {
+        lazyAllSortedTypeNames =
+            Ordering.natural()
+                .immutableSortedCopy(
+                    Iterables.concat(BUILTIN_TYPES.keySet(), descriptors.keySet()));
+      }
+      return lazyAllSortedTypeNames;
     }
-    return lazyAllSortedTypeNames;
-  }
-
-  private Iterable<String> getAllTypeNames() {
-    Iterable<String> typeNames = BUILTIN_TYPES.keySet();
-    for (SoyTypeProvider provider : typeProviders) {
-      typeNames = Iterables.concat(provider.getAllTypeNames());
-    }
-    return typeNames;
   }
 
   /**
@@ -453,6 +535,164 @@ public final class SoyTypeRegistry {
     @Override
     public SoyType apply(TypeNode node) {
       return node.accept(this);
+    }
+  }
+
+  /** Helper class that assists in the construction of SoyTypeProviders. */
+  public static final class Builder {
+    private final List<ByteSource> descriptorSources = new ArrayList<>();
+    private final List<FileDescriptorSet> descriptorSets = new ArrayList<>();
+    private final List<GenericDescriptor> descriptors = new ArrayList<>();
+
+    public Builder() {}
+
+    /** Read a file descriptor set from a file and register any proto types found within. */
+    public Builder addFileDescriptorSetFromFile(File descriptorFile) {
+      return addFileDescriptorSetFromByteSource(Files.asByteSource(descriptorFile));
+    }
+
+    // TODO(lukes): actually read the file here and do the parsing work in accept incrementally
+    // this will provide better localization of errors
+    /** Read a file descriptor set from a byte source and register any proto types found within. */
+    public Builder addFileDescriptorSetFromByteSource(ByteSource descriptorSource) {
+      descriptorSources.add(descriptorSource);
+      return this;
+    }
+
+    /** Given file descriptor set, register any proto types found within. */
+    public Builder addFileDescriptorSet(FileDescriptorSet descriptorSet) {
+      descriptorSets.add(descriptorSet);
+      return this;
+    }
+
+    /** Registers a collection of descriptors of any type. */
+    public Builder addDescriptors(Iterable<? extends GenericDescriptor> descriptorsToAdd) {
+      for (GenericDescriptor descriptorToAdd : descriptorsToAdd) {
+        descriptors.add(descriptorToAdd);
+      }
+      return this;
+    }
+
+    /** Registers a collection of descriptors of any type. */
+    public Builder addDescriptors(GenericDescriptor... descriptorsToAdd) {
+      Collections.addAll(descriptors, descriptorsToAdd);
+      return this;
+    }
+
+    private void accept(DescriptorVisitor visitor)
+        throws FileNotFoundException, IOException, DescriptorValidationException {
+      // use a linked hash map.  The descriptors will tend to be in dependency order, so by
+      // constructing in the provided order we will limit the depth of the recusion below.
+      Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
+      for (ByteSource source : descriptorSources) {
+        try (InputStream inputStream = source.openStream()) {
+          for (FileDescriptorProto file :
+              FileDescriptorSet.parseFrom(inputStream, REGISTRY).getFileList()) {
+            nameToProtos.put(file.getName(), file);
+          }
+        }
+      }
+      for (FileDescriptorSet descriptorSet : descriptorSets) {
+        for (FileDescriptorProto file : descriptorSet.getFileList()) {
+          nameToProtos.put(file.getName(), file);
+        }
+      }
+      Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
+      for (String name : nameToProtos.keySet()) {
+        visitor.visit(buildDescriptor(null, name, parsedDescriptors, nameToProtos));
+      }
+      visitor.visit(descriptors);
+    }
+
+    private static FileDescriptor buildDescriptor(
+        String requestor,
+        String name,
+        Map<String, FileDescriptor> descriptors,
+        Map<String, FileDescriptorProto> protos)
+        throws DescriptorValidationException {
+      FileDescriptor file = descriptors.get(name);
+      if (file != null) {
+        return file;
+      }
+      FileDescriptorProto proto = protos.get(name);
+      if (proto == null) {
+        throw new IllegalStateException(
+            "Cannot find proto descriptor for " + name + " which is a dependency of " + requestor);
+      }
+      FileDescriptor[] deps = new FileDescriptor[proto.getDependencyCount()];
+      for (int i = 0; i < proto.getDependencyCount(); i++) {
+        deps[i] = buildDescriptor(name, proto.getDependency(i), descriptors, protos);
+      }
+      file = FileDescriptor.buildFrom(proto, deps);
+      descriptors.put(name, file);
+      return file;
+    }
+
+    public SoyTypeRegistry build() {
+      return new SoyTypeRegistry(this);
+    }
+  }
+
+  /** Walks a descriptor tree to build the descriptors, and extensions maps. */
+  private static final class DescriptorVisitor {
+    final Set<String> visited = new HashSet<>();
+    final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
+    final SetMultimap<String, FieldDescriptor> extensions =
+        MultimapBuilder.linkedHashKeys()
+            // We need a custom comparator since FieldDescriptor doesn't implement equals/hashCode
+            // reasonably.  We don't really care about the order, just deduplication.
+            .treeSetValues(
+                new Comparator<FieldDescriptor>() {
+                  @Override
+                  public int compare(FieldDescriptor left, FieldDescriptor right) {
+                    return ComparisonChain.start()
+                        .compare(left.getNumber(), right.getNumber())
+                        .compare(
+                            left.getContainingType().getFullName(),
+                            right.getContainingType().getFullName())
+                        .result();
+                  }
+                })
+            .build();
+
+    void visit(Iterable<? extends GenericDescriptor> descriptors) {
+      for (GenericDescriptor descriptor : descriptors) {
+        visit(descriptor);
+      }
+    }
+
+    void visit(GenericDescriptor descriptor) {
+      if (!visited.add(descriptor.getFullName())) {
+        return;
+      }
+      if (descriptor instanceof FileDescriptor) {
+        FileDescriptor fileDescriptor = (FileDescriptor) descriptor;
+        visit(fileDescriptor.getMessageTypes());
+        visit(fileDescriptor.getExtensions());
+        visit(fileDescriptor.getEnumTypes());
+        visit(fileDescriptor.getDependencies());
+      } else if (descriptor instanceof Descriptor) {
+        Descriptor messageDescriptor = (Descriptor) descriptor;
+        descriptors.put(messageDescriptor.getFullName(), messageDescriptor);
+        visit(messageDescriptor.getEnumTypes());
+        visit(messageDescriptor.getExtensions());
+        visit(messageDescriptor.getNestedTypes());
+        visit(messageDescriptor.getFields());
+      } else if (descriptor instanceof FieldDescriptor) {
+        FieldDescriptor fieldDescriptor = (FieldDescriptor) descriptor;
+        if (fieldDescriptor.getType() == Type.MESSAGE) {
+          visit(fieldDescriptor.getMessageType());
+        }
+        if (fieldDescriptor.getType() == Type.ENUM) {
+          visit(fieldDescriptor.getEnumType());
+        }
+        if (fieldDescriptor.isExtension() && !ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
+          extensions.put(fieldDescriptor.getContainingType().getFullName(), fieldDescriptor);
+        }
+      } else if (descriptor instanceof EnumDescriptor) {
+        EnumDescriptor enumDescriptor = (EnumDescriptor) descriptor;
+        descriptors.put(descriptor.getFullName(), enumDescriptor);
+      } // services, etc. not needed thus far so neither gathered nor dispatched
     }
   }
 }

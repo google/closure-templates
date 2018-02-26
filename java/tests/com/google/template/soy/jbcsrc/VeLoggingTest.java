@@ -37,9 +37,7 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -248,11 +246,9 @@ public final class VeLoggingTest {
                     + Joiner.on("\n").join(templateBodyLines)
                     + "\n{/template}")
             .typeRegistry(
-                new SoyTypeRegistry(
-                    ImmutableSet.<SoyTypeProvider>of(
-                        new SoyProtoTypeProvider.Builder()
-                            .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
-                            .buildNoFiles())))
+                new SoyTypeRegistry.Builder()
+                    .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                    .build())
             .setLoggingConfig(config)
             .addSoyFunction(new DepthFunction())
             .runAutoescaper(true)
