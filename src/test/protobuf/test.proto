@@ -40,6 +40,23 @@ message Foo {
   map<string, string> map_field = 21;
   map<int32, InnerMessage> map_message_field = 22;
   map<string, InnerMessage> map_string_message_field = 23;
+
+  repeated string string_a = 25;
+  optional string string_b_map = 26;
+}
+
+// These fields have the same names as fields in Foo to test accessing fields
+// from a union type.
+message FooUnion {
+  optional string string_field = 1;
+  optional int32 int_field = 2;
+  // Different types than in Foo
+  optional bool some_string = 3;
+
+  // These field names collide with those in Foo when Soy adds its List/Map
+  // suffixes.
+  optional string string_a_list = 5;
+  map<string, string> string_b = 6;
 }
 
 message SixtyFourBitIntFieldsAsStrings {
