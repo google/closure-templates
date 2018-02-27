@@ -236,8 +236,16 @@ abstract class AbstractSoyCompiler {
             // Set experimental features that are not generally available.
             .setExperimentalFeatures(experimentalFeatures);
 
-    if (!protoFileDescriptors.isEmpty()) {
-      sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
+    for (File protoFileDescriptor : protoFileDescriptors) {
+      try {
+        sfsBuilder.addProtoDescriptorsFromFile(protoFileDescriptor);
+      } catch (IOException ioe) {
+        throw new CommandLineError(
+            "Error parsing proto file descriptor from "
+                + protoFileDescriptor
+                + ": "
+                + ioe.getMessage());
+      }
     }
     addSoyFilesToBuilder(sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), deps, indirectDeps);
     if (globalsFile != null) {

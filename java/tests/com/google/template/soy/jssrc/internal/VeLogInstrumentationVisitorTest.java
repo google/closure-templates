@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -257,7 +258,8 @@ public final class VeLogInstrumentationVisitorTest {
             .desugarHtmlNodes(false)
             .typeRegistry(
                 new SoyTypeRegistry.Builder()
-                    .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                    .addDescriptors(
+                        ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                     .build())
             .setLoggingConfig(LOGGING_CONFIG)
             .addSoyFunction(new TestLoggingFunction())

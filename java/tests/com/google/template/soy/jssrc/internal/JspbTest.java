@@ -21,6 +21,7 @@ import static com.google.template.soy.exprtree.Operator.TIMES;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -56,14 +57,15 @@ public final class JspbTest {
   private static final SoyTypeRegistry REGISTRY =
       new SoyTypeRegistry.Builder()
           .addDescriptors(
-              Example.getDescriptor(),
-              ExampleExtendable.getDescriptor(),
-              ExampleExtendable.InnerMessage.getDescriptor(),
-              KvMap.getDescriptor(),
-              KvPair.getDescriptor(),
-              Proto3Message.getDescriptor(),
-              SomeExtension.getDescriptor(),
-              Foo.getDescriptor())
+              ImmutableList.of(
+                  Example.getDescriptor(),
+                  ExampleExtendable.getDescriptor(),
+                  ExampleExtendable.InnerMessage.getDescriptor(),
+                  KvMap.getDescriptor(),
+                  KvPair.getDescriptor(),
+                  Proto3Message.getDescriptor(),
+                  SomeExtension.getDescriptor(),
+                  Foo.getDescriptor()))
           .build();
 
   // Proto field access tests

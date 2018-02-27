@@ -20,6 +20,7 @@ import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -247,7 +248,8 @@ public final class VeLoggingTest {
                     + "\n{/template}")
             .typeRegistry(
                 new SoyTypeRegistry.Builder()
-                    .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                    .addDescriptors(
+                        ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                     .build())
             .setLoggingConfig(config)
             .addSoyFunction(new DepthFunction())

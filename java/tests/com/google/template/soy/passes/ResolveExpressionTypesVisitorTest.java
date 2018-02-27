@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -702,7 +703,9 @@ public final class ResolveExpressionTypesVisitorTest {
   @Test
   public void testProtoInitTyping() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder().addDescriptors(ExampleExtendable.getDescriptor()).build();
+        new SoyTypeRegistry.Builder()
+            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
+            .build();
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(

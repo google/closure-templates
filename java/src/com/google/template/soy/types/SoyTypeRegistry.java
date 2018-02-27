@@ -37,8 +37,6 @@ import com.google.common.html.types.SafeStyleProto;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
-import com.google.common.io.ByteSource;
-import com.google.common.io.Files;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -84,14 +82,14 @@ import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.ProtoUtils;
 import com.google.template.soy.types.proto.SoyProtoEnumType;
 import com.google.template.soy.types.proto.SoyProtoType;
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -229,7 +227,7 @@ public class SoyTypeRegistry {
     DescriptorVisitor visitor = new DescriptorVisitor();
     try {
       builder.accept(visitor);
-    } catch (IOException | DescriptorValidationException e) {
+    } catch (DescriptorValidationException e) {
       throw new RuntimeException("Malformed descriptor set", e);
     }
     this.descriptors = ImmutableMap.copyOf(visitor.descriptors);
@@ -540,28 +538,25 @@ public class SoyTypeRegistry {
 
   /** Helper class that assists in the construction of SoyTypeProviders. */
   public static final class Builder {
-    private final List<ByteSource> descriptorSources = new ArrayList<>();
-    private final List<FileDescriptorSet> descriptorSets = new ArrayList<>();
+    // use a linked hash map.  The descriptors will tend to be in dependency order, so by
+    // constructing in the provided order we will limit the depth of the recusion below.
+    private final Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
     private final List<GenericDescriptor> descriptors = new ArrayList<>();
 
     public Builder() {}
 
     /** Read a file descriptor set from a file and register any proto types found within. */
-    public Builder addFileDescriptorSetFromFile(File descriptorFile) {
-      return addFileDescriptorSetFromByteSource(Files.asByteSource(descriptorFile));
-    }
-
-    // TODO(lukes): actually read the file here and do the parsing work in accept incrementally
-    // this will provide better localization of errors
-    /** Read a file descriptor set from a byte source and register any proto types found within. */
-    public Builder addFileDescriptorSetFromByteSource(ByteSource descriptorSource) {
-      descriptorSources.add(descriptorSource);
-      return this;
-    }
-
-    /** Given file descriptor set, register any proto types found within. */
-    public Builder addFileDescriptorSet(FileDescriptorSet descriptorSet) {
-      descriptorSets.add(descriptorSet);
+    public Builder addFileDescriptorSetFromFile(File descriptorFile) throws IOException {
+      // TODO(lukes): if we called buildDescriptors here we could force callers to pass files in
+      // dependency order (and also throw DescriptorValidationException here).  This would improve
+      // performance (slightly, due to less recursion and no need for the nameToProtos map), but
+      // more importantly it would improve error locality.
+      try (InputStream inputStream = new BufferedInputStream(new FileInputStream(descriptorFile))) {
+        for (FileDescriptorProto file :
+            FileDescriptorSet.parseFrom(inputStream, REGISTRY).getFileList()) {
+          nameToProtos.put(file.getName(), file);
+        }
+      }
       return this;
     }
 
@@ -573,30 +568,7 @@ public class SoyTypeRegistry {
       return this;
     }
 
-    /** Registers a collection of descriptors of any type. */
-    public Builder addDescriptors(GenericDescriptor... descriptorsToAdd) {
-      Collections.addAll(descriptors, descriptorsToAdd);
-      return this;
-    }
-
-    private void accept(DescriptorVisitor visitor)
-        throws FileNotFoundException, IOException, DescriptorValidationException {
-      // use a linked hash map.  The descriptors will tend to be in dependency order, so by
-      // constructing in the provided order we will limit the depth of the recusion below.
-      Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
-      for (ByteSource source : descriptorSources) {
-        try (InputStream inputStream = source.openStream()) {
-          for (FileDescriptorProto file :
-              FileDescriptorSet.parseFrom(inputStream, REGISTRY).getFileList()) {
-            nameToProtos.put(file.getName(), file);
-          }
-        }
-      }
-      for (FileDescriptorSet descriptorSet : descriptorSets) {
-        for (FileDescriptorProto file : descriptorSet.getFileList()) {
-          nameToProtos.put(file.getName(), file);
-        }
-      }
+    private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
       Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
       for (String name : nameToProtos.keySet()) {
         visitor.visit(buildDescriptor(null, name, parsedDescriptors, nameToProtos));

@@ -62,8 +62,9 @@ public final class ProtoSupportTest {
   final SoyTypeRegistry types =
       new SoyTypeRegistry.Builder()
           .addDescriptors(
-              Example.getDescriptor(),
-              Proto3.getDescriptor())
+              ImmutableList.of(
+                  Example.getDescriptor(),
+                  Proto3.getDescriptor()))
           .build();
 
   @Test
