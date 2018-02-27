@@ -35,6 +35,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import javax.annotation.Nullable;
 
 /** A collection of protobuf utility methods. */
 public final class ProtoUtils {
@@ -56,6 +57,32 @@ public final class ProtoUtils {
   public static boolean isSanitizedContentField(FieldDescriptor fieldDescriptor) {
     return fieldDescriptor.getType() == Type.MESSAGE
         && SAFE_PROTO_TYPES.contains(fieldDescriptor.getMessageType().getFullName());
+  }
+
+  /** Returns true if fieldDescriptor holds a map where the values are a sanitized proto type. */
+  public static boolean isSanitizedContentMap(FieldDescriptor fieldDescriptor) {
+    if (!fieldDescriptor.isMapField()) {
+      return false;
+    }
+    Descriptor valueDesc = getMapValueMessageType(fieldDescriptor);
+    if (valueDesc == null) {
+      return false;
+    }
+    return SAFE_PROTO_TYPES.contains(valueDesc.getFullName());
+  }
+
+  /**
+   * Returns the descriptor representing the type of the value of the map field. Returns null if the
+   * map value isn't a message.
+   */
+  @Nullable
+  public static Descriptor getMapValueMessageType(FieldDescriptor mapField) {
+    FieldDescriptor valueDesc = mapField.getMessageType().findFieldByName("value");
+    if (valueDesc.getType() == FieldDescriptor.Type.MESSAGE) {
+      return valueDesc.getMessageType();
+    } else {
+      return null;
+    }
   }
 
   /** Returns the proper .getDescriptor() call for parse info generation in Tofu. */
