@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc.
+ * Copyright 2016 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.aggregate;
+package com.google.template.soy.internal.proto;
 
-import com.google.template.soy.types.SoyType;
-
-/** Abstract base class for {@link LegacyObjectMapType} and {@link MapType}. */
-public abstract class AbstractMapType implements SoyType {
-  /** Returns the type for keys of this map. */
-  public abstract SoyType getKeyType();
-
-  /** Returns the type for values in this map. */
-  public abstract SoyType getValueType();
+/** The type of Java generated proto. */
+public enum ProtoFlavor {
+  PROTO2,
+;
 }

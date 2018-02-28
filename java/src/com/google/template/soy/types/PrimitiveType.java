@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc.
+ * Copyright 2013 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.types;
 
-/** The type of Java generated proto. */
-public enum ProtoFlavor {
-  PROTO2,
-;
+/** Base class for primitive types. */
+abstract class PrimitiveType implements SoyType {
+
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
+    return srcType.getKind() == getKind();
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other.getClass() == this.getClass();
+  }
+
+  @Override
+  public int hashCode() {
+    // All instances of a given primitive type are considered equal.
+    return this.getClass().hashCode();
+  }
 }

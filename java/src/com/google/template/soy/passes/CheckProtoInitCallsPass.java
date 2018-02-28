@@ -31,14 +31,14 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.ErrorType;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.primitive.ErrorType;
-import com.google.template.soy.types.primitive.NullType;
-import com.google.template.soy.types.primitive.UnknownType;
-import com.google.template.soy.types.proto.SoyProtoType;
+import com.google.template.soy.types.UnknownType;
 import java.util.Set;
 
 /**

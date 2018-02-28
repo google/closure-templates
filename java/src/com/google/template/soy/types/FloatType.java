@@ -14,26 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
-import com.google.template.soy.types.SoyType;
+/**
+ * Soy floating-point type.
+ *
+ */
+public final class FloatType extends PrimitiveType {
 
-/** Base class for primitive types. */
-abstract class PrimitiveType implements SoyType {
+  private static final FloatType INSTANCE = new FloatType();
+
+  // Not constructible - use getInstance().
+  private FloatType() {}
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
-    return srcType.getKind() == getKind();
+  public Kind getKind() {
+    return Kind.FLOAT;
   }
 
   @Override
-  public boolean equals(Object other) {
-    return other.getClass() == this.getClass();
+  public String toString() {
+    return "float";
   }
 
-  @Override
-  public int hashCode() {
-    // All instances of a given primitive type are considered equal.
-    return this.getClass().hashCode();
+  /** Return the single instance of this type. */
+  public static FloatType getInstance() {
+    return INSTANCE;
   }
 }

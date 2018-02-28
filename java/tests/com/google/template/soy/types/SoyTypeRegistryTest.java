@@ -19,12 +19,6 @@ package com.google.template.soy.types;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.types.aggregate.LegacyObjectMapType;
-import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.RecordType;
-import com.google.template.soy.types.primitive.FloatType;
-import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.StringType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

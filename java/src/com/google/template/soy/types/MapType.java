@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.aggregate;
+package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.AnyType;
 import java.util.Objects;
 
 /**
  * Map type - generalized mapping type with key and value type arguments.
  *
- * <p>Note: This map type does not interoperate with proto maps or ES6 Maps. We are introducing a
- * second map type to handle these cases. We intend to migrate everyone to the new map type and
- * eventually delete LegacyObjectMapType. See b/69046114.
+ * <p>Note: This map type is designed for working with proto maps or ES6 Maps.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class LegacyObjectMapType extends AbstractMapType {
+public final class MapType extends AbstractMapType {
 
-  public static final LegacyObjectMapType EMPTY_MAP = new LegacyObjectMapType(null, null);
+  public static final MapType EMPTY_MAP = new MapType(null, null);
 
-  public static final LegacyObjectMapType ANY_MAP =
-      new LegacyObjectMapType(AnyType.getInstance(), AnyType.getInstance());
+  public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
@@ -44,20 +39,20 @@ public final class LegacyObjectMapType extends AbstractMapType {
   /** The declared type of item values in this map. */
   private final SoyType valueType;
 
-  private LegacyObjectMapType(SoyType keyType, SoyType valueType) {
+  private MapType(SoyType keyType, SoyType valueType) {
     this.keyType = keyType;
     this.valueType = valueType;
   }
 
-  public static LegacyObjectMapType of(SoyType keyType, SoyType valueType) {
+  public static MapType of(SoyType keyType, SoyType valueType) {
     Preconditions.checkNotNull(keyType);
     Preconditions.checkNotNull(valueType);
-    return new LegacyObjectMapType(keyType, valueType);
+    return new MapType(keyType, valueType);
   }
 
   @Override
   public Kind getKind() {
-    return Kind.LEGACY_OBJECT_MAP;
+    return Kind.MAP;
   }
 
   @Override
@@ -72,8 +67,8 @@ public final class LegacyObjectMapType extends AbstractMapType {
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    if (srcType.getKind() == Kind.LEGACY_OBJECT_MAP) {
-      LegacyObjectMapType srcMapType = (LegacyObjectMapType) srcType;
+    if (srcType.getKind() == Kind.MAP) {
+      MapType srcMapType = (MapType) srcType;
       if (srcMapType == EMPTY_MAP) {
         return true;
       } else if (this == EMPTY_MAP) {
@@ -89,13 +84,13 @@ public final class LegacyObjectMapType extends AbstractMapType {
 
   @Override
   public String toString() {
-    return "legacy_object_map<" + keyType + "," + valueType + ">";
+    return "map<" + keyType + "," + valueType + ">";
   }
 
   @Override
   public boolean equals(Object other) {
     if (other != null && other.getClass() == this.getClass()) {
-      LegacyObjectMapType otherMap = (LegacyObjectMapType) other;
+      MapType otherMap = (MapType) other;
       return Objects.equals(otherMap.keyType, keyType)
           && Objects.equals(otherMap.valueType, valueType);
     }

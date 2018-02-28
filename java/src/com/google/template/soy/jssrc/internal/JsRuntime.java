@@ -23,10 +23,10 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
-import com.google.template.soy.types.proto.ProtoUtils;
-import com.google.template.soy.types.proto.SoyProtoType;
+import com.google.template.soy.types.SoyProtoType;
 
 /**
  * Constants for commonly used js runtime functions and objects.

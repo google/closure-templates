@@ -41,7 +41,7 @@ import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-import com.google.template.soy.types.primitive.SanitizedType;
+import com.google.template.soy.types.SanitizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

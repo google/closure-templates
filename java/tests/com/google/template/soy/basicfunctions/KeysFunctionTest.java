@@ -35,7 +35,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;

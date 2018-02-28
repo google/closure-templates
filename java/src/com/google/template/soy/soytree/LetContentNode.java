@@ -25,9 +25,9 @@ import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.SanitizedType;
-import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.StringType;
 import java.util.List;
 import javax.annotation.Nullable;
 

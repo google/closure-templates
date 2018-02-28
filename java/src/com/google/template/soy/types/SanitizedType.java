@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
 import com.google.common.base.Ascii;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.types.SoyType;
 
 /**
  * Implementation of types for sanitized strings, that is strings that are produced by templates

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.aggregate;
+package com.google.template.soy.types;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -24,8 +24,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.ErrorType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;

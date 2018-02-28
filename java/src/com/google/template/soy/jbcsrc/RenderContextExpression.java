@@ -27,7 +27,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 import java.util.List;
 
 /** An expression for a {@link RenderContext} object. */

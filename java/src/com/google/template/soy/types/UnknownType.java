@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
-
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.aggregate.MapType;
+package com.google.template.soy.types;
 
 /**
  * The "unknown" type is used to indicate that the type was unspecified or could not be inferred.

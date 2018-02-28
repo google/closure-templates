@@ -14,41 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
-import com.google.template.soy.types.SoyType;
+/** A placeholder for errors during parsing. */
+public final class ErrorType implements SoyType {
 
-/**
- * Soy integer type.
- *
- */
-public final class IntType extends PrimitiveType {
+  private static final ErrorType INSTANCE = new ErrorType();
 
-  private static final IntType INSTANCE = new IntType();
+  private ErrorType() {}
 
-  // Not constructible - use getInstance().
-  private IntType() {}
+  public static ErrorType getInstance() {
+    return INSTANCE;
+  }
 
   @Override
   public Kind getKind() {
-    return Kind.INT;
+    return Kind.ERROR;
   }
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    Kind kind = srcType.getKind();
-    // enums are implicitly assignable to ints since that is the runtime representation in all
-    // backends
-    return kind == Kind.INT || kind == Kind.PROTO_ENUM;
+    return false;
   }
 
   @Override
   public String toString() {
-    return "int";
-  }
-
-  /** Return the single instance of this type. */
-  public static IntType getInstance() {
-    return INSTANCE;
+    return "$error$";
   }
 }

@@ -18,7 +18,7 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 

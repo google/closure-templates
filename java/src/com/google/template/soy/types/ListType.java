@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.aggregate;
+package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.types.SoyType;
 import java.util.Objects;
 
 /**

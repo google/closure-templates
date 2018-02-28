@@ -30,9 +30,9 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.proto.SoyProtoType;
+import com.google.template.soy.types.UnionType;
 
 /** Implements runtime type checks for tofu. */
 final class TofuTypeChecks {

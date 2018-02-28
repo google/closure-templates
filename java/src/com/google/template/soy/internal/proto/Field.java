@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.internal.proto;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

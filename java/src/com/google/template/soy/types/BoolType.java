@@ -14,40 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
-
-import com.google.template.soy.types.SoyType;
+package com.google.template.soy.types;
 
 /**
- * The "any" type is the supertype of all other types. The only operations allowed on this type are
- * explicit coercions to other types (i.e. downcasting), or operations that implicitly coerce to
- * string or boolean type (e.g. printing).
+ * Soy boolean type.
  *
  */
-public final class AnyType extends PrimitiveType {
+public final class BoolType extends PrimitiveType {
 
-  private static final AnyType INSTANCE = new AnyType();
+  private static final BoolType INSTANCE = new BoolType();
 
   // Not constructible - use getInstance().
-  private AnyType() {}
+  private BoolType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.ANY;
-  }
-
-  @Override
-  public boolean isAssignableFrom(SoyType srcType) {
-    return true;
+    return Kind.BOOL;
   }
 
   @Override
   public String toString() {
-    return "any";
+    return "bool";
   }
 
   /** Return the single instance of this type. */
-  public static AnyType getInstance() {
+  public static BoolType getInstance() {
     return INSTANCE;
   }
 }

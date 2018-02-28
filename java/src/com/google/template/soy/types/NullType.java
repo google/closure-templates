@@ -14,31 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
 /**
- * Soy floating-point type.
+ * The "null" type.
  *
  */
-public final class FloatType extends PrimitiveType {
+public final class NullType extends PrimitiveType {
 
-  private static final FloatType INSTANCE = new FloatType();
+  private static final NullType INSTANCE = new NullType();
 
   // Not constructible - use getInstance().
-  private FloatType() {}
+  private NullType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.FLOAT;
+    return Kind.NULL;
   }
 
   @Override
   public String toString() {
-    return "float";
+    return "null";
   }
 
   /** Return the single instance of this type. */
-  public static FloatType getInstance() {
+  public static NullType getInstance() {
     return INSTANCE;
   }
 }

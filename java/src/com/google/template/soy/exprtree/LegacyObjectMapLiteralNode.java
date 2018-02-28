@@ -24,10 +24,10 @@ import java.util.List;
  * A node representing a legacy object map literal (with keys and values as alternating children).
  *
  * <p>Note: This map literal does not interoperate with proto maps, ES6 Maps, or {@link
- * com.google.template.soy.types.aggregate.MapType}. We are introducing a second map type to handle
- * proto maps and ES6 Maps, and a second map literal syntax to create MapType values. We intend to
- * migrate everyone to the new map literal syntax and eventually delete LegacyObjectMapLiteralNode.
- * See b/69046114.
+ * com.google.template.soy.types.MapType}. We are introducing a second map type to handle proto maps
+ * and ES6 Maps, and a second map literal syntax to create MapType values. We intend to migrate
+ * everyone to the new map literal syntax and eventually delete LegacyObjectMapLiteralNode. See
+ * b/69046114.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *

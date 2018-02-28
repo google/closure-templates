@@ -18,7 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.primitive.NullType;
+import com.google.template.soy.types.NullType;
 
 /**
  * Node representing a null value.

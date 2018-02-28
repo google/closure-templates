@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.types;
 
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.types.SoyType;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.internal.proto.ProtoUtils;
 
 /** A {@link SoyType} implementation which describes a protocol buffer enum type. */
 public final class SoyProtoEnumType implements SoyType {

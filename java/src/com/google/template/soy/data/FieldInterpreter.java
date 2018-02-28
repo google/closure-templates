@@ -45,7 +45,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.types.proto.FieldVisitor;
+import com.google.template.soy.internal.proto.FieldVisitor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

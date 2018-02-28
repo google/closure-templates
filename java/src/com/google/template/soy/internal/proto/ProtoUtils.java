@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.internal.proto;
 
 
 import com.google.common.base.CaseFormat;
@@ -189,11 +189,11 @@ public final class ProtoUtils {
     return null;
   }
 
-  static String calculateJsEnumName(EnumDescriptor descriptor) {
+  public static String calculateJsEnumName(EnumDescriptor descriptor) {
     return calculateQualifiedJsName(descriptor);
   }
 
-  static String calculateQualifiedJsName(GenericDescriptor descriptor) {
+  public static String calculateQualifiedJsName(GenericDescriptor descriptor) {
     String protoPackage = descriptor.getFile().getPackage();
     // We need a semi-qualified name: including containing types but not the package.
     String name = descriptor.getFullName();

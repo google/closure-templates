@@ -30,7 +30,7 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDire
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.StringType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;

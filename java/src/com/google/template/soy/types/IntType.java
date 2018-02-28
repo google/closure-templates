@@ -14,38 +14,39 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
-
-import com.google.template.soy.types.SoyType;
+package com.google.template.soy.types;
 
 /**
- * Soy string type.
+ * Soy integer type.
  *
  */
-public final class StringType extends PrimitiveType {
+public final class IntType extends PrimitiveType {
 
-  private static final StringType INSTANCE = new StringType();
+  private static final IntType INSTANCE = new IntType();
 
   // Not constructible - use getInstance().
-  private StringType() {}
+  private IntType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.STRING;
-  }
-
-  @Override
-  public String toString() {
-    return "string";
-  }
-
-  /** Return the single instance of this type. */
-  public static StringType getInstance() {
-    return INSTANCE;
+    return Kind.INT;
   }
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    return srcType.getKind().isKnownStringOrSanitizedContent();
+    Kind kind = srcType.getKind();
+    // enums are implicitly assignable to ints since that is the runtime representation in all
+    // backends
+    return kind == Kind.INT || kind == Kind.PROTO_ENUM;
+  }
+
+  @Override
+  public String toString() {
+    return "int";
+  }
+
+  /** Return the single instance of this type. */
+  public static IntType getInstance() {
+    return INSTANCE;
   }
 }

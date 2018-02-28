@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.proto;
+package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -22,13 +22,10 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.primitive.BoolType;
-import com.google.template.soy.types.primitive.FloatType;
-import com.google.template.soy.types.primitive.IntType;
-import com.google.template.soy.types.primitive.SanitizedType;
-import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.internal.proto.Field;
+import com.google.template.soy.internal.proto.FieldVisitor;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.internal.proto.ProtoUtils;
 import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;

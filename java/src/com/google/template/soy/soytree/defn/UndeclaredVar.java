@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 
 /**
  * A reference to an undeclared variable, used in legacy templates.

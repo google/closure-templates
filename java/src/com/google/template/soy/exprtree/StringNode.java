@@ -21,7 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.StringType;
 
 /**
  * Node representing a string value.

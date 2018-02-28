@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 
 /**
  * Node representing a global.

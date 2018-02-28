@@ -14,31 +14,36 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
 /**
- * The "null" type.
+ * Soy string type.
  *
  */
-public final class NullType extends PrimitiveType {
+public final class StringType extends PrimitiveType {
 
-  private static final NullType INSTANCE = new NullType();
+  private static final StringType INSTANCE = new StringType();
 
   // Not constructible - use getInstance().
-  private NullType() {}
+  private StringType() {}
 
   @Override
   public Kind getKind() {
-    return Kind.NULL;
+    return Kind.STRING;
   }
 
   @Override
   public String toString() {
-    return "null";
+    return "string";
   }
 
   /** Return the single instance of this type. */
-  public static NullType getInstance() {
+  public static StringType getInstance() {
     return INSTANCE;
+  }
+
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
+    return srcType.getKind().isKnownStringOrSanitizedContent();
   }
 }

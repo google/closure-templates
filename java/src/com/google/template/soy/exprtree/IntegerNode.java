@@ -18,7 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.IntType;
 
 /**
  * Node representing a Soy integer value. Note that Soy supports up to JavaScript

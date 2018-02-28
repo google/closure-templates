@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types.primitive;
+package com.google.template.soy.types;
 
-/**
- * Soy boolean type.
- *
- */
-public final class BoolType extends PrimitiveType {
+/** Abstract base class for {@link LegacyObjectMapType} and {@link MapType}. */
+public abstract class AbstractMapType implements SoyType {
+  /** Returns the type for keys of this map. */
+  public abstract SoyType getKeyType();
 
-  private static final BoolType INSTANCE = new BoolType();
-
-  // Not constructible - use getInstance().
-  private BoolType() {}
-
-  @Override
-  public Kind getKind() {
-    return Kind.BOOL;
-  }
-
-  @Override
-  public String toString() {
-    return "bool";
-  }
-
-  /** Return the single instance of this type. */
-  public static BoolType getInstance() {
-    return INSTANCE;
-  }
+  /** Returns the type for values in this map. */
+  public abstract SoyType getValueType();
 }
