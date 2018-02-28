@@ -1221,8 +1221,9 @@ goog.isArray = function(val) {
 /**
  * Returns true if the object looks like an array. To qualify as array like
  * the value needs to be either a NodeList or an object with a Number length
- * property. As a special case, a function value is not array like, because its
- * length property is fixed to correspond to the number of expected arguments.
+ * property. Note that for this function neither strings nor functions are
+ * considered "array-like".
+ *
  * @param {?} val Variable to test.
  * @return {boolean} Whether variable is an array.
  */
@@ -7402,7 +7403,9 @@ goog.object.getKeys = function(obj) {
  */
 goog.object.getValueByKeys = function(obj, var_args) {
   var isArrayLike = goog.isArrayLike(var_args);
-  var keys = isArrayLike ? var_args : arguments;
+  var keys = isArrayLike ?
+      /** @type {!IArrayLike<number|string>} */ (var_args) :
+      arguments;
 
   // Start with the 2nd parameter for the variable parameters syntax.
   for (var i = isArrayLike ? 0 : 1; i < keys.length; i++) {
@@ -9311,6 +9314,8 @@ goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
  * @param {boolean=} opt_cancel Whether to stop the error from reaching the
  *    browser.
  * @param {Object=} opt_target Object that fires onerror events.
+ * @suppress {strictMissingProperties} onerror is not defined as a property
+ *    on Object.
  */
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
   var target = opt_target || goog.global;
@@ -13938,12 +13943,13 @@ goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
  */
 goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
   if (element) {
+    var htmlElement = /** @type {!HTMLElement} */ (element);
     dir = goog.i18n.bidi.toDir(dir);
     if (dir) {
-      element.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
+      htmlElement.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
           goog.i18n.bidi.RIGHT :
           goog.i18n.bidi.LEFT;
-      element.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+      htmlElement.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
     }
   }
 };
@@ -13955,16 +13961,17 @@ goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
  * @param {string} text
  */
 goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
+  var htmlElement = /** @type {!HTMLElement} */ (element);
   switch (goog.i18n.bidi.estimateDirection(text)) {
     case (goog.i18n.bidi.Dir.LTR):
-      element.dir = 'ltr';
+      htmlElement.dir = 'ltr';
       break;
     case (goog.i18n.bidi.Dir.RTL):
-      element.dir = 'rtl';
+      htmlElement.dir = 'rtl';
       break;
     default:
       // Default for no direction, inherit from document.
-      element.removeAttribute('dir');
+      htmlElement.removeAttribute('dir');
   }
 };
 
@@ -14802,7 +14809,7 @@ goog.html.SafeUrl.sanitize = function(url) {
   if (url instanceof goog.html.SafeUrl) {
     return url;
   } else if (url.implementsGoogStringTypedString) {
-    url = url.getTypedStringValue();
+    url = /** @type {!goog.string.TypedString} */ (url).getTypedStringValue();
   } else {
     url = String(url);
   }
@@ -14833,7 +14840,7 @@ goog.html.SafeUrl.sanitizeAssertUnchanged = function(url) {
   if (url instanceof goog.html.SafeUrl) {
     return url;
   } else if (url.implementsGoogStringTypedString) {
-    url = url.getTypedStringValue();
+    url = /** @type {!goog.string.TypedString} */ (url).getTypedStringValue();
   } else {
     url = String(url);
   }
@@ -16005,11 +16012,13 @@ goog.html.SafeHtml.htmlEscape = function(textOrHtml) {
   }
   var dir = null;
   if (textOrHtml.implementsGoogI18nBidiDirectionalString) {
-    dir = textOrHtml.getDirection();
+    dir = /** @type {!goog.i18n.bidi.DirectionalString} */ (textOrHtml)
+              .getDirection();
   }
   var textAsString;
   if (textOrHtml.implementsGoogStringTypedString) {
-    textAsString = textOrHtml.getTypedStringValue();
+    textAsString = /** @type {!goog.string.TypedString} */ (textOrHtml)
+                       .getTypedStringValue();
   } else {
     textAsString = String(textOrHtml);
   }
@@ -16491,7 +16500,8 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
   if (value.implementsGoogStringTypedString) {
     // Ok to call getTypedStringValue() since there's no reliance on the type
     // contract for security here.
-    value = value.getTypedStringValue();
+    value =
+        /** @type {!goog.string.TypedString} */ (value).getTypedStringValue();
   }
 
   goog.asserts.assert(
@@ -18148,22 +18158,24 @@ goog.iter.toIterator = function(iterable) {
     return iterable;
   }
   if (typeof iterable.__iterator__ == 'function') {
-    return iterable.__iterator__(false);
+    return /** @type {{__iterator__:function(this:?, boolean=)}} */ (iterable)
+        .__iterator__(false);
   }
   if (goog.isArrayLike(iterable)) {
+    var like = /** @type {!IArrayLike<number|string>} */ (iterable);
     var i = 0;
     var newIter = new goog.iter.Iterator;
     newIter.next = function() {
       while (true) {
-        if (i >= iterable.length) {
+        if (i >= like.length) {
           throw goog.iter.StopIteration;
         }
         // Don't include deleted elements.
-        if (!(i in iterable)) {
+        if (!(i in like)) {
           i++;
           continue;
         }
-        return iterable[i++];
+        return like[i++];
       }
     };
     return newIter;
