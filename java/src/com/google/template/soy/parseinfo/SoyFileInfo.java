@@ -100,17 +100,9 @@ public class SoyFileInfo {
   }
 
   /**
-   * Returns a list of any protocol buffer types used by the templates. The elements of the list are
-   * the default object for a given proto type.
-   */
-  public ImmutableList<Object> getProtoTypes() {
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    ImmutableList<Object> typed = (ImmutableList) getProtoDescriptors();
-    return typed;
-  }
-  /**
-   * Returns a list of any protocol buffer types used by the templates. The elements of the list are
-   * the default object for a given proto type.
+   * Returns a list of any protocol buffer types used by the templates.
+   *
+   * <p>The elements are either Descriptors or EnumDescriptor objects.
    */
   public ImmutableList<GenericDescriptor> getProtoDescriptors() {
     return ImmutableList.of();
