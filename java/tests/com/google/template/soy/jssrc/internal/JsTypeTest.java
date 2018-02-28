@@ -25,12 +25,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -123,17 +126,36 @@ public final class JsTypeTest {
             "{bar: (!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
                 + "|!goog.soy.data.UnsanitizedText|string>|null|undefined), foo: number,}");
     assertThatTypeExpr(RecordType.of(ImmutableMap.<String, SoyType>of())).isEqualTo("!Object");
+
+    assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
+        .isEqualTo(
+            "!soy.map.Map<!goog.soy.data.SanitizedContent|string,!goog.html.SafeHtml|"
+                + "!goog.soy.data.SanitizedHtml|!goog.soy.data.UnsanitizedText|string>");
   }
 
   @Test
   public void testTypeTests() {
     assertThat(getTypeAssertion(StringType.getInstance(), "x"))
         .isEqualTo("goog.isString(x) || x instanceof goog.soy.data.SanitizedContent");
+    assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("goog.isNumber(x)");
+    assertThat(getTypeAssertion(BoolType.getInstance(), "x"))
+        .isEqualTo("goog.isBoolean(x) || x === 1 || x === 0");
+
+    assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
+        .isEqualTo("x == null || (goog.isBoolean(x) || x === 1 || x === 0)");
+    assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
+        .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");
 
     assertThat(getTypeAssertion(LIST_OF_HTML, "x")).isEqualTo("goog.isArray(x)");
 
     assertThat(getTypeAssertion(NULLABLE_LIST_OF_HTML, "x"))
         .isEqualTo("x == null || goog.isArray(x)");
+
+    assertThat(
+            getTypeAssertion(
+                UnionType.of(StringType.getInstance(), ListType.of(IntType.getInstance())), "x"))
+        .isEqualTo(
+            "goog.isArray(x) || (goog.isString(x) || x instanceof goog.soy.data.SanitizedContent)");
   }
 
   private static String getTypeAssertion(SoyType instance, String varName) {
