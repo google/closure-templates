@@ -21,6 +21,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -36,6 +37,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -53,9 +55,9 @@ import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
@@ -104,6 +106,11 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
+
+  private static final ImmutableTable<SoyType, SoyType, SoyFunction> AVAILABLE_CALL_SITE_COERCIONS =
+      new ImmutableTable.Builder<SoyType, SoyType, SoyFunction>()
+          .put(IntType.getInstance(), FloatType.getInstance(), FloatFunction.INSTANCE)
+          .build();
 
   CheckTemplateCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -324,27 +331,42 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     @CheckReturnValue
     private SoyType maybeCoerceType(
         CallParamValueNode paramNode, SoyType argType, Collection<SoyType> declaredTypes) {
-      if (argType.getKind() == Kind.INT
-          && (declaredTypes.contains(FloatType.getInstance())
-              || declaredTypes.contains(SoyTypes.makeNullable(FloatType.getInstance())))) {
+      if (AVAILABLE_CALL_SITE_COERCIONS.row(argType).isEmpty()) {
+        return argType;
+      }
+      for (SoyType formalType : declaredTypes) {
+        if (formalType.isAssignableFrom(argType)) {
+          return argType; // template already accepts value, no need to coerce
+        }
+      }
+      for (SoyType coercionTargetType : AVAILABLE_CALL_SITE_COERCIONS.row(argType).keySet()) {
+        SoyFunction function = null;
         for (SoyType formalType : declaredTypes) {
-          if (formalType.isAssignableFrom(argType)) {
-            return argType; // template already accepts int, no need to coerce
+          if (!formalType.isAssignableFrom(coercionTargetType)) {
+            continue;
+          }
+          if (function == null) {
+            function = AVAILABLE_CALL_SITE_COERCIONS.get(argType, coercionTargetType);
+          } else {
+            // This is actually a bad state that shouldn't happen because there should only be one
+            // coercing function.
+            function = null;
+            break;
           }
         }
-
+        if (function == null) {
+          continue;
+        }
         ExprRootNode root = paramNode.getExpr();
 
-        // create a node to wrap param in float coercion
-        FunctionNode newParam =
-            new FunctionNode(FloatFunction.INSTANCE, root.getRoot().getSourceLocation());
-        newParam.setType(FloatType.getInstance());
+        // create a node to wrap param in coercion
+        FunctionNode newParam = new FunctionNode(function, root.getRoot().getSourceLocation());
+        newParam.setType(coercionTargetType);
 
         newParam.addChild(root.getRoot());
         root.addChild(newParam);
-        return FloatType.getInstance();
+        return coercionTargetType;
       }
-
       return argType;
     }
 
@@ -462,8 +484,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
      * Helper method that reports an error if:
      *
      * <ul>
-     *   <li> There are duplicate params for the caller.
-     *   <li> Required parameters in callee template are not presented in the caller.
+     *   <li>There are duplicate params for the caller.
+     *   <li>Required parameters in callee template are not presented in the caller.
      * </ul>
      */
     private void checkCallParamNames(CallNode caller, TemplateNode callee) {
