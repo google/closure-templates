@@ -51,124 +51,126 @@ import java.util.List;
 import java.util.Map;
 
 /** A collaborator for {@link SoyProtoValue} that handles the interpretation of proto fields. */
-abstract class FieldInterpreter {
-  private static final FieldVisitor<FieldInterpreter> VISITOR =
-      new FieldVisitor<FieldInterpreter>() {
+abstract class ProtoFieldInterpreter {
+  private static final FieldVisitor<ProtoFieldInterpreter> VISITOR =
+      new FieldVisitor<ProtoFieldInterpreter>() {
         @Override
-        protected FieldInterpreter visitLongAsInt() {
+        protected ProtoFieldInterpreter visitLongAsInt() {
           return LONG_AS_INT;
         }
 
         @Override
-        protected FieldInterpreter visitUnsignedInt() {
+        protected ProtoFieldInterpreter visitUnsignedInt() {
           return UNSIGNED_INT;
         }
 
         @Override
-        protected FieldInterpreter visitUnsignedLongAsString() {
+        protected ProtoFieldInterpreter visitUnsignedLongAsString() {
           return UNSIGNEDLONG_AS_STRING;
         }
 
         @Override
-        protected FieldInterpreter visitLongAsString() {
+        protected ProtoFieldInterpreter visitLongAsString() {
           return LONG_AS_STRING;
         }
 
         @Override
-        protected FieldInterpreter visitBool() {
+        protected ProtoFieldInterpreter visitBool() {
           return BOOL;
         }
 
         @Override
-        protected FieldInterpreter visitBytes() {
+        protected ProtoFieldInterpreter visitBytes() {
           return BYTES;
         }
 
         @Override
-        protected FieldInterpreter visitString() {
+        protected ProtoFieldInterpreter visitString() {
           return STRING;
         }
 
         @Override
-        protected FieldInterpreter visitDoubleAsFloat() {
+        protected ProtoFieldInterpreter visitDoubleAsFloat() {
           return DOUBLE_AS_FLOAT;
         }
 
         @Override
-        protected FieldInterpreter visitFloat() {
+        protected ProtoFieldInterpreter visitFloat() {
           return FLOAT;
         }
 
         @Override
-        protected FieldInterpreter visitInt() {
+        protected ProtoFieldInterpreter visitInt() {
           return INT;
         }
 
         @Override
-        protected FieldInterpreter visitSafeHtml() {
+        protected ProtoFieldInterpreter visitSafeHtml() {
           return SAFE_HTML_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitSafeScript() {
+        protected ProtoFieldInterpreter visitSafeScript() {
           return SAFE_SCRIPT_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitSafeStyle() {
+        protected ProtoFieldInterpreter visitSafeStyle() {
           return SAFE_STYLE_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitSafeStyleSheet() {
+        protected ProtoFieldInterpreter visitSafeStyleSheet() {
           return SAFE_STYLE_SHEET_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitSafeUrl() {
+        protected ProtoFieldInterpreter visitSafeUrl() {
           return SAFE_URL_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitTrustedResourceUrl() {
+        protected ProtoFieldInterpreter visitTrustedResourceUrl() {
           return TRUSTED_RESOURCE_URI_PROTO;
         }
 
         @Override
-        protected FieldInterpreter visitMessage(Descriptor messageType) {
+        protected ProtoFieldInterpreter visitMessage(Descriptor messageType) {
           return PROTO_MESSAGE;
         }
 
         @Override
-        protected FieldInterpreter visitEnum(EnumDescriptor enumType) {
+        protected ProtoFieldInterpreter visitEnum(EnumDescriptor enumType) {
           return enumTypeField(enumType);
         }
 
         @Override
-        protected FieldInterpreter visitMap(
-            FieldDescriptor mapField, FieldInterpreter keyValue, FieldInterpreter valueValue) {
+        protected ProtoFieldInterpreter visitMap(
+            FieldDescriptor mapField,
+            ProtoFieldInterpreter keyValue,
+            ProtoFieldInterpreter valueValue) {
           return getMapType(mapField, keyValue, valueValue);
         }
 
         @Override
-        protected FieldInterpreter visitJspbMap(
-            FieldDescriptor keyField, FieldInterpreter scalarInterpreter) {
+        protected ProtoFieldInterpreter visitJspbMap(
+            FieldDescriptor keyField, ProtoFieldInterpreter scalarInterpreter) {
           return getJspbMapType(scalarInterpreter, keyField);
         }
 
         @Override
-        protected FieldInterpreter visitRepeated(FieldInterpreter value) {
+        protected ProtoFieldInterpreter visitRepeated(ProtoFieldInterpreter value) {
           return getListType(value);
         }
       };
 
-  /** Creates a {@link FieldInterpreter} for the given field. */
-  static FieldInterpreter create(FieldDescriptor fieldDescriptor) {
+  /** Creates a {@link ProtoFieldInterpreter} for the given field. */
+  static ProtoFieldInterpreter create(FieldDescriptor fieldDescriptor) {
     return FieldVisitor.visitField(fieldDescriptor, VISITOR);
   }
 
-  private static FieldInterpreter getListType(final FieldInterpreter local) {
-    return new FieldInterpreter() {
+  private static ProtoFieldInterpreter getListType(final ProtoFieldInterpreter local) {
+    return new ProtoFieldInterpreter() {
       @Override
       public SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
@@ -192,14 +194,14 @@ abstract class FieldInterpreter {
     };
   }
 
-  private static FieldInterpreter getMapType(
+  private static ProtoFieldInterpreter getMapType(
       final FieldDescriptor mapField,
-      final FieldInterpreter keyField,
-      final FieldInterpreter valueField) {
+      final ProtoFieldInterpreter keyField,
+      final ProtoFieldInterpreter valueField) {
     final Descriptor messageDescriptor = mapField.getMessageType();
     final FieldDescriptor keyDescriptor = messageDescriptor.getFields().get(0);
     final FieldDescriptor valueDescriptor = messageDescriptor.getFields().get(1);
-    return new FieldInterpreter() {
+    return new ProtoFieldInterpreter() {
 
       @Override
       SoyValue soyFromProto(Object field) {
@@ -241,9 +243,9 @@ abstract class FieldInterpreter {
    *
    * <p>TODO(b/70671325): Investigate if we can drop support for this.
    */
-  private static FieldInterpreter getJspbMapType(
-      final FieldInterpreter scalarImpl, final FieldDescriptor keyFieldDescriptor) {
-    return new FieldInterpreter() {
+  private static ProtoFieldInterpreter getJspbMapType(
+      final ProtoFieldInterpreter scalarImpl, final FieldDescriptor keyFieldDescriptor) {
+    return new ProtoFieldInterpreter() {
       @Override
       public SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
@@ -270,9 +272,9 @@ abstract class FieldInterpreter {
     };
   }
 
-  /** A {@link FieldInterpreter} for bytes typed fields. */
-  private static final FieldInterpreter BYTES =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for bytes typed fields. */
+  private static final ProtoFieldInterpreter BYTES =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return StringData.forValue(
@@ -285,9 +287,9 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for bool typed fields. */
-  private static final FieldInterpreter BOOL =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for bool typed fields. */
+  private static final ProtoFieldInterpreter BOOL =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return BooleanData.forValue((Boolean) field);
@@ -299,14 +301,13 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for int typed fields. */
-  private static final FieldInterpreter INT =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for int typed fields. */
+  private static final ProtoFieldInterpreter INT =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(((Number) field).longValue());
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
@@ -314,9 +315,9 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for int typed fields. */
-  private static final FieldInterpreter UNSIGNED_INT =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for int typed fields. */
+  private static final ProtoFieldInterpreter UNSIGNED_INT =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(UnsignedInts.toLong(((Number) field).intValue()));
@@ -328,9 +329,9 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for int64 typed fields interpreted as soy ints. */
-  private static final FieldInterpreter LONG_AS_INT =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for int64 typed fields interpreted as soy ints. */
+  private static final ProtoFieldInterpreter LONG_AS_INT =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return IntegerData.forValue(((Long) field).longValue());
@@ -342,9 +343,9 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for int64 typed fields interpreted as soy strings. */
-  private static final FieldInterpreter LONG_AS_STRING =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for int64 typed fields interpreted as soy strings. */
+  private static final ProtoFieldInterpreter LONG_AS_STRING =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return StringData.forValue(field.toString());
@@ -357,17 +358,16 @@ abstract class FieldInterpreter {
       };
 
   /**
-   * A {@link FieldInterpreter} for uint64 typed fields interpreted as soy strings.
+   * A {@link ProtoFieldInterpreter} for uint64 typed fields interpreted as soy strings.
    *
    * <p>TODO(lukes): when soy fully switches to java8 use the methods on java.lang.Long
    */
-  private static final FieldInterpreter UNSIGNEDLONG_AS_STRING =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter UNSIGNEDLONG_AS_STRING =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return StringData.forValue(UnsignedLongs.toString((Long) field));
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
@@ -375,14 +375,13 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for float typed fields. */
-  private static final FieldInterpreter FLOAT =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for float typed fields. */
+  private static final ProtoFieldInterpreter FLOAT =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return FloatData.forValue(((Float) field).floatValue());
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
@@ -390,14 +389,13 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for double typed fields interpreted as soy floats. */
-  private static final FieldInterpreter DOUBLE_AS_FLOAT =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for double typed fields interpreted as soy floats. */
+  private static final ProtoFieldInterpreter DOUBLE_AS_FLOAT =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return FloatData.forValue(((Double) field).doubleValue());
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
@@ -405,14 +403,13 @@ abstract class FieldInterpreter {
         }
       };
 
-  /** A {@link FieldInterpreter} for string typed fields. */
-  private static final FieldInterpreter STRING =
-      new FieldInterpreter() {
+  /** A {@link ProtoFieldInterpreter} for string typed fields. */
+  private static final ProtoFieldInterpreter STRING =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return StringData.forValue(field.toString());
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
@@ -420,8 +417,8 @@ abstract class FieldInterpreter {
         }
       };
 
-  private static final FieldInterpreter SAFE_HTML_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter SAFE_HTML_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromSafeHtmlProto((SafeHtmlProto) field);
@@ -433,8 +430,8 @@ abstract class FieldInterpreter {
         }
       };
 
-  private static final FieldInterpreter SAFE_SCRIPT_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter SAFE_SCRIPT_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromSafeScriptProto((SafeScriptProto) field);
@@ -446,8 +443,8 @@ abstract class FieldInterpreter {
         }
       };
 
-  private static final FieldInterpreter SAFE_STYLE_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter SAFE_STYLE_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromSafeStyleProto((SafeStyleProto) field);
@@ -459,8 +456,8 @@ abstract class FieldInterpreter {
         }
       };
 
-  private static final FieldInterpreter SAFE_STYLE_SHEET_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter SAFE_STYLE_SHEET_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromSafeStyleSheetProto((SafeStyleSheetProto) field);
@@ -472,21 +469,20 @@ abstract class FieldInterpreter {
         }
       };
 
-  private static final FieldInterpreter SAFE_URL_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter SAFE_URL_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromSafeUrlProto((SafeUrlProto) field);
         }
-
 
         @Override
         Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeUrlProto();
         }
       };
-  private static final FieldInterpreter TRUSTED_RESOURCE_URI_PROTO =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter TRUSTED_RESOURCE_URI_PROTO =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SanitizedContents.fromTrustedResourceUrlProto((TrustedResourceUrlProto) field);
@@ -498,11 +494,11 @@ abstract class FieldInterpreter {
         }
       };
   /**
-   * Returns a {@link FieldInterpreter} that has the given type and delegates to the
+   * Returns a {@link ProtoFieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static final FieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
-    return new FieldInterpreter() {
+  private static final ProtoFieldInterpreter enumTypeField(final EnumDescriptor enumDescriptor) {
+    return new ProtoFieldInterpreter() {
 
       @Override
       public SoyValue soyFromProto(Object field) {
@@ -532,8 +528,8 @@ abstract class FieldInterpreter {
     };
   }
 
-  private static final FieldInterpreter PROTO_MESSAGE =
-      new FieldInterpreter() {
+  private static final ProtoFieldInterpreter PROTO_MESSAGE =
+      new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
           return SoyProtoValueImpl.create((Message) field);
@@ -545,7 +541,7 @@ abstract class FieldInterpreter {
         }
       };
 
-  private FieldInterpreter() {}
+  private ProtoFieldInterpreter() {}
 
   /** Returns the SoyValue for the Tofu representation of the given field. */
   abstract SoyValue soyFromProto(Object field);

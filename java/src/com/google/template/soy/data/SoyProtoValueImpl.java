@@ -99,16 +99,16 @@ public final class SoyProtoValueImpl extends SoyAbstractValue
   }
 
   private static final class NormalFieldWithInterpreter extends FieldWithInterpreter {
-    @LazyInit FieldInterpreter interpreter;
+    @LazyInit ProtoFieldInterpreter interpreter;
 
     NormalFieldWithInterpreter(FieldDescriptor fieldDesc) {
       super(fieldDesc);
     }
 
-    private FieldInterpreter impl() {
-      FieldInterpreter local = interpreter;
+    private ProtoFieldInterpreter impl() {
+      ProtoFieldInterpreter local = interpreter;
       if (local == null) {
-        local = FieldInterpreter.create(getDescriptor());
+        local = ProtoFieldInterpreter.create(getDescriptor());
       }
       return local;
     }
