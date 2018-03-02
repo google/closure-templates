@@ -1239,7 +1239,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           node.setType(StringType.getInstance());
           break;
         case XID:
-          checkArgIsStringLiteral(arg1, "xid");
+          // arg validation is already handled by the XidPass
           node.setType(StringType.getInstance());
           break;
         case V1_EXPRESSION:

@@ -164,26 +164,6 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   @Test
-  public void testXidFunction() {
-    assertSuccess("{namespace ns}\n", "{template .foo}", "  {xid('foo')}", "{/template}");
-
-    assertFunctionCallsInvalid(
-        "Argument to function 'xid' must be a string literal.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {xid(10)}",
-        "{/template}");
-
-    assertFunctionCallsInvalid(
-        "Argument to function 'xid' must be a string literal.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {@param x : string}",
-        "  {xid($x)}",
-        "{/template}");
-  }
-
-  @Test
   public void testV1ExpressionFunction() {
     assertPasses(
         SyntaxVersion.V1_0,
