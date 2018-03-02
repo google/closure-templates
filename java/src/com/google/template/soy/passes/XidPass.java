@@ -17,7 +17,6 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -49,9 +48,6 @@ final class XidPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    if (file.getSoyFileKind() != SoyFileKind.SRC) {
-      return;
-    }
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
       if (fn.getSoyFunction() == BuiltinFunction.XID) {
         if (fn.numChildren() != 1) {
