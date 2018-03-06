@@ -69,8 +69,15 @@ public final class Context {
    * Describes the innermost element that the text preceding the context point is in. An element is
    * considered entered once its name has been seen in the start tag and is considered closed once
    * the name of its end tag is seen. E.g. the open point is marked with O below and C marks the
-   * close point. {@code <b id="boldly-going">Hello, World!</b > ^ ^ O C } Outside an element, or in
-   * PCDATA text, this will be the nullish value {@link ElementType#NONE}.
+   * close point.
+   *
+   * <pre>{@code
+   * <b id="boldly-going">Hello, World!</b >
+   *   ^                                  ^
+   *   O                                  C
+   * }</pre>
+   *
+   * Outside an element, or in PCDATA text, this will be the nullish value {@link ElementType#NONE}.
    */
   public final ElementType elType;
 
