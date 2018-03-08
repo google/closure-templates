@@ -529,7 +529,7 @@ final class RawTextContextUpdater {
               if (!baseUrlPattern.matcher(match).find()) {
                 throw SoyAutoescapeException.createWithNode(
                     "TrustedResourceUris must have a fixed scheme (https) and host using one of the"
-                        + " following formats:\n  * http://foo\n  * //foo/\n  * /foo\nor move the "
+                        + " following formats:\n  * https://foo\n  * //foo/\n  * /foo\nor move the "
                         + "calculation of this URL "
                         + "outside of the template and use an ordaining API.",
                     node.substring(/* newId= */ Integer.MAX_VALUE, offset));
