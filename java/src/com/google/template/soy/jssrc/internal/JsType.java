@@ -152,6 +152,7 @@ final class JsType {
 
   private static final JsType RAW_MAP_TYPE =
       builder()
+          .addRequire(GoogRequire.create("soy.map"))
           .addType("!soy.map.Map")
           .setPredicate(TypePredicate.NO_OP) // TODO(b/69049599): need real type predicate
           .build();
@@ -276,8 +277,10 @@ final class JsType {
           if (soyType.getKind() == Kind.LEGACY_OBJECT_MAP) {
             builder.setPredicate(GOOG_IS_OBJECT);
           } else {
-            // TODO(b/69049599): need actual type predicate
-            builder.setPredicate(TypePredicate.NO_OP);
+            builder
+                .addRequire(GoogRequire.create("soy.map"))
+                // TODO(b/69049599): need actual type predicate
+                .setPredicate(TypePredicate.NO_OP);
           }
           return builder.build();
         }
@@ -519,6 +522,7 @@ final class JsType {
     return new Builder();
   }
 
+  // TODO(b/72863178): make it harder to construct a JsType without a goog.require().
   private static final class Builder {
     final ImmutableSortedSet.Builder<String> typeExpressions = ImmutableSortedSet.naturalOrder();
     final ImmutableSet.Builder<GoogRequire> extraRequires = ImmutableSet.builder();

@@ -21,6 +21,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -38,6 +39,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -71,6 +73,9 @@ public final class GenJsCodeVisitorTest {
           .build();
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;
+
+  private static final SoyGeneralOptions OPTIONS =
+      new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("experimental_map"));
 
   private static final SoyFunction NOOP_REQUIRE_SOY_FUNCTION =
       new SoyLibraryAssistedJsSrcFunction() {
@@ -2234,10 +2239,10 @@ public final class GenJsCodeVisitorTest {
                 "{namespace boo.foo}\n"
                     + "\n"
                     + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
-                    + "  {@param moo : map<string, html>}\n"
+                    + "  {@param moo : experimental_map<string, html>}\n"
                     + "  {$moo}\n"
                     + "{/template}\n"))
-        .contains("goog.soy.data.SanitizedHtml");
+        .containsAllOf("goog.soy.data.SanitizedHtml", "soy.map");
     assertThat(
             getRequiredSymbols(
                 "{namespace boo.foo}\n"
@@ -2658,7 +2663,8 @@ public final class GenJsCodeVisitorTest {
   }
 
   private ImmutableSet<String> getRequiredSymbols(String soyFile) {
-    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(soyFile).parse();
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(soyFile).options(OPTIONS).parse();
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
