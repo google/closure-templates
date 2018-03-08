@@ -43,7 +43,7 @@ message Requirement {
   }
 
   message BannedRawText {
-    // The banned text.
+    // The banned text. This only bans literal text, not commands or expressions
     repeated string text = 1;
   }
 
