@@ -52,7 +52,9 @@ public final class ValidatedConformanceConfig {
           "requirement missing type");
       Rule<? extends Node> rule = forRequirement(requirement);
       ImmutableList<String> whitelists = ImmutableList.copyOf(requirement.getWhitelistList());
-      rulesBuilder.add(RuleWithWhitelists.create(rule, whitelists));
+      ImmutableList<String> onlyApplyToPaths =
+          ImmutableList.copyOf(requirement.getOnlyApplyToList());
+      rulesBuilder.add(RuleWithWhitelists.create(rule, whitelists, onlyApplyToPaths));
     }
     return new ValidatedConformanceConfig(rulesBuilder.build());
   }

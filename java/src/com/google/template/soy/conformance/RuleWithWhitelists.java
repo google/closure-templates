@@ -28,13 +28,17 @@ import com.google.template.soy.basetree.Node;
 @AutoValue
 abstract class RuleWithWhitelists {
   static RuleWithWhitelists create(
-      Rule<? extends Node> rule, ImmutableList<String> whitelistedPaths) {
-    return new AutoValue_RuleWithWhitelists(rule, whitelistedPaths);
+      Rule<? extends Node> rule,
+      ImmutableList<String> whitelistedPaths,
+      ImmutableList<String> onlyApplyToPaths) {
+    return new AutoValue_RuleWithWhitelists(rule, whitelistedPaths, onlyApplyToPaths);
   }
 
   abstract Rule<? extends Node> getRule();
 
   abstract ImmutableList<String> getWhitelistedPaths();
+
+  abstract ImmutableList<String> getOnlyApplyToPaths();
 
   /** A file should be checked against a rule unless it contains one of the whitelisted paths. */
   boolean shouldCheckConformanceFor(String filePath) {
@@ -43,6 +47,16 @@ abstract class RuleWithWhitelists {
         return false;
       }
     }
-    return true;
+    ImmutableList<String> onlyApplyToPaths = getOnlyApplyToPaths();
+    if (onlyApplyToPaths.isEmpty()) {
+      return true;
+    }
+    // If only_apply_to field is presented in the configuration, check it.
+    for (String onlyApplyToPath : onlyApplyToPaths) {
+      if (filePath.contains(onlyApplyToPath)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

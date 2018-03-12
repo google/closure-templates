@@ -93,5 +93,10 @@ message Requirement {
   // a whitelisted substring is exempt from the requirement.
   repeated string whitelist = 9;
 
+  // Optional: A list of paths. If this field is presented, the conformance
+  // test is only running for the files matching the paths specified here.
+  // Whitelisted sources will still be exempted.
+  repeated string only_apply_to = 15;
+
   reserved 10;
 };
