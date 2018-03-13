@@ -63,6 +63,11 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
     return new ConstantContent(content, kind, dir);
   }
 
+  /** Creates a SanitizedContent object with default direction. */
+  static SanitizedContent create(String content, ContentKind kind) {
+    return new ConstantContent(content, kind, kind.getDefaultDir());
+  }
+
   /**
    * Creates a lazy SanitizedContent object.
    *
@@ -126,8 +131,8 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
     TEXT;
 
     /*
-     * Returns the default direction for this content kind: LTR for JS, URI, ATTRIBUTES, and CSS
-     * content, and otherwise unknown (null).
+     * Returns the default direction for this content kind: LTR for JS, URI, ATTRIBUTES, CSS, and
+     * TRUSTED_RESOURCE_URI content, and otherwise unknown (null).
      */
     @Nullable
     public Dir getDefaultDir() {

@@ -205,57 +205,55 @@ public final class SanitizedContents {
 
   /** Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML. */
   public static SanitizedContent fromSafeHtml(SafeHtml html) {
-    return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML, null);
+    return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML);
   }
 
   /** Converts a {@link SafeHtmlProto} into a Soy {@link SanitizedContent} of kind HTML. */
   public static SanitizedContent fromSafeHtmlProto(SafeHtmlProto html) {
-    return SanitizedContent.create(
-        SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML, null);
+    return SanitizedContent.create(SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML);
   }
 
   /** Converts a {@link SafeScript} into a Soy {@link SanitizedContent} of kind JS. */
   public static SanitizedContent fromSafeScript(SafeScript script) {
-    return SanitizedContent.create(script.getSafeScriptString(), ContentKind.JS, null);
+    return SanitizedContent.create(script.getSafeScriptString(), ContentKind.JS);
   }
 
   /** Converts a {@link SafeScriptProto} into a Soy {@link SanitizedContent} of kind JS. */
   public static SanitizedContent fromSafeScriptProto(SafeScriptProto script) {
     return SanitizedContent.create(
-        SafeScripts.fromProto(script).getSafeScriptString(), ContentKind.JS, null);
+        SafeScripts.fromProto(script).getSafeScriptString(), ContentKind.JS);
   }
 
   /** Converts a {@link SafeStyle} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyle(SafeStyle style) {
-    return SanitizedContent.create(style.getSafeStyleString(), ContentKind.CSS, null);
+    return SanitizedContent.create(style.getSafeStyleString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleProto} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleProto(SafeStyleProto style) {
     return SanitizedContent.create(
-        SafeStyles.fromProto(style).getSafeStyleString(), ContentKind.CSS, null);
+        SafeStyles.fromProto(style).getSafeStyleString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleSheet} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleSheet(SafeStyleSheet styleSheet) {
-    return SanitizedContent.create(styleSheet.getSafeStyleSheetString(), ContentKind.CSS, null);
+    return SanitizedContent.create(styleSheet.getSafeStyleSheetString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeStyleSheetProto} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleSheetProto(SafeStyleSheetProto styleSheet) {
     return SanitizedContent.create(
-        SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(), ContentKind.CSS, null);
+        SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(), ContentKind.CSS);
   }
 
   /** Converts a {@link SafeUrl} into a Soy {@link SanitizedContent} of kind URI. */
   public static SanitizedContent fromSafeUrl(SafeUrl url) {
-    return SanitizedContent.create(url.getSafeUrlString(), ContentKind.URI, Dir.LTR);
+    return SanitizedContent.create(url.getSafeUrlString(), ContentKind.URI);
   }
 
   /** Converts a {@link SafeUrlProto} into a Soy {@link SanitizedContent} of kind URI. */
   public static SanitizedContent fromSafeUrlProto(SafeUrlProto url) {
-    return SanitizedContent.create(
-        SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI, Dir.LTR);
+    return SanitizedContent.create(SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI);
   }
 
   /**
@@ -264,7 +262,7 @@ public final class SanitizedContents {
    */
   public static SanitizedContent fromTrustedResourceUrl(TrustedResourceUrl url) {
     return SanitizedContent.create(
-        url.getTrustedResourceUrlString(), ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
+        url.getTrustedResourceUrlString(), ContentKind.TRUSTED_RESOURCE_URI);
   }
 
   /**
@@ -274,8 +272,7 @@ public final class SanitizedContents {
   public static SanitizedContent fromTrustedResourceUrlProto(TrustedResourceUrlProto url) {
     return SanitizedContent.create(
         TrustedResourceUrls.fromProto(url).getTrustedResourceUrlString(),
-        ContentKind.TRUSTED_RESOURCE_URI,
-        Dir.LTR);
+        ContentKind.TRUSTED_RESOURCE_URI);
   }
 
   /**

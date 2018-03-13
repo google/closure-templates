@@ -182,9 +182,17 @@ public class SanitizedContentsTest {
     assertThat(ContentKind.CSS.getDefaultDir()).isEqualTo(Dir.LTR);
     assertThat(ContentKind.ATTRIBUTES.getDefaultDir()).isEqualTo(Dir.LTR);
     assertThat(ContentKind.URI.getDefaultDir()).isEqualTo(Dir.LTR);
+    assertThat(ContentKind.TRUSTED_RESOURCE_URI.getDefaultDir()).isEqualTo(Dir.LTR);
 
     assertThat(ContentKind.TEXT.getDefaultDir()).isNull();
     assertThat(ContentKind.HTML.getDefaultDir()).isNull();
+  }
+
+  @Test
+  public void testCreateWithoutDir() {
+    assertThat(SanitizedContent.create("abc", ContentKind.HTML).getContentDirection()).isNull();
+    assertThat(SanitizedContent.create("abc", ContentKind.JS).getContentDirection())
+        .isEqualTo(Dir.LTR);
   }
 
   @Test
