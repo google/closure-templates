@@ -97,12 +97,12 @@ public class SoyTypesTest {
 
   @Test
   public void testSanitizedType() {
-    assertThat(STRING_TYPE.isAssignableFrom(HTML_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(CSS_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(URI_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(JS_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(CSS_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(URI_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(JS_TYPE)).isFalse();
 
     assertThat(HTML_TYPE.isAssignableFrom(HTML_TYPE)).isTrue();
     assertThat(HTML_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
@@ -365,9 +365,7 @@ public class SoyTypesTest {
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, ANY_TYPE, INT_TYPE))
         .isEqualTo(ANY_TYPE);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, STRING_TYPE, HTML_TYPE))
-        .isEqualTo(STRING_TYPE);
-    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, HTML_TYPE, STRING_TYPE))
-        .isEqualTo(STRING_TYPE);
+        .isEqualTo(UnionType.of(STRING_TYPE, HTML_TYPE));
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, FLOAT_TYPE))
         .isEqualTo(NUMBER_TYPE);
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, INT_TYPE))

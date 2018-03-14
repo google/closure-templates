@@ -41,9 +41,4 @@ public final class StringType extends PrimitiveType {
   public static StringType getInstance() {
     return INSTANCE;
   }
-
-  @Override
-  public boolean isAssignableFrom(SoyType srcType) {
-    return srcType.getKind().isKnownStringOrSanitizedContent();
-  }
 }

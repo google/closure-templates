@@ -344,17 +344,17 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
-      SoyType stringType = StringType.getInstance();
       if (arithmeticType.isPresent()) {
         return arithmeticType.get();
       } else if (isIllegalOperandForPlusOps(left) || isIllegalOperandForPlusOps(right)) {
         // If any of the types is not allowed to be operands (for example, list and map), we return
         // null here. Returning null indicates a compilation error.
         return null;
-      } else if (stringType.isAssignableFrom(left) || stringType.isAssignableFrom(right)) {
+      } else if (left.getKind().isKnownStringOrSanitizedContent()
+          || right.getKind().isKnownStringOrSanitizedContent()) {
         // If any of these types can be coerced to string, returns string type. In this case plus
         // operation means string concat (instead of arithmetic operation).
-        return stringType;
+        return StringType.getInstance();
       } else {
         // At this point, we know that both types are not string type or number type, and every
         // backend does different things. Returns null that indicates a compilation error.
