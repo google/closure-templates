@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
@@ -33,7 +32,6 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,14 +82,6 @@ public final class BasicFunctionsRuntime {
   /** Returns a list of all the keys in the given map. */
   public static List<SoyValue> mapKeys(SoyMap map) {
     return ImmutableList.copyOf(map.keys());
-  }
-
-  public static SoyMapImpl legacyObjectMapToMap(SoyDict map) {
-    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyValueProvider> entry : map.asJavaStringMap().entrySet()) {
-      builder.put(StringData.forValue(entry.getKey()), entry.getValue());
-    }
-    return SoyMapImpl.forProviderMap(builder.build());
   }
 
   public static SoyDict mapToLegacyObjectMap(SoyMapImpl map) {

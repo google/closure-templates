@@ -19,6 +19,8 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -79,7 +81,7 @@ public final class LegacyObjectMapToMapFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
     static final MethodRef LEGACY_OBJECT_MAP_TO_MAP =
-        MethodRef.create(BasicFunctionsRuntime.class, "legacyObjectMapToMap", SoyDict.class);
+        MethodRef.create(SoyMaps.class, "legacyObjectMapToMap", SoyLegacyObjectMap.class);
   }
 
   @Override
@@ -127,6 +129,6 @@ public final class LegacyObjectMapToMapFunction
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
     DictImpl map = (DictImpl) Iterables.getOnlyElement(args);
-    return BasicFunctionsRuntime.legacyObjectMapToMap(map);
+    return SoyMaps.legacyObjectMapToMap(map);
   }
 }

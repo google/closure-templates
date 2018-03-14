@@ -304,6 +304,10 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     return coerceToString();
   }
 
+  public RuntimeType getMapType() {
+    return mapType;
+  }
+
   /**
    * Sets the internal state to {@link RuntimeType#LEGACY_OBJECT_MAP_OR_RECORD}. If the state has
    * already been set, throws an exception.
