@@ -51,6 +51,23 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     return equalsSignLocation != null;
   }
 
+  /** Returns the static value, if one exists, or null otherwise. */
+  @Nullable
+  public String getStaticContent() {
+    if (!hasValue()) {
+      return null;
+    }
+    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) getChild(1);
+    if (attrValue.numChildren() != 1) {
+      return null;
+    }
+    StandaloneNode attrValueNode = attrValue.getChild(0);
+    if (!(attrValueNode instanceof RawTextNode)) {
+      return null;
+    }
+    return ((RawTextNode) attrValueNode).getRawText();
+  }
+
   public SourceLocation getEqualsLocation() {
     checkState(equalsSignLocation != null, "This attribute doesn't have a value");
     return equalsSignLocation.asLocation(getSourceLocation().getFilePath());

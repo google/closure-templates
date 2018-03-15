@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -29,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.EscapingMode;
+import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -61,6 +63,41 @@ import javax.annotation.Nullable;
  */
 @Immutable
 public final class Context {
+
+  /**
+   * List of link types (values of the <link rel=...> attribute) for which the link is a regular
+   * URL, and not a trusted resource URL. Most of these values are described at
+   * https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
+   */
+  private static final ImmutableSet<String> REGULAR_LINK_REL_VALUES =
+      ImmutableSet.of(
+          "alternate",
+          "amphtml",
+          "apple-touch-icon",
+          "apple-touch-startup-image",
+          "author",
+          "bookmark",
+          "canonical",
+          "cite",
+          "dns-prefetch",
+          "help",
+          "icon",
+          "license",
+          "next",
+          "prefetch",
+          "preload",
+          "prerender",
+          "prev",
+          "search",
+          "shortcut",
+          "subresource",
+          "tag");
+
+  /** Whitespace-separated sequence of regular link types. */
+  private static final Pattern REGULAR_LINK_PATTERN =
+      Pattern.compile(
+          "((^|\\s+)(" + Joiner.on("|").join(REGULAR_LINK_REL_VALUES) + "))*\\s*",
+          Pattern.CASE_INSENSITIVE);
 
   /** The state the text preceding the context point describes. */
   public final HtmlContext state;
@@ -231,7 +268,6 @@ public final class Context {
     }
     return this;
   }
-
 
   /**
    * Computes the context after an attribute delimiter is seen.
@@ -1148,6 +1184,16 @@ public final class Context {
         case "style":
           elType = ElementType.STYLE;
           break;
+        case "link":
+          elType = ElementType.LINK_EXECUTABLE;
+          HtmlAttributeNode rel = node.getDirectAttributeNamed("rel");
+          if (rel != null) {
+            String value = rel.getStaticContent();
+            if (value != null && REGULAR_LINK_PATTERN.matcher(value).matches()) {
+              elType = ElementType.NORMAL;
+            }
+          }
+          break;
         case "textarea":
           elType = ElementType.TEXTAREA;
           break;
@@ -1196,6 +1242,7 @@ public final class Context {
         break;
         // All normal or void tags fit here.
       case NORMAL:
+      case LINK_EXECUTABLE:
       case MEDIA:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
         break;
@@ -1343,6 +1390,12 @@ public final class Context {
 
     /** An image element, so that we can process the src attribute specially. */
     MEDIA,
+
+    /**
+     * An executable link element, e.g. with rel="stylesheet" or rel="import" or with unknown rel,
+     * so that we can process the href attribute specially.
+     */
+    LINK_EXECUTABLE,
 
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,

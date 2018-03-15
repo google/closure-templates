@@ -203,6 +203,19 @@ public final class InferenceEngineTest {
   }
 
   @Test
+  public void testLink() throws Exception {
+    assertTransitions(
+        SanitizedContentKind.HTML,
+        join(
+            "<link {assert('HTML_TAG LINK_EXECUTABLE')}>",
+            "<link rel='stylesheet' {assert('HTML_TAG LINK_EXECUTABLE')}>",
+            "<link rel='import' {assert('HTML_TAG LINK_EXECUTABLE')}>",
+            "<link rel='shortcut icon' {assert('HTML_TAG NORMAL')}>",
+            "{let $rel: 'icon'/}<link rel='{$rel}' {assert('HTML_TAG LINK_EXECUTABLE')}>",
+            ""));
+  }
+
+  @Test
   public void testCss() throws Exception {
     assertTransitions(
         SanitizedContentKind.CSS,
