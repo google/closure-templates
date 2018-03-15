@@ -853,13 +853,19 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       // go away.
       if (argType.isAssignableFrom(UnknownType.getInstance())) {
         node.setType(
-            typeRegistry.getOrCreateMapType(UnknownType.getInstance(), UnknownType.getInstance()));
+            typeRegistry.getOrCreateMapType(StringType.getInstance(), UnknownType.getInstance()));
         return;
       }
       LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
       node.setType(
           typeRegistry.getOrCreateMapType(
-              actualArgType.getKeyType(), actualArgType.getValueType()));
+              // Converting a legacy_object_map<K,V> to a map creates a value of type
+              // map<string, V>, not map<K, V>. legacy_object_map<K, ...> is misleading:
+              // although Soy will type check K consistently, the runtime implementation of
+              // legacy_object_map just coerces the key to a string.
+              // b/69051605 will change many Soy params to have a type of map<string, ...>,
+              // so legacyObjectMapToMap() needs to have this return type too.
+              StringType.getInstance(), actualArgType.getValueType()));
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {
