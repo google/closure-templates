@@ -61,11 +61,11 @@ public final class JsTypeTest {
 
     // Basic unions
     assertThatTypeExpr(UNION_OF_STRING_OR_INT)
-        .isEqualTo("!goog.soy.data.UnsanitizedText|number|string");
+        .isEqualTo("!goog.soy.data.SanitizedContent|number|string");
     assertThatTypeExprForRecordMember(UNION_OF_STRING_OR_INT)
-        .isEqualTo("(!goog.soy.data.UnsanitizedText|number|string)");
+        .isEqualTo("(!goog.soy.data.SanitizedContent|number|string)");
     assertThatTypeExprForOptionalRecordMember(UNION_OF_STRING_OR_INT)
-        .isEqualTo("(!goog.soy.data.UnsanitizedText|number|string|undefined)");
+        .isEqualTo("(!goog.soy.data.SanitizedContent|number|string|undefined)");
     assertThatTypeExprForRecordMember(
             UnionType.of(StringType.getInstance(), UnknownType.getInstance()))
         .isEqualTo("?");
@@ -96,7 +96,7 @@ public final class JsTypeTest {
 
     // Nullable types
     assertThatTypeExpr(NULLABLE_STRING)
-        .isEqualTo("!goog.soy.data.UnsanitizedText|null|string|undefined");
+        .isEqualTo("!goog.soy.data.SanitizedContent|null|string|undefined");
 
     assertThatTypeExpr(NULLABLE_LIST_OF_HTML)
         .isEqualTo(
@@ -129,14 +129,14 @@ public final class JsTypeTest {
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(
-            "!soy.map.Map<!goog.soy.data.UnsanitizedText|string,!goog.html.SafeHtml|"
+            "!soy.map.Map<!goog.soy.data.SanitizedContent|string,!goog.html.SafeHtml|"
                 + "!goog.soy.data.SanitizedHtml|!goog.soy.data.UnsanitizedText|string>");
   }
 
   @Test
   public void testTypeTests() {
     assertThat(getTypeAssertion(StringType.getInstance(), "x"))
-        .isEqualTo("goog.isString(x) || x instanceof goog.soy.data.UnsanitizedText");
+        .isEqualTo("goog.isString(x) || x instanceof goog.soy.data.SanitizedContent");
     assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("goog.isNumber(x)");
     assertThat(getTypeAssertion(BoolType.getInstance(), "x"))
         .isEqualTo("goog.isBoolean(x) || x === 1 || x === 0");
@@ -155,7 +155,7 @@ public final class JsTypeTest {
             getTypeAssertion(
                 UnionType.of(StringType.getInstance(), ListType.of(IntType.getInstance())), "x"))
         .isEqualTo(
-            "goog.isArray(x) || (goog.isString(x) || x instanceof goog.soy.data.UnsanitizedText)");
+            "goog.isArray(x) || (goog.isString(x) || x instanceof goog.soy.data.SanitizedContent)");
   }
 
   private static String getTypeAssertion(SoyType instance, String varName) {
