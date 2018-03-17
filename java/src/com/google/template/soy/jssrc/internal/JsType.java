@@ -27,6 +27,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_NUMBER;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_UNSANITIZED_TEXT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
@@ -128,12 +129,12 @@ final class JsType {
       builder().addType("number").setPredicate(GOOG_IS_NUMBER).build();
 
   // TODO(lukes): does idom need a custom one that excludes sanitized content?
-  private static final JsType STRING_OR_SANITIZED_CONTENT_TYPE =
+  private static final JsType STRING_OR_UNSANITIZED_TEXT =
       builder()
           // TODO(lukes): should this contain unsanitized text?
           .addType("string")
-          .addType("!goog.soy.data.SanitizedContent")
-          .addRequire(GoogRequire.create("goog.soy.data.SanitizedContent"))
+          .addType("!goog.soy.data.UnsanitizedText")
+          .addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"))
           .setPredicate(
               new TypePredicate() {
                 @Override
@@ -142,7 +143,7 @@ final class JsType {
                   return Optional.of(
                       GOOG_IS_STRING
                           .call(value)
-                          .or(value.instanceof_(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
+                          .or(value.instanceof_(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator));
                 }
               })
           .build();
@@ -176,8 +177,26 @@ final class JsType {
 
   private static final ImmutableMap<SanitizedContentKind, JsType> STRICT_TYPES;
 
-  private static final JsType IDOM_HTML_AND_ATTRIBUTES =
+  private static final JsType IDOM_ATTRIBUTES =
       builder().addType("function()").setPredicate(GOOG_IS_FUNCTION).build();
+
+  private static final JsType IDOM_HTML =
+      builder()
+          .addType("!goog.soy.data.SanitizedContent")
+          .addRequire(GoogRequire.create("goog.soy.data.SanitizedContent"))
+          .addType("function()")
+          .setPredicate(
+              new TypePredicate() {
+                @Override
+                public Optional<CodeChunk.WithValue> maybeCheck(
+                    CodeChunk.WithValue value, Generator codeGenerator) {
+                  return Optional.of(
+                      GOOG_IS_FUNCTION
+                          .call(value)
+                          .or(value.instanceof_(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
+                }
+              })
+          .build();
 
   static {
     EnumMap<SanitizedContentKind, JsType> types = new EnumMap<>(SanitizedContentKind.class);
@@ -226,13 +245,18 @@ final class JsType {
         return NUMBER_TYPE;
 
       case STRING:
-        return STRING_OR_SANITIZED_CONTENT_TYPE;
+        return STRING_OR_UNSANITIZED_TEXT;
 
       case ATTRIBUTES:
+        if (isIncrementalDom) {
+          // idom has a different strategy for handling these
+          return IDOM_ATTRIBUTES;
+        }
+        // fall through
       case HTML:
         if (isIncrementalDom) {
           // idom has a different strategy for handling these
-          return IDOM_HTML_AND_ATTRIBUTES;
+          return IDOM_HTML;
         }
         // fall-through
       case CSS:
