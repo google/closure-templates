@@ -76,9 +76,6 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
 
-  public static final CodeChunk.WithValue GOOG_SOY_DATA_UNSANITIZED_TEXT =
-      GoogRequire.create("goog.soy.data.UnsanitizedText").reference();
-
   public static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
 
