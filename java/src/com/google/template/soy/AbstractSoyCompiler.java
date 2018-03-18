@@ -124,7 +124,7 @@ abstract class AbstractSoyCompiler {
             + "access support for proto types.",
     handler = SoyCmdLineParser.FileListOptionHandler.class
   )
-  private final List<File> protoFileDescriptors = new ArrayList<>();
+  private List<File> protoFileDescriptors = new ArrayList<>();
 
   @Option(
     name = "--conformanceConfig",
@@ -147,7 +147,7 @@ abstract class AbstractSoyCompiler {
             + "experiments on. Please proceed with caution at your own risk.",
     handler = SoyCmdLineParser.StringListOptionHandler.class
   )
-  private final List<String> experimentalFeatures = new ArrayList<>();
+  private List<String> experimentalFeatures = new ArrayList<>();
 
   @Option(
     name = "--disableOptimizerForTestingUseOnly",
@@ -159,7 +159,7 @@ abstract class AbstractSoyCompiler {
   private boolean disableOptimizer = false;
 
   /** The remaining arguments after parsing command-line flags. */
-  @Argument private final List<String> arguments = new ArrayList<>();
+  @Argument private List<String> arguments = new ArrayList<>();
 
   final ClassLoader pluginClassLoader;
 
