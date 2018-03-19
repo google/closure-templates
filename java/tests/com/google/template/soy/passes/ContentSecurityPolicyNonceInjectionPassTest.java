@@ -264,6 +264,33 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertThat(renderedValue).isEqualTo("<a href='#' onmouseover='foo()'>click me</a>");
   }
 
+  @Test
+  public void testHtmlImport() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            "<link rel=\'Import\' href=\"foo.html\"" + NONCE + ">\n",
+            "{/template}"),
+        join("{template .foo}\n", "<link rel=\'Import\' href=\"foo.html\">\n", "{/template}"));
+  }
+
+  @Test
+  public void testHtmlImport_multipleChildren() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            "<link rel=\'import{1 |escapeHtmlAttribute}\' href=\"foo.html\">\n",
+            "{/template}"),
+        join("{template .foo}\n", "<link rel=\'import{1}\' href=\"foo.html\">\n", "{/template}"));
+  }
+
+  @Test
+  public void testHtmlImport_emptyRel() {
+    assertInjected(
+        join("{template .foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"),
+        join("{template .foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"));
+  }
+
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }

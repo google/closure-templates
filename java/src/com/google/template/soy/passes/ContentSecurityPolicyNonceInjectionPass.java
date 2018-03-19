@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -31,7 +32,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TagName.RcDataTagName;
+import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -105,8 +106,7 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
       }
     }
     for (HtmlOpenTagNode openTag : SoyTreeUtils.getAllNodesOfType(file, HtmlOpenTagNode.class)) {
-      RcDataTagName rcDataTagName = openTag.getTagName().getRcDataTagName();
-      if (rcDataTagName == RcDataTagName.SCRIPT || rcDataTagName == RcDataTagName.STYLE) {
+      if (isTagNonceable(openTag)) {
         // this should point to the character immediately before the '>' or '/>' at the end of the
         // open tag
         SourceLocation insertionLocation =
@@ -118,6 +118,33 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         openTag.addChild(createCspInjection(insertionLocation, nodeIdGen));
       }
     }
+  }
+
+  private boolean isTagNonceable(HtmlOpenTagNode tag) {
+    TagName nameObj = tag.getTagName();
+    if (!nameObj.isStatic()) {
+      return false;
+    }
+    String name = nameObj.getStaticTagNameAsLowerCase();
+    if (name.equals("script") || name.equals("style")) {
+      return true;
+    }
+    if (name.equals("link") && isNonceableLink(tag)) {
+      return true;
+    }
+    return false;
+  }
+
+  private boolean isNonceableLink(HtmlOpenTagNode tag) {
+    HtmlAttributeNode attr = tag.getDirectAttributeNamed("rel");
+    if (attr == null) {
+      return false;
+    }
+    String attrValue = attr.getStaticContent();
+    if (attrValue == null) {
+      return false;
+    }
+    return Ascii.equalsIgnoreCase("import", attrValue);
   }
 
   /**
