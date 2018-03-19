@@ -17,7 +17,7 @@
 package com.google.template.soy.types;
 
 /** A placeholder for errors during parsing. */
-public final class ErrorType implements SoyType {
+public final class ErrorType extends SoyType {
 
   private static final ErrorType INSTANCE = new ErrorType();
 
@@ -33,7 +33,7 @@ public final class ErrorType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     return false;
   }
 

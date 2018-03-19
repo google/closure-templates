@@ -23,7 +23,7 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
 
 /** A {@link SoyType} implementation which describes a protocol buffer enum type. */
-public final class SoyProtoEnumType implements SoyType {
+public final class SoyProtoEnumType extends SoyType {
   private final EnumDescriptor descriptor;
 
   public SoyProtoEnumType(EnumDescriptor descriptor) {
@@ -36,7 +36,7 @@ public final class SoyProtoEnumType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType fromType) {
+  boolean doIsAssignableFromNonUnionType(SoyType fromType) {
     return fromType == this
         || (fromType.getClass() == this.getClass()
             && ((SoyProtoEnumType) fromType).descriptor == descriptor);

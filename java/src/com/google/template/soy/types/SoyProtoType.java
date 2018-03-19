@@ -34,7 +34,7 @@ import javax.annotation.concurrent.GuardedBy;
  * A {@link SoyType} subclass which describes a protocol buffer type.
  *
  */
-public final class SoyProtoType implements SoyType {
+public final class SoyProtoType extends SoyType {
   private static final class TypeVisitor extends FieldVisitor<SoyType> {
     private final SoyTypeRegistry registry;
 
@@ -226,7 +226,7 @@ public final class SoyProtoType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType fromType) {
+  boolean doIsAssignableFromNonUnionType(SoyType fromType) {
     return fromType == this;
   }
 

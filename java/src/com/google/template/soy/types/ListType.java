@@ -25,7 +25,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class ListType implements SoyType {
+public final class ListType extends SoyType {
 
   public static final ListType EMPTY_LIST = new ListType(null);
 
@@ -50,7 +50,7 @@ public final class ListType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     if (srcType.getKind() == Kind.LIST) {
       ListType srcListType = (ListType) srcType;
       if (srcListType == EMPTY_LIST) {

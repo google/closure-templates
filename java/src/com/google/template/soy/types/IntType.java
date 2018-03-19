@@ -33,7 +33,7 @@ public final class IntType extends PrimitiveType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     Kind kind = srcType.getKind();
     // enums are implicitly assignable to ints since that is the runtime representation in all
     // backends

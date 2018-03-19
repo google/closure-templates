@@ -35,7 +35,7 @@ public final class AnyType extends PrimitiveType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     return true;
   }
 

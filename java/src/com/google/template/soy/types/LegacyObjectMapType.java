@@ -69,7 +69,7 @@ public final class LegacyObjectMapType extends AbstractMapType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     if (srcType.getKind() == Kind.LEGACY_OBJECT_MAP) {
       LegacyObjectMapType srcMapType = (LegacyObjectMapType) srcType;
       if (srcMapType == EMPTY_MAP) {

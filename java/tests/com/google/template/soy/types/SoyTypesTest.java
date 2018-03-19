@@ -20,15 +20,18 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.google.common.truth.FailureMetadata;
+import com.google.common.truth.Subject;
+import com.google.common.truth.Truth;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.types.SanitizedType.AttributesType;
-import com.google.template.soy.types.SanitizedType.CssType;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SanitizedType.HtmlType;
-import com.google.template.soy.types.SanitizedType.JsType;
-import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,92 +44,87 @@ public class SoyTypesTest {
   private static final FloatType FLOAT_TYPE = FloatType.getInstance();
   private static final StringType STRING_TYPE = StringType.getInstance();
   private static final HtmlType HTML_TYPE = HtmlType.getInstance();
-  private static final CssType CSS_TYPE = CssType.getInstance();
-  private static final JsType JS_TYPE = JsType.getInstance();
-  private static final AttributesType ATTRIBUTES_TYPE = AttributesType.getInstance();
   private static final NullType NULL_TYPE = NullType.getInstance();
   private static final AnyType ANY_TYPE = AnyType.getInstance();
   private static final UnknownType UNKNOWN_TYPE = UnknownType.getInstance();
-  private static final TrustedResourceUriType TRUSTED_RESOURCE_URI_TYPE =
-      TrustedResourceUriType.getInstance();
   private static final UriType URI_TYPE = UriType.getInstance();
 
   @Test
   public void testAnyType() {
-    assertThat(ANY_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
-    assertThat(ANY_TYPE.isAssignableFrom(ANY_TYPE)).isTrue();
-    assertThat(ANY_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isTrue();
-    assertThat(ANY_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
-    assertThat(ANY_TYPE.isAssignableFrom(INT_TYPE)).isTrue();
+    assertThatSoyType("any").isAssignableFrom("null");
+    assertThatSoyType("any").isAssignableFrom("any");
+    assertThatSoyType("any").isAssignableFrom("?");
+    assertThatSoyType("any").isAssignableFrom("string");
+    assertThatSoyType("any").isAssignableFrom("int");
   }
 
   @Test
   public void testUnknownType() {
-    assertThat(UNKNOWN_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
-    assertThat(UNKNOWN_TYPE.isAssignableFrom(ANY_TYPE)).isTrue();
-    assertThat(UNKNOWN_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isTrue();
-    assertThat(UNKNOWN_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
-    assertThat(UNKNOWN_TYPE.isAssignableFrom(INT_TYPE)).isTrue();
+    assertThatSoyType("?").isAssignableFrom("null");
+    assertThatSoyType("?").isAssignableFrom("any");
+    assertThatSoyType("?").isAssignableFrom("?");
+    assertThatSoyType("?").isAssignableFrom("string");
+    assertThatSoyType("?").isAssignableFrom("int");
   }
 
   @Test
   public void testNullType() {
-    assertThat(NULL_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
-    assertThat(NULL_TYPE.isAssignableFrom(STRING_TYPE)).isFalse();
-    assertThat(NULL_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(NULL_TYPE.isAssignableFrom(ANY_TYPE)).isFalse();
-    assertThat(NULL_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
+    assertThatSoyType("null").isAssignableFrom("null");
+    assertThatSoyType("null").isNotAssignableFrom("string");
+    assertThatSoyType("null").isNotAssignableFrom("int");
+    assertThatSoyType("null").isNotAssignableFrom("any");
+    assertThatSoyType("null").isNotAssignableFrom("?");
   }
 
   @Test
   public void testStringType() {
-    assertThat(STRING_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
-    assertThat(STRING_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(NULL_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(ANY_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
+    assertThatSoyType("string").isAssignableFrom("string");
+    assertThatSoyType("string").isNotAssignableFrom("int");
+    assertThatSoyType("string").isNotAssignableFrom("null");
+    assertThatSoyType("string").isNotAssignableFrom("any");
+    assertThatSoyType("string").isNotAssignableFrom("?");
   }
 
   @Test
   public void testPrimitiveTypeEquality() {
-    assertThat(ANY_TYPE.equals(ANY_TYPE)).isTrue();
-    assertThat(ANY_TYPE.equals(INT_TYPE)).isFalse();
-    assertThat(INT_TYPE.equals(ANY_TYPE)).isFalse();
-    assertThat(UNKNOWN_TYPE.equals(UNKNOWN_TYPE)).isTrue();
+    assertThatSoyType("any").isEqualTo("any");
+    assertThatSoyType("any").isNotEqualTo("int");
+    assertThatSoyType("int").isNotEqualTo("any");
+    assertThatSoyType("?").isEqualTo("?");
   }
 
   @Test
   public void testSanitizedType() {
-    assertThat(STRING_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(CSS_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(URI_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isFalse();
-    assertThat(STRING_TYPE.isAssignableFrom(JS_TYPE)).isFalse();
+    assertThatSoyType("string").isNotAssignableFrom("html");
+    assertThatSoyType("string").isNotAssignableFrom("css");
+    assertThatSoyType("string").isNotAssignableFrom("uri");
+    assertThatSoyType("string").isNotAssignableFrom("trusted_resource_url");
+    assertThatSoyType("string").isNotAssignableFrom("attributes");
+    assertThatSoyType("string").isNotAssignableFrom("js");
 
-    assertThat(HTML_TYPE.isAssignableFrom(HTML_TYPE)).isTrue();
-    assertThat(HTML_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(HTML_TYPE.isAssignableFrom(CSS_TYPE)).isFalse();
+    assertThatSoyType("html").isAssignableFrom("html");
+    assertThatSoyType("html").isNotAssignableFrom("int");
+    assertThatSoyType("html").isNotAssignableFrom("css");
 
-    assertThat(CSS_TYPE.isAssignableFrom(CSS_TYPE)).isTrue();
-    assertThat(CSS_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(CSS_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThatSoyType("css").isAssignableFrom("css");
+    assertThatSoyType("css").isNotAssignableFrom("int");
+    assertThatSoyType("css").isNotAssignableFrom("html");
 
-    assertThat(URI_TYPE.isAssignableFrom(URI_TYPE)).isTrue();
-    assertThat(URI_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(URI_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThatSoyType("uri").isAssignableFrom("uri");
+    assertThatSoyType("uri").isNotAssignableFrom("int");
+    assertThatSoyType("uri").isNotAssignableFrom("html");
 
-    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isTrue();
-    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThatSoyType("trusted_resource_url").isAssignableFrom("trusted_resource_url");
+    assertThatSoyType("trusted_resource_url").isNotAssignableFrom("int");
+    assertThatSoyType("trusted_resource_url").isNotAssignableFrom("html");
 
-    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isTrue();
-    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThatSoyType("attributes").isAssignableFrom("attributes");
+    assertThatSoyType("attributes").isNotAssignableFrom("int");
+    assertThatSoyType("attributes").isNotAssignableFrom("html");
 
-    assertThat(JS_TYPE.isAssignableFrom(JS_TYPE)).isTrue();
-    assertThat(JS_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
-    assertThat(JS_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
+    assertThatSoyType("js").isAssignableFrom("js");
+    assertThatSoyType("js").isNotAssignableFrom("int");
+    assertThatSoyType("js").isNotAssignableFrom("html");
   }
 
   @Test
@@ -134,122 +132,137 @@ public class SoyTypesTest {
     // Test that it flattens properly
     SoyType utype = UnionType.of(INT_TYPE, UnionType.of(INT_TYPE, NULL_TYPE));
     assertThat(utype.toString()).isEqualTo("int|null");
-    assertThat(utype.isAssignableFrom(INT_TYPE)).isTrue();
-    assertThat(utype.isAssignableFrom(NULL_TYPE)).isTrue();
-    assertThat(utype.isAssignableFrom(FLOAT_TYPE)).isFalse();
-    assertThat(utype.isAssignableFrom(STRING_TYPE)).isFalse();
-    assertThat(utype.isAssignableFrom(ANY_TYPE)).isFalse();
-    assertThat(utype.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
+    assertThatSoyType("int|null").isAssignableFrom("int");
+    assertThatSoyType("int|null").isAssignableFrom("null");
+    assertThatSoyType("int|null").isNotAssignableFrom("float");
+    assertThatSoyType("int|null").isNotAssignableFrom("string");
+    assertThatSoyType("int|null").isNotAssignableFrom("any");
+    assertThatSoyType("int|null").isNotAssignableFrom("?");
   }
 
   @Test
   public void testUnionTypeEquality() {
-    assertThat(UnionType.of(INT_TYPE, BOOL_TYPE).equals(UnionType.of(BOOL_TYPE, INT_TYPE)))
-        .isTrue();
-    assertThat(UnionType.of(INT_TYPE, BOOL_TYPE).equals(UnionType.of(INT_TYPE, STRING_TYPE)))
-        .isFalse();
+    assertThatSoyType("int|bool").isEqualTo("bool|int");
+    assertThatSoyType("int|bool").isNotEqualTo("int|string");
+  }
+
+  // Regression test for an old bug where unions on the right hand side where not type checked
+  // correctly.
+  // See b/74754137
+  @Test
+  public void testUnionTypeAssignability() {
+    assertThatSoyType("list<int|string>").isAssignableFrom("list<int>|list<string>");
+    assertThatSoyType("list<int>|list<string>").isNotAssignableFrom("list<int|string>");
+
+    assertThatSoyType("list<[field: int|string]>")
+        .isAssignableFrom("list<[field: string]>|list<[field: int]>");
+    assertThatSoyType("list<[field: string]>|list<[field: int]>")
+        .isNotAssignableFrom("list<[field: int|string]>");
+
+    assertThatSoyType("map<string, int|string>")
+        .isAssignableFrom("map<string, int>|map<string, string>");
+    assertThatSoyType("map<string, int>|map<string, string>")
+        .isNotAssignableFrom("map<string, int|string>");
   }
 
   // Test that list types are covariant over their element types.
   @Test
   public void testListCovariance() {
-    ListType listOfAny = ListType.of(ANY_TYPE);
-    ListType listOfString = ListType.of(STRING_TYPE);
-    ListType listOfInt = ListType.of(INT_TYPE);
-
     // Legal to assign List<X> to List<X>
-    assertThat(listOfAny.isAssignableFrom(listOfAny)).isTrue();
-    assertThat(listOfString.isAssignableFrom(listOfString)).isTrue();
-    assertThat(listOfInt.isAssignableFrom(listOfInt)).isTrue();
+    assertThatSoyType("list<any>").isAssignableFrom("list<any>");
+    assertThatSoyType("list<string>").isAssignableFrom("list<string>");
+    assertThatSoyType("list<int>").isAssignableFrom("list<int>");
 
     // Legal to assign List<X> to List<Y> where Y <: X
-    assertThat(listOfAny.isAssignableFrom(listOfString)).isTrue();
-    assertThat(listOfAny.isAssignableFrom(listOfInt)).isTrue();
+    assertThatSoyType("list<any>").isAssignableFrom("list<string>");
+    assertThatSoyType("list<any>").isAssignableFrom("list<int>");
 
     // Not legal to assign List<X> to List<Y> where !(Y <: X)
-    assertThat(listOfInt.isAssignableFrom(listOfString)).isFalse();
-    assertThat(listOfString.isAssignableFrom(listOfInt)).isFalse();
-    assertThat(listOfInt.isAssignableFrom(listOfAny)).isFalse();
-    assertThat(listOfString.isAssignableFrom(listOfAny)).isFalse();
+    assertThatSoyType("list<int>").isNotAssignableFrom("list<string>");
+    assertThatSoyType("list<string>").isNotAssignableFrom("list<int>");
+    assertThatSoyType("list<int>").isNotAssignableFrom("list<any>");
+    assertThatSoyType("list<string>").isNotAssignableFrom("list<any>");
   }
 
   @Test
   public void testListTypeEquality() {
-    ListType listOfAny = ListType.of(ANY_TYPE);
-    ListType listOfAny2 = ListType.of(ANY_TYPE);
-    ListType listOfString = ListType.of(STRING_TYPE);
-
-    assertThat(listOfAny.equals(listOfAny2)).isTrue();
-    assertThat(listOfAny.equals(listOfString)).isFalse();
+    assertThatSoyType("list<any>").isEqualTo("list<any>");
+    assertThatSoyType("list<any>").isNotEqualTo("list<string>");
   }
 
   // Test that map types are covariant over their key types.
   @Test
   public void testMapKeyCovariance() {
-    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfStringToAny = LegacyObjectMapType.of(STRING_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfIntToAny = LegacyObjectMapType.of(INT_TYPE, ANY_TYPE);
-
     // Legal to assign Map<X, Y> to Map<X, Y>
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
-    assertThat(mapOfStringToAny.isAssignableFrom(mapOfStringToAny)).isTrue();
-    assertThat(mapOfIntToAny.isAssignableFrom(mapOfIntToAny)).isTrue();
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<any, any>");
+    assertThatSoyType("legacy_object_map<string, any>")
+        .isAssignableFrom("legacy_object_map<string, any>");
+    assertThatSoyType("legacy_object_map<int, any>")
+        .isAssignableFrom("legacy_object_map<int, any>");
 
     // Legal to assign Map<X, Z> to Map<Y, Z> where Y <: X
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfStringToAny)).isTrue();
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfIntToAny)).isTrue();
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<string, any>");
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<int, any>");
 
     // Not legal to assign Map<X, Z> to Map<Y, Z> where !(Y <: X)
-    assertThat(mapOfIntToAny.isAssignableFrom(mapOfStringToAny)).isFalse();
-    assertThat(mapOfStringToAny.isAssignableFrom(mapOfIntToAny)).isFalse();
-    assertThat(mapOfIntToAny.isAssignableFrom(mapOfAnyToAny)).isFalse();
-    assertThat(mapOfStringToAny.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThatSoyType("legacy_object_map<int, any>")
+        .isNotAssignableFrom("legacy_object_map<string, any>");
+    assertThatSoyType("legacy_object_map<string, any>")
+        .isNotAssignableFrom("legacy_object_map<int, any>");
+    assertThatSoyType("legacy_object_map<int, any>")
+        .isNotAssignableFrom("legacy_object_map<any, any>");
+    assertThatSoyType("legacy_object_map<string, any>")
+        .isNotAssignableFrom("legacy_object_map<any, any>");
   }
 
   // Test that map types are covariant over their value types.
   @Test
   public void testLegacyObjectMapValueCovariance() {
-    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
-    LegacyObjectMapType mapOfAnyToInt = LegacyObjectMapType.of(ANY_TYPE, INT_TYPE);
-
     // Legal to assign Map<X, Y> to Map<X, Y>
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToString)).isTrue();
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToInt)).isTrue();
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<any, any>");
+    assertThatSoyType("legacy_object_map<any, string>")
+        .isAssignableFrom("legacy_object_map<any, string>");
+    assertThatSoyType("legacy_object_map<any, int>")
+        .isAssignableFrom("legacy_object_map<any, int>");
 
     // Legal to assign Map<X, Y> to Map<X, Z> where Z <: Y
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToString)).isTrue();
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToInt)).isTrue();
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<any, string>");
+    assertThatSoyType("legacy_object_map<any, any>")
+        .isAssignableFrom("legacy_object_map<any, int>");
 
     // Not legal to assign Map<X, Y> to Map<X, Z> where !(Z <: Y)
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToString)).isFalse();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToInt)).isFalse();
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToAny)).isFalse();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThatSoyType("legacy_object_map<any, int>")
+        .isNotAssignableFrom("legacy_object_map<any, string>");
+    assertThatSoyType("legacy_object_map<any, string>")
+        .isNotAssignableFrom("legacy_object_map<any, int>");
+    assertThatSoyType("legacy_object_map<any, int>")
+        .isNotAssignableFrom("legacy_object_map<any, any>");
+    assertThatSoyType("legacy_object_map<any, string>")
+        .isNotAssignableFrom("legacy_object_map<any, any>");
   }
 
   // Test that map types are covariant over their value types.
   @Test
   public void testMapValueCovariance() {
-    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
-    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
-    MapType mapOfAnyToInt = MapType.of(ANY_TYPE, INT_TYPE);
-
     // Legal to assign Map<X, Y> to Map<X, Y>
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToString)).isTrue();
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToInt)).isTrue();
+    assertThatSoyType("map<int,any>").isAssignableFrom("map<int,any>");
+    assertThatSoyType("map<int,string>").isAssignableFrom("map<int,string>");
+    assertThatSoyType("map<int,int>").isAssignableFrom("map<int,int>");
 
     // Legal to assign Map<X, Y> to Map<X, Z> where Z <: Y
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToString)).isTrue();
-    assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToInt)).isTrue();
+    assertThatSoyType("map<int,any>").isAssignableFrom("map<int,string>");
+    assertThatSoyType("map<int,any>").isAssignableFrom("map<int,int>");
 
     // Not legal to assign Map<X, Y> to Map<X, Z> where !(Z <: Y)
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToString)).isFalse();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToInt)).isFalse();
-    assertThat(mapOfAnyToInt.isAssignableFrom(mapOfAnyToAny)).isFalse();
-    assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
+    assertThatSoyType("map<int,int>").isNotAssignableFrom("map<int,string>");
+    assertThatSoyType("map<int,string>").isNotAssignableFrom("map<int,int>");
+    assertThatSoyType("map<int,int>").isNotAssignableFrom("map<int,any>");
+    assertThatSoyType("map<int,string>").isNotAssignableFrom("map<int,any>");
   }
 
   @Test
@@ -260,81 +273,41 @@ public class SoyTypesTest {
 
   @Test
   public void testLegacyObjectMapTypeEquality() {
-    LegacyObjectMapType mapOfAnyToAny = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfAnyToAny2 = LegacyObjectMapType.of(ANY_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfStringToAny = LegacyObjectMapType.of(STRING_TYPE, ANY_TYPE);
-    LegacyObjectMapType mapOfAnyToString = LegacyObjectMapType.of(ANY_TYPE, STRING_TYPE);
-
-    assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
-    assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
-    assertThat(mapOfAnyToAny.equals(mapOfAnyToString)).isFalse();
+    assertThatSoyType("legacy_object_map<any, any>").isEqualTo("legacy_object_map<any, any>");
+    assertThatSoyType("legacy_object_map<any, any>").isNotEqualTo("legacy_object_map<string, any>");
+    assertThatSoyType("legacy_object_map<any, any>").isNotEqualTo("legacy_object_map<any, string>");
   }
 
   @Test
   public void testMapTypeEquality() {
-    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
-    MapType mapOfAnyToAny2 = MapType.of(ANY_TYPE, ANY_TYPE);
-    MapType mapOfStringToAny = MapType.of(STRING_TYPE, ANY_TYPE);
-    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
-
-    assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
-    assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
-    assertThat(mapOfAnyToAny.equals(mapOfAnyToString)).isFalse();
+    assertThatSoyType("map<string,any>").isEqualTo("map<string,any>");
+    assertThatSoyType("map<string,any>").isNotEqualTo("map<int,any>");
+    assertThatSoyType("map<string,any>").isNotEqualTo("map<int,any>");
   }
 
   @Test
   public void testRecordTypeEquality() {
-    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE));
-
-    assertThat(
-            r1.equals(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE))))
-        .isTrue();
-    assertThat(
-            r1.equals(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "c", ANY_TYPE))))
-        .isFalse();
-    assertThat(
-            r1.equals(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", STRING_TYPE))))
-        .isFalse();
+    assertThatSoyType("[a: int, b: any]").isEqualTo("[a: int, b: any]");
+    assertThatSoyType("[a: int, b: any]").isNotEqualTo("[a: int, c: any]");
+    assertThatSoyType("[a: int, b: any]").isNotEqualTo("[a: int, b: string]");
   }
 
   @Test
   public void testRecordTypeAssignment() {
-    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE));
-
     // Same
-    assertThat(
-            r1.isAssignableFrom(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE))))
-        .isTrue();
+    assertThatSoyType("[a:int, b:any]").isAssignableFrom("[a:int, b:any]");
 
     // "b" is subtype
-    assertThat(
-            r1.isAssignableFrom(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", STRING_TYPE))))
-        .isTrue();
+    assertThatSoyType("[a:int, b:any]").isAssignableFrom("[a:int, b:string]");
 
     // Additional field
-    assertThat(
-            r1.isAssignableFrom(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", INT_TYPE, "b", STRING_TYPE, "c", STRING_TYPE))))
-        .isTrue();
+    assertThatSoyType("[a:int, b:any]").isAssignableFrom("[a:int, b:string, c:string]");
 
     // Missing "b"
-    assertThat(
-            r1.isAssignableFrom(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "c", ANY_TYPE))))
-        .isFalse();
+    assertThatSoyType("[a:int, b:any]").isNotAssignableFrom("[a:int, c:string]");
 
-    // Field type mismatch
-    assertThat(
-            r1.isAssignableFrom(
-                RecordType.of(ImmutableMap.<String, SoyType>of("a", STRING_TYPE, "b", ANY_TYPE))))
-        .isFalse();
+    // Field type mismatch on a
+    assertThatSoyType("[a:int, b:any]").isNotAssignableFrom("[a:string, c:any]");
   }
 
   @Test
@@ -694,5 +667,82 @@ public class SoyTypesTest {
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
         .isNotNull();
+  }
+
+  static SoyTypeSubject assertThatSoyType(String typeString) {
+    return Truth.assertAbout(SoyTypeSubject::new).that(typeString);
+  }
+
+  private static final class SoyTypeSubject extends Subject<SoyTypeSubject, String> {
+    protected SoyTypeSubject(FailureMetadata metadata, String actual) {
+      super(metadata, actual);
+    }
+
+    void isAssignableFrom(String other) {
+      SoyType leftType = parseType(actual());
+      SoyType rightType = parseType(other);
+      if (!leftType.isAssignableFrom(rightType)) {
+        fail("isAssignableFrom", other);
+      }
+    }
+
+    void isNotAssignableFrom(String other) {
+      SoyType leftType = parseType(actual());
+      SoyType rightType = parseType(other);
+      if (leftType.isAssignableFrom(rightType)) {
+        fail("isNotAssignableFrom", other);
+      }
+    }
+
+    @Deprecated
+    @Override
+    public void isEqualTo(@Nullable Object expected) {
+      throw new UnsupportedOperationException("call isEqualTo(String) instead");
+    }
+
+    void isEqualTo(String other) {
+      SoyType leftType = parseType(actual());
+      SoyType rightType = parseType(other);
+      if (!leftType.equals(rightType)) {
+        fail("isEqualTo", other);
+      }
+      // make sure that assignability is compatible with equality.
+      if (!leftType.isAssignableFrom(rightType)) {
+        failWithRawMessage("types are equal, but %s is not assignable from %s", actual(), other);
+      }
+      if (!rightType.isAssignableFrom(leftType)) {
+        failWithRawMessage("types are equal, but %s is not assignable from %s", other, actual());
+      }
+    }
+
+    @Deprecated
+    @Override
+    public void isNotEqualTo(@Nullable Object unexpected) {
+      throw new UnsupportedOperationException("call isEqualTo(String) instead");
+    }
+
+    void isNotEqualTo(String other) {
+      SoyType leftType = parseType(actual());
+      SoyType rightType = parseType(other);
+      if (leftType.equals(rightType)) {
+        fail("isNotEqualTo", other);
+      }
+      // make sure that assignability is compatible with equality.
+      if (leftType.isAssignableFrom(rightType) && rightType.isAssignableFrom(leftType)) {
+        failWithRawMessage(
+            "types are not equal, but %s and %s are mutally assignable", actual(), other);
+      }
+    }
+
+    private static SoyType parseType(String input) {
+      TemplateNode template =
+          SoyFileSetParserBuilder.forTemplateContents(
+                  "{@param p : " + input + "}\n{$p ? 't' : 'f'}")
+              .parse()
+              .fileSet()
+              .getChild(0)
+              .getChild(0);
+      return Iterables.getOnlyElement(template.getAllParams()).type();
+    }
   }
 }

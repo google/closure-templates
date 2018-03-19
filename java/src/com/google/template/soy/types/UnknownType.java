@@ -34,7 +34,7 @@ public final class UnknownType extends PrimitiveType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     // Allow assigning from all types except the new map type.
     // Bracket access on "?"-typed values generates JS bracket access, which works
     // whether the actual value is a an array or an object. But this doesn't work for ES6 Maps

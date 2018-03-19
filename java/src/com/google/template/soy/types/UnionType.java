@@ -34,7 +34,7 @@ import java.util.Set;
  * Type representing a set of possible alternative types.
  *
  */
-public final class UnionType implements SoyType {
+public final class UnionType extends SoyType {
   private static final Predicate<SoyType> IS_NULL =
       new Predicate<SoyType>() {
         @Override
@@ -106,27 +106,15 @@ public final class UnionType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
-    if (srcType.getKind() == Kind.UNION) {
-      // A union is assignable to a union if every type in the source
-      // union is assignable to some type in the destination union.
-      UnionType fromUnion = (UnionType) srcType;
-      for (SoyType fromMember : fromUnion.members) {
-        if (!isAssignableFrom(fromMember)) {
-          return false;
-        }
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    // A type can be assigned to a union iff it is assignable to at least one
+    // member of the union.
+    for (SoyType memberType : members) {
+      if (memberType.isAssignableFrom(srcType)) {
+        return true;
       }
-      return true;
-    } else {
-      // A type can be assigned to a union iff it is assignable to at least one
-      // member of the union.
-      for (SoyType memberType : members) {
-        if (memberType.isAssignableFrom(srcType)) {
-          return true;
-        }
-      }
-      return false;
     }
+    return false;
   }
 
   /** Returns true if the union includes the null type. */

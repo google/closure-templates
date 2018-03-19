@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.ForOverride;
 
 /**
  * Interface for all classes that describe a data type in Soy. These types are used to determine
@@ -33,7 +34,7 @@ import com.google.common.collect.Sets;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public interface SoyType {
+public abstract class SoyType {
 
   /**
    * Enum that identifies the kind of type this is.
@@ -135,8 +136,11 @@ public interface SoyType {
     }
   }
 
+  // restrict subtypes to this package
+  SoyType() {}
+
   /** Returns what kind of type this is. */
-  Kind getKind();
+  public abstract Kind getKind();
 
   /**
    * Returns true if a parameter or field of this type can be assigned from a value of {@code
@@ -145,5 +149,30 @@ public interface SoyType {
    * @param srcType The type of the incoming value.
    * @return True if the assignment is valid.
    */
-  boolean isAssignableFrom(SoyType srcType);
+  public final boolean isAssignableFrom(SoyType srcType) {
+    // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
+    // memebers.
+    if (srcType instanceof UnionType) {
+      // By construction union types are guaranteed
+      // 1. not to be empty
+      // 2. not to contain union types
+      UnionType asUnion = (UnionType) srcType;
+      for (SoyType member : asUnion.getMembers()) {
+        if (!doIsAssignableFromNonUnionType(member)) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return doIsAssignableFromNonUnionType(srcType);
+    }
+  }
+
+  /**
+   * Subclass integration point to implement assignablility.
+   *
+   * @param type The target type, guaranteed to <b>not be a union type</b>.
+   */
+  @ForOverride
+  abstract boolean doIsAssignableFromNonUnionType(SoyType type);
 }

@@ -27,7 +27,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class RecordType implements SoyType {
+public final class RecordType extends SoyType {
 
   private final ImmutableSortedMap<String, SoyType> members;
 
@@ -45,7 +45,7 @@ public final class RecordType implements SoyType {
   }
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     if (srcType.getKind() == Kind.RECORD) {
       RecordType srcRecord = (RecordType) srcType;
       // The source record must have at least all of the members in the dest

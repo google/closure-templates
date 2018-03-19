@@ -17,10 +17,10 @@
 package com.google.template.soy.types;
 
 /** Base class for primitive types. */
-abstract class PrimitiveType implements SoyType {
+abstract class PrimitiveType extends SoyType {
 
   @Override
-  public boolean isAssignableFrom(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     return srcType.getKind() == getKind();
   }
 

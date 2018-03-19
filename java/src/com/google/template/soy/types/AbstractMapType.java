@@ -17,7 +17,7 @@
 package com.google.template.soy.types;
 
 /** Abstract base class for {@link LegacyObjectMapType} and {@link MapType}. */
-public abstract class AbstractMapType implements SoyType {
+public abstract class AbstractMapType extends SoyType {
   /** Returns the type for keys of this map. */
   public abstract SoyType getKeyType();
 
