@@ -55,7 +55,7 @@ import org.objectweb.asm.Type;
       @Signature(
         // TODO(b/70946095): should return bool
         returnType = "?",
-        parameterTypes = {"?"}
+        parameterTypes = {"any"}
       )
 )
 @Singleton
