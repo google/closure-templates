@@ -184,7 +184,7 @@ public final class StreamingPrintDirectivesTest {
       assertThat(cce)
           .hasMessageThat()
           .isEqualTo(
-              "com.google.template.soy.data.restricted.StringData$ConstantString cannot be cast to "
+              "com.google.template.soy.data.restricted.StringData cannot be cast to "
                   + "com.google.template.soy.data.restricted.IntegerData");
     }
   }
