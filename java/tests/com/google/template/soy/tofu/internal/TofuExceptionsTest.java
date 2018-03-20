@@ -174,9 +174,8 @@ public final class TofuExceptionsTest {
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Parameter type mismatch: "
-                  + "attempt to bind value 'not an int' to parameter 'foo' which has declared "
-                  + "type 'int'.");
+              "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
+                  + "'not an int' to parameter 'foo' which has declared type 'int'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:14)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
       assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
@@ -198,8 +197,7 @@ public final class TofuExceptionsTest {
       assertThat(sfe).hasCauseThat().isEqualTo(futureFailureCause);
       assertThat(ste)
           .hasMessageThat()
-          .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Error dereferencing future");
+          .isEqualTo("When evaluating \"$foo\": Error dereferencing future");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
       assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
