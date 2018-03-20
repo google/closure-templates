@@ -58,6 +58,7 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
@@ -394,7 +395,12 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           errorReporter.report(
               location, PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT, paramName, argType);
         }
-      } else if (argType.getKind() == SoyType.Kind.UNKNOWN) {
+      } else if (argType.getKind() == SoyType.Kind.UNKNOWN
+          // Maps are incompatible with the unknown type. Maps and legacy object maps have the same
+          // access syntax (`map['key']`), so allowing both to be assignable from the unknown type
+          // makes it impossible for the jssrc backend to generate correct code barring runtime
+          // adaptation.
+          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.MAP) {
         // Special rules for unknown / any
         //
         // This check disabled: We now allow maps created from protos to be passed
