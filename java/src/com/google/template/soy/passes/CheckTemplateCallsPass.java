@@ -396,10 +396,15 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
               location, PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT, paramName, argType);
         }
       } else if (argType.getKind() == SoyType.Kind.UNKNOWN
-          // Maps are incompatible with the unknown type. Maps and legacy object maps have the same
-          // access syntax (`map['key']`), so allowing both to be assignable from the unknown type
-          // makes it impossible for the jssrc backend to generate correct code barring runtime
-          // adaptation.
+          // TODO(b/69048281): consider allowing passing `?`-typed values to `map`-typed params.
+          // As long as there are two map types, `map` cannot be assigned <em>to</em> the unknown
+          // type; the jssrc backend wouldn't know what code to generate for bracket access on a
+          // `?`-typed value. However, assigning `map` <em>from</em> the unknown type is possible
+          // and perhaps useful, since it is equivalent to a runtime type assertion. During the
+          // legacy_object_map to map migration, it is disallowed in order to catch bugs in the
+          // migration tool (e.g. upgrading a callee's param to `map` without inserting
+          // `legacyObjectMapToMap` calls in the caller). But it may be useful in order to work with
+          // recursive map-like structures such as JSON.
           && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.MAP) {
         // Special rules for unknown / any
         //
