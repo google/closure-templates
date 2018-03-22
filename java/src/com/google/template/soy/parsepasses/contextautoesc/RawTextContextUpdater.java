@@ -502,7 +502,7 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile(".+")) {
         final Pattern baseUrlPattern =
             Pattern.compile(
-                "^(?:https:)?//[0-9a-z.:[\\\\]-]+/|^/[^/\\\\]", Pattern.CASE_INSENSITIVE);
+                "^(?:https:)?//[0-9a-z.:\\[\\]-]+/|^/[^/\\\\]", Pattern.CASE_INSENSITIVE);
 
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
