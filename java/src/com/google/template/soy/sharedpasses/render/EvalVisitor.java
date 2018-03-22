@@ -261,7 +261,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       if (!isStringKeyed) {
         throw RenderException.create(
             String.format(
-                "Currently, map literals must have string keys (key \"%s\" in map %s does not "
+                "legacy_object_map literals must have string keys (key \"%s\" in map %s does not "
                     + "evaluate to a string).",
                 firstNonstringKeyNode.toSourceString(), node.toSourceString()));
       }
