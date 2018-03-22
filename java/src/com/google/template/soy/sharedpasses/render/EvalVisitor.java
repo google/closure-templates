@@ -42,8 +42,8 @@ import com.google.template.soy.data.SoyProtoValueImpl;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -270,7 +270,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       for (int i = 0; i < numItems; i++) {
         map.put(keys.get(i).stringValue(), values.get(i));
       }
-      return DictImpl.forProviderMap(map, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+      return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
     } else {
       ImmutableMap.Builder<SoyValue, SoyValue> builder = ImmutableMap.builder();
       for (int i = 0; i < numItems; ++i) {

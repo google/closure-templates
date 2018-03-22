@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -90,7 +90,8 @@ public final class LegacyObjectMapToMapFunctionTest {
                                 ImmutableList.of(
                                     FieldRef.NULL_PROVIDER.accessor(),
                                     FieldRef.NULL_PROVIDER.accessor())),
-                            FieldRef.enumReference(RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                            FieldRef.enumReference(
+                                    RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                                 .accessor())))))
         .evaluatesToInstanceOf(SoyMapImpl.class);
   }

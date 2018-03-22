@@ -22,7 +22,6 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -128,7 +127,7 @@ public final class LegacyObjectMapToMapFunction
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    DictImpl map = (DictImpl) Iterables.getOnlyElement(args);
+    SoyLegacyObjectMap map = (SoyLegacyObjectMap) Iterables.getOnlyElement(args);
     return SoyMaps.legacyObjectMapToMap(map);
   }
 }

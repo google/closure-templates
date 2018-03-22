@@ -19,7 +19,7 @@ package com.google.template.soy.data;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 
 /**
@@ -49,7 +49,8 @@ public final class SoyMaps {
   public static SoyMap asSoyMap(SoyValue map) {
     Preconditions.checkArgument(isMapOrLegacyObjectMap(map));
     if (map instanceof SoyMapImpl
-        || (map instanceof DictImpl && ((DictImpl) map).getMapType() == RuntimeType.MAP)) {
+        || (map instanceof DictImpl
+            && ((DictImpl) map).getMapType() == RuntimeMapTypeTracker.Type.MAP)) {
       // These types can already be accessed as a SoyMap, so just return the map directly.
       return (SoyMap) map;
     } else {

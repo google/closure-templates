@@ -38,9 +38,9 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -94,7 +94,8 @@ public abstract class MethodRef {
           .asNonNullable();
 
   public static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
-      create(DictImpl.class, "forProviderMap", Map.class, RuntimeType.class).asNonNullable();
+      create(DictImpl.class, "forProviderMap", Map.class, RuntimeMapTypeTracker.Type.class)
+          .asNonNullable();
 
   public static final MethodRef MAP_IMPL_FOR_PROVIDER_MAP =
       create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();

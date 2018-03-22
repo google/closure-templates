@@ -25,7 +25,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -80,7 +80,8 @@ public class KeysFunctionTest {
                         UnknownType.getInstance(),
                         MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
                             MethodRef.IMMUTABLE_MAP_OF.get(0).invoke(),
-                            FieldRef.enumReference(RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                            FieldRef.enumReference(
+                                    RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                                 .accessor())))))
         .evaluatesTo(ImmutableList.of());
     assertThatExpression(
@@ -96,7 +97,8 @@ public class KeysFunctionTest {
                                 ImmutableList.<Expression>of(
                                     FieldRef.NULL_PROVIDER.accessor(),
                                     FieldRef.NULL_PROVIDER.accessor())),
-                            FieldRef.enumReference(RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                            FieldRef.enumReference(
+                                    RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                                 .accessor())))))
         .evaluatesTo(ImmutableList.of(StringData.forValue("a"), StringData.forValue("b")));
   }

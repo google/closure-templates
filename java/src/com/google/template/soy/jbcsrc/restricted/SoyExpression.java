@@ -28,7 +28,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -298,7 +298,8 @@ public final class SoyExpression extends Expression {
     } else if (type.isKnownList()) {
       MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
     } else if (type.isKnownLegacyObjectMap()) {
-      FieldRef.enumReference(RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD).putUnchecked(adapter);
+      FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
+          .putUnchecked(adapter);
       MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownMap()) {
       MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);

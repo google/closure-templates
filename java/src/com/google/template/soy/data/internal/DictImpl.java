@@ -57,12 +57,13 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * (plain JS objects and ES6 Maps, respectively). Indexing into a plain JS object as though it were
  * an ES6 Map is a runtime error. Soy's Java runtime must preserve this behavior.
  *
- * <p>{@link RuntimeType} exists to provide this non-compatibility. DictImpl instances begin life in
- * an {@link RuntimeType#UNKNOWN} state. If a SoyMap method is first invoked on it, it transitions
- * to the {@link RuntimeType#MAP} state, and later invocations of SoyMap or SoyRecord methods cause
- * runtime errors. Likewise, if a SoyMap or SoyRecord method is first invoked on the DictImpl
- * instance, it transitions to the {@link RuntimeType#LEGACY_OBJECT_MAP_OR_RECORD} state, and later
- * invocations of SoyMap methods cause runtime errors.
+ * <p>{@link RuntimeMapTypeTracker} exists to provide this non-compatibility. DictImpl instances
+ * begin life in an {@link RuntimeMapTypeTracker.Type#UNKNOWN} state. If a SoyMap method is first
+ * invoked on it, it transitions to the {@link RuntimeMapTypeTracker.Type#MAP} state, and later
+ * invocations of SoyMap or SoyRecord methods cause runtime errors. Likewise, if a SoyMap or
+ * SoyRecord method is first invoked on the DictImpl instance, it transitions to the {@link
+ * RuntimeMapTypeTracker.Type#LEGACY_OBJECT_MAP_OR_RECORD} state, and later invocations of SoyMap
+ * methods cause runtime errors.
  *
  * every {@code legacy_object_map} to {@code map} and delete {@code legacy_object_map}. This will
  * require changing every plain JS object passed in to Soy to be an ES6 Map with the same entries.
@@ -78,56 +79,39 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap {
 
   /**
-   * Represents the runtime type of this DictImpl. The runtime type can only be set once. Changing
-   * the state more than once will throw an exception. See discussion above.
-   */
-  public enum RuntimeType {
-    /**
-     * This DictImpl could represent a Soy {@code legacy_object_map}, a Soy {@code map}, or a Soy
-     * record ({@code [field1: type1, ...]}). The first {@link SoyDict} or {@link
-     * com.google.template.soy.data.SoyRecord} method invoked on this object will transition the
-     * state to {@link #LEGACY_OBJECT_MAP_OR_RECORD}, while the first {@link SoyMap} method invoked
-     * on this object will transition the state to {@link #MAP}.
-     */
-    UNKNOWN,
-    /** This DictImpl represents a Soy {@code legacy_object_map} or record at runtime. */
-    LEGACY_OBJECT_MAP_OR_RECORD,
-    /** This DictImpl represents a Soy {@code map} at runtime. */
-    MAP,
-  }
-
-  /**
    * Creates a SoyDict implementation for a particular underlying provider map.
    *
    * <p>The map may be mutable, but will not be mutated by the DictImpl.
    */
   public static DictImpl forProviderMap(
-      Map<String, ? extends SoyValueProvider> providerMap, RuntimeType mapType) {
+      Map<String, ? extends SoyValueProvider> providerMap, RuntimeMapTypeTracker.Type mapType) {
     return new DictImpl(providerMap, mapType);
   }
 
-  private DictImpl(Map<String, ? extends SoyValueProvider> providerMap, RuntimeType mapType) {
+  private DictImpl(
+      Map<String, ? extends SoyValueProvider> providerMap, RuntimeMapTypeTracker.Type typeTracker) {
     this.providerMap = checkNotNull(providerMap);
-    this.mapType = checkNotNull(mapType);
+    this.typeTracker = new RuntimeMapTypeTracker(checkNotNull(typeTracker));
   }
 
   /** Map containing each data provider. */
   private final Map<String, ? extends SoyValueProvider> providerMap;
+
   /**
-   * An internal state that indicates whether this map implementation is intended for legacy map or
-   * new map that supports ES6 and proto map.
+   * Tracks whether this map implementation is intended for legacy map or new map that supports ES6
+   * and proto map.
    */
-  private RuntimeType mapType;
+  private final RuntimeMapTypeTracker typeTracker;
 
   @Override
   public final boolean hasField(String name) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.containsKey(name);
   }
 
   @Override
   public final SoyValue getField(String name) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getFieldInternal(name);
   }
 
@@ -138,26 +122,26 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
 
   @Override
   public final SoyValueProvider getFieldProvider(String name) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.get(name);
   }
 
   @Override
   public final int getItemCnt() {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.size();
   }
 
   @Override
   public int size() {
-    maybeSetMapType();
+    typeTracker.maybeSetMapType();
     return providerMap.size();
   }
 
   @Override
   @Nonnull
   public final Iterable<? extends SoyValue> getItemKeys() {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return Iterables.transform(
         providerMap.keySet(),
         new Function<String, SoyValue>() {
@@ -171,7 +155,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   @Nonnull
   @Override
   public Iterable<? extends SoyValue> keys() {
-    maybeSetMapType();
+    typeTracker.maybeSetMapType();
     return Iterables.transform(
         providerMap.keySet(),
         new Function<String, SoyValue>() {
@@ -184,37 +168,37 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
 
   @Override
   public final boolean hasItem(SoyValue key) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.containsKey(getStringKey(key));
   }
 
   @Override
   public boolean containsKey(SoyValue key) {
-    maybeSetMapType();
+    typeTracker.maybeSetMapType();
     return providerMap.containsKey(getStringKey(key));
   }
 
   @Override
   public final SoyValue getItem(SoyValue key) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getFieldInternal(getStringKey(key));
   }
 
   @Override
   public SoyValue get(SoyValue key) {
-    maybeSetMapType();
+    typeTracker.maybeSetMapType();
     return getFieldInternal(getStringKey(key));
   }
 
   @Override
   public final SoyValueProvider getItemProvider(SoyValue key) {
-    maybeSetLegacyObjectMapOrRecordType();
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.get(getStringKey(key));
   }
 
   @Override
   public SoyValueProvider getProvider(SoyValue key) {
-    maybeSetMapType();
+    typeTracker.maybeSetMapType();
     return providerMap.get(getStringKey(key));
   }
 
@@ -270,7 +254,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     appendable.append('{');
 
     boolean isFirst = true;
-    boolean useNewSoyMap = mapType == RuntimeType.MAP;
+    boolean useNewSoyMap = typeTracker.type() == RuntimeMapTypeTracker.Type.MAP;
     for (SoyValue key : (useNewSoyMap ? keys() : getItemKeys())) {
       SoyValue value = useNewSoyMap ? get(key) : getItem(key);
       if (isFirst) {
@@ -304,39 +288,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
     return coerceToString();
   }
 
-  public RuntimeType getMapType() {
-    return mapType;
-  }
-
-  /**
-   * Sets the internal state to {@link RuntimeType#LEGACY_OBJECT_MAP_OR_RECORD}. If the state has
-   * already been set, throws an exception.
-   */
-  private void maybeSetLegacyObjectMapOrRecordType() {
-    if (mapType == RuntimeType.UNKNOWN) {
-      mapType = RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD;
-    } else if (mapType == RuntimeType.MAP) {
-      throw new IllegalStateException(
-          "Expected a value of type `map`, got `legacy_object_map`. "
-              + "These two map types are not interoperable. "
-              + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-              + "to convert explicitly.");
-    }
-  }
-
-  /**
-   * Sets the internal state to {@link RuntimeType#MAP}. If the state has already been set, throws
-   * an exception.
-   */
-  private void maybeSetMapType() {
-    if (mapType == RuntimeType.UNKNOWN) {
-      mapType = RuntimeType.MAP;
-    } else if (mapType == RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD) {
-      throw new IllegalStateException(
-          "Expected a value of type `map`, got `legacy_object_map`. "
-              + "These two map types are not interoperable. "
-              + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-              + "to convert explicitly.");
-    }
+  public RuntimeMapTypeTracker.Type getMapType() {
+    return typeTracker.type();
   }
 }

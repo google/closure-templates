@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -45,17 +44,17 @@ public class DictImplTest {
   @Test
   public void testSoyValueMethods() {
 
-    SoyValue val1 = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN);
+    SoyValue val1 = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(val1.coerceToBoolean()).isTrue(); // DictImpl is always truthy.
     assertThat(val1.coerceToString()).isEqualTo("{}");
-    SoyValue val2 = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN);
+    SoyValue val2 = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(val1.equals(val2)).isFalse(); // DictImpl uses object identity.
 
     SoyValue val3 =
         DictImpl.forProviderMap(
             ImmutableMap.<String, SoyValue>of(
                 "foo", FloatData.forValue(3.14), "too", BooleanData.TRUE),
-            RuntimeType.UNKNOWN);
+            RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(val3.coerceToBoolean()).isTrue();
     assertThat(val3.coerceToString()).isEqualTo("{foo: 3.14, too: true}");
   }
@@ -66,7 +65,7 @@ public class DictImplTest {
     SoyDict dict =
         DictImpl.forProviderMap(
             ImmutableMap.of("boo", StringData.forValue("aaah"), "foo", FloatData.forValue(3.14)),
-            RuntimeType.UNKNOWN);
+            RuntimeMapTypeTracker.Type.UNKNOWN);
     Map<String, ? extends SoyValueProvider> m1 = dict.asJavaStringMap();
     assertThat(m1).hasSize(2);
     assertThat(m1.get("boo").resolve().stringValue()).isEqualTo("aaah");
@@ -79,7 +78,7 @@ public class DictImplTest {
   public void testRecordMethods() {
 
     Map<String, SoyValueProvider> providerMap = new HashMap<>();
-    SoyDict dict = DictImpl.forProviderMap(providerMap, RuntimeType.UNKNOWN);
+    SoyDict dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(dict.hasField("boo")).isFalse();
     assertThat(dict.getField("boo")).isNull();
     assertThat(dict.getFieldProvider("boo")).isNull();
@@ -103,7 +102,7 @@ public class DictImplTest {
   public void testLegacyObjectMapMethods() {
     StringData boo = StringData.forValue("boo");
     Map<String, SoyValueProvider> providerMap = new HashMap<>();
-    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeType.UNKNOWN);
+    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(dict.getItemCnt()).isEqualTo(0);
     assertThat(dict.getItemKeys()).isEmpty();
     assertThat(dict.hasItem(boo)).isFalse();
@@ -135,7 +134,7 @@ public class DictImplTest {
   public void testMapMethods() {
     StringData boo = StringData.forValue("boo");
     Map<String, SoyValueProvider> providerMap = new HashMap<>();
-    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeType.UNKNOWN);
+    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(dict.size()).isEqualTo(0);
     assertThat(dict.keys()).isEmpty();
     assertThat(dict.containsKey(boo)).isFalse();
@@ -166,7 +165,7 @@ public class DictImplTest {
   @Test
   public void testMapInteroperability() {
     Map<String, SoyValueProvider> providerMap = new HashMap<>();
-    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeType.UNKNOWN);
+    DictImpl dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(dict.size()).isEqualTo(0);
     try {
       dict.getItemCnt();
@@ -181,7 +180,7 @@ public class DictImplTest {
                   + "to convert explicitly.");
     }
     // Recreate the map that resets the internal state.
-    dict = DictImpl.forProviderMap(providerMap, RuntimeType.UNKNOWN);
+    dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
     assertThat(dict.getItemCnt()).isEqualTo(0);
     try {
       dict.keys();

@@ -34,7 +34,7 @@ import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -353,7 +353,7 @@ final class ExpressionCompiler {
           useLegacyMap
               ? MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
                   BytecodeUtils.newLinkedHashMap(keys, values),
-                  FieldRef.enumReference(DictImpl.RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                  FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                       .accessor())
               : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
                   BytecodeUtils.newLinkedHashMap(keys, values));

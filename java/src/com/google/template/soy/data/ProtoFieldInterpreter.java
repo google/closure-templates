@@ -38,8 +38,8 @@ import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -259,7 +259,8 @@ abstract class ProtoFieldInterpreter {
           }
           builder.put(key, scalarImpl.soyFromProto(message));
         }
-        return DictImpl.forProviderMap(builder.build(), RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+        return DictImpl.forProviderMap(
+            builder.build(), RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
       }
 
       @Override

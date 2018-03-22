@@ -24,8 +24,8 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.StringData;
 import org.junit.Test;
@@ -40,7 +40,8 @@ public class SoyMapsTest {
   public void testIsMapOrLegacyObjectMap() {
     assertThat(isMapOrLegacyObjectMap(SoyMapImpl.forProviderMap(ImmutableMap.of()))).isTrue();
     assertThat(
-            isMapOrLegacyObjectMap(DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN)))
+            isMapOrLegacyObjectMap(
+                DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN)))
         .isTrue();
     assertThat(isMapOrLegacyObjectMap(StringData.EMPTY_STRING)).isFalse();
     assertThat(isMapOrLegacyObjectMap(ParamStore.EMPTY_INSTANCE)).isFalse();
@@ -51,7 +52,7 @@ public class SoyMapsTest {
     SoyMap soyMap = SoyMapImpl.forProviderMap(ImmutableMap.of());
     assertThat(asSoyMap(soyMap)).isEqualTo(soyMap);
 
-    SoyMap dictMap = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.MAP);
+    SoyMap dictMap = DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.MAP);
     assertThat(asSoyMap(dictMap)).isEqualTo(dictMap);
   }
 
@@ -70,7 +71,7 @@ public class SoyMapsTest {
         DictImpl.forProviderMap(
             ImmutableMap.of(
                 "first", StringData.forValue("second"), "third", StringData.forValue("fourth")),
-            RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+            RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
 
     SoyMap map = asSoyMap(legacyMap);
 
@@ -87,7 +88,7 @@ public class SoyMapsTest {
         DictImpl.forProviderMap(
             ImmutableMap.of(
                 "hello", StringData.forValue("goodbye"), "yes", StringData.forValue("no")),
-            RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+            RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
 
     SoyMap map = legacyObjectMapToMap(legacyMap);
 

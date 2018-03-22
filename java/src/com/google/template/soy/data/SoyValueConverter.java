@@ -42,9 +42,9 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -78,7 +78,7 @@ public final class SoyValueConverter {
 
   /** An immutable empty dict. */
   public static final SoyDict EMPTY_DICT =
-      DictImpl.forProviderMap(ImmutableMap.of(), RuntimeType.UNKNOWN);
+      DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN);
 
   /** An immutable empty list. */
   public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
@@ -357,7 +357,7 @@ public final class SoyValueConverter {
         // This Java map could represent a Soy legacy_object_map, a Soy map, or a Soy record.
         // We don't know which until one of the SoyMap, SoyLegacyObjectMap, or SoyRecord methods
         // is invoked on it.
-        RuntimeType.UNKNOWN);
+        RuntimeMapTypeTracker.Type.UNKNOWN);
   }
 
   /**

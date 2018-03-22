@@ -27,7 +27,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -45,7 +45,7 @@ public final class BasicFunctionsRuntime {
         Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
     map.putAll(first.asJavaStringMap());
     map.putAll(second.asJavaStringMap());
-    return DictImpl.forProviderMap(map, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+    return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
   }
 
   /**
@@ -90,7 +90,8 @@ public final class BasicFunctionsRuntime {
         map.asJavaMap().entrySet()) {
       keysCoercedToStrings.put(entry.getKey().coerceToString(), entry.getValue());
     }
-    return DictImpl.forProviderMap(keysCoercedToStrings, RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD);
+    return DictImpl.forProviderMap(
+        keysCoercedToStrings, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
   }
 
   /** Returns the numeric maximum of the two arguments. */

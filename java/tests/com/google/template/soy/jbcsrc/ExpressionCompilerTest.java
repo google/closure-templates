@@ -38,7 +38,7 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.DictImpl.RuntimeType;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -211,7 +211,7 @@ public class ExpressionCompilerTest {
                         "b", FloatData.forValue(1.0),
                         "c", StringData.forValue("asdf"),
                         "d", BooleanData.FALSE),
-                    RuntimeType.LEGACY_OBJECT_MAP_OR_RECORD)
+                    RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                 .toString());
   }
 

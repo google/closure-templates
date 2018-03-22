@@ -21,10 +21,10 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.testing.EqualsTester;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +35,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
-public class SoyMapDataTest {
+public final class SoyMapDataTest {
 
   @Test
   public void testPutRemoveGetSingleKey() {
@@ -93,7 +93,7 @@ public class SoyMapDataTest {
   @Test
   public void testConstruction() {
 
-    Map<String, Object> existingMap = Maps.newHashMap();
+    Map<String, Object> existingMap = new HashMap<>();
     existingMap.put("boo", 8);
     existingMap.put("foo", null);
     existingMap.put("goo", ImmutableMap.of("buntu", "blah", "dy", true));
@@ -111,7 +111,7 @@ public class SoyMapDataTest {
   @Test
   public void testErrorDuringConstruction() {
 
-    Map<String, Object> existingMap = Maps.newHashMap();
+    Map<String, Object> existingMap = new HashMap<>();
     existingMap.put("boo", 8);
     existingMap.put("foo", null);
     existingMap.put("goo", ImmutableMap.of("buntu", "blah", "fy", new Object(), "dy", true));
@@ -163,7 +163,7 @@ public class SoyMapDataTest {
 
     SoyMapData smd0 = new SoyMapData();
     SoyMapData smd1 = new SoyMapData("boo", "foo");
-    Map<String, Object> existingMap = Maps.newHashMap();
+    Map<String, Object> existingMap = new HashMap<>();
     existingMap.put("boo", 8);
     existingMap.put("foo", null);
     existingMap.put("goo", ImmutableMap.of("buntu", "blah", "dy", true));
@@ -208,5 +208,56 @@ public class SoyMapDataTest {
 
     smd = new SoyMapData("long", l);
     assertThat(smd.getLong("long")).isEqualTo(l);
+  }
+
+  @Test
+  public void testRuntimeTypeTransitions() {
+    ImmutableMap<String, String> underlying = ImmutableMap.of("a", "b");
+
+    SoyMapData recordOrLegacyObjectMap = new SoyMapData(underlying);
+    // Call some SoyRecord methods first.
+    assertThat(recordOrLegacyObjectMap.hasField("a")).isTrue();
+    assertThat(recordOrLegacyObjectMap.getField("a").coerceToString()).isEqualTo("b");
+
+    // Now call some SoyLegacyObjectMap methods.
+    assertThat(recordOrLegacyObjectMap.getItemCnt()).isEqualTo(1);
+    assertThat(recordOrLegacyObjectMap.getItem(StringData.forValue("a")).coerceToString())
+        .isEqualTo("b");
+
+    // Now call some SoyMap methods. Since the runtime state has transitioned to
+    // LEGACY_OBJECT_MAP_OR_RECORD, this should throw.
+    try {
+      recordOrLegacyObjectMap.get(StringData.forValue("a"));
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .contains(
+              "Expected a value of type `map`, got `legacy_object_map`. "
+                  + "These two map types are not interoperable. "
+                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
+                  + "to convert explicitly.");
+    }
+
+    SoyMapData map = new SoyMapData(underlying);
+
+    // Call some SoyMap methods first.
+    assertThat(map.get(StringData.forValue("a")).coerceToString()).isEqualTo("b");
+    assertThat(map.size()).isEqualTo(1);
+
+    // Now call some SoyLegacyObjectMap methods. Since the runtime state has transitioned to MAP,
+    // this should throw.
+    try {
+      map.getItem(StringData.forValue("a"));
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .contains(
+              "Expected a value of type `map`, got `legacy_object_map`. "
+                  + "These two map types are not interoperable. "
+                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
+                  + "to convert explicitly.");
+    }
   }
 }
