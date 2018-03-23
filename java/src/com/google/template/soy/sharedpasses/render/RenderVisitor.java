@@ -22,7 +22,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.LazySanitizedContents;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
@@ -37,7 +36,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
@@ -621,10 +619,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         // this template call.
         throw re.addStackTraceElement(node);
       }
+      ContentKind calleeKind = fromSanitizedContentKind(callee.getContentKind());
       SoyValue resultData =
-          (callee.getContentKind() != null)
-              ? UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                  calleeBuilder.toString(), ContentKind.valueOf(callee.getContentKind().name()))
+          calleeKind != null
+              ? UnsafeSanitizedContentOrdainer.ordainAsSafe(calleeBuilder.toString(), calleeKind)
               : StringData.forValue(calleeBuilder.toString());
       for (SoyPrintDirective directive : node.getEscapingDirectives()) {
         resultData = applyDirective(directive, resultData, ImmutableList.<SoyValue>of(), node);
@@ -714,22 +712,21 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     popOutputBuf();
   }
 
-  private SoyValue renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
-    RenderableThunk thunk =
-        new RenderableThunk() {
-          @Override
-          protected void doRender(Appendable appendable) throws IOException {
-            renderBlock(renderUnitNode, appendable);
-          }
-        };
-    SanitizedContentKind contentKind = renderUnitNode.getContentKind();
-    if (contentKind != null) {
-      return LazySanitizedContents.forThunk(thunk, ContentKind.valueOf(contentKind.name()));
-    } else {
-      return StringData.forThunk(thunk);
-    }
+  private SoyValueProvider renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
+    return new RenderableThunk(fromSanitizedContentKind(renderUnitNode.getContentKind())) {
+      @Override
+      protected void doRender(Appendable appendable) throws IOException {
+        renderBlock(renderUnitNode, appendable);
+      }
+    };
   }
 
+  private static ContentKind fromSanitizedContentKind(SanitizedContentKind kind) {
+    if (kind == null) {
+      return null;
+    }
+    return ContentKind.valueOf(kind.name());
+  }
   /**
    * Private helper to evaluate an expression. Always use this helper instead of using evalVisitor
    * directly, because this helper creates and throws a RenderException if there's an error.
