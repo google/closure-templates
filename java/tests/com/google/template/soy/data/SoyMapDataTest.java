@@ -224,40 +224,9 @@ public final class SoyMapDataTest {
     assertThat(recordOrLegacyObjectMap.getItem(StringData.forValue("a")).coerceToString())
         .isEqualTo("b");
 
-    // Now call some SoyMap methods. Since the runtime state has transitioned to
-    // LEGACY_OBJECT_MAP_OR_RECORD, this should throw.
-    try {
-      recordOrLegacyObjectMap.get(StringData.forValue("a"));
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              "Expected a value of type `map`, got `legacy_object_map`. "
-                  + "These two map types are not interoperable. "
-                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-                  + "to convert explicitly.");
-    }
-
-    SoyMapData map = new SoyMapData(underlying);
-
-    // Call some SoyMap methods first.
-    assertThat(map.get(StringData.forValue("a")).coerceToString()).isEqualTo("b");
-    assertThat(map.size()).isEqualTo(1);
-
-    // Now call some SoyLegacyObjectMap methods. Since the runtime state has transitioned to MAP,
-    // this should throw.
-    try {
-      map.getItem(StringData.forValue("a"));
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              "Expected a value of type `map`, got `legacy_object_map`. "
-                  + "These two map types are not interoperable. "
-                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-                  + "to convert explicitly.");
-    }
+    // Now call some SoyMap methods.
+    assertThat(recordOrLegacyObjectMap.size()).isEqualTo(1);
+    assertThat(recordOrLegacyObjectMap.get(StringData.forValue("a")).coerceToString())
+        .isEqualTo("b");
   }
 }

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
@@ -48,14 +47,6 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   /** Underlying map. */
   private final Map<String, SoyData> map;
-
-  /**
-   * Tracks whether this map implementation is intended for legacy map or new map that supports ES6
-   * and proto map. See {@link com.google.template.soy.data.internal.DictImpl} for a discussion of
-   * why this is necessary.
-   */
-  private final RuntimeMapTypeTracker typeTracker =
-      new RuntimeMapTypeTracker(RuntimeMapTypeTracker.Type.UNKNOWN);
 
   public SoyMapData() {
     map = Maps.newLinkedHashMap();
@@ -236,19 +227,16 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   @Override
   public boolean hasField(String name) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(name) != null;
   }
 
   @Override
   public SoyValue getField(String name) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(name);
   }
 
   @Override
   public SoyValueProvider getFieldProvider(String name) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(name);
   }
 
@@ -257,14 +245,12 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   @Override
   public int getItemCnt() {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getKeys().size();
   }
 
   @Override
   @Nonnull
   public Iterable<StringData> getItemKeys() {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     Set<String> internalKeys = getKeys();
     List<StringData> keys = Lists.newArrayListWithCapacity(internalKeys.size());
     for (String internalKey : internalKeys) {
@@ -275,19 +261,16 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   @Override
   public boolean hasItem(SoyValue key) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(getStringKey(key)) != null;
   }
 
   @Override
   public SoyValue getItem(SoyValue key) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(getStringKey(key));
   }
 
   @Override
   public SoyValueProvider getItemProvider(SoyValue key) {
-    typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return getSingle(getStringKey(key));
   }
 
@@ -296,14 +279,12 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   @Override
   public int size() {
-    typeTracker.maybeSetMapType();
     return getKeys().size();
   }
 
   @Nonnull
   @Override
   public Iterable<? extends SoyValue> keys() {
-    typeTracker.maybeSetMapType();
     return Iterables.transform(
         map.keySet(),
         new Function<String, SoyValue>() {
@@ -316,26 +297,22 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   @Override
   public boolean containsKey(SoyValue key) {
-    typeTracker.maybeSetMapType();
     return getSingle(getStringKey(key)) != null;
   }
 
   @Override
   public SoyValue get(SoyValue key) {
-    typeTracker.maybeSetMapType();
     return getSingle(getStringKey(key));
   }
 
   @Override
   public SoyValueProvider getProvider(SoyValue key) {
-    typeTracker.maybeSetMapType();
     return getSingle(getStringKey(key));
   }
 
   @Nonnull
   @Override
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
-    typeTracker.maybeSetMapType();
     ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
     for (Map.Entry<String, SoyData> entry : map.entrySet()) {
       builder.put(StringData.forValue(entry.getKey()), entry.getValue());
