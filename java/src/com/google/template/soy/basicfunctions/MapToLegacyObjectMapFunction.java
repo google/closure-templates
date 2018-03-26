@@ -18,8 +18,8 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -77,7 +77,7 @@ public final class MapToLegacyObjectMapFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
     static final MethodRef MAP_TO_LEGACY_OBJECT_MAP =
-        MethodRef.create(BasicFunctionsRuntime.class, "mapToLegacyObjectMap", SoyMapImpl.class);
+        MethodRef.create(BasicFunctionsRuntime.class, "mapToLegacyObjectMap", SoyMap.class);
   }
 
   @Override
@@ -98,7 +98,7 @@ public final class MapToLegacyObjectMapFunction
     return SoyExpression.forLegacyObjectMap(
         newType,
         JbcSrcMethods.MAP_TO_LEGACY_OBJECT_MAP.invoke(
-            soyExpression.box().checkedCast(SoyMapImpl.class)));
+            soyExpression.box().checkedCast(SoyMap.class)));
   }
 
   @Override
@@ -116,7 +116,7 @@ public final class MapToLegacyObjectMapFunction
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    SoyMapImpl map = (SoyMapImpl) Iterables.getOnlyElement(args);
+    SoyMap map = (SoyMap) Iterables.getOnlyElement(args);
     return BasicFunctionsRuntime.mapToLegacyObjectMap(map);
   }
 }

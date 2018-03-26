@@ -28,7 +28,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
-import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -84,7 +83,7 @@ public final class BasicFunctionsRuntime {
     return ImmutableList.copyOf(map.keys());
   }
 
-  public static SoyDict mapToLegacyObjectMap(SoyMapImpl map) {
+  public static SoyDict mapToLegacyObjectMap(SoyMap map) {
     Map<String, SoyValueProvider> keysCoercedToStrings = new LinkedHashMap<>();
     for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
         map.asJavaMap().entrySet()) {
