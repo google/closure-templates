@@ -120,7 +120,7 @@ public class SoyTypeRegistry {
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
   // TODO(b/72409542): consider allowing string|int
-  private static final ImmutableSet<SoyType.Kind> ALLOWED_MAP_KEY_TYPES =
+  public static final ImmutableSet<SoyType.Kind> ALLOWED_MAP_KEY_TYPES =
       ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.STRING, Kind.PROTO_ENUM);
 
   private static final SoyErrorKind BAD_MAP_KEY_TYPE;

@@ -10193,7 +10193,7 @@ goog.debug.exposeArray = function(arr) {
 /**
  * Normalizes the error/exception object between browsers.
  * @param {*} err Raw error object.
- * @return {!{
+ * @return {{
  *    message: (?|undefined),
  *    name: (?|undefined),
  *    lineNumber: (?|undefined),
@@ -13767,7 +13767,7 @@ goog.html.SafeScript.unwrap = function(safeScript) {
  * encoded.
  *
  * @param {*} val
- * @return {!string}
+ * @return {string}
  * @private
  */
 goog.html.SafeScript.stringify_ = function(val) {

@@ -129,7 +129,7 @@ public final class JsTypeTest {
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(
-            "!soy.map.Map<!goog.soy.data.UnsanitizedText|string,!goog.html.SafeHtml|"
+            "!soy.map.Map<string,!goog.html.SafeHtml|"
                 + "!goog.soy.data.SanitizedHtml|!goog.soy.data.UnsanitizedText|string>");
   }
 

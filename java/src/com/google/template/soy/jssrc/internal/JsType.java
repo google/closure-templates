@@ -32,6 +32,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentT
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -44,14 +45,16 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
-import com.google.template.soy.types.AbstractMapType;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -128,6 +131,14 @@ final class JsType {
   private static final JsType NUMBER_TYPE =
       builder().addType("number").setPredicate(GOOG_IS_NUMBER).build();
 
+  /**
+   * The correct JsType for the soy {@code string} type is {@link #STRING_OR_UNSANITIZED_TEXT},
+   * since the Soy runtime explicitly annotates some strings as being unsanitized. This type exists
+   * for the rare situations where the UnsanitizedText union is not useful, such as in map keys.
+   */
+  private static final JsType STRING_TYPE =
+      builder().addType("string").setPredicate(GOOG_IS_STRING).build();
+
   // TODO(lukes): does idom need a custom one that excludes sanitized content?
   private static final JsType STRING_OR_UNSANITIZED_TEXT =
       builder()
@@ -150,13 +161,6 @@ final class JsType {
 
   private static final JsType RAW_ARRAY_TYPE =
       builder().addType("!Array").setPredicate(GOOG_IS_ARRAY).build();
-
-  private static final JsType RAW_MAP_TYPE =
-      builder()
-          .addRequire(GoogRequire.create("soy.map"))
-          .addType("!soy.map.Map")
-          .setPredicate(TypePredicate.NO_OP) // TODO(b/69049599): need real type predicate
-          .build();
 
   private static final JsType RAW_OBJECT_TYPE =
       builder().addType("!Object").setPredicate(GOOG_IS_OBJECT).build();
@@ -278,35 +282,46 @@ final class JsType {
             .build();
 
       case LEGACY_OBJECT_MAP:
-      case MAP:
         {
-          AbstractMapType mapType = (AbstractMapType) soyType;
-
+          LegacyObjectMapType mapType = (LegacyObjectMapType) soyType;
           if (mapType.getKeyType().getKind() == SoyType.Kind.ANY
               && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
-            return soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? RAW_OBJECT_TYPE : RAW_MAP_TYPE;
+            return RAW_OBJECT_TYPE;
           }
-          String jsTypeName =
-              soyType.getKind() == Kind.LEGACY_OBJECT_MAP ? "Object" : "soy.map.Map";
           JsType keyTypeName = forSoyType(mapType.getKeyType(), isIncrementalDom);
           JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom);
-          Builder builder =
-              builder()
-                  .addType(
-                      String.format(
-                          "!%s<%s,%s>",
-                          jsTypeName, keyTypeName.typeExpr(), valueTypeName.typeExpr()))
-                  .addRequires(keyTypeName.getGoogRequires())
-                  .addRequires(valueTypeName.getGoogRequires());
-          if (soyType.getKind() == Kind.LEGACY_OBJECT_MAP) {
-            builder.setPredicate(GOOG_IS_OBJECT);
-          } else {
-            builder
-                .addRequire(GoogRequire.create("soy.map"))
-                // TODO(b/69049599): need actual type predicate
-                .setPredicate(TypePredicate.NO_OP);
-          }
-          return builder.build();
+          return builder()
+              .addType(
+                  String.format("!Object<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+              .addRequires(keyTypeName.getGoogRequires())
+              .addRequires(valueTypeName.getGoogRequires())
+              .setPredicate(GOOG_IS_OBJECT)
+              .build();
+        }
+      case MAP:
+        {
+          MapType mapType = (MapType) soyType;
+          SoyType keyType = mapType.getKeyType();
+          SoyType.Kind keyKind = keyType.getKind();
+          Preconditions.checkState(SoyTypeRegistry.ALLOWED_MAP_KEY_TYPES.contains(keyKind));
+          // Soy key type of string should translate to a JS key type of string.
+          // forSoyType(StringType.getInstance()) normally translates to
+          // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for
+          // lookups. Using UnsanitizedText instances as keys in Soy maps would cause unexpected
+          // behavior (usually a failed map lookup), so don't generate signatures that allow it.
+          JsType keyTypeName =
+              keyKind == SoyType.Kind.STRING ? STRING_TYPE : forSoyType(keyType, isIncrementalDom);
+          JsType valueTypeName = forSoyType(mapType.getValueType(), isIncrementalDom);
+          return builder()
+              .addType(
+                  String.format(
+                      "!soy.map.Map<%s,%s>", keyTypeName.typeExpr(), valueTypeName.typeExpr()))
+              .addRequires(keyTypeName.getGoogRequires())
+              .addRequires(valueTypeName.getGoogRequires())
+              .addRequire(GoogRequire.create("soy.map"))
+              // TODO(b/69049599): need actual type predicate
+              .setPredicate(TypePredicate.NO_OP)
+              .build();
         }
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;
