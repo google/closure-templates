@@ -722,8 +722,7 @@ final class InferenceEngine {
                   + "' in context '"
                   + startContext.state
                   + "'.  This is no longer allowed, please migrate the callee to strict and "
-                  + "specify a content kind by adding a "
-                  + "kind=\"(html|attributes|js|css|uri)\" attribute to the callee",
+                  + "specify a content kind by adding a kind attribute to the callee",
               callNode);
         }
         inferences.cloneTemplates(baseName, newCalleeName, callNode);

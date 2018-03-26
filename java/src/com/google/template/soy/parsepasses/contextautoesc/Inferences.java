@@ -251,8 +251,7 @@ final class Inferences {
                 + baseName
                 + "' contains HTML nodes but does not specify the kind. "
                 + "This is no longer allowed, please migrate the template to strict and "
-                + "specify a content kind by adding a "
-                + "kind=\"(html|attributes|js|css|uri)\" attribute",
+                + "specify a content kind by adding a kind attribute",
             callNode);
       }
       SoyFileHeaderInfo soyFileHeaderInfo = tn.getSoyFileHeaderInfo();
