@@ -153,20 +153,22 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testStringTypeIsInstance() {
-    assertIsInstance(StringType.getInstance(), STRING_DATA);
+    assertIsInstance(
+        StringType.getInstance(),
+        STRING_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
     assertIsNotInstance(
         StringType.getInstance(),
         NULL_DATA,
         BOOLEAN_DATA,
         INTEGER_DATA,
-        HTML_DATA,
         LIST_DATA,
         MAP_DATA,
-        ATTRIBUTES_DATA,
-        CSS_DATA,
-        URI_DATA,
-        TRUSTED_RESOURCE_URI_DATA,
-        JS_DATA,
         DICT_DATA);
   }
 
@@ -378,21 +380,17 @@ public class TofuTypeChecksTest {
   @Test
   public void testUnionTypeIsInstance() {
     SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
-    assertIsInstance(utype, INTEGER_DATA, STRING_DATA);
-    assertIsNotInstance(
+    assertIsInstance(
         utype,
+        INTEGER_DATA,
+        STRING_DATA,
         HTML_DATA,
         ATTRIBUTES_DATA,
         CSS_DATA,
         URI_DATA,
         TRUSTED_RESOURCE_URI_DATA,
-        JS_DATA,
-        NULL_DATA,
-        BOOLEAN_DATA,
-        FLOAT_DATA,
-        LIST_DATA,
-        MAP_DATA,
-        DICT_DATA);
+        JS_DATA);
+    assertIsNotInstance(utype, NULL_DATA, BOOLEAN_DATA, FLOAT_DATA, LIST_DATA, MAP_DATA, DICT_DATA);
   }
 
   private static void assertIsInstance(SoyType type, SoyValue... values) {

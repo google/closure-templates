@@ -29,6 +29,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -44,7 +45,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Nullable private final ContentKind contentKind;
 
   // Will be either a SanitizedContent or a StringData.
-  private SoyValue resolvedValue;
+  private SoyString resolvedValue;
   private BufferingAppendable buffer;
 
   // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
@@ -58,7 +59,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   @Override
   public final SoyValue resolve() {
     checkState(isDone(), "called resolve() before status() returned ready.");
-    SoyValue local = getResolvedValue();
+    SoyString local = getResolvedValue();
     checkState(
         local != TombstoneValue.INSTANCE,
         "called resolve() after calling renderAndResolve with isLast == true");
@@ -114,8 +115,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     return resolvedValue != null || buffer != null;
   }
 
-  private SoyValue getResolvedValue() {
-    SoyValue local = resolvedValue;
+  private SoyString getResolvedValue() {
+    SoyString local = resolvedValue;
     if (local == null) {
       if (buffer != null) {
         String string = buffer.toString();

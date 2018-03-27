@@ -26,16 +26,13 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -102,8 +99,7 @@ final class ChangeNewlineToBrDirective
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
-        UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
-        JbcSrcMethods.CHANGE_NEWLINE_TO_BR.invoke(value.box()));
+        StringType.getInstance(), JbcSrcMethods.CHANGE_NEWLINE_TO_BR.invoke(value.box()));
   }
 
   @Override

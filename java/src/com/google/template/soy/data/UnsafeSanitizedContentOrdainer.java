@@ -73,9 +73,6 @@ public final class UnsafeSanitizedContentOrdainer {
    * constants in your code.
    */
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
-    if (kind == ContentKind.TEXT) {
-      return UnsanitizedString.create(value, dir);
-    }
     return SanitizedContent.create(value, kind, dir);
   }
 }

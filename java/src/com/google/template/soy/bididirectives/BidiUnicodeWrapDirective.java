@@ -30,9 +30,7 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDire
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -100,7 +98,7 @@ final class BidiUnicodeWrapDirective
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
-        UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
+        StringType.getInstance(),
         JbcSrcMethods.BIDI_UNICODE_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
   }
 

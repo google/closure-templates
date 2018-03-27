@@ -35,9 +35,7 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -116,7 +114,7 @@ final class InsertWordBreaksDirective
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
-        UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
+        StringType.getInstance(),
         JbcSrcMethods.INSERT_WORD_BREAKS.invoke(
             value.box(),
             BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE)));

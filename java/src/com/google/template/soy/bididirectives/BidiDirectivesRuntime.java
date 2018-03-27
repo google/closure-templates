@@ -28,6 +28,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiFormatter.BidiWrappingText;
@@ -40,7 +41,7 @@ public final class BidiDirectivesRuntime {
 
   private BidiDirectivesRuntime() {}
 
-  public static SoyValue bidiUnicodeWrap(BidiGlobalDir dir, SoyValue value) {
+  public static SoyString bidiUnicodeWrap(BidiGlobalDir dir, SoyValue value) {
     // normalize null between tofu and jbcsrc
     value = value == null ? NullData.INSTANCE : value;
     ContentKind valueKind = null;

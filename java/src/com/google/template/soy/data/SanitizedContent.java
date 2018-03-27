@@ -32,6 +32,7 @@ import com.google.common.html.types.SafeUrls;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.html.types.UncheckedConversions;
+import com.google.template.soy.data.restricted.SoyString;
 import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -44,7 +45,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @ParametersAreNonnullByDefault
 @Immutable
-public class SanitizedContent extends SoyData {
+public class SanitizedContent extends SoyData implements SoyString {
   /**
    * Creates a SanitizedContent object.
    *
@@ -140,10 +141,10 @@ public class SanitizedContent extends SoyData {
   private final String content;
 
   /**
-   * Package private constructor to limit subclasses to this file. This is important to ensure that
-   * all implementations of this class are fully vetted by security.
+   * Private constructor to limit subclasses to this file. This is important to ensure that all
+   * implementations of this class are fully vetted by security.
    */
-  SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+  private SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
     this.content = content;
     this.contentKind = contentKind;
     this.contentDir = contentDir;

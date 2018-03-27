@@ -741,9 +741,8 @@ public class BytecodeCompilerTest {
             "  {$content ?: 'empty' |escapeHtml}",
             "{/template}");
     subject.rendersAs("empty");
-    subject.failsToRenderWith(
-        ClassCastException.class,
-        ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
+    subject.rendersAs(
+        "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
   }
 
   private Object getField(String name, CompiledTemplate template) throws Exception {

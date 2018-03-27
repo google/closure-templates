@@ -17,10 +17,9 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -74,7 +73,7 @@ final class StrLenFunction extends TypedSoyFunction
     SoyValue arg0 = args.get(0);
 
     Preconditions.checkArgument(
-        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
+        arg0 instanceof SoyString,
         "First argument to strLen() function is not StringData or SanitizedContent: %s",
         arg0);
 
