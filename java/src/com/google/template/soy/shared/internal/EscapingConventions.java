@@ -1200,7 +1200,7 @@ public final class EscapingConventions {
           Pattern.compile(
               "^"
                   // Disallow special element names.
-                  + "(?!link|script|style|title|textarea|xmp|no)"
+                  + "(?!base|iframe|link|no|script|style|textarea|title|xmp)"
                   + "[a-z0-9_$:-]*\\z",
               Pattern.CASE_INSENSITIVE),
           null);

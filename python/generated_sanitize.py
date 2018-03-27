@@ -218,7 +218,7 @@ _FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+
 
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!link|script|style|title|textarea|xmp|no)[a-z0-9_$:-]*\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
 def escape_html_helper(value):
   value = str(value)
