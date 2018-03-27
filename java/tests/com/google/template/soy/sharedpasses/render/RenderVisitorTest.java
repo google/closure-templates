@@ -1608,9 +1608,10 @@ public class RenderVisitorTest {
       assertThat(outputSb.toString()).isEqualTo("Before: ");
       assertThat(e)
           .hasMessageThat()
-          .contains(
-              "Parameter type mismatch: attempt to bind value 'hello world' to parameter "
-                  + "'foo' which has declared type 'int'");
+          .isEqualTo(
+              "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
+                  + "'hello world' (a StringData) to parameter "
+                  + "'foo' which has a declared type of 'int'.");
     }
   }
 

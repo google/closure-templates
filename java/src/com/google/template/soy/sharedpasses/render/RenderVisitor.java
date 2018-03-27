@@ -896,9 +896,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       throw RenderException.createWithSource(
           "Parameter type mismatch: attempt to bind value '"
               + (value instanceof UndefinedData ? "(undefined)" : value)
-              + "' to parameter '"
+              + "' (a "
+              + value.getClass().getSimpleName()
+              + ") to parameter '"
               + param.name()
-              + "' which has declared type '"
+              + "' which has a declared type of '"
               + param.type()
               + "'.",
           node);
