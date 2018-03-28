@@ -98,7 +98,7 @@ public class SoyTypesTest {
     assertThatSoyType("string").isNotAssignableFrom("html");
     assertThatSoyType("string").isNotAssignableFrom("css");
     assertThatSoyType("string").isNotAssignableFrom("uri");
-    assertThatSoyType("string").isNotAssignableFrom("trusted_resource_url");
+    assertThatSoyType("string").isNotAssignableFrom("trusted_resource_uri");
     assertThatSoyType("string").isNotAssignableFrom("attributes");
     assertThatSoyType("string").isNotAssignableFrom("js");
 
@@ -114,9 +114,9 @@ public class SoyTypesTest {
     assertThatSoyType("uri").isNotAssignableFrom("int");
     assertThatSoyType("uri").isNotAssignableFrom("html");
 
-    assertThatSoyType("trusted_resource_url").isAssignableFrom("trusted_resource_url");
-    assertThatSoyType("trusted_resource_url").isNotAssignableFrom("int");
-    assertThatSoyType("trusted_resource_url").isNotAssignableFrom("html");
+    assertThatSoyType("trusted_resource_uri").isAssignableFrom("trusted_resource_uri");
+    assertThatSoyType("trusted_resource_uri").isNotAssignableFrom("int");
+    assertThatSoyType("trusted_resource_uri").isNotAssignableFrom("html");
 
     assertThatSoyType("attributes").isAssignableFrom("attributes");
     assertThatSoyType("attributes").isNotAssignableFrom("int");

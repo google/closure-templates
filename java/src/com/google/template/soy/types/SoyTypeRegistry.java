@@ -136,7 +136,6 @@ public class SoyTypeRegistry {
     BAD_MAP_KEY_TYPE = SoyErrorKind.of(sb.toString());
   }
 
-  // TODO(shwetakarwa): Rename consistently to use "URL".
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
           .put("?", UnknownType.getInstance())
@@ -151,6 +150,8 @@ public class SoyTypeRegistry {
           .put("attributes", AttributesType.getInstance())
           .put("css", CssType.getInstance())
           .put("uri", UriType.getInstance())
+          .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
+          // TODO(jakubvrana): Delete.
           .put("trusted_resource_url", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
           .build();

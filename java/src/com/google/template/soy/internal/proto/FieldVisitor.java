@@ -148,7 +148,7 @@ public abstract class FieldVisitor<T> {
   protected abstract T visitSafeUrl();
 
   /**
-   * Visits a TrustedResourceUrlProto field that should be interpreted as a soy trusted_resource_url
+   * Visits a TrustedResourceUrlProto field that should be interpreted as a soy trusted_resource_uri
    * object.
    */
   @ForOverride
