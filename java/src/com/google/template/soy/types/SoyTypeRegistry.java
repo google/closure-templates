@@ -151,6 +151,8 @@ public class SoyTypeRegistry {
           .put("css", CssType.getInstance())
           .put("uri", UriType.getInstance())
           .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
+          // TODO(jakubvrana): Delete.
+          .put("trusted_resource_url", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
           .build();
 
