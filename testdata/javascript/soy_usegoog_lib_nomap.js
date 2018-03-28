@@ -24235,7 +24235,7 @@ soydata.$$EMPTY_STRING_ = {
  * is not always safe and calls for careful review.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {!function(*, ?goog.i18n.bidi.Dir=): T} A factory that takes
+ * @return {function(*, ?goog.i18n.bidi.Dir=): T} A factory that takes
  *     content and an optional content direction and returns a new instance. If
  *     the content direction is undefined, ctor.prototype.contentDir is used.
  * @template T
@@ -24284,7 +24284,7 @@ soydata.$$makeSanitizedContentFactory_ = function(ctor) {
  * is not always safe and calls for careful review.
  *
  * @param {function(new: T, string)} ctor A constructor.
- * @return {!function(*): T} A factory that takes content and returns a new
+ * @return {function(*): T} A factory that takes content and returns a new
  *     instance (with default directionality, i.e. ctor.prototype.contentDir).
  * @template T
  * @private
@@ -24710,7 +24710,7 @@ soy.$$EMPTY_TEMPLATE_FN_ = function(
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {!function(*, ?goog.i18n.bidi.Dir=): (T|soydata.$$EMPTY_STRING_)}
+ * @return {function(*, ?goog.i18n.bidi.Dir=): (T|soydata.$$EMPTY_STRING_)}
  *     A factory that takes content and an optional content direction and
  *     returns a new instance, or an empty string. If the content direction is
  *     undefined, ctor.prototype.contentDir is used.
@@ -24767,7 +24767,7 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {!function(*): (T|soydata.$$EMPTY_STRING_)} A
+ * @return {function(*): (T|soydata.$$EMPTY_STRING_)} A
  *     factory that takes content and returns a
  *     new instance (with default directionality, i.e.
  *     ctor.prototype.contentDir), or an empty string.
@@ -25903,7 +25903,7 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
  * @param {boolean} condition The type check condition.
  * @param {string} paramName The Soy name of the parameter.
  * @param {?} param The JS object for the parameter.
- * @param {!string} jsDocTypeStr SoyDoc type str.
+ * @param {string} jsDocTypeStr SoyDoc type str.
  * @return {?} the param value
  * @throws {goog.asserts.AssertionError} When the condition evaluates to false.
  */
