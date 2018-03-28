@@ -113,8 +113,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -131,7 +129,6 @@ import javax.annotation.Nullable;
 public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Regex pattern to look for dots in a template name. */
-  private static final Pattern DOT = Pattern.compile("\\.");
 
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
@@ -415,7 +412,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       file.append('\n');
       addCodeToRequireJsFunctions(node);
     } else {
-      addCodeToDefineJsNamespaces(file, node);
+      throw new AssertionError("impossible");
     }
 
     // Add code for each template.
@@ -423,12 +420,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine().appendLine();
       visit(template);
     }
-    if (jsSrcOptions.shouldProvideRequireSoyNamespaces()
-        || jsSrcOptions.shouldProvideRequireJsFunctions()
-        || jsSrcOptions.shouldGenerateGoogModules()) {
-      // if none of these options are set, the user must not be using the closure dependency system.
-      jsCodeBuilder.appendGoogRequires(file);
-    }
+    jsCodeBuilder.appendGoogRequires(file);
     jsCodeBuilder.appendCode(file);
     jsFilesContents.add(file.toString());
     jsCodeBuilder = null;
@@ -451,39 +443,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // the future, this might be supported per function.
     for (String requiredCssNamespace : requiredCssNamespaces) {
       header.append(" * @requirecss {").append(requiredCssNamespace).append("}\n");
-    }
-  }
-
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to define JS namespaces.
-   *
-   * @param header
-   * @param soyFile The node we're visiting.
-   */
-  private void addCodeToDefineJsNamespaces(StringBuilder header, SoyFileNode soyFile) {
-
-    SortedSet<String> jsNamespaces = new TreeSet<>();
-    for (TemplateNode template : soyFile.getChildren()) {
-      String templateName = template.getTemplateName();
-      Matcher dotMatcher = DOT.matcher(templateName);
-      while (dotMatcher.find()) {
-        jsNamespaces.add(templateName.substring(0, dotMatcher.start()));
-      }
-    }
-
-    for (String jsNamespace : jsNamespaces) {
-      boolean hasDot = jsNamespace.indexOf('.') >= 0;
-      // If this is a top level namespace and the option to declare top level
-      // namespaces is turned off, skip declaring it.
-      if (jsSrcOptions.shouldDeclareTopLevelNamespaces() || hasDot) {
-        header
-            .append("if (typeof ")
-            .append(jsNamespace)
-            .append(" == 'undefined') { ")
-            .append(hasDot ? "" : "var ")
-            .append(jsNamespace)
-            .append(" = {}; }\n");
-      }
     }
   }
 

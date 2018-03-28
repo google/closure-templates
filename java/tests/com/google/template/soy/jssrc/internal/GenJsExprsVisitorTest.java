@@ -122,12 +122,11 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testPrint_nonExpr() {
 
-    String soyNodeCode = JOINER.join(
-        "{@param boo : string}",
-        "{(['a': 'b', $boo: 'c'])[$boo]}");
+    String soyNodeCode =
+        JOINER.join("{@param boo : string}", "{(quoteKeysIfJs(['a': 'b', $boo: 'c']))[$boo]}");
     String expectedGenCode =
         JOINER.join(
-            "var $tmp = {a: 'b'};",
+            "var $tmp = {'a': 'b'};",
             "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = 'c';",
             "$tmp[opt_data.boo];");
     assertGeneratedChunks(soyNodeCode, expectedGenCode);

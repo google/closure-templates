@@ -106,24 +106,24 @@ public final class TranslateExprNodeVisitorTest {
     SoyJsSrcOptions withCompiler = new SoyJsSrcOptions();
     withCompiler.setShouldProvideRequireSoyNamespaces(true);
 
-    // Non-identifier key without quoteKeysIfJs() is error only when using Closure Compiler.
-    assertThatSoyExpr("['0': 123, '1': $foo]")
+    assertThatSoyExpr("quoteKeysIfJs(['0': 123, '1': $foo])")
         .withJsSrcOptions(noCompiler)
         .generatesCode("{'0': 123, '1': opt_data.foo};");
 
+    // Non-identifier key without quoteKeysIfJs() is an error
     assertThatSoyExpr("['0': 123, '1': '123']")
         .withJsSrcOptions(withCompiler)
         .causesErrors(
             "Map literal with non-identifier key '0' must be wrapped in quoteKeysIfJs().",
             "Map literal with non-identifier key '1' must be wrapped in quoteKeysIfJs().");
 
-    // Expression key without quoteKeysIfJs() is error only when using Closure Compiler.
-    assertThatSoyExpr("['aaa': 123, $boo: $foo]")
+    assertThatSoyExpr("quoteKeysIfJs(['aaa': 123, $boo: $foo])")
         .withJsSrcOptions(noCompiler)
         .generatesCode(
-            "var $tmp = {aaa: 123};",
+            "var $tmp = {'aaa': 123};",
             "$tmp[soy.$$checkLegacyObjectMapLiteralKey(opt_data.boo)] = opt_data.foo;");
 
+    // Expression key without quoteKeysIfJs() is an error.
     assertThatSoyExpr("['aaa': 123, $boo: $foo, $moo: $goo]")
         .withJsSrcOptions(withCompiler)
         .causesErrors(

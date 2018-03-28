@@ -71,19 +71,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   private boolean shouldProvideRequireSoyNamespaces = false;
 
   @Option(
-    name = "--shouldDeclareTopLevelNamespaces",
-    usage =
-        "[Only applicable when generating regular JS code to define namespaces (i.e."
-            + " not generating goog.provide/goog.require).] When this option is set to"
-            + " false, each generated JS file will not attempt to declare the top-level"
-            + " name in its namespace, instead assuming the top-level name is already"
-            + " declared in the global scope. E.g. for namespace aaa.bbb, the code will not"
-            + " attempt to declare aaa, but will still define aaa.bbb if it's not already"
-            + " defined."
-  )
-  private boolean shouldDeclareTopLevelNamespaces = true;
-
-  @Option(
     name = "--locales",
     usage =
         "[Required for generating localized JS] Comma-delimited list of locales for"
@@ -203,7 +190,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
-    jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);

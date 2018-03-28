@@ -36,7 +36,6 @@ public final class SoyIncrementalDomSrcOptions {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
     jsSrcOptions.setShouldProvideRequireJsFunctions(false);
     jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
-    jsSrcOptions.setShouldDeclareTopLevelNamespaces(false);
     // Only goog.module generation supported
     jsSrcOptions.setShouldGenerateGoogModules(true);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(true);

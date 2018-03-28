@@ -115,28 +115,8 @@ public final class GenJsCodeVisitorTest {
 
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
-    // ------ Not using Closure ------
-    String expectedJsFileContentStart =
-        "// This file was automatically generated from no-path.\n"
-            + "// Please don't edit this file by hand.\n"
-            + "\n"
-            + "/**\n"
-            + " * @fileoverview Templates in namespace boo.foo.\n"
-            + " * @public\n"
-            + " */\n"
-            + "\n"
-            + "if (typeof boo == 'undefined') { var boo = {}; }\n"
-            + "if (typeof boo.foo == 'undefined') { boo.foo = {}; }\n"
-            + "\n"
-            + "\n";
-
-    List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
-    assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
-
     // ------ Using Closure, provide/require Soy namespaces ------
-    expectedJsFileContentStart =
+    String expectedJsFileContentStart =
         "// This file was automatically generated from no-path.\n"
             + "// Please don't edit this file by hand.\n"
             + "\n"
@@ -151,7 +131,7 @@ public final class GenJsCodeVisitorTest {
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsFilesContents =
+    List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
@@ -1338,7 +1318,6 @@ public final class GenJsCodeVisitorTest {
 
   @Test
   public void testGoogModuleGeneration() {
-    jsSrcOptions.setShouldDeclareTopLevelNamespaces(false);
     jsSrcOptions.setShouldGenerateGoogModules(true);
 
     String testFileContent =
