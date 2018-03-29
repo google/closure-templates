@@ -45,12 +45,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-final class BlessStringAsTrustedResourceUrlForLegacyDirective
+public final class BlessStringAsTrustedResourceUrlForLegacyDirective
     implements SoyJavaPrintDirective,
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
 
+  public static final String NAME = "|blessStringAsTrustedResourceUrlForLegacy";
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   @Inject
@@ -58,7 +59,7 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
 
   @Override
   public String getName() {
-    return "|blessStringAsTrustedResourceUrlForLegacy";
+    return NAME;
   }
 
   @Override

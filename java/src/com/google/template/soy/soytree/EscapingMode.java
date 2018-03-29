@@ -172,6 +172,11 @@ public enum EscapingMode {
     return DIRECTIVE_TO_ESCAPING_MODE.get(directiveName);
   }
 
+  @Override
+  public String toString() {
+    return directiveName;
+  }
+
   private static final Map<String, EscapingMode> DIRECTIVE_TO_ESCAPING_MODE;
 
   static {

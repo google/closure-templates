@@ -538,7 +538,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testJsStringInsideQuotesRejected() throws Exception {
     assertRewriteFails(
-        "Escaping modes [ESCAPE_JS_VALUE] not compatible with" + " (Context JS_SQ_STRING).",
+        "Escaping modes [|escapeJsValue] not compatible with (Context JS_SQ_STRING).",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -1268,6 +1268,41 @@ public final class ContextualAutoescaperTest {
             "?q={$query |blessStringAsTrustedResourceUrlForLegacy}",
             "#{$fragment |blessStringAsTrustedResourceUrlForLegacy}'></script>",
             "{/template}\n"));
+  }
+
+  @Test
+  public void testBlessStringAsTrustedResourceUrlForLegacy_inTrustedResourceBlock()
+      throws Exception {
+    // |blessStringAsTrustedResourceUrlForLegacy only does something when it is at the start of a
+    // uri.  In other positions it is meaningless.
+    // TODO(b/77160591): Consider reporting an error when this bless directive is used incorrectly.
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param p: ?}\n",
+            "{let $t1 kind=\"trusted_resource_uri\"}",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |filterNormalizeUri}/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "{/let}",
+            "{let $t2 kind=\"trusted_resource_uri\"}",
+            "//foo.com/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "{/let}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param p: ?}\n",
+            "{let $t1 kind=\"trusted_resource_uri\"}",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}",
+            "{/let}",
+            "{let $t2 kind=\"trusted_resource_uri\"}",
+            "//foo.com/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}",
+            "{/let}\n",
+            "{/template}"));
   }
 
   @Test
@@ -2825,7 +2860,7 @@ public final class ContextualAutoescaperTest {
         // this with two things to check.
         // TODO(gboyer): Once 100% of the contextual autoescaper's errors are migrated to the error
         // reporter, we can stop throwing and simply add explicit checks in the cases.
-        throw new RewriteError(message);
+        throw new RewriteError(soyError, message);
       } else {
         throw new IllegalStateException("Unexpected error: " + message);
       }
@@ -2834,9 +2869,13 @@ public final class ContextualAutoescaperTest {
   }
 
   private static final class RewriteError extends RuntimeException {
+    final SoyError error;
+    final String origMessage;
 
-    RewriteError(String error) {
-      super(error);
+    RewriteError(SoyError error, String message) {
+      super(error.toString());
+      this.error = error;
+      this.origMessage = message;
     }
   }
 
@@ -2855,8 +2894,8 @@ public final class ContextualAutoescaperTest {
       rewrite(inputs);
       fail();
     } catch (RewriteError ex) {
-      if (msg != null && !msg.equals(ex.getMessage())) {
-        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, ex.getMessage());
+      if (msg != null && !msg.equals(ex.origMessage)) {
+        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, ex.origMessage);
         comparisonFailure.initCause(ex);
         throw comparisonFailure;
       }
