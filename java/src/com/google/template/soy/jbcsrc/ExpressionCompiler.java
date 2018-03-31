@@ -33,7 +33,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -90,7 +89,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
@@ -691,8 +689,6 @@ final class ExpressionCompiler {
       // 1. expose the 'non-null' prover from ResolveExpressionTypesVisitor, this can in fact be
       //    relied on.  However it is currently mixed in with other parts of the type system which
       //    cannot be trusted
-      // 2. compute a least common upper bound for these types. At least that way we would preserve
-      //    more type information
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
       if (typesEqual) {
         if (trueBranch.isBoxed() == falseBranch.isBoxed()) {
@@ -701,12 +697,13 @@ final class ExpressionCompiler {
         SoyExpression boxedTrue = trueBranch.box();
         return boxedTrue.withSource(ternary(condition, boxedTrue, falseBranch.box()));
       }
+      Type boxedRuntimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
       return SoyExpression.forSoyValue(
-          UnknownType.getInstance(),
+          node.getType(),
           ternary(
               condition,
-              trueBranch.box().checkedCast(SoyValue.class),
-              falseBranch.box().checkedCast(SoyValue.class)));
+              trueBranch.box().checkedCast(boxedRuntimeType),
+              falseBranch.box().checkedCast(boxedRuntimeType)));
     }
 
     @Override
