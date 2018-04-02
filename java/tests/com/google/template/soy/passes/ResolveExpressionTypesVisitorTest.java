@@ -69,10 +69,8 @@ public final class ResolveExpressionTypesVisitorTest {
 
   private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
 
-  private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
-      SyntaxVersion declaredSyntaxVersion) {
-    return new ResolveExpressionTypesVisitor(
-        TYPE_REGISTRY, declaredSyntaxVersion, ErrorReporter.exploding());
+  private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor() {
+    return new ResolveExpressionTypesVisitor(TYPE_REGISTRY, ErrorReporter.exploding());
   }
 
   @Test
@@ -234,30 +232,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pa: ?}",
                     "{@param pi: int}",
                     "{@param pf: float}",
-                    "{assertType('?', $pa and $pa)}",
-                    "{assertType('?', $pi and $pi)}",
-                    "{assertType('?', $pf and $pf)}",
-                    "{assertType('?', $pa or $pa)}",
-                    "{assertType('?', $pi or $pi)}",
-                    "{assertType('?', $pf or $pf)}",
-                    "{assertType('bool', not $pa)}",
-                    "{assertType('bool', not $pi)}",
-                    "{assertType('bool', not $pf)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
-    createResolveExpressionTypesVisitor(SyntaxVersion.V2_0).exec(soyTree);
-    assertTypes(soyTree);
-
-    soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
-                    "{@param pa: ?}",
-                    "{@param pi: int}",
-                    "{@param pf: float}",
                     "{assertType('bool', $pa and $pa)}",
                     "{assertType('bool', $pi and $pi)}",
                     "{assertType('bool', $pf and $pf)}",
@@ -267,13 +241,13 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('bool', not $pa)}",
                     "{assertType('bool', not $pi)}",
                     "{assertType('bool', not $pf)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_3)
+            .declaredSyntaxVersion(SyntaxVersion.V1_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
     new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
-    createResolveExpressionTypesVisitor(SyntaxVersion.V2_3).exec(soyTree);
+    createResolveExpressionTypesVisitor().exec(soyTree);
     assertTypes(soyTree);
   }
 

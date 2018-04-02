@@ -25,23 +25,6 @@ while still need a way for legacy templates to get V1 behavior (more on this
 [below](#v1_language_features), but all other uses for `SyntaxVersion` should be
 able to be eliminated.
 
-### Eliminate V2_3
-
-2.3 changes the type checking on the boolean logical operators to result in
-`bool` types expressions instead of `?` types. The issue here is that different
-backends implement the logical operators differently. Specifically, jssrc uses
-the JS `||` operator to implement Soy `or`; this means that the soy expression
-`$a or $b` compiles to `opt_data['a'] || opt_data['a']` in jssrc but it compiles
-to something like `a.coerceToBoolean() || b.coerceToBoolean()` in Tofu and
-jbcsrc.
-
-The new type checks in 2.3 try to make this issue more obvious. So to eliminate
-this I think we need to either
-
-*   change the jssrc code generation to something like `!!opt_data['a'] ||
-    !!opt_data['a']` to force boolean coercions
-*   just allow js and everything else to be different
-
 ### Eliminate V2_4
 
 There isn't much to this since no additional language checks are enabled. But

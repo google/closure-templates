@@ -412,10 +412,7 @@ public final class PassManager {
   private final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      // Needs the syntax version to decide
-      // 1. whether the type of boolean operators is bool
-      // 2. whether to allow printing bools
-      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
+      new ResolveExpressionTypesVisitor(registry, errorReporter).exec(file);
     }
   }
 

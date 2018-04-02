@@ -25,8 +25,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
@@ -183,9 +181,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
 
-  /** User-declared syntax version. */
-  private final SyntaxVersion declaredSyntaxVersion;
-
   private final ErrorReporter errorReporter;
   /** Type registry. */
   private final SoyTypeRegistry typeRegistry;
@@ -197,11 +192,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   ResolveExpressionTypesVisitor(
       SoyTypeRegistry typeRegistry,
-      SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   @Override
@@ -212,23 +205,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitPrintNode(PrintNode node) {
     visitSoyNode(node);
-
-    ExprRootNode expr = node.getExpr();
-    if (expr != null && expr.getType().equals(BoolType.getInstance())) {
-      String errorMsg = "Bool values can no longer be printed";
-      // Append some possibly helpful info in the case that the expr's top level is the 'or'
-      // operator and the declaredSyntaxVersion is 2.3+ (meaning we resolved the 'or' output to be
-      // type bool).
-      if (declaredSyntaxVersion.num >= SyntaxVersion.V2_3.num
-          && expr.getRoot() instanceof OrOpNode) {
-        errorMsg +=
-            " (if you're intending the 'or' operator to return one of the operands"
-                + " instead of bool, please use the binary null-coalescing operator '?:' instead)";
-      }
-      errorMsg += ".";
-      node.maybeSetSyntaxVersionUpperBound(
-          new SyntaxVersionUpperBound(SyntaxVersion.V2_3, errorMsg));
-    }
   }
 
   @Override
@@ -667,7 +643,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       // Restore substitutions to previous state
       substitutions = savedSubstitutionState;
 
-      markLogicalOpType(node);
+      node.setType(BoolType.getInstance());
     }
 
     @Override
@@ -689,7 +665,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       // Restore substitutions to previous state
       substitutions = savedSubstitutionState;
 
-      markLogicalOpType(node);
+      node.setType(BoolType.getInstance());
     }
 
     @Override
@@ -897,17 +873,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         node.setType(ErrorType.getInstance());
       } else {
         node.setType(type);
-      }
-    }
-
-    private void markLogicalOpType(AbstractOperatorNode node) {
-      if (declaredSyntaxVersion.num >= SyntaxVersion.V2_3.num) {
-        node.setType(BoolType.getInstance());
-      } else {
-        // In legacy Soy behavior, depending on the language, the 'and' and 'or' operators may
-        // return a bool or may return the left or right hand value. So in this case we'll just give
-        // up and return unknown type.
-        node.setType(UnknownType.getInstance());
       }
     }
 
