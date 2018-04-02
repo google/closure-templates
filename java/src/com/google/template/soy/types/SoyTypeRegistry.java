@@ -16,12 +16,13 @@
 
 package com.google.template.soy.types;
 
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
@@ -59,7 +60,6 @@ import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -119,22 +119,10 @@ public class SoyTypeRegistry {
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
-  // TODO(b/72409542): consider allowing string|int
-  public static final ImmutableSet<SoyType.Kind> ALLOWED_MAP_KEY_TYPES =
-      ImmutableSet.of(Kind.BOOL, Kind.INT, Kind.STRING, Kind.PROTO_ENUM);
-
-  private static final SoyErrorKind BAD_MAP_KEY_TYPE;
-
-  static {
-    StringBuilder sb =
-        new StringBuilder("''{0}'' is not allowed as a map key type. Allowed map key types: ");
-    ImmutableList<SoyType.Kind> allowed = ALLOWED_MAP_KEY_TYPES.asList();
-    for (int i = 0; i < allowed.size() - 1; ++i) {
-      sb.append(allowed.get(i).toString().toLowerCase()).append(", ");
-    }
-    sb.append(allowed.get(allowed.size() - 1).toString().toLowerCase()).append(".");
-    BAD_MAP_KEY_TYPE = SoyErrorKind.of(sb.toString());
-  }
+  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
+      SoyErrorKind.of(
+          "''{0}'' is not allowed as a map key type. Allowed map key types: "
+              + "bool, int, number, string, proto enum.");
 
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
@@ -145,7 +133,7 @@ public class SoyTypeRegistry {
           .put("int", IntType.getInstance())
           .put("float", FloatType.getInstance())
           .put("string", StringType.getInstance())
-          .put("number", SoyTypes.NUMBER_TYPE)
+          .put("number", NUMBER_TYPE)
           .put("html", HtmlType.getInstance())
           .put("attributes", AttributesType.getInstance())
           .put("css", CssType.getInstance())
@@ -392,7 +380,7 @@ public class SoyTypeRegistry {
             void checkPermissibleGenericTypes(
                 List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {
               SoyType keyType = types.get(0);
-              if (!ALLOWED_MAP_KEY_TYPES.contains(keyType.getKind())) {
+              if (!MapType.isAllowedKeyType(keyType)) {
                 errorReporter.report(typeNodes.get(0).sourceLocation(), BAD_MAP_KEY_TYPE, keyType);
               }
             }

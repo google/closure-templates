@@ -54,7 +54,6 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -303,7 +302,7 @@ final class JsType {
           MapType mapType = (MapType) soyType;
           SoyType keyType = mapType.getKeyType();
           SoyType.Kind keyKind = keyType.getKind();
-          Preconditions.checkState(SoyTypeRegistry.ALLOWED_MAP_KEY_TYPES.contains(keyKind));
+          Preconditions.checkState(MapType.isAllowedKeyType(keyType));
           // Soy key type of string should translate to a JS key type of string.
           // forSoyType(StringType.getInstance()) normally translates to
           // string|!goog.soy.data.UnsanitizedText, but ES6 Maps always use instance equality for
