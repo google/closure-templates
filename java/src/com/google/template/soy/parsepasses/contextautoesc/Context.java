@@ -1197,6 +1197,9 @@ public final class Context {
         case "style":
           elType = ElementType.STYLE;
           break;
+        case "base":
+          elType = ElementType.BASE;
+          break;
         case "link":
           elType = ElementType.LINK_EXECUTABLE;
           HtmlAttributeNode rel = node.getDirectAttributeNamed("rel");
@@ -1255,6 +1258,7 @@ public final class Context {
         break;
         // All normal or void tags fit here.
       case NORMAL:
+      case BASE:
       case LINK_EXECUTABLE:
       case MEDIA:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
@@ -1355,6 +1359,9 @@ public final class Context {
       // link attributes
       attr = Context.AttributeType.URI;
       uriType = Context.UriType.TRUSTED_RESOURCE;
+    } else if (elType == ElementType.BASE && "href".equals(attrName)) {
+      attr = Context.AttributeType.URI;
+      uriType = Context.UriType.TRUSTED_RESOURCE_BLOCK;
     } else if (URI_ATTR_NAMES.contains(localName)
         || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
         || "xmlns".equals(attrName)
@@ -1391,6 +1398,9 @@ public final class Context {
 
     /** A style element whose content is raw CSS. */
     STYLE,
+
+    /** A base element, so that we can process the href attribute specially. */
+    BASE,
 
     /** A textarea element whose content is encoded HTML but which cannot contain elements. */
     TEXTAREA,

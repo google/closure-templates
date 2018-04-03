@@ -158,7 +158,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "Error while re-contextualizing template ns.uri "
             + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
-            + "- In file no-path:8:2, template ns.uri__C113717: Soy can't prove this URI has a "
+            + "- In file no-path:8:2, template ns.uri__C113737: Soy can't prove this URI has a "
             + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
             + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
             + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
@@ -239,8 +239,8 @@ public final class ContextualAutoescaperTest {
             "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
             "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
-            "<script src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'",
-            "></script>\n",
+            "<base href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<script src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -258,6 +258,7 @@ public final class ContextualAutoescaperTest {
             "<video src='{$x}'></video>\n",
             "<source src='{$x}'>\n",
             "<audio src='{$x}'></audio>\n",
+            "<base href='{$x}'>\n",
             "<script src='{$x}'></script>",
             "{/template}\n"));
   }
