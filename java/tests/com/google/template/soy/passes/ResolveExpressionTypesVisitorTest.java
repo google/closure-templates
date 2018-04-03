@@ -722,6 +722,24 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
+  public void testConcatLists() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{assertType('list<string>', concatLists(['1'], ['2']))}",
+                    "{assertType('list<int>', concatLists([1], [2]))}",
+                    "{assertType('list<int>', concatLists([1], []))}",
+                    "{assertType('list<int>', concatLists([], [1]))}",
+                    "{assertType('list<int>', concatLists(true ? [] : [1], [2]))}",
+                    "{assertType('list<null>', concatLists([], []))}",
+                    "{assertType('list<int|string>', concatLists([1], [\"2\"]))}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testMapKeys() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(

@@ -23,6 +23,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -57,6 +58,15 @@ public final class BasicFunctionsRuntime {
     } else {
       return (long) Math.ceil(arg.floatValue());
     }
+  }
+
+  /** Concatenates its arguments. */
+  public static List<SoyValueProvider> concatLists(List<SoyList> args) {
+    ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
+    for (SoyList soyList : args) {
+      flattened.addAll(soyList.asJavaList());
+    }
+    return flattened.build();
   }
 
   /**

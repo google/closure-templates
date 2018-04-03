@@ -23,8 +23,10 @@ import static com.google.template.soy.exprtree.ExprNode.Kind.MAP_LITERAL_NODE;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
@@ -1260,6 +1262,32 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         } else {
           node.setType(UnknownType.getInstance());
         }
+      } else if (fn instanceof ConcatListsFunction) {
+        boolean allTypesValid = true;
+        ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
+        for (ExprNode childNode : node.getChildren()) {
+          allTypesValid =
+              checkArgType(childNode, ListType.ANY_LIST, node, UnknownPolicy.DISALLOWED);
+          if (!allTypesValid) {
+            break;
+          }
+          SoyType elementType = ((ListType) childNode.getType()).getElementType();
+          if (elementType != null) { // Empty lists have no element type
+            elementTypesBuilder.add(elementType);
+          }
+        }
+
+        if (allTypesValid) {
+          ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
+          node.setType(
+              elementTypes.isEmpty()
+                  ? ListType.EMPTY_LIST
+                  : typeRegistry.getOrCreateListType(
+                      typeRegistry.getOrCreateUnionType(elementTypes)));
+        } else {
+          node.setType(UnknownType.getInstance());
+        }
+
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.

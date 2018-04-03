@@ -28,6 +28,7 @@ import java.util.Objects;
 public final class ListType extends SoyType {
 
   public static final ListType EMPTY_LIST = new ListType(null);
+  public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
 
   private final SoyType elementType;
 

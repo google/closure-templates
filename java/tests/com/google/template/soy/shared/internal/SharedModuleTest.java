@@ -50,7 +50,7 @@ public final class SharedModuleTest {
   // These functions have special handling in the ResolveExpressionTypesVisitor and so don't
   // implement TypedSoyFunction
   private static final ImmutableSet<String> FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING =
-      ImmutableSet.of("mapKeys", "legacyObjectMapToMap", "mapToLegacyObjectMap");
+      ImmutableSet.of("concatLists", "mapKeys", "legacyObjectMapToMap", "mapToLegacyObjectMap");
 
   private Injector injector;
 
