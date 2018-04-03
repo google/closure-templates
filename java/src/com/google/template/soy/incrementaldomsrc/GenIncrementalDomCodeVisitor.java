@@ -666,7 +666,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitVeLogNode(VeLogNode node) {
     if (node.getLogonlyExpression() != null) {
       TranslateExprNodeVisitor visitor =
-          new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter);
+          new TranslateExprNodeVisitor(templateTranslationContext, errorReporter);
       CodeChunk.WithValue isLogOnly = visitor.exec(node.getLogonlyExpression());
       CodeChunk.WithValue errorMessage =
           CodeChunk.stringLiteral(

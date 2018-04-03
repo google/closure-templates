@@ -19,7 +19,6 @@ package com.google.template.soy.incrementaldomsrc;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
@@ -37,10 +36,9 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
 
     @SuppressWarnings("unchecked")
     GenIncrementalDomExprsVisitorFactory(
-        SoyJsSrcOptions options,
         Supplier<IncrementalDomGenCallCodeUtils> genCallCodeUtils,
         IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor) {
-      super(options, (Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
+      super((Supplier) genCallCodeUtils, isComputableAsJsExprsVisitor);
     }
 
     @Override
@@ -49,7 +47,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
         TemplateAliases templateAliases,
         ErrorReporter errorReporter) {
       return new GenIncrementalDomExprsVisitor(
-          options,
           (IncrementalDomGenCallCodeUtils) genCallCodeUtils.get(),
           (IsComputableAsIncrementalDomExprsVisitor) isComputableAsJsExprsVisitor,
           this,
@@ -60,7 +57,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
   }
 
   public GenIncrementalDomExprsVisitor(
-      SoyJsSrcOptions options,
       IncrementalDomGenCallCodeUtils genCallCodeUtils,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
@@ -68,7 +64,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
       ErrorReporter errorReporter,
       TemplateAliases templateAliases) {
     super(
-        options,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         genIncrementalDomExprsVisitorFactory,

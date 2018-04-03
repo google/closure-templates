@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Supplier;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 
 /**
@@ -28,15 +27,15 @@ final class JsSrcTestUtils {
 
   private JsSrcTestUtils() {}
 
-  static GenJsExprsVisitorFactory createGenJsExprsVisitorFactory(SoyJsSrcOptions options) {
-    return createObjects(options).factory;
+  static GenJsExprsVisitorFactory createGenJsExprsVisitorFactory() {
+    return createObjects().factory;
   }
 
-  static GenCallCodeUtils createGenCallCodeUtils(SoyJsSrcOptions options) {
-    return createObjects(options).utils.get();
+  static GenCallCodeUtils createGenCallCodeUtils() {
+    return createObjects().utils.get();
   }
 
-  private static Objects createObjects(final SoyJsSrcOptions options) {
+  private static Objects createObjects() {
     final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
@@ -45,13 +44,12 @@ final class JsSrcTestUtils {
 
       @Override
       public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(
-            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new Objects(supplier, genJsExprsVisitorFactory);

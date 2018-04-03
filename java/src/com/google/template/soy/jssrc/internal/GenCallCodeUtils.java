@@ -31,7 +31,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -55,8 +54,6 @@ import java.util.List;
  */
 public class GenCallCodeUtils {
 
-  private final SoyJsSrcOptions options;
-
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
@@ -67,11 +64,9 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   protected GenCallCodeUtils(
-      SoyJsSrcOptions options,
       DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.options = options;
     this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -145,8 +140,7 @@ public class GenCallCodeUtils {
       } else {
         // Case 2b: Delegate call with variant expression.
         variant =
-            new TranslateExprNodeVisitor(options, translationContext, errorReporter)
-                .exec(variantSoyExpr);
+            new TranslateExprNodeVisitor(translationContext, errorReporter).exec(variantSoyExpr);
       }
 
       callee =
@@ -244,7 +238,7 @@ public class GenCallCodeUtils {
       dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.isPassingData()) {
       dataToPass =
-          new TranslateExprNodeVisitor(options, translationContext, errorReporter)
+          new TranslateExprNodeVisitor(translationContext, errorReporter)
               .exec(callNode.getDataExpr());
     } else {
       dataToPass = LITERAL_NULL;
@@ -265,8 +259,7 @@ public class GenCallCodeUtils {
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
         CodeChunk.WithValue value =
-            new TranslateExprNodeVisitor(options, translationContext, errorReporter)
-                .exec(cpvn.getExpr());
+            new TranslateExprNodeVisitor(translationContext, errorReporter).exec(cpvn.getExpr());
         values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;

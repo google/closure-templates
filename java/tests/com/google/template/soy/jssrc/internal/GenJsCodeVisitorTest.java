@@ -1402,7 +1402,7 @@ public final class GenJsCodeVisitorTest {
             nameGenerator);
     genJsCodeVisitor.templateTranslationContext = translationContext;
     genJsCodeVisitor.genJsExprsVisitor =
-        JsSrcTestUtils.createGenJsExprsVisitorFactory(jsSrcOptions)
+        JsSrcTestUtils.createGenJsExprsVisitorFactory()
             .create(translationContext, TEMPLATE_ALIASES, ErrorReporter.exploding());
     genJsCodeVisitor.assistantForMsgs = null; // will be created when used
 

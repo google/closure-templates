@@ -30,7 +30,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -218,8 +217,7 @@ public final class GenCallCodeUtilsTest {
     callNode.setEscapingDirectives(
         escapingDirectives.stream().map(directives::get).collect(toImmutableList()));
 
-    GenCallCodeUtils genCallCodeUtils =
-        JsSrcTestUtils.createGenCallCodeUtils(new SoyJsSrcOptions());
+    GenCallCodeUtils genCallCodeUtils = JsSrcTestUtils.createGenCallCodeUtils();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     CodeChunk call =
         genCallCodeUtils.gen(

@@ -1078,8 +1078,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private CodeChunk.WithValue translateExpr(ExprNode expr) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
-        .exec(expr);
+    return new TranslateExprNodeVisitor(templateTranslationContext, errorReporter).exec(expr);
   }
 
   /**

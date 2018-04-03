@@ -28,7 +28,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -300,7 +299,7 @@ public final class GenJsExprsVisitorTest {
 
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     GenJsExprsVisitor visitor =
-        JsSrcTestUtils.createGenJsExprsVisitorFactory(new SoyJsSrcOptions())
+        JsSrcTestUtils.createGenJsExprsVisitorFactory()
             .create(
                 TranslationContext.of(
                     SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),

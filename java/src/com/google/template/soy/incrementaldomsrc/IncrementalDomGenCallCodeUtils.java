@@ -17,7 +17,6 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.GenIncrementalDomExprsVisitorFactory;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -30,12 +29,10 @@ import com.google.template.soy.soytree.CallParamContentNode;
 final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
 
   IncrementalDomGenCallCodeUtils(
-      SoyJsSrcOptions options,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsIncrementalDomExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory) {
     super(
-        options,
         incrementalDomDelTemplateNamer,
         isComputableAsIncrementalDomExprsVisitor,
         genIncrementalDomExprsVisitorFactory);

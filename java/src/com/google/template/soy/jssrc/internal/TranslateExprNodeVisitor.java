@@ -80,7 +80,6 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
@@ -171,9 +170,6 @@ public class TranslateExprNodeVisitor
           "Cannot access field ''{0}'' of type ''{1}'', "
               + "because the different union member types have different access methods.");
 
-  /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
-
   /**
    * The current replacement JS expressions for the local variables (and foreach-loop special
    * functions) current in scope.
@@ -184,10 +180,8 @@ public class TranslateExprNodeVisitor
   private final CodeChunk.Generator codeGenerator;
 
   public TranslateExprNodeVisitor(
-      SoyJsSrcOptions jsSrcOptions,
       TranslationContext translationContext,
       ErrorReporter errorReporter) {
-    this.jsSrcOptions = jsSrcOptions;
     this.errorReporter = errorReporter;
     this.variableMappings = translationContext.soyToJsVariableMappings();
     this.codeGenerator = translationContext.codeGenerator();
@@ -264,12 +258,9 @@ public class TranslateExprNodeVisitor
     // If there are both string and nonstring keys, then the expression will be
     //     (function() { var $$tmp0 = {'aa': 11}; $$tmp0[opt_data.bb] = 22; return $$tmp0; })()
 
-    // If we are outputting JS code to be processed by Closure Compiler, then it is important that
+    // Since we are outputting JS code to be processed by Closure Compiler, it is important that
     // any unquoted map literal keys are string literals, since Closure Compiler can rename unquoted
     // map keys and we want everything to be renamed at the same time.
-    boolean isProbablyUsingClosureCompiler =
-        jsSrcOptions.shouldProvideRequireSoyNamespaces()
-            || jsSrcOptions.shouldProvideRequireJsFunctions();
 
     // We will divide the map literal contents into two categories.
     //
@@ -301,7 +292,7 @@ public class TranslateExprNodeVisitor
 
       // error case: for closure compiler users, do not allow unquoted, non-string-literal keys,
       // since the compiler may change the names of any unquoted map keys.
-      if (isProbablyUsingClosureCompiler && !doQuoteKeys && !(keyNode instanceof StringNode)) {
+      if (!doQuoteKeys && !(keyNode instanceof StringNode)) {
         errorReporter.report(
             keyNode.getSourceLocation(),
             EXPR_IN_MAP_LITERAL_REQUIRES_QUOTE_KEYS_IF_JS,
@@ -320,14 +311,12 @@ public class TranslateExprNodeVisitor
 
           if (BaseUtils.isIdentifier(strKey)) {
             objLiteral.put(id(strKey), visit(valueNode));
-          } else if (isProbablyUsingClosureCompiler) {
+          } else {
             errorReporter.report(
                 keyNode.getSourceLocation(),
                 MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS,
                 keyNode.toSourceString());
             continue;
-          } else {
-            objLiteral.put(visit(keyNode), visit(valueNode));
           }
         }
       } else {

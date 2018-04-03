@@ -194,13 +194,12 @@ public class JsSrcMain {
 
       @Override
       public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(
-            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new GenJsCodeVisitor(

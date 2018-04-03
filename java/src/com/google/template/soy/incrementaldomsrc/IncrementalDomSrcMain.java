@@ -183,12 +183,12 @@ public class IncrementalDomSrcMain {
       @Override
       public IncrementalDomGenCallCodeUtils get() {
         return new IncrementalDomGenCallCodeUtils(
-            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+            delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenIncrementalDomExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenIncrementalDomExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
+        new GenIncrementalDomExprsVisitorFactory(supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new GenIncrementalDomCodeVisitor(

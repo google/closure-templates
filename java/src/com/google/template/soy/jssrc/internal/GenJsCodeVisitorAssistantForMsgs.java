@@ -489,7 +489,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   private CodeChunk.WithValue translateExpr(ExprNode expr) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter).exec(expr);
+    return new TranslateExprNodeVisitor(translationContext, errorReporter).exec(expr);
   }
 
   /**
