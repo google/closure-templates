@@ -327,7 +327,10 @@ public final class RawTextContextUpdaterTest {
         "URI START TRUSTED_RESOURCE_BLOCK",
         "//[::1]/",
         "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
-    assertTransition("URI START TRUSTED_RESOURCE_BLOCK", "//\\/", "ERROR");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE_BLOCK",
+        "foo",
+        "URI TRUSTED_RESOURCE_URI_END TRUSTED_RESOURCE_BLOCK");
     assertTransition(
         "URI START TRUSTED_RESOURCE_BLOCK", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
     assertTransition(

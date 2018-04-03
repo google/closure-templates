@@ -434,6 +434,8 @@ final class RawTextContextUpdater {
       case DANGEROUS_SCHEME:
         // Dangerous schemes remain dangerous.
         return UriPart.DANGEROUS_SCHEME;
+      case TRUSTED_RESOURCE_URI_END:
+        throw new AssertionError("impossible");
       case NONE:
         // generally impossible
       case START:
@@ -527,12 +529,10 @@ final class RawTextContextUpdater {
               // which allows some things like query parameters to be set using untrusted
               // content.
               if (!baseUrlPattern.matcher(match).find()) {
-                throw SoyAutoescapeException.createWithNode(
-                    "TrustedResourceUris must have a fixed scheme (https) and host using one of the"
-                        + " following formats:\n  * https://foo\n  * //foo/\n  * /foo\nor move the "
-                        + "calculation of this URL "
-                        + "outside of the template and use an ordaining API.",
-                    node.substring(/* newId= */ Integer.MAX_VALUE, offset));
+                // If the prefix is not allowed then we switch to UriPart.END meaning that we don't
+                // allow anything after this node (the whole URI must be fixed).
+                context = context.derive(UriPart.TRUSTED_RESOURCE_URI_END);
+                break;
               } else {
                 context = context.derive(UriPart.AUTHORITY_OR_PATH);
               }
@@ -556,6 +556,8 @@ final class RawTextContextUpdater {
               break;
             case FRAGMENT:
               // fragment is the end
+              return context;
+            case TRUSTED_RESOURCE_URI_END:
               return context;
             case DANGEROUS_SCHEME:
             case MAYBE_SCHEME:

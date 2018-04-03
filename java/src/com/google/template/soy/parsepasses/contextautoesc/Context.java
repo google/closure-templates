@@ -1520,6 +1520,12 @@ public final class Context {
     START,
 
     /**
+     * This is used for static TRUSTED_RESOURCE_URIs with no print nodes. We throw an error if
+     * there's a print node in this state.
+     */
+    TRUSTED_RESOURCE_URI_END,
+
+    /**
      * After a print statement in the beginning of a URI, where it's still possible to be in the
      * scheme.
      *

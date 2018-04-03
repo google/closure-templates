@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -220,6 +221,8 @@ final class InferenceEngine {
 
     private Context context;
 
+    private RawTextNode uriStart = null;
+
     public ContextPropagatingVisitor(Context context) {
       this.context = context;
     }
@@ -261,10 +264,15 @@ final class InferenceEngine {
     @Override
     protected void visitRawTextNode(RawTextNode rawTextNode) {
       context = RawTextContextUpdater.processRawText(rawTextNode, context);
+      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+        uriStart = rawTextNode;
+      }
     }
 
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+      checkUriEnd();
+
       if (autoescapeMode == AutoescapeMode.STRICT || autoescapeMode == AutoescapeMode.CONTEXTUAL) {
         // (1) Determine the escaping we should do on the node itself, and the context we should
         // parse the children in.
@@ -310,6 +318,8 @@ final class InferenceEngine {
      */
     @Override
     protected void visitCallNode(CallNode callNode) {
+      checkUriEnd();
+
       String calleeName;
       if (callNode instanceof CallBasicNode) {
         calleeName = ((CallBasicNode) callNode).getCalleeName();
@@ -467,6 +477,8 @@ final class InferenceEngine {
         }
       }
 
+      checkUriEnd();
+
       List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
       Context prev = context;
       if (escapingModes.isEmpty()) { // None specified.
@@ -503,6 +515,22 @@ final class InferenceEngine {
         context =
             RawTextContextUpdater.processRawText(
                 new RawTextNode(-1, "z", printNode.getSourceLocation()), context);
+      }
+    }
+
+    private void checkUriEnd() {
+      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+        throw SoyAutoescapeException.createWithNode(
+            "TrustedResourceUris containing dynamic content must have a fixed scheme (https) and "
+                + "host using one of the following formats:\n"
+                + "  * https://foo/\n" // NOTYPO
+                + "  * //foo/\n"
+                + "  * /foo\n"
+                + "or move the calculation of this URL outside of the template and use an "
+                + "ordaining API.",
+            // We switch to UriPart.TRUSTED_RESOURCE_URI_END in RawTextNode where we also store
+            // uriStart.
+            uriStart);
       }
     }
 
