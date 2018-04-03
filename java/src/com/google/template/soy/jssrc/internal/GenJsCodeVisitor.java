@@ -537,6 +537,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     SortedSet<String> templateNames = new TreeSet<>();
     for (TemplateNode template : soyFile.getChildren()) {
+      if (template instanceof TemplateDelegateNode) {
+        // skip providing deltemplates.  these are accessed via an indirect mechanism rather than
+        // goog.require.
+        continue;
+      }
       templateNames.add(template.getTemplateName());
     }
     for (String templateName : templateNames) {
