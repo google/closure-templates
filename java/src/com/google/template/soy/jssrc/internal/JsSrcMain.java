@@ -84,14 +84,6 @@ public class JsSrcMain {
       @Nullable SoyMsgBundle msgBundle,
       ErrorReporter errorReporter) {
 
-    // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
-    Preconditions.checkState(
-        !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()
-            || jsSrcOptions.shouldProvideRequireSoyNamespaces()
-            || jsSrcOptions.shouldProvideRequireJsFunctions(),
-        "Do not specify useGoogIsRtlForBidiGlobalDir without either"
-            + " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
-
     // VeLogInstrumentationVisitor add html attributes for {velog} commands and also run desugaring
     // pass since code generator does not understand html nodes (yet).
     new VeLogInstrumentationVisitor(templateRegistry).exec(soyTree);
