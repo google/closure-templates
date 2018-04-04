@@ -158,7 +158,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "Error while re-contextualizing template ns.uri "
             + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
-            + "- In file no-path:8:2, template ns.uri__C113737: Soy can't prove this URI has a "
+            + "- In file no-path:8:2, template ns.uri__C113757: Soy can't prove this URI has a "
             + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
             + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
             + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
@@ -240,6 +240,7 @@ public final class ContextualAutoescaperTest {
             "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
             "<base href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<iframe src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></iframe>",
             "<link rel='shortcut icon' href='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<link rel='stylesheet' href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
             "<link rel='{$x |escapeHtmlAttribute}' "
@@ -263,6 +264,7 @@ public final class ContextualAutoescaperTest {
             "<source src='{$x}'>\n",
             "<audio src='{$x}'></audio>\n",
             "<base href='{$x}'>\n",
+            "<iframe src='{$x}'></iframe>",
             "<link rel='shortcut icon' href='{$x}'>\n",
             "<link rel='stylesheet' href='{$x}'>\n",
             "<link rel='{$x}' href='{$x}'>\n",

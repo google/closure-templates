@@ -1173,6 +1173,9 @@ public final class Context {
         case "image":
           elType = ElementType.MEDIA;
           break;
+        case "iframe":
+          elType = ElementType.IFRAME;
+          break;
         case "script":
           elType = ElementType.SCRIPT;
           break;
@@ -1242,6 +1245,7 @@ public final class Context {
       case NORMAL:
       case BASE:
       case LINK_EXECUTABLE:
+      case IFRAME:
       case MEDIA:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
         break;
@@ -1336,14 +1340,10 @@ public final class Context {
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
-    } else if (elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
-      // TODO(b/36212457): This should handle iframe.src.
-      attr = Context.AttributeType.URI;
-      uriType = UriType.TRUSTED_RESOURCE;
-    } else if (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName)) {
-      attr = AttributeType.URI;
-      uriType = UriType.TRUSTED_RESOURCE;
-    } else if (elType == ElementType.BASE && "href".equals(attrName)) {
+    } else if (elType == ElementType.SCRIPT && "src".equals(attrName)
+        || elType == ElementType.IFRAME && "src".equals(attrName)
+        || elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName)
+        || elType == ElementType.BASE && "href".equals(attrName)) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
     } else if (URI_ATTR_NAMES.contains(localName)
@@ -1397,6 +1397,9 @@ public final class Context {
 
     /** An image element, so that we can process the src attribute specially. */
     MEDIA,
+
+    /** An iframe element, so that we can process the src attribute specially. */
+    IFRAME,
 
     /**
      * An executable link element, e.g. with rel="stylesheet" or rel="import" or with unknown rel,
