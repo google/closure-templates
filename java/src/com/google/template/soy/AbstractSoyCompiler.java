@@ -60,15 +60,6 @@ abstract class AbstractSoyCompiler {
           + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
   @Option(
-    name = "--inputPrefix",
-    usage =
-        "If provided, this path prefix will be prepended to each input file path"
-            + " listed on the command line. This is a literal string prefix, so you'll need"
-            + " to include a trailing slash if necessary."
-  )
-  protected String inputPrefix = "";
-
-  @Option(
     name = "--srcs",
     usage =
         "The list of source Soy files. Extra arguments are treated as srcs. Sources"
@@ -247,7 +238,7 @@ abstract class AbstractSoyCompiler {
                 + ioe.getMessage());
       }
     }
-    addSoyFilesToBuilder(sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), deps, indirectDeps);
+    addSoyFilesToBuilder(sfsBuilder, ImmutableSet.copyOf(srcs), deps, indirectDeps);
     if (globalsFile != null) {
       sfsBuilder.setCompileTimeGlobals(globalsFile);
     }
@@ -340,14 +331,12 @@ abstract class AbstractSoyCompiler {
    * Helper to add srcs and deps Soy files to a SoyFileSet builder. Also does sanity checks.
    *
    * @param sfsBuilder The SoyFileSet builder to add to.
-   * @param inputPrefix The input path prefix to prepend to all the file paths.
    * @param srcs The srcs from the --srcs flag. Exactly one of 'srcs' and 'args' must be nonempty.
    * @param deps The deps from the --deps flag, or empty list if not applicable.
    * @param indirectDeps The deps from the --indirectDeps flag, or empty list if not applicable.
    */
   private static void addSoyFilesToBuilder(
       SoyFileSet.Builder sfsBuilder,
-      String inputPrefix,
       Collection<String> srcs,
       Collection<String> deps,
       Collection<String> indirectDeps) {
@@ -357,20 +346,19 @@ abstract class AbstractSoyCompiler {
     // an error in SoyFileSet).  Do it in this order, so that the if a file is both a src and a dep
     // we will treat it as a src.
     Set<String> soFar = new HashSet<>();
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.SRC, inputPrefix, srcs, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.DEP, inputPrefix, deps, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, inputPrefix, indirectDeps, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.SRC, srcs, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.DEP, deps, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, indirectDeps, soFar);
   }
 
   private static void addAllIfNotPresent(
       SoyFileSet.Builder builder,
       SoyFileKind kind,
-      String inputPrefix,
       Collection<String> files,
       Set<String> soFar) {
     for (String file : files) {
       if (soFar.add(file)) {
-        builder.addWithKind(new File(inputPrefix + file), kind);
+        builder.addWithKind(new File(file), kind);
       }
     }
   }

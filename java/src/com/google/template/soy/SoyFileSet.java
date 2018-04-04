@@ -993,7 +993,6 @@ public final class SoyFileSet {
    *
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
-   * @param inputFilePathPrefix The prefix prepended to all input file paths (can be empty string).
    * @param jsSrcOptions The compilation options for the JS Src output target.
    * @param locales The list of locales. Can be an empty list if not applicable.
    * @param msgPlugin The {@link SoyMsgPlugin} to use, or null if not applicable
@@ -1005,7 +1004,6 @@ public final class SoyFileSet {
   @SuppressWarnings("deprecation")
   void compileToJsSrcFiles(
       String outputPathFormat,
-      String inputFilePathPrefix,
       SoyJsSrcOptions jsSrcOptions,
       List<String> locales,
       @Nullable SoyMsgPlugin msgPlugin,
@@ -1025,7 +1023,6 @@ public final class SoyFileSet {
               null,
               null,
               outputPathFormat,
-              inputFilePathPrefix,
               errorReporter);
 
     } else {
@@ -1039,9 +1036,7 @@ public final class SoyFileSet {
 
         SoyFileSetNode soyTreeClone = soyTree.copy(new CopyState());
 
-        String msgFilePath =
-            MainEntryPointUtils.buildFilePath(
-                messageFilePathFormat, locale, null, inputFilePathPrefix);
+        String msgFilePath = MainEntryPointUtils.buildFilePath(messageFilePathFormat, locale, null);
 
         SoyMsgBundle msgBundle =
             new SoyMsgBundleHandler(msgPlugin).createFromFile(new File(msgFilePath));
@@ -1062,7 +1057,6 @@ public final class SoyFileSet {
                 locale,
                 msgBundle,
                 outputPathFormat,
-                inputFilePathPrefix,
                 errorReporter);
       }
     }
@@ -1153,22 +1147,19 @@ public final class SoyFileSet {
    *
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
-   * @param inputFilePathPrefix The prefix prepended to all input file paths (can be empty string).
    * @param pySrcOptions The compilation options for the Python Src output target.
    * @throws SoyCompilationException If compilation fails.
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  void compileToPySrcFiles(
-      String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
+  void compileToPySrcFiles(String outputPathFormat, SoyPySrcOptions pySrcOptions)
       throws IOException {
     resetErrorReporter();
     requireStrictAutoescaping();
     ParseResult result = parse(SyntaxVersion.V2_0);
     throwIfErrorsPresent();
     new PySrcMain(apiCallScopeProvider)
-        .genPyFiles(
-            result.fileSet(), pySrcOptions, outputPathFormat, inputFilePathPrefix, errorReporter);
+        .genPyFiles(result.fileSet(), pySrcOptions, outputPathFormat, errorReporter);
 
     throwIfErrorsPresent();
     reportWarnings();

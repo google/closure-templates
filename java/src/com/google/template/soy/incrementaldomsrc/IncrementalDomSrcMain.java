@@ -145,8 +145,7 @@ public class IncrementalDomSrcMain {
     }
 
     Multimap<String, Integer> outputs =
-        MainEntryPointUtils.mapOutputsToSrcs(
-            null /* locale */, outputPathFormat, "" /* inputPathsPrefix */, srcsToCompile);
+        MainEntryPointUtils.mapOutputsToSrcs(null /* locale */, outputPathFormat, srcsToCompile);
 
     for (String outputFilePath : outputs.keySet()) {
       Writer out = Files.newWriter(new File(outputFilePath), UTF_8);

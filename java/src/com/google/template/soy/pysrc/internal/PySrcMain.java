@@ -92,7 +92,6 @@ public final class PySrcMain {
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
-   * @param inputPathsPrefix The input path prefix, or empty string if none.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
@@ -100,7 +99,6 @@ public final class PySrcMain {
       SoyFileSetNode soyTree,
       SoyPySrcOptions pySrcOptions,
       String outputPathFormat,
-      String inputPathsPrefix,
       ErrorReporter errorReporter)
       throws IOException {
 
@@ -111,8 +109,7 @@ public final class PySrcMain {
     // Determine the output paths.
     List<String> soyNamespaces = getSoyNamespaces(soyTree);
     Multimap<String, Integer> outputs =
-        MainEntryPointUtils.mapOutputsToSrcs(
-            null, outputPathFormat, inputPathsPrefix, srcsToCompile);
+        MainEntryPointUtils.mapOutputsToSrcs(null, outputPathFormat, srcsToCompile);
 
     // Generate the manifest and add it to the current manifest.
     ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs);

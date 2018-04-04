@@ -38,7 +38,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             + " JS file (UTF-8) for each input Soy file. If generating localized JS, then"
             + " there will be one output JS file for each combination of input Soy file and"
             + " locale. The format string can include literal characters as well as the"
-            + " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME},"
+            + " placeholders {INPUT_DIRECTORY}, {INPUT_FILE_NAME},"
             + " {INPUT_FILE_NAME_NO_EXT}, {LOCALE}, {LOCALE_LOWER_CASE}. Note"
             + " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes"
             + " pt_br."
@@ -200,13 +200,12 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     if (generateLocalizedJs) {
       sfs.compileToJsSrcFiles(
           outputPathFormat,
-          inputPrefix,
           jsSrcOptions,
           locales,
           messagePlugin,
           messageFilePathFormat);
     } else {
-      sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null, null);
+      sfs.compileToJsSrcFiles(outputPathFormat, jsSrcOptions, locales, null, null);
     }
   }
 }

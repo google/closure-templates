@@ -712,10 +712,8 @@
                 <argument>--compileTimeGlobalsFile</argument>
                 <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
-                <argument>--inputPrefix</argument>
-                <argument>${soy.examples}/</argument>
                 <argument>--srcs</argument>
-                <argument>simple.soy,features.soy</argument>
+                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
               </arguments>
             </configuration>
             <goals>
@@ -792,10 +790,8 @@
                 <argument>--outputFile</argument>
                 <argument>${soy.examples.out}/examples_extracted.xlf
                 </argument>
-                <argument>--inputPrefix</argument>
-                <argument>${soy.examples}/</argument>
                 <argument>--srcs</argument>
-                <argument>simple.soy,features.soy</argument>
+                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
               </arguments>
             </configuration>
             <goals>

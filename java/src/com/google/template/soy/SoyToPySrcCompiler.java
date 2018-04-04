@@ -46,7 +46,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
         "[Required] A format string that specifies how to build the path to each"
             + " output file. There will be one output Python file (UTF-8) for each input Soy"
             + " file. The format string can include literal characters as well as the"
-            + " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
+            + " placeholders {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
             + " {INPUT_FILE_NAME_NO_EXT}. Additionally periods are not allowed in the"
             + " outputted filename outside of the final py extension."
   )
@@ -165,7 +165,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
             outputNamespaceManifest);
 
     // Compile.
-    sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);
+    sfs.compileToPySrcFiles(outputPathFormat, pySrcOptions);
   }
 
   /**

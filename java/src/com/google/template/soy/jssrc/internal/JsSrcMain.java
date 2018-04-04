@@ -124,7 +124,6 @@ public class JsSrcMain {
    *     source.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
-   * @param inputPathsPrefix The input path prefix, or empty string if none.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws IOException If there is an error in opening/writing an output JS file.
    */
@@ -135,7 +134,6 @@ public class JsSrcMain {
       @Nullable String locale,
       @Nullable SoyMsgBundle msgBundle,
       String outputPathFormat,
-      String inputPathsPrefix,
       ErrorReporter errorReporter)
       throws IOException {
 
@@ -154,8 +152,7 @@ public class JsSrcMain {
     }
 
     Multimap<String, Integer> outputs =
-        MainEntryPointUtils.mapOutputsToSrcs(
-            locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
+        MainEntryPointUtils.mapOutputsToSrcs(locale, outputPathFormat, srcsToCompile);
 
     for (String outputFilePath : outputs.keySet()) {
       Writer out = Files.newWriter(new File(outputFilePath), UTF_8);
