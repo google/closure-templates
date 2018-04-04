@@ -371,7 +371,7 @@ public final class Context {
             break;
           case TRUSTED_RESOURCE:
             if (hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
-              escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+              escapingMode = EscapingMode.NORMALIZE_URI;
             } else {
               escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
             }
