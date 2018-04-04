@@ -174,10 +174,9 @@ public class DictImplTest {
       assertThat(e)
           .hasMessageThat()
           .isEqualTo(
-              "Expected a value of type `map`, got `legacy_object_map`. "
+              "Expected a value of type `legacy_object_map`, got `map`. "
                   + "These two map types are not interoperable. "
-                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-                  + "to convert explicitly.");
+                  + "Use `mapToLegacyObjectMap()` to convert this object to a legacy_object_map.");
     }
     // Recreate the map that resets the internal state.
     dict = DictImpl.forProviderMap(providerMap, RuntimeMapTypeTracker.Type.UNKNOWN);
@@ -191,8 +190,7 @@ public class DictImplTest {
           .isEqualTo(
               "Expected a value of type `map`, got `legacy_object_map`. "
                   + "These two map types are not interoperable. "
-                  + "Use `map_to_legacy_object_map()` and `legacy_object_map_to_map()` "
-                  + "to convert explicitly.");
+                  + "Use `legacyObjectMapToMap()` to convert this object to a map.");
     }
   }
 }
