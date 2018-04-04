@@ -276,7 +276,7 @@ public final class JspbTest {
             + " * @param {Object<string, *>=} opt_ijData\n"
             + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
             + " * @return {string}\n"
-            + " * @suppress {checkTypes|uselessCode}\n"
+            + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
