@@ -454,7 +454,7 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile("([:./&?=#])|\\z")) {
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriType != UriType.TRUSTED_RESOURCE_BLOCK;
+          return prior.uriType != UriType.TRUSTED_RESOURCE;
         }
 
         @Override
@@ -477,7 +477,7 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile("(?i)^(javascript|data|blob|filesystem):")) {
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriPart == UriPart.START && prior.uriType != UriType.TRUSTED_RESOURCE_BLOCK;
+          return prior.uriPart == UriPart.START && prior.uriType != UriType.TRUSTED_RESOURCE;
         }
 
         @Override
@@ -508,7 +508,7 @@ final class RawTextContextUpdater {
 
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriType == UriType.TRUSTED_RESOURCE_BLOCK;
+          return prior.uriType == UriType.TRUSTED_RESOURCE;
         }
 
         @Override

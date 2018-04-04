@@ -258,7 +258,7 @@ public final class Context {
           .withAttrType(AttributeType.PLAIN_TEXT)
           .build();
     } else if (uriPart == UriPart.START) {
-      if (uriType == UriType.TRUSTED_RESOURCE_BLOCK) {
+      if (uriType == UriType.TRUSTED_RESOURCE) {
         return derive(UriPart.AUTHORITY_OR_PATH);
       }
       // TODO(gboyer): When we start enforcing strict URI syntax, make it an error to call this if
@@ -352,54 +352,39 @@ public final class Context {
     // embedded in the specific quoting context in which it appears.
     EscapingMode extraEscapingMode = null;
 
-    // Keep track of whether an URI is a TrustedResource. We want some resource URIs like sources to
-    // be safe and not in attacker control. Hence, a restriction that these resouce URIs need to be
-    // compile time constants is being set. To makes sure these are compile time constants these
-    // either need to be of type string or TrustedResourceUrl.
-    EscapingMode truMode = null;
-    // If a print directive with the name "|blessStringAsTrustedResourceUrlForLegacy" exists
-    // we don't want to enforce presence of a trusted resource URL. This is mainly done so as
-    // not to break the legacy soy files.
-    if (uriType == UriType.TRUSTED_RESOURCE
-        && !hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
-      truMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
-    }
-
     // Make sure we're using the right part for a URI context.
     switch (uriPart) {
       case QUERY:
         escapingMode = EscapingMode.ESCAPE_URI;
         break;
       case START:
-        if (truMode == null) {
-          // We need to filter substitutions at the start of a URL since they can switch the
-          // protocol to a code loading protocol like javascript:. We don't want these filters to
-          // happen when the URL in question is TrustedResourceUrl as we are sure it is not in
-          // attacker control.
-          if (escapingMode != EscapingMode.NORMALIZE_URI) {
-            extraEscapingMode = escapingMode;
-          }
-          switch (uriType) {
-            case MEDIA:
-              escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
-              break;
-            case TRUSTED_RESOURCE_BLOCK:
-              if (hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
-                escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
-              } else {
-                escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
-              }
-              break;
-            default:
+        // We need to filter substitutions at the start of a URL since they can switch the
+        // protocol to a code loading protocol like javascript:. We don't want these filters to
+        // happen when the URL in question is TrustedResourceUrl as we are sure it is not in
+        // attacker control.
+        if (escapingMode != EscapingMode.NORMALIZE_URI) {
+          extraEscapingMode = escapingMode;
+        }
+        switch (uriType) {
+          case MEDIA:
+            escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
+            break;
+          case TRUSTED_RESOURCE:
+            if (hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
               escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
-              break;
-          }
+            } else {
+              escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
+            }
+            break;
+          default:
+            escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+            break;
         }
         break;
 
       case AUTHORITY_OR_PATH:
       case FRAGMENT:
-        if (uriType == UriType.TRUSTED_RESOURCE_BLOCK) {
+        if (uriType == UriType.TRUSTED_RESOURCE) {
           escapingMode = EscapingMode.ESCAPE_URI;
         }
         break;
@@ -492,11 +477,8 @@ public final class Context {
       case NONE:
         break;
     }
-    // Return and immutable list of (truMode, escapingMode, extraEscapingMode)
+    // Return and immutable list of (escapingMode, extraEscapingMode)
     ImmutableList.Builder<EscapingMode> escapingListBuilder = new ImmutableList.Builder<>();
-    if (truMode != null) {
-      escapingListBuilder.add(truMode);
-    }
     escapingListBuilder.add(escapingMode);
     if (extraEscapingMode != null) {
       escapingListBuilder.add(extraEscapingMode);
@@ -1087,7 +1069,7 @@ public final class Context {
         // Ensure that the URI content is non-empty and the URI type remains normal (which is
         // the assumed type of the URI content kind).
         return state == HtmlContext.URI
-            && uriType == UriType.TRUSTED_RESOURCE_BLOCK
+            && uriType == UriType.TRUSTED_RESOURCE
             && uriPart != UriPart.START;
     }
     throw new IllegalArgumentException(
@@ -1357,13 +1339,13 @@ public final class Context {
     } else if (elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
       // TODO(b/36212457): This should handle iframe.src.
       attr = Context.AttributeType.URI;
-      uriType = Context.UriType.TRUSTED_RESOURCE;
+      uriType = UriType.TRUSTED_RESOURCE;
     } else if (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName)) {
       attr = AttributeType.URI;
-      uriType = UriType.TRUSTED_RESOURCE_BLOCK;
+      uriType = UriType.TRUSTED_RESOURCE;
     } else if (elType == ElementType.BASE && "href".equals(attrName)) {
       attr = Context.AttributeType.URI;
-      uriType = Context.UriType.TRUSTED_RESOURCE_BLOCK;
+      uriType = UriType.TRUSTED_RESOURCE;
     } else if (URI_ATTR_NAMES.contains(localName)
         || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
         || "xmlns".equals(attrName)
@@ -1566,8 +1548,7 @@ public final class Context {
     /**
      * In the scheme, authority, or path. Between ^s in {@code h^ttp://host/path^?k=v#frag}.
      *
-     * <p>In the specific case of {@link UriType#TRUSTED_RESOURCE_BLOCK}, this must be a part of the
-     * path
+     * <p>In the specific case of {@link UriType#TRUSTED_RESOURCE}, this must be a part of the path.
      */
     AUTHORITY_OR_PATH,
 
@@ -1633,13 +1614,6 @@ public final class Context {
     /**
      * A URI which loads resources. This is intended to be used in scripts, stylesheets, etc which
      * should not be in attacker control.
-     */
-    TRUSTED_RESOURCE,
-    /**
-     * Same as {@link #TRUSTED_RESOURCE} but with slightly different semantics.
-     *
-     * <p>This is applied to {@code kind="trusted_resource_uri"} blocks/templates and it changes the
-     * semantics for composing a trusted resource uri.
      *
      * <ul>
      *   <li>Constant strings are allowed
@@ -1647,14 +1621,8 @@ public final class Context {
      *       interpolated as long as they are percent encoded.
      *   <li>If the prefix is dynamic then we require it to be a trusted_resource_uri.
      * </ul>
-     *
-     * <p>These semantics are not compatible with the current {@link #TRUSTED_RESOURCE} because that
-     * mode requires every part to be a trusted_resource_uri even though concatenating multiple such
-     * URIs is not obviously safe.
-     *
-     * <p>TODO(b/72493024): apply these same, superior semantics to TRUSTED_RESOURCE
      */
-    TRUSTED_RESOURCE_BLOCK;
+    TRUSTED_RESOURCE;
   }
 
   /** A mutable builder for {@link Context}s. */
@@ -1775,7 +1743,7 @@ public final class Context {
         case TRUSTED_RESOURCE_URI:
           withState(HtmlContext.URI);
           withUriPart(UriPart.START);
-          withUriType(UriType.TRUSTED_RESOURCE_BLOCK);
+          withUriType(UriType.TRUSTED_RESOURCE);
           break;
         default:
           throw new AssertionError();

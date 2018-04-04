@@ -314,46 +314,34 @@ public final class RawTextContextUpdaterTest {
   }
 
   @Test
-  public void testUri_TrustedResourceBlock() throws Exception {
+  public void testUri_TrustedResource() throws Exception {
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK",
+        "URI START TRUSTED_RESOURCE",
         "https://bar/", // NOTYPO
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK",
-        "//foo/bar",
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+        "URI START TRUSTED_RESOURCE", "//foo/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK",
-        "//[::1]/",
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+        "URI START TRUSTED_RESOURCE", "//[::1]/", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK",
-        "foo",
-        "URI TRUSTED_RESOURCE_URI_END TRUSTED_RESOURCE_BLOCK");
+        "URI START TRUSTED_RESOURCE", "foo", "URI TRUSTED_RESOURCE_URI_END TRUSTED_RESOURCE");
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+        "URI START TRUSTED_RESOURCE", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "/bar?baz=foo", "URI QUERY TRUSTED_RESOURCE");
     assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK", "/bar?baz=foo", "URI QUERY TRUSTED_RESOURCE_BLOCK");
-    assertTransition(
-        "URI START TRUSTED_RESOURCE_BLOCK",
-        "/bar?baz=foo#frag",
-        "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
+        "URI START TRUSTED_RESOURCE", "/bar?baz=foo#frag", "URI FRAGMENT TRUSTED_RESOURCE");
 
     // test starting from AUTHORITY_OR_PATH because that is what will happen following a dynamic
     // node
     assertTransition(
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK",
-        "/bar",
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK");
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition("URI AUTHORITY_OR_PATH TRUSTED_RESOURCE", "?a", "URI QUERY TRUSTED_RESOURCE");
     assertTransition(
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK", "?a", "URI QUERY TRUSTED_RESOURCE_BLOCK");
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE", "#", "URI FRAGMENT TRUSTED_RESOURCE");
     assertTransition(
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK", "#", "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
-    assertTransition(
-        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE_BLOCK",
+        "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE",
         "/bar/baz/#?foo",
-        "URI FRAGMENT TRUSTED_RESOURCE_BLOCK");
+        "URI FRAGMENT TRUSTED_RESOURCE");
   }
 
   @Test
