@@ -1355,10 +1355,12 @@ public final class Context {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
     } else if (elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
-      // TODO(b/36212457): this should handle iframe.src, style.src and probably several kinds of
-      // link attributes
+      // TODO(b/36212457): This should handle iframe.src.
       attr = Context.AttributeType.URI;
       uriType = Context.UriType.TRUSTED_RESOURCE;
+    } else if (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName)) {
+      attr = AttributeType.URI;
+      uriType = UriType.TRUSTED_RESOURCE_BLOCK;
     } else if (elType == ElementType.BASE && "href".equals(attrName)) {
       attr = Context.AttributeType.URI;
       uriType = Context.UriType.TRUSTED_RESOURCE_BLOCK;

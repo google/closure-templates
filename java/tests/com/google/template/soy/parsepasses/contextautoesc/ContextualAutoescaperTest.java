@@ -240,6 +240,10 @@ public final class ContextualAutoescaperTest {
             "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
             "<base href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<link rel='shortcut icon' href='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<link rel='stylesheet' href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<link rel='{$x |escapeHtmlAttribute}' "
+                + "href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
             "<script src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
@@ -259,7 +263,10 @@ public final class ContextualAutoescaperTest {
             "<source src='{$x}'>\n",
             "<audio src='{$x}'></audio>\n",
             "<base href='{$x}'>\n",
-            "<script src='{$x}'></script>",
+            "<link rel='shortcut icon' href='{$x}'>\n",
+            "<link rel='stylesheet' href='{$x}'>\n",
+            "<link rel='{$x}' href='{$x}'>\n",
+            "<script src='{$x}'></script>\n",
             "{/template}\n"));
   }
 
