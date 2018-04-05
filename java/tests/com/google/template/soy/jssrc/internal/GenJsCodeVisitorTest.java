@@ -115,7 +115,7 @@ public final class GenJsCodeVisitorTest {
 
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
-    // ------ Using Closure, provide/require Soy namespaces ------
+    // ------ Using Closure, provide both Soy namespaces and JS functions ------
     String expectedJsFileContentStart =
         "// This file was automatically generated from no-path.\n"
             + "// Please don't edit this file by hand.\n"
@@ -126,58 +126,12 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
+            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
             + "\n";
 
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
-    assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
-
-    // ------ Using Closure, provide/require JS functions ------
-    expectedJsFileContentStart =
-        "// This file was automatically generated from no-path.\n"
-            + "// Please don't edit this file by hand.\n"
-            + "\n"
-            + "/**\n"
-            + " * @fileoverview Templates in namespace boo.foo.\n"
-            + " * @public\n"
-            + " */\n"
-            + "\n"
-            + "goog.provide('boo.foo.goo');\n"
-            + "\n"
-            + "goog.require('boo.woo.hoo');\n"
-            + "\n";
-
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
-    jsSrcOptions.setShouldProvideRequireJsFunctions(true);
-    jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
-    assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
-
-    // ------ Using Closure, provide both Soy namespaces and JS functions ------
-    expectedJsFileContentStart =
-        "// This file was automatically generated from no-path.\n"
-            + "// Please don't edit this file by hand.\n"
-            + "\n"
-            + "/**\n"
-            + " * @fileoverview Templates in namespace boo.foo.\n"
-            + " * @public\n"
-            + " */\n"
-            + "\n"
-            + "goog.provide('boo.foo');\n"
-            + "goog.provide('boo.foo.goo');\n"
-            + "\n"
-            + "goog.require('boo.woo');\n"
-            + "\n";
-
-    jsSrcOptions.setShouldProvideRequireJsFunctions(false);
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(true);
-    jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
@@ -209,6 +163,7 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
+            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
             + "goog.require('boo.woo.aaa');\n"
@@ -249,6 +204,7 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
+            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('also.for.function');\n"
             + "goog.require('for.function');\n"

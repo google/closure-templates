@@ -404,13 +404,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       file.append('\n');
       addCodeToRequireSoyNamespaces(node);
-    } else if (jsSrcOptions.shouldProvideRequireJsFunctions()) {
-      if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
-        addCodeToProvideSoyNamespace(file, node);
-      }
-      addCodeToProvideJsFunctions(file, node);
-      file.append('\n');
-      addCodeToRequireJsFunctions(node);
     } else {
       throw new AssertionError("impossible");
     }
@@ -594,17 +587,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace));
         prevCalleeNamespace = calleeNamespace;
       }
-    }
-  }
-
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to require template JS functions.
-   *
-   * @param soyFile The node we're visiting.
-   */
-  private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
-    for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
-      jsCodeBuilder.addGoogRequire(GoogRequire.create(node.getCalleeName()));
     }
   }
 

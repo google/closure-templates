@@ -63,6 +63,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private boolean shouldAllowDeprecatedSyntax = false;
 
+  @SuppressWarnings("unused") // TODO(b/73881914): delete, this is ignored
   @Option(
     name = "--shouldProvideRequireSoyNamespaces",
     usage =
@@ -188,7 +189,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldAllowDeprecatedSyntax(shouldAllowDeprecatedSyntax);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
