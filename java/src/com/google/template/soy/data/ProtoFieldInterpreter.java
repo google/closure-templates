@@ -533,7 +533,7 @@ abstract class ProtoFieldInterpreter {
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
-          return SoyProtoValueImpl.create((Message) field);
+          return SoyProtoValue.create((Message) field);
         }
 
         @Override

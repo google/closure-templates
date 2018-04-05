@@ -32,7 +32,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValueImpl;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -227,8 +227,8 @@ public abstract class MethodRef {
 
   public static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
-  public static final MethodRef SOY_PROTO_VALUE_IMPL_CREATE =
-      create(SoyProtoValueImpl.class, "create", Message.class).asNonNullable();
+  public static final MethodRef SOY_PROTO_VALUE_CREATE =
+      create(SoyProtoValue.class, "create", Message.class).asNonNullable();
 
   public static final MethodRef RENDER_RESULT_DONE =
       create(RenderResult.class, "done").asCheap().asNonNullable();
@@ -345,10 +345,10 @@ public abstract class MethodRef {
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
-      create(SoyProtoValueImpl.class, "getProtoField", String.class).asCheap().asNonNullable();
+      create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
 
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
-      create(SoyProtoValueImpl.class, "getProto").asCheap().asNonNullable();
+      create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();
 
   public static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
       create(SoyValue.class, "coerceToBoolean").asCheap();

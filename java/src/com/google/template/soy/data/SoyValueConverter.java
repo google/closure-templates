@@ -275,7 +275,7 @@ public final class SoyValueConverter {
         new Converter<Message.Builder>() {
           @Override
           public SoyValueProvider apply(Message.Builder input) {
-            return SoyProtoValueImpl.create(input.build());
+            return SoyProtoValue.create(input.build());
           }
         });
     cheapConverterMap.put(
@@ -283,7 +283,7 @@ public final class SoyValueConverter {
         new Converter<Message>() {
           @Override
           public SoyValueProvider apply(Message input) {
-            return SoyProtoValueImpl.create(input);
+            return SoyProtoValue.create(input);
           }
         });
 

@@ -304,7 +304,7 @@ public final class SoyExpression extends Expression {
     } else if (type.isKnownMap()) {
       MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownProto()) {
-      MethodRef.SOY_PROTO_VALUE_IMPL_CREATE.invokeUnchecked(adapter);
+      MethodRef.SOY_PROTO_VALUE_CREATE.invokeUnchecked(adapter);
     } else {
       throw new IllegalStateException("Can't box soy expression of type " + type);
     }
