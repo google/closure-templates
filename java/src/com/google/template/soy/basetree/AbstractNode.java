@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basetree;
 
-import javax.annotation.Nullable;
 
 /**
  * Abstract implementation of a Node.
@@ -26,15 +25,10 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractNode implements Node {
 
-  /** The lowest known upper bound (exclusive!) for the syntax version of this node. */
-  @Nullable private SyntaxVersionUpperBound syntaxVersionBound;
-
   /** The parent of this node. */
   private ParentNode<?> parent;
 
   protected AbstractNode() {
-    syntaxVersionBound = null;
-    parent = null;
   }
 
   /**
@@ -43,26 +37,7 @@ public abstract class AbstractNode implements Node {
    * @param orig The node to copy.
    */
   protected AbstractNode(AbstractNode orig, CopyState copyState) {
-    this.parent = null; // important: should not copy parent pointer
-    this.syntaxVersionBound = orig.syntaxVersionBound;
-  }
-
-  @Override
-  public void maybeSetSyntaxVersionUpperBound(SyntaxVersionUpperBound newSyntaxVersionBound) {
-    syntaxVersionBound =
-        SyntaxVersionUpperBound.selectLower(syntaxVersionBound, newSyntaxVersionBound);
-  }
-
-  @Override
-  @Nullable
-  public SyntaxVersionUpperBound getSyntaxVersionUpperBound() {
-    return syntaxVersionBound;
-  }
-
-  @Override
-  public boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff) {
-    return syntaxVersionBound == null
-        || syntaxVersionBound.syntaxVersion.num > syntaxVersionCutoff.num;
+    // important: should not copy parent pointer
   }
 
   @Override

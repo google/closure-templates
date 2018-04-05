@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -35,7 +34,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -219,19 +217,6 @@ public final class ResolveNamesVisitorTest {
     assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
   }
 
-  @Test
-  @Ignore
-  public void testNameLookupFailure() {
-    // This fails currently because we aren't setting SyntaxVersion.V9_9
-    // But referencing unknown variables is actually currently handled by the
-    // CheckTemplateParamsVisitor.  So this test is potentially silly anyway.  Consider
-    // 1. removing this dead feature
-    // 2. moving this functionality from CheckTemplateParamsVisitor to ResolveNamesVisitor where it
-    //    belongs
-    // http://b/21877289 covers various issues with syntax version
-    assertResolveNamesFails("Undefined variable", constructTemplateSource("{$pa}"));
-  }
-
   /**
    * Helper function that constructs a boilerplate template given a list of body statements to
    * insert into the middle of the template. The body statements will be indented and separated with
@@ -254,7 +239,6 @@ public final class ResolveNamesVisitorTest {
   private void assertResolveNamesFails(String expectedError, String fileContent) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)
         .typeRegistry(typeRegistry)
         .parse();

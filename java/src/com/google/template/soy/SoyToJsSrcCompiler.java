@@ -56,10 +56,12 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   private boolean allowExternalCalls = true;
 
   @Option(
-    name = "--syntaxVersion",
-    usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3)."
+    name = "--shouldAllowDeprecatedSyntax",
+    usage =
+        "[Deprecated: Please use --syntaxVersion instead.] Whether to allow Soy V1"
+            + " syntax (for backwards compatibility during the transition period)."
   )
-  private String syntaxVersion = "";
+  private boolean shouldAllowDeprecatedSyntax = false;
 
   @Option(
     name = "--shouldProvideRequireSoyNamespaces",
@@ -180,9 +182,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    if (!syntaxVersion.isEmpty()) {
-      sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
-    }
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
 
     SoyFileSet sfs = sfsBuilder.build();
@@ -190,6 +189,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
+    jsSrcOptions.setShouldAllowDeprecatedSyntax(shouldAllowDeprecatedSyntax);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);

@@ -27,7 +27,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -170,7 +169,6 @@ public final class SoyTreeUtilsTest {
   public final void testClone() throws Exception {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
-            .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .parse()
             .fileSet();
 

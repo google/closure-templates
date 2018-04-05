@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
@@ -78,7 +76,6 @@ public final class PassManager {
   private final ImmutableList<CompilerFileSetPass> simplificationPasses;
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
-  private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
   private final boolean desugarHtmlNodes;
   @Nullable private final ContextualAutoescaper autoescaper;
@@ -87,7 +84,6 @@ public final class PassManager {
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
     this.errorReporter = checkNotNull(builder.errorReporter);
-    this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
     boolean allowUnknownGlobals = builder.allowUnknownGlobals;
     boolean disableAllTypeChecking = builder.disableAllTypeChecking;
@@ -138,7 +134,9 @@ public final class PassManager {
     }
     singleFilePassesBuilder
         .add(new ValidateAliasesPass(registry, errorReporter, options))
-        .add(new CheckSyntaxVersionPass());
+        // This could go earlier or later.  It doesn't depend on other passes and is doesn't affect
+        // other passes.
+        .add(new DeprecatedV1Pass(options.getDeclaredSyntaxVersion(), errorReporter));
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
       // TODO(lukes): both of these are really about type checking, they should be part of
@@ -272,7 +270,6 @@ public final class PassManager {
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
-    private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
     private boolean disableAllTypeChecking;
@@ -296,11 +293,6 @@ public final class PassManager {
 
     public Builder setTypeRegistry(SoyTypeRegistry registry) {
       this.registry = checkNotNull(registry);
-      return this;
-    }
-
-    public Builder setDeclaredSyntaxVersion(SyntaxVersion declaredSyntaxVersion) {
-      this.declaredSyntaxVersion = checkNotNull(declaredSyntaxVersion);
       return this;
     }
 
@@ -378,27 +370,6 @@ public final class PassManager {
 
     public PassManager build() {
       return new PassManager(this);
-    }
-  }
-
-  private final class CheckSyntaxVersionPass extends CompilerFilePass {
-    final ReportSyntaxVersionErrors reportDeclaredVersionErrors =
-        new ReportSyntaxVersionErrors(declaredSyntaxVersion, true, errorReporter);
-
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      reportDeclaredVersionErrors.report(file);
-      // If there were no errors against the declared syntax version, check for errors against
-      // the inferred syntax version too. (If there were errors against the declared syntax version,
-      // skip the inferred error checking, because it could produce duplicate errors and in any case
-      // it's confusing for the user to have to deal with both declared and inferred errors.)
-      if (!errorReporter.errorsSince(checkpoint)) {
-        SyntaxVersion inferredSyntaxVersion = InferRequiredSyntaxVersion.infer(file);
-        if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-          new ReportSyntaxVersionErrors(inferredSyntaxVersion, false, errorReporter).report(file);
-        }
-      }
     }
   }
 

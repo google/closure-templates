@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
@@ -42,8 +41,8 @@ import javax.annotation.Nullable;
  */
 public final class SoyGeneralOptions implements Cloneable {
 
-  /** User-declared syntax version, or null if not set. */
-  @Nullable private SyntaxVersion declaredSyntaxVersion;
+  /** User-declared syntax version, or V2_0 if not set. */
+  private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
 
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
   private TriState allowExternalCalls = TriState.UNSET;
@@ -108,12 +107,9 @@ public final class SoyGeneralOptions implements Cloneable {
    * declare a syntax version.
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param defaultSyntaxVersion The default value to return if the user did not declare a syntax
-   *     version.
    */
-  public SyntaxVersion getDeclaredSyntaxVersion(SyntaxVersion defaultSyntaxVersion) {
-    return (declaredSyntaxVersion != null) ? declaredSyntaxVersion : defaultSyntaxVersion;
+  public SyntaxVersion getDeclaredSyntaxVersion() {
+    return declaredSyntaxVersion;
   }
 
   /**

@@ -27,7 +27,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -542,7 +541,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       }
       // If we are calling a deprecatedV1 template, we cannot check it since the declarations are
       // likely wrong.
-      if (!callee.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+      if (callee.isDeprecatedV1()) {
         return;
       }
       Set<String> paramNames = Sets.newHashSet();

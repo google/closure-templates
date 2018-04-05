@@ -221,6 +221,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
+  /** Whether or not this template is marked as deprecatedV1=true. */
+  private final boolean isDeprecatedV1;
+
   /** The params from template header or SoyDoc. */
   private ImmutableList<TemplateParam> params;
 
@@ -249,7 +252,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
-    maybeSetSyntaxVersionUpperBound(nodeBuilder.getSyntaxVersionBound());
+    this.isDeprecatedV1 = nodeBuilder.isMarkedDeprecatedV1;
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
@@ -302,6 +305,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
+    this.isDeprecatedV1 = orig.isDeprecatedV1;
   }
 
   /** Returns info from the containing Soy file's header declarations. */
@@ -326,6 +330,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   @Nullable
   public String getPartialTemplateName() {
     return partialTemplateName;
+  }
+
+  public boolean isDeprecatedV1() {
+    return isDeprecatedV1;
   }
 
   /** Returns the visibility of this template. */

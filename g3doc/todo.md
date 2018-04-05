@@ -4,49 +4,14 @@ This file is meant to track technical debt issues in the Soy codebase. This
 isn't meant to track bugs or feature requests, but rather long term design
 issues.
 
-## Improve consistency of backends by moving passes into the PassManager
+## Eliminate `V1_0` features whenever possible
 
-Each Soy backend (jssrc, pysrc, tofu, jbcsrc) should try to run the same set of
-compiler passes. The current technique is to move shared compiler passes into
-`PassManager` and expose backend specific configuration requirements via
-explicit setters. This is superior to the historical approach where each backend
-has just decided _not_ to run certain passes (backends should have to opt-out
-instead of opt-in to consistency).
+The V1_0 mode in the compiler disables some common compiler checks. With the
+exception of uses of the `v1Expression` function these should all be fixable.
 
-Work on this task consists mostly of encapsulating compiler functionality in
-`PassManager` and pulling it out of `SoyFileSet` and updating unit tests that
-were relying on particular passes not running.
+### Eliminate support for buggy soydoc params in v1 templates
 
-## Remove `SyntaxVersion` whenever possible
-
-There are 2 aspects of `SyntaxVersion` _declared_ and _inferred_ syntax version,
-we should try to eliminate everything possible. It is likely that we will for a
-while still need a way for legacy templates to get V1 behavior (more on this
-[below](#v1_language_features), but all other uses for `SyntaxVersion` should be
-able to be eliminated.
-
-### Eliminate V2_4
-
-There isn't much to this since no additional language checks are enabled. But
-you are _inferred_ to 2.4 if you use `{@inject ...}` parameters instead of `$ij`
-params.
-
-We should consider moving everything to use the same syntax for ijs.
-
-## Eliminate legacy language features {#v1_language_features}
-
-Soy has grown a rather large array of legacy compatibility options that don't
-have much reason to exist anymore.
-
-A lot of these are related. For example, adding parameter declarations should
-probably happen _after_ fixing expression syntax since unparseable expressions
-hide data references.
-
-### Eliminate support for files without `{namespace ...}` declarations
-
-In Soy v1, all template declarations were fully qualified and there were no
-`{namespace ...}` declarations. We should be able to infer namespaces for all
-such files.
+v1 allows soydoc that looks like `@param {string} foo` which is an error in 2.0.
 
 ### Eliminate support for templates that don't declare parameters
 
@@ -68,22 +33,14 @@ The default type for these parameter declarations will be `?`, the unknown type.
 It would be possible for us to infer the type in certain circumstances, but that
 would increase the complexity of the tool significantly.
 
-### Eliminate v1 expression syntax
+### Enforce that all required parameters are passed
 
-Unparseable expressions are currently interpreted as v1 expressions and are only
-supported in the jssrc backend. We should be able to write tools to help migrate
-most of expressions. Here are the major incompatibilities.
-
-*   `&&`, `||` and `!` -> `and`, `or` and `not`
-*   String literals using double quotes (use single quotes)
-*   translate unknown function references to soy plugins. Probably should wait
-    for work on [better plugin support](#better_plugins)
-*   eliminate unknown global references (maybe not worht it?)
+v1 templates don't have to pass all parameters required by their callees. This
+is very errorprone and could be easily removed by marking parameters as optional
+where callers don't pass them.
 
 ## Eliminate legacy compiler options
 
-*   --isUsingIjData flip to true, delete flag
-*   --codeStyle remove flag, it is dead
 *   --shouldProvideRequireSoyNamespaces and
     --should_provide_require_js_functions These should be eliminated with a
     reasonable default selected. This will have implications for v1 templates
@@ -92,7 +49,6 @@ most of expressions. Here are the major incompatibilities.
         for providing the namespace at the Soy file level and at the template
         level. This will eliminate one of the biggest problems that user face
         with incompatible templates across large code bases.
-    *   AI: Add a namespaces tag to all files
     *   AI: Eliminate namespace collisions across soy files (mknichel has some
         scripts)
     *   AI: Flip the provide namespace flag on for all projects.

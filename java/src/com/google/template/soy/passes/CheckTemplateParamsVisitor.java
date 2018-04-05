@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -77,7 +76,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+    if (node.isDeprecatedV1()) {
       return;
     }
 

@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import java.io.File;
 import java.io.IOException;
@@ -91,12 +90,6 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   private String bidiIsRtlFn = "";
 
   @Option(
-    name = "--syntaxVersion",
-    usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3)."
-  )
-  private String syntaxVersion = "";
-
-  @Option(
     name = "--namespaceManifestPath",
     usage =
         "A list of paths to a manifest file which provides a map of soy namespaces to"
@@ -136,13 +129,6 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
 
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    if (syntaxVersion.length() > 0) {
-      SyntaxVersion parsedVersion = SyntaxVersion.forName(syntaxVersion);
-      if (parsedVersion.num < SyntaxVersion.V2_0.num) {
-        exitWithError("Declared syntax version must be 2.0 or greater.");
-      }
-      sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
-    }
     // Disallow external call entirely in Python.
     sfsBuilder.setAllowExternalCalls(false);
     // Require strict templates in Python.

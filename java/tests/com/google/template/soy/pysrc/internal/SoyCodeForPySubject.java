@@ -27,7 +27,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -171,7 +170,6 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     SoyNode node =
         SharedTestUtils.getNode(
             SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, actual())
-                .declaredSyntaxVersion(SyntaxVersion.V2_0)
                 .parse()
                 .fileSet(),
             0);

@@ -17,7 +17,6 @@
 package com.google.template.soy.basetree;
 
 import com.google.template.soy.base.SourceLocation;
-import javax.annotation.Nullable;
 
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
@@ -30,33 +29,6 @@ import javax.annotation.Nullable;
  *
  */
 public interface Node {
-
-  /**
-   * Returns a pair (syntaxVersion, reasonStr), where the first item is the lowest known upper bound
-   * (exclusive!) for the syntax version of this node, and the second item is a user-friendly
-   * explanation of the reason for the bound. For example: (V2_1, "Function hasData() is unnecessary
-   * and no longer allowed.") Returns null if there is no known upper bound on this node's syntax
-   * version.
-   */
-  @Nullable
-  SyntaxVersionUpperBound getSyntaxVersionUpperBound();
-
-  /**
-   * Records a newly discovered upper bound for the syntax version of this node.
-   *
-   * @param newSyntaxVersionBound A newly discovered upper bound (exclusive!) for the syntax version
-   *     of this node.
-   */
-  void maybeSetSyntaxVersionUpperBound(SyntaxVersionUpperBound newSyntaxVersionBound);
-
-  /**
-   * Returns false if we know that this node's syntax version must be lower than the given value.
-   * Returns true otherwise (i.e. with what we know so far, this node could be the given syntax
-   * version or higher).
-   *
-   * @param syntaxVersionCutoff The syntax version cutoff to check.
-   */
-  boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff);
 
   /** Returns the source location (file path and line number) for this node. */
   SourceLocation getSourceLocation();

@@ -174,16 +174,6 @@ public final class CheckFunctionCallsVisitorTest {
 
     assertFunctionCallsInvalid(
         SyntaxVersion.V1_0,
-        "Incorrect syntax for version 1.0: The v1Expression function can only be used in templates "
-            + "marked with the deprecatedV1=\"true\" attribute.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $blah: 'foo' /}",
-        "  {let $m: v1Expression('$blah') /}",
-        "{/template}");
-
-    assertFunctionCallsInvalid(
-        SyntaxVersion.V1_0,
         "Argument to function 'v1Expression' must be a string literal.",
         "{namespace ns}\n",
         "{template .foo deprecatedV1=\"true\"}",

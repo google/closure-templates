@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -136,7 +135,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('?', $pa.xxx.yyy)}",
                     "{assertType('float', $pb[$pa])}",
                     "{assertType('string', $pc[$pa])}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(TYPE_REGISTRY)
             .parse()
@@ -188,7 +186,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('?', -$pa)}",
                     "{assertType('int', -$pi)}",
                     "{assertType('float', -$pf)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(TYPE_REGISTRY)
             .parse()
@@ -216,7 +213,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('string', $ps + $pf)}",
                     "{assertType('string', $pi + $ps)}",
                     "{assertType('string', $pf + $ps)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -241,7 +237,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('bool', not $pa)}",
                     "{assertType('bool', not $pi)}",
                     "{assertType('bool', not $pf)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V1_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -277,7 +272,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('bool', $pa != $pa)}",
                     "{assertType('bool', $pi != $pi)}",
                     "{assertType('bool', $pf != $pf)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -298,7 +292,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{assertType('float|int', $pi ?: $pf)}",
                     "{assertType('float|int', $pa ? $pi : $pf)}",
                     "{assertType('int', $ni ?: 0)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -311,7 +304,6 @@ public final class ResolveExpressionTypesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource("{@param? l: [a :int]}", "{assertType('int', $l?.a ?: 0)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -329,7 +321,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{let $list: [$pi, $pf]/}",
                     "{assertType('list<float|int>', $list)}",
                     "{assertType('int', length($list))}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -346,7 +337,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pf: float}",
                     "{let $map: map(1: $pi, 2:$pf)/}",
                     "{assertType('map<int,float|int>', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -363,7 +353,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pf: float}",
                     "{let $map: [1: $pi, 2:$pf]/}",
                     "{assertType('legacy_object_map<int,float|int>', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -381,7 +370,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param k1: string}",
                     "{let $map: map($k1: $v1, 'b': $v2) /}",
                     "{assertType('map<string,int|string>', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -399,7 +387,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param k1: string}",
                     "{let $map: [$k1: $v1, 'b': $v2] /}",
                     "{assertType('legacy_object_map<string,int|string>', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -417,7 +404,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     // With the old map syntax, this would create a record type (see next test)
                     "{let $map: map('a': $pi, 'b':$pf)/}",
                     "{assertType('map<string,float|int>', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -434,7 +420,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pf: float}",
                     "{let $map: ['a': $pi, 'b':$pf]/}",
                     "{assertType('[a: int, b: float]', $map)}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -447,7 +432,6 @@ public final class ResolveExpressionTypesVisitorTest {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource("{let $map: map('a': 1, 'a': 2)/}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse()
@@ -461,7 +445,6 @@ public final class ResolveExpressionTypesVisitorTest {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse()
@@ -603,7 +586,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{/if}",
                     ""))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -847,7 +829,6 @@ public final class ResolveExpressionTypesVisitorTest {
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse();

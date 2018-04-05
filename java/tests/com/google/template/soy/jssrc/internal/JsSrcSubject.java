@@ -72,7 +72,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   ErrorReporter errorReporter = ErrorReporter.exploding();
   private final List<SoyFunction> soyFunctions = new ArrayList<>();
-  private SyntaxVersion syntaxVersion = SyntaxVersion.V2_0;
 
   private JsSrcSubject(FailureMetadata failureMetadata, @Nullable String s) {
     super(failureMetadata, s);
@@ -146,7 +145,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   @CheckReturnValue
   T withDeclaredSyntaxVersion(SyntaxVersion version) {
-    this.syntaxVersion = version;
+    this.generalOptions.setDeclaredSyntaxVersionName(version.name);
     return typedThis();
   }
 
@@ -160,7 +159,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forFileContents(actual())
             .allowUnboundGlobals(true)
-            .declaredSyntaxVersion(syntaxVersion)
             .typeRegistry(typeRegistry)
             .options(generalOptions);
     for (SoyFunction soyFunction : soyFunctions) {

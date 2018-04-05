@@ -55,7 +55,6 @@ public final class SoyFileSetParserBuilder {
 
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
-  private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
@@ -139,7 +138,7 @@ public final class SoyFileSetParserBuilder {
 
   /** Sets the parser's declared syntax version. Returns this object, for chaining. */
   public SoyFileSetParserBuilder declaredSyntaxVersion(SyntaxVersion version) {
-    this.declaredSyntaxVersion = version;
+    this.options.setDeclaredSyntaxVersionName(version.name);
     return this;
   }
 
@@ -179,8 +178,6 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
     this.options = checkNotNull(options);
-    // allow the version in the options to override the declared default, if there is one.
-    this.declaredSyntaxVersion = options.getDeclaredSyntaxVersion(declaredSyntaxVersion);
     return this;
   }
 
@@ -250,7 +247,6 @@ public final class SoyFileSetParserBuilder {
   public ParseResult parse() {
     PassManager.Builder passManager =
         new PassManager.Builder()
-            .setDeclaredSyntaxVersion(declaredSyntaxVersion)
             .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
             .setErrorReporter(errorReporter)
             .setTypeRegistry(typeRegistry)

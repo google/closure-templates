@@ -29,8 +29,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -84,9 +82,6 @@ public abstract class TemplateNodeBuilder {
   /** The id for this node. */
   protected Integer id;
 
-  /** The lowest known syntax version bound. Value may be adjusted multiple times. */
-  @Nullable protected SyntaxVersionUpperBound syntaxVersionBound;
-
   /** The command text. */
   protected String cmdText;
 
@@ -132,7 +127,7 @@ public abstract class TemplateNodeBuilder {
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
-  protected boolean isMarkedV1;
+  protected boolean isMarkedDeprecatedV1;
 
   protected boolean strictHtmlDisabled;
 
@@ -142,8 +137,6 @@ public abstract class TemplateNodeBuilder {
   protected TemplateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.errorReporter = errorReporter;
-    this.syntaxVersionBound = null;
-    // All other fields default to null.
   }
 
   /**
@@ -201,7 +194,7 @@ public abstract class TemplateNodeBuilder {
           setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
           break;
         case "deprecatedV1":
-          markDeprecatedV1(attribute.valueAsEnabled(errorReporter));
+          this.isMarkedDeprecatedV1 = attribute.valueAsEnabled(errorReporter);
           break;
         case "stricthtml":
           strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
@@ -280,16 +273,6 @@ public abstract class TemplateNodeBuilder {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected final void markDeprecatedV1(boolean isDeprecatedV1) {
-    isMarkedV1 = isDeprecatedV1;
-    if (isDeprecatedV1) {
-      SyntaxVersionUpperBound newSyntaxVersionBound =
-          new SyntaxVersionUpperBound(SyntaxVersion.V2_0, "Template is marked as deprecatedV1.");
-      this.syntaxVersionBound =
-          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
-    }
-  }
-
   protected void setAutoescapeInfo(
       AutoescapeMode autoescapeMode,
       @Nullable SanitizedContentKind contentKind,
@@ -310,11 +293,6 @@ public abstract class TemplateNodeBuilder {
   /** @return the id for this node. */
   Integer getId() {
     return id;
-  }
-
-  /** @return The lowest known syntax version bound. */
-  SyntaxVersionUpperBound getSyntaxVersionBound() {
-    return syntaxVersionBound;
   }
 
   /** @return The command text. */
@@ -548,7 +526,7 @@ public abstract class TemplateNodeBuilder {
         } else {
           if (declText.startsWith("{")) {
             // v1 is allowed for compatibility reasons
-            if (!isMarkedV1) {
+            if (!isMarkedDeprecatedV1) {
               errorReporter.report(paramLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
             }
           } else {

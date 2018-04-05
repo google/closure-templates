@@ -95,7 +95,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -389,16 +388,6 @@ public final class SoyFileSet {
     }
 
     /**
-     * Sets the user-declared syntax version name for the Soy file bundle.
-     *
-     * @param versionName The syntax version name, e.g. "1.0", "2.0", "2.3".
-     */
-    public Builder setDeclaredSyntaxVersionName(@Nonnull String versionName) {
-      getGeneralOptions().setDeclaredSyntaxVersionName(versionName);
-      return this;
-    }
-
-    /**
      * Sets whether to allow external calls (calls to undefined templates).
      *
      * @param allowExternalCalls Whether to allow external calls (calls to undefined templates).
@@ -663,7 +652,7 @@ public final class SoyFileSet {
     //    ChangeCallsToPassAllData pass will change the params of templates.
     ParseResult result =
         parse(
-            passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().optimize(false),
+            passManagerBuilder().allowUnknownGlobals().optimize(false),
             typeRegistry,
             new PluginResolver(
                 // we allow undefined plugins since they typically aren't provided :(
@@ -720,9 +709,13 @@ public final class SoyFileSet {
   private SoyMsgBundle doExtractMsgs() {
     // extractMsgs disables a bunch of passes since it is typically not configured with things
     // like global definitions, type definitions, etc.
+    // TODO(b/32091399): Message Extraction doesn't have a way to configure the version and it needs
+    // to support all soy files so we assume the worst and configure v1.0.  This can go away when
+    // jssrc no longer supports v1.0
+    generalOptions.setDeclaredSyntaxVersionName("1.0");
     SoyFileSetNode soyTree =
         parse(
-                passManagerBuilder(SyntaxVersion.V1_0)
+                passManagerBuilder()
                     .allowUnknownGlobals()
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     .disableAllTypeChecking(),
@@ -759,11 +752,14 @@ public final class SoyFileSet {
     // ------ Extract msgs from all the templates reachable from public templates. ------
     // Note: In the future, instead of using all public templates as the root set, we can allow the
     // user to provide a root set.
-
+    // TODO(b/32091399): Message Extraction doesn't have a way to configure the version and it needs
+    // to support all soy files so we assume the worst and configure v1.0.  This can go away when
+    // jssrc no longer supports v1.0
+    generalOptions.setDeclaredSyntaxVersionName("1.0");
     if (memoizedExtractedMsgIdsForPruning == null) {
       ParseResult result =
           parse(
-              passManagerBuilder(SyntaxVersion.V1_0).allowUnknownGlobals().disableAllTypeChecking(),
+              passManagerBuilder().allowUnknownGlobals().disableAllTypeChecking(),
               // override the type registry so that the parser doesn't report errors when it
               // can't resolve strict types
               SoyTypeRegistry.DEFAULT_UNKNOWN,
@@ -912,7 +908,7 @@ public final class SoyFileSet {
 
   /** Runs common compiler logic shared by tofu and jbcsrc backends. */
   private ServerCompilationPrimitives compileForServerRendering() {
-    ParseResult result = parse(SyntaxVersion.V2_0);
+    ParseResult result = parse();
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
@@ -1076,7 +1072,7 @@ public final class SoyFileSet {
     // and constants. For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
     PassManager.Builder builder =
-        passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().desugarHtmlNodes(false);
+        passManagerBuilder().allowUnknownGlobals().desugarHtmlNodes(false);
     ParseResult parseResult = parse(builder);
     throwIfErrorsPresent();
     return parseResult;
@@ -1129,15 +1125,14 @@ public final class SoyFileSet {
   /** Prepares the parsed result for use in generating Incremental DOM source code. */
   @SuppressWarnings("deprecation")
   private ParseResult preprocessIncrementalDOMResults() {
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
+    SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion();
 
     Preconditions.checkState(
-        declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
-        "Incremental DOM code generation only supports syntax version of V2 or higher.");
+        declaredSyntaxVersion == SyntaxVersion.V2_0,
+        "Incremental DOM code generation only supports syntax version of V2");
     requireStrictAutoescaping();
     // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
-    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).desugarHtmlNodes(false));
+    ParseResult result = parse(passManagerBuilder().desugarHtmlNodes(false));
     throwIfErrorsPresent();
     return result;
   }
@@ -1156,7 +1151,7 @@ public final class SoyFileSet {
       throws IOException {
     resetErrorReporter();
     requireStrictAutoescaping();
-    ParseResult result = parse(SyntaxVersion.V2_0);
+    ParseResult result = parse();
     throwIfErrorsPresent();
     new PySrcMain(apiCallScopeProvider)
         .genPyFiles(result.fileSet(), pySrcOptions, outputPathFormat, errorReporter);
@@ -1166,8 +1161,8 @@ public final class SoyFileSet {
   }
 
   // Parse the current file set with the given default syntax version.
-  private ParseResult parse(SyntaxVersion defaultVersion) {
-    return parse(passManagerBuilder(defaultVersion));
+  private ParseResult parse() {
+    return parse(passManagerBuilder());
   }
 
   private ParseResult parse(PassManager.Builder builder) {
@@ -1175,7 +1170,7 @@ public final class SoyFileSet {
         builder,
         typeRegistry,
         new PluginResolver(
-            generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0) == SyntaxVersion.V1_0
+            generalOptions.getDeclaredSyntaxVersion() == SyntaxVersion.V1_0
                 ? PluginResolver.Mode.ALLOW_UNDEFINED_FUNCTIONS_FOR_V1_SUPPORT
                 : PluginResolver.Mode.REQUIRE_DEFINITIONS,
             printDirectives,
@@ -1197,10 +1192,9 @@ public final class SoyFileSet {
         .parse();
   }
 
-  private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
+  private PassManager.Builder passManagerBuilder() {
     return new PassManager.Builder()
         .setGeneralOptions(generalOptions)
-        .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
         .setSoyPrintDirectiveMap(printDirectives)
         .setErrorReporter(errorReporter)
         .setConformanceConfig(conformanceConfig)

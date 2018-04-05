@@ -27,7 +27,6 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.testing.Example;
@@ -250,7 +249,6 @@ public final class JspbTest {
 
     ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(REGISTRY)
             .parse();
 
