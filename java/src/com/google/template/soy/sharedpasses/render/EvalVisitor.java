@@ -38,6 +38,7 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyProtoValueImpl;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
@@ -406,7 +407,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     // Note that this code treats value of null and value of NullData differently. Only the latter
     // will trigger this check, which is partly why places like
-    // SoyProtoValue.getFieldProviderInternal() and AbstractDict.getField() return null instead
+    // SoyProtoValueImpl.getFieldProviderInternal() and AbstractDict.getField() return null instead
     // of NullData.
     // TODO(user): Consider cleaning up the null / NullData inconsistencies.
     if (value != null && !TofuTypeChecks.isInstance(fieldAccess.getType(), value)) {
@@ -482,8 +483,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * incorrectly.
    */
   private static void maybeMarkBadProtoAccess(ExprNode expr, SoyValue value) {
-    if (value instanceof SoyProtoValue) {
-      ((SoyProtoValue) value).setAccessLocationKey(expr.getSourceLocation());
+    if (value instanceof SoyProtoValueImpl) {
+      ((SoyProtoValueImpl) value).setAccessLocationKey(expr.getSourceLocation());
     }
   }
 
@@ -677,7 +678,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<String> paramNames = node.getParamNames();
-    SoyProtoValue.Builder builder = new SoyProtoValue.Builder(soyProto.getDescriptor());
+    SoyProtoValueImpl.Builder builder = new SoyProtoValueImpl.Builder(soyProto.getDescriptor());
     for (int i = 0; i < node.numChildren(); i++) {
       SoyValue visit = visit(node.getChild(i));
       // null means don't assign

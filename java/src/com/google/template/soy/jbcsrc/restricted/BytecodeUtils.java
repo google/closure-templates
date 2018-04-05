@@ -36,7 +36,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyProtoValueImpl;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -93,7 +93,7 @@ public final class BytecodeUtils {
   public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
   public static final Type SOY_LEGACY_OBJECT_MAP_TYPE = Type.getType(SoyLegacyObjectMap.class);
   public static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
-  public static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
+  public static final Type SOY_PROTO_VALUE_IMPL_TYPE = Type.getType(SoyProtoValueImpl.class);
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
@@ -876,8 +876,8 @@ public final class BytecodeUtils {
     }
 
     if (asType.equals(Message.class)) {
-      if (!isDefinitelyAssignableFrom(SOY_PROTO_VALUE_TYPE, fromType)) {
-        cb.checkCast(SOY_PROTO_VALUE_TYPE);
+      if (!isDefinitelyAssignableFrom(SOY_PROTO_VALUE_IMPL_TYPE, fromType)) {
+        cb.checkCast(SOY_PROTO_VALUE_IMPL_TYPE);
       }
       MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(cb);
       return MESSAGE_TYPE;
