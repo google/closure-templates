@@ -33,7 +33,12 @@ import javax.annotation.Nonnull;
 /**
  * A list data node in a Soy data tree.
  *
+ * @deprecated Users of this class should use normal {@code java.util.List}s instead. The Soy
+ *     rendering APIs can automatically handle conversion of native Java types and Soy plugin users
+ *     can directly use {@link SoyValueConverter#convert(Object)}. This class offers no benefits
+ *     over those APIs.
  */
+@Deprecated
 public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
   /** The underlying list. */
   private final List<SoyData> list;

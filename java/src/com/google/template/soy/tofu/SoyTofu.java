@@ -114,32 +114,28 @@ public interface SoyTofu {
    */
   interface Renderer {
 
+    /** Sets the data to call the template with. Can be null if the template has no parameters. */
+    Renderer setData(Map<String, ?> data);
+
     /**
      * Sets the data to call the template with. Can be null if the template has no parameters.
      *
-     * <p>Note: If you call this method instead of {@link #setData(SoyRecord)}, your template data
-     * will be converted to a {@code SoyMapData} object on each call. This may not be a big deal if
-     * you only need to use the data object once. But if you need to reuse the same data object for
-     * multiple calls, it's more efficient to build your own {@code SoyRecord} object and reuse it
-     * with {@link #setData(SoyRecord)}.
+     * @deprecated Use {@link #setData(Map)} instead. Soy's custom {@link SoyRecord} type offers no
+     *     benefits over native Java maps.
      */
-    Renderer setData(Map<String, ?> data);
-
-    /** Sets the data to call the template with. Can be null if the template has no parameters. */
+    @Deprecated
     Renderer setData(SoyRecord data);
+
+    /** Sets the injected data to call the template with. Can be null if not used. */
+    Renderer setIjData(Map<String, ?> ijData);
 
     /**
      * Sets the injected data to call the template with. Can be null if not used.
      *
-     * <p>Note: If you call this method instead of {@link #setIjData(SoyRecord)}, the data will be
-     * converted to a {@code SoyRecord} object on each call. This may not be a big deal if you only
-     * need to use the data object once. But if you need to reuse the same data object for multiple
-     * calls, it's more efficient to build your own {@code SoyRecord} object and reuse it with
-     * {@link #setIjData(SoyRecord)}.
+     * @deprecated Use {@link #setIjData(Map)} instead. Soy's custom {@link SoyRecord} type offers
+     *     no benefits over native Java maps.
      */
-    Renderer setIjData(Map<String, ?> ijData);
-
-    /** Sets the injected data to call the template with. Can be null if not used. */
+    @Deprecated
     Renderer setIjData(SoyRecord ijData);
 
     /**
