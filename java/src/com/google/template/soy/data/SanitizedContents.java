@@ -68,6 +68,9 @@ public final class SanitizedContents {
 
   /** Creates an empty string constant. */
   public static SanitizedContent emptyString(ContentKind kind) {
+    if (kind == ContentKind.TEXT) {
+      return UnsanitizedString.create("", Dir.NEUTRAL);
+    }
     return SanitizedContent.create("", kind, Dir.NEUTRAL); // Empty string is neutral.
   }
 
@@ -76,8 +79,8 @@ public final class SanitizedContents {
    *
    * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
    */
-  public static SanitizedContent unsanitizedText(String text, @Nullable Dir dir) {
-    return SanitizedContent.create(text, ContentKind.TEXT, dir);
+  public static UnsanitizedString unsanitizedText(String text, @Nullable Dir dir) {
+    return UnsanitizedString.create(text, dir);
   }
 
   /**
@@ -85,7 +88,7 @@ public final class SanitizedContents {
    *
    * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
    */
-  public static SanitizedContent unsanitizedText(String text) {
+  public static UnsanitizedString unsanitizedText(String text) {
     return unsanitizedText(text, null);
   }
 

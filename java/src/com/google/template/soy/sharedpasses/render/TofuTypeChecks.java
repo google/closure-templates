@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.template.soy.data.Flags;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -35,7 +36,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
 
 /** Implements runtime type checks for tofu. */
-final class TofuTypeChecks {
+public final class TofuTypeChecks {
   /**
    * Returns true if the given {@linkplain SoyValue value} is an instance of the {@linkplain SoyType
    * type}. For generic types, this only checks the overall shape of the type (list, map, etc) since
@@ -49,7 +50,7 @@ final class TofuTypeChecks {
    * @param value The value to check against the type.
    * @return True if the value is an instance of the type.
    */
-  static final boolean isInstance(SoyType type, SoyValue value) {
+  public static final boolean isInstance(SoyType type, SoyValue value) {
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:
@@ -87,7 +88,12 @@ final class TofuTypeChecks {
       case RECORD:
         return value instanceof SoyRecord;
       case STRING:
-        return value instanceof SoyString;
+        // TODO(b/74259210): Log a future error
+        if (Flags.stringIsNotSanitizedContent()) {
+          return value instanceof SoyString;
+        } else {
+          return value instanceof SoyString || value instanceof SanitizedContent;
+        }
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:

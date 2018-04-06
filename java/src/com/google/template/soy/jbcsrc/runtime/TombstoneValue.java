@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.restricted.SoyString;
 import java.io.IOException;
 
 /**
@@ -26,7 +25,7 @@ import java.io.IOException;
  *
  * <p>This should never be exposed to users or end up being accessed via a template.
  */
-final class TombstoneValue extends SoyAbstractValue implements SoyString {
+final class TombstoneValue extends SoyAbstractValue {
   static final TombstoneValue INSTANCE = new TombstoneValue();
 
   @Override

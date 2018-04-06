@@ -368,6 +368,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
+  public static final MethodRef RUNTIME_CHECK_SOY_STRING =
+      create(JbcSrcRuntime.class, "checkSoyString", Object.class).asCheap().asNonNullable();
+
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
       create(
               SoyValueProvider.class,

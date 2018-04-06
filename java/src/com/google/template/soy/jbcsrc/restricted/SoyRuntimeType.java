@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.common.base.Optional;
@@ -27,7 +28,6 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -142,7 +142,7 @@ public abstract class SoyRuntimeType {
             BoolType.getInstance(), Type.BOOLEAN_TYPE, Type.getType(BooleanData.class));
       case STRING:
         return new PrimitiveSoyType(
-            StringType.getInstance(), BytecodeUtils.STRING_TYPE, Type.getType(SoyString.class));
+            StringType.getInstance(), BytecodeUtils.STRING_TYPE, SOY_STRING_TYPE);
       case INT:
         return new PrimitiveSoyType(
             IntType.getInstance(), Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);

@@ -25,7 +25,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.Closeable;
 import java.io.IOException;
@@ -150,7 +149,7 @@ public final class BasicDirectivesRuntime {
     }
   }
 
-  public static SoyString changeNewlineToBr(SoyValue value) {
+  public static SoyValue changeNewlineToBr(SoyValue value) {
     String result = NEWLINE_PATTERN.matcher(coerceToString(value)).replaceAll("<br>");
 
     // Make sure to transmit the known direction, if any, to any downstream directive that may need
@@ -238,7 +237,7 @@ public final class BasicDirectivesRuntime {
     };
   }
 
-  public static SoyString insertWordBreaks(SoyValue value, int maxCharsBetweenWordBreaks) {
+  public static SoyValue insertWordBreaks(SoyValue value, int maxCharsBetweenWordBreaks) {
     String result =
         new InsertWordBreaks(maxCharsBetweenWordBreaks).processString(coerceToString(value));
 

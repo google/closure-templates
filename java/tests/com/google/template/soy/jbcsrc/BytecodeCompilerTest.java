@@ -731,6 +731,12 @@ public class BytecodeCompilerTest {
     assertThat(templateMetadata.delCallees()).isEmpty();
   }
 
+  private Object getField(String name, CompiledTemplate template) throws Exception {
+    Field declaredField = template.getClass().getDeclaredField(name);
+    declaredField.setAccessible(true);
+    return declaredField.get(template);
+  }
+
   @Test
   public void testPassHtmlAsNullableString() throws Exception {
     CompiledTemplateSubject subject =
@@ -743,12 +749,6 @@ public class BytecodeCompilerTest {
     subject.rendersAs("empty");
     subject.rendersAs(
         "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
-  }
-
-  private Object getField(String name, CompiledTemplate template) throws Exception {
-    Field declaredField = template.getClass().getDeclaredField(name);
-    declaredField.setAccessible(true);
-    return declaredField.get(template);
   }
 
   @Test

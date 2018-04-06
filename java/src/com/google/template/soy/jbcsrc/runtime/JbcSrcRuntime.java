@@ -34,6 +34,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -131,6 +132,16 @@ public final class JbcSrcRuntime {
     SoyValueProvider provider = record.getFieldProvider(field);
     // | instead of || avoids a branch
     return (provider == null | provider instanceof NullData) ? NULL_PROVIDER : provider;
+  }
+
+  /**
+   * Casts the given type to SoyString or throws a ClassCastException.
+   *
+   * <p>TODO(b/74259210): Change this to conditionally log a warning
+   */
+  public static SoyString checkSoyString(Object o) {
+    // TODO(tomnguyen) Log a future error here if o is SanitizedCompatString
+    return (SoyString) o;
   }
 
   /**

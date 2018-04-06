@@ -45,7 +45,8 @@ import javax.annotation.concurrent.Immutable;
  */
 @ParametersAreNonnullByDefault
 @Immutable
-public class SanitizedContent extends SoyData implements SoyString {
+public class SanitizedContent extends SoyData {
+
   /**
    * Creates a SanitizedContent object.
    *
@@ -60,12 +61,18 @@ public class SanitizedContent extends SoyData implements SoyString {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
-    return new SanitizedContent(content, kind, dir);
+    if (Flags.stringIsNotSanitizedContent()) {
+      return new SanitizedContent(content, kind, dir);
+    }
+    return SanitizedCompatString.create(content, kind, dir);
   }
 
   /** Creates a SanitizedContent object with default direction. */
   static SanitizedContent create(String content, ContentKind kind) {
-    return new SanitizedContent(content, kind, kind.getDefaultDir());
+    if (Flags.stringIsNotSanitizedContent()) {
+      return new SanitizedContent(content, kind, kind.getDefaultDir());
+    }
+    return SanitizedCompatString.create(content, kind, kind.getDefaultDir());
   }
 
   /** A kind of textual content. */
@@ -141,10 +148,10 @@ public class SanitizedContent extends SoyData implements SoyString {
   private final String content;
 
   /**
-   * Private constructor to limit subclasses to this file. This is important to ensure that all
-   * implementations of this class are fully vetted by security.
+   * Package private constructor to limit subclasses to this file. This is important to ensure that
+   * all implementations of this class are fully vetted by security.
    */
-  private SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+  SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
     this.content = content;
     this.contentKind = contentKind;
     this.contentDir = contentDir;
@@ -364,5 +371,23 @@ public class SanitizedContent extends SoyData implements SoyString {
         getContentKind());
     return TrustedResourceUrls.toProto(
         UncheckedConversions.trustedResourceUrlFromStringKnownToSatisfyTypeContract(getContent()));
+  }
+
+  /** A sanitized content that implements the old semantics of SoyString. */
+  private static final class SanitizedCompatString extends SanitizedContent implements SoyString {
+
+    private SanitizedCompatString(
+        String content, ContentKind contentKind, @Nullable Dir contentDir) {
+      super(content, contentKind, contentDir);
+    }
+
+    static SanitizedCompatString create(String content, ContentKind kind, @Nullable Dir dir) {
+      return new SanitizedCompatString(content, kind, dir);
+    }
+
+    /** Creates a SanitizedContent object with default direction. */
+    static SanitizedCompatString create(String content, ContentKind kind) {
+      return new SanitizedCompatString(content, kind, kind.getDefaultDir());
+    }
   }
 }
