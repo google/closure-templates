@@ -177,7 +177,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
-      checkNotNull(contentKind);
+      checkNotNull(expectedContentKind);
       this.contentKindExplicitlySet = true;
       this.expectedContentKind = expectedContentKind;
       return this;
