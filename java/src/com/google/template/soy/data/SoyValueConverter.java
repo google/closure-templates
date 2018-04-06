@@ -327,6 +327,8 @@ public final class SoyValueConverter {
             return newListFromIterable(input);
           }
         });
+    // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
+    // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
     expensiveConverterMap.put(
         FluentIterable.class,
         new Converter<FluentIterable<?>>() {
