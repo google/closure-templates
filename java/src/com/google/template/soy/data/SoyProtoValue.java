@@ -57,8 +57,7 @@ import java.util.logging.Logger;
  * these methods.
  *
  */
-// TODO(b/77641519): make this final once it's not mocked
-public class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
+public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
   // The minimum amount of time between logging for map/record access to a particular proto.
   private static final long LOGGING_FREQUENCY = TimeUnit.MINUTES.toMillis(1);
   private static final Logger logger = Logger.getLogger(SoyProtoValue.class.getName());
