@@ -188,8 +188,6 @@
       <groupId>com.google.errorprone</groupId>
       <artifactId>error_prone_annotations</artifactId>
       <version>2.0.14</version>
-      <!-- unnecessary at runtime since retention of annotations is CLASS -->
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
