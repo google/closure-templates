@@ -45,8 +45,8 @@ import javax.inject.Singleton;
  * <p>The keys are returned as a list with no guarantees on the order (may be different on each run
  * or for each backend).
  *
- * <p>This enables iteration over the keys in a map, e.g. {@code {foreach $key in keys($myMap)} ...
- * {/foreach}}
+ * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in keys($myMap)} ...
+ * {/for}}
  *
  * <p>NOTE: this function has special support in the type checker for calculating the return type
  *
