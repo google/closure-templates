@@ -63,15 +63,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private boolean shouldAllowDeprecatedSyntax = false;
 
-  @SuppressWarnings("unused") // TODO(b/73881914): delete, this is ignored
-  @Option(
-    name = "--shouldProvideRequireSoyNamespaces",
-    usage =
-        "When this option is used, each generated JS file will contain (a) one single"
-            + " goog.provide statement for the corresponding Soy file's namespace and"
-            + " (b) goog.require statements for the namespaces of the called templates."
-  )
-  private boolean shouldProvideRequireSoyNamespaces = false;
 
   @Option(
     name = "--locales",
@@ -140,11 +131,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   @Option(
     name = "--useGoogIsRtlForBidiGlobalDir",
     usage =
-        "[Only applicable if both --shouldGenerateGoogMsgDefs and"
-            +
-            " --shouldProvideRequireSoyNamespaces"
-            +
-            " is true]"
+        "[Only applicable if both --shouldGenerateGoogMsgDefs is true]"
             + " Whether to determine the bidi global direction at template runtime by"
             + " evaluating (goog.i18n.bidi.IS_RTL). Do not combine with --bidiGlobalDir."
   )

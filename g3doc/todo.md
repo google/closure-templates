@@ -41,19 +41,6 @@ where callers don't pass them.
 
 ## Eliminate legacy compiler options
 
-*   --shouldProvideRequireSoyNamespaces and
-    --should_provide_require_js_functions These should be eliminated with a
-    reasonable default selected. This will have implications for v1 templates
-    that are currently missing namespaces.
-    *   This step's goal is to consolidate all Soy files to use the same option
-        for providing the namespace at the Soy file level and at the template
-        level. This will eliminate one of the biggest problems that user face
-        with incompatible templates across large code bases.
-    *   AI: Eliminate namespace collisions across soy files (mknichel has some
-        scripts)
-    *   AI: Flip the provide namespace flag on for all projects.
-    *   AI: Remove the options to change this since it won't matter once we
-        provide both namespaces and functions
 *   --allowv1syntax This should be mostly redundant now that v1 templates need
     the `deprecatedV1="true"` attribute. But eliminating it will be a little
     tricky due to the way 'declaredSyntaxVersion' is used when configuring the
