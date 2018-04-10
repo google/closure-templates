@@ -263,7 +263,10 @@ public final class TemplateTester {
       try (SystemOutRestorer restorer = logOutput.enter()) {
         result = template.render(builder, context);
       } catch (Throwable e) {
-        failWithRawMessageAndCause(String.format("Unexpected failure for %s", actualAsString()), e);
+        // TODO(lukes): the fact that we are catching an exception means we have structured 
+        // this subject poorly.  The subject should be responsible for asserting, not actually
+        // invoking the functionality under test.
+        failWithCauseAndMessage(e, "Unexpected failure for %s", actualAsString());
         result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
@@ -341,6 +344,27 @@ public final class TemplateTester {
     private static void checkClasses(Iterable<ClassData> classData2) {
       for (ClassData d : classData2) {
         d.checkClass();
+      }
+    }
+
+    /*
+     * Hack to get Truth to include a given exception as the cause of the failure. It works by
+     * letting us delegate to a new Subject whose value under test is the exception. Because that
+     * makes the assertion "about" the exception, Truth includes it as a cause.
+     */
+
+    private void failWithCauseAndMessage(Throwable cause, String format, Object... args) {
+      check().about(UnexpectedFailureSubject::new).that(cause).doFail(format, args);
+    }
+
+    private static final class UnexpectedFailureSubject
+        extends Subject<UnexpectedFailureSubject, Throwable> {
+      UnexpectedFailureSubject(FailureMetadata metadata, Throwable actual) {
+        super(metadata, actual);
+      }
+
+      void doFail(String format, Object... args) {
+        failWithRawMessage(format, args);
       }
     }
   }
