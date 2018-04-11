@@ -80,7 +80,7 @@ public class SoySauceTest {
       assertThat(e)
           .hasMessageThat()
           .isEqualTo(
-              "Expected template to be kind=\"js\" but was kind=\"html\": strict_test.helloHtml");
+              "Expected template 'strict_test.helloHtml' to be kind=\"js\" but was kind=\"html\"");
     }
   }
 
@@ -93,7 +93,7 @@ public class SoySauceTest {
       assertThat(e)
           .hasMessageThat()
           .isEqualTo(
-              "Expected template to be kind=\"html\" but was kind=\"js\": strict_test.helloJs");
+              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
     }
     try {
       sauce.renderTemplate("strict_test.helloJs").renderStrict();
@@ -102,7 +102,7 @@ public class SoySauceTest {
       assertThat(e)
           .hasMessageThat()
           .isEqualTo(
-              "Expected template to be kind=\"html\" but was kind=\"js\": strict_test.helloJs");
+              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
     }
     assertThat(
             sauce
@@ -149,14 +149,18 @@ public class SoySauceTest {
       sauce.renderTemplate("nonstrict_test.hello").renderStrict();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e).hasMessageThat().isEqualTo("Cannot render a non strict template as 'html'");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'html'");
     }
 
     try {
       sauce.renderTemplate("nonstrict_test.hello").setExpectedContentKind(ContentKind.JS).render();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e).hasMessageThat().isEqualTo("Cannot render a non strict template as 'js'");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'js'");
     }
   }
 

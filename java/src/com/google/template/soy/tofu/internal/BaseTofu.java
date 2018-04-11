@@ -16,6 +16,7 @@
 
 package com.google.template.soy.tofu.internal;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -377,22 +378,23 @@ public final class BaseTofu implements SoyTofu {
       }
       if (template.getContentKind() == null) {
         throw new SoyTofuException(
-            "Expected template to be autoescape=\"strict\" "
-                + "but was autoescape=\""
-                + template.getAutoescapeMode().getAttributeValue()
-                + "\": "
-                + template.getTemplateName());
+            "Cannot render a non strict template '"
+                + templateName
+                + "' as '"
+                + Ascii.toLowerCase(expectedContentKind.name())
+                + "'");
       }
       SanitizedContentKind expectedAsSanitizedContentKind =
           SanitizedContentKind.valueOf(expectedContentKind.name());
       if (expectedAsSanitizedContentKind != template.getContentKind()) {
         throw new SoyTofuException(
-            "Expected template to be kind=\""
+            "Expected template '"
+                + template.getTemplateName()
+                + "' to be kind=\""
                 + expectedAsSanitizedContentKind.asAttributeValue()
                 + "\" but was kind=\""
                 + template.getContentKind().asAttributeValue()
-                + "\": "
-                + template.getTemplateName());
+                + "\"");
       }
     }
   }

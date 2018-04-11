@@ -238,18 +238,21 @@ public final class SoySauceImpl implements SoySauce {
       }
       if (!contentKind.isPresent()) {
         throw new IllegalStateException(
-            "Cannot render a non strict template as '"
+            "Cannot render a non strict template '"
+                + templateName
+                + "' as '"
                 + Ascii.toLowerCase(expectedContentKind.name())
                 + "'");
       }
       if (expectedContentKind != contentKind.get()) {
         throw new IllegalStateException(
-            "Expected template to be kind=\""
+            "Expected template '"
+                + templateName
+                + "' to be kind=\""
                 + Ascii.toLowerCase(expectedContentKind.name())
                 + "\" but was kind=\""
                 + Ascii.toLowerCase(contentKind.get().name())
-                + "\": "
-                + templateName);
+                + "\"");
       }
     }
   }
