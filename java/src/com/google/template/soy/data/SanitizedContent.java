@@ -32,19 +32,17 @@ import com.google.common.html.types.SafeUrls;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.html.types.UncheckedConversions;
+import com.google.errorprone.annotations.DoNotMock;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.restricted.SoyString;
 import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.concurrent.Immutable;
 
-/**
- * A chunk of sanitized content of a known kind, e.g. the output of an HTML sanitizer.
- *
- * <p>TODO(lukes): mark as DoNotMock and possibly with the errorprone Immutable annotation
- */
+/** A chunk of sanitized content of a known kind, e.g. the output of an HTML sanitizer. */
 @ParametersAreNonnullByDefault
 @Immutable
+@DoNotMock("Use SanitizedContents.emptyString or UnsafeSanitizedContentOrdainer.ordainAsSafe")
 public class SanitizedContent extends SoyData {
 
   /**
