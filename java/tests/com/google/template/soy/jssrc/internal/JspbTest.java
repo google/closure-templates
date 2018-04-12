@@ -263,6 +263,7 @@ public final class JspbTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
+            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('proto.example.ExampleExtendable');\n"
             + "goog.require('proto.example.SomeExtension');\n"

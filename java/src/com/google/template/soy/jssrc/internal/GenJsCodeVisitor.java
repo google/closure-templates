@@ -399,6 +399,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       addCodeToRequireGoogModules(node);
     } else if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
       addCodeToProvideSoyNamespace(file, node);
+      if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
+        addCodeToProvideJsFunctions(file, node);
+      }
       file.append('\n');
       addCodeToRequireSoyNamespaces(node);
     } else {
@@ -518,6 +521,26 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide template JS functions.
+   *
+   * @param soyFile The node we're visiting.
+   */
+  private static void addCodeToProvideJsFunctions(StringBuilder header, SoyFileNode soyFile) {
+
+    SortedSet<String> templateNames = new TreeSet<>();
+    for (TemplateNode template : soyFile.getChildren()) {
+      if (template instanceof TemplateDelegateNode) {
+        // skip providing deltemplates.  these are accessed via an indirect mechanism rather than
+        // goog.require.
+        continue;
+      }
+      templateNames.add(template.getTemplateName());
+    }
+    for (String templateName : templateNames) {
+      header.append("goog.provide('").append(templateName).append("');\n");
+    }
+  }
 
   private void addJsDocToProvideDelTemplates(StringBuilder header, SoyFileNode soyFile) {
 
