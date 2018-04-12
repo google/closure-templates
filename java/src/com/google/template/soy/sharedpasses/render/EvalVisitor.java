@@ -409,9 +409,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // SoyProtoValue.getFieldProviderInternal() and AbstractDict.getField() return null instead
     // of NullData.
     // TODO(user): Consider cleaning up the null / NullData inconsistencies.
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            fieldAccess.getType(), value, fieldAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(fieldAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
@@ -462,9 +460,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     SoyValue value =
         shouldUseNewMap ? ((SoyMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
 
-    if (value != null
-        && !TofuTypeChecks.isInstance(
-            itemAccess.getType(), value, itemAccess.getSourceLocation())) {
+    if (value != null && !TofuTypeChecks.isInstance(itemAccess.getType(), value)) {
       throw RenderException.create(
           String.format(
               "Expected value of type '%s', but actual type was '%s'.",
