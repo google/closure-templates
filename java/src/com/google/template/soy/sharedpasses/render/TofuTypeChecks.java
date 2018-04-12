@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.Flags;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -34,9 +35,12 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /** Implements runtime type checks for tofu. */
 public final class TofuTypeChecks {
+  private static final Logger logger = Logger.getLogger(TofuTypeChecks.class.getName());
   /**
    * Returns true if the given {@linkplain SoyValue value} is an instance of the {@linkplain SoyType
    * type}. For generic types, this only checks the overall shape of the type (list, map, etc) since
@@ -48,9 +52,10 @@ public final class TofuTypeChecks {
    *
    * @param type The type to test.
    * @param value The value to check against the type.
+   * @param location The source location of the instance
    * @return True if the value is an instance of the type.
    */
-  public static final boolean isInstance(SoyType type, SoyValue value) {
+  public static final boolean isInstance(SoyType type, SoyValue value, SourceLocation location) {
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:
@@ -88,17 +93,29 @@ public final class TofuTypeChecks {
       case RECORD:
         return value instanceof SoyRecord;
       case STRING:
-        // TODO(b/74259210): Log a future error
         if (Flags.stringIsNotSanitizedContent()) {
           return value instanceof SoyString;
         } else {
+          if (value instanceof SoyString
+              && value instanceof SanitizedContent
+              && logger.isLoggable(Level.WARNING)
+              && Math.random() < .1) {
+            logger.log(
+                Level.WARNING,
+                String.format(
+                    "Passing in sanitized content into a template that accepts only string is "
+                        + "forbidden. Please modify the template at %s to take in "
+                        + "%s.",
+                    location != null ? location.toString() : "",
+                    ((SanitizedContent) value).getContentKind()));
+          }
           return value instanceof SoyString || value instanceof SanitizedContent;
         }
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:
         for (SoyType memberType : ((UnionType) type).getMembers()) {
-          if (isInstance(memberType, value)) {
+          if (isInstance(memberType, value, location)) {
             return true;
           }
         }

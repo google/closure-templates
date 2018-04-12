@@ -891,7 +891,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Check that the value matches the given param type. */
   private void checkValueType(TemplateParam param, SoyValue value, TemplateNode node) {
-    if (!TofuTypeChecks.isInstance(param.type(), value)) {
+    if (!TofuTypeChecks.isInstance(param.type(), value, param.nameLocation())) {
       // should this be a soydataexception?
       throw RenderException.createWithSource(
           "Parameter type mismatch: attempt to bind value '"

@@ -55,6 +55,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.Nullable;
 
 /**
@@ -65,6 +67,7 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("ShortCircuitBoolean")
 public final class JbcSrcRuntime {
+  private static final Logger logger = Logger.getLogger(JbcSrcRuntime.class.getName());
   public static final SoyValueProvider NULL_PROVIDER =
       new SoyValueProvider() {
         @Override
@@ -136,11 +139,22 @@ public final class JbcSrcRuntime {
 
   /**
    * Casts the given type to SoyString or throws a ClassCastException.
-   *
-   * <p>TODO(b/74259210): Change this to conditionally log a warning
    */
   public static SoyString checkSoyString(Object o) {
-    // TODO(tomnguyen) Log a future error here if o is SanitizedCompatString
+    // if it isn't a sanitized content we don't want to warn and if it isn't a soystring we should
+    // always fail.
+    if (o instanceof SoyString
+        && o instanceof SanitizedContent
+        && logger.isLoggable(Level.WARNING)
+        && Math.random() < .1) {
+      logger.log(
+          Level.WARNING,
+          String.format(
+              "Passing in sanitized content into a template that accepts only string is forbidden. "
+                  + " Please modify the template to take in %s.",
+              ((SanitizedContent) o).getContentKind()),
+          new Exception());
+    }
     return (SoyString) o;
   }
 

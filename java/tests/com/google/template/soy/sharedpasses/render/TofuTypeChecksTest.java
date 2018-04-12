@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -409,7 +410,7 @@ public class TofuTypeChecksTest {
                   + value.getClass().getName()
                   + " to be an instance of Soy type "
                   + type)
-          .that(TofuTypeChecks.isInstance(type, value))
+          .that(TofuTypeChecks.isInstance(type, value, SourceLocation.UNKNOWN))
           .isTrue();
     }
   }
@@ -421,7 +422,7 @@ public class TofuTypeChecksTest {
                   + value.getClass().getName()
                   + " to NOT be an instance of Soy type "
                   + type)
-          .that(TofuTypeChecks.isInstance(type, value))
+          .that(TofuTypeChecks.isInstance(type, value, null))
           .isFalse();
     }
   }
