@@ -142,11 +142,16 @@ public final class SoyJsSrcOptions implements Cloneable {
   public void setShouldProvideBothSoyNamespacesAndJsFunctions(
       boolean shouldProvideBothSoyNamespacesAndJsFunctions) {}
 
-  /** Returns whether we should generate code to provide both Soy namespaces and JS functions. */
+  /**
+   * Returns whether we should generate code to provide both Soy namespaces and JS functions.
+   *
+   * @deprecated this always returns false
+   */
+  @Deprecated
   public boolean shouldProvideBothSoyNamespacesAndJsFunctions() {
-    // TODO(b/73881914):  this is temporary, soon we will stop providing templates.
-    return shouldProvideRequireSoyNamespaces();
+    return false;
   }
+
   /**
    * Sets whether we should generate code to declare the top level namespace.
    *

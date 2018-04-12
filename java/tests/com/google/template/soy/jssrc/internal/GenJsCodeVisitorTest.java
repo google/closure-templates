@@ -126,7 +126,6 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
-            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
             + "\n";
@@ -163,7 +162,6 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
-            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
             + "goog.require('boo.woo.aaa');\n"
@@ -204,7 +202,6 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n"
             + "goog.provide('boo.foo');\n"
-            + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('also.for.function');\n"
             + "goog.require('for.function');\n"
