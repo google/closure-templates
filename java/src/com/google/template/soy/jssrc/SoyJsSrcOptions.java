@@ -112,50 +112,11 @@ public final class SoyJsSrcOptions implements Cloneable {
   public boolean shouldProvideRequireSoyNamespaces() {
     return depsStrategy == JsDepsStrategy.NAMESPACES;
   }
-
-  /**
-   * Sets whether we should generate code to provide/require template JS functions.
-   *
-   * @param shouldProvideRequireJsFunctions The value to set.
-   * @deprecated this is ignored
-   */
-  @Deprecated
-  public void setShouldProvideRequireJsFunctions(boolean shouldProvideRequireJsFunctions) {}
-
-  /**
-   * Returns whether we're set to generate code to provide/require template JS functions.
-   *
-   * @deprecated this always returns false.
-   */
-  @Deprecated
-  public boolean shouldProvideRequireJsFunctions() {
-    return false;
-  }
-
-  /**
-   * Sets whether we should generate code to provide both Soy namespaces and JS functions.
-   *
-   * @param shouldProvideBothSoyNamespacesAndJsFunctions The value to set.
-   * @deprecated this is ignored
-   */
-  @Deprecated
-  public void setShouldProvideBothSoyNamespacesAndJsFunctions(
-      boolean shouldProvideBothSoyNamespacesAndJsFunctions) {}
-
   /** Returns whether we should generate code to provide both Soy namespaces and JS functions. */
   public boolean shouldProvideBothSoyNamespacesAndJsFunctions() {
     // TODO(b/73881914):  this is temporary, soon we will stop providing templates.
     return shouldProvideRequireSoyNamespaces();
   }
-  /**
-   * Sets whether we should generate code to declare the top level namespace.
-   *
-   * @param shouldDeclareTopLevelNamespaces The value to set.
-   * @deprecated This is ignored
-   */
-  @Deprecated
-  public void setShouldDeclareTopLevelNamespaces(boolean shouldDeclareTopLevelNamespaces) {}
-
   /**
    * Sets whether goog.modules should be generated.
    *
@@ -282,10 +243,6 @@ public final class SoyJsSrcOptions implements Cloneable {
     return MoreObjects.toStringHelper(this)
         .add("shouldAllowDeprecatedSyntax", shouldAllowDeprecatedSyntax)
         .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces())
-        .add("shouldProvideRequireJsFunctions", shouldProvideRequireJsFunctions())
-        .add(
-            "shouldProvideBothSoyNamespacesAndJsFunctions",
-            shouldProvideBothSoyNamespacesAndJsFunctions())
         .add("shouldGenerateGoogMsgDefs", shouldGenerateGoogMsgDefs)
         .add("shouldGenerateGoogModules", shouldGenerateGoogModules())
         .add("googMsgsAreExternal", googMsgsAreExternal)
