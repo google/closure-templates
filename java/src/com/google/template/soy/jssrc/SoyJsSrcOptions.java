@@ -112,11 +112,7 @@ public final class SoyJsSrcOptions implements Cloneable {
   public boolean shouldProvideRequireSoyNamespaces() {
     return depsStrategy == JsDepsStrategy.NAMESPACES;
   }
-  /** Returns whether we should generate code to provide both Soy namespaces and JS functions. */
-  public boolean shouldProvideBothSoyNamespacesAndJsFunctions() {
-    // TODO(b/73881914):  this is temporary, soon we will stop providing templates.
-    return shouldProvideRequireSoyNamespaces();
-  }
+
   /**
    * Sets whether goog.modules should be generated.
    *
