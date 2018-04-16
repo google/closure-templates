@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
@@ -212,10 +211,6 @@ public class JsCodeBuilder {
     this.indent = Strings.repeat(" ", indentCt);
   }
 
-  int getIndent() {
-    return this.indent.length();
-  }
-
   /**
    * Pushes on a new current output variable.
    * @param outputVarName The new output variable name.
@@ -289,34 +284,6 @@ public class JsCodeBuilder {
   }
 
   /**
-   * Appends the current indent, then the given strings.
-   *
-   * @param codeFragments The code string(s) to append.
-   * @return This CodeBuilder (for stringing together operations).
-   */
-  public JsCodeBuilder appendLineStart(String... codeFragments) {
-    code.append(indent);
-    append(codeFragments);
-    return this;
-  }
-
-  /**
-   * Appends the given strings, then a newline.
-   *
-   * @param codeFragments The code string(s) to append.
-   * @return This CodeBuilder (for stringing together operations).
-   */
-  public JsCodeBuilder appendLineEnd(String... codeFragments) {
-    append(codeFragments);
-    code.append("\n");
-    return this;
-  }
-
-  public RequiresCollector getRequiresCollector() {
-    return requireCollector;
-  }
-
-  /**
    * Adds a {@code goog.require}
    *
    * @param require The namespace being required
@@ -333,7 +300,7 @@ public class JsCodeBuilder {
   }
 
   /** Should only be used by {@link GenJsCodeVisitor#visitSoyFileNode}. */
-  void appendGoogRequires(StringBuilder sb) {
+  void appendGoogRequiresTo(StringBuilder sb) {
     for (GoogRequire require : googRequires.values()) {
       // TODO(lukes): we need some namespace management here... though really we need namespace
       // management with all declarations... The problem is that a require could introduce a name
@@ -350,7 +317,7 @@ public class JsCodeBuilder {
   }
 
   /** Appends the code accumulated in this builder to the given {@link StringBuilder}. */
-  void appendCode(StringBuilder sb) {
+  void appendCodeTo(StringBuilder sb) {
     sb.append(code);
   }
 }

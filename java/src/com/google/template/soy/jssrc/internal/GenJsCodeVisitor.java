@@ -410,8 +410,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine().appendLine();
       visit(template);
     }
-    jsCodeBuilder.appendGoogRequires(file);
-    jsCodeBuilder.appendCode(file);
+    jsCodeBuilder.appendGoogRequiresTo(file);
+    jsCodeBuilder.appendCodeTo(file);
     jsFilesContents.add(file.toString());
     jsCodeBuilder = null;
   }
