@@ -50,6 +50,12 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class TemplateNodeBuilder {
+  /**
+   * A way for a param migration script to disable the mixed param warning so it doesn't prevent the
+   * script from running.
+   */
+  private static final boolean DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION =
+      Boolean.getBoolean("DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION");
 
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
       SoyErrorKind.of("Found invalid soydoc param name ''{0}''.");
@@ -71,7 +77,8 @@ public abstract class TemplateNodeBuilder {
   private static final SoyErrorKind MIXED_PARAM_STYLES =
       SoyErrorKind.of(
           "Cannot mix SoyDoc params and header params in the same template. Please "
-              + " migrate to the '''{@param <name>: <type>}''' syntax.");
+              + " migrate to the '''{@param <name>: <type>}''' syntax."
+          );
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
@@ -259,8 +266,10 @@ public abstract class TemplateNodeBuilder {
     // if the template has any header params, report an error on each soydoc param
     if (hasTemplateHeaderParams) {
       for (TemplateParam param : this.params) {
-        if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC) {
-          errorReporter.report(param.nameLocation(), MIXED_PARAM_STYLES);
+        if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC
+            && !DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION) {
+          errorReporter.report(
+              param.nameLocation(), MIXED_PARAM_STYLES, param.nameLocation().getFilePath());
         }
       }
     }
