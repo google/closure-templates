@@ -2421,7 +2421,7 @@ soy.esc.$$LT_REGEX_ = /</g;
  *
  * @private {!Object<string, boolean>}
  */
-soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'sub': true, 'sup': true, 'u': true};
+soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, 's': true, 'strong': true, 'sub': true, 'sup': true, 'u': true};
 
 /**
  * Pattern for matching attribute name and value, where value is single-quoted

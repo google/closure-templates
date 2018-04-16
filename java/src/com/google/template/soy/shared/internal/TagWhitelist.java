@@ -35,6 +35,7 @@ public final class TagWhitelist {
 
   /** Additional tags which can be white-listed as safe. */
   public static enum OptionalSafeTag {
+    HR("hr"),
     LI("li"),
     OL("ol"),
     SPAN("span"),
@@ -113,7 +114,7 @@ public final class TagWhitelist {
   /** A white-list of common formatting tags used by jslayout. */
   public static final TagWhitelist FORMATTING =
       new TagWhitelist(
-          "b", "br", "em", "i", "s", "sub", "sup", "u"
+          "b", "br", "em", "i", "s", "strong", "sub", "sup", "u"
           // Any changes to this must be reviewed by ise-team@.
           );
 

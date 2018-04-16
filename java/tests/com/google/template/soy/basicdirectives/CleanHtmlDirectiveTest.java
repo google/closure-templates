@@ -115,7 +115,7 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
             .collect(toImmutableList());
 
     assertThat(cleanHtml.applyForJsSrc(dataRef, optionalSafeTagsAsJsExprs).getText())
-        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['li', 'ol', 'span', 'ul'])");
+        .isEqualTo("soy.$$cleanHtml(opt_data.myKey, ['hr', 'li', 'ol', 'span', 'ul'])");
 
     // Only the specified optional safe tags are passed to $$cleanHtml.
     assertThat(
@@ -173,7 +173,7 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
             .collect(toImmutableList());
 
     assertThat(cleanHtml.applyForPySrc(data, optionalSafeTagsAsPyExprs).getText())
-        .isEqualTo("sanitize.clean_html('data', ['li', 'ol', 'span', 'ul'])");
+        .isEqualTo("sanitize.clean_html('data', ['hr', 'li', 'ol', 'span', 'ul'])");
 
     // Only the specified optional safe tags are passed to $$cleanHtml.
     PyExpr span = new PyExpr("'span'", Integer.MAX_VALUE);

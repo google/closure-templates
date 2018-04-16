@@ -337,7 +337,7 @@ _HTML_TAG_REGEX = re.compile(r"""<(?:!|/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^
 
 _LT_REGEX = re.compile('<')
 
-_SAFE_TAG_WHITELIST = ('b', 'br', 'em', 'i', 's', 'sub', 'sup', 'u')
+_SAFE_TAG_WHITELIST = ('b', 'br', 'em', 'i', 's', 'strong', 'sub', 'sup', 'u')
 
 
 # END GENERATED CODE
