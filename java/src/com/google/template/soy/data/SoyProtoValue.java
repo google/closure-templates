@@ -59,7 +59,7 @@ import java.util.logging.Logger;
  */
 public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
   // The minimum amount of time between logging for map/record access to a particular proto.
-  private static final long LOGGING_FREQUENCY = TimeUnit.MINUTES.toMillis(1);
+  private static final long LOGGING_FREQUENCY_MILLIS = TimeUnit.SECONDS.toMillis(10);
   private static final Logger logger = Logger.getLogger(SoyProtoValue.class.getName());
 
   private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForRecordAccess =
@@ -368,7 +368,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     String fullName = clazz().fullName;
     Long lastTime = lastAccessMap.get(fullName);
     long nowMillis = System.currentTimeMillis();
-    if (lastTime == null || lastTime < nowMillis - LOGGING_FREQUENCY) {
+    if (lastTime == null || lastTime < nowMillis - LOGGING_FREQUENCY_MILLIS) {
       Long replaced = lastAccessMap.put(fullName, nowMillis);
       // we raced and stomped on a value, but that is fine, it just means that we might delay
       // logging for this key
