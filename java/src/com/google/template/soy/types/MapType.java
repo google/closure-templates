@@ -50,12 +50,13 @@ public final class MapType extends AbstractMapType {
     return new MapType(keyType, valueType);
   }
 
+  // LINT.IfChange
   /** Whether the type is permissible as a key in a Soy {@code map} ({@link MapType}). */
   public static boolean isAllowedKeyType(SoyType type) {
-    // TODO(b/72409542): consider allowing string|int
     switch (type.getKind()) {
       case BOOL:
       case INT:
+      case FLOAT:
       case STRING:
       case PROTO_ENUM:
         return true;

@@ -119,10 +119,11 @@ public class SoyTypeRegistry {
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
+  // LINT.IfChange
   private static final SoyErrorKind BAD_MAP_KEY_TYPE =
       SoyErrorKind.of(
           "''{0}'' is not allowed as a map key type. Allowed map key types: "
-              + "bool, int, number, string, proto enum.");
+              + "bool, int, float, number, string, proto enum.");
 
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
