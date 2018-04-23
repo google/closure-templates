@@ -415,7 +415,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyValue dataRefValue = eval(node.getExpr(), node);
       if (!(dataRefValue instanceof SoyList)) {
         throw RenderException.createWithSource(
-            "In 'foreach' command "
+            "In 'for' command "
                 + node.toSourceString()
                 + ", the data reference does not "
                 + "resolve to a SoyList "

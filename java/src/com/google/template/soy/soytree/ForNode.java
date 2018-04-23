@@ -28,8 +28,8 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 
 /**
- * Node representing a 'foreach' statement. Should always contain a ForNonemptyNode as the first
- * child. May contain a second child, which should be a ForIfemptyNode.
+ * Node representing a 'for' statement. Should always contain a ForNonemptyNode as the first child.
+ * May contain a second child, which should be a ForIfemptyNode.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
