@@ -505,7 +505,7 @@ public class SoyFileParser {
         filePath,
         errorReporter);
     try {
-      return typeRegistry.getOrCreateType(parser.TypeExpr(), errorReporter);
+      return new TypeNodeConverter(errorReporter, typeRegistry).getOrCreateType(parser.TypeExpr());
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(
           errorReporter, filePath, e, parser.token_source.curLexState);
@@ -536,6 +536,8 @@ public class SoyFileParser {
   /** Experimental features for this compilation, if any. */
   private ImmutableSet<String> experimentalFeatures;
 
+  private TypeNodeConverter typeNodeConverter;
+
   /**
    * Constructor that takes a reader object providing the input.
    *
@@ -563,6 +565,7 @@ public class SoyFileParser {
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
     this.experimentalFeatures = checkNotNull(experimentalFeatures);
+    this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
   /** Constructor for use by parseExpression() and parseType() only. */
@@ -1807,7 +1810,7 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 
   try {
     paramTypeNode = TypeExpr()
-    { paramType = typeRegistry.getOrCreateType(paramTypeNode, errorReporter); }
+    { paramType = typeNodeConverter.getOrCreateType(paramTypeNode); }
     tagEnd = <CMD_END>
   } catch (ParseException parseException) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);

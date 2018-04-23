@@ -18,8 +18,6 @@ package com.google.template.soy.types;
 
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -27,8 +25,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
@@ -48,11 +44,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.ExtensionRegistry;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.CssType;
@@ -60,12 +51,6 @@ import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
-import com.google.template.soy.types.ast.GenericTypeNode;
-import com.google.template.soy.types.ast.NamedTypeNode;
-import com.google.template.soy.types.ast.RecordTypeNode;
-import com.google.template.soy.types.ast.TypeNode;
-import com.google.template.soy.types.ast.TypeNodeVisitor;
-import com.google.template.soy.types.ast.UnionTypeNode;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,31 +84,6 @@ public class SoyTypeRegistry {
     // Add extensions needed for parsing descriptors here.
     return instance;
   }
-
-  private static final SoyErrorKind UNKNOWN_TYPE =
-      SoyErrorKind.of("Unknown type ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind DUPLICATE_RECORD_FIELD =
-      SoyErrorKind.of("Duplicate field ''{0}'' in record declaration.");
-
-  private static final SoyErrorKind UNEXPECTED_TYPE_PARAM =
-      SoyErrorKind.of(
-          "Unexpected type parameter: ''{0}'' only has {1}", StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind EXPECTED_TYPE_PARAM =
-      SoyErrorKind.of("Expected a type parameter: ''{0}'' has {1}", StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind NOT_A_GENERIC_TYPE =
-      SoyErrorKind.of("''{0}'' is not a generic type, expected ''list'' or ''map''.");
-
-  private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
-      SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
-
-  // LINT.IfChange
-  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
-      SoyErrorKind.of(
-          "''{0}'' is not allowed as a map key type. Allowed map key types: "
-              + "bool, int, float, number, string, proto enum.");
 
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
@@ -254,7 +214,8 @@ public class SoyTypeRegistry {
     return null;
   }
 
-  private Iterable<String> getAllSortedTypeNames() {
+  /** Gets all known types, sorted alphabetically. */
+  public Iterable<String> getAllSortedTypeNames() {
     synchronized (lock) {
       if (lazyAllSortedTypeNames == null) {
         lazyAllSortedTypeNames =
@@ -340,172 +301,6 @@ public class SoyTypeRegistry {
    */
   public RecordType getOrCreateRecordType(Map<String, SoyType> fields) {
     return recordTypes.intern(RecordType.of(fields));
-  }
-
-  /**
-   * Converts a TypeNode into a SoyType.
-   *
-   * <p>If any errors are encountered they are reported to the error reporter.
-   */
-  public SoyType getOrCreateType(@Nullable TypeNode node, ErrorReporter errorReporter) {
-    if (node == null) {
-      return UnknownType.getInstance();
-    }
-    return node.accept(new TypeNodeConverter(errorReporter));
-  }
-
-  private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES =
-      ImmutableMap.of(
-          "list",
-          new GenericTypeInfo(1) {
-            @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateListType(types.get(0));
-            }
-          },
-          "legacy_object_map",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
-            }
-          },
-          "map",
-          new GenericTypeInfo(2) {
-            @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateMapType(types.get(0), types.get(1));
-            }
-
-            @Override
-            void checkPermissibleGenericTypes(
-                List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {
-              SoyType keyType = types.get(0);
-              if (!MapType.isAllowedKeyType(keyType)) {
-                errorReporter.report(typeNodes.get(0).sourceLocation(), BAD_MAP_KEY_TYPE, keyType);
-              }
-            }
-          });
-
-  /** Simple representation of a generic type specification. */
-  private abstract static class GenericTypeInfo {
-    final int numParams;
-
-    GenericTypeInfo(int numParams) {
-      this.numParams = numParams;
-    }
-
-    final String formatNumTypeParams() {
-      return numParams + " type parameter" + (numParams > 1 ? "s" : "");
-    }
-
-    /**
-     * Creates the given type. There are guaranteed to be exactly {@link #numParams} in the list.
-     */
-    abstract SoyType create(List<SoyType> types, SoyTypeRegistry registry);
-
-    /**
-     * Subclasses can override to implement custom restrictions on their generic type parameters.
-     *
-     * @param types The generic types.
-     * @param typeNodes TypeNodes corresponding to each of the generic types (for reporting source
-     *     locations in error messages)
-     * @param errorReporter For reporting an error condition.
-     */
-    void checkPermissibleGenericTypes(
-        List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {}
-  }
-
-  private final class TypeNodeConverter
-      implements TypeNodeVisitor<SoyType>, Function<TypeNode, SoyType> {
-    final ErrorReporter errorReporter;
-
-    TypeNodeConverter(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
-
-    @Override
-    public SoyType visit(NamedTypeNode node) {
-      String name = node.name();
-      SoyType type = getType(name);
-      if (type == null) {
-        GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-        if (genericType != null) {
-          errorReporter.report(
-              node.sourceLocation(),
-              MISSING_GENERIC_TYPE_PARAMETERS,
-              name,
-              genericType.formatNumTypeParams());
-        } else {
-          errorReporter.report(
-              node.sourceLocation(),
-              UNKNOWN_TYPE,
-              name,
-              SoyErrors.getDidYouMeanMessage(getAllSortedTypeNames(), name));
-        }
-        type = ErrorType.getInstance();
-      }
-      return type;
-    }
-
-    @Override
-    public SoyType visit(GenericTypeNode node) {
-      ImmutableList<TypeNode> args = node.arguments();
-      String name = node.name();
-      GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-      if (genericType == null) {
-        errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
-        return ErrorType.getInstance();
-      }
-      if (args.size() < genericType.numParams) {
-        errorReporter.report(
-            // blame the '>'
-            node.sourceLocation().getEndLocation(),
-            EXPECTED_TYPE_PARAM,
-            name,
-            genericType.formatNumTypeParams());
-        return ErrorType.getInstance();
-      } else if (args.size() > genericType.numParams) {
-        errorReporter.report(
-            // blame the first unexpected argument
-            args.get(genericType.numParams).sourceLocation(),
-            UNEXPECTED_TYPE_PARAM,
-            name,
-            genericType.formatNumTypeParams());
-        return ErrorType.getInstance();
-      }
-
-      List<SoyType> genericTypes = Lists.transform(args, this);
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      genericType.checkPermissibleGenericTypes(genericTypes, args, errorReporter);
-      return errorReporter.errorsSince(checkpoint)
-          ? ErrorType.getInstance()
-          : genericType.create(genericTypes, SoyTypeRegistry.this);
-    }
-
-    @Override
-    public SoyType visit(UnionTypeNode node) {
-      return getOrCreateUnionType(Collections2.transform(node.candidates(), this));
-    }
-
-    @Override
-    public SoyType visit(RecordTypeNode node) {
-      Map<String, SoyType> map = Maps.newLinkedHashMap();
-      for (RecordTypeNode.Property property : node.properties()) {
-        SoyType oldType = map.put(property.name(), property.type().accept(this));
-        if (oldType != null) {
-          errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
-          // restore old mapping and keep going
-          map.put(property.name(), oldType);
-        }
-      }
-      return getOrCreateRecordType(map);
-    }
-
-    @Override
-    public SoyType apply(TypeNode node) {
-      return node.accept(this);
-    }
   }
 
   /** Helper class that assists in the construction of SoyTypeProviders. */
