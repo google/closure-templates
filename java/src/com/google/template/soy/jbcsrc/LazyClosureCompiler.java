@@ -51,7 +51,6 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -569,38 +568,6 @@ final class LazyClosureCompiler {
           paramFields.values(),
           localFields.values(),
           syntheticFields.values());
-    }
-
-    @Override
-    public JbcSrcPluginContext getPluginContext() {
-      // return a lazy delegate.  Most plugins never even need the context, but accessing
-      // getRenderContext() will copy the field into the inner class as a side effect.  using a lazy
-      // delegate we can avoid that in the common case.
-      return new JbcSrcPluginContext() {
-        RenderContextExpression delegate;
-
-        RenderContextExpression getDelegate() {
-          if (delegate == null) {
-            delegate = getRenderContext();
-          }
-          return delegate;
-        }
-
-        @Override
-        public Expression getBidiGlobalDir() {
-          return getDelegate().getBidiGlobalDir();
-        }
-
-        @Override
-        public Expression getDebugSoyTemplateInfo() {
-          return getDelegate().getDebugSoyTemplateInfo();
-        }
-
-        @Override
-        public Expression getULocale() {
-          return getDelegate().getULocale();
-        }
-      };
     }
 
     @Override

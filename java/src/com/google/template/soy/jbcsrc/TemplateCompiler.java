@@ -48,7 +48,6 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -363,11 +362,6 @@ final class TemplateCompiler {
     @Override
     public Expression getLocal(SyntheticVarName varName) {
       return variableSet.getVariable(varName).local();
-    }
-
-    @Override
-    public JbcSrcPluginContext getPluginContext() {
-      return renderContext;
     }
 
     @Override

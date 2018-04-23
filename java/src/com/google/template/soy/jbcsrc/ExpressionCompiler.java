@@ -923,7 +923,7 @@ final class ExpressionCompiler {
       SoyFunction fn = node.getSoyFunction();
       List<SoyExpression> args = visitChildren(node);
       if (fn instanceof SoyJbcSrcFunction) {
-        return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getPluginContext(), args);
+        return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getRenderContext(), args);
       }
       // We support a fallback to dynamically lookup the function at runtime.  In the long run we
       // should consider migrating everyone to use SoyJbcSrcFunction.

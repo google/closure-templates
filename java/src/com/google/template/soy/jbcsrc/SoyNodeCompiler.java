@@ -618,18 +618,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // In this case we want to render the SoyValueProvider via renderAndResolve which will
     // enable incremental rendering of parameters for lazy transclusions!
     // This actually ends up looking a lot like how calls work so we use the same strategy.
-    Statement initRenderee = Statement.NULL_STATEMENT;
-    Statement clearRenderee = Statement.NULL_STATEMENT;
-    if (!soyValueProvider.isCheap()) {
-      FieldRef currentRendereeField = variables.getCurrentRenderee();
-      initRenderee =
-          currentRendereeField
-              .putInstanceField(thisVar, soyValueProvider)
-              .labelStart(reattachPoint);
-      clearRenderee =
-          currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
-      soyValueProvider = currentRendereeField.accessor(thisVar);
-    }
+    FieldRef currentRendereeField = variables.getCurrentRenderee();
+    Statement initRenderee =
+        currentRendereeField.putInstanceField(thisVar, soyValueProvider).labelStart(reattachPoint);
+    Statement clearRenderee =
+        currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
 
     // TODO(lukes): we should have similar logic for calls and message escaping
     Statement initAppendable = Statement.NULL_STATEMENT;
@@ -642,7 +635,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               directives,
               appendable,
               exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
-              parameterLookup.getPluginContext(),
+              parameterLookup.getRenderContext(),
               variables);
       FieldRef currentAppendableField = variables.getCurrentAppendable();
       initAppendable =
@@ -667,12 +660,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       }
     }
     Expression callRenderAndResolve =
-        soyValueProvider.invoke(
-            MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-            appendable,
-            // the isLast param
-            // TODO(lukes): pass a real value here when we have expression use analysis.
-            constant(false));
+        currentRendereeField
+            .accessor(thisVar)
+            .invoke(
+                MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
+                appendable,
+                // the isLast param
+                // TODO(lukes): pass a real value here when we have expression use analysis.
+                constant(false));
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
     return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
   }
@@ -946,7 +941,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .accessor(thisVar)
             .invoke(
                 MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext());
-    Statement callCallee = detachState.detachForCall(callRender);
+    Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee =
         currentCalleeField.putInstanceField(
             thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));

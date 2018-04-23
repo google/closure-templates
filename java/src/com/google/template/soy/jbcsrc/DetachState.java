@@ -164,56 +164,6 @@ final class DetachState implements ExpressionDetacher.Factory {
   }
 
   /**
-   * Generate detach logic for render operations (like SoyValueProvider.renderAndResolve).
-   *
-   * <p>This is simple
-   *
-   * <pre>{@code
-   * REATTACH_RENDER:
-   * RenderResult initialResult = svp.renderAndResolve(appendable);
-   * if (!initialResult.isDone()) {
-   *   // save all fields
-   *   state = REATTACH_RENDER;
-   *   return initialResult;
-   * }
-   * }</pre>
-   *
-   * <p>NOTE: {@code call} statements should use {@link #detachForCall} which has an optimization
-   * for the fact that calls are simpler
-   *
-   * @param render an Expression that can generate code to call a render method that returns a
-   *     RenderResult
-   */
-  Statement detachForRender(final Expression render) {
-    checkArgument(render.resultType().equals(RENDER_RESULT_TYPE));
-    final Label reattachPoint = new Label();
-    final SaveRestoreState saveRestoreState = variables.saveRestoreState();
-
-    Statement restore = saveRestoreState.restore();
-    int state = addState(reattachPoint, restore);
-    final Statement saveState =
-        stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
-    return new Statement() {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        adapter.mark(reattachPoint);
-        // Legend: RR = RenderResult, Z = boolean
-        render.gen(adapter); // Stack: RR
-        adapter.dup(); // Stack: RR, RR
-        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
-        // if isDone goto Done
-        Label end = new Label();
-        adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
-        saveRestoreState.save().gen(adapter);
-        saveState.gen(adapter);
-        adapter.returnValue();
-        adapter.mark(end);
-        adapter.pop(); // Stack:
-      }
-    };
-  }
-
-  /**
    * Generate detach logic for calls.
    *
    * <p>Calls are a little different due to a desire to minimize the cost of detaches. We assume
@@ -246,14 +196,10 @@ final class DetachState implements ExpressionDetacher.Factory {
    * <p>With this technique we save re-running the save-restore logic for multiple detaches from the
    * same call site. This should be especially useful for top level templates.
    *
-   * <p>A consequence of this technique is that the callRender expression cannot depend on any
-   * variables that are controlled by the restore logic.
-   *
    * @param callRender an Expression that can generate code to call the render method, should be
-   *     safe to generate more than once. And should not rely on any state that is managed by the
-   *     save restore logic.
+   *     safe to generate more than once.
    */
-  Statement detachForCall(final Expression callRender) {
+  Statement detachForRender(final Expression callRender) {
     checkArgument(callRender.resultType().equals(RENDER_RESULT_TYPE));
     final Label reattachRender = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
