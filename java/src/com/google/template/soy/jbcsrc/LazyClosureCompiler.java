@@ -59,10 +59,10 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
@@ -206,13 +206,13 @@ final class LazyClosureCompiler {
   }
 
   Expression compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
-    Optional<Expression> asRawText = asRawTextOnly(renderUnit);
+    String proposedName = getProposedName(namePrefix, varName);
+    Optional<Expression> asRawText = asRawTextOnly(proposedName, renderUnit);
     if (asRawText.isPresent()) {
       return asRawText.get();
     }
     TypeInfo type =
-        innerClasses.registerInnerClassWithGeneratedName(
-            getProposedName(namePrefix, varName), LAZY_CLOSURE_ACCESS);
+        innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
             .setAccess(LAZY_CLOSURE_ACCESS)
@@ -229,9 +229,21 @@ final class LazyClosureCompiler {
     return expr;
   }
 
-  private Optional<Expression> asRawTextOnly(RenderUnitNode renderUnit) {
+  /**
+   * Returns an SoyValueProvider expression for the given RenderUnitNode if it is composed of only
+   * raw text.
+   */
+  private Optional<Expression> asRawTextOnly(String name, RenderUnitNode renderUnit) {
     StringBuilder builder = null;
-    for (StandaloneNode child : renderUnit.getChildren()) {
+    List<SoyNode> children = new ArrayList<>(renderUnit.getChildren());
+    for (int i = 0; i < children.size(); i++) {
+      SoyNode child = children.get(i);
+      if (child instanceof MsgHtmlTagNode) {
+        // by the time MsgHtmlTagNodes hit the code generator the HtmlTagNode instances they wrap
+        // have been desugared into RawTextNodes (and other things).
+        children.addAll(i + 1, ((MsgHtmlTagNode) child).getChildren());
+        continue;
+      }
       if (child instanceof RawTextNode) {
         if (builder == null) {
           builder = new StringBuilder();
@@ -241,17 +253,18 @@ final class LazyClosureCompiler {
         return Optional.absent();
       }
     }
-    // TODO(lukes): ideally this would be a static final StringData field rather than reboxing each
-    // time, but we don't (yet) have a good mechanism for that.
+
     SanitizedContentKind kind = renderUnit.getContentKind();
-    Expression constant = constant(builder == null ? "" : builder.toString(), parentVariables);
+    Expression value = constant(builder == null ? "" : builder.toString(), parentVariables);
     if (kind == null) {
-      return Optional.<Expression>of(MethodRef.STRING_DATA_FOR_VALUE.invoke(constant));
+      value = MethodRef.STRING_DATA_FOR_VALUE.invoke(value);
     } else {
-      return Optional.<Expression>of(
-          MethodRef.ORDAIN_AS_SAFE.invoke(
-              constant, constantSanitizedContentKindAsContentKind(kind)));
+      value =
+          MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
     }
+
+    FieldRef staticField = parentVariables.addStaticField(name, value);
+    return Optional.of(staticField.accessor());
   }
 
   private String getProposedName(String prefix, String varName) {
