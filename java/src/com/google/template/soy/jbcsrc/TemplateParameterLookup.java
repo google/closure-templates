@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -50,6 +51,12 @@ interface TemplateParameterLookup {
    * com.google.template.soy.jbcsrc.shared.RenderContext}.
    */
   RenderContextExpression getRenderContext();
+
+  /**
+   * Returns the plugin context object. This is required for the plugin apis and should be used in
+   * preference to {@link #getRenderContext()} whenever possible.
+   */
+  JbcSrcPluginContext getPluginContext();
 
   /**
    * Returns the current template's parameter dictionary. The returned expression will have a {@link
