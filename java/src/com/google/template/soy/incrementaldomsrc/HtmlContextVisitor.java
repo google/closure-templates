@@ -40,7 +40,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayDeque;
-import java.util.IdentityHashMap;
 
 /**
  * A visitor that populates the {@link HtmlContext} fields of {@link MsgFallbackGroupNode}, {@link
@@ -62,11 +61,6 @@ import java.util.IdentityHashMap;
  */
 final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
 
-
-  // These restrictions seem arbitrary.  Remove them
-  private static final SoyErrorKind DYNAMIC_TAG_NAME =
-      SoyErrorKind.of("IncrementalDom does not support dynamic tag names.");
-
   private static final SoyErrorKind DYNAMIC_ATTRIBUTE_NAME =
       SoyErrorKind.of("IncrementalDom does not support dynamic attribute names.");
 
@@ -76,12 +70,6 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of(
           "Soy statements are not "
               + "allowed before an attribute value. They should be moved inside a quotation mark.");
-
-  private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
-      SoyErrorKind.of(
-          "Invalid self-closing tag for \"{0}\". Self-closing tags are only valid for void tags and"
-              + " SVG content (partially supported). For a list of void elements, see "
-              + "https://www.w3.org/TR/html5/syntax.html#void-elements.");
 
   private static final SoyErrorKind UNSUPPORTED_HTML_COMMENTS_FOR_IDOM =
       SoyErrorKind.of(
@@ -101,15 +89,6 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   private final ErrorReporter errorReporter;
 
   private final ArrayDeque<HtmlContext> stateStack = new ArrayDeque<>();
-
-  // TODO(lukes): These two fields are used to record the current inferred namespace for a node.
-  // this replicates logic by the old HtmlTransformVisitor but the logic is fundamentally broken
-  // since it fails to account for control flow.  In the future incrementaldom templates should be
-  // forced to rely on the stricthtml pass (and require stricthtml="true"), or otherwise simply
-  // trust what the user wrote for self closing tags.
-  private final ArrayDeque<HtmlOpenTagNode> openTagStack = new ArrayDeque<>();
-  private final IdentityHashMap<HtmlOpenTagNode, InferredElementNamespace>
-      openTagToInferredNamesapce = new IdentityHashMap<>();
 
   public HtmlContextVisitor(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -141,42 +120,13 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    if (!node.getTagName().isStatic()) {
-      errorReporter.report(node.getTagName().getTagLocation(), DYNAMIC_TAG_NAME);
-      return;
-    }
     pushState(HtmlContext.HTML_TAG_NAME);
     visitChildren(node);
     popState();
-
-    boolean tagMatches = false;
-    // When encountering a closing tag, need to pop off any unclosed tags.
-    while (!openTagStack.isEmpty() && !tagMatches) {
-      HtmlOpenTagNode htmlOpenTagNode = openTagStack.pop();
-      tagMatches =
-          htmlOpenTagNode
-              .getTagName()
-              .getStaticTagNameAsLowerCase()
-              .equals(node.getTagName().getStaticTagNameAsLowerCase());
-    }
   }
 
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-    if (!node.getTagName().isStatic()) {
-      errorReporter.report(node.getTagName().getTagLocation(), DYNAMIC_TAG_NAME);
-      return;
-    }
-    String tagName = node.getTagName().getStaticTagNameAsLowerCase();
-    InferredElementNamespace namespace = getNamespace(tagName);
-    if (node.isSelfClosing()
-        && namespace == InferredElementNamespace.XHTML
-        && !node.getTagName().isDefinitelyVoid()) {
-      errorReporter.report(node.getTagName().getTagLocation(), INVALID_SELF_CLOSING_TAG, tagName);
-    } else {
-      openTagStack.push(node);
-      openTagToInferredNamesapce.put(node, namespace);
-    }
 
     pushState(HtmlContext.HTML_TAG_NAME);
     visit(node.getChild(0));
@@ -252,25 +202,6 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
     if (node instanceof ParentSoyNode) {
       visitChildren((ParentSoyNode<?>) node);
     }
-  }
-
-  /**
-   * @param tagName The tag name to get the namespace for, given the current stack of open Elements.
-   */
-  private InferredElementNamespace getNamespace(String tagName) {
-    if (tagName.equalsIgnoreCase("svg")) {
-      return InferredElementNamespace.SVG;
-    }
-
-    // If at the root of a template, treat it as being in the XHTML namespace. Ideally, we would
-    // be able to check the union of the callsites and figure out what namespace were from there.
-    // Ultimately we cannot tell if a template will be rendered into an SVG at runtime. For almost
-    // all cases, XHTML is the right value however.
-    if (tagName.equalsIgnoreCase("foreignObject") || openTagStack.isEmpty()) {
-      return InferredElementNamespace.XHTML;
-    }
-
-    return openTagToInferredNamesapce.get(openTagStack.peek());
   }
 
   private void pushState(HtmlContext context) {

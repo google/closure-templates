@@ -78,6 +78,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SoyType;
@@ -429,8 +430,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       return ImmutableList.of(LITERAL_EMPTY_STRING);
     }
     HtmlAttributeValueNode value = (HtmlAttributeValueNode) node.getChild(1);
+    return getPrintNodeCodeChunk(value, "html_attribute_" + node.getId());
+  }
+
+  private List<CodeChunk.WithValue> getPrintNodeCodeChunk(
+      ParentSoyNode<?> value, String outputVar) {
     if (!isComputableAsJsExprsVisitor.execOnChildren(value)) {
-      String outputVar = "html_attribute_" + node.getId();
       getJsCodeBuilder().pushOutputVar(outputVar).setOutputVarInited();
       SanitizedContentKind prev = getJsCodeBuilder().getContentKind();
       getJsCodeBuilder().setContentKind(SanitizedContentKind.TEXT);
@@ -454,11 +459,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * Visits the subtree of a node and wraps the resulting code in a pair of {@code
    * incrementalDom.elementOpenStart} and {@code incrementalDom.elementOpenEnd} calls.
    */
-  private void emitOpenStartEndAndVisitSubtree(HtmlOpenTagNode node, String tagName) {
+  private void emitOpenStartEndAndVisitSubtree(HtmlOpenTagNode node, CodeChunk.WithValue tagName) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
 
     List<CodeChunk.WithValue> args = new ArrayList<>();
-    args.add(stringLiteral(tagName));
+    args.add(tagName);
 
     CodeChunk.WithValue keyValue = maybeGetKeyNodeValue(node);
     if (keyValue != null) {
@@ -498,21 +503,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
 
-    // getStaticTagName is guaranteed to succeed since it is enforced by the HtmlContextVisitor
-    String tagName = node.getTagName().getStaticTagName();
+    CodeChunk.WithValue tagCodeChunk = getTagNameCodeChunk(node.getTagName());
     // the tag name is always child-0
     if (node.numChildren() == 1) {
-      jsCodeBuilder.append(
-          INCREMENTAL_DOM_ELEMENT_OPEN.call(ImmutableList.of(stringLiteral(tagName))));
+      jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_OPEN.call(ImmutableList.of(tagCodeChunk)));
     } else {
-      emitOpenStartEndAndVisitSubtree(node, tagName);
+      emitOpenStartEndAndVisitSubtree(node, tagCodeChunk);
     }
 
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      emitClose(tagName);
+      emitClose(tagCodeChunk);
     }
   }
 
@@ -574,8 +577,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
     if (!node.getTagName().isDefinitelyVoid()) {
-      // getStaticTagName is guaranteed to succeed since it is enforced by the HtmlContextVisitor
-      emitClose(node.getTagName().getStaticTagName());
+      emitClose(getTagNameCodeChunk(node.getTagName()));
     }
   }
 
@@ -586,9 +588,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * &lt;incrementalDom.elementClose('div');&gt;
    * </pre>
    */
-  private void emitClose(String tagName) {
+  private void emitClose(CodeChunk.WithValue tagName) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_CLOSE.call(stringLiteral(tagName)));
+    jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_CLOSE.call(tagName));
   }
 
   /**
@@ -617,6 +619,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsCodeBuilder.addChunkToOutputVar(textArg);
     }
   }
+
 
   /**
    * Visit an {@link PrintNode}, with special cases for a variable being printed within an attribute
@@ -778,6 +781,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     visitChildren(node);
+  }
+
+  private CodeChunk.WithValue getTagNameCodeChunk(TagName tagName) {
+    // No need to check if is computable as js expr because tag names can only be
+    // print nodes and constants.
+    return genJsExprsVisitor.exec(tagName.getNode()).get(0);
   }
 
   /**
