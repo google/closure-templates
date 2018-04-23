@@ -679,6 +679,11 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testDebugger() {
+    assertThatTemplateBody("{debugger}").rendersAs("");
+  }
+
+  @Test
   public void testParamValidation() throws Exception {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?: -1}");

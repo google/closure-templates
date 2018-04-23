@@ -29,7 +29,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
-import static com.google.template.soy.jbcsrc.restricted.Statement.NULL_STATEMENT;
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
@@ -709,9 +708,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitDebuggerNode(DebuggerNode node) {
-    // intentional no-op.  java has no 'breakpoint' equivalent.  But we can add a label + line
-    // number.  Which may be useful for debugging :)
-    return NULL_STATEMENT;
+    // Call JbcSrcRuntime.debuggger.  This logs a stack trace by default and is an obvious place to
+    // put a breakpoint.
+    return MethodRef.RUNTIME_DEBUGGER.invokeVoid(
+        constant(node.getSourceLocation().getFilePath()),
+        constant(node.getSourceLocation().getBeginLine()));
   }
 
   /**

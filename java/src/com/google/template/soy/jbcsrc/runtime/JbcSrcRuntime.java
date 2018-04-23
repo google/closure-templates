@@ -97,6 +97,19 @@ public final class JbcSrcRuntime {
     return new AssertionError("Unexpected state requested: " + state);
   }
 
+  /**
+   * Every {@code debugger} statement will call this method. You can use conditional breakpoints
+   * here to easily stop execution at the right location.
+   */
+  public static void debugger(String fileName, int lineNumber) {
+    logger.log(
+        Level.WARNING,
+        String.format(
+            "Hit {debugger} statement at %s:%d. Put a breakpoint here to halt Soy rendering.",
+            fileName, lineNumber),
+        new Exception());
+  }
+
   public static boolean stringEqualsAsNumber(String expr, double number) {
     if (expr == null) {
       return false;

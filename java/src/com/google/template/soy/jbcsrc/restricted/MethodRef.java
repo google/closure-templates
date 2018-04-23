@@ -304,6 +304,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_LOGGER =
       create(JbcSrcRuntime.class, "logger").asCheap().asNonNullable();
 
+  public static final MethodRef RUNTIME_DEBUGGER =
+      create(JbcSrcRuntime.class, "debugger", String.class, int.class);
+
   public static final MethodRef RUNTIME_MINUS =
       create(SharedRuntime.class, "minus", SoyValue.class, SoyValue.class).asNonNullable();
 
