@@ -121,6 +121,7 @@ public final class PassManager {
       singleFilePassesBuilder.add(new AddDebugAttributesPass());
     }
     if (!disableAllTypeChecking) {
+      singleFilePassesBuilder.add(new CheckDeclaredTypesPass());
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
       singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, builder.loggingConfig));
@@ -377,6 +378,13 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new ResolveNamesVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class CheckDeclaredTypesPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new CheckDeclaredTypesVisitor(errorReporter).exec(file);
     }
   }
 

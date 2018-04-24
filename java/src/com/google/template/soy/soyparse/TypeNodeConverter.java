@@ -17,18 +17,15 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ErrorType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
@@ -64,12 +61,6 @@ final class TypeNodeConverter {
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
-  // LINT.IfChange
-  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
-      SoyErrorKind.of(
-          "''{0}'' is not allowed as a map key type. Allowed map key types: "
-              + "bool, int, float, number, string, proto enum.");
-
   private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES =
       ImmutableMap.of(
           "list",
@@ -92,15 +83,6 @@ final class TypeNodeConverter {
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
               return registry.getOrCreateMapType(types.get(0), types.get(1));
             }
-
-            @Override
-            void checkPermissibleGenericTypes(
-                List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {
-              SoyType keyType = types.get(0);
-              if (!MapType.isAllowedKeyType(keyType)) {
-                errorReporter.report(typeNodes.get(0).sourceLocation(), BAD_MAP_KEY_TYPE, keyType);
-              }
-            }
           });
 
   /** Simple representation of a generic type specification. */
@@ -119,17 +101,6 @@ final class TypeNodeConverter {
      * Creates the given type. There are guaranteed to be exactly {@link #numParams} in the list.
      */
     abstract SoyType create(List<SoyType> types, SoyTypeRegistry registry);
-
-    /**
-     * Subclasses can override to implement custom restrictions on their generic type parameters.
-     *
-     * @param types The generic types.
-     * @param typeNodes TypeNodes corresponding to each of the generic types (for reporting source
-     *     locations in error messages)
-     * @param errorReporter For reporting an error condition.
-     */
-    void checkPermissibleGenericTypes(
-        List<SoyType> types, List<TypeNode> typeNodes, ErrorReporter errorReporter) {}
   }
 
   private final ErrorReporter errorReporter;
@@ -175,6 +146,7 @@ final class TypeNodeConverter {
         }
         type = ErrorType.getInstance();
       }
+      node.setResolvedType(type);
       return type;
     }
 
@@ -205,17 +177,23 @@ final class TypeNodeConverter {
         return ErrorType.getInstance();
       }
 
-      List<SoyType> genericTypes = Lists.transform(args, this);
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      genericType.checkPermissibleGenericTypes(genericTypes, args, errorReporter);
-      return errorReporter.errorsSince(checkpoint)
-          ? ErrorType.getInstance()
-          : genericType.create(genericTypes, typeRegistry);
+      SoyType type = genericType.create(Lists.transform(args, this), typeRegistry);
+      node.setResolvedType(type);
+      return type;
     }
 
     @Override
     public SoyType visit(UnionTypeNode node) {
-      return typeRegistry.getOrCreateUnionType(Collections2.transform(node.candidates(), this));
+      // Copy the result of the transform because transform is lazy. The union evaluation code short
+      // circuits if it sees a ? type so for types like ?|list<?> the union evaluation would get
+      // short circuited and the lazy transform would never visit list<?>. By copying the transform
+      // result (which the transform documentation recommends to avoid lazy evaluation), we ensure
+      // that all type nodes are visited.
+      SoyType type =
+          typeRegistry.getOrCreateUnionType(
+              ImmutableList.copyOf(Lists.transform(node.candidates(), this)));
+      node.setResolvedType(type);
+      return type;
     }
 
     @Override
@@ -229,7 +207,9 @@ final class TypeNodeConverter {
           map.put(property.name(), oldType);
         }
       }
-      return typeRegistry.getOrCreateRecordType(map);
+      SoyType type = typeRegistry.getOrCreateRecordType(map);
+      node.setResolvedType(type);
+      return type;
     }
 
     @Override

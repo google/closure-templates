@@ -16,16 +16,33 @@
 
 package com.google.template.soy.types.ast;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /** The base class for an immutable node in the type AST. */
 public abstract class TypeNode {
+
+  @Nullable private SoyType resolvedType;
 
   TypeNode() {}
 
   public abstract SourceLocation sourceLocation();
 
   public abstract <T> T accept(TypeNodeVisitor<T> visitor);
+
+  public void setResolvedType(SoyType type) {
+    checkState(resolvedType == null, "type has already been set to %s", resolvedType);
+    resolvedType = type;
+  }
+
+  public SoyType getResolvedType() {
+    checkState(
+        resolvedType != null, "type hasn't been set yet on %s at %s", toString(), sourceLocation());
+    return resolvedType;
+  }
 
   /** Returns round-trippable (through the parser) source code for this node. */
   @Override
