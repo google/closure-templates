@@ -173,7 +173,7 @@ final class MsgCompiler {
               msg,
               escapingDirectives,
               soyMsgParts,
-              parameterLookup.getRenderContext().getULocale(),
+              parameterLookup.getPluginContext().getULocale(),
               partsAndId.parts);
     }
     return Statement.concat(

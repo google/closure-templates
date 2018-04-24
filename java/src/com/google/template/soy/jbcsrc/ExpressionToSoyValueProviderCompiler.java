@@ -90,6 +90,8 @@ final class ExpressionToSoyValueProviderCompiler {
    * be done without introducing unnecessary boxing operations. This is intended for situations
    * (like print operations) where calling {@link SoyValueProvider#renderAndResolve} would be better
    * than calling {@link #toString()} and passing directly to the output.
+   *
+   * <p>TODO(lukes): this method is confusingly named
    */
   Optional<Expression> compileAvoidingBoxing(ExprNode node, Label reattachPoint) {
     checkNotNull(node);
