@@ -360,4 +360,30 @@ public final class DetachStateTest {
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("prefix foo suffix");
   }
+
+  @Test
+  public void testDetach_msg() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "",
+            "{template .t}",
+            "  {@param p : string}",
+            "  {msg desc='...'}",
+            "    Hello {$p phname='name'}!",
+            "  {/msg}",
+            "{/template}",
+            "");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.t");
+    RenderContext context = getDefaultContext(templates);
+    SettableFuture<String> param = SettableFuture.create();
+    SoyRecord params = asRecord(ImmutableMap.of("p", param));
+    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
+    assertThat(output.toString()).isEqualTo("Hello ");
+    param.set("foo");
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("Hello foo!");
+  }
 }

@@ -36,6 +36,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -47,7 +48,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
-import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
+import com.google.template.soy.jbcsrc.MsgCompiler.PlaceholderCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -94,6 +95,8 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -201,8 +204,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getContentKind() != null) {
       templateBody =
           Statement.concat(
-              appendableExpression.setSanitizedContentKind(node.getContentKind()).toStatement(),
               appendableExpression
+                  .setSanitizedContentKind(node.getContentKind())
                   .setSanitizedContentDirectionality(
                       ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
                   .toStatement(),
@@ -1055,26 +1058,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         variables,
         parameterLookup,
         appendableExpression,
-        new SoyNodeToStringCompiler() {
-          @Override
-          public Statement compileToBuffer(
-              MsgHtmlTagNode htmlTagNode, AppendableExpression appendable) {
-            return compilerWithNewAppendable(appendable).visit(htmlTagNode);
-          }
-
-          @Override
-          public Statement compileToBuffer(CallNode call, AppendableExpression appendable) {
-            // TODO(lukes): in the case that CallNode has to be escaped we will render all the bytes
-            // into a buffer, box it into a soy value, escape it, then copy the bytes into this
-            // buffer.  Consider optimizing at least one of the buffer copies away.
-            return compilerWithNewAppendable(appendable).visit(call);
-          }
-
-          @Override
-          public Expression compileToString(PrintNode node, Label reattachPoint) {
-            return compilePrintNodeAsExpression(node, reattachPoint).coerceToString();
-          }
-
+        new PlaceholderCompiler() {
           @Override
           public Expression compileToString(ExprRootNode node, Label reattachPoint) {
             return exprCompiler.compile(node, reattachPoint).coerceToString();
@@ -1083,6 +1067,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           @Override
           public Expression compileToInt(ExprRootNode node, Label reattachPoint) {
             return exprCompiler.compile(node, reattachPoint).box().checkedCast(IntegerData.class);
+          }
+
+          @Override
+          public Expression compileToSoyValueProvider(String phname, StandaloneNode node) {
+            LetContentNode fakeLet =
+                LetContentNode.forVariable(/*id=*/ -1, node.getSourceLocation(), phname, null);
+            // copy the node so we don't end up removing it from the parent as a side effect.
+            fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
+            return lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname);
           }
         });
   }

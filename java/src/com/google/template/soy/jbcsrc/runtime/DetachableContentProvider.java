@@ -75,7 +75,12 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (currentBuilder == null) {
       builder = currentBuilder = LoggingAdvisingAppendable.buffering();
     }
-    RenderResult result = doRender(currentBuilder);
+    RenderResult result;
+    try {
+      result = doRender(currentBuilder);
+    } catch (IOException ioe) {
+      throw new AssertionError("impossible", ioe);
+    }
     if (result.isDone()) {
       buffer = currentBuilder;
       builder = null;
@@ -87,6 +92,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     if (isDone()) {
+      if (buffer == null && resolvedValue == TombstoneValue.INSTANCE) {
+        throw new IllegalStateException(
+            "calling renderAndResolve after setting isLast = true is not supported");
+      }
       buffer.replayOn(appendable);
       return RenderResult.done();
     }
@@ -135,7 +144,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable);
+  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException;
 
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the

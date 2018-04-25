@@ -20,15 +20,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 
-import com.google.common.base.Optional;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -56,15 +56,28 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.types.StringType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 
-/** A helper for compiling {@link MsgNode messages} */
+/**
+ * A helper for compiling {@link MsgNode messages}.
+ *
+ * <p>The strategy is to mostly rely on a runtime support library in {@code JbcsrcRuntime} to handle
+ * actual message formatting so this class is responsible for:
+ *
+ * <ul>
+ *   <li>Stashing a default ImmutableList<SoyMsgPart> in a static field to handle missing
+ *       translations
+ *   <li>performing lookup from the RenderContext to get the translation
+ *   <li>generating code calculate placeholder values
+ * </ul>
+ */
 final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
       ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class, String.class);
@@ -87,20 +100,13 @@ final class MsgCompiler {
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
    * limited way.
    */
-  interface SoyNodeToStringCompiler {
+  interface PlaceholderCompiler {
     /**
      * Compiles the expression to a {@link String} valued expression.
      *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
     Expression compileToString(ExprRootNode node, Label reattachPoint);
-
-    /**
-     * Compiles the print node to a {@link String} valued expression.
-     *
-     * <p>If the node requires detach logic, it should use the given label as the reattach point.
-     */
-    Expression compileToString(PrintNode node, Label reattachPoint);
 
     /**
      * Compiles the expression to an {@code IntegerData} valued expression.
@@ -110,19 +116,11 @@ final class MsgCompiler {
     Expression compileToInt(ExprRootNode node, Label reattachPoint);
 
     /**
-     * Compiles the given CallNode to a statement that writes the result into the given appendable.
+     * Compiles the given node to a statement that writes the result into the given appendable.
      *
      * <p>The statement is guaranteed to be written to a location with a stack depth of zero.
      */
-    Statement compileToBuffer(CallNode call, AppendableExpression appendable);
-
-    /**
-     * Compiles the given MsgHtmlTagNode to a statement that writes the result into the given
-     * appendable.
-     *
-     * <p>The statement is guaranteed to be written to a location with a stack depth of zero.
-     */
-    Statement compileToBuffer(MsgHtmlTagNode htmlTagNode, AppendableExpression appendable);
+    Expression compileToSoyValueProvider(String phname, StandaloneNode node);
   }
 
   private final Expression thisVar;
@@ -130,7 +128,7 @@ final class MsgCompiler {
   private final TemplateVariableManager variables;
   private final TemplateParameterLookup parameterLookup;
   private final AppendableExpression appendableExpression;
-  private final SoyNodeToStringCompiler soyNodeCompiler;
+  private final PlaceholderCompiler placeholderCompiler;
 
   MsgCompiler(
       Expression thisVar,
@@ -138,13 +136,13 @@ final class MsgCompiler {
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
       AppendableExpression appendableExpression,
-      SoyNodeToStringCompiler soyNodeCompiler) {
+      PlaceholderCompiler placeholderCompiler) {
     this.thisVar = checkNotNull(thisVar);
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
     this.appendableExpression = checkNotNull(appendableExpression);
-    this.soyNodeCompiler = checkNotNull(soyNodeCompiler);
+    this.placeholderCompiler = checkNotNull(placeholderCompiler);
   }
 
   /**
@@ -278,65 +276,92 @@ final class MsgCompiler {
       ImmutableList<SoyMsgPart> parts) {
     // We need to render placeholders into a buffer and then pack them into a map to pass to
     // Runtime.renderSoyMsgWithPlaceholders.
-    Expression placeholderMap = variables.getMsgPlaceholderMapField().accessor(thisVar);
-    Map<String, Statement> placeholderNameToPutStatement = new LinkedHashMap<>();
-    putPlaceholdersIntoMap(placeholderMap, msg, parts, placeholderNameToPutStatement);
+
+    Map<String, Function<Expression, Statement>> placeholderNameToPutStatement =
+        new LinkedHashMap<>();
+    putPlaceholdersIntoMap(msg, parts, placeholderNameToPutStatement);
     // sanity check
     checkState(!placeholderNameToPutStatement.isEmpty());
-    variables.setMsgPlaceholderMapMinSize(placeholderNameToPutStatement.size());
-    Statement populateMap = Statement.concat(placeholderNameToPutStatement.values());
-    Statement clearMap = placeholderMap.invokeVoid(MethodRef.LINKED_HASH_MAP_CLEAR);
+    ConstructorRef cstruct =
+        msg.isPlrselMsg() ? ConstructorRef.PLRSEL_MSG_RENDERER : ConstructorRef.MSG_RENDERER;
+    Statement initRendererStatement =
+        variables
+            .getCurrentRenderee()
+            .putInstanceField(
+                thisVar,
+                cstruct.construct(
+                    soyMsgParts, locale, constant(placeholderNameToPutStatement.size())));
+    List<Statement> initializationStatements = new ArrayList<>();
+    initializationStatements.add(initRendererStatement);
+    for (Function<Expression, Statement> fn : placeholderNameToPutStatement.values()) {
+      initializationStatements.add(fn.apply(variables.getCurrentRenderee().accessor(thisVar)));
+    }
+
+    Statement initMsgRenderer = Statement.concat(initializationStatements);
     Statement render;
     if (areAllPrintDirectivesStreamable(escapingDirectives)) {
-      // No need to save/restore since rendering a message doesn't detach.  All detaching for data
-      // should have already happened as part of constructing the placholder map.
       AppendableAndOptions wrappedAppendable =
           applyStreamingEscapingDirectives(
               escapingDirectives,
               appendableExpression,
-              parameterLookup.getRenderContext(),
+              parameterLookup.getPluginContext(),
               variables);
-      Statement initAppendable = Statement.NULL_STATEMENT;
-      Statement clearAppendable = Statement.NULL_STATEMENT;
-      Expression appendableExpression = wrappedAppendable.appendable();
+      FieldRef currentAppendableField = variables.getCurrentAppendable();
+      Statement initAppendable =
+          currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
+      Expression appendableExpression = currentAppendableField.accessor(thisVar);
+      Statement clearAppendable =
+          currentAppendableField.putInstanceField(
+              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
       if (wrappedAppendable.closeable()) {
-        Scope scope = variables.enterScope();
-        Variable appendableVar =
-            scope.createTemporary("msg_appendable", wrappedAppendable.appendable());
-        initAppendable = appendableVar.initializer();
-        appendableExpression = appendableVar.local();
         clearAppendable =
             Statement.concat(
-                appendableVar
-                    .local()
+                appendableExpression
                     .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
                     .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
-                scope.exitScope());
+                clearAppendable);
       }
       render =
           Statement.concat(
               initAppendable,
-              MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
-                  soyMsgParts, locale, placeholderMap, appendableExpression),
+              detachState.detachForRender(
+                  variables
+                      .getCurrentRenderee()
+                      .accessor(thisVar)
+                      .invoke(
+                          MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
+                          appendableExpression,
+                          // set the isLast field to true since we know this will only be rendered
+                          // once.
+                          /* isLast=*/ constant(true))),
               clearAppendable);
     } else {
-      // render into the handy buffer we already have!
-      Statement renderToBuffer =
-          MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
-              soyMsgParts, locale, placeholderMap, tempBuffer());
-      // N.B. the type here is always 'string'
+      Label start = new Label();
       SoyExpression value =
-          SoyExpression.forString(
-              tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
+          SoyExpression.forSoyValue(
+              StringType.getInstance(),
+              detachState
+                  .createExpressionDetacher(start)
+                  .resolveSoyValueProvider(variables.getCurrentRenderee().accessor(thisVar))
+                  .checkedCast(SOY_STRING_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
       }
       render =
-          Statement.concat(
-              renderToBuffer,
-              appendableExpression.appendString(value.coerceToString()).toStatement());
+          appendableExpression
+              .appendString(value.unboxAs(String.class))
+              .toStatement()
+              .labelStart(start);
     }
-    return Statement.concat(populateMap, render, clearMap);
+    return Statement.concat(
+        initMsgRenderer,
+        render,
+        // clear the field
+        variables
+            .getCurrentRenderee()
+            .putInstanceField(
+                thisVar,
+                BytecodeUtils.constantNull(ConstructorRef.MSG_RENDERER.instanceClass().type())));
   }
 
   /**
@@ -344,10 +369,9 @@ final class MsgCompiler {
    * case value into {@code mapExpression}
    */
   private void putPlaceholdersIntoMap(
-      Expression mapExpression,
       MsgNode originalMsg,
       Iterable<? extends SoyMsgPart> parts,
-      Map<String, Statement> placeholderNameToPutStatement) {
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement) {
     for (SoyMsgPart child : parts) {
       if (child instanceof SoyMsgRawTextPart || child instanceof SoyMsgPluralRemainderPart) {
         // raw text doesn't have placeholders and remainders use the same placeholder as plural they
@@ -355,14 +379,11 @@ final class MsgCompiler {
         continue;
       }
       if (child instanceof SoyMsgPluralPart) {
-        putPluralPartIntoMap(
-            mapExpression, originalMsg, placeholderNameToPutStatement, (SoyMsgPluralPart) child);
+        putPluralPartIntoMap(originalMsg, placeholderNameToPutStatement, (SoyMsgPluralPart) child);
       } else if (child instanceof SoyMsgSelectPart) {
-        putSelectPartIntoMap(
-            mapExpression, originalMsg, placeholderNameToPutStatement, (SoyMsgSelectPart) child);
+        putSelectPartIntoMap(originalMsg, placeholderNameToPutStatement, (SoyMsgSelectPart) child);
       } else if (child instanceof SoyMsgPlaceholderPart) {
         putPlaceholderIntoMap(
-            mapExpression,
             originalMsg,
             placeholderNameToPutStatement,
             (SoyMsgPlaceholderPart) child);
@@ -373,51 +394,45 @@ final class MsgCompiler {
   }
 
   private void putSelectPartIntoMap(
-      Expression mapExpression,
       MsgNode originalMsg,
-      Map<String, Statement> placeholderNameToPutStatement,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
       SoyMsgSelectPart select) {
     MsgSelectNode repSelectNode = originalMsg.getRepSelectNode(select.getSelectVarName());
     if (!placeholderNameToPutStatement.containsKey(select.getSelectVarName())) {
       Label reattachPoint = new Label();
-      Expression value = soyNodeCompiler.compileToString(repSelectNode.getExpr(), reattachPoint);
+      Expression value =
+          placeholderCompiler.compileToString(repSelectNode.getExpr(), reattachPoint);
       placeholderNameToPutStatement.put(
           select.getSelectVarName(),
-          putToMap(mapExpression, select.getSelectVarName(), value).labelStart(reattachPoint));
+          putToMapFunction(select.getSelectVarName(), value, reattachPoint));
     }
     // Recursively visit select cases
     for (Case<String> caseOrDefault : select.getCases()) {
-      putPlaceholdersIntoMap(
-          mapExpression, originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+      putPlaceholdersIntoMap(originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
     }
   }
 
   private void putPluralPartIntoMap(
-      Expression mapExpression,
       MsgNode originalMsg,
-      Map<String, Statement> placeholderNameToPutStatement,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
       SoyMsgPluralPart plural) {
     MsgPluralNode repPluralNode = originalMsg.getRepPluralNode(plural.getPluralVarName());
     if (!placeholderNameToPutStatement.containsKey(plural.getPluralVarName())) {
       Label reattachPoint = new Label();
-      Expression value = soyNodeCompiler.compileToInt(repPluralNode.getExpr(), reattachPoint);
+      Expression value = placeholderCompiler.compileToInt(repPluralNode.getExpr(), reattachPoint);
       placeholderNameToPutStatement.put(
           plural.getPluralVarName(),
-          putToMap(mapExpression, plural.getPluralVarName(), value)
-              .labelStart(reattachPoint)
-              .withSourceLocation(repPluralNode.getSourceLocation()));
+          putToMapFunction(plural.getPluralVarName(), value, reattachPoint));
     }
     // Recursively visit plural cases
     for (Case<SoyMsgPluralCaseSpec> caseOrDefault : plural.getCases()) {
-      putPlaceholdersIntoMap(
-          mapExpression, originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+      putPlaceholdersIntoMap(originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
     }
   }
 
   private void putPlaceholderIntoMap(
-      Expression mapExpression,
       MsgNode originalMsg,
-      Map<String, Statement> placeholderNameToPutStatement,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
       SoyMsgPlaceholderPart placeholder)
       throws AssertionError {
     String placeholderName = placeholder.getPlaceholderName();
@@ -428,86 +443,18 @@ final class MsgCompiler {
         throw new IllegalStateException("empty rep node for: " + placeholderName);
       }
       StandaloneNode initialNode = repPlaceholderNode.getChild(0);
-      Statement putEntyInMap;
-      if (initialNode instanceof MsgHtmlTagNode) {
-        putEntyInMap =
-            addHtmlTagNodeToPlaceholderMap(
-                mapExpression, placeholderName, (MsgHtmlTagNode) initialNode);
-      } else if (initialNode instanceof CallNode) {
-        putEntyInMap =
-            addCallNodeToPlaceholderMap(mapExpression, placeholderName, (CallNode) initialNode);
-      } else if (initialNode instanceof PrintNode) {
-        putEntyInMap =
-            addPrintNodeToPlaceholderMap(mapExpression, placeholderName, (PrintNode) initialNode);
-      } else if (initialNode instanceof RawTextNode) {
-        putEntyInMap =
-            addRawTextNodeToPlaceholderMap(
-                mapExpression, placeholderName, (RawTextNode) initialNode);
+      Function<Expression, Statement> putEntyInMap;
+      if (initialNode instanceof MsgHtmlTagNode
+          || initialNode instanceof CallNode
+          || initialNode instanceof PrintNode
+          || initialNode instanceof RawTextNode) {
+        putEntyInMap = addNodeToPlaceholderMap(placeholderName, (StandaloneNode) initialNode);
       } else {
         // the AST for MsgNodes guarantee that these are the only options
         throw new AssertionError("Unexpected child: " + initialNode.getClass());
       }
-      placeholderNameToPutStatement.put(
-          placeholder.getPlaceholderName(),
-          putEntyInMap.withSourceLocation(repPlaceholderNode.getSourceLocation()));
+      placeholderNameToPutStatement.put(placeholderName, putEntyInMap);
     }
-  }
-
-  /**
-   * Returns a statement that adds the content of the raw text node to the map.
-   *
-   * @param mapExpression The map to put the new entry in
-   * @param mapKey The map key
-   * @param rawText The node
-   */
-  private Statement addRawTextNodeToPlaceholderMap(
-      Expression mapExpression, String mapKey, RawTextNode rawText) {
-    return mapExpression
-        .invoke(
-            MethodRef.LINKED_HASH_MAP_PUT,
-            constant(mapKey),
-            constant(rawText.getRawText(), variables))
-        .toStatement()
-        .withSourceLocation(rawText.getSourceLocation());
-  }
-
-  /**
-   * Returns a statement that adds the content of the node to the map.
-   *
-   * @param mapExpression The map to put the new entry in
-   * @param mapKey The map key
-   * @param htmlTagNode The node
-   */
-  private Statement addHtmlTagNodeToPlaceholderMap(
-      Expression mapExpression, String mapKey, MsgHtmlTagNode htmlTagNode) {
-    Optional<String> rawText = tryGetRawTextContent(htmlTagNode);
-    Statement putStatement;
-    if (rawText.isPresent()) {
-      putStatement =
-          mapExpression
-              .invoke(MethodRef.LINKED_HASH_MAP_PUT, constant(mapKey), constant(rawText.get()))
-              .toStatement();
-    } else {
-      Statement renderIntoBuffer = soyNodeCompiler.compileToBuffer(htmlTagNode, tempBuffer());
-      Statement putBuffer = putBufferIntoMapForPlaceholder(mapExpression, mapKey);
-      putStatement = Statement.concat(renderIntoBuffer, putBuffer);
-    }
-    return putStatement.withSourceLocation(htmlTagNode.getSourceLocation());
-  }
-
-  /**
-   * Returns a statement that adds the content rendered by the call to the map.
-   *
-   * @param mapExpression The map to put the new entry in
-   * @param mapKey The map key
-   * @param callNode The node
-   */
-  private Statement addCallNodeToPlaceholderMap(
-      Expression mapExpression, String mapKey, CallNode callNode) {
-    Statement renderIntoBuffer = soyNodeCompiler.compileToBuffer(callNode, tempBuffer());
-    Statement putBuffer = putBufferIntoMapForPlaceholder(mapExpression, mapKey);
-    return Statement.concat(renderIntoBuffer, putBuffer)
-        .withSourceLocation(callNode.getSourceLocation());
   }
 
   /**
@@ -517,40 +464,32 @@ final class MsgCompiler {
    * @param mapKey The map key
    * @param printNode The node
    */
-  private Statement addPrintNodeToPlaceholderMap(
-      Expression mapExpression, String mapKey, PrintNode printNode) {
-    // This is much like the escaping path of visitPrintNode but somewhat simpler because our
-    // ultimate target is a string rather than putting bytes on the output stream.
-    Label reattachPoint = new Label();
-    Expression compileToString = soyNodeCompiler.compileToString(printNode, reattachPoint);
-    return putToMap(mapExpression, mapKey, compileToString)
-        .labelStart(reattachPoint)
-        .withSourceLocation(printNode.getSourceLocation());
+  private Function<Expression, Statement> addNodeToPlaceholderMap(
+      String mapKey, StandaloneNode node) {
+    return putToMapFunction(mapKey, placeholderCompiler.compileToSoyValueProvider(mapKey, node));
   }
 
-  private Statement putToMap(Expression mapExpression, String mapKey, Expression valueExpression) {
-    return mapExpression
-        .invoke(MethodRef.LINKED_HASH_MAP_PUT, constant(mapKey), valueExpression)
-        .toStatement();
+  private Function<Expression, Statement> putToMapFunction(
+      String mapKey, Expression valueExpression) {
+    return putToMapFunction(mapKey, valueExpression, null);
   }
 
-  private AppendableExpression tempBuffer() {
-    return AppendableExpression.forStringBuilder(variables.getTempBufferField().accessor(thisVar));
-  }
-
-  private Statement putBufferIntoMapForPlaceholder(Expression mapExpression, String mapKey) {
-    return mapExpression
-        .invoke(
-            MethodRef.LINKED_HASH_MAP_PUT,
-            constant(mapKey),
-            tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR))
-        .toStatement();
-  }
-
-  private Optional<String> tryGetRawTextContent(ParentSoyNode<?> initialNode) {
-    if (initialNode.numChildren() == 1 && initialNode.getChild(0) instanceof RawTextNode) {
-      return Optional.of(((RawTextNode) initialNode.getChild(0)).getRawText());
-    }
-    return Optional.absent();
+  private Function<Expression, Statement> putToMapFunction(
+      final String mapKey, final Expression valueExpression, @Nullable final Label labelStart) {
+    return new Function<Expression, Statement>() {
+      @Override
+      public Statement apply(Expression mapExpression) {
+        Statement statement =
+            mapExpression
+                // need to cast since it is stored in a SoyValueProvider field
+                .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
+                .invokeVoid(
+                    MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(mapKey), valueExpression);
+        if (labelStart != null) {
+          statement = statement.labelStart(labelStart);
+        }
+        return statement;
+      }
+    };
   }
 }

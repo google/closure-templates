@@ -43,7 +43,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
    * tree and introduce local temporary variables.
    */
-  // TODO(user): Delete.
   public static LetContentNode forVariable(
       int id,
       SourceLocation sourceLocation,

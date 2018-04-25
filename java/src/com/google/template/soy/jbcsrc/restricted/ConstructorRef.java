@@ -25,6 +25,8 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.ibm.icu.util.ULocale;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,6 +77,11 @@ public abstract class ConstructorRef {
   public static final ConstructorRef AUGMENTED_PARAM_STORE =
       create(AugmentedParamStore.class, SoyRecord.class, int.class);
   public static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
+
+  public static final ConstructorRef MSG_RENDERER =
+      create(JbcSrcRuntime.MsgRenderer.class, ImmutableList.class, ULocale.class, int.class);
+  public static final ConstructorRef PLRSEL_MSG_RENDERER =
+      create(JbcSrcRuntime.PlrSelMsgRenderer.class, ImmutableList.class, ULocale.class, int.class);
 
   public abstract TypeInfo instanceClass();
 

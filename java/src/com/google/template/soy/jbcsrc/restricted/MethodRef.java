@@ -56,7 +56,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
@@ -316,14 +315,8 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_PLUS =
       create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class).asNonNullable();
 
-  public static final MethodRef RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS =
-      create(
-          JbcSrcRuntime.class,
-          "renderSoyMsgPartsWithPlaceholders",
-          ImmutableList.class,
-          ULocale.class,
-          Map.class,
-          Appendable.class);
+  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
+      create(JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, Object.class);
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class)

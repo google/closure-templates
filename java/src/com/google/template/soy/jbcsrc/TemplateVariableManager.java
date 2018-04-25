@@ -21,9 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_APPENDABLE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.MSG_PLACEHOLDER_MAP_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
@@ -34,11 +32,9 @@ import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ClassFieldManager;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -65,7 +61,6 @@ import org.objectweb.asm.commons.Method;
  * <p>This class also manages other template level resources, like:
  *
  * <ul>
- *   <li>A {@link #getTempBufferField() buffer} that can be used to render msg placeholders.
  *   <li>A {@link #getCurrentCalleeField() callee field} that holds the current template that is
  *       being called.
  *   <li>A {@link #getCurrentRenderee() renderee field} that holds the current incrementally
@@ -303,11 +298,6 @@ final class TemplateVariableManager implements ClassFieldManager {
   @Nullable private FieldRef currentRendereeField;
   // Allocated lazily
   @Nullable private FieldRef currentAppendable;
-  // Allocated lazily
-  @Nullable private FieldRef tempBufferField;
-  // Allocated lazily
-  @Nullable private FieldRef msgPlaceholderMapField;
-  private int msgPlaceholderMapInitialSize = 0;
 
   /**
    * @param fieldNames The field name set for the current class.
@@ -321,7 +311,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
     this.fieldNames.claimName(CURRENT_RENDEREE_FIELD);
     this.fieldNames.claimName(TEMP_BUFFER_FIELD);
-    this.fieldNames.claimName(MSG_PLACEHOLDER_MAP_FIELD);
     this.owner = owner;
     this.thisVar = thisVar;
     availableSlots.set(0); // for 'this'
@@ -471,38 +460,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     if (currentAppendable != null) {
       currentAppendable.defineField(writer);
     }
-    if (tempBufferField != null) {
-      tempBufferField.defineField(writer);
-      // If a template needs a temp buffer then we initialize it eagerly in the template constructor
-      // this may be wasteful in the case that the buffer is only used on certain call paths, but
-      // if it turns out to be expensive, this could always be solved by an author by refactoring
-      // their templates (e.g. extract the conditional logic into another template)
-      final Expression newStringBuilder = MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke();
-      initializers.add(
-          new Statement() {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              adapter.loadThis();
-              newStringBuilder.gen(adapter);
-              tempBufferField.putUnchecked(adapter);
-            }
-          });
-    }
-    if (msgPlaceholderMapField != null) {
-      msgPlaceholderMapField.defineField(writer);
-      // same comment as above about eager initialization.
-      final Expression newHashMap =
-          ConstructorRef.LINKED_HASH_MAP_SIZE.construct(constant(msgPlaceholderMapInitialSize));
-      initializers.add(
-          new Statement() {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              adapter.loadThis();
-              newHashMap.gen(adapter);
-              msgPlaceholderMapField.putUnchecked(adapter);
-            }
-          });
-    }
     return Statement.concat(initializers);
   }
 
@@ -541,37 +498,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     return local;
   }
 
-  /** Returns the field that holds the current temp buffer. */
-  FieldRef getTempBufferField() {
-    FieldRef local = tempBufferField;
-    if (local == null) {
-      local =
-          tempBufferField =
-              FieldRef.createFinalField(
-                      owner, TEMP_BUFFER_FIELD, LoggingAdvisingAppendable.BufferingAppendable.class)
-                  .asNonNull();
-    }
-    return local;
-  }
-
-  /** Returns the field that holds a map used for rendering msg placeholders. */
-  FieldRef getMsgPlaceholderMapField() {
-    FieldRef local = msgPlaceholderMapField;
-    if (local == null) {
-      local =
-          msgPlaceholderMapField =
-              FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class)
-                  .asNonNull();
-    }
-    return local;
-  }
-
-  /** Configures a minimum size for the {@link #getMsgPlaceholderMapField()}. */
-  void setMsgPlaceholderMapMinSize(int size) {
-    // we use the max of all the requested minimum sizes for the initial size
-    this.msgPlaceholderMapInitialSize = Math.max(msgPlaceholderMapInitialSize, size);
-  }
-
   /**
    * Returns the field that holds the currently rendering SoyValueProvider.
    *
@@ -594,6 +520,9 @@ final class TemplateVariableManager implements ClassFieldManager {
    *
    * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
    * restoring the current renderee to a local.
+   *
+   * <p>TODO(lukes): it would be better if the VariableSet would save/restore... the issue is
+   * allowing multiple uses within a template to share the field.
    */
   FieldRef getCurrentAppendable() {
     FieldRef local = currentAppendable;
