@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -83,5 +84,13 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
   @Override
   public int hashCode() {
     return Objects.hash(SoyMsgSelectPart.class, selectVarName, cases);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("Select")
+        .addValue(selectVarName)
+        .add("cases", cases)
+        .toString();
   }
 }

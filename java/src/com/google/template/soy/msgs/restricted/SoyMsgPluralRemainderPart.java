@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.MoreObjects;
 import java.util.Objects;
 
 /**
@@ -45,5 +46,10 @@ public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
   @Override
   public int hashCode() {
     return Objects.hash(SoyMsgPluralRemainderPart.class, pluralVarName);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("Remainder").addValue(pluralVarName).toString();
   }
 }

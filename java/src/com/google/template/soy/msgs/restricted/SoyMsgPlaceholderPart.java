@@ -18,6 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -66,5 +67,14 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
   @Override
   public int hashCode() {
     return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName, placeholderExample);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("Placeholder")
+        .omitNullValues()
+        .addValue(placeholderName)
+        .add("ex", placeholderExample)
+        .toString();
   }
 }

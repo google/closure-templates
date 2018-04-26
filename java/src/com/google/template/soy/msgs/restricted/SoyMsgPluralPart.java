@@ -18,6 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
@@ -140,5 +141,15 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
   @Override
   public int hashCode() {
     return Objects.hash(SoyMsgPluralPart.class, offset, pluralVarName, cases);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("Plural")
+        .omitNullValues()
+        .addValue(pluralVarName)
+        .add("cases", cases)
+        .add("offset", offset == 0 ? null : Integer.toString(offset))
+        .toString();
   }
 }

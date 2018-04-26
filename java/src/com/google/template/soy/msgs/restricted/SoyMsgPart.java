@@ -44,5 +44,7 @@ public abstract class SoyMsgPart {
     public abstract ImmutableList<SoyMsgPart> parts();
   }
 
-  // No methods.
+  // force subtypes to implement this.
+  @Override
+  public abstract String toString();
 }
