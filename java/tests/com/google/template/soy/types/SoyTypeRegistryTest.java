@@ -111,4 +111,14 @@ public class SoyTypeRegistryTest {
     assertThat(r3).isNotSameAs(r1);
     assertThat(r4).isNotSameAs(r1);
   }
+
+  @Test
+  public void testNumberType() {
+    // Make sure the type registry knows about the special number type
+    assertThat(SoyTypes.NUMBER_TYPE)
+        .isSameAs(
+            typeRegistry.getOrCreateUnionType(FloatType.getInstance(), IntType.getInstance()));
+    assertThat(SoyTypes.NUMBER_TYPE)
+        .isSameAs(typeRegistry.getOrCreateUnionType(SoyTypes.NUMBER_TYPE));
+  }
 }

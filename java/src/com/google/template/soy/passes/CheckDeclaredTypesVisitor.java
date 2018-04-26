@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -43,12 +42,6 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  * ResolveExpressionTypesVisitor} calculates implicit types and determines if they're legal.
  */
 final class CheckDeclaredTypesVisitor extends AbstractSoyNodeVisitor<Void> {
-
-  // LINT.IfChange
-  private static final SoyErrorKind BAD_MAP_KEY_TYPE =
-      SoyErrorKind.of(
-          "''{0}'' is not allowed as a map key type. Allowed map key types: "
-              + "bool, int, float, number, string, proto enum.");
 
   private final ErrorReporter errorReporter;
 
@@ -84,7 +77,8 @@ final class CheckDeclaredTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           checkArgument(node.arguments().size() == 2);
           TypeNode key = node.arguments().get(0);
           if (!MapType.isAllowedKeyType(key.getResolvedType())) {
-            errorReporter.report(key.sourceLocation(), BAD_MAP_KEY_TYPE, key.getResolvedType());
+            errorReporter.report(
+                key.sourceLocation(), MapType.BAD_MAP_KEY_TYPE, key.getResolvedType());
           }
           node.arguments().get(1).accept(this);
           break;

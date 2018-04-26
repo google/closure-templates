@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.collect.ComparisonChain;
@@ -166,6 +167,8 @@ public class SoyTypeRegistry {
     this.extensions = ImmutableSetMultimap.copyOf(visitor.extensions);
     // TODO(lukes): this is wrong.  The safe string protos should not be usable as types
     this.protoTypeCache = new HashMap<>(SAFE_PROTO_TO_SANITIZED_TYPE);
+    // Register the special number type so == comparisons work
+    checkState(unionTypes.intern((UnionType) NUMBER_TYPE) == NUMBER_TYPE);
   }
 
   public SoyTypeRegistry() {

@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.error.SoyErrorKind;
 import java.util.Objects;
 
 /**
@@ -32,6 +33,11 @@ public final class MapType extends AbstractMapType {
   public static final MapType EMPTY_MAP = new MapType(null, null);
 
   public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
+
+  public static final SoyErrorKind BAD_MAP_KEY_TYPE =
+      SoyErrorKind.of(
+          "''{0}'' is not allowed as a map key type. Allowed map key types: "
+              + "bool, int, float, number, string, proto enum.");
 
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
@@ -50,7 +56,7 @@ public final class MapType extends AbstractMapType {
     return new MapType(keyType, valueType);
   }
 
-  // LINT.IfChange
+  // IMPORTANT: if the allowed key types change, make sure to update BAD_MAP_KEY_TYPE above.
   /** Whether the type is permissible as a key in a Soy {@code map} ({@link MapType}). */
   public static boolean isAllowedKeyType(SoyType type) {
     switch (type.getKind()) {

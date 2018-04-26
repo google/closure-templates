@@ -31,6 +31,7 @@ import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
@@ -142,6 +143,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL =
       SoyErrorKind.of("{0} literals with duplicate keys are not allowed.  Duplicate key: ''{1}''");
+  private static final SoyErrorKind ILLEGAL_MAP_RESOLVED_KEY_TYPE =
+      SoyErrorKind.of(
+          "A map''s keys must all be the same type. This map has keys of multiple types "
+              + "(''{0}'').");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
@@ -452,6 +457,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       Map<String, SoyType> recordFieldTypes = new LinkedHashMap<>();
       List<SoyType> keyTypes = new ArrayList<>(numChildren / 2);
       List<SoyType> valueTypes = new ArrayList<>(numChildren / 2);
+      Checkpoint checkpoint = errorReporter.checkpoint();
       for (int i = 0; i < numChildren; i += 2) {
         ExprNode key = node.getChild(i);
         ExprNode value = node.getChild(i + 1);
@@ -472,9 +478,18 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           }
         }
         keyTypes.add(key.getType());
+        if (nodeKind == MAP_LITERAL_NODE && !MapType.isAllowedKeyType(key.getType())) {
+          errorReporter.report(key.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, key.getType());
+        }
         valueTypes.add(value.getType());
       }
       SoyType commonKeyType = SoyTypes.computeLowestCommonType(typeRegistry, keyTypes);
+      if (!errorReporter.errorsSince(checkpoint)
+          && nodeKind == MAP_LITERAL_NODE
+          && !MapType.isAllowedKeyType(commonKeyType)) {
+        errorReporter.report(
+            node.getSourceLocation(), ILLEGAL_MAP_RESOLVED_KEY_TYPE, commonKeyType);
+      }
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
 
       // The legacy literal syntax [k1:v1, k2:v2, ...] creates either a legacy object map (a value
