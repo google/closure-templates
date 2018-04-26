@@ -83,6 +83,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -95,6 +96,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.AnyType;
@@ -1339,24 +1341,31 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.appendLine("debugger;");
   }
 
+  @Override
+  protected void visitVeLogNode(VeLogNode node) {
+    // no need to do anything, the VeLogInstrumentationVisitor has already handled these.
+    visitChildren(node);
+  }
+
+  @Override
+  protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+    // PlaceholderNodes just wrap other nodes with placeholder metadata which is processed by the
+    // GenJsCodeVisitorAssistentForMsgs
+    visitChildren(node);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
   @Override
   protected void visitSoyNode(SoyNode node) {
-    // TODO(lukes): this method is suspicious...delete? always throw unsupportedoperationexception?
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-      return;
-    }
-
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Simply generate JS expressions for this node and add them to the current output var.
       jsCodeBuilder.addChunksToOutputVar(genJsExprsVisitor.exec(node));
 
     } else {
       // Need to implement visit*Node() for the specific case.
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("implement visit*Node for" + node.getKind());
     }
   }
 
