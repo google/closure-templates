@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.testing.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
