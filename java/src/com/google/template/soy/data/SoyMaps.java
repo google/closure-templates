@@ -17,10 +17,11 @@
 package com.google.template.soy.data;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Utility methods for dealing with Soy maps.
@@ -67,10 +68,11 @@ public final class SoyMaps {
 
   /** Converts the parameter to a {@link SoyMap}. */
   public static SoyMap legacyObjectMapToMap(SoyLegacyObjectMap map) {
-    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+    // TODO(b/78597316): switch this to HashMap
+    Map<SoyValue, SoyValueProvider> newMap = new LinkedHashMap<>();
     for (SoyValue key : map.getItemKeys()) {
-      builder.put(key, map.getItemProvider(key));
+      newMap.put(key, map.getItemProvider(key));
     }
-    return SoyMapImpl.forProviderMap(builder.build());
+    return SoyMapImpl.forProviderMap(newMap);
   }
 }

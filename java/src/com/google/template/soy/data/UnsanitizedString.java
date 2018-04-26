@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import javax.annotation.Nullable;
 
 /** A sanitized content that implements SoyString. This is only relevant to kind=TEXT */
@@ -37,5 +38,25 @@ public final class UnsanitizedString extends SanitizedContent implements SoyStri
 
   private UnsanitizedString(String content) {
     super(content, ContentKind.TEXT, ContentKind.TEXT.getDefaultDir());
+  }
+
+  @Override
+  public boolean equals(@Nullable Object other) {
+    // TODO(user): js uses reference equality, this uses content comparison
+    if (other instanceof StringData) {
+      // So that StringData and UnsanitizedString can be used interchangeably. Keep this in sync
+      // with StringData#equals.
+      return ((StringData) other).stringValue().equals(this.getContent());
+    }
+    return other instanceof UnsanitizedString
+        && this.getContentDirection() == ((SanitizedContent) other).getContentDirection()
+        && this.getContent().equals(((UnsanitizedString) other).getContent());
+  }
+
+  @Override
+  public int hashCode() {
+    // So that StringData and UnsanitizedString can be used interchangeably. Keep this in sync with
+    // StringData#hashCode.
+    return getContent().hashCode();
   }
 }

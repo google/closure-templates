@@ -28,7 +28,6 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
@@ -271,16 +270,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
     } else {
-      ImmutableMap.Builder<SoyValue, SoyValue> builder = ImmutableMap.builder();
+      // TODO(b/78597316): switch this to HashMap
+      Map<SoyValue, SoyValue> map = new LinkedHashMap<>();
       for (int i = 0; i < numItems; ++i) {
         SoyValue key = keys.get(i);
         SoyValue value = values.get(i);
         if (isNullOrUndefinedBase(key)) {
           throw RenderException.create(String.format("null key in entry: null=%s", value));
         }
-        builder.put(key, value);
+        map.put(key, value);
       }
-      return SoyMapImpl.forProviderMap(builder.build());
+      return SoyMapImpl.forProviderMap(map);
     }
   }
 

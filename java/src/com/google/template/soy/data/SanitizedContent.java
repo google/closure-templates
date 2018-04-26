@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Preconditions;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
@@ -59,6 +61,8 @@ public class SanitizedContent extends SoyData {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
+    checkArgument(
+        kind != ContentKind.TEXT, "Use UnsanitizedString for SanitizedContent with a kind of TEXT");
     if (Flags.stringIsNotSanitizedContent()) {
       return new SanitizedContent(content, kind, dir);
     }
@@ -67,6 +71,8 @@ public class SanitizedContent extends SoyData {
 
   /** Creates a SanitizedContent object with default direction. */
   static SanitizedContent create(String content, ContentKind kind) {
+    checkArgument(
+        kind != ContentKind.TEXT, "Use UnsanitizedString for SanitizedContent with a kind of TEXT");
     if (Flags.stringIsNotSanitizedContent()) {
       return new SanitizedContent(content, kind, kind.getDefaultDir());
     }

@@ -33,7 +33,7 @@ public class UnsafeSanitizedContentOrdainerTest {
   @Test
   public void testOrdainAsSafe() {
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT))
-        .isEqualTo(SanitizedContent.create("Hello World", ContentKind.TEXT, null));
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", null));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML))
         .isEqualTo(SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS))
@@ -50,13 +50,13 @@ public class UnsafeSanitizedContentOrdainerTest {
   public void testOrdainAsSafeWithDir() {
     assertThat(
             UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR))
-        .isEqualTo(SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.LTR));
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.LTR));
     assertThat(
             UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.RTL))
-        .isEqualTo(SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.RTL));
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.RTL));
     assertThat(
             UnsafeSanitizedContentOrdainer.ordainAsSafe(
                 "Hello World", ContentKind.TEXT, Dir.NEUTRAL))
-        .isEqualTo(SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.NEUTRAL));
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.NEUTRAL));
   }
 }
