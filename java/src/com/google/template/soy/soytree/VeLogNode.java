@@ -112,6 +112,45 @@ public final class VeLogNode extends AbstractBlockCommandNode
     return Kind.VE_LOG_NODE;
   }
 
+  /** Returns the open tag node if it exists. */
+  @Nullable
+  public HtmlOpenTagNode getOpenTagNode() {
+    if (numChildren() > 0) {
+      return (HtmlOpenTagNode) getVeLogChildNodeAsHtmlTagNode(getChild(0), /*openTag=*/ true);
+    }
+    return null;
+  }
+
+  /** Returns the close tag node if it exists. */
+  @Nullable
+  public HtmlCloseTagNode getCloseTagNode() {
+    if (numChildren() > 1) {
+      return (HtmlCloseTagNode)
+          getVeLogChildNodeAsHtmlTagNode(getChild(numChildren() - 1), /*openTag=*/ false);
+    }
+    return null;
+  }
+
+  private static HtmlTagNode getVeLogChildNodeAsHtmlTagNode(SoyNode node, boolean openTag) {
+    SoyNode.Kind tagKind =
+        openTag ? SoyNode.Kind.HTML_OPEN_TAG_NODE : SoyNode.Kind.HTML_CLOSE_TAG_NODE;
+    if (node.getKind() == tagKind) {
+      return (HtmlTagNode) node;
+    }
+    // In a msg tag it will be a placeholder, wrapping a MsgHtmlTagNode wrapping the HtmlTagNode.
+    if (node.getKind() == Kind.MSG_PLACEHOLDER_NODE) {
+      MsgPlaceholderNode placeholderNode = (MsgPlaceholderNode) node;
+      if (placeholderNode.numChildren() == 1
+          && placeholderNode.getChild(0).getKind() == Kind.MSG_HTML_TAG_NODE) {
+        MsgHtmlTagNode msgHtmlTagNode = (MsgHtmlTagNode) placeholderNode.getChild(0);
+        if (msgHtmlTagNode.numChildren() == 1 && msgHtmlTagNode.getChild(0).getKind() == tagKind) {
+          return (HtmlTagNode) msgHtmlTagNode.getChild(0);
+        }
+      }
+    }
+    return null;
+  }
+
   @Override
   public String getCommandText() {
     return name.identifier()

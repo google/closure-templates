@@ -334,14 +334,12 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
         return;
       }
-      SoyNode firstChild = node.getChild(0);
+      HtmlOpenTagNode firstTag = node.getOpenTagNode();
       // The first child of {velog} must be an open tag.
-      if (firstChild.getKind() != SoyNode.Kind.HTML_OPEN_TAG_NODE) {
-        errorReporter.report(firstChild.getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
+      if (firstTag == null) {
+        errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
         return;
       }
-      // At this point we can safely cast it to an open tag.
-      HtmlOpenTagNode firstTag = (HtmlOpenTagNode) firstChild;
       // If the first child is self-closing or is a void tag, reports an error if we see anything
       // after it.
       if (node.numChildren() > 1
@@ -350,9 +348,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         return;
       }
       SoyNode lastChild = node.getChild(node.numChildren() - 1);
+      HtmlCloseTagNode lastTag = null;
       if (node.numChildren() > 1) {
+        lastTag = node.getCloseTagNode();
         // The last child (if it is not the same with the first child) must be a close tag.
-        if (lastChild.getKind() != SoyNode.Kind.HTML_CLOSE_TAG_NODE) {
+        if (lastTag == null) {
           errorReporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
           return;
         }
@@ -361,9 +361,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // After visiting all the children, we should have alreday built the map.
       // At this point, we check the map and verify that the first child is actually popped by the
       // last child. Otherwise, report an error.
-      if (node.numChildren() > 1) {
-        // At this point we can safely cast it to a close tag.
-        HtmlCloseTagNode lastTag = (HtmlCloseTagNode) lastChild;
+      if (lastTag != null) {
         // If the map does not contain the last tag, other part of this compiler pass should enforce
         // that there is an error thrown. Don't report another error here since it is a duplicate.
         // This check make sures that there is exactly one top-level element -- the last tag must
