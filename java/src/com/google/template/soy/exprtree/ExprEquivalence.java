@@ -16,11 +16,16 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Equivalence;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -78,10 +83,25 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-          return hashChildren(node);
+          return mapLiteralFields(node).hashCode();
+        }
+
+        @Override
+        protected Integer visitMapLiteralNode(MapLiteralNode node) {
+          return mapLiteralFields(node).hashCode();
         }
 
         // literals
+
+        @Override
+        protected Integer visitProtoInitNode(ProtoInitNode node) {
+          return Objects.hash(node.getProtoName(), protoInitFields(node));
+        }
+
+        @Override
+        protected Integer visitBooleanNode(BooleanNode node) {
+          return Boolean.valueOf(node.getValue()).hashCode();
+        }
 
         @Override
         protected Integer visitIntegerNode(IntegerNode node) {
@@ -105,8 +125,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitOperatorNode(OperatorNode node) {
-          // operators are determined entirely by their children
-          return hashChildren(node);
+          return node.getOperator().hashCode() * 31 + hashChildren(node);
         }
 
         @Override
@@ -116,7 +135,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitExprNode(ExprNode node) {
-          return 0;
+          throw new UnsupportedOperationException(node.toSourceString());
         }
 
         private int hashChildren(ParentExprNode node) {
@@ -168,7 +187,10 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     @Override
     protected Boolean visitFunctionNode(FunctionNode node) {
       FunctionNode typedOther = (FunctionNode) other;
-      return compareChildren(node) && node.getFunctionName().equals(typedOther.getFunctionName());
+      // only pure functions can be equal to each other.
+      return node.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)
+          && compareChildren(node)
+          && node.getFunctionName().equals(typedOther.getFunctionName());
     }
 
     @Override
@@ -183,10 +205,24 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
     @Override
     protected Boolean visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-      return compareChildren(node);
+      return mapLiteralFields(node).equals(mapLiteralFields((LegacyObjectMapLiteralNode) other));
+    }
+
+    @Override
+    protected Boolean visitMapLiteralNode(MapLiteralNode node) {
+      return mapLiteralFields(node).equals(mapLiteralFields((MapLiteralNode) other));
     }
 
     // literals
+
+    @Override
+    protected Boolean visitProtoInitNode(ProtoInitNode node) {
+      ProtoInitNode otherNode = (ProtoInitNode) other;
+      if (!otherNode.getProtoName().equals(node.getProtoName())) {
+        return false;
+      }
+      return protoInitFields(node).equals(protoInitFields(otherNode));
+    }
 
     @Override
     protected Boolean visitBooleanNode(BooleanNode node) {
@@ -215,8 +251,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
     @Override
     protected Boolean visitOperatorNode(OperatorNode node) {
-      // operators are determined entirely by their children
-      return compareChildren(node);
+      return node.getOperator() == ((OperatorNode) other).getOperator() && compareChildren(node);
     }
 
     @Override
@@ -226,13 +261,34 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
     @Override
     protected Boolean visitExprNode(ExprNode node) {
-      // default
-      return false;
+      throw new UnsupportedOperationException(node.toSourceString());
     }
 
     private boolean compareChildren(ParentExprNode node) {
       return pairwise().equivalent(node.getChildren(), ((ParentExprNode) other).getChildren());
     }
+  }
+
+  private final HashMap<String, Equivalence.Wrapper<ExprNode>> protoInitFields(ProtoInitNode node) {
+    HashMap<String, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
+    List<ExprNode> children = node.getChildren();
+    for (int i = 0; i < children.size(); i++) {
+      map.put(node.getParamName(i), wrap(children.get(i)));
+    }
+    return map;
+  }
+
+  private final HashMap<Equivalence.Wrapper<ExprNode>, Equivalence.Wrapper<ExprNode>>
+      mapLiteralFields(ParentExprNode node) {
+    // both of these nodes store keys and values as alternating children.  We don't want order to
+    // matter so we store in a map
+    checkArgument(node instanceof LegacyObjectMapLiteralNode || node instanceof MapLiteralNode);
+    HashMap<Equivalence.Wrapper<ExprNode>, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
+    List<ExprNode> children = node.getChildren();
+    for (int i = 0; i < children.size(); i += 2) {
+      map.put(wrap(children.get(i)), wrap(children.get(i + 1)));
+    }
+    return map;
   }
 
   private ExprEquivalence() {}
