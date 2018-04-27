@@ -965,27 +965,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // about the field type.
           return UnknownType.getInstance();
 
-          // calling .length on strings/lists is common in v1 templates. So provide better error
-          // messages for when users are migrating.
-        case STRING:
-        case CSS:
-        case JS:
-        case ATTRIBUTES:
-        case HTML:
-        case URI:
-          if (fieldName.equals("length")) {
-            errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
-            return ErrorType.getInstance();
-          }
-          break;
-
-        case LIST:
-          if (fieldName.equals("length")) {
-            errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
-            return ErrorType.getInstance();
-          }
-          break;
-
         case RECORD:
           {
             RecordType recordType = (RecordType) baseType;
@@ -1058,11 +1037,39 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // report no additional errors
           return ErrorType.getInstance();
 
-        default:
-          // fall-through
+          // calling .length on strings/lists is common in v1 templates. So provide better error
+          // messages for when users are migrating.
+        case STRING:
+        case CSS:
+        case JS:
+        case ATTRIBUTES:
+        case HTML:
+        case URI:
+          if (fieldName.equals("length")) {
+            errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
+            return ErrorType.getInstance();
+          }
+          // else fall through
+
+        case LIST:
+          if (fieldName.equals("length")) {
+            errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
+            return ErrorType.getInstance();
+          }
+          // else fall through
+
+        case ANY:
+        case NULL:
+        case BOOL:
+        case INT:
+        case FLOAT:
+        case TRUSTED_RESOURCE_URI:
+        case MAP:
+        case PROTO_ENUM:
+          errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
+          return ErrorType.getInstance();
       }
-      errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
-      return ErrorType.getInstance();
+      throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
 
     /** Given a base type and an item key type, compute the item value type. */
@@ -1146,10 +1153,25 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         case ERROR:
           return ErrorType.getInstance();
 
-        default:
+        case ANY:
+        case NULL:
+        case BOOL:
+        case INT:
+        case FLOAT:
+        case STRING:
+        case HTML:
+        case ATTRIBUTES:
+        case JS:
+        case CSS:
+        case URI:
+        case TRUSTED_RESOURCE_URI:
+        case RECORD:
+        case PROTO:
+        case PROTO_ENUM:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
+      throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
 
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {

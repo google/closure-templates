@@ -58,7 +58,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.LegacyObjectMapType;
+import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -327,6 +327,8 @@ public final class GenerateParseInfoVisitor
           findProtoTypesRecurse(paramType, protoTypes);
         }
       }
+      // TODO(b/77597955): Scan all expressions, to pick up types from function return values and
+      // anything else that may have a type now or in the future.
       // Field access nodes need special handling to ensure that extension references are handled.
       for (FieldAccessNode fieldAccess :
           SoyTreeUtils.getAllNodesOfType(template, FieldAccessNode.class)) {
@@ -738,45 +740,61 @@ public final class GenerateParseInfoVisitor
    * @param protoTypes Output set.
    */
   private static void findProtoTypesRecurse(SoyType type, SortedSet<String> protoTypes) {
-    if (type.getKind() == SoyType.Kind.PROTO) {
-      protoTypes.add(((SoyProtoType) type).getDescriptorExpression());
-    } else if (type.getKind() == SoyType.Kind.PROTO_ENUM) {
-      protoTypes.add(((SoyProtoEnumType) type).getDescriptorExpression());
-    } else {
-      switch (type.getKind()) {
-        case UNION:
-          for (SoyType member : ((UnionType) type).getMembers()) {
-            findProtoTypesRecurse(member, protoTypes);
+    switch (type.getKind()) {
+      case PROTO:
+        protoTypes.add(((SoyProtoType) type).getDescriptorExpression());
+        break;
+
+      case PROTO_ENUM:
+        protoTypes.add(((SoyProtoEnumType) type).getDescriptorExpression());
+        break;
+
+      case UNION:
+        for (SoyType member : ((UnionType) type).getMembers()) {
+          findProtoTypesRecurse(member, protoTypes);
+        }
+        break;
+
+      case LIST:
+        {
+          ListType listType = (ListType) type;
+          findProtoTypesRecurse(listType.getElementType(), protoTypes);
+          break;
+        }
+
+      case MAP:
+      case LEGACY_OBJECT_MAP:
+        {
+          AbstractMapType mapType = (AbstractMapType) type;
+          findProtoTypesRecurse(mapType.getKeyType(), protoTypes);
+          findProtoTypesRecurse(mapType.getValueType(), protoTypes);
+          break;
+        }
+
+      case RECORD:
+        {
+          RecordType recordType = (RecordType) type;
+          for (SoyType fieldType : recordType.getMembers().values()) {
+            findProtoTypesRecurse(fieldType, protoTypes);
           }
           break;
+        }
 
-        case LIST:
-          {
-            ListType listType = (ListType) type;
-            findProtoTypesRecurse(listType.getElementType(), protoTypes);
-            break;
-          }
-
-        case LEGACY_OBJECT_MAP:
-          {
-            LegacyObjectMapType mapType = (LegacyObjectMapType) type;
-            findProtoTypesRecurse(mapType.getKeyType(), protoTypes);
-            findProtoTypesRecurse(mapType.getValueType(), protoTypes);
-            break;
-          }
-
-        case RECORD:
-          {
-            RecordType recordType = (RecordType) type;
-            for (SoyType fieldType : recordType.getMembers().values()) {
-              findProtoTypesRecurse(fieldType, protoTypes);
-            }
-            break;
-          }
-
-        default:
-          break;
-      }
+      case ANY:
+      case UNKNOWN:
+      case ERROR:
+      case NULL:
+      case BOOL:
+      case INT:
+      case FLOAT:
+      case STRING:
+      case HTML:
+      case ATTRIBUTES:
+      case JS:
+      case CSS:
+      case URI:
+      case TRUSTED_RESOURCE_URI:
+        // continue
     }
   }
 

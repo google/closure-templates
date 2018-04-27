@@ -123,9 +123,9 @@ public final class TofuTypeChecks {
       case URI:
         return isSanitizedofKind(value, ContentKind.URI);
       case ERROR:
-      default:
-        throw new AssertionError("invalid type: " + type);
+        // continue
     }
+    throw new AssertionError("invalid type: " + type);
   }
 
   private static boolean isSanitizedofKind(SoyValue value, ContentKind kind) {

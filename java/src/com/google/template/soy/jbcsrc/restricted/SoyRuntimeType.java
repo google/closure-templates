@@ -186,9 +186,9 @@ public abstract class SoyRuntimeType {
         // no unique unboxed representation
         return null;
       case ERROR:
-      default:
-        throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
+        // continue
     }
+    throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }
 
   private static PrimitiveSoyType protoType(SoyProtoType soyType) {

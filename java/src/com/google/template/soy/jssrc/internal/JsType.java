@@ -411,10 +411,10 @@ final class JsType {
                   })
               .build();
         }
-
-      default:
-        throw new AssertionError("unhandled soytype: " + soyType);
+      case ERROR:
+        // continue
     }
+    throw new AssertionError("unhandled soytype: " + soyType);
   }
 
   /** Can generate code chunks which validate the 'type' of a given code chunk. */
