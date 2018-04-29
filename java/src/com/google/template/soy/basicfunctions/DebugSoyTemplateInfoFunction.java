@@ -53,9 +53,8 @@ public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
 
   public static final DebugSoyTemplateInfoFunction INSTANCE = new DebugSoyTemplateInfoFunction();
 
-  // Do not @Inject; should not be used outside of {@link AddHtmlCommentsForDebugPass}.
+  // Do not @Inject; should not be used outside of {@link AddDebugAttributesPass}.
   private DebugSoyTemplateInfoFunction() {}
-
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
