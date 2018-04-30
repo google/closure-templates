@@ -70,6 +70,25 @@ import java.util.Map;
  */
 public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 
+  /** How a key access should behave if a key is not in the structure. */
+  private enum NotFoundBehavior {
+    /** Return {@code None} if the key is not in the structure. */
+    RETURN_NONE,
+    /** Throw an exception if the key is not in the structure. */
+    THROW
+  }
+
+  /** If a key should be coerced to a string before a key access. */
+  private enum CoerceKeyToString {
+    /**
+     * Coerce the key to a string. This is mostly useful for keys that are the {@link
+     * com.google.template.soy.data.UnsanitizedString} type.
+     */
+    YES,
+    /** Do not coerce the key to a string. */
+    NO
+  }
+
   private static final SoyErrorKind PROTO_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("Proto accessors are not supported in pysrc.");
   private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
@@ -170,6 +189,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       if (needsRuntimeNullCheck) {
         key = new PyFunctionExprBuilder("runtime.check_not_null").addArg(key).asPyExpr();
       }
+      key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
       ExprNode valueNode = node.getChild(i + 1);
       dict.put(key, visit(valueNode));
     }
@@ -251,13 +271,21 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             ItemAccessNode itemAccess = (ItemAccessNode) node;
             Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
             PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-            if (baseKind == Kind.LEGACY_OBJECT_MAP || baseKind == Kind.RECORD) {
-              return genCodeForKeyAccess(refText, keyPyExpr.getText());
-            } else {
-              return new PyFunctionExprBuilder("runtime.key_safe_data_access")
-                  .addArg(new PyExpr(refText, Integer.MAX_VALUE))
-                  .addArg(keyPyExpr)
-                  .build();
+            switch (baseKind) {
+              case LIST:
+                return genCodeForKeyAccess(
+                    refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.NO);
+              case MAP:
+              case UNION:
+              case UNKNOWN:
+                return genCodeForKeyAccess(
+                    refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.YES);
+              case LEGACY_OBJECT_MAP:
+              case RECORD:
+                return genCodeForKeyAccess(
+                    refText, keyPyExpr, NotFoundBehavior.THROW, CoerceKeyToString.YES);
+              default:
+                throw new AssertionError("illegal item access on " + baseKind);
             }
           }
         }
@@ -464,17 +492,37 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param key the String literal value to be used as a key
    */
   private static String genCodeForLiteralKeyAccess(String containerExpr, String key) {
-    return genCodeForKeyAccess(containerExpr, "'" + key + "'");
+    return genCodeForKeyAccess(
+        containerExpr,
+        new PyStringExpr("'" + key + "'"),
+        NotFoundBehavior.THROW,
+        CoerceKeyToString.NO);
   }
 
   /**
    * Generates the code for key access given the name of a variable to be used as a key, e.g. {@code
    * .get(key)}.
    *
-   * @param keyName the variable name to be used as a key
+   * @param key an expression to be used as a key
+   * @param notFoundBehavior What should happen if the key is not in the structure.
+   * @param coerceKeyToString Whether or not the key should be coerced to a string.
    */
-  private static String genCodeForKeyAccess(String containerExpr, String keyName) {
-    return containerExpr + ".get(" + keyName + ")";
+  private static String genCodeForKeyAccess(
+      String containerExpr,
+      PyExpr key,
+      NotFoundBehavior notFoundBehavior,
+      CoerceKeyToString coerceKeyToString) {
+    if (coerceKeyToString == CoerceKeyToString.YES) {
+      key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
+    }
+    if (notFoundBehavior == NotFoundBehavior.RETURN_NONE) {
+      return new PyFunctionExprBuilder("runtime.key_safe_data_access")
+          .addArg(new PyExpr(containerExpr, Integer.MAX_VALUE))
+          .addArg(key)
+          .build();
+    } else {
+      return new PyFunctionExprBuilder(containerExpr + ".get").addArg(key).build();
+    }
   }
 
   /**

@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
@@ -110,6 +111,22 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     } else {
       assertThat(compileBody()).isEqualTo(expectedPyOutput);
     }
+  }
+
+  /**
+   * Asserts that the subject compiles to the expected Python output.
+   *
+   * <p>During compilation, freestanding bodies are compiled as strict templates with the output
+   * variable already being initialized. Additionally, any automatically generated variables have
+   * generated IDs replaced with '###'. Thus 'name123' would become 'name###'.
+   *
+   * <p>This is preferable to {@link #compilesTo(String)} because it provides a slightly more
+   * readable way to break long Python source lines passed into this.
+   *
+   * @param expectedPyOutputLines Lines of the expected Python result of compilation.
+   */
+  public void compilesTo(String... expectedPyOutputLines) {
+    compilesTo(Joiner.on('\n').join(expectedPyOutputLines));
   }
 
   /**

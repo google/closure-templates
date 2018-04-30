@@ -210,22 +210,21 @@ public final class GenPyCodeVisitorTest {
             + "  {/if}\n"
             + "{/template}\n";
 
-    String expectedPyFile =
-        EXPECTED_PYFILE_START
-            + "\n\n"
-            + "def helloWorld(data={}, ijData={}):\n"
-            + "  output = []\n"
-            + "  if data.get('foo'):\n"
-            + "    iList### = xrange(5)\n"
-            + "    for iIndex###, iData### in enumerate(iList###):\n"
-            + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n"
-            + "  else:\n"
-            + "    output.append('Blah')\n"
-            + "  return sanitize.SanitizedHtml(''.join(output), "
-            + SANITIZATION_APPROVAL
-            + ")\n";
-
-    assertThatSoyFile(soyFile).compilesTo(expectedPyFile);
+    assertThatSoyFile(soyFile)
+        .compilesTo(
+            EXPECTED_PYFILE_START,
+            "",
+            "def helloWorld(data={}, ijData={}):",
+            "  output = []",
+            "  if data.get('foo'):",
+            "    iList### = xrange(5)",
+            "    for iIndex###, iData### in enumerate(iList###):",
+            "      output.append(str(runtime.key_safe_data_access(data.get('boo'), "
+                + "runtime.maybe_coerce_key_to_string(iData###))))",
+            "  else:",
+            "    output.append('Blah')",
+            "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")",
+            "");
   }
 
   @Test
@@ -255,18 +254,20 @@ public final class GenPyCodeVisitorTest {
   public void testFor() {
     String soyCode =
         "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
-    String expectedPyCode =
-        "iList### = xrange(5)\n"
-            + "for iIndex###, iData### in enumerate(iList###):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+    assertThatSoyCode(soyCode)
+        .compilesTo(
+            "iList### = xrange(5)",
+            "for iIndex###, iData### in enumerate(iList###):",
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
+                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
 
     soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
-    expectedPyCode =
-        "iList### = xrange(5, 10)\n"
-            + "for iIndex###, iData### in enumerate(iList###):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+    assertThatSoyCode(soyCode)
+        .compilesTo(
+            "iList### = xrange(5, 10)",
+            "for iIndex###, iData### in enumerate(iList###):",
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
+                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
 
     soyCode =
         "  {@param boo : ?}\n"
@@ -275,11 +276,12 @@ public final class GenPyCodeVisitorTest {
             + "{for $i in range($foo, $boo, $goo)}\n"
             + "  {$boo[$i]}\n"
             + "{/for}\n";
-    expectedPyCode =
-        "iList### = xrange(data.get('foo'), data.get('boo'), data.get('goo'))\n"
-            + "for iIndex###, iData### in enumerate(iList###):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n";
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+    assertThatSoyCode(soyCode)
+        .compilesTo(
+            "iList### = xrange(data.get('foo'), data.get('boo'), data.get('goo'))",
+            "for iIndex###, iData### in enumerate(iList###):",
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
+                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
   }
 
   @Test
