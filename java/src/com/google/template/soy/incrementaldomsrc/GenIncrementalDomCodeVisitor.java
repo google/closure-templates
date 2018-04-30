@@ -65,7 +65,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -75,7 +74,6 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TagName;
@@ -404,16 +402,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    if (node.hasValue() || node.getChild(0).getKind() == Kind.RAW_TEXT_NODE) {
-      // This cast is safe because the HtmlContextVisitor enforces it, or the above condition
-      // checked
-      RawTextNode attrName = (RawTextNode) node.getChild(0);
+
+    if (node.hasValue()) {
+      // Attribute keys can only be print statements or constants. As such, the first child
+      // should be the key and the second the value.
+      checkState(isComputableAsJsExprsVisitor.exec(node.getChild(0)));
       jsCodeBuilder.append(
           INCREMENTAL_DOM_ATTR.call(
-              stringLiteral(attrName.getRawText()),
+              // Attributes can only be print nodes or constants
+              genJsExprsVisitor.exec(node.getChild(0)).get(0),
               CodeChunkUtils.concatChunksForceString(getAttributeValues(node))));
     } else {
-      visitChildren(node); // visit dynamic children
+      visitChildren(node); // Prints raw text or attributes node.
     }
   }
 
@@ -612,11 +612,17 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitRawTextNode(RawTextNode node) {
     CodeChunk.WithValue textArg = stringLiteral(node.getRawText());
     JsCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    if (node.getHtmlContext() == HtmlContext.HTML_PCDATA) {
-      // Note - we don't use generateTextCall since this text can never be null.
-      jsCodeBuilder.append(INCREMENTAL_DOM_TEXT.call(textArg));
-    } else {
-      jsCodeBuilder.addChunkToOutputVar(textArg);
+    switch (node.getHtmlContext()) {
+      case HTML_PCDATA:
+        // Note - we don't use generateTextCall since this text can never be null.
+        jsCodeBuilder.append(INCREMENTAL_DOM_TEXT.call(textArg));
+        break;
+      case HTML_TAG:
+        jsCodeBuilder.append(INCREMENTAL_DOM_ATTR.call(textArg, stringLiteral("")));
+        break;
+      default:
+        jsCodeBuilder.addChunkToOutputVar(textArg);
+        break;
     }
   }
 
@@ -634,7 +640,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitPrintNode(PrintNode node) {
     ExprNode firstNode = node.getExpr().getRoot();
-
     // TODO(b/71896143): directives are not handled correctly in the html_tag case.
     switch (node.getHtmlContext()) {
       case HTML_TAG:

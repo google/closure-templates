@@ -61,9 +61,6 @@ import java.util.ArrayDeque;
  */
 final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyErrorKind DYNAMIC_ATTRIBUTE_NAME =
-      SoyErrorKind.of("IncrementalDom does not support dynamic attribute names.");
-
   // This prevents the use of patterns like <div foo={if $foo}bar{else}baz{/if}>
   // which seems like it could be supported but isn't.
   private static final SoyErrorKind SOY_TAG_BEFORE_ATTR_VALUE =
@@ -140,12 +137,13 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
+    boolean hasValue = node.hasValue();
+    if (hasValue) {
+      pushState(HtmlContext.HTML_ATTRIBUTE_NAME);
+    }
     visit(node.getChild(0)); // visit the name (or dynamic attribute)
-    if (node.hasValue()) {
-      // if there is a value, the name must be a constant.... who knows why though
-      if (node.getChild(0).getKind() != Kind.RAW_TEXT_NODE) {
-        errorReporter.report(node.getChild(0).getSourceLocation(), DYNAMIC_ATTRIBUTE_NAME);
-      }
+    if (hasValue) {
+      popState();
       StandaloneNode attributeValue = node.getChild(1);
       if (attributeValue.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
         // TODO(lukes): this should is impossible,  validate that
