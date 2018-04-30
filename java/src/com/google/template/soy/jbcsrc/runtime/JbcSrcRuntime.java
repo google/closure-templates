@@ -17,8 +17,12 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.base.Function;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.SetMultimap;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -53,9 +57,11 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -303,22 +309,100 @@ public final class JbcSrcRuntime {
     private SoyValueProvider pendingRender;
     final Map<String, Object> placeholders;
 
+    // Some placeholders have ordering constraints.  This is necessary for the velog to function
+    // correctly in the face of translators reordering things.
+    // The constraints are simply that an end tag must come after a start tag
+    @Nullable Set<String> startPlaceholders;
+    @Nullable Multiset<String> startPlaceholderRenderCount;
+    // an optional map from a placeholder to another placeholder that must precede it.
+    @Nullable SetMultimap<String, String> endPlaceholderToStartPlaceholder;
+    private final long msgId;
+
     public MsgRenderer(
-        ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale, int numPlaceholders) {
+        long msgId,
+        ImmutableList<SoyMsgPart> msgParts,
+        @Nullable ULocale locale,
+        int numPlaceholders) {
       // using a null content kind which will cause our base class to box the value in a StringData
       // object
       super(/* contentKind= */ null);
+      this.msgId = msgId;
       this.msgParts = msgParts;
       this.locale = locale;
       this.placeholders = Maps.newLinkedHashMapWithExpectedSize(numPlaceholders);
     }
 
-    public void setPlaceholder(String key, Object value) {
-      Object prev = placeholders.put(key, value);
+    /**
+     * Sets a placeholder value.
+     *
+     * @param placeholderName The placeholder name
+     * @param placeholderValue The placeholder value. For a normal placeholder this will be a
+     *     SoyValueProvider but for plurals this will be an IntegerData and for selects this will be
+     *     a string.
+     */
+    public void setPlaceholder(String placeholderName, Object placeholderValue) {
+      Object prev = placeholders.put(placeholderName, placeholderValue);
       if (prev != null) {
         throw new IllegalArgumentException(
-            "found multiple placeholders: " + prev + " and " + value + " for key " + key);
+            "found multiple placeholders: "
+                + prev
+                + " and "
+                + placeholderValue
+                + " for key "
+                + placeholderName);
       }
+    }
+
+    /**
+     * Sets a placeholder and declares that it must come before {@code endPlaceholder}.
+     *
+     * <p>This is necessary to enforce the constraints of the velogging system.
+     *
+     * @param placeholderName The placeholder name
+     * @param placeholderValue The placeholder value. For a normal placeholder this will be a
+     *     SoyValueProvider but for plurals this will be an IntegerData and for selects this will be
+     *     a string.
+     * @param endPlaceholder The name of another placeholder that _must_ come _after_ this one.
+     */
+    public void setPlaceholderAndOrdering(
+        String placeholderName, Object placeholderValue, String endPlaceholder) {
+      if (endPlaceholderToStartPlaceholder == null) {
+        startPlaceholders = new HashSet<>();
+        endPlaceholderToStartPlaceholder = HashMultimap.create();
+        startPlaceholderRenderCount = HashMultiset.create();
+      }
+      // We need to check that our ordering constraints make sense.
+      // the placeholderName shouldn't be the 'after' node of any other node and the endPlaceholder
+      // shouldn't be the before node of any other node.
+      // The edges in this ordering graph should create a forest of trees of depth 1.
+      if (endPlaceholderToStartPlaceholder.containsKey(placeholderName)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "%s is supposed to come after %s but before %s. Order contraints should not be "
+                    + "transitive.",
+                placeholderName,
+                // just use one of them, there is normally only one
+                endPlaceholderToStartPlaceholder.get(placeholderName).iterator().next(),
+                endPlaceholder));
+      }
+      if (startPlaceholders.contains(endPlaceholder)) {
+        String beforePlaceholder = null;
+        // scan to find the placeholder that is supposed to come after this one.
+        for (Map.Entry<String, String> entry : endPlaceholderToStartPlaceholder.entries()) {
+          if (endPlaceholder.equals(entry.getValue())) {
+            beforePlaceholder = entry.getKey();
+            break;
+          }
+        }
+        throw new IllegalArgumentException(
+            String.format(
+                "%s is supposed to come after %s but before %s. Order contraints should not be "
+                    + "transitive.",
+                endPlaceholder, placeholderName, beforePlaceholder));
+      }
+      setPlaceholder(placeholderName, placeholderValue);
+      endPlaceholderToStartPlaceholder.put(endPlaceholder, placeholderName);
+      startPlaceholders.add(placeholderName);
     }
 
     /**
@@ -344,6 +428,31 @@ public final class JbcSrcRuntime {
           out.append(((SoyMsgRawTextPart) msgPart).getRawText());
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
+          if (endPlaceholderToStartPlaceholder != null) {
+            if (startPlaceholders.contains(placeholderName)) {
+              startPlaceholderRenderCount.add(placeholderName);
+            } else {
+              // check if it is an end tag
+              Set<String> startPlaceholders = endPlaceholderToStartPlaceholder.get(placeholderName);
+              if (!startPlaceholders.isEmpty()) {
+                // make sure the start tag has been rendered
+                boolean matched = false;
+                for (String startPlaceholder : startPlaceholders) {
+                  if (startPlaceholderRenderCount.remove(startPlaceholder)) {
+                    matched = true;
+                    break;
+                  }
+                }
+                if (!matched) {
+                  // uhoh
+                  throw new IllegalStateException(
+                      String.format(
+                          "Expected placeholder '%s' to come after one of %s, in message %d",
+                          placeholderName, startPlaceholders, msgId));
+                }
+              }
+            }
+          }
           SoyValueProvider placeholderValue = (SoyValueProvider) placeholders.get(placeholderName);
           try {
             RenderResult result = placeholderValue.renderAndResolve(out, /* isLast= */ false);
@@ -365,6 +474,13 @@ public final class JbcSrcRuntime {
           throw new AssertionError("unexpected part: " + msgPart);
         }
       }
+      if (startPlaceholderRenderCount != null && !startPlaceholderRenderCount.isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "The following placeholders never had their matching placeholders rendered in"
+                    + " message %d: %s",
+                msgId, startPlaceholderRenderCount.elementSet()));
+      }
       return RenderResult.done();
     }
 
@@ -381,8 +497,11 @@ public final class JbcSrcRuntime {
     private long remainder = -1;
 
     public PlrSelMsgRenderer(
-        ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale, int numPlaceholders) {
-      super(msgParts, locale, numPlaceholders);
+        long msgId,
+        ImmutableList<SoyMsgPart> msgParts,
+        @Nullable ULocale locale,
+        int numPlaceholders) {
+      super(msgId, msgParts, locale, numPlaceholders);
     }
 
     @Override

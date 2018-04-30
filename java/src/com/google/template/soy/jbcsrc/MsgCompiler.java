@@ -172,7 +172,7 @@ final class MsgCompiler {
               escapingDirectives,
               soyMsgParts,
               parameterLookup.getPluginContext().getULocale(),
-              partsAndId.parts);
+              partsAndId);
     }
     return Statement.concat(
         printMsg.withSourceLocation(msg.getSourceLocation()),
@@ -273,13 +273,13 @@ final class MsgCompiler {
       ImmutableList<SoyPrintDirective> escapingDirectives,
       Expression soyMsgParts,
       Expression locale,
-      ImmutableList<SoyMsgPart> parts) {
+      MsgPartsAndIds partsAndId) {
     // We need to render placeholders into a buffer and then pack them into a map to pass to
     // Runtime.renderSoyMsgWithPlaceholders.
 
     Map<String, Function<Expression, Statement>> placeholderNameToPutStatement =
         new LinkedHashMap<>();
-    putPlaceholdersIntoMap(msg, parts, placeholderNameToPutStatement);
+    putPlaceholdersIntoMap(msg, partsAndId.parts, placeholderNameToPutStatement);
     // sanity check
     checkState(!placeholderNameToPutStatement.isEmpty());
     ConstructorRef cstruct =
@@ -290,7 +290,10 @@ final class MsgCompiler {
             .putInstanceField(
                 thisVar,
                 cstruct.construct(
-                    soyMsgParts, locale, constant(placeholderNameToPutStatement.size())));
+                    constant(partsAndId.id),
+                    soyMsgParts,
+                    locale,
+                    constant(placeholderNameToPutStatement.size())));
     List<Statement> initializationStatements = new ArrayList<>();
     initializationStatements.add(initRendererStatement);
     for (Function<Expression, Statement> fn : placeholderNameToPutStatement.values()) {

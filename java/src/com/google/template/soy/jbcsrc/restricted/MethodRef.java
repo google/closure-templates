@@ -318,6 +318,14 @@ public abstract class MethodRef {
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
       create(JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, Object.class);
 
+  public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
+      create(
+          JbcSrcRuntime.MsgRenderer.class,
+          "setPlaceholderAndOrdering",
+          String.class,
+          Object.class,
+          String.class);
+
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class)
           .asNonNullable();

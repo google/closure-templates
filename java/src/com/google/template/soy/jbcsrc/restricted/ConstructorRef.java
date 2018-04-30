@@ -79,9 +79,19 @@ public abstract class ConstructorRef {
   public static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
 
   public static final ConstructorRef MSG_RENDERER =
-      create(JbcSrcRuntime.MsgRenderer.class, ImmutableList.class, ULocale.class, int.class);
+      create(
+          JbcSrcRuntime.MsgRenderer.class,
+          long.class,
+          ImmutableList.class,
+          ULocale.class,
+          int.class);
   public static final ConstructorRef PLRSEL_MSG_RENDERER =
-      create(JbcSrcRuntime.PlrSelMsgRenderer.class, ImmutableList.class, ULocale.class, int.class);
+      create(
+          JbcSrcRuntime.PlrSelMsgRenderer.class,
+          long.class,
+          ImmutableList.class,
+          ULocale.class,
+          int.class);
 
   public abstract TypeInfo instanceClass();
 
