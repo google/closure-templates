@@ -28,10 +28,14 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
@@ -63,6 +67,11 @@ final class VeLogValidationPass extends CompilerFilePass {
               + "Did you forget to configure it?");
   private static final SoyErrorKind WRONG_TYPE =
       SoyErrorKind.of("Expected an expression of type ''{0}'', instead got ''{1}''.");
+  private static final SoyErrorKind LOGONLY_DISALLOWED_IN_MSG =
+      SoyErrorKind.of(
+          "The logonly attribute may not be set on '''{velog}''' nodes in '''{msg}''' context. "
+              + "Consider moving the logonly content into another template and calling it, or "
+              + "refactoring your '''{msg}''' into multiple distinct messages.");
   private static final SoyErrorKind REQUIRE_STRICTHTML =
       SoyErrorKind.of(
           "The '{'velog ...'}' command can only be used in templates with stricthtml=\"true\".");
@@ -195,6 +204,12 @@ final class VeLogValidationPass extends CompilerFilePass {
       }
 
       if (node.getLogonlyExpression() != null) {
+        // check to see if it is in a msg node.  logonly is disallowed in msg nodes because we don't
+        // have an implementation strategy.
+        if (isInMsgNode(node)) {
+          reporter.report(
+              node.getLogonlyExpression().getSourceLocation(), LOGONLY_DISALLOWED_IN_MSG);
+        }
         SoyType type = node.getLogonlyExpression().getType();
         if (type.getKind() != Kind.BOOL) {
           reporter.report(
@@ -205,5 +220,16 @@ final class VeLogValidationPass extends CompilerFilePass {
         }
       }
     }
+  }
+
+  private static boolean isInMsgNode(SoyNode node) {
+    if (node instanceof MsgNode) {
+      return true;
+    }
+    ParentSoyNode<?> parent = node.getParent();
+    if (parent instanceof MsgBlockNode || parent instanceof MsgSubstUnitNode) {
+      return isInMsgNode(parent);
+    }
+    return false;
   }
 }

@@ -53,7 +53,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * <p>If the node contains a {@code phname} attribute, it will be <em>removed</em> from the node
    * and used as the placeholder name, it will _not_ be rendered.
    */
-  public static MsgHtmlTagNode fromNode(int id, HtmlTagNode tagNode, ErrorReporter errorReporter) {
+  public static MsgHtmlTagNode fromNode(
+      int id, HtmlTagNode tagNode, @Nullable VeLogNode velogParent, ErrorReporter errorReporter) {
     RawTextNode userSpecifiedPhExample =
         getAttributeValue(tagNode, MessagePlaceholders.PHEX_ATTR, errorReporter);
     String phExample = null;
@@ -84,6 +85,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       // it understand the node type instead.
       lcTagName = "/" + lcTagName;
     }
+    // Include the velog node sameness key if we are the open or close tag node of the velog.
+    // close tag nodes don't really need the sameness key given our implementations.
+    VeLogNode.SamenessKey key = velogParent != null ? velogParent.getSamenessKey() : null;
     return new MsgHtmlTagNode(
         id,
         tagNode.getSourceLocation(),
@@ -91,7 +95,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
         phExample,
         lcTagName,
         tagNode instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tagNode).isSelfClosing(),
-        fullTagText != null ? SamenessKey.create(phName, fullTagText) : null,
+        fullTagText != null ? SamenessKey.create(phName, fullTagText, key) : null,
         tagNode);
   }
 
@@ -218,7 +222,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   /** Whether this HTML tag is self-ending (i.e. ends with "/>") */
   private final boolean isSelfEnding;
 
-  @Nullable private final Object samenessKey;
+  @Nullable private final SamenessKey samenessKey;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -233,8 +237,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       @Nullable String userSuppliedPlaceholderExample,
       String lcTagName,
       boolean isSelfEnding,
-      Object samenessKey,
-      StandaloneNode child) {
+      @Nullable SamenessKey samenessKey,
+      HtmlTagNode child) {
     super(id, sourceLocation);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
     this.userSuppliedPlaceholderExample = userSuppliedPlaceholderExample;
@@ -328,15 +332,24 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
   @AutoValue
   abstract static class SamenessKey {
-    static SamenessKey create(String userSuppliedPlaceholderName, String fullTagText) {
-      return new AutoValue_MsgHtmlTagNode_SamenessKey(userSuppliedPlaceholderName, fullTagText);
+    static SamenessKey create(
+        String userSuppliedPlaceholderName, String fullTagText, VeLogNode.SamenessKey key) {
+      if (userSuppliedPlaceholderName == null && fullTagText == null && key == null) {
+        throw new IllegalArgumentException("at least one parameter should be nonnull");
+      }
+      return new AutoValue_MsgHtmlTagNode_SamenessKey(
+          userSuppliedPlaceholderName, fullTagText, key);
     }
 
+    // at least one of these is nonnull
     @Nullable
     abstract String userSuppliedPlaceholderName();
 
     @Nullable
     abstract String fullTagText();
+
+    @Nullable
+    abstract VeLogNode.SamenessKey logKey();
   }
 
   @Override public String toSourceString() {

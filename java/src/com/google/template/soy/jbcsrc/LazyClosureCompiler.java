@@ -207,8 +207,23 @@ final class LazyClosureCompiler {
   }
 
   Expression compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
+    return compileLazyContent(
+        namePrefix, renderUnit, varName, ExtraCodeCompiler.NO_OP, ExtraCodeCompiler.NO_OP);
+  }
+
+  Expression compileLazyContent(
+      String namePrefix,
+      RenderUnitNode renderUnit,
+      String varName,
+      ExtraCodeCompiler prefix,
+      ExtraCodeCompiler suffix) {
     String proposedName = getProposedName(namePrefix, varName);
-    Optional<Expression> asRawText = asRawTextOnly(proposedName, renderUnit);
+    // Attempt to compile the whole thing to a string if possible.  The presense of a non-trivial
+    // ExtraCodeCompiler means that it isn't just textual.
+    Optional<Expression> asRawText =
+        prefix != ExtraCodeCompiler.NO_OP && suffix != ExtraCodeCompiler.NO_OP
+            ? asRawTextOnly(proposedName, renderUnit)
+            : Optional.absent();
     if (asRawText.isPresent()) {
       return asRawText.get();
     }
@@ -222,7 +237,7 @@ final class LazyClosureCompiler {
             .build();
     Expression expr =
         new CompilationUnit(writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
-            .compileRenderable(renderUnit);
+            .compileRenderable(renderUnit, prefix, suffix);
 
     innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
@@ -328,7 +343,8 @@ final class LazyClosureCompiler {
       return constructExpr;
     }
 
-    Expression compileRenderable(RenderUnitNode renderUnit) {
+    Expression compileRenderable(
+        RenderUnitNode renderUnit, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
       FieldRef stateField = createField(type, STATE_FIELD, Type.INT_TYPE);
       stateField.defineField(writer);
       fieldNames.claimName(STATE_FIELD);
@@ -353,7 +369,7 @@ final class LazyClosureCompiler {
               AppendableExpression.forLocal(appendableVar),
               variableSet,
               lookup);
-      CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit);
+      CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();
       final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());

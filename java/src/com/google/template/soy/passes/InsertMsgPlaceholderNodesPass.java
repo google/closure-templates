@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,7 +101,17 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
         parent.removeChild(index);
         MsgPlaceholderInitialNode newNode;
         if (node instanceof HtmlTagNode) {
-          newNode = MsgHtmlTagNode.fromNode(nodeIdGen.genId(), (HtmlTagNode) node, errorReporter);
+          VeLogNode veLogParent = null;
+          // If it is the open tag of a VeLogNode, then make sure the placeholder knows about it.
+          // NOTE: we don't tell the close tags that they are part of a velog because it isn't
+          // necessary, close tags are all the same, even when it comes to velogging. (all we need
+          // to do is call exitLoggableElement()).
+          if (parent instanceof VeLogNode && index == 0) {
+            veLogParent = (VeLogNode) parent;
+          }
+          newNode =
+              MsgHtmlTagNode.fromNode(
+                  nodeIdGen.genId(), (HtmlTagNode) node, veLogParent, errorReporter);
         } else {
           // print, and call nodes don't get additional wrappers.
           newNode = (MsgPlaceholderInitialNode) node;
@@ -132,6 +143,12 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     protected void visitCallNode(CallNode node) {
       maybeAddAndVisitChildren(node);
       checkPlaceholderNode(node);
+    }
+
+    @Override
+    protected void visitVeLogNode(VeLogNode node) {
+      // visit children directly since they are still 'in' the message
+      visitChildren(node);
     }
 
     @Override

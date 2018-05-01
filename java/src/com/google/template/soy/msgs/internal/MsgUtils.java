@@ -35,8 +35,9 @@ import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.VeLogNode;
 
 /**
  * Soy-specific utilities for working with messages.
@@ -170,10 +171,15 @@ public class MsgUtils {
    * @param msgNode The MsgNode containing 'parent'.
    */
   private static ImmutableList<SoyMsgPart> buildMsgPartsForChildren(
-      BlockNode parent, MsgNode msgNode) {
+      MsgBlockNode parent, MsgNode msgNode) {
 
     ImmutableList.Builder<SoyMsgPart> msgParts = ImmutableList.builder();
+    doBuildMsgPartsForChildren(parent, msgNode, msgParts);
+    return msgParts.build();
+  }
 
+  private static void doBuildMsgPartsForChildren(
+      MsgBlockNode parent, MsgNode msgNode, ImmutableList.Builder<SoyMsgPart> msgParts) {
     for (StandaloneNode child : parent.getChildren()) {
       if (child instanceof RawTextNode) {
         String rawText = ((RawTextNode) child).getRawText();
@@ -185,10 +191,12 @@ public class MsgUtils {
         msgParts.add(buildMsgPartForPlural((MsgPluralNode) child, msgNode));
       } else if (child instanceof MsgSelectNode) {
         msgParts.add(buildMsgPartForSelect((MsgSelectNode) child, msgNode));
+      } else if (child instanceof VeLogNode) {
+        doBuildMsgPartsForChildren((VeLogNode) child, msgNode, msgParts);
+      } else {
+        throw new AssertionError("unexpected child: " + child);
       }
     }
-
-    return msgParts.build();
   }
 
   /**
@@ -207,7 +215,8 @@ public class MsgUtils {
 
     for (CaseOrDefaultNode child : msgPluralNode.getChildren()) {
 
-      ImmutableList<SoyMsgPart> caseMsgParts = buildMsgPartsForChildren(child, msgNode);
+      ImmutableList<SoyMsgPart> caseMsgParts =
+          buildMsgPartsForChildren((MsgBlockNode) child, msgNode);
       SoyMsgPluralCaseSpec caseSpec;
 
       if (child instanceof MsgPluralCaseNode) {
@@ -241,7 +250,8 @@ public class MsgUtils {
     ImmutableList.Builder<SoyMsgPart.Case<String>> selectCases = ImmutableList.builder();
 
     for (CaseOrDefaultNode child : msgSelectNode.getChildren()) {
-      ImmutableList<SoyMsgPart> caseMsgParts = buildMsgPartsForChildren(child, msgNode);
+      ImmutableList<SoyMsgPart> caseMsgParts =
+          buildMsgPartsForChildren((MsgBlockNode) child, msgNode);
       String caseValue;
       if (child instanceof MsgSelectCaseNode) {
         caseValue = ((MsgSelectCaseNode) child).getCaseValue();

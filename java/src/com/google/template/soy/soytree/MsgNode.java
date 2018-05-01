@@ -483,57 +483,64 @@ public final class MsgNode extends AbstractBlockCommandNode
       ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
       Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
       Map<MsgSubstUnitNode, String> repNodeToExample = new HashMap<>();
-      Deque<MsgSubstUnitNode> traversalQueue = new ArrayDeque<>();
+      Deque<SoyNode> traversalQueue = new ArrayDeque<>();
 
       // Seed the traversal queue with the direct children of this MsgNode.
+      // NOTE: the placeholder name selection algorithm depends on the order of iteration in these
+      // loops.  So we cannot trivially switch the SoyTreeUtils.visitAllNodes or getAllNodesOfType
+      // since the iteration order is either undefined or slightly different.
       for (SoyNode child : msgNode.getChildren()) {
-        if (child instanceof MsgSubstUnitNode) {
-          traversalQueue.add((MsgSubstUnitNode) child);
-        }
+        maybeEnqueue(traversalQueue, child);
       }
 
       while (!traversalQueue.isEmpty()) {
-        MsgSubstUnitNode node = traversalQueue.remove();
+        SoyNode node = traversalQueue.remove();
 
         if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode)) {
           for (CaseOrDefaultNode child : ((ParentSoyNode<CaseOrDefaultNode>) node).getChildren()) {
             for (SoyNode grandchild : child.getChildren()) {
-              if (grandchild instanceof MsgSubstUnitNode) {
-                traversalQueue.add((MsgSubstUnitNode) grandchild);
-              }
+              maybeEnqueue(traversalQueue, grandchild);
             }
+          }
+        } else if (node instanceof VeLogNode) {
+          VeLogNode velogNode = (VeLogNode) node;
+          for (SoyNode grandchild : velogNode.getChildren()) {
+            maybeEnqueue(traversalQueue, grandchild);
           }
         }
 
-        String baseName = node.getBaseVarName();
-        if (!baseNameToRepNodesMap.containsKey(baseName)) {
-          // Case 1: First occurrence of this base name.
-          baseNameToRepNodesMap.put(baseName, node);
-          String example = getPhExample(node);
-          if (example != null) {
-            repNodeToExample.put(node, example);
-          }
-        } else {
-          boolean isNew = true;
-          for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
-            if (node.shouldUseSameVarNameAs(other)) {
-              // Case 2: Should use same var name as another node we've seen.
-              nonRepNodeToRepNodeMap.put(node, other);
-              String example = checkCompatibleExamples(node, other, reporter);
-              if (example != null) {
-                repNodeToExample.put(other, example);
-              }
-              isNew = false;
-              break;
-            }
-          }
-          if (isNew) {
-            // Case 3: New representative node that has the same base name as another node we've
-            // seen, but should not use the same var name.
-            baseNameToRepNodesMap.put(baseName, node);
-            String example = getPhExample(node);
+        if (node instanceof MsgSubstUnitNode) {
+          MsgSubstUnitNode substUnit = (MsgSubstUnitNode) node;
+          String baseName = substUnit.getBaseVarName();
+          if (!baseNameToRepNodesMap.containsKey(baseName)) {
+            // Case 1: First occurrence of this base name.
+            baseNameToRepNodesMap.put(baseName, substUnit);
+            String example = getPhExample(substUnit);
             if (example != null) {
-              repNodeToExample.put(node, example);
+              repNodeToExample.put(substUnit, example);
+            }
+          } else {
+            boolean isNew = true;
+            for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
+              if (substUnit.shouldUseSameVarNameAs(other)) {
+                // Case 2: Should use same var name as another node we've seen.
+                nonRepNodeToRepNodeMap.put(substUnit, other);
+                String example = checkCompatibleExamples(substUnit, other, reporter);
+                if (example != null) {
+                  repNodeToExample.put(other, example);
+                }
+                isNew = false;
+                break;
+              }
+            }
+            if (isNew) {
+              // Case 3: New representative node that has the same base name as another node we've
+              // seen, but should not use the same var name.
+              baseNameToRepNodesMap.put(baseName, substUnit);
+              String example = getPhExample(substUnit);
+              if (example != null) {
+                repNodeToExample.put(substUnit, example);
+              }
             }
           }
         }
@@ -542,6 +549,12 @@ public final class MsgNode extends AbstractBlockCommandNode
           ImmutableListMultimap.copyOf(baseNameToRepNodesMap),
           ImmutableMap.copyOf(nonRepNodeToRepNodeMap),
           ImmutableMap.copyOf(Maps.filterValues(repNodeToExample, Predicates.notNull())));
+    }
+
+    private static void maybeEnqueue(Deque<SoyNode> traversalQueue, SoyNode child) {
+      if (child instanceof MsgSubstUnitNode || child instanceof VeLogNode) {
+        traversalQueue.add(child);
+      }
     }
 
     /**

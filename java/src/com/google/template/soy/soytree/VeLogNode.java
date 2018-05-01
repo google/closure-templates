@@ -22,20 +22,53 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
  * Node for a <code {@literal {}velog...}</code> statement.
- *
- * <p>This is an experimental feature and the name is temporary. So don't get upset!
  */
 public final class VeLogNode extends AbstractBlockCommandNode
-    implements ExprHolderNode, StatementNode, BlockNode {
+    implements ExprHolderNode, StatementNode, MsgBlockNode {
+
+  /**
+   * An equivalence key for comparing {@link VeLogNode} instances.
+   *
+   * <p>This ignores things like {@link SoyNode#getId()} and {@link SoyNode#getSourceLocation()} and
+   * is useful for deciding placeholder equivalence for velog nodes in messages.
+   */
+  static final class SamenessKey {
+    private final VeLogNode delegate;
+
+    private SamenessKey(VeLogNode delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (!(other instanceof SamenessKey)) {
+        return false;
+      }
+      SamenessKey otherKey = (SamenessKey) other;
+      return delegate.name.identifier().equals(otherKey.delegate.name.identifier())
+          && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr)
+          && ExprEquivalence.get().equivalent(delegate.dataExpr, otherKey.delegate.dataExpr);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          delegate.name.identifier(),
+          ExprEquivalence.get().wrap(delegate.logonlyExpr),
+          ExprEquivalence.get().wrap(delegate.dataExpr));
+    }
+  }
 
   @Nullable private final ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
@@ -80,6 +113,10 @@ public final class VeLogNode extends AbstractBlockCommandNode
     this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
     this.loggingId = orig.loggingId;
+  }
+
+  SamenessKey getSamenessKey() {
+    return new SamenessKey(this);
   }
 
   /** Returns the name associated with this log statement. */

@@ -149,7 +149,7 @@ final class SoyMsgIdComputer {
         }
 
       } else {
-        throw new AssertionError();
+        throw new AssertionError("unexpected child: " + msgPart);
       }
     }
 

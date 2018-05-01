@@ -199,21 +199,29 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   CompiledMethodBody compile(RenderUnitNode node) {
-    Statement templateBody = visitChildrenInNewScope(node);
+    return compile(node, ExtraCodeCompiler.NO_OP, ExtraCodeCompiler.NO_OP);
+  }
+
+  CompiledMethodBody compile(
+      RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
+    List<Statement> statements = new ArrayList<>();
     // Tag the content with the kind
     if (node.getContentKind() != null) {
-      templateBody =
-          Statement.concat(
-              appendableExpression
-                  .setSanitizedContentKind(node.getContentKind())
-                  .setSanitizedContentDirectionality(
-                      ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
-                  .toStatement(),
-              templateBody);
+      statements.add(
+          appendableExpression
+              .setSanitizedContentKind(node.getContentKind())
+              .setSanitizedContentDirectionality(
+                  ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
+              .toStatement());
     }
-    Statement jumpTable = detachState.generateReattachTable();
+    statements.add(prefix.compile(exprCompiler, appendableExpression));
+    statements.add(visitChildrenInNewScope(node));
+    statements.add(suffix.compile(exprCompiler, appendableExpression));
+    statements.add(
+        // needs to go at the beginning but can only be generated after the whole method body.
+        0, detachState.generateReattachTable());
     return CompiledMethodBody.create(
-        Statement.concat(jumpTable, templateBody), detachState.getNumberOfDetaches());
+        Statement.concat(statements), detachState.getNumberOfDetaches());
   }
 
   @Override
@@ -1070,12 +1078,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           }
 
           @Override
-          public Expression compileToSoyValueProvider(String phname, StandaloneNode node) {
+          public Expression compileToSoyValueProvider(
+              String phname,
+              StandaloneNode node,
+              ExtraCodeCompiler prefix,
+              ExtraCodeCompiler suffix) {
             LetContentNode fakeLet =
                 LetContentNode.forVariable(/*id=*/ -1, node.getSourceLocation(), phname, null);
             // copy the node so we don't end up removing it from the parent as a side effect.
             fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
-            return lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname);
+            return lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname, prefix, suffix);
           }
         });
   }

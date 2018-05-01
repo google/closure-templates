@@ -186,6 +186,20 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testLogging_msg() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        ""
+            + "{msg desc=\"a message!\"}\n"
+            + "  Greetings, {velog Foo}<a href='./wiki?human'>Human</a>{/velog}\n"
+            + "{/msg}");
+    assertThat(sb.toString()).isEqualTo("Greetings, <a href='./wiki?human'>Human</a>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+  }
+
+  @Test
   public void testLogging_nestedLogOnly() throws IOException {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
