@@ -128,7 +128,10 @@ final class RemoveUnnecessaryEscapingDirectives {
           EscapingMode.ESCAPE_HTML_RCDATA.directiveName,
           // Attribute values are handled by the incrementaldom.attr method
           EscapingMode.ESCAPE_HTML_ATTRIBUTE.directiveName,
-          EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE.directiveName);
+          EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE.directiveName,
+          // The incremental dom has some logic for handling these where it either invokes the value
+          // as a function or throws an error.
+          EscapingMode.FILTER_HTML_ATTRIBUTES.directiveName);
 
   private static boolean canSkip(SoyPrintDirective printDirective) {
     return SKIPPABLE_ESCAPING_MODES.contains(printDirective.getName());
