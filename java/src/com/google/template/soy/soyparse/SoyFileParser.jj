@@ -817,9 +817,9 @@ TOKEN_MGR_DECLS: {
 // File header declarations.
 
 <DEFAULT> TOKEN: {
-  < ALIAS_OPEN: "{alias" > : EXPR
-| < NAMESPACE_OPEN: "{namespace" > : IN_CMD_TAG
-| < DELPACKAGE_OPEN: "{delpackage" > : IN_CMD_TAG
+  < ALIAS_OPEN: "{alias" <WS> > : EXPR
+| < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
+| < DELPACKAGE_OPEN: "{delpackage" <WS> > : IN_CMD_TAG
 }
 
 
@@ -912,8 +912,8 @@ TOKEN_MGR_DECLS: {
 // Templates.
 
 <DEFAULT> TOKEN: {
-  < DELTEMPLATE_OPEN : "{deltemplate" > { isInTemplate = true; } : IN_CMD_TAG
-| < TEMPLATE_OPEN: "{template" > { isInTemplate = true; } : IN_CMD_TAG
+  < DELTEMPLATE_OPEN : "{deltemplate" <WS> > { isInTemplate = true; } : IN_CMD_TAG
+| < TEMPLATE_OPEN: "{template" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 }
 
 

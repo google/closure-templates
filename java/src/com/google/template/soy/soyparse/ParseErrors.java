@@ -160,8 +160,14 @@ final class ParseErrors {
     switch (tokenId) {
 
         // File-level tokens:
+      case SoyFileParserConstants.ALIAS_OPEN:
+        return "{alias";
+      case SoyFileParserConstants.DELPACKAGE_OPEN:
+        return "{delpackage";
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
+      case SoyFileParserConstants.NAMESPACE_OPEN:
+        return "{namespace";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
       case SoyFileParserConstants.EOF:
