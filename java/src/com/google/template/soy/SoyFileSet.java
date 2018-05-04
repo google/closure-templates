@@ -45,8 +45,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
-import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -1076,50 +1074,6 @@ public final class SoyFileSet {
     ParseResult parseResult = parse(builder);
     throwIfErrorsPresent();
     return parseResult;
-  }
-
-  /**
-   * Compiles this Soy file set into iDOM source code files and returns these JS files as a list of
-   * strings, one per file.
-   *
-   * @param jsSrcOptions The compilation options for the JS Src output target.
-   * @return A list of strings where each string represents the JS source code that belongs in one
-   *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
-   * @throws SoyCompilationException If compilation fails.
-   */
-  public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
-    resetErrorReporter();
-    ParseResult result = preprocessIncrementalDOMResults();
-    List<String> generatedSrcs =
-        new IncrementalDomSrcMain(apiCallScopeProvider, typeRegistry)
-            .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
-    throwIfErrorsPresent();
-    reportWarnings();
-    return generatedSrcs;
-  }
-
-  /**
-   * Compiles this Soy file set into JS source code files and writes these JS files to disk.
-   *
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
-   * @param jsSrcOptions The compilation options for the JS Src output target.
-   * @throws SoyCompilationException If compilation fails.
-   * @throws IOException If there is an error in opening/reading a message file or opening/writing
-   *     an output JS file.
-   */
-  void compileToIncrementalDomSrcFiles(
-      String outputPathFormat, SoyIncrementalDomSrcOptions jsSrcOptions) throws IOException {
-    resetErrorReporter();
-    disallowExternalCalls();
-    ParseResult result = preprocessIncrementalDOMResults();
-
-    new IncrementalDomSrcMain(apiCallScopeProvider, typeRegistry)
-        .genJsFiles(
-            result.fileSet(), result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
-
-    throwIfErrorsPresent();
-    reportWarnings();
   }
 
   /** Prepares the parsed result for use in generating Incremental DOM source code. */
