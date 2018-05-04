@@ -24212,7 +24212,7 @@ class SoyMap {
    * $$mapToLegacyObjectMap. Not renaming "keys" is presumably ~43% less bad
    * than not renaming "entries".
    *
-   * @return {!Iterator<!Array<K|V>>}
+   * @return {!IteratorIterable<!Array<K|V>>}
    */
   entries() {}
 }
