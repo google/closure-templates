@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.template.soy.coredirectives.IdDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
@@ -45,7 +44,7 @@ public final class SharedModuleTest {
 
   // pysrc has intentionally not implemented a few directives.
   private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
-      ImmutableSet.of(NoAutoescapeDirective.NAME, IdDirective.NAME);
+      ImmutableSet.of(NoAutoescapeDirective.NAME);
 
   // These functions have special handling in the ResolveExpressionTypesVisitor and so don't
   // implement TypedSoyFunction
@@ -102,7 +101,6 @@ public final class SharedModuleTest {
         .containsExactly(
             "|escapeHtml",
             "|blessStringAsTrustedResourceUrlForLegacy",
-            "|id",
             "|escapeCssString",
             "|normalizeHtml",
             "|escapeJsString",

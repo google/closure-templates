@@ -32,7 +32,6 @@ public class CoreDirectivesModule extends AbstractModule {
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
     soyDirectivesSetBinder.addBinding().to(NoAutoescapeDirective.class);
-    soyDirectivesSetBinder.addBinding().to(IdDirective.class);
     soyDirectivesSetBinder.addBinding().to(EscapeHtmlDirective.class);
   }
 }
