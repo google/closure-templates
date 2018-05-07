@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
@@ -31,6 +32,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
@@ -40,6 +42,8 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
 
@@ -59,7 +63,7 @@ public abstract class SoyRuntimeType {
    */
   public static Optional<SoyRuntimeType> getUnboxedType(SoyType soyType) {
     // Optional is immutable so Optional<Subclass> can always be safely cast to Optional<SuperClass>
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Optional<SoyRuntimeType> typed = (Optional) primitiveTypeCache.getUnchecked(soyType);
     return typed;
   }
@@ -69,7 +73,7 @@ public abstract class SoyRuntimeType {
     return boxedTypeCache.getUnchecked(soyType);
   }
 
-  // Thse caches should have a relatively fixed size (the universe of SoyTypes).  One potential
+  // These caches should have a relatively fixed size (the universe of SoyTypes).  One potential
   // source of concern is that in the case of protos, if a user is hot swapping in new class
   // definitions and adding/removing fields.  We won't modify the SoyType definitions (or
   // SoyRuntimeType) definitions in these caches.  This is a limitation in the design of the proto
@@ -114,11 +118,28 @@ public abstract class SoyRuntimeType {
       case RECORD:
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_RECORD_TYPE);
       case UNION:
-        // for nullable types we can get more specific runtime types.
-        SoyType nonNullType = ((UnionType) soyType).removeNullability();
-        if (nonNullType != soyType) {
-          BoxedSoyType boxedType = boxedSoyTypeImpl(nonNullType);
-          return new BoxedSoyType(soyType, boxedType.runtimeType());
+        {
+          // unions generally don't have a runtime type except in 2 special cases
+          // 1. nullable types can use the normal reference type.
+          // 2. if all members of the union have the same runtimeType then we can use that
+          SoyType nonNullType = SoyTypes.removeNull(soyType);
+          if (!nonNullType.equals(soyType)) {
+            BoxedSoyType boxedType = (BoxedSoyType) getBoxedType(nonNullType);
+            return new BoxedSoyType(soyType, boxedType.runtimeType());
+          }
+          BoxedSoyType memberType = null;
+          for (SoyType member : ((UnionType) soyType).getMembers()) {
+            BoxedSoyType boxed = (BoxedSoyType) getBoxedType(member);
+            if (memberType == null) {
+              memberType = boxed;
+            } else if (!memberType.runtimeType().equals(boxed.runtimeType())) {
+              memberType = null;
+              break;
+            }
+          }
+          if (memberType != null) {
+            return new BoxedSoyType(soyType, memberType.runtimeType());
+          }
         }
         // fall-through
       case UNKNOWN:
@@ -170,14 +191,35 @@ public abstract class SoyRuntimeType {
         // currently not much point.
         return null;
       case UNION:
-        // unions generally don't have a unique unboxed type except in the special case of nullable
-        // nullable reference types can be unboxed.
-        SoyType nonNullType = ((UnionType) soyType).removeNullability();
-        if (nonNullType != soyType) {
-          PrimitiveSoyType primitive = unboxedTypeImpl(nonNullType);
-          if (primitive != null && !BytecodeUtils.isPrimitive(primitive.runtimeType())) {
+        {
+          // unions generally don't have a unique unboxed runtime type except in 2 special cases
+          // 1. nullable reference types can be unboxed.
+          // 2. if all members of the union have the same runtimeType then we can use that
+          SoyType nonNullType = SoyTypes.removeNull(soyType);
+          if (!nonNullType.equals(soyType)) {
+            PrimitiveSoyType primitive = (PrimitiveSoyType) getUnboxedType(nonNullType).orNull();
+            if (primitive != null && !BytecodeUtils.isPrimitive(primitive.runtimeType())) {
+              return new PrimitiveSoyType(
+                  soyType, primitive.runtimeType(), primitive.box().runtimeType());
+            }
+          }
+          PrimitiveSoyType memberType = null;
+          for (SoyType member : ((UnionType) soyType).getMembers()) {
+            PrimitiveSoyType primitive = (PrimitiveSoyType) getUnboxedType(member).orNull();
+            if (primitive == null) {
+              return null;
+            }
+            if (memberType == null) {
+              memberType = primitive;
+            } else if (!memberType.runtimeType().equals(primitive.runtimeType())
+                || !memberType.box().runtimeType().equals(primitive.box().runtimeType())) {
+              memberType = null;
+              break;
+            }
+          }
+          if (memberType != null) {
             return new PrimitiveSoyType(
-                soyType, primitive.runtimeType(), primitive.box().runtimeType());
+                soyType, memberType.runtimeType(), memberType.box().runtimeType());
           }
         }
         // fall-through
@@ -261,8 +303,18 @@ public abstract class SoyRuntimeType {
   }
 
   public boolean isKnownStringOrSanitizedContent() {
-    // It 'is' a string if it is unboxed or is one of our string types
-    return soyType.getKind().isKnownStringOrSanitizedContent();
+    if (soyType.getKind().isKnownStringOrSanitizedContent()) {
+      return true;
+    }
+    if (soyType.getKind() == Kind.UNION) {
+      for (SoyType member : ((UnionType) soyType).getMembers()) {
+        if (!member.getKind().isKnownStringOrSanitizedContent()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public boolean isKnownSanitizedContent() {
@@ -289,28 +341,54 @@ public abstract class SoyRuntimeType {
     return soyType.getKind() == Kind.FLOAT;
   }
 
-  public final boolean isKnownList() {
-    return soyType.getKind() == Kind.LIST;
+  public final boolean isKnownListOrUnionOfLists() {
+    return isTypeOfKind(Kind.LIST);
   }
 
-  public final boolean isKnownLegacyObjectMap() {
-    return soyType.getKind() == Kind.LEGACY_OBJECT_MAP;
+  public final ListType asListType() {
+    checkState(isKnownListOrUnionOfLists());
+    if (soyType instanceof ListType) {
+      return (ListType) soyType;
+    }
+    List<SoyType> members = new ArrayList<>();
+    for (SoyType member : ((UnionType) soyType).getMembers()) {
+      ListType memberAsList = (ListType) member;
+      if (memberAsList.getElementType() != null) {
+        members.add(memberAsList.getElementType());
+      }
+    }
+    return ListType.of(UnionType.of(members));
   }
 
-  public final boolean isKnownMap() {
-    return soyType.getKind() == Kind.MAP;
+  public final boolean isKnownLegacyObjectMapOrUnionOfMaps() {
+    return isTypeOfKind(Kind.LEGACY_OBJECT_MAP);
   }
 
-  public final boolean isKnownRecord() {
-    return soyType.getKind() == Kind.RECORD;
+  public final boolean isKnownMapOrUnionOfMaps() {
+    return isTypeOfKind(Kind.MAP);
   }
 
   public final boolean isKnownBool() {
     return soyType.getKind() == Kind.BOOL;
   }
 
-  public final boolean isKnownProto() {
-    return soyType.getKind() == Kind.PROTO;
+  public final boolean isKnownProtoOrUnionOfProtos() {
+    return isTypeOfKind(Kind.PROTO);
+  }
+
+  private boolean isTypeOfKind(Kind kind) {
+    if (soyType.getKind() == kind) {
+      return true;
+    }
+    if (soyType.getKind() == Kind.UNION) {
+      for (SoyType member : ((UnionType) soyType).getMembers()) {
+        if (member.getKind() != kind) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
