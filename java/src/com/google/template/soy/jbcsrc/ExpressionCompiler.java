@@ -32,7 +32,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
@@ -89,7 +88,6 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.List;
@@ -1028,35 +1026,27 @@ final class ExpressionCompiler {
       }
 
       SoyExpression visitNullSafeFieldAccess(SoyExpression baseExpr, FieldAccessNode node) {
-        if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
-          if (baseExpr.soyType().getKind() == Kind.PROTO) {
-            // It is a single known proto field.  Generate code to call the getter directly
+        switch (baseExpr.soyType().getKind()) {
+          case PROTO:
             SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
             return ProtoUtils.accessField(protoType, baseExpr, node);
-          } else {
-            // this must be some kind of union of protos which has support via the boxing apis
+          case UNKNOWN:
+          case UNION:
+          case RECORD:
+            // Always fall back to SoyRecord.  All known object and record types implement this
+            // interface.
+            Expression fieldProvider =
+                MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                    baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
             return SoyExpression.forSoyValue(
                 node.getType(),
-                baseExpr
-                    .box()
-                    .checkedCast(SoyProtoValue.class)
-                    .invoke(
-                        MethodRef.SOY_PROTO_VALUE_GET_PROTO_FIELD,
-                        BytecodeUtils.constant(node.getFieldName()))
+                detacher
+                    .get()
+                    .resolveSoyValueProvider(fieldProvider)
                     .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
-          }
+          default:
+            throw new AssertionError("unexpected field access operation");
         }
-        // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the
-        // provider
-        Expression fieldProvider =
-            MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
-        return SoyExpression.forSoyValue(
-            node.getType(),
-            detacher
-                .get()
-                .resolveSoyValueProvider(fieldProvider)
-                .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
       }
 
       SoyExpression visitNullSafeItemAccess(SoyExpression baseExpr, ItemAccessNode node) {
@@ -1066,11 +1056,11 @@ final class ExpressionCompiler {
         Expression soyValueProvider;
         // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
         // optimized the same way because there is no real way to 'unbox' a SoyMap.
-        if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
+        if (baseExpr.soyRuntimeType().isKnownList()) {
           soyValueProvider =
               MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
                   baseExpr.unboxAs(List.class), keyExpr.unboxAs(long.class));
-        } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
+        } else if (baseExpr.soyRuntimeType().isKnownMap()) {
           // Box and do a map style lookup.
           soyValueProvider =
               MethodRef.RUNTIME_GET_MAP_ITEM.invoke(

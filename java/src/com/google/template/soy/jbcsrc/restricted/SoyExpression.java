@@ -145,9 +145,8 @@ public final class SoyExpression extends Expression {
     super(delegate.resultType(), delegate.features());
     checkArgument(
         BytecodeUtils.isPossiblyAssignableFrom(soyRuntimeType.runtimeType(), delegate.resultType()),
-        "Expecting SoyExpression type of %s for soy type %s, found delegate with type of %s",
+        "Expecting SoyExpression type of %s, found delegate with type of %s",
         soyRuntimeType.runtimeType(),
-        soyRuntimeType.soyType(),
         delegate.resultType());
     this.soyRuntimeType = soyRuntimeType;
     this.delegate = delegate;
@@ -296,15 +295,15 @@ public final class SoyExpression extends Expression {
       MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
     } else if (type.isKnownString()) {
       MethodRef.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
-    } else if (type.isKnownListOrUnionOfLists()) {
+    } else if (type.isKnownList()) {
       MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
-    } else if (type.isKnownLegacyObjectMapOrUnionOfMaps()) {
+    } else if (type.isKnownLegacyObjectMap()) {
       FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
           .putUnchecked(adapter);
       MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
-    } else if (type.isKnownMapOrUnionOfMaps()) {
+    } else if (type.isKnownMap()) {
       MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
-    } else if (type.isKnownProtoOrUnionOfProtos()) {
+    } else if (type.isKnownProto()) {
       MethodRef.SOY_PROTO_VALUE_CREATE.invokeUnchecked(adapter);
     } else {
       throw new IllegalStateException("Can't box soy expression of type " + type);
@@ -453,9 +452,7 @@ public final class SoyExpression extends Expression {
     }
 
     // Attempting to unbox an unboxed proto
-    if (asType.equals(Message.class)
-        && soyRuntimeType.isKnownProtoOrUnionOfProtos()
-        && !isBoxed()) {
+    if (asType.equals(Message.class) && soyRuntimeType.isKnownProto() && !isBoxed()) {
       return this;
     }
 
@@ -518,8 +515,8 @@ public final class SoyExpression extends Expression {
 
   private SoyExpression unboxAsList() {
     ListType asListType;
-    if (soyRuntimeType.isKnownListOrUnionOfLists()) {
-      asListType = soyRuntimeType.asListType();
+    if (soyRuntimeType.isKnownList()) {
+      asListType = (ListType) soyType();
     } else {
       Kind kind = soyType().getKind();
       if (kind == Kind.UNKNOWN) {

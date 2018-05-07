@@ -123,7 +123,9 @@ public final class SoyTypes {
     } else if (t1.isAssignableFrom(t0)) {
       return t1;
     } else {
-      // Create a union.  This preserves the most information.
+      // TODO: At some point we should just give up and use 'any'.
+      // Probably this should happen if the types have no relation with
+      // each other.
       return typeRegistry.getOrCreateUnionType(t0, t1);
     }
   }
