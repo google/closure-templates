@@ -351,6 +351,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
       create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
 
+  public static final MethodRef RUNTIME_GET_PROTO_FIELD =
+      create(JbcSrcRuntime.class, "getProtoField", SoyProtoValue.class, String.class).asCheap();
+
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();
 

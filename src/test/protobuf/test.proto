@@ -43,6 +43,7 @@ message Foo {
 
   repeated string string_a = 25;
   optional string string_b_map = 26;
+  optional MessageField message_field = 27;
 }
 
 // These fields have the same names as fields in Foo to test accessing fields
@@ -57,6 +58,7 @@ message FooUnion {
   // suffixes.
   optional string string_a_list = 5;
   map<string, string> string_b = 6;
+  optional MessageField message_field = 7;
 }
 
 message SixtyFourBitIntFieldsAsStrings {

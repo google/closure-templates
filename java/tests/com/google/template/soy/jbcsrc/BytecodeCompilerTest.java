@@ -1022,6 +1022,26 @@ public class BytecodeCompilerTest {
     }
   }
 
+  /**
+   * Regression test for b/77321078. It used to be that we would generate bad map access code if the
+   * calculated type was a union.
+   *
+   * <p>It used to throw a class cast exception because we defaulted to thinking that the ternary
+   * expression generated a legacy_object_map.
+   */
+  @Test
+  public void testMapUnion() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param b : bool}",
+            // because one of these is a map<string,int> and the other is a map<string,string>
+            // the overall type is a map<string,int>|map<string,string>
+            "{($b ? map('a': 1) : map('a': '2'))['a']}",
+            "");
+    tester.rendersAs("1", ImmutableMap.of("b", true));
+    tester.rendersAs("2", ImmutableMap.of("b", false));
+  }
+
   private static int getTemplateLineNumber(String templateName, Throwable t) {
     for (StackTraceElement ste : t.getStackTrace()) {
       if (ste.getClassName().endsWith(templateName) && ste.getMethodName().equals("render")) {

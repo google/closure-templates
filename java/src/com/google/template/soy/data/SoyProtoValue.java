@@ -250,7 +250,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
         && !proto.hasField(field.getDescriptor())) {
       return NullData.INSTANCE;
     }
-    return field.interpretField(proto).resolve();
+    return field.interpretField(proto);
   }
 
   public void setAccessLocationKey(Object location) {
