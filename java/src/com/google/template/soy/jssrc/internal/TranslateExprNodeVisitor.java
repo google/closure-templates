@@ -96,7 +96,6 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -379,17 +378,16 @@ public class TranslateExprNodeVisitor
    */
   private CodeChunk.WithValue genMapKeyCode(ExprNode keyNode) {
     CodeChunk.WithValue key = visit(keyNode);
-    // We need to coerce if the value could possibly a sanitizedcontent object
+    // We need to coerce if the value could possibly be a sanitizedcontent object
     boolean needsRuntimeCoercionLogic = false;
     SoyType type = keyNode.getType();
     for (SoyType member :
         (type instanceof UnionType ? ((UnionType) type).getMembers() : ImmutableList.of(type))) {
-      Kind kind = member.getKind();
+      SoyType.Kind kind = member.getKind();
       needsRuntimeCoercionLogic |=
           kind.isKnownStringOrSanitizedContent()
-              || kind == Kind.UNKNOWN
-              || kind == Kind.UNION
-              || kind == Kind.ANY;
+              || kind == SoyType.Kind.UNKNOWN
+              || kind == SoyType.Kind.ANY;
     }
     return needsRuntimeCoercionLogic ? SOY_MAP_MAYBE_COERCE_KEY_TO_STRING.call(key) : key;
   }
@@ -444,13 +442,8 @@ public class TranslateExprNodeVisitor
           NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
           ExprNode keyNode = itemAccess.getKeyExprChild();
           SoyType baseType = itemAccess.getBaseExprChild().getType();
-          SoyType.Kind baseKind = baseType.getKind();
-          boolean shouldUseGetter =
-              baseKind == Kind.MAP
-                  || (baseKind == Kind.UNION
-                      && ((UnionType) baseType).removeNullability().getKind() == Kind.MAP);
-          return shouldUseGetter
-              ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // jspb.Map
+          return isSoyMapAtRuntime(baseType)
+              ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // soy.Map
               : base.bracketAccess(
                   visit(keyNode), itemAccess.isNullSafe()); // vanilla bracket access
         }
@@ -458,6 +451,22 @@ public class TranslateExprNodeVisitor
       default:
         return new NullSafeAccumulator(visit(node));
     }
+  }
+
+  /** Returns true if this type will be represented by a {@code SoyMap} at runtime. */
+  private static boolean isSoyMapAtRuntime(SoyType type) {
+    if (type.getKind() == SoyType.Kind.MAP) {
+      return true;
+    }
+    if (type.getKind() == SoyType.Kind.UNION) {
+      for (SoyType member : ((UnionType) type).getMembers()) {
+        if (member.getKind() != SoyType.Kind.NULL && member.getKind() != SoyType.Kind.MAP) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
