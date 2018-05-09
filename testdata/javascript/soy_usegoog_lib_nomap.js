@@ -369,6 +369,10 @@ goog.cspNonce_ = null;
 goog.getScriptNonce_ = function(doc) {
   var script = doc.querySelector('script[nonce]');
   if (script) {
+    // Try to get the nonce from the IDL property first, because browsers that
+    // implement additional nonce protection features (currently only Chrome) to
+    // prevent nonce stealing via CSS do not expose the nonce via attributes.
+    // See https://github.com/whatwg/html/issues/2369
     var nonce = script['nonce'] || script.getAttribute('nonce');
     if (nonce && goog.NONCE_PATTERN_.test(nonce)) {
       return nonce;
@@ -3326,7 +3330,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
       // This is necessary to allow nonce-based CSPs without 'strict-dynamic'.
       var nonce = goog.getScriptNonce();
       if (nonce) {
-        scriptEl.nonce = nonce;
+        scriptEl.setAttribute('nonce', nonce);
       }
 
       if (goog.DebugLoader_.IS_OLD_IE_) {
@@ -3423,7 +3427,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
       // This is necessary to allow nonce-based CSPs without 'strict-dynamic'.
       var nonce = goog.getScriptNonce();
       if (nonce) {
-        scriptEl.nonce = nonce;
+        scriptEl.setAttribute('nonce', nonce);
       }
 
       if (contents) {
