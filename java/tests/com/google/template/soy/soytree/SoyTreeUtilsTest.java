@@ -17,11 +17,13 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -31,11 +33,14 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import java.util.List;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -168,9 +173,7 @@ public final class SoyTreeUtilsTest {
   @Test
   public final void testClone() throws Exception {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING).parse().fileSet();
 
     SoyFileSetNode clone = soyTree.copy(new CopyState());
     assertEquals(1, clone.numChildren());
@@ -305,5 +308,84 @@ public final class SoyTreeUtilsTest {
                 + "              IF_ELSE_NODE\n"
                 + "                PRINT_NODE\n"
                 + "        RAW_TEXT_NODE\n");
+  }
+
+  private static final SoyFunction ASSERT_IS_CONST_FUNCTION =
+      new SoyFunction() {
+        @Override
+        public String getName() {
+          return "assertIsConst";
+        }
+
+        @Override
+        public Set<Integer> getValidArgsSizes() {
+          return ImmutableSet.of(1);
+        }
+      };
+
+  private static final SoyFunction ASSERT_IS_NONCONST_FUNCTION =
+      new SoyFunction() {
+        @Override
+        public String getName() {
+          return "assertIsNonconst";
+        }
+
+        @Override
+        public Set<Integer> getValidArgsSizes() {
+          return ImmutableSet.of(1);
+        }
+      };
+
+  @Test
+  public final void testIsConstantExpr() throws Exception {
+    String testFileContent =
+        "{namespace boo}\n"
+            + "\n"
+            + "{template .foo}\n"
+            + "  {assertIsConst('CONST')}\n"
+            + "  {assertIsConst(1 + 2)}\n"
+            + "  {assertIsConst(true)}\n"
+            + "  {assertIsConst('foo' or 0)}\n"
+            + "  {assertIsConst(floor(1.5))}\n"
+            + "{/template}\n";
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .addSoyFunction(ASSERT_IS_CONST_FUNCTION)
+            .parse()
+            .fileSet();
+    assertIsConsts(soyTree);
+  }
+
+  @Test
+  public final void testIsNonConstantExpr() throws Exception {
+    String testFileContent =
+        "{namespace boo}\n"
+            + "\n"
+            + "{template .foo}\n"
+            + "  {@param p : ?}\n"
+            + "  {assertIsNonconst($p)}\n"
+            + "  {assertIsNonconst(1 + $p)}\n"
+            + "  {assertIsNonconst(floor($p))}\n"
+            + "  {assertIsNonconst('<div>' + $p + '</div>')}\n"
+            + "{/template}\n";
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .addSoyFunction(ASSERT_IS_NONCONST_FUNCTION)
+            .parse()
+            .fileSet();
+    assertIsConsts(soyTree);
+  }
+
+  /** Traverses the tree and checks all the calls to {@code assetIsConst} */
+  private void assertIsConsts(SoyNode node) {
+    for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
+      if (fn.getFunctionName().equals("assertIsConst")) {
+        boolean isConstantExpr = SoyTreeUtils.isConstantExpr(fn.getChild(0));
+        assertWithMessage("assertion @ " + fn.getSourceLocation()).that(isConstantExpr).isTrue();
+      } else if (fn.getFunctionName().equals("assertIsNonconst")) {
+        boolean isConstantExpr = SoyTreeUtils.isConstantExpr(fn.getChild(0));
+        assertWithMessage("assertion @ " + fn.getSourceLocation()).that(isConstantExpr).isFalse();
+      }
+    }
   }
 }

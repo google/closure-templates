@@ -28,6 +28,8 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayDeque;
@@ -336,5 +338,43 @@ public final class SoyTreeUtils {
       strings.add(node.toSourceString());
     }
     return COMMA_JOINER.join(strings);
+  }
+
+  /**
+   * Return whether the given root node is a constant expression or not. Pure functions are
+   * considered constant iff their parameter is a constant expression.
+   *
+   * @param rootSoyNode the root of the expression tree.
+   * @return {@code true} if the expression is constant in evaluation, {@code false} otherwise.
+   */
+  public static boolean isConstantExpr(ExprNode rootSoyNode) {
+    class ConstantNodeVisitor implements NodeVisitor<Node, VisitDirective> {
+      boolean isConstant = true;
+
+      @Override
+      public VisitDirective exec(Node node) {
+        // Note: ExprNodes only contain other ExprNodes, so this down-cast is safe.
+        switch (((ExprNode) node).getKind()) {
+          case VAR_REF_NODE:
+            isConstant = false;
+            return VisitDirective.ABORT;
+          case FUNCTION_NODE:
+            FunctionNode fn = (FunctionNode) node;
+            if (fn.getSoyFunction() != null
+                && fn.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
+              // Continue to evaluate the const-ness of the pure function's parameters.
+              return VisitDirective.CONTINUE;
+            } else {
+              return VisitDirective.ABORT;
+            }
+          default:
+            return VisitDirective.CONTINUE;
+        }
+      }
+    }
+
+    ConstantNodeVisitor visitor = new ConstantNodeVisitor();
+    visitAllNodes(rootSoyNode, visitor);
+    return visitor.isConstant;
   }
 }
