@@ -24,15 +24,13 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.MsgSubstUnitBaseVarNameUtils;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.List;
@@ -43,7 +41,7 @@ import javax.annotation.Nullable;
  * levels of 'select'.
  *
  */
-final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class RewriteGenderMsgsPass extends CompilerFilePass {
 
   private static final SoyErrorKind MORE_THAN_THREE_TOTAL_GENDERS =
       SoyErrorKind.of(
@@ -61,26 +59,18 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private final ErrorReporter errorReporter;
 
-  /** Node id generator for the Soy tree being visited. */
-  private final IdGenerator nodeIdGen;
-
-  /**
-   * Constructs a rewriter using the same node ID generator as the tree.
-   *
-   * @param nodeIdGen The same node ID generator used to generate the existing tree nodes.
-   */
-  public RewriteGenderMsgsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+  RewriteGenderMsgsPass(ErrorReporter errorReporter) {
     this.errorReporter = Preconditions.checkNotNull(errorReporter);
-    this.nodeIdGen = Preconditions.checkNotNull(nodeIdGen);
   }
 
+  @Override
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (MsgNode msg : SoyTreeUtils.getAllNodesOfType(file, MsgNode.class)) {
+      maybeRewriteNode(msg, nodeIdGen);
+    }
+  }
 
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for specific nodes.
-
-
-  @Override protected void visitMsgNode(MsgNode msg) {
-
+  private void maybeRewriteNode(MsgNode msg, IdGenerator nodeIdGen) {
     List<ExprRootNode> genderExprs = msg.getAndRemoveGenderExprs();
     if (genderExprs == null) {
       return;  // not a msg that this pass should rewrite
@@ -114,14 +104,13 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
         baseSelectVarName = null;
       }
 
-      splitMsgForGender(msg, genderExpr, baseSelectVarName);
+      splitMsgForGender(msg, genderExpr, baseSelectVarName, nodeIdGen);
     }
 
     // ------ Verify from the re-written msg that gender restrictions are followed. ------
 
     checkExceedsMaxGenders((MsgSelectNode) msg.getChild(0), 1);
   }
-
 
   /**
    * Helper to split a msg for gender, by adding a 'select' node and cloning the msg's contents into
@@ -131,9 +120,13 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param genderExpr The expression for the gender value.
    * @param baseSelectVarName The base select var name to use, or null if it should be generated
    *     from the gender expression.
+   * @param nodeIdGen The id generator for the current tree
    */
-  private void splitMsgForGender(
-      MsgNode msg, ExprRootNode genderExpr, @Nullable String baseSelectVarName) {
+  private static void splitMsgForGender(
+      MsgNode msg,
+      ExprRootNode genderExpr,
+      @Nullable String baseSelectVarName,
+      IdGenerator nodeIdGen) {
 
     List<StandaloneNode> origChildren = ImmutableList.copyOf(msg.getChildren());
     msg.clearChildren();
@@ -191,15 +184,4 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     }
     return true;
   }
-
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-
-  @Override protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
-  }
-
 }

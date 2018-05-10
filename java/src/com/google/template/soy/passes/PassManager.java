@@ -104,8 +104,14 @@ public final class PassManager {
             .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
             // needs to run after htmlrewriting, before resolvenames and autoescaping
             .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
-            // Needs to run after HtmlRewritePass
-            .add(new MsgsPass(errorReporter))
+            // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use to
+            // create placeholders.
+            .add(new InsertMsgPlaceholderNodesPass(errorReporter))
+            .add(new RewriteRemaindersPass((errorReporter)))
+            .add(new RewriteGenderMsgsPass(errorReporter))
+            // Needs to come after any pass that manipulates msg placeholders.
+            .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
+            .add(new CheckNonEmptyMsgNodesPass(errorReporter))
             // Needs to run after inserting msg placeholders to ensure that genders="..."
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(errorReporter))
