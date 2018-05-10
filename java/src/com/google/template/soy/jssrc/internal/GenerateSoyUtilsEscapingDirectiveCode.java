@@ -262,7 +262,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
         .append(" * A helper for the Soy directive |")
         .append(name)
         .append('\n')
-        .append(" * @param {*} value Can be of any type but will be coerced to a string.\n")
+        .append(" * @param {?} value Can be of any type but will be coerced to a string.\n")
         .append(" * @return {string} The escaped text.\n")
         .append(" */\n")
         .append("soy.esc.$$")
