@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -155,7 +156,7 @@ public final class SoyTypes {
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
     // If either of the types is an error type, return the error type
-    if (t0 == ErrorType.getInstance() || t1 == ErrorType.getInstance()) {
+    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
       return Optional.<SoyType>of(ErrorType.getInstance());
     }
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
@@ -207,6 +208,9 @@ public final class SoyTypes {
   @Nullable
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
+    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
+      return ErrorType.getInstance();
+    }
     // If both types are nullable, we will make the result nullable as well.
     // If only one of these input types is nullable, we don't. For example, {int} and {int|null}
     // probably should return {int} instead of {int|null}.
