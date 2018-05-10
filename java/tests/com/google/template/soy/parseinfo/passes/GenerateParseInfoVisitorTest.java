@@ -24,7 +24,7 @@ import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -38,6 +38,8 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.testing.Extendable;
+import com.google.template.soy.testing.Extension;
 import com.google.template.soy.testing.Foo;
 import com.google.template.soy.types.SoyTypeRegistry;
 import org.junit.Test;
@@ -145,6 +147,41 @@ public final class GenerateParseInfoVisitorTest {
         .contains("com.google.template.soy.testing.Foo.InnerEnum.getDescriptor()");
   }
 
+  @Test
+  public void testFindsProtoInit() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Foo.InnerMessage.getDescriptor()),
+            "{@param proto: bool}",
+            "{$proto ? soy.test.Foo.InnerMessage(field: 27) : null}");
+
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+  }
+
+  @Test
+  public void testFindsProtoExtension() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
+            "{@param extendable: soy.test.Extendable}",
+            "{$extendable.extension.enumField}");
+
+    assertThat(parseInfoContent)
+        .contains("com.google.template.soy.testing.Extendable.getDescriptor()");
+    assertThat(parseInfoContent)
+        .contains("com.google.template.soy.testing.Extension.extension.getDescriptor()");
+  }
+
+  @Test
+  public void testFindsProtoEnumUse() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Foo.InnerEnum.getDescriptor()), "{soy.test.Foo.InnerEnum.THREE}");
+
+    assertThat(parseInfoContent)
+        .contains("com.google.template.soy.testing.Foo.InnerEnum.getDescriptor()");
+  }
+
   private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
     return new SoyFileNode(
         0,
@@ -157,7 +194,8 @@ public final class GenerateParseInfoVisitorTest {
         new TemplateNode.SoyFileHeaderInfo(namespace));
   }
 
-  private static String createParseInfo(ImmutableList<Descriptor> protos, String... templateLines) {
+  private static String createParseInfo(
+      ImmutableList<GenericDescriptor> protos, String... templateLines) {
     SoyTypeRegistry typeRegistry = new SoyTypeRegistry.Builder().addDescriptors(protos).build();
     SoyFileSetNode tree =
         SoyFileSetParserBuilder.forFileContents(
