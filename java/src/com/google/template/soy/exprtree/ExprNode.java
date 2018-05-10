@@ -51,8 +51,6 @@ public interface ExprNode extends Node {
     MAP_LITERAL_NODE,
     LEGACY_OBJECT_MAP_LITERAL_NODE,
 
-    VAR_NODE,
-
     VAR_REF_NODE,
     FIELD_ACCESS_NODE,
     ITEM_ACCESS_NODE,
