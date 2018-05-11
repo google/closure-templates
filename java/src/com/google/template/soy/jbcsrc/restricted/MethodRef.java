@@ -62,7 +62,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -169,10 +168,7 @@ public abstract class MethodRef {
   public static final MethodRef INTS_CHECKED_CAST =
       create(Ints.class, "checkedCast", long.class).asCheap();
 
-  public static final MethodRef LINKED_HASH_MAP_CLEAR = create(LinkedHashMap.class, "clear");
-
-  public static final MethodRef LINKED_HASH_MAP_PUT =
-      create(LinkedHashMap.class, "put", Object.class, Object.class);
+  public static final MethodRef MAP_PUT = create(Map.class, "put", Object.class, Object.class);
 
   public static final MethodRef LIST_GET = create(List.class, "get", int.class).asCheap();
 

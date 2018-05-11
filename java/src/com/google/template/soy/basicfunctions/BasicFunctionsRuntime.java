@@ -33,7 +33,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +94,7 @@ public final class BasicFunctionsRuntime {
   }
 
   public static SoyDict mapToLegacyObjectMap(SoyMap map) {
-    Map<String, SoyValueProvider> keysCoercedToStrings = new LinkedHashMap<>();
+    Map<String, SoyValueProvider> keysCoercedToStrings = new HashMap<>();
     for (Map.Entry<? extends SoyValue, ? extends SoyValueProvider> entry :
         map.asJavaMap().entrySet()) {
       keysCoercedToStrings.put(entry.getKey().coerceToString(), entry.getValue());

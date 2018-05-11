@@ -99,6 +99,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -270,8 +271,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
     } else {
-      // TODO(b/78597316): switch this to HashMap
-      Map<SoyValue, SoyValue> map = new LinkedHashMap<>();
+      Map<SoyValue, SoyValue> map = new HashMap<>();
       for (int i = 0; i < numItems; ++i) {
         SoyValue key = keys.get(i);
         SoyValue value = values.get(i);

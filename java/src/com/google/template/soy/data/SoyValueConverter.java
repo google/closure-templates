@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScript;
@@ -367,11 +368,11 @@ public final class SoyValueConverter {
    * values are converted into Soy values lazily and only once. The keys are converted eagerly.
    */
   private SoyMap newSoyMapFromJavaMap(Map<?, ?> javaMap) {
-    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+    Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(javaMap.size());
     for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
-      builder.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));
+      map.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));
     }
-    return SoyMapImpl.forProviderMap(builder.build());
+    return SoyMapImpl.forProviderMap(map);
   }
 
   /**

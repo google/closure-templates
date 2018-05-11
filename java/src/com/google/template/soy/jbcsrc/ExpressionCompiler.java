@@ -355,8 +355,7 @@ final class ExpressionCompiler {
                   BytecodeUtils.newLinkedHashMap(keys, values),
                   FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
                       .accessor())
-              : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
-                  BytecodeUtils.newLinkedHashMap(keys, values));
+              : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 

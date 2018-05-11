@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -68,8 +68,7 @@ public final class SoyMaps {
 
   /** Converts the parameter to a {@link SoyMap}. */
   public static SoyMap legacyObjectMapToMap(SoyLegacyObjectMap map) {
-    // TODO(b/78597316): switch this to HashMap
-    Map<SoyValue, SoyValueProvider> newMap = new LinkedHashMap<>();
+    Map<SoyValue, SoyValueProvider> newMap = new HashMap<>();
     for (SoyValue key : map.getItemKeys()) {
       newMap.put(key, map.getItemProvider(key));
     }

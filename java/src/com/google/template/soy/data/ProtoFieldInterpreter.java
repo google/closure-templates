@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeStyleProto;
@@ -207,12 +208,12 @@ abstract class ProtoFieldInterpreter {
       SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<Message> entries = (List<Message>) field;
-        ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+        Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(entries.size());
         for (Message message : entries) {
           SoyValue key = keyField.soyFromProto(message.getField(keyDescriptor)).resolve();
-          builder.put(key, valueField.soyFromProto(message.getField(valueDescriptor)));
+          map.put(key, valueField.soyFromProto(message.getField(valueDescriptor)));
         }
-        return SoyMapImpl.forProviderMap(builder.build());
+        return SoyMapImpl.forProviderMap(map);
       }
 
       @Override

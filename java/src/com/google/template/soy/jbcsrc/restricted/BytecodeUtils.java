@@ -51,6 +51,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,7 @@ public final class BytecodeUtils {
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
+  public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
   public static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
   public static final Type LINKED_HASH_MAP_TYPE = Type.getType(LinkedHashMap.class);
   public static final Type LIST_TYPE = Type.getType(List.class);
@@ -889,12 +891,26 @@ public final class BytecodeUtils {
         "Can't unbox top of stack from " + fromType + " to " + asType);
   }
 
+  /** Returns an expression that returns a new {@link HashMap} containing all the given entries. */
+  public static Expression newHashMap(
+      Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
+    return newMap(keys, values, ConstructorRef.HASH_MAP_CAPACITY, HASH_MAP_TYPE);
+  }
+
   /**
    * Returns an expression that returns a new {@link LinkedHashMap} containing all the given
    * entries.
    */
   public static Expression newLinkedHashMap(
       Iterable<? extends Expression> keys, Iterable<? extends Expression> values) {
+    return newMap(keys, values, ConstructorRef.LINKED_HASH_MAP_CAPACITY, LINKED_HASH_MAP_TYPE);
+  }
+
+  private static Expression newMap(
+      Iterable<? extends Expression> keys,
+      Iterable<? extends Expression> values,
+      ConstructorRef constructorRef,
+      Type mapType) {
     final ImmutableList<Expression> keysCopy = ImmutableList.copyOf(keys);
     final ImmutableList<Expression> valuesCopy = ImmutableList.copyOf(values);
     checkArgument(keysCopy.size() == valuesCopy.size());
@@ -903,8 +919,8 @@ public final class BytecodeUtils {
       checkArgument(valuesCopy.get(i).resultType().getSort() == Type.OBJECT);
     }
     final Expression construct =
-        ConstructorRef.LINKED_HASH_MAP_SIZE.construct(constant(hashMapCapacity(keysCopy.size())));
-    return new Expression(LINKED_HASH_MAP_TYPE, Feature.NON_NULLABLE) {
+        constructorRef.construct(constant(hashMapCapacity(keysCopy.size())));
+    return new Expression(mapType, Feature.NON_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
@@ -914,7 +930,7 @@ public final class BytecodeUtils {
           mv.dup();
           key.gen(mv);
           value.gen(mv);
-          MethodRef.LINKED_HASH_MAP_PUT.invokeUnchecked(mv);
+          MethodRef.MAP_PUT.invokeUnchecked(mv);
           mv.pop(); // pop the Object result of map.put
         }
       }

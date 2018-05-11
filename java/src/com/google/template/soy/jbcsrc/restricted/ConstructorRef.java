@@ -30,6 +30,7 @@ import com.ibm.icu.util.ULocale;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -73,7 +74,9 @@ public abstract class ConstructorRef {
   }
 
   public static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
-  public static final ConstructorRef LINKED_HASH_MAP_SIZE = create(LinkedHashMap.class, int.class);
+  public static final ConstructorRef HASH_MAP_CAPACITY = create(HashMap.class, int.class);
+  public static final ConstructorRef LINKED_HASH_MAP_CAPACITY =
+      create(LinkedHashMap.class, int.class);
   public static final ConstructorRef AUGMENTED_PARAM_STORE =
       create(AugmentedParamStore.class, SoyRecord.class, int.class);
   public static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
