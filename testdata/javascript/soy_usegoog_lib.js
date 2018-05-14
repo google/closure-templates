@@ -24193,6 +24193,7 @@ goog.module.declareLegacyNamespace();
 
 const SanitizedContent = goog.require('goog.soy.data.SanitizedContent');
 const {assertString} = goog.require('goog.asserts');
+const {shuffle} = goog.require('goog.array');
 
 /**
  * Structural interface for representing Soy `map`s in JavaScript.
@@ -24272,7 +24273,15 @@ function $$mapToLegacyObjectMap(map) {
  * @template K, V
  */
 function $$getMapKeys(map) {
-  return Array.from(map.keys());
+  const keys = Array.from(map.keys());
+  // The iteration order of Soy map keys and proto maps is documented as
+  // undefined. But the iteration order of ES6 Maps is specified as insertion
+  // order. In debug mode, shuffle the keys to hopefully catch callers that are
+  // making assumptions about iteration order.
+  if (goog.DEBUG) {
+    shuffle(keys);
+  }
+  return keys;
 }
 
 /**
