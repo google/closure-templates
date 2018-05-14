@@ -198,7 +198,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     // and map literals, but we know here which one is intended. Add OrderedDict APIs to tell it
     // which kind of map it "really" is, so it can throw a runtime exception if a template tries
     // to index into the map with the wrong convention.
-    return PyExprUtils.convertMapToOrderedDict(dict);
+    return node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE
+        ? PyExprUtils.convertMapToPyExpr(dict)
+        // TODO(user): legacy object maps should not have a consistent iteration order
+        : PyExprUtils.convertMapToOrderedDict(dict);
   }
 
   // -----------------------------------------------------------------------------------------------
