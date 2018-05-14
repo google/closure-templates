@@ -28,6 +28,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_UNSANITIZED_TEXT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
@@ -318,8 +319,7 @@ final class JsType {
               .addRequires(keyTypeName.getGoogRequires())
               .addRequires(valueTypeName.getGoogRequires())
               .addRequire(GoogRequire.create("soy.map"))
-              // TODO(b/69049599): need actual type predicate
-              .setPredicate(TypePredicate.NO_OP)
+              .setPredicate(SOY_MAP_IS_SOY_MAP)
               .build();
         }
       case PROTO:

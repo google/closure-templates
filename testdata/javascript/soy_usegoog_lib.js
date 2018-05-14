@@ -24199,13 +24199,12 @@ const {shuffle} = goog.require('goog.array');
  * Structural interface for representing Soy `map`s in JavaScript.
  *
  * <p>The Soy `map` type was originally represented in JavaScript by plain
- * objects ({@code Object<K,V>}). However, plain object access syntax
- * ({@code obj['key']}) is incompatible with the ES6 Map and jspb.Map APIs,
- * both of which use {@code map.get('key')}. In order to allow the Soy
- * `map` type to interoperate with ES6 Maps and proto maps, Soy now uses this
- * interface to represent the `map` type. (The Soy
- * `legacy_object_literal_map` type continues to use plain objects for backwards
- * compatibility.)
+ * objects (`Object<K,V>`). However, plain object access syntax (`obj['key']`)
+ * is incompatible with the ES6 Map and jspb.Map APIs, both of which use
+ * `map.get('key')`. In order to allow the Soy `map` type to interoperate with
+ * ES6 Maps and proto maps, Soy now uses this interface to represent the `map`
+ * type. (The Soy `legacy_object_literal_map` type continues to use plain
+ * objects for backwards compatibility.)
  *
  * <p>This is a structural interface -- ES6 Map and jspb.Map implicitly
  * implement it without declaring that they do.
@@ -24311,11 +24310,23 @@ function $$maybeCoerceKeyToString(key) {
   return key instanceof SanitizedContent ? '' + key : key;
 }
 
+/**
+ * Determines if the argument matches the soy.map.Map interface.
+ * @param {?} map The object to check.
+ * @return {boolean} True if it is a soy.map.Map, false otherwise.
+ */
+function $$isSoyMap(map) {
+  return goog.isObject(map) && goog.isFunction(map.get) &&
+      goog.isFunction(map.set) && goog.isFunction(map.keys) &&
+      goog.isFunction(map.entries);
+}
+
 exports = {
   $$mapToLegacyObjectMap,
   $$maybeCoerceKeyToString,
   $$populateMap,
   $$getMapKeys,
+  $$isSoyMap,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,
