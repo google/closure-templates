@@ -24189,7 +24189,7 @@ goog.loadModule(function(exports) {'use strict';/*
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
-const SanitizedContent = goog.require('goog.soy.data.SanitizedContent');
+const UnsanitizedText = goog.require('goog.soy.data.UnsanitizedText');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
 
@@ -24299,14 +24299,14 @@ function $$populateMap(jspbMap, map) {
 
 /**
  * SoyMaps, like ES6 Maps and proto maps, allow non-string values as map keys.
- * But SanitizedContent keys still need to be coerced to strings so that
+ * But UnsanitizedText keys still need to be coerced to strings so that
  * instances with identical textual content are considered identical for map
  * lookups.
  * @param {?} key The key that is being inserted into or looked up in the map.
- * @return {?} The key, coerced to a string if it is a SanitizedContent object.
+ * @return {?} The key, coerced to a string if it is an UnsanitizedText object.
  */
 function $$maybeCoerceKeyToString(key) {
-  return key instanceof SanitizedContent ? '' + key : key;
+  return key instanceof UnsanitizedText ? key.getContent() : key;
 }
 
 exports = {
