@@ -27,6 +27,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.not;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.operation;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
@@ -36,6 +37,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
@@ -72,8 +74,11 @@ import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -96,6 +101,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -564,6 +570,31 @@ public class TranslateExprNodeVisitor
   @Override
   protected CodeChunk.WithValue visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
+  }
+
+  private CodeChunk.WithValue visitEqualNodeHelper(OperatorNode node) {
+    for (ExprNode c : node.getChildren()) {
+      SoyType type = c.getType();
+      // A runtime directive needs to be used if operands are anything but booleans and
+      // numbers.
+      if ((!SoyTypes.isNumericPrimitive(type) && type.getKind() != SoyType.Kind.BOOL)
+          || type.getKind() == SoyType.Kind.UNKNOWN
+          || type.getKind() == SoyType.Kind.ANY) {
+        return SOY_EQUALS.call(visitChildren(node));
+      }
+    }
+
+    return operation(Operator.EQUAL, visitChildren(node));
+  }
+
+  @Override
+  protected CodeChunk.WithValue visitEqualOpNode(EqualOpNode node) {
+    return visitEqualNodeHelper(node);
+  }
+
+  @Override
+  protected CodeChunk.WithValue visitNotEqualOpNode(NotEqualOpNode node) {
+    return not(visitEqualNodeHelper(node));
   }
 
   @Override

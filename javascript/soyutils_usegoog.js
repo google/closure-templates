@@ -494,6 +494,69 @@ soy.$$parseInt = function(str) {
   return isNaN(parsed) ? null : parsed;
 };
 
+/**
+ * When equals comparison cannot be expressed using JS runtime semantics for ==,
+ * bail out to a runtime function. In practice, this only means comparisons
+ * of boolean and number are valid for equals, and everything else needs this
+ * function. Even "strings" have to go through this since in some cases they
+ * are just strings and in some cases they are UnsanitzedText. In addition,
+ * some sanitized content may be functions or objects that need to be coerced
+ * to a string.
+ * @param {?} obj1
+ * @param {?} obj2
+ * @return {boolean}
+ */
+soy.$$equals = function(obj1, obj2) {
+  /** @type {?} */
+  var valueOne;
+  /** @type {?} */
+  var valueTwo;
+
+  /**
+   * Convert text to string since that's what it really is. Or just keep it the
+   * same
+   * @param {?} obj
+   * @return {?}
+   */
+  function unsanitizedTextOrObject(obj) {
+    if (obj instanceof goog.soy.data.UnsanitizedText) {
+      return obj.toString();
+    } else {
+      return obj;
+    }
+  }
+
+  valueOne = unsanitizedTextOrObject(obj1);
+  valueTwo = unsanitizedTextOrObject(obj2);
+
+  // Incremental DOM functions have to be coerced to a string. At runtime
+  // they are tagged with a type for ATTR or HTML. They both need to be
+  // the same to be considered structurally equal. Beware, as this is a
+  // very expensive function.
+  if (goog.isFunction(valueOne) && goog.isFunction(valueTwo)) {
+    if ((/** @type {?} */ (valueOne)).type !==
+        (/** @type {?} */ (valueTwo)).type) {
+      return false;
+    } else {
+      return valueOne.toString() === valueTwo.toString();
+    }
+  }
+
+  // Likewise for sanitized content.
+  if (valueOne instanceof goog.soy.data.SanitizedContent &&
+      valueTwo instanceof goog.soy.data.SanitizedContent) {
+    if (valueOne.contentKind != valueTwo.contentKind) {
+      return false;
+    } else {
+      return valueOne.toString() == valueTwo.toString();
+    }
+  }
+
+  // Rely on javascript semantics for comparing two objects.
+  return valueOne == valueTwo;
+};
+
+
 
 /**
  * Parses the given string into a float. Returns null if parse is unsuccessful.

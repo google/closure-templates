@@ -65,6 +65,8 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
 
+  public static final CodeChunk.WithValue SOY_EQUALS = SOY.dotAccess("$$equals");
+
   public static final CodeChunk.WithValue GOOG_IS_NUMBER = dottedIdNoRequire("goog.isNumber");
 
   public static final CodeChunk.WithValue GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
