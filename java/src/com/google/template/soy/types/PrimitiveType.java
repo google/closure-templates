@@ -26,6 +26,9 @@ abstract class PrimitiveType extends SoyType {
 
   @Override
   public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    }
     return other.getClass() == this.getClass();
   }
 
