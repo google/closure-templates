@@ -85,7 +85,9 @@ public final class MapToLegacyObjectMapFunction
     SoyExpression soyExpression = Iterables.getOnlyElement(args);
     SoyType originalType = soyExpression.soyRuntimeType().soyType();
     LegacyObjectMapType newType;
-    if (originalType instanceof MapType) {
+    if (originalType.equals(MapType.EMPTY_MAP)) {
+      newType = LegacyObjectMapType.EMPTY_MAP;
+    } else if (originalType instanceof MapType) {
       newType =
           LegacyObjectMapType.of(
               ((MapType) originalType).getKeyType(), ((MapType) originalType).getValueType());

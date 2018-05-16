@@ -838,27 +838,29 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       SoyType argType = node.getChild(0).getType();
-      // Allow the type of the arg to be unknown.
-      // This is mostly for integration tests: legacy_object_map literals will string-literal keys
-      // are interpreted as *record* literals, unless surrounded by quoteKeysIfJs. But quoteKeysIfJs
-      // hard-codes its return type to be unknown. So allow unknown type arg for now.
-      // The only good thing about this situation is that quoteKeysIfJs is rarely used and should
-      // go away.
-      if (argType.isAssignableFrom(UnknownType.getInstance())) {
+      if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
+        node.setType(MapType.EMPTY_MAP);
+      } else if (argType.isAssignableFrom(UnknownType.getInstance())) {
+        // Allow the type of the arg to be unknown.
+        // This is mostly for integration tests: legacy_object_map literals will string-literal keys
+        // are interpreted as *record* literals, unless surrounded by quoteKeysIfJs. But
+        // quoteKeysIfJs hard-codes its return type to be unknown. So allow unknown type arg for
+        // now. The only good thing about this situation is that quoteKeysIfJs is rarely used and
+        // should go away.
         node.setType(
             typeRegistry.getOrCreateMapType(StringType.getInstance(), UnknownType.getInstance()));
-        return;
+      } else {
+        LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
+        node.setType(
+            typeRegistry.getOrCreateMapType(
+                // Converting a legacy_object_map<K,V> to a map creates a value of type
+                // map<string, V>, not map<K, V>. legacy_object_map<K, ...> is misleading:
+                // although Soy will type check K consistently, the runtime implementation of
+                // legacy_object_map just coerces the key to a string.
+                // b/69051605 will change many Soy params to have a type of map<string, ...>,
+                // so legacyObjectMapToMap() needs to have this return type too.
+                StringType.getInstance(), actualArgType.getValueType()));
       }
-      LegacyObjectMapType actualArgType = (LegacyObjectMapType) argType;
-      node.setType(
-          typeRegistry.getOrCreateMapType(
-              // Converting a legacy_object_map<K,V> to a map creates a value of type
-              // map<string, V>, not map<K, V>. legacy_object_map<K, ...> is misleading:
-              // although Soy will type check K consistently, the runtime implementation of
-              // legacy_object_map just coerces the key to a string.
-              // b/69051605 will change many Soy params to have a type of map<string, ...>,
-              // so legacyObjectMapToMap() needs to have this return type too.
-              StringType.getInstance(), actualArgType.getValueType()));
     }
 
     private void visitMapToLegacyObjectMapFunction(FunctionNode node) {

@@ -116,16 +116,19 @@ public final class KeysFunction extends TypedSoyFunction
     SoyExpression soyExpression = args.get(0);
     SoyType argType = soyExpression.soyType();
     // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
-    SoyType listElementType;
-    if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
-      listElementType = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
+    ListType listType;
+    if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
+      listType = ListType.EMPTY_LIST;
+    } else if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
+      listType =
+          ListType.of(((LegacyObjectMapType) argType).getKeyType()); // pretty much just string
     } else if (argType.getKind() == Kind.LIST) {
-      listElementType = IntType.getInstance();
+      listType = ListType.of(IntType.getInstance());
     } else {
-      listElementType = UnknownType.getInstance();
+      listType = ListType.of(UnknownType.getInstance());
     }
     return SoyExpression.forList(
-        ListType.of(listElementType),
+        listType,
         JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyLegacyObjectMap.class)));
   }
 }
