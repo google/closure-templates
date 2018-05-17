@@ -428,19 +428,6 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
-  public void testMapLiteral_duplicateKeys() {
-    ErrorReporter reporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(
-            constructTemplateSource("{let $map: map('a': 1, 'a': 2)/}"))
-        .errorReporter(reporter)
-        .typeRegistry(TYPE_REGISTRY)
-        .parse()
-        .fileSet();
-    assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
-        .isEqualTo("Map literals with duplicate keys are not allowed.  Duplicate key: 'a'");
-  }
-
-  @Test
   public void testLegacyObjectMapLiteralAsRecord_duplicateKeys() {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
