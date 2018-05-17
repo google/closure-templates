@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,29 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
-/** Represents a JavaScript throw statement. */
+/** Evaluates an expression as a statement. */
 @AutoValue
 @Immutable
-abstract class Throw extends CodeChunk.Statement {
+abstract class ExpressionStatement extends Statement {
 
-  abstract CodeChunk.WithValue value();
-
-  static Throw create(CodeChunk.WithValue value) {
-    return new AutoValue_Throw(value);
+  static ExpressionStatement of(CodeChunk.WithValue expression) {
+    return new AutoValue_ExpressionStatement(expression);
   }
+
+  abstract CodeChunk.WithValue expr();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(value())
-        .append("throw ")
-        .appendOutputExpression(value())
-        .append(';');
+    ctx.appendInitialStatements(expr());
+    ctx.appendOutputExpression(expr());
+    ctx.append(";");
+    ctx.endLine();
   }
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    value().collectRequires(collector);
+    expr().collectRequires(collector);
   }
 }

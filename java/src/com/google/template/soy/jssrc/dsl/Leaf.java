@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -39,7 +40,7 @@ abstract class Leaf extends CodeChunk.WithValue {
 
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
     return new AutoValue_Leaf(
-        /* initialStatements= */ ImmutableList.<CodeChunk>of(),
+        /* initialStatements= */ ImmutableList.<Statement>of(),
         value,
         ImmutableSet.copyOf(requires),
         isCheap);

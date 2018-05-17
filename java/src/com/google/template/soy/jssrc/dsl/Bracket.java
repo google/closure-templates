@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
@@ -34,7 +35,7 @@ abstract class Bracket extends Operation {
 
   static Bracket create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
     return new AutoValue_Bracket(
-        ImmutableList.<CodeChunk>builder()
+        ImmutableList.<Statement>builder()
             .addAll(receiver.initialStatements())
             .addAll(key.initialStatements())
             .build(),

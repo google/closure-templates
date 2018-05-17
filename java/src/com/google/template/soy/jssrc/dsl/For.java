@@ -18,11 +18,12 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a {@code for} statement. */
 @AutoValue
 @Immutable
-abstract class For extends CodeChunk {
+abstract class For extends Statement {
 
   abstract String localVar();
 
@@ -32,14 +33,14 @@ abstract class For extends CodeChunk {
 
   abstract CodeChunk.WithValue increment();
 
-  abstract CodeChunk body();
+  abstract CodeChunk.Statement body();
 
   static For create(
       String localVar,
       CodeChunk.WithValue initial,
       CodeChunk.WithValue limit,
       CodeChunk.WithValue increment,
-      CodeChunk body) {
+      CodeChunk.Statement body) {
     return new AutoValue_For(localVar, initial, limit, increment, body);
   }
 

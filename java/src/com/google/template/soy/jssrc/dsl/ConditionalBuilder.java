@@ -18,32 +18,29 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /** Builds a single {@link Conditional}. */
 public final class ConditionalBuilder {
 
-  private final ImmutableList.Builder<IfThenPair> conditions = ImmutableList.builder();
+  private final ImmutableList.Builder<IfThenPair<Statement>> conditions = ImmutableList.builder();
 
-  @Nullable private CodeChunk trailingElse = null;
+  @Nullable private Statement trailingElse = null;
 
-  ConditionalBuilder(CodeChunk.WithValue predicate, CodeChunk consequent) {
-    conditions.add(new IfThenPair(predicate, consequent));
+  ConditionalBuilder(CodeChunk.WithValue predicate, Statement consequent) {
+    conditions.add(new IfThenPair<>(predicate, consequent));
   }
 
-  /**
-   * Adds an {@code else if} clause with the given predicate and consequent to this conditional.
-   */
-  public ConditionalBuilder elseif_(CodeChunk.WithValue predicate, CodeChunk consequent) {
-    conditions.add(new IfThenPair(predicate, consequent));
+  /** Adds an {@code else if} clause with the given predicate and consequent to this conditional. */
+  public ConditionalBuilder elseif_(CodeChunk.WithValue predicate, Statement consequent) {
+    conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }
 
   /** Adds an {@code else} clause encapsulating the given chunk to this conditional. */
-  public ConditionalBuilder else_(CodeChunk trailingElse) {
+  public ConditionalBuilder else_(Statement trailingElse) {
     Preconditions.checkState(this.trailingElse == null);
     this.trailingElse = trailingElse;
     return this;
@@ -51,31 +48,7 @@ public final class ConditionalBuilder {
 
   /** Finishes building this conditional. */
   @CheckReturnValue
-  public CodeChunk build() {
-    ImmutableList<IfThenPair> pairs = conditions.build();
-    if (isRepresentableAsTernaryExpression(pairs)) {
-      return Ternary.create(
-          pairs.get(0).predicate,
-          (CodeChunk.WithValue) pairs.get(0).consequent,
-          (CodeChunk.WithValue) trailingElse);
-    } else {
-      return Conditional.create(pairs, trailingElse);
-    }
-  }
-
-  private boolean isRepresentableAsTernaryExpression(ImmutableList<IfThenPair> pairs) {
-    if (pairs.size() != 1 || trailingElse == null) {
-      return false;
-    }
-
-    IfThenPair ifThen = Iterables.getOnlyElement(pairs);
-    CodeChunk.WithValue predicate = ifThen.predicate;
-    CodeChunk consequent = ifThen.consequent;
-    return consequent instanceof CodeChunk.WithValue
-        && trailingElse instanceof CodeChunk.WithValue
-        && predicate.initialStatements().containsAll(((WithValue) consequent).initialStatements())
-        && predicate
-            .initialStatements()
-            .containsAll(((WithValue) trailingElse).initialStatements());
+  public Statement build() {
+    return Conditional.create(conditions.build(), trailingElse);
   }
 }

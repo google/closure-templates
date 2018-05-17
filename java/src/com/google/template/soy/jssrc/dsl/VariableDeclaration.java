@@ -24,7 +24,7 @@ import javax.annotation.concurrent.Immutable;
 /** Represents a variable declaration. */
 @AutoValue
 @Immutable
-public abstract class VariableDeclaration extends CodeChunk {
+public abstract class VariableDeclaration extends CodeChunk.Statement {
 
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()

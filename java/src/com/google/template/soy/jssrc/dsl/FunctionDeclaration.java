@@ -17,6 +17,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -32,11 +33,11 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 abstract class FunctionDeclaration extends CodeChunk.WithValue {
   abstract ImmutableList<String> params();
 
-  abstract CodeChunk body();
+  abstract Statement body();
 
-  static FunctionDeclaration create(Iterable<String> parameters, CodeChunk body) {
+  static FunctionDeclaration create(Iterable<String> parameters, Statement body) {
     return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.<CodeChunk>of(),
+        /* initialStatements= */ ImmutableList.<CodeChunk.Statement>of(),
         ImmutableList.copyOf(parameters),
         body);
   }

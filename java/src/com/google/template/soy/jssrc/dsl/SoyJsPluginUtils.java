@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -91,8 +92,8 @@ public final class SoyJsPluginUtils {
       }
     }
 
-    ImmutableList.Builder<CodeChunk> initialStatements =
-        ImmutableList.<CodeChunk>builder().addAll(expr.initialStatements());
+    ImmutableList.Builder<Statement> initialStatements =
+        ImmutableList.<Statement>builder().addAll(expr.initialStatements());
     for (CodeChunk.WithValue arg : args) {
       initialStatements.addAll(arg.initialStatements());
     }

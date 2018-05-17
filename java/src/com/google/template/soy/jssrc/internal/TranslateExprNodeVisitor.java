@@ -83,6 +83,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -259,13 +260,13 @@ public class TranslateExprNodeVisitor
     // will mistakenly rename (or not rename) its keys, and no need to ever quote a key.
     CodeChunk.WithValue map =
         codeGenerator.declarationBuilder().setRhs(CodeChunk.new_(id("Map")).call()).build().ref();
-    ImmutableList.Builder<CodeChunk> setCalls = ImmutableList.builder();
+    ImmutableList.Builder<Statement> setCalls = ImmutableList.builder();
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
       // Constructing a map literal with a null key is a runtime error.
       CodeChunk.WithValue key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
       CodeChunk.WithValue value = visit(node.getChild(i + 1));
-      setCalls.add(map.dotAccess("set").call(key, value));
+      setCalls.add(map.dotAccess("set").call(key, value).asStatement());
     }
     return map.withInitialStatements(setCalls.build());
   }
@@ -501,7 +502,7 @@ public class TranslateExprNodeVisitor
       return proto;
     }
     CodeChunk.WithValue protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
-    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
+    ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
 
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i);
@@ -518,7 +519,8 @@ public class TranslateExprNodeVisitor
 
       if (fieldDesc.isExtension()) {
         CodeChunk.WithValue extInfo = extensionField(fieldDesc);
-        initialStatements.add(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
+        initialStatements.add(
+            protoVar.dotAccess("setExtension").call(extInfo, fieldValue).asStatement());
       } else if (fieldDesc.isMapField()) {
         // Protocol buffer in JS does not generate setters for map fields. To construct a proto map
         // field, we first save a reference to the empty instance using the getter,  and then load
@@ -533,10 +535,10 @@ public class TranslateExprNodeVisitor
                   ProtoUtils.getMapValueMessageType(fieldDesc));
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
         }
-        initialStatements.add(SOY_MAP_POPULATE.call(protoMapVar, fieldValue));
+        initialStatements.add(SOY_MAP_POPULATE.call(protoMapVar, fieldValue).asStatement());
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        initialStatements.add(protoVar.dotAccess(setFn).call(fieldValue));
+        initialStatements.add(protoVar.dotAccess(setFn).call(fieldValue).asStatement());
       }
     }
 
@@ -586,7 +588,7 @@ public class TranslateExprNodeVisitor
 
       List<CodeChunk.WithValue> args = visitChildren(node);
       List<JsExpr> functionInputs = new ArrayList<>(args.size());
-      List<CodeChunk> initialStatements = new ArrayList<>();
+      List<Statement> initialStatements = new ArrayList<>();
       RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
 
       // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.

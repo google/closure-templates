@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
@@ -70,19 +71,19 @@ public abstract class CodeChunk {
   public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}", /* isCheap= */ false);
 
   /** Creates a new code chunk representing the concatenation of the given chunks. */
-  public static CodeChunk statements(CodeChunk first, CodeChunk... rest) {
-    return statements(ImmutableList.<CodeChunk>builder().add(first).add(rest).build());
+  public static Statement statements(Statement first, Statement... rest) {
+    return statements(ImmutableList.<Statement>builder().add(first).add(rest).build());
   }
 
   /** Creates a new code chunk representing the concatenation of the given chunks. */
-  public static CodeChunk statements(Iterable<CodeChunk> stmts) {
-    ImmutableList<CodeChunk> copy = ImmutableList.copyOf(stmts);
+  public static Statement statements(Iterable<Statement> stmts) {
+    ImmutableList<Statement> copy = ImmutableList.copyOf(stmts);
     return copy.size() == 1 ? copy.get(0) : StatementList.of(copy);
   }
 
   /** Starts a conditional statement beginning with the given predicate and consequent chunks. */
   public static ConditionalBuilder ifStatement(
-      CodeChunk.WithValue predicate, CodeChunk consequent) {
+      CodeChunk.WithValue predicate, Statement consequent) {
     return new ConditionalBuilder(predicate, consequent);
   }
 
@@ -197,12 +198,12 @@ public abstract class CodeChunk {
   }
 
   /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
-  public static CodeChunk assign(String varName, CodeChunk.WithValue rhs) {
+  public static Statement assign(String varName, CodeChunk.WithValue rhs) {
     return Assignment.create(varName, rhs);
   }
 
   /** Creates a code chunk representing an anonymous function literal. */
-  public static CodeChunk.WithValue function(Iterable<String> parameters, CodeChunk body) {
+  public static CodeChunk.WithValue function(Iterable<String> parameters, Statement body) {
     return FunctionDeclaration.create(parameters, body);
   }
 
@@ -260,27 +261,27 @@ public abstract class CodeChunk {
   }
 
   /** Creates a code chunk representing a for loop. */
-  public static CodeChunk forLoop(
+  public static Statement forLoop(
       String localVar,
       CodeChunk.WithValue initial,
       CodeChunk.WithValue limit,
       CodeChunk.WithValue increment,
-      CodeChunk body) {
+      Statement body) {
     return For.create(localVar, initial, limit, increment, body);
   }
 
   /** Creates a code chunk representing a for loop, with default values for initial & increment. */
-  public static CodeChunk forLoop(String localVar, CodeChunk.WithValue limit, CodeChunk body) {
+  public static Statement forLoop(String localVar, CodeChunk.WithValue limit, Statement body) {
     return For.create(localVar, number(0), limit, number(1), body);
   }
 
   /** Creates a code chunk that represents a return statement returning the given value. */
-  public static CodeChunk return_(CodeChunk.WithValue returnValue) {
+  public static Statement return_(CodeChunk.WithValue returnValue) {
     return Return.create(returnValue);
   }
 
   /** Creates a code chunk that represents a throw statement. */
-  public static CodeChunk throw_(CodeChunk.WithValue throwValue) {
+  public static Statement throw_(CodeChunk.WithValue throwValue) {
     return Throw.create(throwValue);
   }
 
@@ -305,11 +306,20 @@ public abstract class CodeChunk {
    *
    * <p>TODO(user): remove.
    */
-  public static CodeChunk treatRawStringAsStatementLegacyOnly(
+  public static Statement treatRawStringAsStatementLegacyOnly(
       String rawString, Iterable<GoogRequire> requires) {
     return LeafStatement.create(rawString, requires);
   }
 
+  /**
+   * Marker class for {@link CodeChunk} instances that compile to one or more JavaScript statements.
+   *
+   * <p>It should be the case that any Statement will start and end in the same lexical scope.
+   */
+  @Immutable
+  public abstract static class Statement extends CodeChunk {
+    Statement() {}
+  }
 
   /**
    * Marker class for a chunk of code that represents a value.
@@ -329,6 +339,11 @@ public abstract class CodeChunk {
 
     WithValue() {
       /* no subclasses outside this package */
+    }
+
+    /** Formats this expression as a statement. */
+    public final Statement asStatement() {
+      return ExpressionStatement.of(this);
     }
 
     public final CodeChunk.WithValue plus(CodeChunk.WithValue rhs) {
@@ -452,7 +467,7 @@ public abstract class CodeChunk {
      * includes the initial statements from the original arguments.
      */
     public final CodeChunk.WithValue withInitialStatements(
-        Iterable<? extends CodeChunk> initialStatements) {
+        Iterable<? extends Statement> initialStatements) {
       // If there are no new initial statements, return the current chunk.
       if (Iterables.isEmpty(initialStatements)) {
         return this;
@@ -462,7 +477,7 @@ public abstract class CodeChunk {
     }
 
     /** Convenience method for {@code withInitialStatements(ImmutableList.of(statement))}. */
-    public final CodeChunk.WithValue withInitialStatement(CodeChunk initialStatement) {
+    public final CodeChunk.WithValue withInitialStatement(Statement initialStatement) {
       return withInitialStatements(ImmutableList.of(initialStatement));
     }
 
@@ -505,7 +520,7 @@ public abstract class CodeChunk {
      * doFormatInitialStatements be implemented in terms of this method? is this method supposed to
      * contain all initial statements? even from conditional branches?
      */
-    public abstract ImmutableList<CodeChunk> initialStatements();
+    public abstract ImmutableList<Statement> initialStatements();
 
     /**
      * Returns {@code true} if the expression represented by this code chunk is so trivial that it
@@ -660,7 +675,7 @@ public abstract class CodeChunk {
    */
   abstract void doFormatInitialStatements(FormattingContext ctx);
 
-  CodeChunk() {}
+  private CodeChunk() {}
 
   /**
    * Code chunks in a single Soy template emit code into a shared JavaScript lexical scope, so they
@@ -707,10 +722,6 @@ public abstract class CodeChunk {
         CodeChunk.WithValue predicate,
         CodeChunk.WithValue consequent,
         CodeChunk.WithValue alternate) {
-      if (predicate.initialStatements().containsAll(consequent.initialStatements())
-          && predicate.initialStatements().containsAll(alternate.initialStatements())) {
-        return Ternary.create(predicate, consequent, alternate);
-      }
       return ifExpression(predicate, consequent).else_(alternate).build(this);
     }
   }

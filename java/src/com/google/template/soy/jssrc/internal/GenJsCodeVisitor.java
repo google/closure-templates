@@ -55,6 +55,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -228,7 +229,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * This method must only be called by assistant visitors, in particular
    * GenJsCodeVisitorAssistantForMsgs.
    */
-  public CodeChunk visitForUseByAssistantsAsCodeChunk(SoyNode node) {
+  public Statement visitForUseByAssistantsAsCodeChunk(SoyNode node) {
     return doVisitReturningCodeChunk(node, false);
   }
 
@@ -303,7 +304,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsCodeBuilder;
   }
 
-
   /**
    * Visits the children of the given node, returning a {@link CodeChunk} encapsulating its
    * JavaScript code. The chunk is indented one level from the current indent level.
@@ -316,7 +316,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * {@link JsCodeBuilder} and using the unsound {@link
    * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
    */
-  protected CodeChunk visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
+  protected Statement visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
     return doVisitReturningCodeChunk(node, true);
   }
 
@@ -324,7 +324,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Do not use directly; use {@link #visitChildrenReturningCodeChunk} or {@link
    * #visitNodeReturningCodeChunk} instead.
    */
-  private CodeChunk doVisitReturningCodeChunk(SoyNode node, boolean visitChildren) {
+  private Statement doVisitReturningCodeChunk(SoyNode node, boolean visitChildren) {
     // Replace jsCodeBuilder with a child JsCodeBuilder.
     JsCodeBuilder original = jsCodeBuilder;
     jsCodeBuilder = createChildJsCodeBuilder();
@@ -339,7 +339,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       visit(node);
     }
 
-    CodeChunk chunk =
+    Statement chunk =
         CodeChunk.treatRawStringAsStatementLegacyOnly(
             jsCodeBuilder.getCode(), jsCodeBuilder.googRequires());
 
@@ -663,7 +663,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsDocBuilder.append(" */\n");
     jsDoc = jsDocBuilder.toString();
 
-    ImmutableList.Builder<CodeChunk> bodyStatements = ImmutableList.builder();
+    ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
         CodeChunk.assign(
             "opt_ijData",
@@ -679,11 +679,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     CodeChunk.WithValue function =
         CodeChunk.function(
-            // TODO(lukes): come up with a different abstraction for parameter names.  strings
+            // TODO(lukes): come up with a different abstraction for parameter names.  stringsc
             // are too brittle.
             ImmutableList.of("opt_data", "opt_ijData", "opt_ijData_deprecated"),
             CodeChunk.statements(bodyStatements.build()));
-    ImmutableList.Builder<CodeChunk> declarations = ImmutableList.builder();
+    ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     if (addToExports) {
       declarations.add(VariableDeclaration.builder(alias).setRhs(function).build());
       declarations.add(
@@ -715,12 +715,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (node instanceof TemplateDelegateNode) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
       declarations.add(
-          SOY_REGISTER_DELEGATE_FN.call(
-              SOY_GET_DELTEMPLATE_ID.call(
-                  stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
-              stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
-              number(nodeAsDelTemplate.getDelPriority().getValue()),
-              dottedIdNoRequire(alias)));
+          SOY_REGISTER_DELEGATE_FN
+              .call(
+                  SOY_GET_DELTEMPLATE_ID.call(
+                      stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
+                  stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
+                  number(nodeAsDelTemplate.getDelPriority().getValue()),
+                  dottedIdNoRequire(alias))
+              .asStatement());
     }
 
     // TODO(b/35203585): find a way to represent jsdoc using code chunks
@@ -732,11 +734,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Generates the function body. */
   @CheckReturnValue
-  protected CodeChunk generateFunctionBody(TemplateNode node) {
+  protected Statement generateFunctionBody(TemplateNode node) {
     // Type check parameters.
-    CodeChunk paramDeclarations = genParamTypeChecks(node);
+    Statement paramDeclarations = genParamTypeChecks(node);
     SanitizedContentKind kind = node.getContentKind();
-    CodeChunk bodyAndReturn;
+    Statement bodyAndReturn;
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
       // expressions. We specially handle this case because we don't want to generate the variable
@@ -769,7 +771,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Case 2: Normal case.
 
       jsCodeBuilder.pushOutputVar("output");
-      CodeChunk codeChunk = visitChildrenReturningCodeChunk(node);
+      Statement codeChunk = visitChildrenReturningCodeChunk(node);
       jsCodeBuilder.popOutputVar();
       bodyAndReturn = CodeChunk.statements(codeChunk, return_(sanitize(id("output"), kind)));
     }
@@ -946,7 +948,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // Convert predicate.
         CodeChunk.WithValue predicate = translateExpr(condNode.getExpr());
         // Convert body.
-        CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
+        Statement consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
         if (conditional == null) {
           conditional = ifStatement(predicate, consequent);
@@ -956,7 +958,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       } else if (child instanceof IfElseNode) {
         // Convert body.
-        CodeChunk trailingElse = visitChildrenReturningCodeChunk((IfElseNode) child);
+        Statement trailingElse = visitChildrenReturningCodeChunk((IfElseNode) child);
         // Add else-block to conditional.
         conditional.else_(trailingElse);
       } else {
@@ -1010,10 +1012,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           CodeChunk.WithValue caseChunk = translateExpr(caseExpr);
           caseChunks.add(caseChunk);
         }
-        CodeChunk body = visitChildrenReturningCodeChunk(scn);
+        Statement body = visitChildrenReturningCodeChunk(scn);
         switchBuilder.case_(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
-        CodeChunk body = visitChildrenReturningCodeChunk((SwitchDefaultNode) child);
+        Statement body = visitChildrenReturningCodeChunk((SwitchDefaultNode) child);
         switchBuilder.default_(body);
       } else {
         throw new AssertionError();
@@ -1081,7 +1083,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // string.  This will lead to redundant variable declarations.
     // When visitChildrenReturningCodeChunk is gone, this can be cleaned up, but for now we have to
     // manually decide where to declare the variables.
-    List<CodeChunk> statements = new ArrayList<>();
+    List<Statement> statements = new ArrayList<>();
     // Build some local variable names.
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     String varPrefix = nonEmptyNode.getVarName() + node.getId();
@@ -1145,12 +1147,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Generate the foreach body as a CodeChunk.
     CodeChunk.WithValue limit = id(limitName);
     statements.add(VariableDeclaration.builder(limitName).setRhs(limitInitializer).build());
-    CodeChunk foreachBody = handleForeachLoop(nonEmptyNode, limit, getDataItemFunction);
+    Statement foreachBody = handleForeachLoop(nonEmptyNode, limit, getDataItemFunction);
 
     if (hasIfempty) {
       // If there is an ifempty node, wrap the foreach body in an if statement and append the
       // ifempty body as the else clause.
-      CodeChunk ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
+      Statement ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
       CodeChunk.WithValue limitCheck = limit.op(Operator.GREATER_THAN, number(0));
 
       foreachBody = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
@@ -1160,7 +1162,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private CodeChunk.WithValue maybeStashInLocal(
-      CodeChunk.WithValue expr, String varName, List<CodeChunk> statements) {
+      CodeChunk.WithValue expr, String varName, List<Statement> statements) {
     if (expr.isCheap()) {
       return expr;
     }
@@ -1186,7 +1188,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *   }
    * </pre>
    */
-  private CodeChunk handleForeachLoop(
+  private Statement handleForeachLoop(
       ForNonemptyNode node,
       CodeChunk.WithValue limit,
       Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction) {
@@ -1211,7 +1213,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    CodeChunk foreachBody = CodeChunk.statements(data, visitChildrenReturningCodeChunk(node));
+    Statement foreachBody = CodeChunk.statements(data, visitChildrenReturningCodeChunk(node));
 
     // Create the entire for block.
     return forLoop(loopIndexName, limit, foreachBody);
@@ -1437,8 +1439,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param node the template node.
    */
   @CheckReturnValue
-  protected CodeChunk genParamTypeChecks(TemplateNode node) {
-    ImmutableList.Builder<CodeChunk> declarations = ImmutableList.builder();
+  protected Statement genParamTypeChecks(TemplateNode node) {
+    ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     for (TemplateParam param : node.getAllParams()) {
       if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
         continue;

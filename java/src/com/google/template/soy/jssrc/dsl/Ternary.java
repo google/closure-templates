@@ -46,7 +46,7 @@ abstract class Ternary extends Operation {
     Preconditions.checkArgument(
         predicate.initialStatements().containsAll(alternate.initialStatements()));
     return new AutoValue_Ternary(
-        ImmutableList.<CodeChunk>builder()
+        ImmutableList.<CodeChunk.Statement>builder()
             .addAll(predicate.initialStatements())
             .addAll(consequent.initialStatements())
             .addAll(alternate.initialStatements())

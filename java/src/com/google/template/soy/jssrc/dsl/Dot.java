@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript member access ({@code .}) expression. */
 @AutoValue
@@ -34,7 +35,7 @@ abstract class Dot extends Operation {
 
   static Dot create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
     return new AutoValue_Dot(
-        ImmutableList.<CodeChunk>builder()
+        ImmutableList.<Statement>builder()
             .addAll(receiver.initialStatements())
             .addAll(key.initialStatements())
             .build(),

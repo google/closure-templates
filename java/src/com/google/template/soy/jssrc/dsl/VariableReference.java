@@ -29,7 +29,8 @@ abstract class VariableReference extends CodeChunk.WithValue {
   abstract VariableDeclaration declaration();
 
   static VariableReference of(VariableDeclaration declaration) {
-    return new AutoValue_VariableReference(ImmutableList.<CodeChunk>of(declaration), declaration);
+    return new AutoValue_VariableReference(
+        ImmutableList.<CodeChunk.Statement>of(declaration), declaration);
   }
 
   @Override

@@ -31,6 +31,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
@@ -239,21 +240,21 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
     // Generate the goog.i18n.MessageFormat calls for child plural/select messages (if any), each
     // wrapped in an if-block that will only execute if that child is the chosen message.
-    CodeChunk condition;
+    Statement condition;
     if (primaryCodeGenInfo.placeholders != null) {
       ConditionalBuilder builder =
           CodeChunk.ifStatement(
               selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
-              selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)));
+              selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)).asStatement());
       if (fallbackCodeGenInfo.placeholders != null) {
-        builder.else_(selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)));
+        builder.else_(selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement());
       }
       condition = builder.build();
     } else {
       condition =
           CodeChunk.ifStatement(
                   selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
-                  selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)))
+                  selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement())
               .build();
     }
     return CodeChunk.id(tmpVarName).withInitialStatement(condition);

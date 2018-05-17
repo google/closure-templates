@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an expression preceded by one or more initial statements. */
@@ -29,10 +30,11 @@ abstract class Composite extends CodeChunk.WithValue {
 
   abstract CodeChunk.WithValue value();
 
-  static Composite create(ImmutableList<CodeChunk> initialStatements, CodeChunk.WithValue value) {
+  static Composite create(
+      ImmutableList<CodeChunk.Statement> initialStatements, CodeChunk.WithValue value) {
     Preconditions.checkState(!initialStatements.isEmpty());
     return new AutoValue_Composite(
-        ImmutableList.<CodeChunk>builder()
+        ImmutableList.<Statement>builder()
             .addAll(initialStatements)
             .addAll(value.initialStatements())
             .build(),
@@ -69,7 +71,7 @@ abstract class Composite extends CodeChunk.WithValue {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk stmt : initialStatements()) {
+    for (Statement stmt : initialStatements()) {
       stmt.collectRequires(collector);
     }
     value().collectRequires(collector);

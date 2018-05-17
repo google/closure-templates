@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript function call. */
 @AutoValue
@@ -32,7 +33,7 @@ abstract class Call extends Operation {
   abstract ImmutableList<CodeChunk.WithValue> args();
 
   static Call create(CodeChunk.WithValue receiver, ImmutableList<CodeChunk.WithValue> args) {
-    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
+    ImmutableList.Builder<Statement> builder = ImmutableList.builder();
     builder.addAll(receiver.initialStatements());
     for (CodeChunk.WithValue arg : args) {
       builder.addAll(arg.initialStatements());

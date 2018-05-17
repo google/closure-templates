@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -67,7 +68,7 @@ abstract class Group extends Operation {
   }
 
   @Override
-  public ImmutableList<CodeChunk> initialStatements() {
+  public ImmutableList<Statement> initialStatements() {
     return underlying().initialStatements();
   }
 }

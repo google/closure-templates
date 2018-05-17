@@ -20,12 +20,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /**
  * Represents the concatenation of many chunks via the {@code +} operator.
  *
  * <p>This could be represented as a nested sequence of {@link BinaryOperation} chunks, but the
- * compiler tends to create very large concatenations (thousands of nodes) and the recursive
+ * compiler tends to create very large concatenations (thousands of nodes) and the naive recursive
  * formatting algorithm can cause stack overflow errors.
  */
 @AutoValue
@@ -33,7 +34,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 abstract class Concatenation extends Operation {
 
   static Concatenation create(Iterable<? extends CodeChunk.WithValue> parts) {
-    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
+    ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
     ImmutableList.Builder<CodeChunk.WithValue> partsBuilder = ImmutableList.builder();
     for (CodeChunk.WithValue part : parts) {
       initialStatements.addAll(part.initialStatements());

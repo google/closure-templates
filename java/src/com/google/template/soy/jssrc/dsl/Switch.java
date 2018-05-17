@@ -20,12 +20,13 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.Nullable;
 
 /** Represents a {@code switch} statement. */
 @AutoValue
 @Immutable
-abstract class Switch extends CodeChunk {
+abstract class Switch extends Statement {
   abstract CodeChunk.WithValue switchOn();
 
   abstract ImmutableList<CaseClause> caseClauses();
@@ -97,9 +98,9 @@ abstract class Switch extends CodeChunk {
   @Immutable
   static final class CaseClause {
     private final ImmutableList<WithValue> caseLabels;
-    private final CodeChunk caseBody;
+    private final Statement caseBody;
 
-    CaseClause(ImmutableList<WithValue> caseLabels, CodeChunk caseBody) {
+    CaseClause(ImmutableList<WithValue> caseLabels, Statement caseBody) {
       this.caseLabels = caseLabels;
       this.caseBody = caseBody;
     }

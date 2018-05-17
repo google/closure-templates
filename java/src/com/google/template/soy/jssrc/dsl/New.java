@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents the JavaScript {@code new} operator. */
 @AutoValue
@@ -61,7 +62,7 @@ abstract class New extends Operation {
   }
 
   @Override
-  public ImmutableList<CodeChunk> initialStatements() {
+  public ImmutableList<Statement> initialStatements() {
     return ctor().initialStatements();
   }
 }

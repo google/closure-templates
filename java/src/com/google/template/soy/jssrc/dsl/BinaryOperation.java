@@ -52,7 +52,7 @@ abstract class BinaryOperation extends Operation {
       CodeChunk.WithValue arg1,
       CodeChunk.WithValue arg2) {
     return new AutoValue_BinaryOperation(
-        ImmutableList.<CodeChunk>builder()
+        ImmutableList.<Statement>builder()
             .addAll(arg1.initialStatements())
             .addAll(arg2.initialStatements())
             .build(),
@@ -74,7 +74,7 @@ abstract class BinaryOperation extends Operation {
     // rhs should be evaluated only if lhs evaluates to true.
     CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(CodeChunk.ifStatement(tmp, tmp.assign(rhs)).build()), tmp);
+        ImmutableList.of(ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
 
   static CodeChunk.WithValue or(
@@ -88,7 +88,7 @@ abstract class BinaryOperation extends Operation {
     // rhs should be evaluated only if lhs evaluates to false.
     CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(CodeChunk.ifStatement(not(tmp), tmp.assign(rhs)).build()), tmp);
+        ImmutableList.of(ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()), tmp);
   }
 
   @Override

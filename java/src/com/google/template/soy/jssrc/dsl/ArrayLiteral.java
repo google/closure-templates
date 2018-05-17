@@ -29,7 +29,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   abstract ImmutableList<? extends CodeChunk.WithValue> elements();
 
   static ArrayLiteral create(ImmutableList<? extends CodeChunk.WithValue> elements) {
-    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
+    ImmutableList.Builder<CodeChunk.Statement> builder = ImmutableList.builder();
     for (CodeChunk.WithValue element : elements) {
       builder.addAll(element.initialStatements());
     }
