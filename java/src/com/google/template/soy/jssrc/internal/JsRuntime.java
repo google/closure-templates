@@ -112,6 +112,8 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =
       SOY_MAP.dotAccess("$$maybeCoerceKeyToString");
 
+  public static final CodeChunk.WithValue SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
+
   public static final CodeChunk.WithValue SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.dotAccess("$$transformValues");
 
