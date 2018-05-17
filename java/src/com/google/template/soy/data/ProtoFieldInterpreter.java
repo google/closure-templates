@@ -17,7 +17,6 @@
 package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
@@ -38,9 +37,7 @@ import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
-import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
-import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -154,12 +151,6 @@ abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        protected ProtoFieldInterpreter visitJspbMap(
-            FieldDescriptor keyField, ProtoFieldInterpreter scalarInterpreter) {
-          return getJspbMapType(scalarInterpreter, keyField);
-        }
-
-        @Override
         protected ProtoFieldInterpreter visitRepeated(ProtoFieldInterpreter value) {
           return getListType(value);
         }
@@ -233,43 +224,6 @@ abstract class ProtoFieldInterpreter {
           mapEntries.add(entryBuilder.build());
         }
         return mapEntries.build();
-      }
-    };
-  }
-
-  /**
-   * Proto {@code map} fields are handled by {@link #getMapType}. But before protos had a map type,
-   * JSPB had a {@code map_key} field annotation that simulated map behavior at runtime. They're
-   * still out there, somewhere, so we have to support them.
-   *
-   * <p>TODO(b/70671325): Investigate if we can drop support for this.
-   */
-  private static ProtoFieldInterpreter getJspbMapType(
-      final ProtoFieldInterpreter scalarImpl, final FieldDescriptor keyFieldDescriptor) {
-    return new ProtoFieldInterpreter() {
-      @Override
-      public SoyValue soyFromProto(Object field) {
-        @SuppressWarnings("unchecked")
-        List<Message> entries = (List<Message>) field;
-        ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
-        for (Message message : entries) {
-          String key = (String) message.getField(keyFieldDescriptor);
-          if (key.isEmpty()) {
-            // Ignore empty keys.
-            continue;
-          }
-          builder.put(key, scalarImpl.soyFromProto(message));
-        }
-        return DictImpl.forProviderMap(
-            builder.build(), RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
-      }
-
-      @Override
-      Object protoFromSoy(SoyValue field) {
-        // TODO(lukes): this is supportable, but mapkey fields are deprecated...  add support
-        // when/if someone starts asking for it.
-        throw new UnsupportedOperationException(
-            "assigning to mapkey fields is not currently supported");
       }
     };
   }

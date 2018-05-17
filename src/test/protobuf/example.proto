@@ -50,6 +50,8 @@ message ExampleExtendable {
 
   optional int64 long_field_jstype_string = 21
       ;
+
+  repeated SomeEmbeddedMessage repeated_embedded_message = 25;
 }
 
 extend ExampleExtendable {
@@ -81,15 +83,6 @@ message KvPair {
   optional string key = 1;
   optional string value = 2;
   optional int32 another_value = 3;
-}
-
-message KvMap {
-  repeated KvPair item = 1
-      ;
-
-  repeated KvPair other_field = 2;
-
-  optional int32 serialized_size = 3;
 }
 
 message ProtoMap {

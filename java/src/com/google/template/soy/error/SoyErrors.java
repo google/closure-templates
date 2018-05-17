@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.Descriptors.Descriptor;
 import javax.annotation.Nullable;
 
 /** Utility methods for constructing Soy error messages. */
@@ -46,7 +47,7 @@ public final class SoyErrors {
    * proto fields.
    */
   public static String getDidYouMeanMessageForProtoFields(
-      ImmutableSet<String> fields, String fieldName) {
+      ImmutableSet<String> fields, Descriptor descriptor, String fieldName) {
     // TODO(b/27616446): when we have case enum support add a case here.
     if (fields.contains(fieldName + "List")) {
       return String.format(" Did you mean '%sList'?", fieldName);

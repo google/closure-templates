@@ -96,7 +96,9 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
 
       // Check that each arg exists in the proto.
       if (!fields.contains(fieldName)) {
-        String extraErrorMessage = SoyErrors.getDidYouMeanMessageForProtoFields(fields, fieldName);
+        String extraErrorMessage =
+            SoyErrors.getDidYouMeanMessageForProtoFields(
+                fields, soyType.getDescriptor(), fieldName);
         errorReporter.report(
             expr.getSourceLocation(), FIELD_DOES_NOT_EXIST, fieldName, extraErrorMessage);
         continue;

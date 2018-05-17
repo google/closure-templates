@@ -995,7 +995,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             } else {
               String extraErrorMessage =
                   SoyErrors.getDidYouMeanMessageForProtoFields(
-                      protoType.getFieldNames(), fieldName);
+                      protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
               errorReporter.report(
                   sourceLocation,
                   UNDEFINED_FIELD_FOR_PROTO_TYPE,

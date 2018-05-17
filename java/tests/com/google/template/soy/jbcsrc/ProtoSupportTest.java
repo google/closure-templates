@@ -36,10 +36,11 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
-import com.google.template.soy.testing.KvMap;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.Proto3;
 import com.google.template.soy.testing.Proto3Message;
+import com.google.template.soy.testing.ProtoMap;
+import com.google.template.soy.testing.ProtoMap.InnerMessage;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -79,6 +80,35 @@ public final class ProtoSupportTest {
             ImmutableMap.of(
                 "proto",
                 KvPair.newBuilder().setKey("key").setValue("value").setAnotherValue(3).build()));
+  }
+
+  @Test
+  public void testSimpleProto_nullCoalescing() {
+    assertThatTemplateBody("{@param? proto : example.KvPair}", "{$proto?.value ?: 'bar'}")
+        .rendersAs("bar");
+
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param proto : example.ProtoMap}",
+            "{$proto.mapMessageFieldMap?[2390]?.field ?: 'bar'}");
+    tester.rendersAs(
+        "4837",
+        ImmutableMap.of(
+            "proto",
+            ProtoMap.newBuilder()
+                .putMapMessageField(2390, InnerMessage.newBuilder().setField(4837).build())));
+    tester.rendersAs(
+        "0",
+        ImmutableMap.of(
+            "proto",
+            ProtoMap.newBuilder().putMapMessageField(2390, InnerMessage.getDefaultInstance())));
+    tester.rendersAs("bar", ImmutableMap.of("proto", ProtoMap.getDefaultInstance()));
+
+    assertThatTemplateBody(
+            "{@param? proto : example.KvPair}",
+            "{@param? proto2 : example.KvPair}",
+            "{$proto?.value ?: $proto2?.value}")
+        .rendersAs("null");
   }
 
   // The null safe accessor syntax introduces some complication for primitive proto accessors since
@@ -180,17 +210,19 @@ public final class ProtoSupportTest {
   @Test
   public void testRepeatedFields() {
     assertThatTemplateBody(
-            "{@param map : example.KvMap}",
-            "{for $pair in $map.otherFieldList}",
-            "  {$pair.key}",
+            "{@param e : example.ExampleExtendable}",
+            "{for $m in $e.repeatedEmbeddedMessageList}",
+            "  {$m.someEmbeddedString}",
             "{/for}")
         .rendersAs(
             "k1k2",
             ImmutableMap.of(
-                "map",
-                KvMap.newBuilder()
-                    .addOtherField(KvPair.newBuilder().setKey("k1"))
-                    .addOtherField(KvPair.newBuilder().setKey("k2"))));
+                "e",
+                ExampleExtendable.newBuilder()
+                    .addRepeatedEmbeddedMessage(
+                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k1"))
+                    .addRepeatedEmbeddedMessage(
+                        SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("k2"))));
   }
 
   @Test

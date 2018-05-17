@@ -23,7 +23,6 @@ import com.google.protobuf.DescriptorProtos.FieldOptions.JSType;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import java.util.List;
 
 /**
@@ -35,6 +34,7 @@ import java.util.List;
 public abstract class FieldVisitor<T> {
   /** Applies the visitor to the given field. */
   public static <T> T visitField(FieldDescriptor fieldDescriptor, FieldVisitor<T> visitor) {
+    // NOTE: map fields are technically repeated, so check isMap first.
     if (fieldDescriptor.isMapField()) {
       List<FieldDescriptor> mapFields = fieldDescriptor.getMessageType().getFields();
       checkState(mapFields.size() == 2, "proto representation of map fields changed");
@@ -43,21 +43,7 @@ public abstract class FieldVisitor<T> {
       return visitor.visitMap(
           fieldDescriptor, getScalarType(keyField, visitor), getScalarType(valueField, visitor));
     } else if (fieldDescriptor.isRepeated()) {
-      if (ProtoUtils.hasJsMapKey(fieldDescriptor)) {
-        String keyFieldName = ProtoUtils.getJsMapKeyFieldName(fieldDescriptor);
-        FieldDescriptor keyDescriptor =
-            fieldDescriptor.getMessageType().findFieldByName(keyFieldName);
-        if (keyDescriptor == null) {
-          throw new IllegalArgumentException(
-              "Cannot find field with name \"" + keyFieldName + "\".");
-        } else if (keyDescriptor.getJavaType() != JavaType.STRING || keyDescriptor.isRepeated()) {
-          throw new IllegalArgumentException(
-              "\"" + keyFieldName + "\" must be an optional/required string field.");
-        }
-        return visitor.visitJspbMap(keyDescriptor, getScalarType(fieldDescriptor, visitor));
-      } else {
-        return visitor.visitRepeated(getScalarType(fieldDescriptor, visitor));
-      }
+      return visitor.visitRepeated(getScalarType(fieldDescriptor, visitor));
     } else {
       return getScalarType(fieldDescriptor, visitor);
     }
@@ -66,20 +52,6 @@ public abstract class FieldVisitor<T> {
   /** Visits a proto map field. Which is represented by a soy map. */
   @ForOverride
   protected abstract T visitMap(FieldDescriptor mapField, T keyValue, T valueValue);
-
-  /**
-   * Proto {@code map} fields are handled by {@link #visitMap}. But before protos had a map type,
-   * JSPB had a {@code map_key} field annotation that simulated map behavior at runtime. They're
-   * still out there, somewhere, so we have to support them.
-   *
-   * <p>TODO(b/70671325): Investigate if we can drop support for this.
-   *
-   * @param keyField the field of the message that is the key field. guaranateed to be a string
-   * @param valueValue the result of evaluating this visitor on the field when interpreted as a
-   *     scalar.
-   */
-  @ForOverride
-  protected abstract T visitJspbMap(FieldDescriptor keyField, T valueValue);
 
   /**
    * Visits a repeated field.

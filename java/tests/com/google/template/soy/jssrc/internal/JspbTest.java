@@ -32,7 +32,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
-import com.google.template.soy.testing.KvMap;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
@@ -60,7 +59,6 @@ public final class JspbTest {
                   Example.getDescriptor(),
                   ExampleExtendable.getDescriptor(),
                   ExampleExtendable.InnerMessage.getDescriptor(),
-                  KvMap.getDescriptor(),
                   KvPair.getDescriptor(),
                   Proto3Message.getDescriptor(),
                   SomeExtension.getDescriptor(),

@@ -145,14 +145,6 @@ public final class ProtoUtils {
     return false;
   }
 
-  static boolean hasJsMapKey(FieldDescriptor fieldDescriptor) {
-    return false;
-  }
-
-  static String getJsMapKeyFieldName(FieldDescriptor fieldDescriptor) {
-    return null;
-  }
-
   /** Only int64 fields can have jstype annotations. */
   private static final ImmutableSet<Type> JS_TYPEABLE_FIELDS =
       Sets.immutableEnumSet(Type.INT64, Type.SFIXED64, Type.UINT64, Type.FIXED64, Type.SINT64);

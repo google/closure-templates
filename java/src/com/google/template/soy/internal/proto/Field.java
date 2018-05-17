@@ -130,7 +130,7 @@ public abstract class Field {
     if (field.isMapField()) {
       return "Map";
     } else if (field.isRepeated()) {
-      return ProtoUtils.hasJsMapKey(field) ? "Map" : "List";
+      return "List";
     } else {
       return "";
     }

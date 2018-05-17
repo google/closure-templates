@@ -48,11 +48,6 @@ public final class SoyProtoType extends SoyType {
     }
 
     @Override
-    protected SoyType visitJspbMap(FieldDescriptor field, SoyType valueType) {
-      return registry.getOrCreateLegacyObjectMapType(StringType.getInstance(), valueType);
-    }
-
-    @Override
     protected SoyType visitRepeated(SoyType value) {
       return registry.getOrCreateListType(value);
     }
