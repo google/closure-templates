@@ -253,6 +253,7 @@ public abstract class CodeChunk {
   }
 
   /** Creates a code chunk representing a javascript map literal. */
+  // TODO(b/79368576): rename to objectLiteral.
   public static WithValue mapLiteral(
       Iterable<? extends WithValue> keys, Iterable<? extends WithValue> values) {
     return MapLiteral.create(ImmutableList.copyOf(keys), ImmutableList.copyOf(values));

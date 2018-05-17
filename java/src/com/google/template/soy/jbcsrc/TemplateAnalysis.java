@@ -665,7 +665,6 @@ final class TemplateAnalysis {
             // generate alternate code to reference a synthetic variable.
             // See ExpressionCompiler
             return;
-          case QUOTE_KEYS_IF_JS:
           case CHECK_NOT_NULL:
           case CSS:
           case XID:

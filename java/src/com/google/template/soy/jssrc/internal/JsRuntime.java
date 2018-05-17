@@ -92,9 +92,6 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 
-  public static final CodeChunk.WithValue SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY =
-      SOY.dotAccess("$$checkLegacyObjectMapLiteralKey");
-
   public static final CodeChunk.WithValue SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
 
   public static final CodeChunk.WithValue SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");

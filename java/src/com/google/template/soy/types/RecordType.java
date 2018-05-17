@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ import java.util.Objects;
  *
  */
 public final class RecordType extends SoyType {
+
+  public static final RecordType EMPTY_RECORD = RecordType.of(ImmutableMap.of());
 
   private final ImmutableSortedMap<String, SoyType> members;
 

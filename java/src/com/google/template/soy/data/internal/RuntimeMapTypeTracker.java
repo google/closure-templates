@@ -44,6 +44,8 @@ public final class RuntimeMapTypeTracker {
      */
     UNKNOWN,
     /** This object represents a Soy {@code legacy_object_map} or record at runtime. */
+    // TODO(b/76108656): Split legacy_object_map and record type so that an object can only be used
+    // at runtime as a legacy_object_map or record, but not both.
     LEGACY_OBJECT_MAP_OR_RECORD,
     /** This object represents a Soy {@code map} at runtime. */
     MAP,

@@ -144,7 +144,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   protected void visitFunctionNode(FunctionNode node) {
 
     // Cannot simplify nonplugin functions.
-    // TODO(brndn): we can actually simplify checkNotNull and quoteKeysIfJs.
+    // TODO(brndn): we can actually simplify checkNotNull.
     if (node.getSoyFunction() instanceof BuiltinFunction) {
       return;
     }

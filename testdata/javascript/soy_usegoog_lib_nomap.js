@@ -24605,24 +24605,6 @@ soy.$$assignDefaults = function(obj, defaults) {
 
 
 /**
- * Checks that the given map key is a string.
- *
- * <p>This is used to validate keys for legacy object map literals.
- *
- * @param {?} key Key to check.
- * @return {string} The given key.
- */
-soy.$$checkLegacyObjectMapLiteralKey = function(key) {
-  if ((typeof key) != 'string') {
-    throw Error(
-        'Map literal\'s key expression must evaluate to string' +
-        ' (encountered type "' + (typeof key) + '").');
-  }
-  return key;
-};
-
-
-/**
  * Gets the keys in a map as an array. There are no guarantees on the order.
  * @param {Object} map The map to get the keys of.
  * @return {!Array<string>} The array of keys in the given map.

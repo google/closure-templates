@@ -545,9 +545,8 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testItemAccess_maps() {
-    // String literal keys trigger a heuristic that makes MapLiteral mean RecordLiteral and you
-    // can't use 'item access' to read it. We use string concatention to force a map interpretation.
-    variables.put("map", compileExpression("['a' + '' : 0, 'b': 1, 'c' : 2]").box());
+    variables.put(
+        "map", compileExpression("mapToLegacyObjectMap(map('a': 0, 'b': 1, 'c': 2))").box());
     // By default all values are boxed
     assertExpression("$map['a']").evaluatesTo(IntegerData.forValue(0));
     assertExpression("$map['b']").evaluatesTo(IntegerData.forValue(1));

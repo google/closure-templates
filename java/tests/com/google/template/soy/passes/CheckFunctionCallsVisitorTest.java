@@ -112,22 +112,6 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   @Test
-  public void testQuoteKeysIfJsFunction() {
-    assertSuccess(
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
-        "{/template}");
-
-    assertFunctionCallsInvalid(
-        "Function 'quoteKeysIfJs' called with incorrect arg type string (expected map literal).",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $m: quoteKeysIfJs('blah') /}",
-        "{/template}");
-  }
-
-  @Test
   public void testCssFunction() {
     assertSuccess(
         "{namespace ns}\n",

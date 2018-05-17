@@ -62,8 +62,7 @@ public class TranslateToPyExprVisitorTest {
   }
 
   @Test
-  public void testMapLiteral() {
-    // Unquoted keys.
+  public void testRecordLiteral() {
     assertThatSoyExpr("[:]").translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
     assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']")
         .translatesTo(
@@ -71,26 +70,6 @@ public class TranslateToPyExprVisitorTest {
                 + "(runtime.maybe_coerce_key_to_string('bbb'), 'blah')])",
             Integer.MAX_VALUE);
     assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']")
-        .translatesTo(
-            "collections.OrderedDict(["
-                + "(runtime.maybe_coerce_key_to_string('aaa'), data.get('foo')), "
-                + "(runtime.maybe_coerce_key_to_string('bbb'), 'blah')])",
-            Integer.MAX_VALUE);
-
-    // Non-string keys are allowed in Python.
-    assertThatSoyExpr("[1: 'blah', 0: 123]")
-        .translatesTo(
-            "collections.OrderedDict([(runtime.maybe_coerce_key_to_string(1), 'blah'), "
-                + "(runtime.maybe_coerce_key_to_string(0), 123)])",
-            Integer.MAX_VALUE);
-  }
-
-  @Test
-  public void testMapLiteral_quoteKeysIfJS() {
-    // quoteKeysIfJs should change nothing in Python.
-    assertThatSoyExpr("quoteKeysIfJs([:])")
-        .translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
-    assertThatSoyExpr("quoteKeysIfJs( ['aaa': $foo, 'bbb': 'blah'] )")
         .translatesTo(
             "collections.OrderedDict(["
                 + "(runtime.maybe_coerce_key_to_string('aaa'), data.get('foo')), "

@@ -25,7 +25,6 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.not;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
@@ -35,7 +34,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
@@ -53,7 +51,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -62,7 +59,6 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -106,7 +102,6 @@ import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -163,13 +158,6 @@ public class TranslateExprNodeVisitor
   private static final ImmutableSet<String> TRUST_PRECEDENCE_PLUGINS =
       ImmutableSet.of(DebugSoyTemplateInfoFunction.NAME);
 
-  private static final SoyErrorKind CONSTANT_USED_AS_KEY_IN_MAP_LITERAL =
-      SoyErrorKind.of("Keys in map literals cannot be constants (found constant ''{0}'').");
-  private static final SoyErrorKind EXPR_IN_MAP_LITERAL_REQUIRES_QUOTE_KEYS_IF_JS =
-      SoyErrorKind.of("Expression key ''{0}'' in map literal must be wrapped in quoteKeysIfJs().");
-  private static final SoyErrorKind MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS =
-      SoyErrorKind.of(
-          "Map literal with non-identifier key {0} must be wrapped in quoteKeysIfJs().");
   private static final SoyErrorKind UNION_ACCESSOR_MISMATCH =
       SoyErrorKind.of(
           "Cannot access field ''{0}'' of type ''{1}'', "
@@ -248,113 +236,20 @@ public class TranslateExprNodeVisitor
 
   @Override
   protected CodeChunk.WithValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-    return visitLegacyObjectMapLiteralNode(node, false);
-  }
-
-  /**
-   * Helper to visit a LegacyObjectMapLiteralNode, with the extra option of whether to quote keys.
-   */
-  private CodeChunk.WithValue visitLegacyObjectMapLiteralNode(
-      LegacyObjectMapLiteralNode node, boolean doQuoteKeys) {
-
-    // If there are only string keys, then the expression will be
-    //     {aa: 11, bb: 22}    or    {'aa': 11, 'bb': 22}
-    // where the former is with unquoted keys and the latter with quoted keys.
-    // If there are both string and nonstring keys, then the expression will be
-    //     (function() { var $$tmp0 = {'aa': 11}; $$tmp0[opt_data.bb] = 22; return $$tmp0; })()
-
-    // Since we are outputting JS code to be processed by Closure Compiler, it is important that
-    // any unquoted map literal keys are string literals, since Closure Compiler can rename unquoted
-    // map keys and we want everything to be renamed at the same time.
-
-    // We will divide the map literal contents into two categories.
-    //
-    // Key-value pairs with StringNode keys can be included in the JS object literal.
-    // Key-value pairs that are not StringNodes (VarRefs, IJ values, etc.) must be passed through
-    // the soy.$$checkLegacyObjectMapLiteralKey() function, cannot be included in the JS object
-    // literal, and must generate code in the form of:
-    //   $$map[soy.$$checkLegacyObjectMapLiteralKey(key)] = value
-
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> objLiteral = new LinkedHashMap<>();
-    LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> assignments = new LinkedHashMap<>();
 
     // Process children
-
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
+      Preconditions.checkState(keyNode instanceof StringNode);
       ExprNode valueNode = node.getChild(i + 1);
 
-      // error case: key is a non-string primitive.
-      // TODO: Support map literal with nonstring key. We can probably just remove this case and
-      // roll it into the next case.
-      if (!(keyNode instanceof StringNode) && keyNode instanceof PrimitiveNode) {
-        errorReporter.report(
-            keyNode.getSourceLocation(),
-            CONSTANT_USED_AS_KEY_IN_MAP_LITERAL,
-            keyNode.toSourceString());
-        continue;
-      }
-
-      // error case: for closure compiler users, do not allow unquoted, non-string-literal keys,
-      // since the compiler may change the names of any unquoted map keys.
-      if (!doQuoteKeys && !(keyNode instanceof StringNode)) {
-        errorReporter.report(
-            keyNode.getSourceLocation(),
-            EXPR_IN_MAP_LITERAL_REQUIRES_QUOTE_KEYS_IF_JS,
-            keyNode.toSourceString());
-        continue;
-      }
-
-      if (keyNode instanceof StringNode) {
-        // key is a StringNode; key-value pair gets included in the JS object literal.
-        // figure out whether the string should be quoted or not.
-
-        if (doQuoteKeys) {
-          objLiteral.put(visit(keyNode), visit(valueNode));
-        } else {
-          String strKey = ((StringNode) keyNode).getValue();
-
-          if (BaseUtils.isIdentifier(strKey)) {
-            objLiteral.put(id(strKey), visit(valueNode));
-          } else {
-            errorReporter.report(
-                keyNode.getSourceLocation(),
-                MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS,
-                keyNode.toSourceString());
-            continue;
-          }
-        }
-      } else {
-        // key is not a StringNode; key must be passed through
-        // soy.$$checkLegacyObjectMapLiteralKey() and the pair cannot be included in the JS object
-        // literal.
-
-        CodeChunk.WithValue rawKey = visit(keyNode);
-        assignments.put(SOY_CHECK_LEGACY_OBJECT_MAP_LITERAL_KEY.call(rawKey), visit(valueNode));
-      }
+      String strKey = ((StringNode) keyNode).getValue();
+      objLiteral.put(id(strKey), visit(valueNode));
     }
 
     // Build the map literal
-
-    ImmutableList<CodeChunk.WithValue> keys = ImmutableList.copyOf(objLiteral.keySet());
-    ImmutableList<CodeChunk.WithValue> values = ImmutableList.copyOf(objLiteral.values());
-
-    CodeChunk.WithValue map = mapLiteral(keys, values);
-
-    if (assignments.isEmpty()) {
-      // If there are no assignments, we can return the map literal directly without assigning
-      // to a tmp var.
-      return map;
-    }
-
-    // Otherwise, we need to bail to a tmp var and emit assignment statements.
-    CodeChunk.WithValue mapVar = codeGenerator.declarationBuilder().setRhs(map).build().ref();
-    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
-    for (Map.Entry<CodeChunk.WithValue, CodeChunk.WithValue> entry : assignments.entrySet()) {
-      initialStatements.add(mapVar.bracketAccess(entry.getKey()).assign(entry.getValue()));
-    }
-
-    return mapVar.withInitialStatements(initialStatements.build());
+    return CodeChunk.mapLiteral(objLiteral.keySet(), objLiteral.values());
   }
 
   @Override
@@ -663,9 +558,6 @@ public class TranslateExprNodeVisitor
           return visitIsLastFunction(node);
         case INDEX:
           return visitIndexFunction(node);
-        case QUOTE_KEYS_IF_JS:
-          return visitLegacyObjectMapLiteralNode(
-              (LegacyObjectMapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:

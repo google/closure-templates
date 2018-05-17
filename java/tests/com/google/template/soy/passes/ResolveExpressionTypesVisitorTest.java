@@ -345,22 +345,6 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
-  public void testLegacyObjectMapLiteral() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
-                    "{@param pi: int}",
-                    "{@param pf: float}",
-                    "{let $map: [1: $pi, 2:$pf]/}",
-                    "{assertType('legacy_object_map<int,float|int>', $map)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
-  }
-
-  @Test
   public void testMapLiteralWithStringKeysAsMap() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -370,23 +354,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param k1: string}",
                     "{let $map: map($k1: $v1, 'b': $v2) /}",
                     "{assertType('map<string,int|string>', $map)}"))
-            .typeRegistry(TYPE_REGISTRY)
-            .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .parse()
-            .fileSet();
-    assertTypes(soyTree);
-  }
-
-  @Test
-  public void testLegacyObjectMapLiteralWithStringKeysAsMap() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
-                    "{@param v1: int}",
-                    "{@param v2: string}",
-                    "{@param k1: string}",
-                    "{let $map: [$k1: $v1, 'b': $v2] /}",
-                    "{assertType('legacy_object_map<string,int|string>', $map)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()

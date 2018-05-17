@@ -447,9 +447,9 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind INVALID_VAR_NAME_IJ =
       SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
-  private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
-      SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
-          + "(please surround with single quotes for string or parentheses for global).");
+  private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_RECORD_LITERAL =
+      SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in record literal "
+          + "(please surround with quotes).");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
 
@@ -3739,7 +3739,7 @@ private ExprNode MapKeyOrExpr() :
       // value is assigned (the risk is in the jssrc backend where undefined globals are
       // allowed).
       errorReporter.report(
-          createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
+          createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_RECORD_LITERAL, ident.image);
     }
   |
     itemExpr = Expr()

@@ -32,7 +32,6 @@ public enum BuiltinFunction implements SoyFunction {
   IS_FIRST("isFirst"),
   IS_LAST("isLast"),
   INDEX("index"),
-  QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
   CHECK_NOT_NULL("checkNotNull"),
   /**
    * Function for substituting CSS class names according to a lookup map.

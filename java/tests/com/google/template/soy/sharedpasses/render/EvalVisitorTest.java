@@ -291,35 +291,16 @@ public class EvalVisitorTest {
   }
 
   @Test
-  public void testEvalMapLiteral() throws Exception {
+  public void testEvalRecordLiteral() throws Exception {
 
     SoyDict result = (SoyDict) eval("[:]");
     assertThat(result.getItemKeys()).isEmpty();
 
-    result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]");
+    result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, 'ccc': $boo]");
     assertThat(result.getItemKeys()).hasSize(3);
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
-    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
-
-    result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]"); // trailing comma
-    assertThat(result.getItemKeys()).hasSize(3);
-    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
-    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
-    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
-
-    result = (SoyDict) eval("quoteKeysIfJs([:])");
-    assertThat(result.getItemKeys()).isEmpty();
-
-    result = (SoyDict) eval("quoteKeysIfJs( ['aaa': 'blah', 'bbb': 123, $foo.bar: $boo] )");
-    assertThat(result.getItemKeys()).hasSize(3);
-    assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
-    assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
-    assertThat(result.getField("baz").integerValue()).isEqualTo(8);
-
-    // Test last value overwrites earlier value for the same key.
-    result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");
-    assertThat(result.getField("baz").stringValue()).isEqualTo("bluh");
+    assertThat(result.getField("ccc").integerValue()).isEqualTo(8);
   }
 
   @Test

@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -87,10 +86,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitIsLastFunction(node);
         case INDEX:
           return visitIndexFunction(node);
-        case QUOTE_KEYS_IF_JS:
-          // this function is a no-op in non JS backends, the CheckFunctionCallsVisitor ensures that
-          // there is only one child and it is a LegacyObjectMapLiteralNode
-          return visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node.getChild(0));
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:

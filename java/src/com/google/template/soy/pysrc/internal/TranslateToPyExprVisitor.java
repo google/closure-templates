@@ -430,9 +430,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitForEachFunction(node, "__isLast");
       case INDEX:
         return visitForEachFunction(node, "__index");
-      case QUOTE_KEYS_IF_JS:
-        // 'quoteKeysIfJs' is ignored in Python.
-        return visitLegacyObjectMapLiteralNode((LegacyObjectMapLiteralNode) node.getChild(0));
       case CHECK_NOT_NULL:
         return visitCheckNotNullFunction(node);
       case CSS:

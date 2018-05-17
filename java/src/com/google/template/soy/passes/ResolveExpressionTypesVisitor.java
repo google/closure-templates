@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
@@ -147,6 +148,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of(
           "A map''s keys must all be the same type. This map has keys of multiple types "
               + "(''{0}'').");
+  private static final SoyErrorKind ILLEGAL_RECORD_KEY_NAME =
+      SoyErrorKind.of("Record key ''{0}'' must be a valid Soy identifier.");
+  private static final SoyErrorKind ILLEGAL_RECORD_KEY_TYPE =
+      SoyErrorKind.of("Record key ''{0}'' must be a string literal. Did you mean to use a map?");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
@@ -442,14 +447,16 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       tryApplySubstitution(node);
     }
 
+    // TODO(b/79368576): consider splitting this into separate methods for maps and legacy object
+    // maps, if that makes it easier to understand.
     private void setMapLiteralNodeType(AbstractParentExprNode node) {
       Kind nodeKind = node.getKind();
       checkState(nodeKind == MAP_LITERAL_NODE || nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE);
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        node.setType(
-            nodeKind == MAP_LITERAL_NODE ? MapType.EMPTY_MAP : LegacyObjectMapType.EMPTY_MAP);
+        // TODO(b/79869432): Remove support for the empty record.
+        node.setType(nodeKind == MAP_LITERAL_NODE ? MapType.EMPTY_MAP : RecordType.EMPTY_RECORD);
         return;
       }
 
@@ -461,7 +468,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       for (int i = 0; i < numChildren; i += 2) {
         ExprNode key = node.getChild(i);
         ExprNode value = node.getChild(i + 1);
-        // TODO: consider using ExprEquivalence to detect duplicate keys
+        // TODO: consider using ExprEquivalence to detect duplicate map keys
         if (key.getKind() == ExprNode.Kind.STRING_NODE) {
           String fieldName = ((StringNode) key).getValue();
           SoyType prev = recordFieldTypes.put(fieldName, value.getType());
@@ -469,13 +476,17 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             errorReporter.report(
                 key.getSourceLocation(),
                 DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL,
-                nodeKind == MAP_LITERAL_NODE
-                    ? "Map"
-                    // TODO: because LegacyObjectMapLiteralNodes are also used to represent record
-                    // literals, this message incorrectly says "Record" for legacy object maps.
-                    : "Record",
+                nodeKind == MAP_LITERAL_NODE ? "Map" : "Record",
                 fieldName);
           }
+          if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE && !BaseUtils.isIdentifier(fieldName)) {
+            errorReporter.report(key.getSourceLocation(), ILLEGAL_RECORD_KEY_NAME, fieldName);
+            node.setType(ErrorType.getInstance());
+          }
+        } else if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE) {
+          errorReporter.report(
+              key.getSourceLocation(), ILLEGAL_RECORD_KEY_TYPE, key.toSourceString());
+          node.setType(ErrorType.getInstance());
         }
         keyTypes.add(key.getType());
         if (nodeKind == MAP_LITERAL_NODE && !MapType.isAllowedKeyType(key.getType())) {
@@ -492,28 +503,20 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
 
-      // The legacy literal syntax [k1:v1, k2:v2, ...] creates either a legacy object map (a value
-      // of type LegacyObjectMapType) or a record (a value of type RecordType).
-      // A heuristic is used to decide which one: if all the keys are typed as strings,
-      // the literal creates a record; otherwise, it creates map.
-      if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE
-          && StringType.getInstance().isAssignableFrom(commonKeyType)
-          && recordFieldTypes.size() == numChildren / 2) {
-        Map<String, SoyType> leastCommonFieldTypes =
-            Maps.newHashMapWithExpectedSize(recordFieldTypes.size());
-        for (String fieldName : recordFieldTypes.keySet()) {
-          leastCommonFieldTypes.put(fieldName, recordFieldTypes.get(fieldName));
+      if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE) {
+        if (!duplicateKeyErrors.isEmpty()) {
+          node.setType(ErrorType.getInstance());
+        } else {
+          Map<String, SoyType> leastCommonFieldTypes =
+              Maps.newHashMapWithExpectedSize(recordFieldTypes.size());
+          for (String fieldName : recordFieldTypes.keySet()) {
+            leastCommonFieldTypes.put(fieldName, recordFieldTypes.get(fieldName));
+          }
+          node.setType(typeRegistry.getOrCreateRecordType(leastCommonFieldTypes));
         }
-        node.setType(typeRegistry.getOrCreateRecordType(leastCommonFieldTypes));
       } else {
-        node.setType(
-            nodeKind == MAP_LITERAL_NODE
-                // The new literal syntax map(k1: v1, k2: v2, ...) always creates a value of type
-                // MapType.
-                ? typeRegistry.getOrCreateMapType(commonKeyType, commonValueType)
-                // The legacy literal syntax [k1:v1, k2:v2, ...] creates a value of type
-                // LegacyObjectMapType when not all the keys are strings. (See comment above.)
-                : typeRegistry.getOrCreateLegacyObjectMapType(commonKeyType, commonValueType));
+        Preconditions.checkState(nodeKind == MAP_LITERAL_NODE);
+        node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
       }
     }
 
@@ -841,12 +844,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
         node.setType(MapType.EMPTY_MAP);
       } else if (argType.isAssignableFrom(UnknownType.getInstance())) {
-        // Allow the type of the arg to be unknown.
-        // This is mostly for integration tests: legacy_object_map literals will string-literal keys
-        // are interpreted as *record* literals, unless surrounded by quoteKeysIfJs. But
-        // quoteKeysIfJs hard-codes its return type to be unknown. So allow unknown type arg for
-        // now. The only good thing about this situation is that quoteKeysIfJs is rarely used and
-        // should go away.
+        // Allow the type of the arg to be unknown as legacy_object_map functionality on unknown
+        // types is allowed (i.e. bracket access on a variable with an unknown type).
         node.setType(
             typeRegistry.getOrCreateMapType(StringType.getInstance(), UnknownType.getInstance()));
       } else {
@@ -1222,20 +1221,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         case INDEX:
           requireLoopVariableInScope(node, arg1);
           node.setType(IntType.getInstance());
-          break;
-        case QUOTE_KEYS_IF_JS:
-          if (!(arg1 instanceof LegacyObjectMapLiteralNode)) {
-            errorReporter.report(
-                arg1.getSourceLocation(),
-                INCORRECT_ARG_TYPE,
-                "quoteKeysIfJs",
-                arg1.getType(),
-                "map literal");
-          }
-          // TODO(b/70946095): it would be easy to add type information here, but doing so would
-          // introduce compile errors into user templates.  So doing so will require a global
-          // cleanup of all broken templates.
-          node.setType(UnknownType.getInstance());
           break;
         case IS_PRIMARY_MSG_IN_USE:
           // don't bother checking the args, they are only ever set by the MsgIdFunctionPass

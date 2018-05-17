@@ -49,13 +49,13 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement: {\n"
             + "  banned_function {\n"
-            + "    function: 'quoteKeysIfJs'\n"
+            + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
             + "{template .foo}\n"
-            + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
+            + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
             + "{/template}");
   }
 
@@ -64,12 +64,12 @@ public class SoyConformanceTest {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_function: {\n"
-            + "    function: 'quoteKeysIfJs'\n"
+            + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .quoteKeysIfJs}\n"
+            + "{template .checkNotNull}\n"
             + "This should be allowed.\n"
             + "{/template}");
   }
@@ -171,7 +171,7 @@ public class SoyConformanceTest {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_function {\n"
-            + "    function: 'quoteKeysIfJs'\n"
+            + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "  whitelist: 'foo/bar/baz.soy'\n"
@@ -180,7 +180,7 @@ public class SoyConformanceTest {
             CharSource.wrap(
                 "{namespace ns}\n"
                     + "{template .foo}\n"
-                    + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
+                    + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SoyFileKind.SRC,
             "foo/bar/baz.soy"));
@@ -191,7 +191,7 @@ public class SoyConformanceTest {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_function {\n"
-            + "    function: 'quoteKeysIfJs'\n"
+            + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "  whitelist: 'c/foo/bar/baz.soy'\n"
@@ -200,7 +200,7 @@ public class SoyConformanceTest {
             CharSource.wrap(
                 "{namespace ns}\n"
                     + "{template .foo}\n"
-                    + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
+                    + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SoyFileKind.SRC,
             "a/b/c/foo/bar/baz.soy"));
@@ -211,7 +211,7 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement: {\n"
             + "  banned_function {\n"
-            + "    function: 'quoteKeysIfJs'\n"
+            + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foooo'"
             + "  whitelist: 'foo/c/bar/baz.soy'\n"
@@ -220,7 +220,7 @@ public class SoyConformanceTest {
             CharSource.wrap(
                 "{namespace ns}\n"
                     + "{template .foo}\n"
-                    + "{quoteKeysIfJs(['xxx': 'bar', 'yyy': 'baz'])}\n"
+                    + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
             SoyFileKind.SRC,
             "a/b/c/foo/bar/baz.soy"));
