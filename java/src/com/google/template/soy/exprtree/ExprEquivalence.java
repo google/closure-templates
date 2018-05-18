@@ -81,7 +81,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         }
 
         @Override
-        protected Integer visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+        protected Integer visitRecordLiteralNode(RecordLiteralNode node) {
           return mapLiteralFields(node).hashCode();
         }
 
@@ -203,8 +203,8 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     }
 
     @Override
-    protected Boolean visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-      return mapLiteralFields(node).equals(mapLiteralFields((LegacyObjectMapLiteralNode) other));
+    protected Boolean visitRecordLiteralNode(RecordLiteralNode node) {
+      return mapLiteralFields(node).equals(mapLiteralFields((RecordLiteralNode) other));
     }
 
     @Override
@@ -281,7 +281,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
       mapLiteralFields(ParentExprNode node) {
     // both of these nodes store keys and values as alternating children.  We don't want order to
     // matter so we store in a map
-    checkArgument(node instanceof LegacyObjectMapLiteralNode || node instanceof MapLiteralNode);
+    checkArgument(node instanceof RecordLiteralNode || node instanceof MapLiteralNode);
     HashMap<Equivalence.Wrapper<ExprNode>, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i += 2) {

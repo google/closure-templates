@@ -59,7 +59,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -81,6 +80,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -223,10 +223,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   @Override
-  protected SoyValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+  protected SoyValue visitRecordLiteralNode(RecordLiteralNode node) {
     int numItems = node.numChildren() / 2;
 
-    // Not an ImmutableMap, because map literals allow duplicate keys (last one wins).
+    // Not an ImmutableMap, because record literals allow null values.
     Map<String, SoyValue> map = new LinkedHashMap<>();
     for (int i = 0; i < numItems; i++) {
       SoyValue key = visit(node.getChild(2 * i));

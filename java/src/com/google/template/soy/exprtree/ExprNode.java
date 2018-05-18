@@ -49,7 +49,7 @@ public interface ExprNode extends Node {
 
     LIST_LITERAL_NODE,
     MAP_LITERAL_NODE,
-    LEGACY_OBJECT_MAP_LITERAL_NODE,
+    RECORD_LITERAL_NODE,
 
     VAR_REF_NODE,
     FIELD_ACCESS_NODE,

@@ -48,7 +48,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -70,6 +69,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
@@ -309,48 +309,43 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
-      // anyway and could additionally delay detach generation.  Ditto for
-      // LegacyObjectMapLiteralNode.
+      // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
       return SoyExpression.forList(
           (ListType) node.getType(), SoyExpression.asBoxedList(visitChildren(node)));
     }
 
     @Override
-    protected final SoyExpression visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-      return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+    protected final SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
+      return visitRecordLiteralOrMapLiteralNode(node);
     }
 
     @Override
     protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
-      return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+      return visitRecordLiteralOrMapLiteralNode(node);
     }
 
-    private SoyExpression visitLegacyObjectMapLiteralOrMapLiteralNode(AbstractParentExprNode node) {
+    private SoyExpression visitRecordLiteralOrMapLiteralNode(AbstractParentExprNode node) {
       checkState(
-          node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+          node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE
               || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
-      final boolean useLegacyMap = node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE;
+      final boolean useRecord = node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE;
       final int numItems = node.numChildren() / 2;
       if (numItems == 0) {
-        return useLegacyMap
+        return useRecord
             ? SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor())
             : SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
       }
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings (for legacy object map literals) or boxed SoyValues (for map literals).
-        // Values are boxed SoyValues.
-        // Note: The soy grammar and type system both allow for legacy object maps to have arbitrary
-        // keys for types but none of the implementations support this.  So we don't support it
-        // either.
-        // b/20468013
+        // Keys are strings (for record literals) or boxed SoyValues (for map literals). Values are
+        // boxed SoyValues.
         SoyExpression key = visit(node.getChild(2 * i));
-        keys.add(useLegacyMap ? key.unboxAs(String.class) : key.box());
+        keys.add(useRecord ? key.unboxAs(String.class) : key.box());
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression soyDict =
-          useLegacyMap
+          useRecord
               ? MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
                   BytecodeUtils.newLinkedHashMap(keys, values),
                   FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)

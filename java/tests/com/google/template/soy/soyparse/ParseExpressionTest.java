@@ -32,7 +32,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
@@ -44,6 +43,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import org.junit.Test;
@@ -403,7 +403,7 @@ public final class ParseExpressionTest {
   }
 
   @Test
-  public void testParseListsAndMaps() throws Exception {
+  public void testParseListsAndRecords() throws Exception {
 
     ExprNode expr = assertThatExpression("[]").isValidExpression();
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(0);
@@ -417,15 +417,15 @@ public final class ParseExpressionTest {
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
 
     expr = assertThatExpression("[:]").isValidExpression();
-    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(0);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("['aa': 55]").isValidExpression();
-    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(2);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(2);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(2);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
-    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(6);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(6);
     expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
-    assertThat(((LegacyObjectMapLiteralNode) expr).numChildren()).isEqualTo(6);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(6);
   }
 
   @Test

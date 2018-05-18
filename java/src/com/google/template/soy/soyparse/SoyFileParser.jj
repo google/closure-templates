@@ -71,7 +71,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
@@ -368,11 +368,11 @@ import javax.annotation.Nullable;
  *       + Delimited by brackets.
  *       Examples:   []   ['blah', 123, $foo]
  *
- *    9. Legacy object map literal:
+ *    9. Record literal:
  *       + Delimited by brackets.
- *       + Empty map has a single colon within the brackets (to distinguish from empty list).
- *       + Keys must be strings (or expressions that will evaluate to strings).
- *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, $boo: $foo]
+ *       + Empty literal has a single colon within the brackets (to distinguish from empty list).
+ *       + Keys must be strings.
+ *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, 'boo': $foo]
  *
  *    10. Operator:
  *       + Parentheses can be used to override precedence rules:   ( )
@@ -3654,8 +3654,7 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
 }
 
 /**
- * Parses legacy object map literals and list literals.  Both are primary expressions that start
- * with "[".
+ * Parses record literals and list literals.  Both are primary expressions that start with "[".
  *
  * CollectionLiteral -> "[" ( "]" | ":" "]"
  *                      | Expr ( ( ("," Expr)* | ( ":" Expr ( "," Expr ":" Expr )* ) ) [","] "]" ) )
@@ -3669,22 +3668,22 @@ private ExprNode CollectionLiteral() :
 {
   begin = <LBRACKET>
   (
-    // empty map
+    // empty record
     <COLON>
     end = <RBRACKET>
-    { return new LegacyObjectMapLiteralNode(items, createSrcLoc(begin, end)); }
+    { return new RecordLiteralNode(items, createSrcLoc(begin, end)); }
   |
     // empty list
     end = <RBRACKET>
     { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
   |
-    // The first item of a non-empty list/map will be an expression
-    itemExpr = MapKeyOrExpr()
+    // The first item of a non-empty list/record will be an expression
+    itemExpr = RecordKeyOrExpr()
     { items = new ArrayList<ExprNode>();
       items.add(itemExpr);
     }
 
-    // The next item will be a comma for a list, or a colon for a map
+    // The next item will be a comma for a list, or a colon for a record
     (
       ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
         LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
@@ -3696,7 +3695,7 @@ private ExprNode CollectionLiteral() :
       end = <RBRACKET>
       { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
     |
-      // nonempty map
+      // nonempty record
       <COLON>
       itemExpr = Expr()  // value
       { items.add(itemExpr); }
@@ -3704,7 +3703,7 @@ private ExprNode CollectionLiteral() :
         // this lookahead is necessary to make this loop unambiguous with the trailing comma
         LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
         <COMMA>
-        itemExpr = MapKeyOrExpr()
+        itemExpr = RecordKeyOrExpr()
         { items.add(itemExpr); }
         <COLON>
         itemExpr = Expr()
@@ -3712,16 +3711,16 @@ private ExprNode CollectionLiteral() :
       )*
       [ <COMMA> ]  // trailing comma
       end = <RBRACKET>
-      { return new LegacyObjectMapLiteralNode(items, createSrcLoc(begin, end)); }
+      { return new RecordLiteralNode(items, createSrcLoc(begin, end)); }
     )
   )
 }
 
 /**
- * Matches an expression that can be used as a map key, or a normal expression if it isn't for a
- * map key.
+ * Matches an expression that can be used as a record key, or a normal expression if it isn't for a
+ * record key.
  */
-private ExprNode MapKeyOrExpr() :
+private ExprNode RecordKeyOrExpr() :
 {
   ExprNode itemExpr;
   Token ident;
@@ -3734,7 +3733,7 @@ private ExprNode MapKeyOrExpr() :
       // so we can keep parsing.
       itemExpr = new GlobalNode(headerInfo.resolveAlias(ident.image), createSrcLoc(ident));
       // TODO(lukes): consider how important this check is.  The theory is that users might
-      // think that our mapliterals work like keys in js object literals.  Though what will
+      // think that our record literals work like keys in js object literals.  Though what will
       // really happen is that we will parse it as a global and then it just will get whatever
       // value is assigned (the risk is in the jssrc backend where undefined globals are
       // allowed).

@@ -66,7 +66,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -78,6 +77,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -236,7 +236,7 @@ public class TranslateExprNodeVisitor
   }
 
   @Override
-  protected CodeChunk.WithValue visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+  protected CodeChunk.WithValue visitRecordLiteralNode(RecordLiteralNode node) {
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> objLiteral = new LinkedHashMap<>();
 
     // Process children
@@ -249,15 +249,12 @@ public class TranslateExprNodeVisitor
       objLiteral.put(id(strKey), visit(valueNode));
     }
 
-    // Build the map literal
+    // Build the record literal
     return CodeChunk.mapLiteral(objLiteral.keySet(), objLiteral.values());
   }
 
   @Override
   protected WithValue visitMapLiteralNode(MapLiteralNode node) {
-    // Map literal nodes are much simpler to translate than legacy object map literal nodes.
-    // Because they are implemented by ES6 Maps, there is no possibility that JSCompiler
-    // will mistakenly rename (or not rename) its keys, and no need to ever quote a key.
     CodeChunk.WithValue map =
         codeGenerator.declarationBuilder().setRhs(CodeChunk.new_(id("Map")).call()).build().ref();
     ImmutableList.Builder<Statement> setCalls = ImmutableList.builder();

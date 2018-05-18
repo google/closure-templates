@@ -88,10 +88,10 @@ public final class SimplifyExprVisitorTest {
     assertThat("['z': ['a' + 'b': 1 - 3]]").simplifiesTo("['z': ['ab': -2]]");
 
     // With functions.
-    // Note: Currently, ListLiteralNode and LegacyObjectMapLiteralNode are never considered to be
-    // constant, even though in reality, they can be constant. So in the current implementation,
-    // this keys() call cannot be simplified away.
-    assertThat("keys(['a' + 'b': 1 - 3])").simplifiesTo("keys(['ab': -2])");
+    // Note: Currently, ListLiteralNode and MapLiteralNode are never considered to be constant, even
+    // though in reality, they can be constant. So in the current implementation, this mapKeys()
+    // call cannot be simplified away.
+    assertThat("mapKeys(map('a' + 'b': 1 - 3))").simplifiesTo("mapKeys(map('ab': -2))");
   }
 
   @Test

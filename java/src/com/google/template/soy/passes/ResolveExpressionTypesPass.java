@@ -17,8 +17,8 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.exprtree.ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE;
 import static com.google.template.soy.exprtree.ExprNode.Kind.MAP_LITERAL_NODE;
+import static com.google.template.soy.exprtree.ExprNode.Kind.RECORD_LITERAL_NODE;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
@@ -50,7 +50,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -71,6 +70,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -444,7 +444,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
+    protected void visitRecordLiteralNode(RecordLiteralNode node) {
       visitChildren(node);
       setMapLiteralNodeType(node);
       tryApplySubstitution(node);
@@ -457,11 +457,11 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       tryApplySubstitution(node);
     }
 
-    // TODO(b/79368576): consider splitting this into separate methods for maps and legacy object
-    // maps, if that makes it easier to understand.
+    // TODO(b/79368576): consider splitting this into separate methods for maps and records, if that
+    // makes it easier to understand.
     private void setMapLiteralNodeType(AbstractParentExprNode node) {
       Kind nodeKind = node.getKind();
-      checkState(nodeKind == MAP_LITERAL_NODE || nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE);
+      checkState(nodeKind == MAP_LITERAL_NODE || nodeKind == RECORD_LITERAL_NODE);
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
@@ -489,11 +489,11 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
                 nodeKind == MAP_LITERAL_NODE ? "Map" : "Record",
                 fieldName);
           }
-          if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE && !BaseUtils.isIdentifier(fieldName)) {
+          if (nodeKind == RECORD_LITERAL_NODE && !BaseUtils.isIdentifier(fieldName)) {
             errorReporter.report(key.getSourceLocation(), ILLEGAL_RECORD_KEY_NAME, fieldName);
             node.setType(ErrorType.getInstance());
           }
-        } else if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE) {
+        } else if (nodeKind == RECORD_LITERAL_NODE) {
           errorReporter.report(
               key.getSourceLocation(), ILLEGAL_RECORD_KEY_TYPE, key.toSourceString());
           node.setType(ErrorType.getInstance());
@@ -513,7 +513,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       }
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
 
-      if (nodeKind == LEGACY_OBJECT_MAP_LITERAL_NODE) {
+      if (nodeKind == RECORD_LITERAL_NODE) {
         if (!duplicateKeyErrors.isEmpty()) {
           node.setType(ErrorType.getInstance());
         } else {

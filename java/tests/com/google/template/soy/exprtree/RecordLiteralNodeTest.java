@@ -25,34 +25,29 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for LegacyObjectMapLiteralNode.
- *
- */
+/** Unit tests for RecordLiteralNode. */
 @RunWith(JUnit4.class)
-public final class LegacyObjectMapLiteralNodeTest {
+public final class RecordLiteralNodeTest {
 
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   @Test
   public void testToSourceString() {
-    VarRefNode booDataRef = new VarRefNode("boo", X, false, null);
     VarRefNode fooDataRef = new VarRefNode("foo", X, false, null);
 
-    LegacyObjectMapLiteralNode mapLit =
-        new LegacyObjectMapLiteralNode(
+    RecordLiteralNode recordLit =
+        new RecordLiteralNode(
             ImmutableList.<ExprNode>of(
                 new StringNode("aaa", QuoteStyle.SINGLE, X),
                 new StringNode("blah", QuoteStyle.SINGLE, X),
                 new StringNode("bbb", QuoteStyle.SINGLE, X),
                 new IntegerNode(123, X),
-                booDataRef,
+                new StringNode("boo", QuoteStyle.SINGLE, X),
                 fooDataRef),
             X);
-    assertThat(mapLit.toSourceString()).isEqualTo("['aaa': 'blah', 'bbb': 123, $boo: $foo]");
+    assertThat(recordLit.toSourceString()).isEqualTo("['aaa': 'blah', 'bbb': 123, 'boo': $foo]");
 
-    LegacyObjectMapLiteralNode emptyMapLit =
-        new LegacyObjectMapLiteralNode(ImmutableList.<ExprNode>of(), X);
-    assertThat(emptyMapLit.toSourceString()).isEqualTo("[:]");
+    RecordLiteralNode emptyRecordLit = new RecordLiteralNode(ImmutableList.<ExprNode>of(), X);
+    assertThat(emptyRecordLit.toSourceString()).isEqualTo("[:]");
   }
 }

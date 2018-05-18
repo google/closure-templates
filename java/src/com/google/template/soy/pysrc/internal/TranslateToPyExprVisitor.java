@@ -34,7 +34,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
-import com.google.template.soy.exprtree.LegacyObjectMapLiteralNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -47,6 +46,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -166,18 +166,18 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   @Override
-  protected PyExpr visitLegacyObjectMapLiteralNode(LegacyObjectMapLiteralNode node) {
-    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+  protected PyExpr visitRecordLiteralNode(RecordLiteralNode node) {
+    return visitRecordLiteralOrMapLiteralNode(node);
   }
 
   @Override
   protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
-    return visitLegacyObjectMapLiteralOrMapLiteralNode(node);
+    return visitRecordLiteralOrMapLiteralNode(node);
   }
 
-  private PyExpr visitLegacyObjectMapLiteralOrMapLiteralNode(AbstractParentExprNode node) {
+  private PyExpr visitRecordLiteralOrMapLiteralNode(AbstractParentExprNode node) {
     Preconditions.checkState(
-        node.getKind() == ExprNode.Kind.LEGACY_OBJECT_MAP_LITERAL_NODE
+        node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE
             || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
@@ -194,13 +194,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       dict.put(key, visit(valueNode));
     }
 
-    // TODO(b/69064788): OrderedDict is being used to represent both legacy object map literals
-    // and map literals, but we know here which one is intended. Add OrderedDict APIs to tell it
-    // which kind of map it "really" is, so it can throw a runtime exception if a template tries
-    // to index into the map with the wrong convention.
+    // TODO(b/69064788): OrderedDict is being used to represent both record literals and map
+    // literals, but we know here which one is intended. Add OrderedDict APIs to tell it which kind
+    // of object it "really" is, so it can throw a runtime exception if a template tries to index
+    // into the object with the wrong convention.
     return node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE
         ? PyExprUtils.convertMapToPyExpr(dict)
-        // TODO(user): legacy object maps should not have a consistent iteration order
         : PyExprUtils.convertMapToOrderedDict(dict);
   }
 

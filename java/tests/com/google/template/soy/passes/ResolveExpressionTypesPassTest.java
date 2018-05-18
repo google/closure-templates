@@ -374,14 +374,14 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testLegacyObjectMapLiteralAsRecord() {
+  public void testRecordLiteralAsRecord() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
-                    "{let $map: ['a': $pi, 'b':$pf]/}",
-                    "{assertType('[a: int, b: float]', $map)}"))
+                    "{let $record: ['a': $pi, 'b':$pf]/}",
+                    "{assertType('[a: int, b: float]', $record)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
@@ -390,10 +390,10 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testLegacyObjectMapLiteralAsRecord_duplicateKeys() {
+  public void testRecordLiteral_duplicateKeys() {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
-            constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
+            constructTemplateSource("{let $record: ['a': 1, 'a': 2]/}"))
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse()
