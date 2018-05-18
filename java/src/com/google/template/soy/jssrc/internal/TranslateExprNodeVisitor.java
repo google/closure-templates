@@ -566,6 +566,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
         case REMAINDER:
+        case MSG_WITH_ID:
         case MSG_ID:
           // should have been removed earlier in the compiler
           throw new AssertionError();
@@ -643,7 +644,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private Expression visitIsPrimaryMsgInUseFunction(FunctionNode node) {
     // we need to find the msgfallbackgroupnode that we are referring to.  It is a bit tedious to
     // navigate the AST, but we know that all these checks will succeed because it is validated by
-    // the MsgIdFunctionPass
+    // the MsgWithIdFunctionPass
     MsgFallbackGroupNode msgNode =
         (MsgFallbackGroupNode)
             ((LetContentNode)

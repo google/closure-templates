@@ -16,11 +16,13 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -28,6 +30,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -43,22 +46,34 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.LocalVar;
 
 /**
- * Validates uses of the {@code msgId} function.
+ * Implements the {@code msgWithId} and {@code msgId} functions.
+ *
+ * <p>These functions provide a way to access msg ids at runtime, their implementation is performed
+ * by either calculating the msg id at compile time (if it is a constant) or rewriting the call to a
+ * call to the {@code $$isPrimaryMsgInUse} function to detect which id is in use at runtime.
+ *
+ * <ul>
+ *   <li>{@code msgId} simply returns the id
+ *   <li>{@code msgWithId} will return a record of the id and the msg text which is slightly more
+ *       usable.
+ * </ul>
+ *
+ * <p>TODO(b/79240335): delete the {@code msgId} function.
  *
  * <p>Must run after the ResolveNamesPass and the CheckNonEmptyMsgNodesPass since we depend on
  * finding local variable definitions and empty message nodes don't have valid ids. Should run
  * before ResolveExpressionTypesPass so that we don't need to worry about assigning types here.
  */
-final class MsgIdFunctionPass extends CompilerFilePass {
+final class MsgWithIdFunctionPass extends CompilerFilePass {
   private static final SoyErrorKind MSG_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of(
-          "Function ''msgId'' must take a let variable containing a single msg "
-              + "as its only argument.{0}",
+          "Function ''{0}'' must take a let variable containing a single msg "
+              + "as its only argument.{1}",
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
 
-  MsgIdFunctionPass(ErrorReporter errorReporter) {
+  MsgWithIdFunctionPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
@@ -66,7 +81,8 @@ final class MsgIdFunctionPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     outer:
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      if (fn.getSoyFunction() == BuiltinFunction.MSG_ID) {
+      if (fn.getSoyFunction() == BuiltinFunction.MSG_ID
+          || fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
         if (fn.numChildren() != 1) {
           // if it isn't == 1, then an error has already been reported
           continue;
@@ -114,9 +130,29 @@ final class MsgIdFunctionPass extends CompilerFilePass {
 
   private void badFunctionCall(FunctionNode fn, String explanation) {
     errorReporter.report(
-        fn.getChild(0).getSourceLocation(), MSG_VARIABLE_NOT_IN_SCOPE, explanation);
+        fn.getChild(0).getSourceLocation(),
+        MSG_VARIABLE_NOT_IN_SCOPE,
+        fn.getSoyFunction().getName(),
+        explanation);
+    if (fn.getSoyFunction() == BuiltinFunction.MSG_ID) {
+
     fn.getParent()
         .replaceChild(fn, new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()));
+    } else if (fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
+      // this way we don't trigger a cascade of errors about incorrect types
+      fn.getParent()
+          .replaceChild(
+              fn,
+              new RecordLiteralNode(
+                  ImmutableList.of(
+                      new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                      new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                      new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                      fn.getChild(0).copy(new CopyState())),
+                  fn.getSourceLocation()));
+    } else {
+      throw new AssertionError("impossible");
+    }
   }
 
   /**
@@ -124,11 +160,11 @@ final class MsgIdFunctionPass extends CompilerFilePass {
    * there is a fallback.
    */
   private void handleMsgIdCall(FunctionNode fn, MsgFallbackGroupNode msgNode) {
-    ExprNode replacement;
+    ExprNode msgIdNode;
     long primaryMsgId = MsgUtils.computeMsgIdForDualFormat(msgNode.getChild(0));
     if (msgNode.numChildren() == 1) {
       // easy peasy
-      replacement = createMsgIdNode(primaryMsgId, fn.getSourceLocation());
+      msgIdNode = createMsgIdNode(primaryMsgId, fn.getSourceLocation());
     } else {
       long fallbackMsgId = MsgUtils.computeMsgIdForDualFormat(msgNode.getChild(1));
       ConditionalOpNode condOpNode = new ConditionalOpNode(fn.getSourceLocation());
@@ -139,15 +175,32 @@ final class MsgIdFunctionPass extends CompilerFilePass {
       // code for these things.
       // We could formalize the hack by providing a way to stash arbitrary data in the FunctionNode
       // and then just pack this up in a non-AST datastructure.
-      isPrimaryMsgInUse.addChild(fn.getChild(0));
+      isPrimaryMsgInUse.addChild(fn.getChild(0).copy(new CopyState()));
       isPrimaryMsgInUse.addChild(new IntegerNode(primaryMsgId, fn.getSourceLocation()));
       isPrimaryMsgInUse.addChild(new IntegerNode(fallbackMsgId, fn.getSourceLocation()));
       condOpNode.addChild(isPrimaryMsgInUse);
       condOpNode.addChild(createMsgIdNode(primaryMsgId, fn.getSourceLocation()));
       condOpNode.addChild(createMsgIdNode(fallbackMsgId, fn.getSourceLocation()));
-      replacement = condOpNode;
+      msgIdNode = condOpNode;
     }
-    fn.getParent().replaceChild(fn, replacement);
+    if (fn.getSoyFunction() == BuiltinFunction.MSG_ID) {
+      fn.getParent().replaceChild(fn, msgIdNode);
+    } else if (fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
+      // We need to generate a record literal
+      // This map literal has 2 keys: 'id' and 'msg'
+      RecordLiteralNode recordLiteral =
+          new RecordLiteralNode(
+              ImmutableList.of(
+                  new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                  msgIdNode,
+                  new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                  fn.getChild(0).copy(new CopyState())),
+              fn.getSourceLocation());
+      fn.getParent().replaceChild(fn, recordLiteral);
+
+    } else {
+      throw new AssertionError("impossible");
+    }
   }
 
   private StringNode createMsgIdNode(long id, SourceLocation location) {

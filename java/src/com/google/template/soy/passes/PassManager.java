@@ -117,7 +117,7 @@ public final class PassManager {
             .add(new XidPass(errorReporter))
             .add(new ResolveNamesPass(errorReporter))
             // needs to be after ResolveNames and MsgsPass
-            .add(new MsgIdFunctionPass(errorReporter));
+            .add(new MsgWithIdFunctionPass(errorReporter));
     if (builder.addHtmlAttributesForDebugging) {
       // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
       // before ResolveExpressionTypesPass (since we insert expressions).

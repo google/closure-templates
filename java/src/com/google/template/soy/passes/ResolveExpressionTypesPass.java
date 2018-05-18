@@ -1254,6 +1254,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           node.setType(UnknownType.getInstance());
           break;
         case REMAINDER:
+        case MSG_WITH_ID:
         case MSG_ID: // should have already been removed from the tree
           throw new AssertionError();
       }
