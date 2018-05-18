@@ -29,12 +29,11 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 abstract class BinaryOperation extends Operation {
   abstract String operator();
 
-  abstract CodeChunk.WithValue arg1();
+  abstract Expression arg1();
 
-  abstract CodeChunk.WithValue arg2();
+  abstract Expression arg2();
 
-  static CodeChunk.WithValue create(
-      Operator operator, CodeChunk.WithValue arg1, CodeChunk.WithValue arg2) {
+  static Expression create(Operator operator, Expression arg1, Expression arg2) {
     Preconditions.checkState(operator != Operator.AND, "use BinaryOperation::and");
     Preconditions.checkState(operator != Operator.OR, "use BinaryOperation::or");
     return create(
@@ -49,8 +48,8 @@ abstract class BinaryOperation extends Operation {
       String operator,
       int precedence,
       Associativity associativity,
-      CodeChunk.WithValue arg1,
-      CodeChunk.WithValue arg2) {
+      Expression arg1,
+      Expression arg2) {
     return new AutoValue_BinaryOperation(
         ImmutableList.<Statement>builder()
             .addAll(arg1.initialStatements())
@@ -63,8 +62,7 @@ abstract class BinaryOperation extends Operation {
         arg2);
   }
 
-  static CodeChunk.WithValue and(
-      CodeChunk.WithValue lhs, CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
+  static Expression and(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
     // If rhs has no initial statements, use the JS && operator directly.
     // It's already short-circuiting.
     if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
@@ -72,13 +70,12 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
+        ImmutableList.of(Statement.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
 
-  static CodeChunk.WithValue or(
-      CodeChunk.WithValue lhs, CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
+  static Expression or(Expression lhs, Expression rhs, CodeChunk.Generator codeGenerator) {
     // If rhs has no initial statements, use the JS || operator directly.
     // It's already short-circuiting.
     if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
@@ -86,9 +83,10 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
-        ImmutableList.of(ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()), tmp);
+        ImmutableList.of(Statement.ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()),
+        tmp);
   }
 
   @Override

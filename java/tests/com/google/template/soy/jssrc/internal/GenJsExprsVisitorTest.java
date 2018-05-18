@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -29,6 +29,7 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -53,26 +54,12 @@ public final class GenJsExprsVisitorTest {
   }
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put(
-              "goo",
-              id("gooData8"))
-          .put(
-              "goo__isFirst",
-              id("gooIndex8")
-                  .doubleEquals(
-                      number(0)))
-          .put(
-              "goo__isLast",
-              id("gooIndex8")
-                  .doubleEquals(
-                      id("gooListLen8")
-                          .minus(
-                              number(1))))
-          .put(
-              "goo__index",
-              id("gooIndex8"))
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, Expression>builder()
+          .put("goo", id("gooData8"))
+          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
+          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
+          .put("goo__index", id("gooIndex8"))
           .build();
 
   @Test
@@ -261,11 +248,11 @@ public final class GenJsExprsVisitorTest {
   }
 
   private static void assertGeneratedChunks(String soyNodeCode, String... expectedChunks) {
-    List<CodeChunk.WithValue> actualChunks = generateChunks(soyNodeCode, 0);
+    List<Expression> actualChunks = generateChunks(soyNodeCode, 0);
     assertThat(actualChunks).hasSize(expectedChunks.length);
 
     for (int i = 0; i < actualChunks.size(); i++) {
-      CodeChunk.WithValue actual = actualChunks.get(i);
+      Expression actual = actualChunks.get(i);
       String expected = expectedChunks[i];
 
       assertThat(actual.getCode()).isEqualTo(expected);
@@ -275,10 +262,10 @@ public final class GenJsExprsVisitorTest {
   /** @param indicesToNode Series of indices for walking down to the node we want to test. */
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
-    List<CodeChunk.WithValue> actualChunks = generateChunks(soyCode, indicesToNode);
+    List<Expression> actualChunks = generateChunks(soyCode, indicesToNode);
 
     List<JsExpr> actualJsExprs = new ArrayList<>();
-    for (CodeChunk.WithValue chunk : actualChunks) {
+    for (Expression chunk : actualChunks) {
       actualJsExprs.add(chunk.assertExpr()); // TODO(user): Fix tests to work with CodeChunks
     }
 
@@ -291,7 +278,7 @@ public final class GenJsExprsVisitorTest {
     }
   }
 
-  private static List<CodeChunk.WithValue> generateChunks(String soyCode, int... indicesToNode) {
+  private static List<Expression> generateChunks(String soyCode, int... indicesToNode) {
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();

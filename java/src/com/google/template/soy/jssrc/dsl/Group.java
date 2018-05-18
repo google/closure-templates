@@ -22,7 +22,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -35,9 +34,9 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @AutoValue
 @Immutable
 abstract class Group extends Operation {
-  abstract CodeChunk.WithValue underlying();
+  abstract Expression underlying();
 
-  static Group create(WithValue underlying) {
+  static Group create(Expression underlying) {
     return new AutoValue_Group(underlying);
   }
 

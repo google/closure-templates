@@ -20,14 +20,13 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.Nullable;
 
 /** Represents a {@code switch} statement. */
 @AutoValue
 @Immutable
 abstract class Switch extends Statement {
-  abstract CodeChunk.WithValue switchOn();
+  abstract Expression switchOn();
 
   abstract ImmutableList<CaseClause> caseClauses();
 
@@ -35,7 +34,7 @@ abstract class Switch extends Statement {
   abstract CodeChunk defaultCaseBody();
 
   static Switch create(
-      CodeChunk.WithValue switchOn,
+      Expression switchOn,
       ImmutableList<CaseClause> caseClauses,
       @Nullable CodeChunk defaultCaseBody) {
     return new AutoValue_Switch(switchOn, caseClauses, defaultCaseBody);
@@ -46,13 +45,13 @@ abstract class Switch extends Statement {
     // Append the initial statements for the switch expression and all the case labels.
     ctx.appendInitialStatements(switchOn());
     for (CaseClause caseClause : caseClauses()) {
-      for (CodeChunk.WithValue caseLabel : caseClause.caseLabels) {
+      for (Expression caseLabel : caseClause.caseLabels) {
         ctx.appendInitialStatements(caseLabel);
       }
     }
 
     // Append the output expressions for the switch expression and case labels,
-    // together with the complete statements for all the bodies.
+    // together with the complete of for all the bodies.
     ctx.append("switch (").appendOutputExpression(switchOn()).append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
       for (CaseClause caseClause : caseClauses()) {
@@ -81,7 +80,7 @@ abstract class Switch extends Statement {
   public void collectRequires(RequiresCollector collector) {
     switchOn().collectRequires(collector);
     for (CaseClause caseClause : caseClauses()) {
-      for (CodeChunk.WithValue caseLabel : caseClause.caseLabels) {
+      for (Expression caseLabel : caseClause.caseLabels) {
         caseLabel.collectRequires(collector);
       }
       caseClause.caseBody.collectRequires(collector);
@@ -97,10 +96,10 @@ abstract class Switch extends Statement {
    */
   @Immutable
   static final class CaseClause {
-    private final ImmutableList<WithValue> caseLabels;
+    private final ImmutableList<Expression> caseLabels;
     private final Statement caseBody;
 
-    CaseClause(ImmutableList<WithValue> caseLabels, Statement caseBody) {
+    CaseClause(ImmutableList<Expression> caseLabels, Statement caseBody) {
       this.caseLabels = caseLabels;
       this.caseBody = caseBody;
     }

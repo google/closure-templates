@@ -16,13 +16,13 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -75,11 +76,12 @@ public class GenCallCodeUtils {
   /**
    * Generates the JS expression for a given call.
    *
-   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
+   * <p>Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
    * their respective 'param&lt;n&gt;' temporary variables.
    *
-   * <p> Here are five example calls:
+   * <p>Here are five example calls:
+   *
    * <pre>
    *   {call some.func data="all" /}
    *   {call some.func data="$boo.foo" /}
@@ -95,7 +97,9 @@ public class GenCallCodeUtils {
    *     {/param}
    *   {/call}
    * </pre>
+   *
    * Their respective generated calls might be the following:
+   *
    * <pre>
    *   some.func(opt_data)
    *   some.func(opt_data.boo.foo)
@@ -103,6 +107,7 @@ public class GenCallCodeUtils {
    *   some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo))
    *   some.func({goo: param65})
    * </pre>
+   *
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
@@ -110,30 +115,30 @@ public class GenCallCodeUtils {
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the call.
    */
-  public CodeChunk.WithValue gen(
+  public Expression gen(
       CallNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,
       ErrorReporter errorReporter) {
 
     // Build the JS CodeChunk for the callee's name.
-    CodeChunk.WithValue callee;
+    Expression callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
       // TODO(lukes): add the logic for the goog.require here.  The simplest strategy requires a
       // TemplateRegistry to detect external templates.
       callee =
-          CodeChunk.dottedIdNoRequire(
+          Expression.dottedIdNoRequire(
               templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
-      CodeChunk.WithValue calleeId =
+      Expression calleeId =
           JsRuntime.SOY_GET_DELTEMPLATE_ID.call(
               stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
 
       ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
-      CodeChunk.WithValue variant;
+      Expression variant;
       if (variantSoyExpr == null) {
         // Case 2a: Delegate call with empty variant.
         variant = LITERAL_EMPTY_STRING;
@@ -151,11 +156,11 @@ public class GenCallCodeUtils {
     }
 
     // Generate the data object to pass to callee
-    CodeChunk.WithValue objToPass =
+    Expression objToPass =
         genObjToPass(callNode, templateAliases, translationContext, errorReporter);
 
     // Generate the main call expression.
-    CodeChunk.WithValue call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
+    Expression call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
@@ -187,15 +192,15 @@ public class GenCallCodeUtils {
     return fromExpr(callResult, collector.get()).withInitialStatements(call.initialStatements());
   }
 
-
   /**
    * Generates the JS expression for the object to pass in a given call.
    *
-   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
+   * <p>Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
    * their respective 'param&lt;n&gt;' temporary variables.
    *
-   * <p> Here are five example calls:
+   * <p>Here are five example calls:
+   *
    * <pre>
    *   {call some.func data="all" /}
    *   {call some.func data="$boo.foo" /}
@@ -211,7 +216,9 @@ public class GenCallCodeUtils {
    *     {/param}
    *   {/call}
    * </pre>
+   *
    * Their respective objects to pass might be the following:
+   *
    * <pre>
    *   opt_data
    *   opt_data.boo.foo
@@ -219,6 +226,7 @@ public class GenCallCodeUtils {
    *   soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo)
    *   {goo: param65}
    * </pre>
+   *
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
@@ -226,14 +234,14 @@ public class GenCallCodeUtils {
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the object to pass in the call.
    */
-  private CodeChunk.WithValue genObjToPass(
+  private Expression genObjToPass(
       CallNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,
       ErrorReporter errorReporter) {
 
     // ------ Generate the expression for the original data to pass ------
-    CodeChunk.WithValue dataToPass;
+    Expression dataToPass;
     if (callNode.isPassingAllData()) {
       dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.isPassingData()) {
@@ -250,25 +258,26 @@ public class GenCallCodeUtils {
     }
 
     // ------ Build an object literal containing the additional params ------
-    ImmutableList.Builder<CodeChunk.WithValue> keys = ImmutableList.builder();
-    ImmutableList.Builder<CodeChunk.WithValue> values = ImmutableList.builder();
+    ImmutableList.Builder<Expression> keys = ImmutableList.builder();
+    ImmutableList.Builder<Expression> values = ImmutableList.builder();
 
     for (CallParamNode child : callNode.getChildren()) {
       keys.add(id(child.getKey().identifier()));
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        CodeChunk.WithValue value =
+        Expression value =
             new TranslateExprNodeVisitor(translationContext, errorReporter).exec(cpvn.getExpr());
         values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
 
-        CodeChunk.WithValue content;
+        Expression content;
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          List<CodeChunk.WithValue> chunks = genJsExprsVisitorFactory
-              .create(translationContext, templateAliases, errorReporter)
-              .exec(cpcn);
+          List<Expression> chunks =
+              genJsExprsVisitorFactory
+                  .create(translationContext, templateAliases, errorReporter)
+                  .exec(cpcn);
           content = CodeChunkUtils.concatChunksForceString(chunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
@@ -281,11 +290,11 @@ public class GenCallCodeUtils {
       }
     }
 
-    CodeChunk.WithValue params = CodeChunk.mapLiteral(keys.build(), values.build());
+    Expression params = Expression.objectLiteral(keys.build(), values.build());
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {
-      CodeChunk.WithValue allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
+      Expression allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
       return allData;
     } else {
       return params;
@@ -293,17 +302,16 @@ public class GenCallCodeUtils {
   }
 
   /**
-   * If the param node had a content kind specified, it was autoescaped in the
-   * corresponding context. Hence the result of evaluating the param block is wrapped
-   * in a SanitizedContent instance of the appropriate kind.
-   * <p>
-   * The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
-   * "new SanitizedHtml"), or null if the node has no 'kind' attribute.  This uses the
-   * variant used in internal blocks.
-   * </p>
+   * If the param node had a content kind specified, it was autoescaped in the corresponding
+   * context. Hence the result of evaluating the param block is wrapped in a SanitizedContent
+   * instance of the appropriate kind.
+   *
+   * <p>The expression for the constructor of SanitizedContent of the appropriate kind (e.g., "new
+   * SanitizedHtml"), or null if the node has no 'kind' attribute. This uses the variant used in
+   * internal blocks.
    */
-  protected CodeChunk.WithValue maybeWrapContent(
-      CodeChunk.Generator generator, CallParamContentNode node, CodeChunk.WithValue content) {
+  protected Expression maybeWrapContent(
+      CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
     if (node.getContentKind() == null) {
       return content;
     }

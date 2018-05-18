@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -72,7 +71,7 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Writes the output expression for the {@code value} to the buffer. */
-  FormattingContext appendOutputExpression(WithValue value) {
+  FormattingContext appendOutputExpression(Expression value) {
     value.doFormatOutputExpr(this);
     return this;
   }
@@ -80,8 +79,8 @@ final class FormattingContext implements AutoCloseable {
   /** Writes all code for the {@code chunk} to the buffer. */
   FormattingContext appendAll(CodeChunk chunk) {
     appendInitialStatements(chunk);
-    if (chunk instanceof CodeChunk.WithValue) {
-      appendOutputExpression((CodeChunk.WithValue) chunk);
+    if (chunk instanceof Expression) {
+      appendOutputExpression((Expression) chunk);
       append(";");
       endLine();
     }

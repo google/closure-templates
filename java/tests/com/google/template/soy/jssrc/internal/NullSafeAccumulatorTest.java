@@ -21,6 +21,7 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.testing.Foo;
 import org.junit.Test;
@@ -33,11 +34,11 @@ public final class NullSafeAccumulatorTest {
 
   @Test
   public void testNullSafeChain() {
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum).generates("a;");
     assertThat(accum.dotAccess(FieldAccess.id("b"), true /* nullSafe */))
         .generates("a == null ? null : a.b;");
-    assertThat(accum.bracketAccess(CodeChunk.id("c"), true /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("c"), true /* nullSafe */))
         .generates(
             "var $tmp$$1;\n"
                 + "if (a == null) {\n"
@@ -62,7 +63,7 @@ public final class NullSafeAccumulatorTest {
                 + "  }\n"
                 + "  $tmp$$3 = $tmp$$2;\n"
                 + "}");
-    assertThat(accum.bracketAccess(CodeChunk.id("e"), true /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("e"), true /* nullSafe */))
         .generates(
             "var $tmp$$5;\n"
                 + "if (a == null) {\n"
@@ -89,14 +90,13 @@ public final class NullSafeAccumulatorTest {
 
   @Test
   public void testNonNullSafeChain() {
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum)
         .generates("a;");
-    assertThat(accum.bracketAccess(CodeChunk.id("b"), false /* nullSafe */))
-        .generates("a[b];");
+    assertThat(accum.bracketAccess(Expression.id("b"), false /* nullSafe */)).generates("a[b];");
     assertThat(accum.dotAccess(FieldAccess.id("c"), false /* nullSafe */))
         .generates("a[b].c;");
-    assertThat(accum.bracketAccess(CodeChunk.id("d"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("d"), false /* nullSafe */))
         .generates("a[b].c[d];");
     assertThat(accum.dotAccess(FieldAccess.id("e"), false /* nullSafe */))
         .generates("a[b].c[d].e;");
@@ -104,11 +104,11 @@ public final class NullSafeAccumulatorTest {
 
   @Test
   public void testMixedChains() {
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum).generates("a;");
     assertThat(accum.dotAccess(FieldAccess.id("b"), true /* nullSafe */))
         .generates("a == null ? null : a.b;");
-    assertThat(accum.bracketAccess(CodeChunk.id("c"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("c"), false /* nullSafe */))
         .generates("a == null ? null : a.b[c];");
     assertThat(accum.dotAccess(FieldAccess.id("d"), true /* nullSafe */))
         .generates(
@@ -119,7 +119,7 @@ public final class NullSafeAccumulatorTest {
                 + "  var $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
                 + "}");
-    assertThat(accum.bracketAccess(CodeChunk.id("e"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("e"), false /* nullSafe */))
         .generates(
             "var $tmp$$1;\n"
                 + "if (a == null) {\n"
@@ -132,17 +132,17 @@ public final class NullSafeAccumulatorTest {
 
   @Test
   public void testCallPreservesChain() {
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
-    assertThat(accum.dotAccess(FieldAccess.call("b", CodeChunk.id("c")), false /* nullSafe */))
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
+    assertThat(accum.dotAccess(FieldAccess.call("b", Expression.id("c")), false /* nullSafe */))
         .generates("a.b(c);");
-    assertThat(accum.dotAccess(FieldAccess.call("d", CodeChunk.id("e")), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.call("d", Expression.id("e")), true /* nullSafe */))
         .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
   }
 
   @Test
   public void testMap() {
     FieldDescriptor desc = Foo.getDescriptor().findFieldByName("map_field");
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum.dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */))
         .generates("a.getMapFieldMap();");
   }
@@ -150,11 +150,11 @@ public final class NullSafeAccumulatorTest {
   @Test
   public void testMapGet() {
     FieldDescriptor desc = Foo.getDescriptor().findFieldByName("map_field");
-    NullSafeAccumulator accum = new NullSafeAccumulator(CodeChunk.id("a"));
+    NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(
             accum
                 .dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */)
-                .mapGetAccess(CodeChunk.id("key"), false /* nullSafe */))
+                .mapGetAccess(Expression.id("key"), false /* nullSafe */))
         .generates("a.getMapFieldMap().get(key);");
   }
 

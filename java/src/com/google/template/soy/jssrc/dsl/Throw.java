@@ -22,11 +22,11 @@ import com.google.errorprone.annotations.Immutable;
 /** Represents a JavaScript throw statement. */
 @AutoValue
 @Immutable
-abstract class Throw extends CodeChunk.Statement {
+abstract class Throw extends Statement {
 
-  abstract CodeChunk.WithValue value();
+  abstract Expression value();
 
-  static Throw create(CodeChunk.WithValue value) {
+  static Throw create(Expression value) {
     return new AutoValue_Throw(value);
   }
 

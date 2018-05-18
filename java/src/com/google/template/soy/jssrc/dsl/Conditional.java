@@ -20,7 +20,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.Nullable;
 
 /** Represents an {@code if}-{@code else if}-{@code else} statement. */
@@ -42,7 +41,7 @@ abstract class Conditional extends Statement {
   void doFormatInitialStatements(FormattingContext ctx) {
     formatIfClause(ctx);
     int numRightBracesToClose = 0;
-    CodeChunk.WithValue firstPredicate = conditions().get(0).predicate;
+    Expression firstPredicate = conditions().get(0).predicate;
     for (IfThenPair<Statement> condition : conditions().subList(1, conditions().size())) {
       if (firstPredicate.initialStatements().containsAll(condition.predicate.initialStatements())) {
         formatElseIfClauseWithNoDependencies(condition, ctx);

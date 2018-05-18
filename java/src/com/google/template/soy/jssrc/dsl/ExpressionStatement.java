@@ -18,18 +18,17 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Evaluates an expression as a statement. */
 @AutoValue
 @Immutable
 abstract class ExpressionStatement extends Statement {
 
-  static ExpressionStatement of(CodeChunk.WithValue expression) {
+  static ExpressionStatement of(Expression expression) {
     return new AutoValue_ExpressionStatement(expression);
   }
 
-  abstract CodeChunk.WithValue expr();
+  abstract Expression expr();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {

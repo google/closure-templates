@@ -20,30 +20,28 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
-/** Represents a JavaScript map literal expression. */
+/** Represents a JavaScript object literal expression. */
 @AutoValue
 @Immutable
-abstract class MapLiteral extends CodeChunk.WithValue {
+abstract class ObjectLiteral extends Expression {
 
-  abstract ImmutableList<? extends CodeChunk.WithValue> keys();
+  abstract ImmutableList<? extends Expression> keys();
 
-  abstract ImmutableList<? extends CodeChunk.WithValue> values();
+  abstract ImmutableList<? extends Expression> values();
 
-  static MapLiteral create(
-      ImmutableList<? extends CodeChunk.WithValue> keys,
-      ImmutableList<? extends CodeChunk.WithValue> values) {
+  static ObjectLiteral create(
+      ImmutableList<? extends Expression> keys, ImmutableList<? extends Expression> values) {
     Preconditions.checkArgument(keys.size() == values.size(), "Mismatch between keys and values.");
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
-    for (CodeChunk.WithValue key : keys) {
+    for (Expression key : keys) {
       initialStatements.addAll(key.initialStatements());
     }
-    for (CodeChunk.WithValue value : values) {
+    for (Expression value : values) {
       initialStatements.addAll(value.initialStatements());
     }
-    return new AutoValue_MapLiteral(initialStatements.build(), keys, values);
+    return new AutoValue_ObjectLiteral(initialStatements.build(), keys, values);
   }
 
   @Override
@@ -69,20 +67,20 @@ abstract class MapLiteral extends CodeChunk.WithValue {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk.WithValue key : keys()) {
+    for (Expression key : keys()) {
       ctx.appendInitialStatements(key);
     }
-    for (CodeChunk.WithValue value : values()) {
+    for (Expression value : values()) {
       ctx.appendInitialStatements(value);
     }
   }
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk.WithValue key : keys()) {
+    for (Expression key : keys()) {
       key.collectRequires(collector);
     }
-    for (CodeChunk.WithValue value : values()) {
+    for (Expression value : values()) {
       value.collectRequires(collector);
     }
   }

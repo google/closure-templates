@@ -15,8 +15,8 @@
  */
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -25,6 +25,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.SoyProtoType;
 
@@ -48,99 +49,92 @@ public final class JsRuntime {
 
   private JsRuntime() {}
 
-  public static final CodeChunk.WithValue GOOG_ARRAY_MAP = GOOG_ARRAY.reference().dotAccess("map");
+  public static final Expression GOOG_ARRAY_MAP = GOOG_ARRAY.reference().dotAccess("map");
 
-  public static final CodeChunk.WithValue GOOG_ASSERTS_ASSERT =
-      GOOG_ASSERTS.reference().dotAccess("assert");
+  public static final Expression GOOG_ASSERTS_ASSERT = GOOG_ASSERTS.reference().dotAccess("assert");
 
-  public static final CodeChunk.WithValue GOOG_DEBUG = dottedIdNoRequire("goog.DEBUG");
+  public static final Expression GOOG_DEBUG = dottedIdNoRequire("goog.DEBUG");
 
-  public static final CodeChunk.WithValue GOOG_GET_CSS_NAME = dottedIdNoRequire("goog.getCssName");
+  public static final Expression GOOG_GET_CSS_NAME = dottedIdNoRequire("goog.getCssName");
 
-  public static final CodeChunk.WithValue GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
+  public static final Expression GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
 
-  public static final CodeChunk.WithValue GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
+  public static final Expression GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
 
-  public static final CodeChunk.WithValue GOOG_IS_BOOLEAN = dottedIdNoRequire("goog.isBoolean");
+  public static final Expression GOOG_IS_BOOLEAN = dottedIdNoRequire("goog.isBoolean");
 
-  public static final CodeChunk.WithValue GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
+  public static final Expression GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
 
-  public static final CodeChunk.WithValue SOY_EQUALS = SOY.dotAccess("$$equals");
+  public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
-  public static final CodeChunk.WithValue GOOG_IS_NUMBER = dottedIdNoRequire("goog.isNumber");
+  public static final Expression GOOG_IS_NUMBER = dottedIdNoRequire("goog.isNumber");
 
-  public static final CodeChunk.WithValue GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
+  public static final Expression GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
 
-  public static final CodeChunk.WithValue GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
+  public static final Expression GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
 
-  public static final CodeChunk.WithValue GOOG_REQUIRE = dottedIdNoRequire("goog.require");
+  public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
-  public static final CodeChunk.WithValue GOOG_SOY_DATA_SANITIZED_CONTENT =
+  public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
 
-  public static final CodeChunk.WithValue GOOG_SOY_DATA_UNSANITIZED_TEXT =
+  public static final Expression GOOG_SOY_DATA_UNSANITIZED_TEXT =
       GoogRequire.create("goog.soy.data.UnsanitizedText").reference();
 
-  public static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
+  public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
 
-  public static final CodeChunk.WithValue GOOG_I18N_MESSAGE_FORMAT =
+  public static final Expression GOOG_I18N_MESSAGE_FORMAT =
       GoogRequire.create("goog.i18n.MessageFormat").reference();
 
-  public static final CodeChunk.WithValue SOY_ASSERTS_ASSERT_TYPE =
-      SOY_ASSERTS.dotAccess("assertType");
+  public static final Expression SOY_ASSERTS_ASSERT_TYPE = SOY_ASSERTS.dotAccess("assertType");
 
-  public static final CodeChunk.WithValue SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
+  public static final Expression SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
 
-  public static final CodeChunk.WithValue SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
+  public static final Expression SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
 
-  public static final CodeChunk.WithValue SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
+  public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
 
-  public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
+  public static final Expression SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
 
-  public static final CodeChunk.WithValue SOY_REGISTER_DELEGATE_FN =
-      SOY.dotAccess("$$registerDelegateFn");
+  public static final Expression SOY_REGISTER_DELEGATE_FN = SOY.dotAccess("$$registerDelegateFn");
 
-  public static final CodeChunk.WithValue SOY_GET_DELTEMPLATE_ID =
-      SOY.dotAccess("$$getDelTemplateId");
+  public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");
 
-  public static final CodeChunk.WithValue SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
+  public static final Expression SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
-  public static final CodeChunk.WithValue SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =
+  public static final Expression SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =
       SOY_MAP.dotAccess("$$maybeCoerceKeyToString");
 
-  public static final CodeChunk.WithValue SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
+  public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
 
-  public static final CodeChunk.WithValue SOY_NEWMAPS_TRANSFORM_VALUES =
+  public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.dotAccess("$$transformValues");
 
-  public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
-      dottedIdNoRequire("window.console.log");
+  public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 
-  public static final CodeChunk.WithValue XID = XID_REQUIRE.reference();
+  public static final Expression XID = XID_REQUIRE.reference();
 
   /** A constant for the template parameter {@code opt_data}. */
-  public static final CodeChunk.WithValue OPT_DATA = id("opt_data");
+  public static final Expression OPT_DATA = id("opt_data");
 
   /** A constant for the template parameter {@code opt_ijData}. */
-  public static final CodeChunk.WithValue OPT_IJ_DATA = id("opt_ijData");
+  public static final Expression OPT_IJ_DATA = id("opt_ijData");
 
   /** Returns the field containing the extension object for the given field descriptor. */
-  public static CodeChunk.WithValue extensionField(FieldDescriptor desc) {
+  public static Expression extensionField(FieldDescriptor desc) {
     String jsExtensionImport = ProtoUtils.getJsExtensionImport(desc);
     String jsExtensionName = ProtoUtils.getJsExtensionName(desc);
     return symbolWithNamespace(jsExtensionImport, jsExtensionName);
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
-  public static CodeChunk.WithValue protoToSanitizedContentConverterFunction(
-      Descriptor messageType) {
+  public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
     return GoogRequire.create(NodeContentKinds.toJsUnpackFunction(messageType)).reference();
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
-  public static CodeChunk.WithValue sanitizedContentToProtoConverterFunction(
-      Descriptor messageType) {
+  public static Expression sanitizedContentToProtoConverterFunction(Descriptor messageType) {
     return GoogRequire.create(NodeContentKinds.toJsPackFunction(messageType)).reference();
   }
 
@@ -148,7 +142,7 @@ public final class JsRuntime {
    * Returns an 'ordainer' function that can be used wrap a {@code string} in a {@code
    * SanitizedContent} object with no escaping.
    */
-  public static CodeChunk.WithValue sanitizedContentOrdainerFunction(SanitizedContentKind kind) {
+  public static Expression sanitizedContentOrdainerFunction(SanitizedContentKind kind) {
     return symbolWithNamespace(
         NodeContentKinds.getJsImportForOrdainersFunctions(kind),
         NodeContentKinds.toJsSanitizedContentOrdainer(kind));
@@ -158,7 +152,7 @@ public final class JsRuntime {
    * Returns an 'ordainer' function that can be used wrap a {@code string} in a {@code
    * SanitizedContent} object with no escaping.
    */
-  public static CodeChunk.WithValue sanitizedContentOrdainerFunctionForInternalBlocks(
+  public static Expression sanitizedContentOrdainerFunctionForInternalBlocks(
       SanitizedContentKind kind) {
     return symbolWithNamespace(
         NodeContentKinds.getJsImportForOrdainersFunctions(kind),
@@ -166,14 +160,14 @@ public final class JsRuntime {
   }
 
   /** Returns the constructor for the proto. */
-  public static CodeChunk.WithValue protoConstructor(SoyProtoType type) {
+  public static Expression protoConstructor(SoyProtoType type) {
     return GoogRequire.create(type.getNameForBackend(SoyBackendKind.JS_SRC)).reference();
   }
 
   /**
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */
-  public static CodeChunk.WithValue sanitizedContentType(SanitizedContentKind kind) {
+  public static Expression sanitizedContentType(SanitizedContentKind kind) {
     return GoogRequire.create(NodeContentKinds.toJsSanitizedContentCtorName(kind)).reference();
   }
 
@@ -183,8 +177,7 @@ public final class JsRuntime {
    * @param requireSymbol The symbol to {@code goog.require}
    * @param fullyQualifiedSymbol The symbol we want to access.
    */
-  private static CodeChunk.WithValue symbolWithNamespace(
-      String requireSymbol, String fullyQualifiedSymbol) {
+  private static Expression symbolWithNamespace(String requireSymbol, String fullyQualifiedSymbol) {
     GoogRequire require = GoogRequire.create(requireSymbol);
     if (fullyQualifiedSymbol.equals(require.symbol())) {
       return require.reference();

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /**
  * Represents the concatenation of many chunks via the {@code +} operator.
@@ -33,10 +32,10 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 @Immutable
 abstract class Concatenation extends Operation {
 
-  static Concatenation create(Iterable<? extends CodeChunk.WithValue> parts) {
+  static Concatenation create(Iterable<? extends Expression> parts) {
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
-    ImmutableList.Builder<CodeChunk.WithValue> partsBuilder = ImmutableList.builder();
-    for (CodeChunk.WithValue part : parts) {
+    ImmutableList.Builder<Expression> partsBuilder = ImmutableList.builder();
+    for (Expression part : parts) {
       initialStatements.addAll(part.initialStatements());
       if (part instanceof Concatenation) {
         partsBuilder.addAll(((Concatenation) part).parts());
@@ -55,7 +54,7 @@ abstract class Concatenation extends Operation {
     return new AutoValue_Concatenation(initialStatements.build(), partsBuilder.build());
   }
 
-  abstract ImmutableList<CodeChunk.WithValue> parts();
+  abstract ImmutableList<Expression> parts();
 
   @Override
   int precedence() {
@@ -69,7 +68,7 @@ abstract class Concatenation extends Operation {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk.WithValue part : parts()) {
+    for (Expression part : parts()) {
       part.collectRequires(collector);
     }
   }
@@ -91,7 +90,7 @@ abstract class Concatenation extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk.WithValue part : parts()) {
+    for (Expression part : parts()) {
       ctx.appendInitialStatements(part);
     }
   }

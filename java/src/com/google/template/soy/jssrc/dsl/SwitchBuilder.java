@@ -18,16 +18,15 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.Nullable;
 
 /** Builds a {@link Switch} statement. */
 public final class SwitchBuilder {
-  private final CodeChunk.WithValue switchOn;
+  private final Expression switchOn;
   private final ImmutableList.Builder<Switch.CaseClause> clauses = ImmutableList.builder();
   @Nullable private Statement defaultCaseBody;
 
-  SwitchBuilder(CodeChunk.WithValue switchOn) {
+  SwitchBuilder(Expression switchOn) {
     this.switchOn = switchOn;
   }
 
@@ -35,14 +34,14 @@ public final class SwitchBuilder {
    * Adds a case clause (one or more {@code case} labels followed by a body) to this switch
    * statement.
    */
-  public SwitchBuilder case_(ImmutableList<CodeChunk.WithValue> caseLabels, Statement body) {
+  public SwitchBuilder case_(ImmutableList<Expression> caseLabels, Statement body) {
     Preconditions.checkState(!caseLabels.isEmpty(), "at least one case required");
     clauses.add(new Switch.CaseClause(caseLabels, body));
     return this;
   }
 
   /** Adds a case clause to this switch statement. */
-  public SwitchBuilder case_(CodeChunk.WithValue caseLabel, Statement body) {
+  public SwitchBuilder case_(Expression caseLabel, Statement body) {
     clauses.add(new Switch.CaseClause(ImmutableList.of(caseLabel), body));
     return this;
   }

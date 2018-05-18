@@ -19,14 +19,14 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,8 +39,8 @@ import org.junit.runners.JUnit4;
 public final class TranslateExprNodeVisitorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, Expression>builder()
           .put("goo", id("gooData8"))
           .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
           .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))

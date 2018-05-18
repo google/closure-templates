@@ -22,20 +22,19 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript function call. */
 @AutoValue
 @Immutable
 abstract class Call extends Operation {
-  abstract CodeChunk.WithValue receiver();
+  abstract Expression receiver();
 
-  abstract ImmutableList<CodeChunk.WithValue> args();
+  abstract ImmutableList<Expression> args();
 
-  static Call create(CodeChunk.WithValue receiver, ImmutableList<CodeChunk.WithValue> args) {
+  static Call create(Expression receiver, ImmutableList<Expression> args) {
     ImmutableList.Builder<Statement> builder = ImmutableList.builder();
     builder.addAll(receiver.initialStatements());
-    for (CodeChunk.WithValue arg : args) {
+    for (Expression arg : args) {
       builder.addAll(arg.initialStatements());
     }
     return new AutoValue_Call(builder.build(), receiver, args);
@@ -55,7 +54,7 @@ abstract class Call extends Operation {
   @Override
   public void collectRequires(RequiresCollector collector) {
     receiver().collectRequires(collector);
-    for (CodeChunk.WithValue arg : args()) {
+    for (Expression arg : args()) {
       arg.collectRequires(collector);
     }
   }
@@ -65,7 +64,7 @@ abstract class Call extends Operation {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     ctx.append('(');
     boolean first = true;
-    for (WithValue arg : args()) {
+    for (Expression arg : args()) {
       if (first) {
         first = false;
       } else {
@@ -81,7 +80,7 @@ abstract class Call extends Operation {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(receiver());
-    for (CodeChunk.WithValue arg : args()) {
+    for (Expression arg : args()) {
       ctx.appendInitialStatements(arg);
     }
   }

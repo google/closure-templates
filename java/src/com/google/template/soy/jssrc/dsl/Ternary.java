@@ -31,22 +31,19 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 @AutoValue
 @Immutable
 abstract class Ternary extends Operation {
-  abstract CodeChunk.WithValue predicate();
+  abstract Expression predicate();
 
-  abstract CodeChunk.WithValue consequent();
+  abstract Expression consequent();
 
-  abstract CodeChunk.WithValue alternate();
+  abstract Expression alternate();
 
-  static Ternary create(
-      CodeChunk.WithValue predicate,
-      CodeChunk.WithValue consequent,
-      CodeChunk.WithValue alternate) {
+  static Ternary create(Expression predicate, Expression consequent, Expression alternate) {
     Preconditions.checkArgument(
         predicate.initialStatements().containsAll(consequent.initialStatements()));
     Preconditions.checkArgument(
         predicate.initialStatements().containsAll(alternate.initialStatements()));
     return new AutoValue_Ternary(
-        ImmutableList.<CodeChunk.Statement>builder()
+        ImmutableList.<Statement>builder()
             .addAll(predicate.initialStatements())
             .addAll(consequent.initialStatements())
             .addAll(alternate.initialStatements())

@@ -17,12 +17,12 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,12 +36,8 @@ import org.junit.runners.JUnit4;
 public final class V1JsExprTranslatorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put(
-              "goo",
-              id("gooData8"))
-          .build();
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.of("goo", id("gooData8"));
 
   @Test
   public void testDataRef() {

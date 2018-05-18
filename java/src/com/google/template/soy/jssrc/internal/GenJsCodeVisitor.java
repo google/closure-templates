@@ -17,16 +17,16 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.EMPTY_OBJECT_LITERAL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.forLoop;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.ifStatement;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.switch_;
+import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Statement.assign;
+import static com.google.template.soy.jssrc.dsl.Statement.forLoop;
+import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
+import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.dsl.Statement.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
@@ -55,10 +55,11 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -259,7 +260,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // output += 'b';
     // This is because it is actually easier for the jscompiler to optimize.
 
-    List<CodeChunk.WithValue> consecChunks = new ArrayList<>();
+    List<Expression> consecChunks = new ArrayList<>();
 
     for (SoyNode child : node.getChildren()) {
       if (isComputableAsJsExprsVisitor.exec(child)) {
@@ -314,7 +315,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
    * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
    * {@link JsCodeBuilder} and using the unsound {@link
-   * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
+   * Statement#treatRawStringAsStatementLegacyOnly} API.
    */
   protected Statement visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
     return doVisitReturningCodeChunk(node, true);
@@ -340,7 +341,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     Statement chunk =
-        CodeChunk.treatRawStringAsStatementLegacyOnly(
+        Statement.treatRawStringAsStatementLegacyOnly(
             jsCodeBuilder.getCode(), jsCodeBuilder.googRequires());
 
     jsCodeBuilder = original;
@@ -665,9 +666,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
-        CodeChunk.assign(
+        Statement.assign(
             "opt_ijData",
-            CodeChunk.id("opt_ijData_deprecated").or(CodeChunk.id("opt_ijData"), codeGenerator)));
+            Expression.id("opt_ijData_deprecated").or(Expression.id("opt_ijData"), codeGenerator)));
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
@@ -677,19 +678,19 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // ------ Generate function body. ------
     bodyStatements.add(generateFunctionBody(node));
 
-    CodeChunk.WithValue function =
-        CodeChunk.function(
+    Expression function =
+        Expression.function(
             // TODO(lukes): come up with a different abstraction for parameter names.  stringsc
             // are too brittle.
             ImmutableList.of("opt_data", "opt_ijData", "opt_ijData_deprecated"),
-            CodeChunk.statements(bodyStatements.build()));
+            Statement.of(bodyStatements.build()));
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     if (addToExports) {
       declarations.add(VariableDeclaration.builder(alias).setRhs(function).build());
       declarations.add(
           assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
     } else {
-      declarations.add(CodeChunk.assign(alias, function));
+      declarations.add(Statement.assign(alias, function));
     }
 
     // ------ Add the @typedef of opt_data. ------
@@ -702,7 +703,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // TODO(b/35203585): find a way to represent declarations like this in codechunks
       sb.append(alias).append(".Params");
       declarations.add(
-          CodeChunk.treatRawStringAsStatementLegacyOnly(
+          Statement.treatRawStringAsStatementLegacyOnly(
               sb.toString(), ImmutableList.<GoogRequire>of()));
     }
 
@@ -729,7 +730,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (jsDoc != null) {
       jsCodeBuilder.append(jsDoc);
     }
-    jsCodeBuilder.append(CodeChunk.statements(declarations.build()));
+    jsCodeBuilder.append(Statement.of(declarations.build()));
   }
 
   /** Generates the function body. */
@@ -744,7 +745,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // expressions. We specially handle this case because we don't want to generate the variable
       // 'output' at all. We simply concatenate the JS expressions and return the result.
 
-      List<CodeChunk.WithValue> templateBodyChunks = genJsExprsVisitor.exec(node);
+      List<Expression> templateBodyChunks = genJsExprsVisitor.exec(node);
       if (kind == null) {
         // The template is not strict. Thus, it may not apply an escaping directive to *every* print
         // command, which means that some of its print commands could produce a number. Thus, there
@@ -756,7 +757,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // SanitizedContent). We thus call a method that makes sure to return an expression that
         // produces a string and is in no danger of using numeric addition when concatenating the
         // expressions in the list.
-        bodyAndReturn = return_(CodeChunkUtils.concatChunksForceString(templateBodyChunks));
+        bodyAndReturn = returnValue(CodeChunkUtils.concatChunksForceString(templateBodyChunks));
       } else {
         // The template is strict. Thus, it applies an escaping directive to *every* print command,
         // which means that no print command produces a number, which means that there is no danger
@@ -765,7 +766,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // get an expression that produces SanitizedContent, which is indeed possible with an
         // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
         // careful when concatenating the expressions in the list.
-        bodyAndReturn = return_(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind));
+        bodyAndReturn =
+            returnValue(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind));
       }
     } else {
       // Case 2: Normal case.
@@ -773,13 +775,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.pushOutputVar("output");
       Statement codeChunk = visitChildrenReturningCodeChunk(node);
       jsCodeBuilder.popOutputVar();
-      bodyAndReturn = CodeChunk.statements(codeChunk, return_(sanitize(id("output"), kind)));
+      bodyAndReturn = Statement.of(codeChunk, returnValue(sanitize(id("output"), kind)));
     }
-    return CodeChunk.statements(paramDeclarations, bodyAndReturn);
+    return Statement.of(paramDeclarations, bodyAndReturn);
   }
 
-  protected final CodeChunk.WithValue sanitize(
-      CodeChunk.WithValue templateBody, @Nullable SanitizedContentKind contentKind) {
+  protected final Expression sanitize(
+      Expression templateBody, @Nullable SanitizedContentKind contentKind) {
     if (contentKind != null) {
       // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
       // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
@@ -813,7 +815,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // TODO(b/33382980): This is not ideal and leads to less than optimal code generation.
     // ideally genJsExprsVisitor could be used here, but it doesn't work due to the way we need
     // to handle placeholder generation.
-    CodeChunk.WithValue msgVar = getAssistantForMsgs().generateMsgGroupVariable(node);
+    Expression msgVar = getAssistantForMsgs().generateMsgGroupVariable(node);
     getJsCodeBuilder().addChunkToOutputVar(msgVar);
   }
 
@@ -846,7 +848,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String generatedVarName = node.getUniqueVarName();
 
     // Generate code to define the local var.
-    CodeChunk.WithValue value = translateExpr(node.getExpr());
+    Expression value = translateExpr(node.getExpr());
     jsCodeBuilder.append(VariableDeclaration.builder(generatedVarName).setRhs(value).build());
 
     // Add a mapping for generating future references to this local var.
@@ -873,7 +875,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitLetContentNode(LetContentNode node) {
     String generatedVarName = node.getUniqueVarName();
-    CodeChunk.WithValue generatedVar = id(generatedVarName);
+    Expression generatedVar = id(generatedVarName);
 
     // Generate code to define the local var.
     jsCodeBuilder.pushOutputVar(generatedVarName);
@@ -946,7 +948,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         IfCondNode condNode = (IfCondNode) child;
 
         // Convert predicate.
-        CodeChunk.WithValue predicate = translateExpr(condNode.getExpr());
+        Expression predicate = translateExpr(condNode.getExpr());
         // Convert body.
         Statement consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
@@ -1002,14 +1004,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitSwitchNode(SwitchNode node) {
 
-    CodeChunk.WithValue switchOn = coerceTypeForSwitchComparison(node.getExpr());
-    SwitchBuilder switchBuilder = switch_(switchOn);
+    Expression switchOn = coerceTypeForSwitchComparison(node.getExpr());
+    SwitchBuilder switchBuilder = switchValue(switchOn);
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
-        ImmutableList.Builder<CodeChunk.WithValue> caseChunks = ImmutableList.builder();
+        ImmutableList.Builder<Expression> caseChunks = ImmutableList.builder();
         for (ExprNode caseExpr : scn.getExprList()) {
-          CodeChunk.WithValue caseChunk = translateExpr(caseExpr);
+          Expression caseChunk = translateExpr(caseExpr);
           caseChunks.add(caseChunk);
         }
         Statement body = visitChildrenReturningCodeChunk(scn);
@@ -1027,16 +1029,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   // js switch statements use === for comparing the switch expr to the cases.  In order to preserve
   // soy equality semantics for sanitized content objects we need to coerce cases and switch exprs
   // to strings.
-  private CodeChunk.WithValue coerceTypeForSwitchComparison(ExprRootNode expr) {
-    CodeChunk.WithValue switchOn = translateExpr(expr);
+  private Expression coerceTypeForSwitchComparison(ExprRootNode expr) {
+    Expression switchOn = translateExpr(expr);
     SoyType type = expr.getType();
     // If the type is possibly a sanitized content type then we need to toString it.
     if (SoyTypes.makeNullable(StringType.getInstance()).isAssignableFrom(type)
         || type.equals(AnyType.getInstance())
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
-      CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(switchOn).build().ref();
-      return CodeChunk.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
+      Expression tmp = codeGenerator.declarationBuilder().setRhs(switchOn).build().ref();
+      return Expression.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
           .else_(tmp)
           .build(codeGenerator);
     }
@@ -1045,7 +1047,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return switchOn;
   }
 
-  private CodeChunk.WithValue translateExpr(ExprNode expr) {
+  private Expression translateExpr(ExprNode expr) {
     return new TranslateExprNodeVisitor(templateTranslationContext, errorReporter).exec(expr);
   }
 
@@ -1090,24 +1092,24 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // TODO(user): A more consistent pattern for local variable management.
     String limitName = varPrefix + "ListLen";
-    CodeChunk.WithValue limitInitializer;
+    Expression limitInitializer;
     Optional<RangeArgs> args = RangeArgs.createFromNode(node);
-    Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction;
+    Function<Expression, Expression> getDataItemFunction;
     if (args.isPresent()) {
       RangeArgs range = args.get();
       // if any of the expressions are too expensive, allocate local variables for them
-      final CodeChunk.WithValue start =
+      final Expression start =
           maybeStashInLocal(
-              range.start().isPresent() ? translateExpr(range.start().get()) : CodeChunk.number(0),
+              range.start().isPresent() ? translateExpr(range.start().get()) : Expression.number(0),
               varPrefix + "_RangeStart",
               statements);
-      final CodeChunk.WithValue end =
+      final Expression end =
           maybeStashInLocal(translateExpr(range.limit()), varPrefix + "_RangeEnd", statements);
-      final CodeChunk.WithValue step =
+      final Expression step =
           maybeStashInLocal(
               range.increment().isPresent()
                   ? translateExpr(range.increment().get())
-                  : CodeChunk.number(1),
+                  : Expression.number(1),
               varPrefix + "_RangeStep",
               statements);
       // the logic we want is
@@ -1116,36 +1118,35 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Math.max(0, Match.ceil((end - start)/step))
       // should yield identical results.
       limitInitializer =
-          CodeChunk.dottedIdNoRequire("Math.max")
+          Expression.dottedIdNoRequire("Math.max")
               .call(
                   number(0), dottedIdNoRequire("Math.ceil").call(end.minus(start).divideBy(step)));
       // optimize for foreach over a range
       getDataItemFunction =
-          new Function<CodeChunk.WithValue, CodeChunk.WithValue>() {
+          new Function<Expression, Expression>() {
             @Override
-            public CodeChunk.WithValue apply(CodeChunk.WithValue index) {
+            public Expression apply(Expression index) {
               return start.plus(index.times(step));
             }
           };
     } else {
       // Define list var and list-len var.
-      CodeChunk.WithValue dataRef = translateExpr(node.getExpr());
+      Expression dataRef = translateExpr(node.getExpr());
       final String listVarName = varPrefix + "List";
-      CodeChunk.WithValue listVar =
-          VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
+      Expression listVar = VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
       // does it make sense to store this in a variable?
       limitInitializer = listVar.dotAccess("length");
       getDataItemFunction =
-          new Function<CodeChunk.WithValue, CodeChunk.WithValue>() {
+          new Function<Expression, Expression>() {
             @Override
-            public CodeChunk.WithValue apply(CodeChunk.WithValue index) {
+            public Expression apply(Expression index) {
               return id(listVarName).bracketAccess(index);
             }
           };
     }
 
     // Generate the foreach body as a CodeChunk.
-    CodeChunk.WithValue limit = id(limitName);
+    Expression limit = id(limitName);
     statements.add(VariableDeclaration.builder(limitName).setRhs(limitInitializer).build());
     Statement foreachBody = handleForeachLoop(nonEmptyNode, limit, getDataItemFunction);
 
@@ -1153,16 +1154,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // If there is an ifempty node, wrap the foreach body in an if statement and append the
       // ifempty body as the else clause.
       Statement ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
-      CodeChunk.WithValue limitCheck = limit.op(Operator.GREATER_THAN, number(0));
+      Expression limitCheck = limit.op(Operator.GREATER_THAN, number(0));
 
       foreachBody = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
     }
     statements.add(foreachBody);
-    jsCodeBuilder.append(CodeChunk.statements(statements));
+    jsCodeBuilder.append(Statement.of(statements));
   }
 
-  private CodeChunk.WithValue maybeStashInLocal(
-      CodeChunk.WithValue expr, String varName, List<Statement> statements) {
+  private Expression maybeStashInLocal(
+      Expression expr, String varName, List<Statement> statements) {
     if (expr.isCheap()) {
       return expr;
     }
@@ -1190,8 +1191,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private Statement handleForeachLoop(
       ForNonemptyNode node,
-      CodeChunk.WithValue limit,
-      Function<CodeChunk.WithValue, CodeChunk.WithValue> getDataItemFunction) {
+      Expression limit,
+      Function<Expression, Expression> getDataItemFunction) {
     // Build some local variable names.
     String varName = node.getVarName();
     String varPrefix = varName + node.getForNodeId();
@@ -1200,7 +1201,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String loopIndexName = varPrefix + "Index";
     String dataName = varPrefix + "Data";
 
-    CodeChunk.WithValue loopIndex = id(loopIndexName);
+    Expression loopIndex = id(loopIndexName);
     VariableDeclaration data =
         VariableDeclaration.builder(dataName).setRhs(getDataItemFunction.apply(loopIndex)).build();
 
@@ -1213,7 +1214,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    Statement foreachBody = CodeChunk.statements(data, visitChildrenReturningCodeChunk(node));
+    Statement foreachBody = Statement.of(data, visitChildrenReturningCodeChunk(node));
 
     // Create the entire for block.
     return forLoop(loopIndexName, limit, foreachBody);
@@ -1262,7 +1263,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Add the call's result to the current output var.
-    CodeChunk.WithValue call =
+    Expression call =
         genCallCodeUtils.gen(node, templateAliases, templateTranslationContext, errorReporter);
     jsCodeBuilder.addChunkToOutputVar(call);
   }
@@ -1309,7 +1310,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected void visitLogNode(LogNode node) {
 
     if (isComputableAsJsExprsVisitor.execOnChildren(node)) {
-      List<CodeChunk.WithValue> logMsgChunks = genJsExprsVisitor.execOnChildren(node);
+      List<Expression> logMsgChunks = genJsExprsVisitor.execOnChildren(node);
 
       jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(CodeChunkUtils.concatChunks(logMsgChunks)));
     } else {
@@ -1448,19 +1449,19 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String paramName = param.name();
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
-      CodeChunk.WithValue paramChunk =
+      Expression paramChunk =
           TranslateExprNodeVisitor.genCodeForParamAccess(paramName, param.isInjected());
       JsType jsType = getJsType(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);
-      CodeChunk.WithValue coerced = jsType.getValueCoercion(paramChunk, generator);
+      Expression coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
         paramChunk = generator.declarationBuilder().setRhs(coerced).build().ref();
       }
       // The param value to assign
-      CodeChunk.WithValue value;
-      Optional<CodeChunk.WithValue> typeAssertion = jsType.getTypeAssertion(paramChunk, generator);
+      Expression value;
+      Optional<Expression> typeAssertion = jsType.getTypeAssertion(paramChunk, generator);
       // The type-cast expression.
       if (typeAssertion.isPresent()) {
         value =
@@ -1487,7 +1488,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           // everything is on the code chunk api.
           .put(paramName, id(paramAlias));
     }
-    return CodeChunk.statements(declarations.build());
+    return Statement.of(declarations.build());
   }
 
   private JsType getJsType(SoyType paramType) {

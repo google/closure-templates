@@ -15,10 +15,10 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequires;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.Expression.dottedIdWithRequires;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -29,7 +29,7 @@ import com.google.errorprone.annotations.Immutable;
 @Immutable
 public abstract class GoogRequire implements Comparable<GoogRequire> {
 
-  private static final CodeChunk.WithValue GOOG_REQUIRE = dottedIdNoRequire("goog.require");
+  private static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
   /**
    * Creates a new {@code GoogRequire} that requires the given symbol: {@code
@@ -59,7 +59,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   abstract CodeChunk chunk();
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
-  public CodeChunk.WithValue reference() {
+  public Expression reference() {
     if (chunk() instanceof VariableDeclaration) {
       return id(((VariableDeclaration) chunk()).varName(), ImmutableSet.of(this));
     } else {
@@ -68,7 +68,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   }
 
   /** Access a member of this required symbol. */
-  public CodeChunk.WithValue dotAccess(String ident) {
+  public Expression dotAccess(String ident) {
     return reference().dotAccess(ident);
   }
 

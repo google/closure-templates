@@ -24,13 +24,12 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 /** Represents a reference to a previously declared variable. */
 @AutoValue
 @Immutable
-abstract class VariableReference extends CodeChunk.WithValue {
+abstract class VariableReference extends Expression {
 
   abstract VariableDeclaration declaration();
 
   static VariableReference of(VariableDeclaration declaration) {
-    return new AutoValue_VariableReference(
-        ImmutableList.<CodeChunk.Statement>of(declaration), declaration);
+    return new AutoValue_VariableReference(ImmutableList.<Statement>of(declaration), declaration);
   }
 
   @Override

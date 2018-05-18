@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.internal.JsType.forSoyType;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 

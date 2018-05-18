@@ -18,18 +18,18 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.arrayLiteral;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dontTrustPrecedenceOf;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.not;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.operation;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
+import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.new_;
+import static com.google.template.soy.jssrc.dsl.Expression.not;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
+import static com.google.template.soy.jssrc.dsl.Expression.operation;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -83,9 +83,9 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -152,8 +152,7 @@ import java.util.Set;
  * a trivial value like {@code undefined} or {@code "[Object]"}.
  *
  */
-public class TranslateExprNodeVisitor
-    extends AbstractReturningExprNodeVisitor<CodeChunk.WithValue> {
+public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<Expression> {
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
   private static final ImmutableSet<String> TRUST_PRECEDENCE_PLUGINS =
@@ -188,12 +187,12 @@ public class TranslateExprNodeVisitor
    * @param isInjected true if this is an injected parameter.
    * @return The code to access the value of that parameter.
    */
-  static CodeChunk.WithValue genCodeForParamAccess(String paramName, boolean isInjected) {
+  static Expression genCodeForParamAccess(String paramName, boolean isInjected) {
     return isInjected ? OPT_IJ_DATA.dotAccess(paramName) : OPT_DATA.dotAccess(paramName);
   }
 
   @Override
-  protected CodeChunk.WithValue visitExprRootNode(ExprRootNode node) {
+  protected Expression visitExprRootNode(ExprRootNode node) {
     // ExprRootNode is some indirection to make it easier to replace expressions. All we need to do
     // is visit the only child
     return visit(node.getRoot());
@@ -203,27 +202,27 @@ public class TranslateExprNodeVisitor
   // Implementations for primitives.
 
   @Override
-  protected WithValue visitBooleanNode(BooleanNode node) {
+  protected Expression visitBooleanNode(BooleanNode node) {
     return node.getValue() ? LITERAL_TRUE : LITERAL_FALSE;
   }
 
   @Override
-  protected WithValue visitFloatNode(FloatNode node) {
+  protected Expression visitFloatNode(FloatNode node) {
     return number(node.getValue());
   }
 
   @Override
-  protected WithValue visitIntegerNode(IntegerNode node) {
+  protected Expression visitIntegerNode(IntegerNode node) {
     return number(node.getValue());
   }
 
   @Override
-  protected WithValue visitNullNode(NullNode node) {
+  protected Expression visitNullNode(NullNode node) {
     return LITERAL_NULL;
   }
 
   @Override
-  protected CodeChunk.WithValue visitStringNode(StringNode node) {
+  protected Expression visitStringNode(StringNode node) {
     return stringLiteral(node.getValue());
   }
 
@@ -231,13 +230,13 @@ public class TranslateExprNodeVisitor
   // Implementations for collections.
 
   @Override
-  protected CodeChunk.WithValue visitListLiteralNode(ListLiteralNode node) {
+  protected Expression visitListLiteralNode(ListLiteralNode node) {
     return arrayLiteral(visitChildren(node));
   }
 
   @Override
-  protected CodeChunk.WithValue visitRecordLiteralNode(RecordLiteralNode node) {
-    LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> objLiteral = new LinkedHashMap<>();
+  protected Expression visitRecordLiteralNode(RecordLiteralNode node) {
+    LinkedHashMap<Expression, Expression> objLiteral = new LinkedHashMap<>();
 
     // Process children
     for (int i = 0; i < node.numChildren(); i += 2) {
@@ -250,19 +249,19 @@ public class TranslateExprNodeVisitor
     }
 
     // Build the record literal
-    return CodeChunk.mapLiteral(objLiteral.keySet(), objLiteral.values());
+    return Expression.objectLiteral(objLiteral.keySet(), objLiteral.values());
   }
 
   @Override
-  protected WithValue visitMapLiteralNode(MapLiteralNode node) {
-    CodeChunk.WithValue map =
-        codeGenerator.declarationBuilder().setRhs(CodeChunk.new_(id("Map")).call()).build().ref();
+  protected Expression visitMapLiteralNode(MapLiteralNode node) {
+    Expression map =
+        codeGenerator.declarationBuilder().setRhs(Expression.new_(id("Map")).call()).build().ref();
     ImmutableList.Builder<Statement> setCalls = ImmutableList.builder();
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
       // Constructing a map literal with a null key is a runtime error.
-      CodeChunk.WithValue key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
-      CodeChunk.WithValue value = visit(node.getChild(i + 1));
+      Expression key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
+      Expression value = visit(node.getChild(i + 1));
       setCalls.add(map.dotAccess("set").call(key, value).asStatement());
     }
     return map.withInitialStatements(setCalls.build());
@@ -275,8 +274,8 @@ public class TranslateExprNodeVisitor
    * overrides toString appropriately. But ES6 Maps and jspb.Maps don't do this automatically, so we
    * need to set it up.
    */
-  private CodeChunk.WithValue genMapKeyCode(ExprNode keyNode) {
-    CodeChunk.WithValue key = visit(keyNode);
+  private Expression genMapKeyCode(ExprNode keyNode) {
+    Expression key = visit(keyNode);
     // We need to coerce if the value could possibly be a sanitizedcontent object
     boolean needsRuntimeCoercionLogic = false;
     SoyType type = keyNode.getType();
@@ -295,8 +294,8 @@ public class TranslateExprNodeVisitor
   // Implementations for data references.
 
   @Override
-  protected CodeChunk.WithValue visitVarRefNode(VarRefNode node) {
-    CodeChunk.WithValue translation;
+  protected Expression visitVarRefNode(VarRefNode node) {
+    Expression translation;
     if (node.isDollarSignIjParameter()) {
       // Case 0: special cases for csp_nonce. It is created by the compiler itself, and users should
       // not need to set it. So, instead of generating opt_ij_data.csp_nonce, we generate
@@ -316,7 +315,7 @@ public class TranslateExprNodeVisitor
   }
 
   @Override
-  protected CodeChunk.WithValue visitDataAccessNode(DataAccessNode node) {
+  protected Expression visitDataAccessNode(DataAccessNode node) {
     return visitNullSafeNode(node).result(codeGenerator);
   }
 
@@ -414,58 +413,58 @@ public class TranslateExprNodeVisitor
   }
 
   @Override
-  protected CodeChunk.WithValue visitGlobalNode(GlobalNode node) {
+  protected Expression visitGlobalNode(GlobalNode node) {
     if (node.isResolved()) {
       return visit(node.getValue());
     }
     // jssrc supports unknown globals by plopping the global name directly into the output
     // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
     // fix their use of unknown globals.
-    return CodeChunk.dottedIdNoRequire(node.getName());
+    return Expression.dottedIdNoRequire(node.getName());
   }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
 
   @Override
-  protected CodeChunk.WithValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-    List<CodeChunk.WithValue> operands = visitChildren(node);
-    CodeChunk.WithValue consequent = operands.get(0);
-    CodeChunk.WithValue alternate = operands.get(1);
+  protected Expression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+    List<Expression> operands = visitChildren(node);
+    Expression consequent = operands.get(0);
+    Expression alternate = operands.get(1);
     // if the consequent isn't trivial we should store the intermediate result in a new temporary
     if (!consequent.isCheap()) {
       consequent = codeGenerator.declarationBuilder().setRhs(consequent).build().ref();
     }
-    return CodeChunk.ifExpression(consequent.doubleNotEquals(CodeChunk.LITERAL_NULL), consequent)
+    return Expression.ifExpression(consequent.doubleNotEquals(Expression.LITERAL_NULL), consequent)
         .else_(alternate)
         .build(codeGenerator);
   }
 
   @Override
-  protected CodeChunk.WithValue visitAndOpNode(AndOpNode node) {
+  protected Expression visitAndOpNode(AndOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 2);
     return visit(node.getChild(0)).and(visit(node.getChild(1)), codeGenerator);
   }
 
   @Override
-  protected CodeChunk.WithValue visitOrOpNode(OrOpNode node) {
+  protected Expression visitOrOpNode(OrOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 2);
     return visit(node.getChild(0)).or(visit(node.getChild(1)), codeGenerator);
   }
 
   @Override
-  protected WithValue visitConditionalOpNode(ConditionalOpNode node) {
+  protected Expression visitConditionalOpNode(ConditionalOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 3);
     return codeGenerator.conditionalExpression(
         visit(node.getChild(0)), visit(node.getChild(1)), visit(node.getChild(2)));
   }
 
   @Override
-  protected CodeChunk.WithValue visitOperatorNode(OperatorNode node) {
+  protected Expression visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
   }
 
-  private CodeChunk.WithValue visitEqualNodeHelper(OperatorNode node) {
+  private Expression visitEqualNodeHelper(OperatorNode node) {
     for (ExprNode c : node.getChildren()) {
       SoyType type = c.getType();
       // A runtime directive needs to be used if operands are anything but booleans and
@@ -481,32 +480,32 @@ public class TranslateExprNodeVisitor
   }
 
   @Override
-  protected CodeChunk.WithValue visitEqualOpNode(EqualOpNode node) {
+  protected Expression visitEqualOpNode(EqualOpNode node) {
     return visitEqualNodeHelper(node);
   }
 
   @Override
-  protected CodeChunk.WithValue visitNotEqualOpNode(NotEqualOpNode node) {
+  protected Expression visitNotEqualOpNode(NotEqualOpNode node) {
     return not(visitEqualNodeHelper(node));
   }
 
   @Override
-  protected CodeChunk.WithValue visitProtoInitNode(ProtoInitNode node) {
+  protected Expression visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
-    CodeChunk.WithValue proto = new_(protoConstructor(type)).call();
+    Expression proto = new_(protoConstructor(type)).call();
     if (node.numChildren() == 0) {
       // If there's no further structure to the proto, no need to declare a variable.
       return proto;
     }
-    CodeChunk.WithValue protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
+    Expression protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
 
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i);
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
-      CodeChunk.WithValue fieldValue = visit(node.getChild(i));
+      Expression fieldValue = visit(node.getChild(i));
       if (ProtoUtils.isSanitizedContentField(fieldDesc)) {
-        CodeChunk.WithValue sanitizedContentPackFn =
+        Expression sanitizedContentPackFn =
             sanitizedContentToProtoConverterFunction(fieldDesc.getMessageType());
         fieldValue =
             fieldDesc.isRepeated()
@@ -515,7 +514,7 @@ public class TranslateExprNodeVisitor
       }
 
       if (fieldDesc.isExtension()) {
-        CodeChunk.WithValue extInfo = extensionField(fieldDesc);
+        Expression extInfo = extensionField(fieldDesc);
         initialStatements.add(
             protoVar.dotAccess("setExtension").call(extInfo, fieldValue).asStatement());
       } else if (fieldDesc.isMapField()) {
@@ -523,11 +522,10 @@ public class TranslateExprNodeVisitor
         // field, we first save a reference to the empty instance using the getter,  and then load
         // it with the contents of the SoyMap.
         String getFn = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        CodeChunk.WithValue protoMap = protoVar.dotAccess(getFn).call();
-        CodeChunk.WithValue protoMapVar =
-            codeGenerator.declarationBuilder().setRhs(protoMap).build().ref();
+        Expression protoMap = protoVar.dotAccess(getFn).call();
+        Expression protoMapVar = codeGenerator.declarationBuilder().setRhs(protoMap).build().ref();
         if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
-          CodeChunk.WithValue sanitizedContentPackFn =
+          Expression sanitizedContentPackFn =
               sanitizedContentToProtoConverterFunction(
                   ProtoUtils.getMapValueMessageType(fieldDesc));
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
@@ -546,7 +544,7 @@ public class TranslateExprNodeVisitor
   // Implementations for functions.
 
   @Override
-  protected CodeChunk.WithValue visitFunctionNode(FunctionNode node) {
+  protected Expression visitFunctionNode(FunctionNode node) {
     SoyFunction soyFunction = node.getSoyFunction();
 
     if (soyFunction instanceof BuiltinFunction) {
@@ -583,14 +581,14 @@ public class TranslateExprNodeVisitor
         soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
       }
 
-      List<CodeChunk.WithValue> args = visitChildren(node);
+      List<Expression> args = visitChildren(node);
       List<JsExpr> functionInputs = new ArrayList<>(args.size());
       List<Statement> initialStatements = new ArrayList<>();
       RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
 
       // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
       // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
-      for (CodeChunk.WithValue arg : args) {
+      for (Expression arg : args) {
         arg.collectRequires(collector);
         functionInputs.add(arg.singleExprOrName());
         Iterables.addAll(initialStatements, arg.initialStatements());
@@ -606,7 +604,7 @@ public class TranslateExprNodeVisitor
       }
 
       JsExpr outputExpr = soyJsSrcFunction.computeForJsSrc(functionInputs);
-      CodeChunk.WithValue functionOutput =
+      Expression functionOutput =
           TRUST_PRECEDENCE_PLUGINS.contains(soyJsSrcFunction.getName())
               ? fromExpr(outputExpr, collector.get())
               : dontTrustPrecedenceOf(outputExpr, collector.get());
@@ -615,34 +613,34 @@ public class TranslateExprNodeVisitor
     }
   }
 
-  private CodeChunk.WithValue visitCheckNotNullFunction(FunctionNode node) {
+  private Expression visitCheckNotNullFunction(FunctionNode node) {
     return SOY_CHECK_NOT_NULL.call(visit(node.getChild(0)));
   }
 
-  private CodeChunk.WithValue visitIsFirstFunction(FunctionNode node) {
+  private Expression visitIsFirstFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__isFirst");
   }
 
-  private CodeChunk.WithValue visitIsLastFunction(FunctionNode node) {
+  private Expression visitIsLastFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__isLast");
   }
 
-  private CodeChunk.WithValue visitIndexFunction(FunctionNode node) {
+  private Expression visitIndexFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__index");
   }
 
-  private CodeChunk.WithValue visitCssFunction(FunctionNode node) {
+  private Expression visitCssFunction(FunctionNode node) {
     return GOOG_GET_CSS_NAME.call(visitChildren(node));
   }
 
-  private CodeChunk.WithValue visitXidFunction(FunctionNode node) {
+  private Expression visitXidFunction(FunctionNode node) {
     return XID.call(visitChildren(node));
   }
 
-  private CodeChunk.WithValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {
+  private Expression visitIsPrimaryMsgInUseFunction(FunctionNode node) {
     // we need to find the msgfallbackgroupnode that we are referring to.  It is a bit tedious to
     // navigate the AST, but we know that all these checks will succeed because it is validated by
     // the MsgIdFunctionPass
@@ -655,12 +653,12 @@ public class TranslateExprNodeVisitor
     return variableMappings.isPrimaryMsgInUse(msgNode);
   }
 
-  private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {
+  private Expression visitV1ExpressionFunction(FunctionNode node) {
     StringNode expr = (StringNode) node.getChild(0);
     JsExpr jsExpr =
         V1JsExprTranslator.translateToJsExpr(
             expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
-    return CodeChunk.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
+    return Expression.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
   }
 
   private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {

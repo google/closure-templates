@@ -24,13 +24,13 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 /** Represents a JavaScript array literal expression. */
 @AutoValue
 @Immutable
-abstract class ArrayLiteral extends CodeChunk.WithValue {
+abstract class ArrayLiteral extends Expression {
 
-  abstract ImmutableList<? extends CodeChunk.WithValue> elements();
+  abstract ImmutableList<? extends Expression> elements();
 
-  static ArrayLiteral create(ImmutableList<? extends CodeChunk.WithValue> elements) {
-    ImmutableList.Builder<CodeChunk.Statement> builder = ImmutableList.builder();
-    for (CodeChunk.WithValue element : elements) {
+  static ArrayLiteral create(ImmutableList<? extends Expression> elements) {
+    ImmutableList.Builder<Statement> builder = ImmutableList.builder();
+    for (Expression element : elements) {
       builder.addAll(element.initialStatements());
     }
     return new AutoValue_ArrayLiteral(builder.build(), elements);
@@ -38,7 +38,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk.WithValue element : elements()) {
+    for (Expression element : elements()) {
       element.collectRequires(collector);
     }
   }
@@ -54,7 +54,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('[');
     boolean first = true;
-    for (CodeChunk.WithValue element : elements()) {
+    for (Expression element : elements()) {
       if (first) {
         first = false;
       } else {
@@ -67,7 +67,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk.WithValue element : elements()) {
+    for (Expression element : elements()) {
       ctx.appendInitialStatements(element);
     }
   }

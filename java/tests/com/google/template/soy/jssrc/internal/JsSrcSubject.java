@@ -42,7 +42,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -234,8 +234,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   /** For asserting on the contents of a single soy expression. */
   static final class ForExprs extends JsSrcSubject<ForExprs> {
-    private CodeChunk.WithValue chunk;
-    private ImmutableMap<String, WithValue> initialLocalVarTranslations = ImmutableMap.of();
+    private Expression chunk;
+    private ImmutableMap<String, Expression> initialLocalVarTranslations = ImmutableMap.of();
 
     private ForExprs(FailureMetadata failureMetadata, String templateThatContainsOneExpression) {
       super(failureMetadata, templateThatContainsOneExpression);
@@ -261,7 +261,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     }
 
     JsSrcSubject.ForExprs withInitialLocalVarTranslations(
-        ImmutableMap<String, CodeChunk.WithValue> initialLocalVarTranslations) {
+        ImmutableMap<String, Expression> initialLocalVarTranslations) {
       this.initialLocalVarTranslations = initialLocalVarTranslations;
       return this;
     }

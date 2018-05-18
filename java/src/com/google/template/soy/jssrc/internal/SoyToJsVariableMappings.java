@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -32,65 +32,66 @@ import javax.annotation.Nullable;
  */
 public final class SoyToJsVariableMappings {
   /** TODO(brndn): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
-  private final Map<String, CodeChunk.WithValue> mappings;
+  private final Map<String, Expression> mappings;
 
   /**
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
-  private final Map<MsgFallbackGroupNode, CodeChunk.WithValue> isPrimaryMsgInUseForFallbackGroup =
+  private final Map<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup =
       new IdentityHashMap<>();
 
-  private SoyToJsVariableMappings(
-      ImmutableMap<String, ? extends CodeChunk.WithValue> initialMappings) {
+  private SoyToJsVariableMappings(ImmutableMap<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);
   }
 
   /** Returns a new {@link SoyToJsVariableMappings} suitable for translating an entire template. */
   public static SoyToJsVariableMappings forNewTemplate() {
-    return new SoyToJsVariableMappings(ImmutableMap.<String, CodeChunk.WithValue>of());
+    return new SoyToJsVariableMappings(ImmutableMap.<String, Expression>of());
   }
 
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */
   @VisibleForTesting
   static SoyToJsVariableMappings startingWith(
-      ImmutableMap<String, ? extends CodeChunk.WithValue> initialMappings) {
+      ImmutableMap<String, ? extends Expression> initialMappings) {
     return new SoyToJsVariableMappings(initialMappings);
   }
 
   /**
-   * Maps the Soy variable named {@code name} to the given translation.
-   * Any previous mapping for the variable is lost.
-   * TODO(brndn): this API requires callers to mangle the names they pass in to ensure uniqueness.
-   * Do the mangling internally.
+   * Maps the Soy variable named {@code name} to the given translation. Any previous mapping for the
+   * variable is lost.
+   *
+   * <p>TODO(brndn): this API requires callers to mangle the names they pass in to ensure
+   * uniqueness. Do the mangling internally.
    */
-  public SoyToJsVariableMappings put(String var, CodeChunk.WithValue translation) {
+  public SoyToJsVariableMappings put(String var, Expression translation) {
     mappings.put(var, translation);
     return this;
   }
 
-  public SoyToJsVariableMappings setIsPrimaryMsgInUse(
-      MsgFallbackGroupNode msg, CodeChunk.WithValue var) {
+  public SoyToJsVariableMappings setIsPrimaryMsgInUse(MsgFallbackGroupNode msg, Expression var) {
     isPrimaryMsgInUseForFallbackGroup.put(msg, var);
     return this;
   }
 
   /** Returns the JavaScript translation for the Soy variable with the given name, */
-  public CodeChunk.WithValue get(String name) {
+  public Expression get(String name) {
     return Preconditions.checkNotNull(mappings.get(name));
   }
 
-  public CodeChunk.WithValue isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
+  public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
     return isPrimaryMsgInUseForFallbackGroup.get(msg);
   }
 
   /**
-   * Returns the JavaScript translation for the Soy variable with the given name,
-   * or null if no mapping exists for that variable.
-   * TODO(brndn): the null case is only for handling template params. Eliminate the @Nullable
-   * by seeding {@link #forNewTemplate()} with the params.
+   * Returns the JavaScript translation for the Soy variable with the given name, or null if no
+   * mapping exists for that variable.
+   *
+   * <p>TODO(brndn): the null case is only for handling template params. Eliminate the @Nullable by
+   * seeding {@link #forNewTemplate()} with the params.
    */
-  @Nullable public CodeChunk.WithValue maybeGet(String name) {
+  @Nullable
+  public Expression maybeGet(String name) {
     return mappings.get(name);
   }
 }

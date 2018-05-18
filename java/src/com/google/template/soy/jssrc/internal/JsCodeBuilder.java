@@ -16,13 +16,14 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import java.util.ArrayDeque;
@@ -71,10 +72,10 @@ import javax.annotation.Nullable;
 public class JsCodeBuilder {
 
   private static final class OutputVar {
-    final CodeChunk.WithValue name;
+    final Expression name;
     final boolean initialized;
 
-    OutputVar(CodeChunk.WithValue name, boolean initialized) {
+    OutputVar(Expression name, boolean initialized) {
       this.name = name;
       this.initialized = initialized;
     }
@@ -105,10 +106,10 @@ public class JsCodeBuilder {
   /**
    * The current output variable.
    *
-   * <p>TODO(user): this is always an {@link CodeChunk#id}. Consider exposing a subclass of
+   * <p>TODO(user): this is always an {@link Expression#id}. Consider exposing a subclass of
    * CodeChunk so we can enforce this invariant at compile time.
    */
-  @Nullable protected CodeChunk.WithValue currOutputVar;
+  @Nullable protected Expression currOutputVar;
 
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
@@ -151,7 +152,7 @@ public class JsCodeBuilder {
   }
 
   /** Appends the given code chunk to the current output variable. */
-  public JsCodeBuilder addChunkToOutputVar(CodeChunk.WithValue chunk) {
+  public JsCodeBuilder addChunkToOutputVar(Expression chunk) {
     return addChunksToOutputVar(ImmutableList.of(chunk));
   }
 
@@ -159,13 +160,13 @@ public class JsCodeBuilder {
    * Appends one or more lines representing the concatenation of the values of the given code chunks
    * saved to the current output variable.
    */
-  public JsCodeBuilder addChunksToOutputVar(List<? extends CodeChunk.WithValue> codeChunks) {
+  public JsCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (currOutputVarIsInited) {
-      CodeChunk.WithValue rhs = CodeChunkUtils.concatChunks(codeChunks);
+      Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
       rhs.collectRequires(requireCollector);
       appendLine(currOutputVar.plusEquals(rhs).getCode());
     } else {
-      CodeChunk.WithValue rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
+      Expression rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
       rhs.collectRequires(requireCollector);
       append(
           VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())

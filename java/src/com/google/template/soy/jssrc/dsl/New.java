@@ -22,16 +22,15 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents the JavaScript {@code new} operator. */
 @AutoValue
 @Immutable
 abstract class New extends Operation {
 
-  abstract CodeChunk.WithValue ctor();
+  abstract Expression ctor();
 
-  static New create(WithValue ctor) {
+  static New create(Expression ctor) {
     return new AutoValue_New(ctor);
   }
 

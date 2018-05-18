@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
@@ -47,8 +47,8 @@ public final class CodeChunkUtils {
   }
 
   /**
-   * Builds a {@link CodeChunk.WithValue} that represents the concatenation of the given code
-   * chunks. The {@code +} operator is used for concatenation.
+   * Builds a {@link Expression} that represents the concatenation of the given code chunks. The
+   * {@code +} operator is used for concatenation.
    *
    * <p>The resulting chunk is not guaranteed to be string-valued if the first two operands do not
    * produce strings when combined with the plus operator; e.g. 2+2 might be 4 instead of '22'.
@@ -56,17 +56,16 @@ public final class CodeChunkUtils {
    * <p>This is a port of {@link JsExprUtils#concatJsExprs}, which should eventually go away.
    * TODO(user): make that go away.
    */
-  public static CodeChunk.WithValue concatChunks(List<? extends CodeChunk.WithValue> chunks) {
+  public static Expression concatChunks(List<? extends Expression> chunks) {
     return Concatenation.create(chunks);
   }
 
   /**
-   * Builds a {@link CodeChunk.WithValue} that represents the concatenation of the given code
-   * chunks. This doesn't assume the values represented by the inputs are necessarily strings, but
-   * guarantees that the value represented by the output is a string.
+   * Builds a {@link Expression} that represents the concatenation of the given code chunks. This
+   * doesn't assume the values represented by the inputs are necessarily strings, but guarantees
+   * that the value represented by the output is a string.
    */
-  public static CodeChunk.WithValue concatChunksForceString(
-      List<? extends CodeChunk.WithValue> chunks) {
+  public static Expression concatChunksForceString(List<? extends Expression> chunks) {
     if (!chunks.isEmpty()
         && chunks.get(0).isRepresentableAsSingleExpression()
         && JsExprUtils.isStringLiteral(
@@ -79,10 +78,7 @@ public final class CodeChunkUtils {
       return concatChunks(chunks);
     } else {
       return concatChunks(
-          ImmutableList.<CodeChunk.WithValue>builder()
-              .add(LITERAL_EMPTY_STRING)
-              .addAll(chunks)
-              .build());
+          ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
     }
   }
 }

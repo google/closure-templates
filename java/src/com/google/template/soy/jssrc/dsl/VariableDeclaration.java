@@ -24,7 +24,7 @@ import javax.annotation.concurrent.Immutable;
 /** Represents a variable declaration. */
 @AutoValue
 @Immutable
-public abstract class VariableDeclaration extends CodeChunk.Statement {
+public abstract class VariableDeclaration extends Statement {
 
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()
@@ -35,15 +35,15 @@ public abstract class VariableDeclaration extends CodeChunk.Statement {
   abstract String varName();
 
   @Nullable
-  abstract CodeChunk.WithValue rhs();
+  abstract Expression rhs();
 
   @Nullable
   abstract String jsDoc();
 
   abstract ImmutableSet<GoogRequire> googRequires();
 
-  /** Returns a {@link CodeChunk.WithValue} representing a reference to this declared variable. */
-  public CodeChunk.WithValue ref() {
+  /** Returns an {@link Expression} representing a reference to this declared variable. */
+  public Expression ref() {
     return VariableReference.of(this);
   }
 
@@ -95,7 +95,7 @@ public abstract class VariableDeclaration extends CodeChunk.Statement {
 
     public abstract Builder setJsDoc(String jsDoc);
 
-    public abstract Builder setRhs(CodeChunk.WithValue value);
+    public abstract Builder setRhs(Expression value);
 
     public Builder setGoogRequires(Iterable<GoogRequire> requires) {
       return setGoogRequires(ImmutableSet.copyOf(requires));

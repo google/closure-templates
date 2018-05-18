@@ -17,10 +17,10 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.new_;
+import static com.google.template.soy.jssrc.dsl.Expression.objectLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE_FORMAT;
 
@@ -30,11 +30,11 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
+import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
@@ -154,13 +154,13 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    *        productName: opt_data.productName});
    * </pre>
    */
-  public CodeChunk.WithValue generateMsgGroupVariable(MsgFallbackGroupNode node) {
+  public Expression generateMsgGroupVariable(MsgFallbackGroupNode node) {
     String tmpVarName = translationContext.nameGenerator().generateName("msg_s");
-    CodeChunk.WithValue msg;
+    Expression msg;
     if (node.numChildren() == 1) {
       translationContext
           .soyToJsVariableMappings()
-          .setIsPrimaryMsgInUse(node, CodeChunk.WithValue.LITERAL_TRUE);
+          .setIsPrimaryMsgInUse(node, Expression.LITERAL_TRUE);
       msg = generateSingleMsgVariable(node.getChild(0), tmpVarName);
     } else { // has fallbackmsg children
       msg = generateMsgGroupVariable(node, tmpVarName);
@@ -172,7 +172,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
               translationContext.codeGenerator(),
               msg,
               (SoyJsSrcPrintDirective) printDirective,
-              /* args= */ ImmutableList.<CodeChunk.WithValue>of());
+              /* args= */ ImmutableList.<Expression>of());
     }
     return msg;
   }
@@ -181,7 +181,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * Returns a code chunk representing a variable declaration for an {@link MsgNode} with no
    * fallback messages.
    */
-  private CodeChunk.WithValue generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
+  private Expression generateSingleMsgVariable(MsgNode msgNode, String tmpVarName) {
     String googMsgVarName = buildGoogMsgVarNameHelper(msgNode);
 
     // Generate the goog.getMsg call.
@@ -206,8 +206,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * Returns a code chunk representing a variable declaration for an {@link MsgFallbackGroupNode}
    * that contains fallback(s).
    */
-  private CodeChunk.WithValue generateMsgGroupVariable(
-      MsgFallbackGroupNode node, String tmpVarName) {
+  private Expression generateMsgGroupVariable(MsgFallbackGroupNode node, String tmpVarName) {
     checkState(node.numChildren() == 2);
 
     // Generate the goog.getMsg calls for all children.
@@ -219,10 +218,10 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // Declare a temporary variable to hold the getMsgWithFallback() call so that we can apply any
     // MessageFormats from any of the fallbacks.  This is also the variable name that we return to
     // the caller.
-    CodeChunk.WithValue selectedMsg =
+    Expression selectedMsg =
         VariableDeclaration.builder(tmpVarName)
             .setRhs(
-                CodeChunk.dottedIdNoRequire("goog.getMsgWithFallback")
+                Expression.dottedIdNoRequire("goog.getMsgWithFallback")
                     .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))
             .build()
             .ref();
@@ -231,8 +230,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // jscodebuilder system causes us to regenerate the msg vars multiple times because it doesn't
     // detect that they were already generated.
     // TODO(b/33382980): clean this up
-    CodeChunk.WithValue isPrimaryMsgInUse =
-        CodeChunk.id(tmpVarName).doubleEquals(CodeChunk.id(primaryCodeGenInfo.googMsgVarName));
+    Expression isPrimaryMsgInUse =
+        Expression.id(tmpVarName).doubleEquals(Expression.id(primaryCodeGenInfo.googMsgVarName));
     translationContext.soyToJsVariableMappings().setIsPrimaryMsgInUse(node, isPrimaryMsgInUse);
     if (primaryCodeGenInfo.placeholders == null && fallbackCodeGenInfo.placeholders == null) {
       // all placeholders have already been substituted, just return
@@ -243,7 +242,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     Statement condition;
     if (primaryCodeGenInfo.placeholders != null) {
       ConditionalBuilder builder =
-          CodeChunk.ifStatement(
+          Statement.ifStatement(
               selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
               selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)).asStatement());
       if (fallbackCodeGenInfo.placeholders != null) {
@@ -252,12 +251,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       condition = builder.build();
     } else {
       condition =
-          CodeChunk.ifStatement(
+          Statement.ifStatement(
                   selectedMsg.doubleEquals(fallbackCodeGenInfo.googMsgVar),
                   selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement())
               .build();
     }
-    return CodeChunk.id(tmpVarName).withInitialStatement(condition);
+    return Expression.id(tmpVarName).withInitialStatement(condition);
   }
 
   /** Builds the googMsgVarName for an MsgNode. */
@@ -288,7 +287,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // decrease memory usage right now. The same memoization possibility also applies to the msg
     // parts with embedded ICU syntax (created in helper buildGoogMsgContentStr()).
     ImmutableList<SoyMsgPart> msgParts = MsgUtils.buildMsgParts(msgNode);
-    CodeChunk.WithValue googMsgContent =
+    Expression googMsgContent =
         stringLiteral(buildGoogMsgContentStr(msgParts, msgNode.isPlrselMsg()));
 
     // Build the individual code bits for each placeholder (i.e. "<placeholderName>: <exprCode>")
@@ -373,7 +372,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * Generates the {@code goog.i18n.MessageFormat} postprocessing call for a child plural/select
    * message.
    */
-  private static CodeChunk.WithValue getMessageFormatCall(GoogMsgCodeGenInfo codeGenInfo) {
+  private static Expression getMessageFormatCall(GoogMsgCodeGenInfo codeGenInfo) {
     return new_(GOOG_I18N_MESSAGE_FORMAT)
         .call(codeGenInfo.googMsgVar)
         .dotAccess("formatIgnoringPound")
@@ -381,17 +380,16 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   private static final class GoogMsgCodeGenInfo {
-    final CodeChunk.WithValue googMsgVar;
+    final Expression googMsgVar;
     /**
      * Placeholders that still need to be applied, if any. This is only relevant in plrsel messages
      * which require a different formatting method to be called.
      */
-    @Nullable final CodeChunk.WithValue placeholders;
+    @Nullable final Expression placeholders;
 
     final String googMsgVarName;
 
-    GoogMsgCodeGenInfo(
-        CodeChunk.WithValue googMsgVar, String varName, CodeChunk.WithValue placeholders) {
+    GoogMsgCodeGenInfo(Expression googMsgVar, String varName, Expression placeholders) {
       this.googMsgVar = googMsgVar;
       this.googMsgVarName = varName;
       this.placeholders = placeholders;
@@ -487,7 +485,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
   }
 
-  private CodeChunk.WithValue translateExpr(ExprNode expr) {
+  private Expression translateExpr(ExprNode expr) {
     return new TranslateExprNodeVisitor(translationContext, errorReporter).exec(expr);
   }
 
@@ -544,9 +542,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   /** Returns a code chunk for the given placeholder node. */
-  protected CodeChunk.WithValue genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
+  protected Expression genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
 
-    List<CodeChunk.WithValue> contentChunks = new ArrayList<>();
+    List<Expression> contentChunks = new ArrayList<>();
 
     for (StandaloneNode contentNode : msgPhNode.getChildren()) {
 
@@ -569,11 +567,11 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           }
         }
 
-        CodeChunk.WithValue call =
+        Expression call =
             genCallCodeUtils.gen(callNode, templateAliases, translationContext, errorReporter);
         contentChunks.add(call);
       } else {
-        List<CodeChunk.WithValue> chunks = genJsExprsVisitor.exec(contentNode);
+        List<Expression> chunks = genJsExprsVisitor.exec(contentNode);
         contentChunks.add(CodeChunkUtils.concatChunks(chunks));
       }
     }
@@ -623,14 +621,14 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   /**
-   * Helper class for building up the input to {@link CodeChunk#mapLiteral}. TODO(brndn): consider
-   * making this part of the CodeChunk DSL, since all callers seem to do something similar.
+   * Helper class for building up the input to {@link Expression#objectLiteral}. TODO(brndn):
+   * consider making this part of the CodeChunk DSL, since all callers seem to do something similar.
    */
   private static final class MapLiteralBuilder {
-    final Map<String, CodeChunk.WithValue> map = new LinkedHashMap<>();
+    final Map<String, Expression> map = new LinkedHashMap<>();
 
-    MapLiteralBuilder put(String key, CodeChunk.WithValue value) {
-      CodeChunk.WithValue prev = map.put(key, value);
+    MapLiteralBuilder put(String key, Expression value) {
+      Expression prev = map.put(key, value);
       if (prev != null) {
         throw new IllegalArgumentException("already generated this placeholder");
       }
@@ -651,12 +649,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       return this;
     }
 
-    CodeChunk.WithValue build() {
-      ImmutableList.Builder<CodeChunk.WithValue> keys = ImmutableList.builder();
+    Expression build() {
+      ImmutableList.Builder<Expression> keys = ImmutableList.builder();
       for (String key : map.keySet()) {
         keys.add(stringLiteral(key));
       }
-      return mapLiteral(keys.build(), map.values());
+      return objectLiteral(keys.build(), map.values());
     }
   }
 }

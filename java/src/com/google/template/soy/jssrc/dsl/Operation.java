@@ -20,7 +20,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Base class for representing a JavaScript operation. */
-abstract class Operation extends CodeChunk.WithValue {
+abstract class Operation extends Expression {
 
   abstract int precedence();
   abstract Associativity associativity();
@@ -33,15 +33,13 @@ abstract class Operation extends CodeChunk.WithValue {
   }
 
   /**
-   * Surrounds the operand with parens if required by its {@link #precedence}
-   * or {@link #associativity}. For subclasses to call from {@link #doFormatOutputExpr}.
+   * Surrounds the operand with parens if required by its {@link #precedence} or {@link
+   * #associativity}. For subclasses to call from {@link #doFormatOutputExpr}.
    *
    * @param operandPosition The position of the operand with respect to this operation.
    */
   final void formatOperand(
-      CodeChunk.WithValue operand,
-      OperandPosition operandPosition,
-      FormattingContext ctx) {
+      Expression operand, OperandPosition operandPosition, FormattingContext ctx) {
     boolean protect = shouldProtect(operand, operandPosition);
     if (protect) {
       ctx.append('(');
@@ -54,17 +52,16 @@ abstract class Operation extends CodeChunk.WithValue {
 
   /**
    * An operand needs to be protected with parens if
+   *
    * <ul>
    *   <li>its {@link #precedence} is lower than the operator's precedence, or
-   *   <li>its precedence is the same as the operator's, it is
-   *       {@link Associativity#LEFT left associative}, and it appears to the right
-   *       of the operator, or
-   *   <li>its precedence is the same as the operator's, it is
-   *       {@link Associativity#RIGHT right associative}, and it appears to the left
-   *       of the operator.
+   *   <li>its precedence is the same as the operator's, it is {@link Associativity#LEFT left
+   *       associative}, and it appears to the right of the operator, or
+   *   <li>its precedence is the same as the operator's, it is {@link Associativity#RIGHT right
+   *       associative}, and it appears to the left of the operator.
    * </ul>
    */
-  private boolean shouldProtect(CodeChunk.WithValue operand, OperandPosition operandPosition) {
+  private boolean shouldProtect(Expression operand, OperandPosition operandPosition) {
     if (operand instanceof Operation) {
       Operation operation = (Operation) operand;
       return operation.precedence() < this.precedence()

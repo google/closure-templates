@@ -23,10 +23,10 @@ import com.google.errorprone.annotations.Immutable;
 /** Represents {@code if} or {@code else if} clauses. */
 @Immutable
 final class IfThenPair<T extends CodeChunk> {
-  final CodeChunk.WithValue predicate;
+  final Expression predicate;
   final T consequent;
 
-  IfThenPair(CodeChunk.WithValue predicate, T consequent) {
+  IfThenPair(Expression predicate, T consequent) {
     this.predicate = checkNotNull(predicate);
     this.consequent = checkNotNull(consequent);
   }

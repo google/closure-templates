@@ -18,12 +18,11 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a {@code do {....} while(...);} loop. */
 @AutoValue
 @Immutable
-public abstract class DoWhile extends CodeChunk.Statement {
+public abstract class DoWhile extends Statement {
 
   public static Builder builder() {
     return new AutoValue_DoWhile.Builder();
@@ -31,7 +30,7 @@ public abstract class DoWhile extends CodeChunk.Statement {
 
   abstract Statement body();
 
-  abstract CodeChunk.WithValue condition();
+  abstract Expression condition();
 
   @Override
   public void collectRequires(RequiresCollector collector) {
@@ -54,9 +53,9 @@ public abstract class DoWhile extends CodeChunk.Statement {
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setCondition(CodeChunk.WithValue condition);
+    public abstract Builder setCondition(Expression condition);
 
-    public abstract Builder setBody(CodeChunk.Statement condition);
+    public abstract Builder setBody(Statement condition);
 
     public abstract DoWhile build();
   }

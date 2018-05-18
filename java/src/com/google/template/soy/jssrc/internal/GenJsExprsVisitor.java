@@ -16,8 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -25,9 +25,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -51,10 +51,10 @@ import java.util.List;
 /**
  * Visitor for generating JS expressions for parse tree nodes.
  *
- * <p> Precondition: MsgNode should not exist in the tree.
+ * <p>Precondition: MsgNode should not exist in the tree.
  *
  */
-public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.WithValue>> {
+public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> {
 
   /** Injectable factory for creating an instance of this class. */
   public static class GenJsExprsVisitorFactory {
@@ -99,7 +99,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
   private final ErrorReporter errorReporter;
 
   /** List to collect the results. */
-  protected List<CodeChunk.WithValue> chunks;
+  protected List<Expression> chunks;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -132,7 +132,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     this.templateAliases = templateAliases;
   }
 
-  @Override public List<CodeChunk.WithValue> exec(SoyNode node) {
+  @Override
+  public List<Expression> exec(SoyNode node) {
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.exec(node));
     chunks = new ArrayList<>();
     visit(node);
@@ -143,7 +144,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * Executes this visitor on the children of the given node, without visiting the given node
    * itself.
    */
-  public List<CodeChunk.WithValue> execOnChildren(ParentSoyNode<?> node) {
+  public List<Expression> execOnChildren(ParentSoyNode<?> node) {
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.execOnChildren(node));
     chunks = new ArrayList<>();
     visitChildren(node);
@@ -202,7 +203,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * </pre>
    */
   @Override protected void visitPrintNode(PrintNode node) {
-    CodeChunk.WithValue expr = translateExpr(node.getExpr());
+    Expression expr = translateExpr(node.getExpr());
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -219,7 +220,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
       List<ExprRootNode> argNodes = directiveNode.getArgs();
 
       // Convert args to CodeChunks.
-      List<CodeChunk.WithValue> argChunks = new ArrayList<>(argNodes.size());
+      List<Expression> argChunks = new ArrayList<>(argNodes.size());
       for (ExprRootNode argNode : argNodes) {
         argChunks.add(translateExpr(argNode));
       }
@@ -236,7 +237,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     chunks.add(expr);
   }
 
-  private WithValue translateExpr(ExprRootNode argNode) {
+  private Expression translateExpr(ExprRootNode argNode) {
     return new TranslateExprNodeVisitor(translationContext, errorReporter).exec(argNode);
   }
 
@@ -263,9 +264,9 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
         genJsExprsVisitorFactory.create(translationContext, templateAliases, errorReporter);
     CodeChunk.Generator generator = translationContext.codeGenerator();
 
-    List<CodeChunk.WithValue> ifs = new ArrayList<>();
-    List<CodeChunk.WithValue> thens = new ArrayList<>();
-    CodeChunk.WithValue trailingElse = null;
+    List<Expression> ifs = new ArrayList<>();
+    List<Expression> thens = new ArrayList<>();
+    Expression trailingElse = null;
 
     for (SoyNode child : node.getChildren()) {
 
@@ -283,13 +284,13 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
 
     Preconditions.checkState(ifs.size() == thens.size());
 
-    ConditionalExpressionBuilder builder = CodeChunk.ifExpression(ifs.get(0), thens.get(0));
+    ConditionalExpressionBuilder builder = Expression.ifExpression(ifs.get(0), thens.get(0));
 
     for (int i = 1; i < ifs.size(); i++) {
       builder.elseif_(ifs.get(i), thens.get(i));
     }
 
-    CodeChunk.WithValue ifChunk =
+    Expression ifChunk =
         trailingElse != null
             ? builder.else_(trailingElse).build(generator)
             : builder.else_(LITERAL_EMPTY_STRING).build(generator);
@@ -326,7 +327,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * </pre>
    */
   @Override protected void visitCallNode(CallNode node) {
-    CodeChunk.WithValue call =
+    Expression call =
         genCallCodeUtils.gen(node, templateAliases, translationContext, errorReporter);
     chunks.add(call);
   }

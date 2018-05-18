@@ -18,16 +18,15 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript return statement. */
 @AutoValue
 @Immutable
 abstract class Return extends Statement {
 
-  abstract CodeChunk.WithValue value();
+  abstract Expression value();
 
-  static Return create(CodeChunk.WithValue value) {
+  static Return create(Expression value) {
     return new AutoValue_Return(value);
   }
 

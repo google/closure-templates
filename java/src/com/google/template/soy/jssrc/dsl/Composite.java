@@ -20,18 +20,16 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an expression preceded by one or more initial statements. */
 @AutoValue
 @Immutable
-abstract class Composite extends CodeChunk.WithValue {
+abstract class Composite extends Expression {
 
-  abstract CodeChunk.WithValue value();
+  abstract Expression value();
 
-  static Composite create(
-      ImmutableList<CodeChunk.Statement> initialStatements, CodeChunk.WithValue value) {
+  static Composite create(ImmutableList<Statement> initialStatements, Expression value) {
     Preconditions.checkState(!initialStatements.isEmpty());
     return new AutoValue_Composite(
         ImmutableList.<Statement>builder()

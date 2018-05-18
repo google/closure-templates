@@ -28,7 +28,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  */
 @AutoValue
 @Immutable
-abstract class LeafStatement extends CodeChunk.Statement {
+abstract class LeafStatement extends Statement {
   abstract String value();
   abstract ImmutableSet<GoogRequire> requires();
 

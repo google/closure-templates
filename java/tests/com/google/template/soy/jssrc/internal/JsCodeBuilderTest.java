@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;

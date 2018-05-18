@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -29,12 +28,12 @@ public final class ConditionalBuilder {
 
   @Nullable private Statement trailingElse = null;
 
-  ConditionalBuilder(CodeChunk.WithValue predicate, Statement consequent) {
+  ConditionalBuilder(Expression predicate, Statement consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
   }
 
   /** Adds an {@code else if} clause with the given predicate and consequent to this conditional. */
-  public ConditionalBuilder elseif_(CodeChunk.WithValue predicate, Statement consequent) {
+  public ConditionalBuilder elseif_(Expression predicate, Statement consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }

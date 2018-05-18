@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +32,7 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.AutoEscapingType;
@@ -57,8 +58,8 @@ public final class GenJsCodeVisitorTest {
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, Expression>builder()
           .put("goo", id("gooData8"))
           .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
           .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))

@@ -16,32 +16,19 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.exprtree.IntegerNode;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * DSL for constructing sequences of JavaScript code. Unlike {@link JsExpr}, it can handle code that
  * cannot be represented as single expressions.
  *
  * <p>Sample usage: <code>
- * CodeChunk.WithValue fraction = cg.declare(
+ * CodeChunk.Expression fraction = cg.declare(
  *     number(3)
  *         .divideBy(number(4)));
  * cg
@@ -64,474 +51,6 @@ import java.util.List;
  */
 @Immutable
 public abstract class CodeChunk {
-  public static final WithValue LITERAL_TRUE = id("true");
-  public static final WithValue LITERAL_FALSE = id("false");
-  public static final WithValue LITERAL_NULL = id("null");
-  public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''", /* isCheap= */ true);
-  public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}", /* isCheap= */ false);
-
-  /** Creates a new code chunk representing the concatenation of the given chunks. */
-  public static Statement statements(Statement first, Statement... rest) {
-    return statements(ImmutableList.<Statement>builder().add(first).add(rest).build());
-  }
-
-  /** Creates a new code chunk representing the concatenation of the given chunks. */
-  public static Statement statements(Iterable<Statement> stmts) {
-    ImmutableList<Statement> copy = ImmutableList.copyOf(stmts);
-    return copy.size() == 1 ? copy.get(0) : StatementList.of(copy);
-  }
-
-  /** Starts a conditional statement beginning with the given predicate and consequent chunks. */
-  public static ConditionalBuilder ifStatement(
-      CodeChunk.WithValue predicate, Statement consequent) {
-    return new ConditionalBuilder(predicate, consequent);
-  }
-
-  /** Starts a conditional expression beginning with the given predicate and consequent chunks. */
-  public static ConditionalExpressionBuilder ifExpression(
-      CodeChunk.WithValue predicate, CodeChunk.WithValue consequent) {
-    return new ConditionalExpressionBuilder(predicate, consequent);
-  }
-
-  /**
-   * Creates a new code chunk from the given expression. The expression's precedence is preserved.
-   */
-  public static WithValue fromExpr(JsExpr expr, Iterable<GoogRequire> requires) {
-    return Leaf.create(expr, /* isCheap= */ false, requires);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript identifier.
-   *
-   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
-   */
-  public static WithValue id(String id) {
-    CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true);
-  }
-  /**
-   * Creates a code chunk representing a JavaScript identifier.
-   *
-   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
-   */
-  static WithValue id(String id, Iterable<GoogRequire> requires) {
-    CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, requires);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript "dotted identifier" which needs no {@code
-   * goog.require} statements to be added.
-   *
-   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
-   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
-   * It's provided because working with raw dot-separated strings is common.
-   *
-   * <p>Most dotted identifiers should be accessed via the {@link GoogRequire} api.
-   */
-  public static WithValue dottedIdNoRequire(String dotSeparatedIdentifiers) {
-    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.<GoogRequire>of());
-  }
-
-  static WithValue dottedIdWithRequires(
-      String dotSeparatedIdentifiers, Iterable<GoogRequire> requires) {
-    List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
-    Preconditions.checkState(
-        !ids.isEmpty(),
-        "not a dot-separated sequence of JavaScript identifiers: %s",
-        dotSeparatedIdentifiers);
-    // Associate the requires with the base id for convenience.  It is arguable that they should
-    // be instead associated with the last dot. Or perhaps with the 'whole' expression somehow.
-    // This is a minor philosophical concern but it should be fine in practice because nothing would
-    // ever split apart a code chunk into sub-chunks.  So the requires could really go anywhere.
-    CodeChunk.WithValue tip = id(ids.get(0), requires);
-    for (int i = 1; i < ids.size(); ++i) {
-      tip = tip.dotAccess(ids.get(i));
-    }
-    return tip;
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript string literal.
-   *
-   * @param contents The contents of the string literal. The contents will be escaped appropriately
-   *     and embedded inside single quotes.
-   */
-  public static WithValue stringLiteral(String contents) {
-    // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
-    // JS source files.
-    String escaped =
-        BaseUtils.escapeToSoyString(contents, /* shouldEscapeToAscii= */ true, QuoteStyle.SINGLE);
-
-    // </script in a JavaScript string will end the current script tag in most browsers. Escape the
-    // forward slash in the string to get around this issue.
-    escaped = escaped.replace("</script", "<\\/script");
-
-    return Leaf.create(escaped, /* isCheap= */ true);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript regular expression literal.
-   *
-   * @param contents The regex literal (including the opening and closing slashes).
-   */
-  public static WithValue regexLiteral(String contents) {
-    int firstSlash = contents.indexOf('/');
-    int lastSlash = contents.lastIndexOf('/');
-    checkArgument(
-        firstSlash < lastSlash && firstSlash != -1,
-        "expected regex to start with a '/' and have a second '/' near the end, got %s",
-        contents);
-    return Leaf.create(contents, /* isCheap= */ false);
-  }
-
-  /** Creates a code chunk representing a JavaScript number literal. */
-  public static WithValue number(long value) {
-    Preconditions.checkArgument(
-        IntegerNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
-    return Leaf.create(Long.toString(value), /* isCheap= */ true);
-  }
-
-  /** Creates a code chunk representing a JavaScript number literal. */
-  public static WithValue number(double value) {
-    return Leaf.create(Double.toString(value), /* isCheap= */ true);
-  }
-
-  /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
-  public static Statement assign(String varName, CodeChunk.WithValue rhs) {
-    return Assignment.create(varName, rhs);
-  }
-
-  /** Creates a code chunk representing an anonymous function literal. */
-  public static CodeChunk.WithValue function(Iterable<String> parameters, Statement body) {
-    return FunctionDeclaration.create(parameters, body);
-  }
-
-  /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
-  public static WithValue not(CodeChunk.WithValue arg) {
-    return PrefixUnaryOperation.create(Operator.NOT, arg);
-  }
-
-  /** Starts a {@code switch} statement dispatching on the given chunk. */
-  public static SwitchBuilder switch_(CodeChunk.WithValue switchOn) {
-    return new SwitchBuilder(switchOn);
-  }
-
-  /**
-   * Creates a code chunk representing the {@code new} operator applied to the given constructor. If
-   * you need to call the constructor with arguments, call {@link WithValue#call} on the returned
-   * chunk.
-   */
-  public static WithValue new_(WithValue ctor) {
-    return New.create(ctor);
-  }
-
-  /**
-   * Creates a code chunk representing the given Soy operator applied to the given operands.
-   *
-   * <p>Cannot be used for {@link Operator#AND}, {@link Operator#OR}, or {@link
-   * Operator#CONDITIONAL}, as they require access to a {@link CodeChunk.Generator} to generate
-   * temporary variables for short-circuiting. Use {@link CodeChunk.WithValue#and}, {@link
-   * CodeChunk.WithValue#or}, and {@link CodeChunk.Generator#conditionalExpression} instead.
-   */
-  public static WithValue operation(Operator op, List<WithValue> operands) {
-    Preconditions.checkArgument(operands.size() == op.getNumOperands());
-    Preconditions.checkArgument(
-        op != Operator.AND && op != Operator.OR && op != Operator.CONDITIONAL);
-    switch (op.getNumOperands()) {
-      case 1:
-        return PrefixUnaryOperation.create(op, operands.get(0));
-      case 2:
-        return BinaryOperation.create(op, operands.get(0), operands.get(1));
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  /** Creates a code chunk representing a javascript array literal. */
-  public static WithValue arrayLiteral(Iterable<? extends WithValue> elements) {
-    return ArrayLiteral.create(ImmutableList.copyOf(elements));
-  }
-
-  /** Creates a code chunk representing a javascript map literal. */
-  // TODO(b/79368576): rename to objectLiteral.
-  public static WithValue mapLiteral(
-      Iterable<? extends WithValue> keys, Iterable<? extends WithValue> values) {
-    return MapLiteral.create(ImmutableList.copyOf(keys), ImmutableList.copyOf(values));
-  }
-
-  /** Creates a code chunk representing a for loop. */
-  public static Statement forLoop(
-      String localVar,
-      CodeChunk.WithValue initial,
-      CodeChunk.WithValue limit,
-      CodeChunk.WithValue increment,
-      Statement body) {
-    return For.create(localVar, initial, limit, increment, body);
-  }
-
-  /** Creates a code chunk representing a for loop, with default values for initial & increment. */
-  public static Statement forLoop(String localVar, CodeChunk.WithValue limit, Statement body) {
-    return For.create(localVar, number(0), limit, number(1), body);
-  }
-
-  /** Creates a code chunk that represents a return statement returning the given value. */
-  public static Statement return_(CodeChunk.WithValue returnValue) {
-    return Return.create(returnValue);
-  }
-
-  /** Creates a code chunk that represents a throw statement. */
-  public static Statement throw_(CodeChunk.WithValue throwValue) {
-    return Throw.create(throwValue);
-  }
-
-  /**
-   * Wraps a {@link JsExpr} that could have incorrect precedence in parens.
-   *
-   * <p>The JsExpr constructor is inherently error-prone. It allows callers to pass a precedence
-   * unrelated to the topmost operator in the text string. While JsExprs created in the Soy codebase
-   * can be audited, JsExprs are also returned by {@link SoyJsSrcFunction functions} and {@link
-   * SoyJsSrcPrintDirective print directives} owned by others. This method should be used to wrap
-   * the results of those plugins.
-   */
-  public static WithValue dontTrustPrecedenceOf(
-      JsExpr couldHaveWrongPrecedence, Iterable<GoogRequire> requires) {
-    return Group.create(fromExpr(couldHaveWrongPrecedence, requires));
-  }
-
-  /**
-   * Creates a code chunk from the given text, treating it as a series of statements rather than an
-   * expression. For use only by {@link
-   * com.google.template.soy.jssrc.internal.GenJsCodeVisitor#visitReturningCodeChunk}.
-   *
-   * <p>TODO(user): remove.
-   */
-  public static Statement treatRawStringAsStatementLegacyOnly(
-      String rawString, Iterable<GoogRequire> requires) {
-    return LeafStatement.create(rawString, requires);
-  }
-
-  /**
-   * Marker class for {@link CodeChunk} instances that compile to one or more JavaScript statements.
-   *
-   * <p>It should be the case that any Statement will start and end in the same lexical scope.
-   */
-  @Immutable
-  public abstract static class Statement extends CodeChunk {
-    Statement() {}
-  }
-
-  /**
-   * Marker class for a chunk of code that represents a value.
-   *
-   * <p>Expressions represent values. Sequences of statements can represent a value (for example, if
-   * the first statement declares a variable and subsequent statements update the variable's state),
-   * but they are not required to.
-   *
-   * <p>Chunks representing values are required in certain contexts (for example, the right-hand
-   * side of an {@link CodeChunk.WithValue#assign assignment}).
-   */
-  @Immutable
-  public abstract static class WithValue extends CodeChunk {
-    // Do not put public static constants or methods on this class.  If you do then this can trigger
-    // classloading deadlocks due to cyclic references between this class, CodeChunk and the
-    // implementation class of the constant.
-
-    WithValue() {
-      /* no subclasses outside this package */
-    }
-
-    /** Formats this expression as a statement. */
-    public final Statement asStatement() {
-      return ExpressionStatement.of(this);
-    }
-
-    public final CodeChunk.WithValue plus(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.PLUS, this, rhs);
-    }
-
-    public final CodeChunk.WithValue minus(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.MINUS, this, rhs);
-    }
-
-    public final CodeChunk.WithValue plusEquals(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(
-          "+=",
-          0, // the precedence of JS assignments (including +=) is lower than any Soy operator
-          Associativity.RIGHT,
-          this,
-          rhs);
-    }
-
-    public final CodeChunk.WithValue doubleEquals(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.EQUAL, this, rhs);
-    }
-
-    public final CodeChunk.WithValue doubleNotEquals(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.NOT_EQUAL, this, rhs);
-    }
-
-    public final CodeChunk.WithValue tripleEquals(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(
-          "===",
-          Operator.EQUAL.getPrecedence(),
-          Operator.EQUAL.getAssociativity(),
-          this,
-          rhs);
-    }
-
-    public final CodeChunk.WithValue doubleEqualsNull() {
-      return doubleEquals(LITERAL_NULL);
-    }
-
-    public final CodeChunk.WithValue times(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.TIMES, this, rhs);
-    }
-
-    public final CodeChunk.WithValue divideBy(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.DIVIDE_BY, this, rhs);
-    }
-
-    /**
-     * Returns a code chunk representing the logical and ({@code &&}) of this chunk with the given
-     * chunk.
-     *
-     * @param codeGenerator Required in case temporary variables need to be allocated for
-     *     short-circuiting behavior ({@code rhs} should be evaluated only if the current chunk
-     *     evaluates as true).
-     */
-    public final CodeChunk.WithValue and(
-        CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
-      return BinaryOperation.and(this, rhs, codeGenerator);
-    }
-
-    /**
-     * Returns a code chunk representing the logical or ({@code ||}) of this chunk with the given
-     * chunk.
-     *
-     * @param codeGenerator Required in case temporary variables need to be allocated for
-     *     short-circuiting behavior ({@code rhs} should be evaluated only if the current chunk
-     *     evaluates as false).
-     */
-    public final CodeChunk.WithValue or(
-        CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
-      return BinaryOperation.or(this, rhs, codeGenerator);
-    }
-
-    public final CodeChunk.WithValue op(Operator op, CodeChunk.WithValue rhs) {
-      return BinaryOperation.operation(op, ImmutableList.of(this, rhs));
-    }
-
-    /** Takes in a String identifier for convenience, since that's what most use cases need. */
-    public final CodeChunk.WithValue dotAccess(String identifier) {
-      return Dot.create(this, id(identifier));
-    }
-
-    public final CodeChunk.WithValue bracketAccess(CodeChunk.WithValue arg) {
-      return Bracket.create(this, arg);
-    }
-
-    public final CodeChunk.WithValue call(CodeChunk.WithValue... args) {
-      return call(Arrays.asList(args));
-    }
-
-    public final CodeChunk.WithValue call(Iterable<? extends CodeChunk.WithValue> args) {
-      return Call.create(this, ImmutableList.copyOf(args));
-    }
-
-    public final CodeChunk.WithValue instanceof_(CodeChunk.WithValue identifier) {
-      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-      // instanceof has the same precedence as LESS_THAN
-      return BinaryOperation.create(
-          "instanceof", Operator.LESS_THAN.getPrecedence(), Associativity.LEFT, this, identifier);
-    }
-
-    public final CodeChunk.WithValue assign(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(
-          "=",
-          0, // the precedence of JS assignments is lower than any Soy operator
-          Associativity.RIGHT,
-          this,
-          rhs);
-    }
-
-    /**
-     * Returns a chunk whose output expression is the same as this chunk's, but which includes the
-     * given initial statements.
-     *
-     * <p>This method is designed for interoperability with parts of the JS codegen system that do
-     * not understand code chunks. For example, when applying plugin functions, {@link
-     * com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor#visitFunctionNode} needs to
-     * downgrade the plugin arguments from CodeChunk.WithValues to {@link JsExpr}s for the plugin
-     * API to process. The result (a JsExpr) needs to be upgraded back to a CodeChunk.WithValue that
-     * includes the initial statements from the original arguments.
-     */
-    public final CodeChunk.WithValue withInitialStatements(
-        Iterable<? extends Statement> initialStatements) {
-      // If there are no new initial statements, return the current chunk.
-      if (Iterables.isEmpty(initialStatements)) {
-        return this;
-      }
-      // Otherwise, return a code chunk that includes all of the dependent code.
-      return Composite.create(ImmutableList.copyOf(initialStatements), this);
-    }
-
-    /** Convenience method for {@code withInitialStatements(ImmutableList.of(statement))}. */
-    public final CodeChunk.WithValue withInitialStatement(Statement initialStatement) {
-      return withInitialStatements(ImmutableList.of(initialStatement));
-    }
-
-    /**
-     * Returns true if this chunk can be represented as a single expression. This method should be
-     * rarely used, but is needed when interoperating with parts of the codegen system that do not
-     * yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
-     */
-    final boolean isRepresentableAsSingleExpression() {
-      return Iterables.isEmpty(initialStatements());
-    }
-
-    /**
-     * If this chunk can be represented as a single expression, returns that expression. If this
-     * chunk cannot be represented as a single expression, returns an expression containing
-     * references to a variable defined by the corresponding {@link #doFormatInitialStatements
-     * initial statements}.
-     *
-     * <p>This method should rarely be used, but is needed when interoperating with parts of the
-     * codegen system that do not yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
-     */
-    public abstract JsExpr singleExprOrName();
-
-    /**
-     * If this chunk can be represented as a single expression, writes that single expression to the
-     * buffer. If the chunk cannot be represented as a single expression, writes an expression to
-     * the buffer containing references to a variable defined by the corresponding {@link
-     * #doFormatInitialStatements initial statements}.
-     *
-     * <p>Must only be called by {@link FormattingContext#appendOutputExpression}.
-     */
-    abstract void doFormatOutputExpr(FormattingContext ctx);
-
-    /**
-     * Returns the initial statements associated with this value. The statements must be serialized
-     * before this value (for example, they could contain declarations of variables referenced in
-     * this value).
-     *
-     * <p>TODO(b/33382980): If we have this method, why do we need doFormatInitialStatements? should
-     * doFormatInitialStatements be implemented in terms of this method? is this method supposed to
-     * contain all initial statements? even from conditional branches?
-     */
-    public abstract ImmutableList<Statement> initialStatements();
-
-    /**
-     * Returns {@code true} if the expression represented by this code chunk is so trivial that it
-     * isn't worth storing it in a temporary if it needs to be referenced multiple times.
-     *
-     * <p>The default is {@code false}, only certain special code chunks return {@code true}.
-     */
-    public boolean isCheap() {
-      return false;
-    }
-  }
 
   /**
    * A trivial interface for {@link #collectRequires(RequiresCollector)} that can be used to collect
@@ -579,10 +98,10 @@ public abstract class CodeChunk {
   }
 
   /**
-   * {@link #doFormatInitialStatements} and {@link CodeChunk.WithValue#doFormatOutputExpr} are the
-   * main methods subclasses should override to control their formatting. Subclasses should only
-   * override this method in the special case that a code chunk needs to control its formatting when
-   * it is the only chunk being serialized. TODO(brndn): only one override, can probably be declared
+   * {@link #doFormatInitialStatements} and {@link Expression#doFormatOutputExpr} are the main
+   * methods subclasses should override to control their formatting. Subclasses should only override
+   * this method in the special case that a code chunk needs to control its formatting when it is
+   * the only chunk being serialized. TODO(brndn): only one override, can probably be declared
    * final.
    *
    * @param startingIndent The indent level of the foreign code into which this code will be
@@ -594,8 +113,8 @@ public abstract class CodeChunk {
     initialStatements.appendInitialStatements(this);
 
     FormattingContext outputExprs = new FormattingContext(startingIndent);
-    if (this instanceof WithValue) {
-      outputExprs.appendOutputExpression((WithValue) this);
+    if (this instanceof Expression) {
+      outputExprs.appendOutputExpression((Expression) this);
       outputExprs.append(';').endLine();
     }
 
@@ -627,15 +146,14 @@ public abstract class CodeChunk {
   /**
    * Temporary method to ease migration to the CodeChunk DSL.
    *
-   * <p>Because of the recursive nature of the JS codegen system, it is generally not possible
-   * to convert one codegen method at a time to use the CodeChunk DSL.
-   * However, the business logic inside those methods can be migrated incrementally.
-   * Methods that do not yet use the CodeChunk DSL can "unwrap" inputs using this method
-   * and "wrap" results using {@link CodeChunk#fromExpr(JsExpr)}. This is safe as long as
-   * each CodeChunk generated for production code is
-   * {@link CodeChunk.WithValue#isRepresentableAsSingleExpression}.
+   * <p>Because of the recursive nature of the JS codegen system, it is generally not possible to
+   * convert one codegen method at a time to use the CodeChunk DSL. However, the business logic
+   * inside those methods can be migrated incrementally. Methods that do not yet use the CodeChunk
+   * DSL can "unwrap" inputs using this method and "wrap" results using {@link
+   * CodeChunk#fromExpr(JsExpr)}. This is safe as long as each CodeChunk generated for production
+   * code is {@link Expression#isRepresentableAsSingleExpression}.
    *
-   * TODO(user): remove.
+   * <p>TODO(user): remove.
    */
   public final JsExpr assertExpr() {
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
@@ -655,17 +173,17 @@ public abstract class CodeChunk {
    * inside those methods can be migrated incrementally. Methods that do not yet use the CodeChunk
    * DSL can "unwrap" inputs using this method and "wrap" results using {@link
    * CodeChunk#fromExpr(JsExpr)}. This is safe as long as each CodeChunk generated for production
-   * code is {@link CodeChunk.WithValue#isRepresentableAsSingleExpression}.
+   * code is {@link Expression#isRepresentableAsSingleExpression}.
    *
    * <p>TODO(user): remove.
    */
   public final JsExpr assertExprAndCollectRequires(RequiresCollector collector) {
-    WithValue withValue = (WithValue) this;
-    if (!withValue.isRepresentableAsSingleExpression()) {
+    Expression expression = (Expression) this;
+    if (!expression.isRepresentableAsSingleExpression()) {
       throw new IllegalStateException(String.format("Not an expr:\n%s", this.getCode()));
     }
     collectRequires(collector);
-    return withValue.singleExprOrName();
+    return expression.singleExprOrName();
   }
 
   /**
@@ -675,7 +193,7 @@ public abstract class CodeChunk {
    */
   abstract void doFormatInitialStatements(FormattingContext ctx);
 
-  private CodeChunk() {}
+  CodeChunk() {}
 
   /**
    * Code chunks in a single Soy template emit code into a shared JavaScript lexical scope, so they
@@ -706,10 +224,10 @@ public abstract class CodeChunk {
     /**
      * Returns a code chunk representing an if-then-else condition.
      *
-     * <p>If all the parameters are {@link WithValue#isRepresentableAsSingleExpression representable
-     * as single expressions}, the returned chunk will use the JavaScript ternary syntax ({@code
-     * predicate ? consequent : alternate}). Otherwise, the returned chunk will use JavaScript
-     * conditional statement syntax: <code>
+     * <p>If all the parameters are {@link Expression#isRepresentableAsSingleExpression
+     * representable as single expressions}, the returned chunk will use the JavaScript ternary
+     * syntax ({@code predicate ? consequent : alternate}). Otherwise, the returned chunk will use
+     * JavaScript conditional statement syntax: <code>
      *   var $tmp = null;
      *   if (predicate) {
      *     $tmp = consequent;
@@ -718,11 +236,9 @@ public abstract class CodeChunk {
      *   }
      * </code>
      */
-    public CodeChunk.WithValue conditionalExpression(
-        CodeChunk.WithValue predicate,
-        CodeChunk.WithValue consequent,
-        CodeChunk.WithValue alternate) {
-      return ifExpression(predicate, consequent).else_(alternate).build(this);
+    public Expression conditionalExpression(
+        Expression predicate, Expression consequent, Expression alternate) {
+      return Expression.ifExpression(predicate, consequent).else_(alternate).build(this);
     }
   }
 }

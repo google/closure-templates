@@ -18,8 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.ifExpression;
+import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.Expression.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
@@ -31,6 +31,7 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -43,7 +44,7 @@ import javax.annotation.Nullable;
 final class NullSafeAccumulator {
 
   /** The chain's base value. */
-  private final CodeChunk.WithValue base;
+  private final Expression base;
 
   /**
    * Represents each "link" in the chain. For example, for the chain {@code a?.b?.c.d},
@@ -53,11 +54,11 @@ final class NullSafeAccumulator {
 
   /**
    * A chain of dot accesses can end in a {@link com.google.common.html.types.SafeHtmlProto}
-   * (SafeStyleProto, etc.). Such a chain needs to be
-   * {@link com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpacked}
-   * to a SanitizedContent object before it can be used in the JS runtime.
+   * (SafeStyleProto, etc.). Such a chain needs to be {@link
+   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpacked} to a
+   * SanitizedContent object before it can be used in the JS runtime.
    */
-  @Nullable private CodeChunk.WithValue unpackFunction;
+  @Nullable private Expression unpackFunction;
 
   /**
    * A chain of dot accesses can end in a reference to a repeated or map {@link
@@ -70,7 +71,7 @@ final class NullSafeAccumulator {
   @Nullable private AccessType accessType;
 
   /** Creates a NullSafeAccumulator with the given base chunk. */
-  NullSafeAccumulator(CodeChunk.WithValue base) {
+  NullSafeAccumulator(Expression base) {
     this.base = base;
     this.chain = new ArrayList<>();
   }
@@ -84,7 +85,7 @@ final class NullSafeAccumulator {
   NullSafeAccumulator dotAccess(FieldAccess access, boolean nullSafe) {
     if (access instanceof ProtoCall) {
       ProtoCall protoCall = (ProtoCall) access;
-      CodeChunk.WithValue maybeUnpack = protoCall.unpackFunction();
+      Expression maybeUnpack = protoCall.unpackFunction();
       if (maybeUnpack != null) {
         Preconditions.checkState(
             unpackFunction == null, "this chain will already unpack with %s", unpackFunction);
@@ -96,7 +97,7 @@ final class NullSafeAccumulator {
     return this;
   }
 
-  NullSafeAccumulator mapGetAccess(CodeChunk.WithValue mapKeyCode, boolean nullSafe) {
+  NullSafeAccumulator mapGetAccess(Expression mapKeyCode, boolean nullSafe) {
     chain.add(FieldAccess.call("get", mapKeyCode).toChainAccess(nullSafe));
     // With a .get call we no longer need to unpack the entire map, just a singular object.
     accessType = AccessType.SINGULAR;
@@ -105,10 +106,11 @@ final class NullSafeAccumulator {
 
   /**
    * Extends the access chain with a bracket access to the given value.
+   *
    * @param nullSafe If true, code will be generated to ensure the chain is non-null before
-   * dereferencing {@code arg}.
+   *     dereferencing {@code arg}.
    */
-  NullSafeAccumulator bracketAccess(CodeChunk.WithValue arg, boolean nullSafe) {
+  NullSafeAccumulator bracketAccess(Expression arg, boolean nullSafe) {
     chain.add(new Bracket(arg, nullSafe));
     // With a bracket access we no longer need to unpack the entire list, just a singular object.
     accessType = AccessType.SINGULAR;
@@ -119,8 +121,8 @@ final class NullSafeAccumulator {
    * Returns a code chunk representing the entire access chain. Null-safe accesses in the chain
    * generate code to make sure the chain is non-null before performing the access.
    */
-  CodeChunk.WithValue result(CodeChunk.Generator codeGenerator) {
-    CodeChunk.WithValue accessChain = buildAccessChain(base, codeGenerator, chain.iterator());
+  Expression result(CodeChunk.Generator codeGenerator) {
+    Expression accessChain = buildAccessChain(base, codeGenerator, chain.iterator());
 
     if (unpackFunction == null) {
       return accessChain;
@@ -147,8 +149,8 @@ final class NullSafeAccumulator {
    *       null : t2.c.d}}
    * </ol>
    */
-  private static CodeChunk.WithValue buildAccessChain(
-      CodeChunk.WithValue base, CodeChunk.Generator generator, Iterator<ChainAccess> chain) {
+  private static Expression buildAccessChain(
+      Expression base, CodeChunk.Generator generator, Iterator<ChainAccess> chain) {
     if (!chain.hasNext()) {
       return base; // base case
     }
@@ -170,7 +172,8 @@ final class NullSafeAccumulator {
    */
   private abstract static class ChainAccess {
     /** How to extend the tip of the chain. */
-    abstract CodeChunk.WithValue extend(CodeChunk.WithValue prevTip);
+    abstract Expression extend(Expression prevTip);
+
     final boolean nullSafe;
 
     ChainAccess(boolean nullSafe) {
@@ -180,15 +183,15 @@ final class NullSafeAccumulator {
 
   /** Extends the chain with a (null-safe or not) bracket access. */
   private static final class Bracket extends ChainAccess {
-    final CodeChunk.WithValue value;
+    final Expression value;
 
-    Bracket(CodeChunk.WithValue value, boolean nullSafe) {
+    Bracket(Expression value, boolean nullSafe) {
       super(nullSafe);
       this.value = value;
     }
 
     @Override
-    CodeChunk.WithValue extend(CodeChunk.WithValue prevTip) {
+    Expression extend(Expression prevTip) {
       return prevTip.bracketAccess(value);
     }
   }
@@ -202,7 +205,7 @@ final class NullSafeAccumulator {
     }
 
     @Override
-    CodeChunk.WithValue extend(CodeChunk.WithValue prevTip) {
+    Expression extend(Expression prevTip) {
       return prevTip.dotAccess(id);
     }
   }
@@ -213,16 +216,16 @@ final class NullSafeAccumulator {
    */
   private static final class DotCall extends ChainAccess {
     final String getter;
-    @Nullable final CodeChunk.WithValue arg;
+    @Nullable final Expression arg;
 
-    DotCall(String getter, @Nullable CodeChunk.WithValue arg, boolean nullSafe) {
+    DotCall(String getter, @Nullable Expression arg, boolean nullSafe) {
       super(nullSafe);
       this.getter = getter;
       this.arg = arg;
     }
 
     @Override
-    CodeChunk.WithValue extend(CodeChunk.WithValue prevTip) {
+    Expression extend(Expression prevTip) {
       return arg == null
           ? prevTip.dotAccess(getter).call()
           : prevTip.dotAccess(getter).call(arg);
@@ -233,9 +236,9 @@ final class NullSafeAccumulator {
    * {@link NullSafeAccumulator} works by extending the tip of a chain of accesses. In some
    * situations (e.g. {@link ProtoCall}), the tip is "extended" by a dot access followed by a
    * function call. Because dot accesses have higher precedence in JS than function calls, the
-   * extension cannot be represented by a single {@link CodeChunk.WithValue} that is attached to the
-   * previous tip; that would generate an incorrect pair of parens around the function call, e.g.
-   * {@code proto.(getFoo())} instead of {@code proto.getFoo()}. This tuple is a workaround for that
+   * extension cannot be represented by a single {@link Expression} that is attached to the previous
+   * tip; that would generate an incorrect pair of parens around the function call, e.g. {@code
+   * proto.(getFoo())} instead of {@code proto.getFoo()}. This tuple is a workaround for that
    * precedence issue.
    */
   abstract static class FieldAccess {
@@ -247,7 +250,7 @@ final class NullSafeAccumulator {
       return new AutoValue_NullSafeAccumulator_Id(fieldName);
     }
 
-    static FieldAccess call(String getter, CodeChunk.WithValue arg) {
+    static FieldAccess call(String getter, Expression arg) {
       return new AutoValue_NullSafeAccumulator_Call(getter, arg);
     }
 
@@ -269,7 +272,9 @@ final class NullSafeAccumulator {
   @AutoValue
   abstract static class Call extends FieldAccess {
     abstract String getter();
-    @Nullable abstract CodeChunk.WithValue arg();
+
+    @Nullable
+    abstract Expression arg();
 
     @Override
     ChainAccess toChainAccess(boolean nullSafe) {
@@ -283,17 +288,17 @@ final class NullSafeAccumulator {
     abstract String getter();
 
     @Nullable
-    abstract CodeChunk.WithValue getterArg();
+    abstract Expression getterArg();
 
     @Nullable
     abstract AccessType accessType();
 
     @Nullable
-    abstract CodeChunk.WithValue unpackFunction();
+    abstract Expression unpackFunction();
 
     static ProtoCall create(String fieldName, FieldDescriptor desc) {
       String getter;
-      CodeChunk.WithValue arg;
+      Expression arg;
       if (desc.isExtension()) {
         getter = "getExtension";
         arg = extensionField(desc);
@@ -302,7 +307,7 @@ final class NullSafeAccumulator {
         arg = null;
       }
 
-      CodeChunk.WithValue unpackFunction = getUnpackFunction(desc);
+      Expression unpackFunction = getUnpackFunction(desc);
 
       return new AutoValue_NullSafeAccumulator_ProtoCall(
           getter, arg, unpackFunction == null ? null : AccessType.get(desc), unpackFunction);
@@ -314,7 +319,7 @@ final class NullSafeAccumulator {
     }
 
     @Nullable
-    private static CodeChunk.WithValue getUnpackFunction(FieldDescriptor desc) {
+    private static Expression getUnpackFunction(FieldDescriptor desc) {
       if (ProtoUtils.isSanitizedContentField(desc)) {
         return protoToSanitizedContentConverterFunction(desc.getMessageType());
       } else if (ProtoUtils.isSanitizedContentMap(desc)) {
@@ -330,8 +335,7 @@ final class NullSafeAccumulator {
     /** This isn't accessing a data structure, just a singular value. */
     SINGULAR {
       @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
+      Expression unpackResult(Expression accessChain, Expression unpackFunction) {
         // It's okay if the whole chain evals to null. The unpack functions accept null.
         return unpackFunction.call(accessChain);
       }
@@ -339,22 +343,19 @@ final class NullSafeAccumulator {
     /** This is accessing a repeated value. */
     REPEATED {
       @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
+      Expression unpackResult(Expression accessChain, Expression unpackFunction) {
         return GOOG_ARRAY_MAP.call(accessChain, unpackFunction);
       }
     },
     /** This is access a map value. */
     MAP {
       @Override
-      CodeChunk.WithValue unpackResult(
-          CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction) {
+      Expression unpackResult(Expression accessChain, Expression unpackFunction) {
         return SOY_NEWMAPS_TRANSFORM_VALUES.call(accessChain, unpackFunction);
       }
     };
 
-    abstract CodeChunk.WithValue unpackResult(
-        CodeChunk.WithValue accessChain, CodeChunk.WithValue unpackFunction);
+    abstract Expression unpackResult(Expression accessChain, Expression unpackFunction);
 
     private static AccessType get(FieldDescriptor desc) {
       if (desc.isMapField()) {

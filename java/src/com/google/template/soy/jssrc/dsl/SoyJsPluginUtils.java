@@ -16,15 +16,13 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
+import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
@@ -41,10 +39,10 @@ import java.util.List;
  */
 public final class SoyJsPluginUtils {
 
-  private static final Function<WithValue, JsExpr> TO_JS_EXPR =
-      new Function<WithValue, JsExpr>() {
+  private static final Function<Expression, JsExpr> TO_JS_EXPR =
+      new Function<Expression, JsExpr>() {
         @Override
-        public JsExpr apply(WithValue chunk) {
+        public JsExpr apply(Expression chunk) {
           return chunk.singleExprOrName();
         }
       };
@@ -53,16 +51,16 @@ public final class SoyJsPluginUtils {
 
   /** Generates a JS expression for the given operator and operands. */
   public static JsExpr genJsExprUsingSoySyntax(Operator op, List<JsExpr> operandJsExprs) {
-    List<CodeChunk.WithValue> operands =
+    List<Expression> operands =
         Lists.transform(
             operandJsExprs,
-            new Function<JsExpr, CodeChunk.WithValue>() {
+            new Function<JsExpr, Expression>() {
               @Override
-              public CodeChunk.WithValue apply(JsExpr input) {
+              public Expression apply(JsExpr input) {
                 return fromExpr(input, ImmutableList.<GoogRequire>of());
               }
             });
-    return CodeChunk.operation(op, operands).assertExpr();
+    return Expression.operation(op, operands).assertExpr();
   }
 
   /**
@@ -73,16 +71,16 @@ public final class SoyJsPluginUtils {
    * @param directive The print directive to apply.
    * @param args Print directive args, if any.
    */
-  public static CodeChunk.WithValue applyDirective(
+  public static Expression applyDirective(
       CodeChunk.Generator generator,
-      CodeChunk.WithValue expr,
+      Expression expr,
       SoyJsSrcPrintDirective directive,
-      List<CodeChunk.WithValue> args) {
+      List<Expression> args) {
     List<JsExpr> argExprs = Lists.transform(args, TO_JS_EXPR);
     JsExpr applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
     expr.collectRequires(collector);
-    for (CodeChunk.WithValue arg : args) {
+    for (Expression arg : args) {
       arg.collectRequires(collector);
     }
     if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
@@ -94,7 +92,7 @@ public final class SoyJsPluginUtils {
 
     ImmutableList.Builder<Statement> initialStatements =
         ImmutableList.<Statement>builder().addAll(expr.initialStatements());
-    for (CodeChunk.WithValue arg : args) {
+    for (Expression arg : args) {
       initialStatements.addAll(arg.initialStatements());
     }
     return fromExpr(applied, collector.get()).withInitialStatements(initialStatements.build());

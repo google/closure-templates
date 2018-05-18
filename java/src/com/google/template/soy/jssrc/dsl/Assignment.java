@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents an assignment to a variable. */
 @AutoValue
@@ -26,9 +25,9 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 abstract class Assignment extends Statement {
   abstract String varName();
 
-  abstract CodeChunk.WithValue rhs();
+  abstract Expression rhs();
 
-  static Assignment create(String varName, CodeChunk.WithValue rhs) {
+  static Assignment create(String varName, Expression rhs) {
     return new AutoValue_Assignment(varName, rhs);
   }
   

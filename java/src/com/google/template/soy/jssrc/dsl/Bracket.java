@@ -22,18 +22,17 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.Statement;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
 @Immutable
 abstract class Bracket extends Operation {
 
-  abstract CodeChunk.WithValue receiver();
+  abstract Expression receiver();
 
-  abstract CodeChunk.WithValue key();
+  abstract Expression key();
 
-  static Bracket create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
+  static Bracket create(Expression receiver, Expression key) {
     return new AutoValue_Bracket(
         ImmutableList.<Statement>builder()
             .addAll(receiver.initialStatements())

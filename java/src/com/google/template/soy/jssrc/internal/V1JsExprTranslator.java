@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -166,15 +166,13 @@ final class V1JsExprTranslator {
    * from a foreach-loop var), or null if not found.
    *
    * @param ident The Soy local variable to translate.
-   * @param mappings The replacement JS expressions for the local variables
-   *     (and foreach-loop special functions) current in scope.
+   * @param mappings The replacement JS expressions for the local variables (and foreach-loop
+   *     special functions) current in scope.
    * @return The translated string for the given variable, or null if not found.
-   *
-   * TODO(user): change the return type to CodeChunk.WithValue.
    */
   @Nullable
   private static String getLocalVarTranslation(String ident, SoyToJsVariableMappings mappings) {
-    CodeChunk.WithValue translation = mappings.maybeGet(ident);
+    Expression translation = mappings.maybeGet(ident);
     if (translation == null) {
       return null;
     }
