@@ -26,11 +26,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for AssertStrictAutoescapingVisitor.
+ * Unit tests for AssertStrictAutoescapingPass.
  *
  */
 @RunWith(JUnit4.class)
-public final class AssertStrictAutoescapingVisitorTest {
+public final class AssertStrictAutoescapingPassTest {
 
   @Test
   public void testStrictTemplate() {
@@ -55,7 +55,7 @@ public final class AssertStrictAutoescapingVisitorTest {
   }
 
   /**
-   * Parse soyCode and execute the AssertStrictAutoescapingVisitor check on the output.
+   * Parse soyCode and execute the AssertStrictAutoescapingPass check on the output.
    *
    * @param soyCode The input code.
    */
@@ -68,7 +68,7 @@ public final class AssertStrictAutoescapingVisitorTest {
   }
 
   /**
-   * Parse soyCode and execute the AssertStrictAutoescapingVisitor check on the output.
+   * Parse soyCode and execute the AssertStrictAutoescapingPass check on the output.
    *
    * @param soyCode The input code.
    */
@@ -93,7 +93,8 @@ public final class AssertStrictAutoescapingVisitorTest {
             .errorReporter(errorReporter)
             .parse()
             .fileSet();
-    new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
+    new AssertStrictAutoescapingPass(errorReporter)
+        .run(soyTree.getChild(0), soyTree.getNodeIdGenerator());
     return errorReporter.getErrors();
   }
 }

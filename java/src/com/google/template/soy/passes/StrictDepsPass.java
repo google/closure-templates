@@ -21,23 +21,18 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
  * such as the Tofu (JavaObj) backend.
- *
- * <p>{@link #exec} should be called on a {@code SoyFileSetNode} or a {@code SoyFileNode}. There is
- * no return value. A {@code SoySyntaxException} is thrown if an error is found.
- *
  */
-public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class StrictDepsPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_UNDEFINED_TEMPLATE =
       SoyErrorKind.of("Undefined template ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
@@ -51,30 +46,30 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
           "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
               + "not the other way around.");
 
-  /** Registry of all templates in the Soy tree. */
-  private final TemplateRegistry templateRegistry;
-
   private final ErrorReporter errorReporter;
 
-  public StrictDepsVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
-    this.templateRegistry = templateRegistry;
+  public StrictDepsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for specific nodes.
+  @Override
+  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    // TODO(lukes): only run on sources
+    for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(fileSet, CallBasicNode.class)) {
+      checkBasicCall(node, registry);
+    }
+  }
 
   // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
-  @Override
-  protected void visitCallBasicNode(CallBasicNode node) {
-    TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
+  private void checkBasicCall(CallBasicNode node, TemplateRegistry registry) {
+    TemplateNode callee = registry.getBasicTemplate(node.getCalleeName());
 
     if (callee == null) {
       String extraErrorMessage =
           SoyErrors.getDidYouMeanMessage(
-              templateRegistry.getBasicTemplatesMap().keySet(), node.getCalleeName());
+              registry.getBasicTemplatesMap().keySet(), node.getCalleeName());
       errorReporter.report(
           node.getSourceLocation(),
           CALL_TO_UNDEFINED_TEMPLATE,
@@ -104,17 +99,5 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     }
 
-    // Don't forget to visit content within CallParamContentNodes.
-    visitChildren(node);
-  }
-
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
   }
 }

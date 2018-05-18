@@ -687,7 +687,7 @@ final class ExpressionCompiler {
       // NullPointerExceptions at runtime.  To fix these issues we would need to have a better
       // notion of what expressions are nullable (or really, non-nullable) at runtime.
       // TODO(lukes): Simple ideas that could help the above:
-      // 1. expose the 'non-null' prover from ResolveExpressionTypesVisitor, this can in fact be
+      // 1. expose the 'non-null' prover from ResolveExpressionTypesPass, this can in fact be
       //    relied on.  However it is currently mixed in with other parts of the type system which
       //    cannot be trusted
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());

@@ -25,9 +25,8 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -40,19 +39,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
- * keys referenced in the template.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ * Pass for checking that in each template, the declared parameters match the data keys referenced
+ * in the template.
  *
  * <p>Note this visitor only works for code in Soy V2 syntax.
- *
- * <p>{@link #exec} should be called on a full parse tree. There is no return value. However, errors
- * are reported to the {@code ErrorReporter} if the parameters declared in some template's SoyDoc do
- * not match the data keys referenced in that template.
- *
  */
-final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckTemplateParamsPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind UNDECLARED_DATA_KEY =
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
@@ -61,21 +53,23 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private final ErrorReporter errorReporter;
 
-  /** Registry of all templates in the Soy tree. */
-  private final TemplateRegistry templateRegistry;
-
-  CheckTemplateParamsVisitor(
-      TemplateRegistry templateRegistry,
-      ErrorReporter errorReporter) {
-    this.templateRegistry = templateRegistry;
+  CheckTemplateParamsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+  }
+
+  @Override
+  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    for (SoyFileNode fileNode : fileSet.getChildren()) {
+      for (TemplateNode templateNode : fileNode.getChildren()) {
+        checkTemplate(templateNode, registry);
+      }
+    }
   }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override
-  protected void visitTemplateNode(TemplateNode node) {
+  private void checkTemplate(TemplateNode node, TemplateRegistry templateRegistry) {
     if (node.isDeprecatedV1()) {
       return;
     }
@@ -124,16 +118,6 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
       for (TemplateParam unusedParam : unusedParams) {
         errorReporter.report(unusedParam.nameLocation(), UNUSED_PARAM, unusedParam.name());
       }
-    }
-  }
-
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
     }
   }
 }

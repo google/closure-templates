@@ -190,7 +190,7 @@ public final class TemplateRegistry {
   /**
    * Gets the content kind that a call results in. If used with delegate calls, the delegate
    * templates must use strict autoescaping. This relies on the fact that all delegate calls must
-   * have the same kind when using strict autoescaping. This is enforced by CheckDelegatesVisitor.
+   * have the same kind when using strict autoescaping. This is enforced by CheckDelegatesPass.
    *
    * @param node The {@link CallBasicNode} or {@link CallDelegateNode}.
    * @return The kind of content that the call results in.

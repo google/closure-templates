@@ -76,7 +76,7 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
     if (soyType.getKind() == Kind.PROTO) {
       checkProto(node, (SoyProtoType) soyType);
     }
-    // else, do nothing. ResolveExpressionTypesVisitor should have already reported an error.
+    // else, do nothing. ResolveExpressionTypesPass should have already reported an error.
   }
 
   private void checkProto(ProtoInitNode node, SoyProtoType soyType) {

@@ -119,7 +119,7 @@ public final class AugmentMapFunction extends TypedSoyFunction
     SoyExpression arg1 = args.get(1);
     Expression first = arg0.checkedCast(SoyDict.class);
     Expression second = arg1.checkedCast(SoyDict.class);
-    // TODO(lukes): this logic should move into the ResolveExpressionTypesVisitor
+    // TODO(lukes): this logic should move into the ResolveExpressionTypesPass
     LegacyObjectMapType mapType =
         LegacyObjectMapType.of(
             StringType.getInstance(),

@@ -17,17 +17,16 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -37,18 +36,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Checks various rules regarding the use of delegates (including delegate packages, delegate
  * templates, and delegate calls).
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>{@link #exec} should be called on a full parse tree. There is no return value. A {@code
- * SoySyntaxException} is thrown if an error is found.
- *
  */
-final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckDelegatesPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_DELTEMPLATE =
       SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");
@@ -71,38 +66,36 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           "Found delegate template with same name ''{0}'' but different strict html mode "
               + "compared to the definition at {1}.");
 
-  /** A template registry built from the Soy tree. */
-  private final TemplateRegistry templateRegistry;
-
-  /** The current enclosing template's name, as suitable for user messages (during pass). */
-  private String currTemplateNameForUserMsgs;
-
-  /** Current delegate package name, or null if none (during pass). */
-  private String currDelPackageName;
-
-
   private final ErrorReporter errorReporter;
 
-  CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
-    this.templateRegistry = templateRegistry;
+  CheckDelegatesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  public Void exec(SoyNode soyNode) {
-
-    Preconditions.checkArgument(soyNode instanceof SoyFileSetNode);
+  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
-    checkTemplates();
+    checkTemplates(registry);
 
-    // Perform checks that involve calls (uses traversal).
-    super.exec(soyNode);
-
-    return null;
+    // TODO(lukes): only run on sources
+    for (SoyFileNode fileNode : fileSet.getChildren()) {
+      for (TemplateNode template : fileNode.getChildren()) {
+        String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
+        String currDelPackageName = template.getDelPackageName();
+        for (CallBasicNode callNode :
+            SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {
+          checkCallBasicNode(callNode, registry, currDelPackageName, currTemplateNameForUserMsgs);
+        }
+        for (CallDelegateNode callNode :
+            SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
+          checkCallDelegateNode(callNode, registry);
+        }
+      }
+    }
   }
 
   /** Performs checks that only involve templates (uses templateRegistry only). */
-  private void checkTemplates() {
+  private void checkTemplates(TemplateRegistry templateRegistry) {
 
     DelTemplateSelector<TemplateDelegateNode> selector = templateRegistry.getDelTemplateSelector();
 
@@ -196,18 +189,11 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     return paramSet;
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for specific nodes.
-
-  @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    this.currTemplateNameForUserMsgs = node.getTemplateNameForUserMsgs();
-    this.currDelPackageName = node.getDelPackageName();
-    visitChildren(node);
-  }
-
-  @Override
-  protected void visitCallBasicNode(CallBasicNode node) {
+  private void checkCallBasicNode(
+      CallBasicNode node,
+      TemplateRegistry templateRegistry,
+      @Nullable String currDelPackageName,
+      String currTemplateNameForUserMsgs) {
 
     String calleeName = node.getCalleeName();
 
@@ -221,17 +207,28 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
-        errorReporter.report(
-            node.getSourceLocation(),
-            CROSS_PACKAGE_DELCALL,
-            currTemplateNameForUserMsgs,
-            callee.getTemplateName());
+        if (node.getNearestAncestor(CallParamContentNode.class) == null) {
+          errorReporter.report(
+              node.getSourceLocation(),
+              CROSS_PACKAGE_DELCALL,
+              currTemplateNameForUserMsgs,
+              callee.getTemplateName());
+        } else {
+          // downgrade to a warning for backwards compatibility reasons.  This pass used to have a
+          // bug where it failed to inspect CallParamContentNode and thus missed a number of call
+          // sites...and people depend on it.
+          // luckily this particular error doesn't seem very important. it doesn't violate Soy's
+          errorReporter.warn(
+              node.getSourceLocation(),
+              CROSS_PACKAGE_DELCALL,
+              currTemplateNameForUserMsgs,
+              callee.getTemplateName());
+        }
       }
     }
   }
 
-  @Override
-  protected void visitCallDelegateNode(CallDelegateNode node) {
+  private void checkCallDelegateNode(CallDelegateNode node, TemplateRegistry templateRegistry) {
 
     String delCalleeName = node.getDelCalleeName();
 
@@ -241,13 +238,4 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
-  }
 }

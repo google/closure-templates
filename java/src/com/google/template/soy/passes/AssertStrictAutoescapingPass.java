@@ -16,15 +16,11 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Preconditions;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
@@ -32,41 +28,23 @@ import com.google.template.soy.soytree.TemplateNode;
  * can choose to disallow all other types of autoescaping besides strict.
  *
  */
-final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
+final class AssertStrictAutoescapingPass extends CompilerFilePass {
 
   private static final SoyErrorKind INVALID_AUTOESCAPING =
       SoyErrorKind.of("Invalid use of non-strict when strict autoescaping is required.");
   private final ErrorReporter errorReporter;
 
-  AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {
+  AssertStrictAutoescapingPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  public Void exec(SoyNode soyNode) {
-    Preconditions.checkArgument(
-        soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
-    super.exec(soyNode);
-    return null;
-  }
-
-  @Override
-  protected void visitSoyFileNode(SoyFileNode node) {
-    visitChildren(node);
-  }
-
-  @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    if (node.getAutoescapeMode() != AutoescapeMode.STRICT) {
-      errorReporter.report(node.getSourceLocation(), INVALID_AUTOESCAPING);
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (TemplateNode node : file.getChildren()) {
+      if (node.getAutoescapeMode() != AutoescapeMode.STRICT) {
+        errorReporter.report(node.getSourceLocation(), INVALID_AUTOESCAPING);
+      }
     }
-  }
 
-  /** Fallback implementation for all other nodes. */
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
   }
 }

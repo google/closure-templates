@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -35,6 +36,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -57,7 +59,7 @@ import java.util.Map;
  * declaration object.
  *
  */
-public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class ResolveNamesPass extends CompilerFilePass {
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
           "Found global reference aliasing a local variable ''{0}'', did you mean " + "''${0}''?");
@@ -219,90 +221,97 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private final ErrorReporter errorReporter;
 
-  public ResolveNamesVisitor(ErrorReporter errorReporter) {
+  public ResolveNamesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    // Create a scope for all parameters.
-    localVariables = new LocalVariables();
-    localVariables.enterScope();
-    ijParams = new HashMap<>();
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    new Visitor().exec(file);
+  }
 
-    // Add both injected and regular params to the param scope.
-    for (TemplateParam param : node.getAllParams()) {
-      localVariables.define(param, node);
+  private final class Visitor extends AbstractSoyNodeVisitor<Void> {
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {
+      // Create a scope for all parameters.
+      localVariables = new LocalVariables();
+      localVariables.enterScope();
+      ijParams = new HashMap<>();
+
+      // Add both injected and regular params to the param scope.
+      for (TemplateParam param : node.getAllParams()) {
+        localVariables.define(param, node);
+      }
+
+      visitSoyNode(node);
+      localVariables.exitScope();
+      localVariables.verify();
+      node.setMaxLocalVariableTableSize(localVariables.nextSlotToClaim);
+
+      localVariables = null;
+      ijParams = null;
     }
 
-    visitSoyNode(node);
-    localVariables.exitScope();
-    localVariables.verify();
-    node.setMaxLocalVariableTableSize(localVariables.nextSlotToClaim);
-
-    localVariables = null;
-    ijParams = null;
-  }
-
-  @Override
-  protected void visitPrintNode(PrintNode node) {
-    visitSoyNode(node);
-  }
-
-  @Override
-  protected void visitLetValueNode(LetValueNode node) {
-    visitExpressions(node);
-    // Now after the let-block is complete, define the new variable
-    // in the current scope.
-    localVariables.define(node.getVar(), node);
-  }
-
-  @Override
-  protected void visitLetContentNode(LetContentNode node) {
-    // LetContent nodes may reserve slots in their sub expressions, but due to lazy evaluation will
-    // not use them immediately, so we can't release the slots until the parent scope is gone.
-    // however the variable lifetime should be limited
-    localVariables.enterLazyScope();
-    visitChildren(node);
-    localVariables.exitLazyScope();
-    localVariables.define(node.getVar(), node);
-  }
-
-  @Override
-  protected void visitForNonemptyNode(ForNonemptyNode node) {
-    // Visit the foreach iterator expression
-    visitExpressions(node.getParent());
-
-    // Create a scope to hold the iteration variable
-    localVariables.enterScope();
-    localVariables.define(node.getVar(), node);
-
-    // Visit the node body
-    visitChildren(node);
-    localVariables.exitScope();
-  }
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ExprHolderNode) {
-      visitExpressions((ExprHolderNode) node);
+    @Override
+    protected void visitPrintNode(PrintNode node) {
+      visitSoyNode(node);
     }
 
-    if (node instanceof ParentSoyNode<?>) {
-      if (node instanceof BlockNode) {
-        localVariables.enterScope();
-        visitChildren((BlockNode) node);
-        localVariables.exitScope();
-      } else {
-        visitChildren((ParentSoyNode<?>) node);
+    @Override
+    protected void visitLetValueNode(LetValueNode node) {
+      visitExpressions(node);
+      // Now after the let-block is complete, define the new variable
+      // in the current scope.
+      localVariables.define(node.getVar(), node);
+    }
+
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
+      // LetContent nodes may reserve slots in their sub expressions, but due to lazy evaluation
+      // will not use them immediately, so we can't release the slots until the parent scope is
+      // gone. However the variable lifetime should be limited
+      localVariables.enterLazyScope();
+      visitChildren(node);
+      localVariables.exitLazyScope();
+      localVariables.define(node.getVar(), node);
+    }
+
+    @Override
+    protected void visitForNonemptyNode(ForNonemptyNode node) {
+      // Visit the foreach iterator expression
+      visitExpressions(node.getParent());
+
+      // Create a scope to hold the iteration variable
+      localVariables.enterScope();
+      localVariables.define(node.getVar(), node);
+
+      // Visit the node body
+      visitChildren(node);
+      localVariables.exitScope();
+    }
+
+    @Override
+    protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ExprHolderNode) {
+        visitExpressions((ExprHolderNode) node);
+      }
+
+      if (node instanceof ParentSoyNode<?>) {
+        if (node instanceof BlockNode) {
+          localVariables.enterScope();
+          visitChildren((BlockNode) node);
+          localVariables.exitScope();
+        } else {
+          visitChildren((ParentSoyNode<?>) node);
+        }
       }
     }
-  }
 
-  private void visitExpressions(ExprHolderNode node) {
-    ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
-    for (ExprRootNode expr : node.getExprList()) {
-      exprVisitor.exec(expr);
+    private void visitExpressions(ExprHolderNode node) {
+      ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
+      for (ExprRootNode expr : node.getExprList()) {
+        exprVisitor.exec(expr);
+      }
     }
   }
 
@@ -381,7 +390,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
         // this case is mostly about supporting v1 templates.  Undeclared vars for v2 templates are
-        // flagged as errors in the CheckTemplateParamsVisitor
+        // flagged as errors in the CheckTemplateParamsPass
         varDefn = new UndeclaredVar(varRef.getName());
       }
       varRef.setDefn(varDefn);

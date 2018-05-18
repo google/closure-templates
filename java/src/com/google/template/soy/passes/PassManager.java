@@ -29,7 +29,6 @@ import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -67,7 +66,7 @@ import javax.annotation.Nullable;
  *
  * <p>A note on ordering. There is no real structure to the ordering of the passes beyond what is
  * documented in comments. Many passes do rely on running before/after a different pass (e.g. {@link
- * ResolveExpressionTypesVisitor} needs to run after {@link ResolveNamesPass}), but there isn't any
+ * ResolveExpressionTypesPass} needs to run after {@link ResolveNamesPass}), but there isn't any
  * dependency system in place.
  */
 public final class PassManager {
@@ -79,7 +78,6 @@ public final class PassManager {
   private final SoyGeneralOptions options;
   private final boolean desugarHtmlNodes;
   @Nullable private final ContextualAutoescaper autoescaper;
-  @Nullable private final SimplifyVisitor simplifyVisitor;
 
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
@@ -90,7 +88,6 @@ public final class PassManager {
     this.desugarHtmlNodes = builder.desugarHtmlNodes;
     this.autoescaper =
         builder.autoescaperEnabled ? new ContextualAutoescaper(builder.soyPrintDirectives) : null;
-    this.simplifyVisitor = options.isOptimizerEnabled() ? SimplifyVisitor.create() : null;
 
     // Single file passes
     // These passes perform tree rewriting and all compiler checks that don't require information
@@ -118,7 +115,7 @@ public final class PassManager {
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             // needs to happen after rewrite globals
             .add(new XidPass(errorReporter))
-            .add(new ResolveNamesPass())
+            .add(new ResolveNamesPass(errorReporter))
             // needs to be after ResolveNames and MsgsPass
             .add(new MsgIdFunctionPass(errorReporter));
     if (builder.addHtmlAttributesForDebugging) {
@@ -127,8 +124,8 @@ public final class PassManager {
       singleFilePassesBuilder.add(new AddDebugAttributesPass());
     }
     if (!disableAllTypeChecking) {
-      singleFilePassesBuilder.add(new CheckDeclaredTypesPass());
-      singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
+      singleFilePassesBuilder.add(new CheckDeclaredTypesPass(errorReporter));
+      singleFilePassesBuilder.add(new ResolveExpressionTypesPass(registry, errorReporter));
       // needs to run after both resolve types and htmlrewrite pass
       singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, builder.loggingConfig));
     }
@@ -147,12 +144,12 @@ public final class PassManager {
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
       // TODO(lukes): both of these are really about type checking, they should be part of
-      // ResolveExpressionTypesVisitor
+      // ResolveExpressionTypesPass
       singleFilePassesBuilder.add(new CheckProtoInitCallsPass(errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
-      singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
+      singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));
     }
     this.singleFilePasses = singleFilePassesBuilder.build();
 
@@ -163,19 +160,20 @@ public final class PassManager {
     // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
     // use.
     ImmutableList.Builder<CompilerFileSetPass> beforeAutoescaperFileSetPassBuilder =
-        ImmutableList.<CompilerFileSetPass>builder().add(new CheckTemplateParamsPass());
+        ImmutableList.<CompilerFileSetPass>builder()
+            .add(new CheckTemplateParamsPass(errorReporter));
     if (!disableAllTypeChecking) {
       beforeAutoescaperFileSetPassBuilder.add(new CheckTemplateCallsPass(errorReporter));
     }
     beforeAutoescaperFileSetPassBuilder
-        .add(new CheckVisibilityPass())
-        .add(new CheckDelegatesPass())
+        .add(new CheckTemplateVisibilityPass(errorReporter))
+        .add(new CheckDelegatesPass(errorReporter))
         // Could run ~anywhere, needs to be a fileset pass to validate deprecated-noncontextual
         // calls.  Make this a singlefile pass when deprecated-noncontextual is dead.
         .add(new CheckEscapingSanityFileSetPass(errorReporter));
     // If disallowing external calls, perform the check.
     if (options.allowExternalCalls() == TriState.DISABLED) {
-      beforeAutoescaperFileSetPassBuilder.add(new StrictDepsPass());
+      beforeAutoescaperFileSetPassBuilder.add(new StrictDepsPass(errorReporter));
     }
     // if htmlrewriting is enabled, don't desugar because later passes want the nodes
     // we need to run this here, before the autoescaper because the autoescaper may choke on lots
@@ -194,7 +192,8 @@ public final class PassManager {
       // the nodes.
       simplificationPassesBuilder.add(new DesugarHtmlNodesPass());
     }
-    if (builder.optimize) {
+    // TODO(lukes): there should only be one way to disable the optimizer, not 2
+    if (builder.optimize && options.isOptimizerEnabled()) {
       simplificationPassesBuilder.add(new OptimizationPass());
     }
     // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes in ways
@@ -365,6 +364,7 @@ public final class PassManager {
       this.loggingConfig = checkNotNull(loggingConfig);
       return this;
     }
+
     /**
      * Can be used to enable/disable the autoescaper.
      *
@@ -377,77 +377,6 @@ public final class PassManager {
 
     public PassManager build() {
       return new PassManager(this);
-    }
-  }
-
-  private final class ResolveNamesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolveNamesVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class CheckDeclaredTypesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new CheckDeclaredTypesVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class ResolveExpressionTypesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolveExpressionTypesVisitor(registry, errorReporter).exec(file);
-    }
-  }
-
-  private final class EnforceStrictAutoescapingPass extends CompilerFilePass {
-    final AssertStrictAutoescapingVisitor visitor =
-        new AssertStrictAutoescapingVisitor(errorReporter);
-
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      visitor.exec(file);
-    }
-  }
-
-  private final class CheckTemplateParamsPass extends CompilerFileSetPass {
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new CheckTemplateParamsVisitor(registry, errorReporter).exec(fileSet);
-    }
-  }
-
-  private final class CheckDelegatesPass extends CompilerFileSetPass {
-
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new CheckDelegatesVisitor(registry, errorReporter).exec(fileSet);
-    }
-  }
-
-  private final class CheckVisibilityPass extends CompilerFileSetPass {
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      // TODO(lukes): make this part of CheckCallsPass?
-      new CheckTemplateVisibility(registry, errorReporter).exec(fileSet);
-    }
-  }
-
-  private final class StrictDepsPass extends CompilerFileSetPass {
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new StrictDepsVisitor(registry, errorReporter).exec(fileSet);
-    }
-  }
-
-  // Attempt to simplify the tree.
-  private final class OptimizationPass extends CompilerFileSetPass {
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      if (simplifyVisitor != null) { // it will be null when disabled
-        simplifyVisitor.simplify(fileSet, registry);
-      }
     }
   }
 }

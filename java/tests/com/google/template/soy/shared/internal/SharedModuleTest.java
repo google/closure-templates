@@ -46,7 +46,7 @@ public final class SharedModuleTest {
   private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
       ImmutableSet.of(NoAutoescapeDirective.NAME);
 
-  // These functions have special handling in the ResolveExpressionTypesVisitor and so don't
+  // These functions have special handling in the ResolveExpressionTypesPass and so don't
   // implement TypedSoyFunction
   private static final ImmutableSet<String> FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING =
       ImmutableSet.of("concatLists", "mapKeys", "legacyObjectMapToMap", "mapToLegacyObjectMap");

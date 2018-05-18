@@ -84,7 +84,7 @@ import javax.annotation.Nullable;
  * a set of TemplateParam object in each {@code CallNode} for all the params that require runtime
  * checking.
  *
- * <p>Note: This pass requires that the ResolveExpressionTypesVisitor has already been run.
+ * <p>Note: This pass requires that the ResolveExpressionTypesPass has already been run.
  */
 final class CheckTemplateCallsPass extends CompilerFileSetPass {
 

@@ -18,8 +18,8 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -39,28 +39,25 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  * keys are used.
  *
  * <p>This class determines if explicit type declarations are legal, whereas {@link
- * ResolveExpressionTypesVisitor} calculates implicit types and determines if they're legal.
+ * ResolveExpressionTypesPass} calculates implicit types and determines if they're legal.
  */
-final class CheckDeclaredTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckDeclaredTypesPass extends CompilerFilePass {
 
   private final ErrorReporter errorReporter;
 
-  CheckDeclaredTypesVisitor(ErrorReporter errorReporter) {
+  CheckDeclaredTypesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    for (TemplateParam param : node.getAllParams()) {
-      if (param.declLoc() == DeclLoc.HEADER) {
-        ((HeaderParam) param).getTypeNode().accept(new MapKeyTypeChecker());
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (TemplateNode templateNode : file.getChildren()) {
+      for (TemplateParam param : templateNode.getAllParams()) {
+        if (param.declLoc() == DeclLoc.HEADER) {
+          ((HeaderParam) param).getTypeNode().accept(new MapKeyTypeChecker());
+        }
       }
     }
-  }
-
-  @Override
-  protected void visitSoyFileNode(SoyFileNode node) {
-    visitChildren(node);
   }
 
   private final class MapKeyTypeChecker implements TypeNodeVisitor<Void> {

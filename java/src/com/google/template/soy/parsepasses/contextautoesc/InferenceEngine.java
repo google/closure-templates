@@ -623,8 +623,8 @@ final class InferenceEngine {
     /**
      * Determines the content kind of the templates.
      *
-     * <p>This relies on CheckDelegatesVisitor to print friendly messages if the deltemplates differ
-     * in content kind.
+     * <p>This relies on CheckDelegatesPass to print friendly messages if the deltemplates differ in
+     * content kind.
      */
     private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
       if (templates.isEmpty()) {

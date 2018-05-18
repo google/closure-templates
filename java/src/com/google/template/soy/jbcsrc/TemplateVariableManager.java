@@ -117,7 +117,7 @@ final class TemplateVariableManager implements ClassFieldManager {
      * Creates a new user-defined variable.
      *
      * @param name The name of the variable, the name is assumed to be unique (enforced by the
-     *     ResolveNamesVisitor).
+     *     ResolveNamesPass).
      * @param initializer The expression that can be used to initialize the variable
      * @param strategy Set this to {@code DERIVED} if the value of the variable is trivially
      *     derivable from other variables already defined.
@@ -143,7 +143,7 @@ final class TemplateVariableManager implements ClassFieldManager {
       /**
        * Includes @param, @inject, {let..}, and loop vars.
        *
-       * <p>Uniqueness of local variable names is enforced by the ResolveNamesVisitor pass, we just
+       * <p>Uniqueness of local variable names is enforced by the ResolveNamesPass pass, we just
        * need uniqueness for the field names
        */
       USER_DEFINED,

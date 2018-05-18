@@ -48,11 +48,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link ResolveExpressionTypesVisitor}.
+ * Unit tests for {@link ResolveExpressionTypesPass}.
  *
  */
 @RunWith(JUnit4.class)
-public final class ResolveExpressionTypesVisitorTest {
+public final class ResolveExpressionTypesPassTest {
   private static final SoyFunction ASSERT_TYPE_FUNCTION =
       new SoyFunction() {
         @Override
@@ -68,9 +68,6 @@ public final class ResolveExpressionTypesVisitorTest {
 
   private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
 
-  private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor() {
-    return new ResolveExpressionTypesVisitor(TYPE_REGISTRY, ErrorReporter.exploding());
-  }
 
   @Test
   public void testOptionalParamTypes() {
@@ -241,8 +238,6 @@ public final class ResolveExpressionTypesVisitorTest {
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
-    createResolveExpressionTypesVisitor().exec(soyTree);
     assertTypes(soyTree);
   }
 

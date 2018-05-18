@@ -25,7 +25,7 @@ import com.google.template.soy.types.SoyType;
  * strict type checking for Soy functions.
  *
  * <p>Generic types are not supported in general. Some built-in functions have special logic in
- * {@link com.google.template.soy.passes.ResolveExpressionTypesVisitor} for additional checks.
+ * {@link com.google.template.soy.passes.ResolveExpressionTypesPass} for additional checks.
  */
 @AutoValue
 public abstract class ResolvedSignature {

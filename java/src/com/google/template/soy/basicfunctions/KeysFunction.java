@@ -115,7 +115,7 @@ public final class KeysFunction extends TypedSoyFunction
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     SoyExpression soyExpression = args.get(0);
     SoyType argType = soyExpression.soyType();
-    // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
+    // TODO(lukes): this logic should live in ResolveExpressionTypesPass
     ListType listType;
     if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
       listType = ListType.EMPTY_LIST;

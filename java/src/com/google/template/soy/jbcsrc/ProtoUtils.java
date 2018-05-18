@@ -739,7 +739,7 @@ final class ProtoUtils {
               .local()
               .invoke(MethodRef.MAP_GET_KEY)
               .checkedCast(keyRuntimeType.runtimeType())
-              // In ResolveExpressionTypesVisitor we already enforce that key is not nullable.
+              // In ResolveExpressionTypesPass we already enforce that key is not nullable.
               .asNonNullable();
       SoyExpression mapKey = SoyExpression.forSoyValue(keyType, getMapKey);
 

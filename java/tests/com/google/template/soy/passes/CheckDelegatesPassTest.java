@@ -26,11 +26,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for CheckDelegatesVisitor.
+ * Unit tests for CheckDelegatesPass.
  *
  */
 @RunWith(JUnit4.class)
-public final class CheckDelegatesVisitorTest {
+public final class CheckDelegatesPassTest {
 
   @Test
   public void testRecognizeValidDelegatePackage() {

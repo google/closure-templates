@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
@@ -87,6 +88,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -123,7 +125,7 @@ import javax.annotation.Nullable;
  * Visitor which resolves all expression types.
  *
  */
-final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ResolveExpressionTypesPass extends CompilerFilePass {
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
@@ -202,78 +204,107 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
 
-  ResolveExpressionTypesVisitor(
-      SoyTypeRegistry typeRegistry,
-      ErrorReporter errorReporter) {
+  ResolveExpressionTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
   }
 
   @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    visitSoyNode(node);
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    substitutions = null; // make sure substitutions don't leak across files
+    new TypeAssignmentSoyVisitor().exec(file);
   }
 
-  @Override
-  protected void visitPrintNode(PrintNode node) {
-    visitSoyNode(node);
-  }
+  private final class TypeAssignmentSoyVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  @Override
-  protected void visitLetValueNode(LetValueNode node) {
-    visitSoyNode(node);
-    node.getVar().setType(node.getExpr().getType());
-  }
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {
+      visitSoyNode(node);
+    }
 
-  @Override
-  protected void visitLetContentNode(LetContentNode node) {
-    visitSoyNode(node);
-    node.getVar()
-        .setType(
-            node.getContentKind() != null
-                ? SanitizedType.getTypeForContentKind(node.getContentKind())
-                : StringType.getInstance());
-  }
+    @Override
+    protected void visitPrintNode(PrintNode node) {
+      visitSoyNode(node);
+    }
 
-  @Override
-  protected void visitIfNode(IfNode node) {
-    // TODO(user): Also support switch / case.
-    TypeSubstitution savedSubstitutionState = substitutions;
-    for (SoyNode child : node.getChildren()) {
-      if (child instanceof IfCondNode) {
-        IfCondNode icn = (IfCondNode) child;
-        visitExpressions(icn);
+    @Override
+    protected void visitLetValueNode(LetValueNode node) {
+      visitSoyNode(node);
+      node.getVar().setType(node.getExpr().getType());
+    }
 
-        // Visit the conditional expression to compute which types can be narrowed.
-        TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
-        visitor.exec(icn.getExpr());
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
+      visitSoyNode(node);
+      node.getVar()
+          .setType(
+              node.getContentKind() != null
+                  ? SanitizedType.getTypeForContentKind(node.getContentKind())
+                  : StringType.getInstance());
+    }
 
-        // Save the state of substitutions from the previous if block.
-        TypeSubstitution previousSubstitutionState = substitutions;
+    @Override
+    protected void visitIfNode(IfNode node) {
+      // TODO(user): Also support switch / case.
+      TypeSubstitution savedSubstitutionState = substitutions;
+      for (SoyNode child : node.getChildren()) {
+        if (child instanceof IfCondNode) {
+          IfCondNode icn = (IfCondNode) child;
+          visitExpressions(icn);
 
-        // Modify the current set of type substitutions for the 'true' branch
-        // of the if statement.
-        addTypeSubstitutions(visitor.positiveTypeConstraints);
-        visitChildren(icn);
+          // Visit the conditional expression to compute which types can be narrowed.
+          TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
+          visitor.exec(icn.getExpr());
 
-        // Rewind the substitutions back to the state before the if-condition.
-        // Add in the negative substitutions, which will affect subsequent blocks
-        // of the if statement.
-        // So for example if we have a variable whose type is (A|B|C) and the
-        // first if-block tests whether that variable is type A, then in the
-        // 'else' block it must be of type (B|C); If a subsequent 'elseif'
-        // statement tests whether it's type B, then in the following else block
-        // it can only be of type C.
-        substitutions = previousSubstitutionState;
-        addTypeSubstitutions(visitor.negativeTypeConstraints);
-      } else if (child instanceof IfElseNode) {
-        // For the else node, we simply inherit the previous set of subsitutions.
-        IfElseNode ien = (IfElseNode) child;
-        visitChildren(ien);
+          // Save the state of substitutions from the previous if block.
+          TypeSubstitution previousSubstitutionState = substitutions;
+
+          // Modify the current set of type substitutions for the 'true' branch
+          // of the if statement.
+          addTypeSubstitutions(visitor.positiveTypeConstraints);
+          visitChildren(icn);
+
+          // Rewind the substitutions back to the state before the if-condition.
+          // Add in the negative substitutions, which will affect subsequent blocks
+          // of the if statement.
+          // So for example if we have a variable whose type is (A|B|C) and the
+          // first if-block tests whether that variable is type A, then in the
+          // 'else' block it must be of type (B|C); If a subsequent 'elseif'
+          // statement tests whether it's type B, then in the following else block
+          // it can only be of type C.
+          substitutions = previousSubstitutionState;
+          addTypeSubstitutions(visitor.negativeTypeConstraints);
+        } else if (child instanceof IfElseNode) {
+          // For the else node, we simply inherit the previous set of subsitutions.
+          IfElseNode ien = (IfElseNode) child;
+          visitChildren(ien);
+        }
+      }
+      substitutions = savedSubstitutionState;
+    }
+
+    @Override
+    protected void visitForNonemptyNode(ForNonemptyNode node) {
+      // Visit the foreach iterator expression
+      visitExpressions(node.getParent());
+      // Set the inferred type of the loop variable.
+      node.getVar().setType(getElementType(node.getExpr().getType(), node));
+      // Visit the node body
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ExprHolderNode) {
+        visitExpressions((ExprHolderNode) node);
+      }
+
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
       }
     }
-    substitutions = savedSubstitutionState;
   }
+
 
   // Given a map of type subsitutions, add all the entries to the current set of
   // active substitutions.
@@ -293,27 +324,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (!entry.getValue().equals(previousType)) {
         substitutions = new TypeSubstitution(substitutions, expr, entry.getValue());
       }
-    }
-  }
-
-  @Override
-  protected void visitForNonemptyNode(ForNonemptyNode node) {
-    // Visit the foreach iterator expression
-    visitExpressions(node.getParent());
-    // Set the inferred type of the loop variable.
-    node.getVar().setType(getElementType(node.getExpr().getType(), node));
-    // Visit the node body
-    visitChildren(node);
-  }
-
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ExprHolderNode) {
-      visitExpressions((ExprHolderNode) node);
-    }
-
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
     }
   }
 

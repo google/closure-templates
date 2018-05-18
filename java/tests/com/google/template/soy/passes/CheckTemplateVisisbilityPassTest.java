@@ -28,12 +28,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link CheckTemplateVisibility}.
+ * Unit tests for {@link CheckTemplateVisibilityPass}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 @RunWith(JUnit4.class)
-public final class CheckTemplateVisibilityTest {
+public final class CheckTemplateVisisbilityPassTest {
 
   @Test
   public void testCallPrivateTemplateFromSameFile() {

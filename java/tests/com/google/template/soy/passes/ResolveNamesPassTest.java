@@ -30,6 +30,7 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
@@ -39,11 +40,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for ResolveNamesVisitor.
+ * Unit tests for ResolveNamesPass.
  *
  */
 @RunWith(JUnit4.class)
-public final class ResolveNamesVisitorTest {
+public final class ResolveNamesPassTest {
 
   private static final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
 
@@ -54,7 +55,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{@param pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -67,7 +68,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{@inject pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -79,7 +80,7 @@ public final class ResolveNamesVisitorTest {
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $pa: 1 /}", "{$pa}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
@@ -99,7 +100,7 @@ public final class ResolveNamesVisitorTest {
                     "{let $lb: 1 /}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
     // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
@@ -123,7 +124,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{let $la: 1 /}", "{let $lb: $la /}", "{let $lc: $lb /}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(3);
@@ -195,7 +196,7 @@ public final class ResolveNamesVisitorTest {
                     "{$a}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
+    runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(2);
@@ -206,6 +207,7 @@ public final class ResolveNamesVisitorTest {
     assertThat(bLetNode.getVar().localVariableIndex()).isEqualTo(0);
   }
 
+
   @Test
   public void testLetReferencedInsideAttributeValue() {
     SoyFileSetNode soyTree =
@@ -215,6 +217,12 @@ public final class ResolveNamesVisitorTest {
     TemplateNode n = soyTree.getChild(0).getChild(0);
     VarRefNode node = Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
+  }
+
+  private void runPass(SoyFileSetNode soyTree) {
+    for (SoyFileNode file : soyTree.getChildren()) {
+      new ResolveNamesPass(ErrorReporter.exploding()).run(file, soyTree.getNodeIdGenerator());
+    }
   }
 
   /**

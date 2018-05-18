@@ -29,11 +29,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link CheckTemplateParamsVisitor}.
+ * Unit tests for {@link CheckTemplateParamsPass}.
  *
  */
 @RunWith(JUnit4.class)
-public final class CheckTemplateParamsVisitorTest {
+public final class CheckTemplateParamsPassTest {
 
   @Test
   public void testMatchingSimple() {

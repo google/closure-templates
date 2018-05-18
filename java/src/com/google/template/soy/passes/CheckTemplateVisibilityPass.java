@@ -18,12 +18,11 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -33,41 +32,33 @@ import com.google.template.soy.soytree.Visibility;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
+final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =
       SoyErrorKind.of("{0} has {1} access in {2}.");
 
   private final ErrorReporter errorReporter;
 
-  /** Registry of all templates in the Soy tree. */
-  private final TemplateRegistry templateRegistry;
-
-  CheckTemplateVisibility(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
-    this.templateRegistry = templateRegistry;
+  CheckTemplateVisibilityPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
-  protected void visitCallBasicNode(CallBasicNode node) {
-    visitChildren(node);
-    String calleeName = node.getCalleeName();
-    TemplateNode definition = templateRegistry.getBasicTemplate(calleeName);
-    if (definition != null && !isVisible(node, definition)) {
-      errorReporter.report(
-          node.getSourceLocation(),
-          CALLEE_NOT_VISIBLE,
-          calleeName,
-          definition.getVisibility().getAttributeValue(),
-          definition.getParent().getFilePath());
+  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    // TODO(lukes): only run on sources
+    for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(fileSet, CallBasicNode.class)) {
+      String calleeName = node.getCalleeName();
+      TemplateNode definition = registry.getBasicTemplate(calleeName);
+      if (definition != null && !isVisible(node, definition)) {
+        errorReporter.report(
+            node.getSourceLocation(),
+            CALLEE_NOT_VISIBLE,
+            calleeName,
+            definition.getVisibility().getAttributeValue(),
+            definition.getParent().getFilePath());
+      }
     }
-  }
 
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    if (node instanceof ParentSoyNode) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
   }
 
   private static boolean isVisible(CallNode caller, TemplateNode callee) {
