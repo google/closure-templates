@@ -59,6 +59,8 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -272,6 +274,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     @Override
     protected void visitTemplateNode(TemplateNode node) {
       localVarExprs = new LocalVariableStack();
+      for (TemplateParam param : node.getParams()) {
+        if (param instanceof HeaderParam) {
+          ((HeaderParam) param).getTypeNode().accept(new LegacyObjectMapFinder(errorReporter));
+        }
+      }
+
       genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
 
       // Generate function definition up to colon.

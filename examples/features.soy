@@ -393,8 +393,7 @@
  * Demo expressions.
  */
 {template .demoExpressions}
-  {@param students: ?}  /** Nonempty list of students. Each student must have 'name', 'major',
-                            and 'year'. */
+  {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
   {@param currentYear: ?}  /** The current year. */
 
   First student's major: {$students[0].major}<br>

@@ -95,6 +95,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       SoyErrorKind.of("Proto init is not supported in pysrc.");
   private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
       SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
+  private static final SoyErrorKind UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED =
+      SoyErrorKind.of(
+          "Bracket access on values of unknown type is not supported in pysrc. "
+              + "The expression should be declared as a list or map.");
 
   /**
    * Errors in this visitor generate Python source that immediately explodes. Users of Soy are
@@ -277,9 +281,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               case LIST:
                 return genCodeForKeyAccess(
                     refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.NO);
+              case UNKNOWN:
+                errorReporter.report(
+                    itemAccess.getKeyExprChild().getSourceLocation(),
+                    UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
+                // fall through
               case MAP:
               case UNION:
-              case UNKNOWN:
                 return genCodeForKeyAccess(
                     refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.YES);
               case LEGACY_OBJECT_MAP:

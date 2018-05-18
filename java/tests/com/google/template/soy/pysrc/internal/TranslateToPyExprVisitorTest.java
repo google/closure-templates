@@ -95,36 +95,9 @@ public class TranslateToPyExprVisitorTest {
   public void testDataRef() {
     assertThatSoyExpr("$boo").translatesTo("data.get('boo')", Integer.MAX_VALUE);
     assertThatSoyExpr("$boo.goo").translatesTo("data.get('boo').get('goo')", Integer.MAX_VALUE);
-    assertThatSoyExpr("$boo['goo']")
-        .translatesTo(
-            "runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string('goo'))",
-            Integer.MAX_VALUE);
-    assertThatSoyExpr("$boo[0]")
-        .translatesTo(
-            "runtime.key_safe_data_access(data.get('boo'), runtime.maybe_coerce_key_to_string(0))",
-            Integer.MAX_VALUE);
-    assertThatSoyExpr("$boo[$foo][$foo+1]")
-        .translatesTo(
-            "runtime.key_safe_data_access("
-                + "runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(data.get('foo'))), "
-                + "runtime.maybe_coerce_key_to_string(runtime.type_safe_add(data.get('foo'), 1)))",
-            Integer.MAX_VALUE);
-
     assertThatSoyExpr("$boo?.goo")
         .translatesTo(
             "None if data.get('boo') is None else data.get('boo').get('goo')",
-            Operator.CONDITIONAL);
-    assertThatSoyExpr("$boo?[0]?[1]")
-        .translatesTo(
-            "None if data.get('boo') is None else "
-                + "None if runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(0)) is None else "
-                + "runtime.key_safe_data_access("
-                + "runtime.key_safe_data_access("
-                + "data.get('boo'), runtime.maybe_coerce_key_to_string(0)), "
-                + "runtime.maybe_coerce_key_to_string(1))",
             Operator.CONDITIONAL);
   }
 

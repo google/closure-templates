@@ -200,7 +200,7 @@ public final class GenPyCodeVisitorTest {
         SOY_NAMESPACE
             + "{template .helloWorld}\n"
             + "  {@param foo : ?}\n"
-            + "  {@param boo : ?}\n"
+            + "  {@param boo : list<string>}\n"
             + "  {if $foo}\n"
             + "    {for $i in range(5)}\n"
             + "      {$boo[$i]}\n"
@@ -219,8 +219,7 @@ public final class GenPyCodeVisitorTest {
             "  if data.get('foo'):",
             "    iList### = xrange(5)",
             "    for iIndex###, iData### in enumerate(iList###):",
-            "      output.append(str(runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(iData###))))",
+            "      output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))",
             "  else:",
             "    output.append('Blah')",
             "  return sanitize.SanitizedHtml(''.join(output), " + SANITIZATION_APPROVAL + ")",
@@ -253,35 +252,37 @@ public final class GenPyCodeVisitorTest {
   @Test
   public void testFor() {
     String soyCode =
-        "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
+        "{@param boo : list<string>}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     assertThatSoyCode(soyCode)
         .compilesTo(
             "iList### = xrange(5)",
             "for iIndex###, iData### in enumerate(iList###):",
-            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
-
-    soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
-    assertThatSoyCode(soyCode)
-        .compilesTo(
-            "iList### = xrange(5, 10)",
-            "for iIndex###, iData### in enumerate(iList###):",
-            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
 
     soyCode =
-        "  {@param boo : ?}\n"
-            + "  {@param goo : ?}\n"
-            + "  {@param foo : ?}\n"
-            + "{for $i in range($foo, $boo, $goo)}\n"
+        "{@param boo : list<string>}\n"
+            + "{for $i in range(5, 10)}\n"
             + "  {$boo[$i]}\n"
             + "{/for}\n";
     assertThatSoyCode(soyCode)
         .compilesTo(
-            "iList### = xrange(data.get('foo'), data.get('boo'), data.get('goo'))",
+            "iList### = xrange(5, 10)",
             "for iIndex###, iData### in enumerate(iList###):",
-            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), "
-                + "runtime.maybe_coerce_key_to_string(iData###))))\n");
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
+
+    soyCode =
+        "  {@param boo : list<string>}\n"
+            + "  {@param goo : ?}\n"
+            + "  {@param foo : ?}\n"
+            + "  {@param hoo: ?}\n"
+            + "{for $i in range($foo, $goo, $hoo)}\n"
+            + "  {$boo[$i]}\n"
+            + "{/for}\n";
+    assertThatSoyCode(soyCode)
+        .compilesTo(
+            "iList### = xrange(data.get('foo'), data.get('goo'), data.get('hoo'))",
+            "for iIndex###, iData### in enumerate(iList###):",
+            "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
   }
 
   @Test
