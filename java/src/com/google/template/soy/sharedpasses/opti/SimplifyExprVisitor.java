@@ -26,19 +26,24 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -135,6 +140,69 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     ExprNode replacementNode = operand0.coerceToBoolean() ? node.getChild(1) : node.getChild(2);
     node.getParent().replaceChild(node, replacementNode);
+  }
+
+  // Optimize accessing fields of record and proto literals: ['a': 'b'].a => 'b'
+  // This is unlikely to occur by chance, but things like the msgWithId() function may introduce
+  // this code since it desugars into a record literal.
+  @Override
+  protected void visitFieldAccessNode(FieldAccessNode node) {
+    // simplify children first
+    visitChildren(node);
+    ExprNode baseExpr = node.getChild(0);
+    if (baseExpr instanceof RecordLiteralNode) {
+      RecordLiteralNode recordLiteral = (RecordLiteralNode) baseExpr;
+      for (int i = 0; i < recordLiteral.numChildren(); i += 2) {
+        StringNode key = (StringNode) recordLiteral.getChild(i);
+        if (key.getValue().equals(node.getFieldName())) {
+          node.getParent().replaceChild(node, recordLiteral.getChild(i + 1));
+          return;
+        }
+      }
+      // replace with null?  this should have been a compiler error.
+    } else if (baseExpr instanceof ProtoInitNode) {
+      ProtoInitNode protoInit = (ProtoInitNode) baseExpr;
+      int fieldIndex = protoInit.getParamNames().indexOf(node.getFieldName());
+      if (fieldIndex != -1) {
+        node.getParent().replaceChild(node, protoInit.getChild(fieldIndex));
+      } else {
+        // here we could replace with a default value or null, but for now, do nothing, rather than
+        // implement proto default field semantics.
+      }
+    }
+  }
+
+  // Optimize accessing map and list literals.  This covers expressions like [1,2,3][1] and
+  // map('a':1)['a']
+  // This is fairly unlikely to happen in practice, but is being done for consistency with the other
+  // aggregate literals above.  This might happen for things like pure functions that return
+  // collections
+  @Override
+  protected void visitItemAccessNode(ItemAccessNode node) {
+    // simplify children first
+    visitChildren(node);
+    ExprNode baseExpr = node.getChild(0);
+    ExprNode keyExpr = node.getChild(1);
+    if (baseExpr instanceof ListLiteralNode && keyExpr instanceof IntegerNode) {
+      ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
+      long index = ((IntegerNode) keyExpr).getValue();
+      if (index > 0 && index < listLiteral.numChildren()) {
+        node.getParent().replaceChild(node, listLiteral.getChild((int) index));
+      } else {
+        // out of range
+        node.getParent().replaceChild(node, new NullNode(node.getSourceLocation()));
+      }
+    } else if (baseExpr instanceof MapLiteralNode) {
+      MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
+      for (int i = 0; i < mapLiteral.numChildren(); i += 2) {
+        if (ExprEquivalence.get().equivalent(keyExpr, mapLiteral.getChild(i))) {
+          node.getParent().replaceChild(node, mapLiteral.getChild(i + 1));
+          return;
+        }
+      }
+      // no matching key
+      node.getParent().replaceChild(node, new NullNode(node.getSourceLocation()));
+    }
   }
 
   // -----------------------------------------------------------------------------------------------

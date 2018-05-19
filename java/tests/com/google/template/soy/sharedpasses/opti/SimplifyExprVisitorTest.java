@@ -95,6 +95,22 @@ public final class SimplifyExprVisitorTest {
   }
 
   @Test
+  public void testDereferenceLiterals() {
+    // dereferences of lists and maps can be simplified
+    assertThat("[1,2,3][1]").simplifiesTo("2");
+    assertThat("[1,2,3]?[1]").simplifiesTo("2");
+
+    assertThat("[1,2,3][3]").simplifiesTo("null");
+    assertThat("[1,2,3]?[3]").simplifiesTo("null");
+
+    assertThat("map('a':1, 'b':3)['a']").simplifiesTo("1");
+    assertThat("map('a':1, 'b':3)?['a']").simplifiesTo("1");
+
+    assertThat("['a':1, 'b':3].a").simplifiesTo("1");
+    assertThat("['a':1, 'b':3]?.a").simplifiesTo("1");
+  }
+
+  @Test
   public void testSimplifyBinaryLogicalOps() {
     // 'and'
     assertThat("true and true").simplifiesTo("true");
