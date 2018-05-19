@@ -55,6 +55,12 @@ public final class PluginResolver {
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
       SoyErrorKind.of("{0} called with {1} arguments (expected {2}).");
 
+  private static final SoyErrorKind PLUGIN_NAMED_MAP_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "Plugins named ''map'' are not allowed, "
+              + "since they conflict with Soy''s map() literal syntax."
+          );
+
   /** Configures the behavior of the resolver when a lookup fails. */
   public enum Mode {
     /**
@@ -87,6 +93,9 @@ public final class PluginResolver {
     this.printDirectives = checkNotNull(printDirectives);
     this.functions = checkNotNull(functions);
     this.reporter = checkNotNull(reporter);
+    if (functions.containsKey("map")) {
+      reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAMED_MAP_NOT_ALLOWED);
+    }
   }
 
   /**
