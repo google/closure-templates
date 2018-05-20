@@ -291,6 +291,38 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join("{template .foo}\n", "<link rel href=\"foo.html\">\n", "{/template}"));
   }
 
+  @Test
+  public void testPreload_as_script() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            "<link rel='preload' as='script' href='foo.js'" + NONCE + ">\n",
+            "{/template}"),
+        join(
+            "{template .foo}\n",
+            "<link rel='preload' as='script' href='foo.js'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testPreload_as_style() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            "<link rel='preload' as='style' href='foo.js'" + NONCE + ">\n",
+            "{/template}"),
+        join(
+            "{template .foo}\n", "<link rel='preload' as='style' href='foo.js'>\n", "{/template}"));
+  }
+
+  @Test
+  public void testPreload_as_wrong() {
+    // as='css' is not a valid attribute for link[rel=preload]
+    assertInjected(
+        join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"),
+        join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
+  }
+
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }

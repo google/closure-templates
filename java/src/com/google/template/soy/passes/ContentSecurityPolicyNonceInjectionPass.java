@@ -35,6 +35,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import javax.annotation.Nullable;
 
 /**
  * A compiler pass that adds CSP nonce injections to {@code <script>} and {@code <style>} tags.
@@ -135,16 +136,30 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
     return false;
   }
 
+  @Nullable
+  private String getStaticDirectAttributeValue(HtmlOpenTagNode tag, String attribute) {
+    HtmlAttributeNode attr = tag.getDirectAttributeNamed(attribute);
+    return attr == null ? null : attr.getStaticContent();
+  }
+
+  // See https://html.spec.whatwg.org/#obtaining-a-resource-from-a-link-element
   private boolean isNonceableLink(HtmlOpenTagNode tag) {
-    HtmlAttributeNode attr = tag.getDirectAttributeNamed("rel");
-    if (attr == null) {
+    String relAttrValue = getStaticDirectAttributeValue(tag, "rel");
+    if (relAttrValue == null) {
       return false;
     }
-    String attrValue = attr.getStaticContent();
-    if (attrValue == null) {
-      return false;
+    if (Ascii.equalsIgnoreCase("import", relAttrValue)) {
+      return true;
     }
-    return Ascii.equalsIgnoreCase("import", attrValue);
+    if (Ascii.equalsIgnoreCase("preload", relAttrValue)) {
+      String asAttrValue = getStaticDirectAttributeValue(tag, "as");
+      if (asAttrValue == null) {
+        return false;
+      }
+      return Ascii.equalsIgnoreCase(asAttrValue, "script")
+          || Ascii.equalsIgnoreCase(asAttrValue, "style");
+    }
+    return false;
   }
 
   /**
