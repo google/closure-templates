@@ -618,7 +618,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");
-        case MSG_ID:
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

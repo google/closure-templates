@@ -81,8 +81,7 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     outer:
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      if (fn.getSoyFunction() == BuiltinFunction.MSG_ID
-          || fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
+      if (fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
         if (fn.numChildren() != 1) {
           // if it isn't == 1, then an error has already been reported
           continue;
@@ -134,25 +133,18 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
         MSG_VARIABLE_NOT_IN_SCOPE,
         fn.getSoyFunction().getName(),
         explanation);
-    if (fn.getSoyFunction() == BuiltinFunction.MSG_ID) {
 
+    // this way we don't trigger a cascade of errors about incorrect types
     fn.getParent()
-        .replaceChild(fn, new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()));
-    } else if (fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
-      // this way we don't trigger a cascade of errors about incorrect types
-      fn.getParent()
-          .replaceChild(
-              fn,
-              new RecordLiteralNode(
-                  ImmutableList.of(
-                      new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                      new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                      new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                      fn.getChild(0).copy(new CopyState())),
-                  fn.getSourceLocation()));
-    } else {
-      throw new AssertionError("impossible");
-    }
+        .replaceChild(
+            fn,
+            new RecordLiteralNode(
+                ImmutableList.of(
+                    new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                    new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                    new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                    fn.getChild(0).copy(new CopyState())),
+                fn.getSourceLocation()));
   }
 
   /**
@@ -183,24 +175,17 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
       condOpNode.addChild(createMsgIdNode(fallbackMsgId, fn.getSourceLocation()));
       msgIdNode = condOpNode;
     }
-    if (fn.getSoyFunction() == BuiltinFunction.MSG_ID) {
-      fn.getParent().replaceChild(fn, msgIdNode);
-    } else if (fn.getSoyFunction() == BuiltinFunction.MSG_WITH_ID) {
-      // We need to generate a record literal
-      // This map literal has 2 keys: 'id' and 'msg'
-      RecordLiteralNode recordLiteral =
-          new RecordLiteralNode(
-              ImmutableList.of(
-                  new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                  msgIdNode,
-                  new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                  fn.getChild(0).copy(new CopyState())),
-              fn.getSourceLocation());
-      fn.getParent().replaceChild(fn, recordLiteral);
-
-    } else {
-      throw new AssertionError("impossible");
-    }
+    // We need to generate a record literal
+    // This map literal has 2 keys: 'id' and 'msg'
+    RecordLiteralNode recordLiteral =
+        new RecordLiteralNode(
+            ImmutableList.of(
+                new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                msgIdNode,
+                new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
+                fn.getChild(0).copy(new CopyState())),
+            fn.getSourceLocation());
+    fn.getParent().replaceChild(fn, recordLiteral);
   }
 
   private StringNode createMsgIdNode(long id, SourceLocation location) {

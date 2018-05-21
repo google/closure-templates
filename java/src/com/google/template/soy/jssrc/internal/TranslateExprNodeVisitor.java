@@ -567,7 +567,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitIsPrimaryMsgInUseFunction(node);
         case REMAINDER:
         case MSG_WITH_ID:
-        case MSG_ID:
           // should have been removed earlier in the compiler
           throw new AssertionError();
       }

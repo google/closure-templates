@@ -43,7 +43,6 @@ public enum BuiltinFunction implements SoyFunction {
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
   REMAINDER("remainder"),
-  MSG_ID("msgId"),
   MSG_WITH_ID("msgWithId"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   ;

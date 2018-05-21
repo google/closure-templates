@@ -94,7 +94,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitXidFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUse(node);
-        case MSG_ID:
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
