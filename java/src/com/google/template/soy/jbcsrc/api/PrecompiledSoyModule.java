@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -30,6 +29,7 @@ import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import javax.inject.Singleton;
 
 /**
  * A module for accessing a precompiled {@link SoySauce} object.

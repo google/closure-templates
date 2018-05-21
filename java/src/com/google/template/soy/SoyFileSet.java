@@ -31,7 +31,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -94,6 +93,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
 /**
  * Represents a complete set of Soy files for compilation as one bundle. The files may depend on

@@ -16,9 +16,9 @@
 
 package com.google.template.soy.jbcsrc.api;
 
-import com.google.inject.BindingAnnotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import javax.inject.Qualifier;
 
 /**
  * Binding annotation for a set of deltemplates to be used in the precompiled {@link SoySauce}
@@ -27,5 +27,5 @@ import java.lang.annotation.RetentionPolicy;
  * <p>See {@link PrecompiledSoyModule}
  */
 @Retention(RetentionPolicy.RUNTIME)
-@BindingAnnotation
+@Qualifier
 public @interface Deltemplates {}
