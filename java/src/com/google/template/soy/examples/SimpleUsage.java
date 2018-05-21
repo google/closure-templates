@@ -16,10 +16,10 @@
 
 package com.google.template.soy.examples;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
-import com.google.template.soy.data.SoyListData;
-import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.tofu.SoyTofu;
 
 /**
@@ -54,14 +54,14 @@ public class SimpleUsage {
     // Example 2.
     writeExampleHeader();
     System.out.println(
-        simpleTofu.newRenderer(".helloName").setData(new SoyMapData("name", "Ana")).render());
+        simpleTofu.newRenderer(".helloName").setData(ImmutableMap.of("name", "Ana")).render());
 
     // Example 3.
     writeExampleHeader();
     System.out.println(
         simpleTofu
             .newRenderer(".helloNames")
-            .setData(new SoyMapData("names", new SoyListData("Bob", "Cid", "Dee")))
+            .setData(ImmutableMap.of("names", ImmutableList.of("Bob", "Cid", "Dee")))
             .render());
   }
 

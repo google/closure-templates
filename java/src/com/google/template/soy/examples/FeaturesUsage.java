@@ -41,8 +41,6 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyListData;
-import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoAutoescapeTrueSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoBidiSupportSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithParamBlockSoyTemplateInfo;
@@ -59,6 +57,7 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.tofu.SoyTofu;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -141,12 +140,6 @@ public class FeaturesUsage {
       msgBundle = null;
     }
 
-    // Note: In the examples below, I sometimes use the version of render() that takes a SoyMapData
-    // and sometimes use the version that takes a Map<String, ?>. They both work. The version that
-    // takes a SoyMapData is more efficient if you need to reuse the same template data object for
-    // multiple calls of render() (because the version that takes a Map<String, ?> internally
-    // converts it to a new SoyMapData on every call).
-
     writeExampleHeader("demoComments");
     System.out.println(tofu.newRenderer(DEMO_COMMENTS).setMsgBundle(msgBundle).render());
 
@@ -164,7 +157,7 @@ public class FeaturesUsage {
     System.out.println(
         tofu.newRenderer(DEMO_PRINT)
             .setData(
-                new SoyMapData(
+                ImmutableMap.of(
                     DemoPrintSoyTemplateInfo.BOO, "Boo!", DemoPrintSoyTemplateInfo.TWO, 2))
             .setMsgBundle(msgBundle)
             .render());
@@ -172,34 +165,32 @@ public class FeaturesUsage {
     writeExampleHeader("demoAutoescapeTrue");
     System.out.println(
         tofu.newRenderer(DEMO_AUTOESCAPE_TRUE)
-            .setData(new SoyMapData(DemoAutoescapeTrueSoyTemplateInfo.ITALIC_HTML, "<i>italic</i>"))
+            .setData(
+                ImmutableMap.of(DemoAutoescapeTrueSoyTemplateInfo.ITALIC_HTML, "<i>italic</i>"))
             .setMsgBundle(msgBundle)
             .render());
 
     writeExampleHeader("demoMsg");
     System.out.println(
         tofu.newRenderer(DEMO_MSG)
-            .setData(
-                ImmutableMap.of(
-                    DemoMsgSoyTemplateInfo.NAME, "Ed",
-                    DemoMsgSoyTemplateInfo.LABS_URL, "http://labs.google.com"))
+            .setData(ImmutableMap.of(DemoMsgSoyTemplateInfo.NAME, "Ed"))
             .setMsgBundle(msgBundle)
             .render());
 
     writeExampleHeader("demoIf");
     System.out.println(
         tofu.newRenderer(DEMO_IF)
-            .setData(new SoyMapData("pi", 3.14159))
+            .setData(ImmutableMap.of("pi", 3.14159))
             .setMsgBundle(msgBundle)
             .render());
     System.out.println(
         tofu.newRenderer(DEMO_IF)
-            .setData(new SoyMapData("pi", 2.71828))
+            .setData(ImmutableMap.of("pi", 2.71828))
             .setMsgBundle(msgBundle)
             .render());
     System.out.println(
         tofu.newRenderer(DEMO_IF)
-            .setData(new SoyMapData("pi", 1.61803))
+            .setData(ImmutableMap.of("pi", 1.61803))
             .setMsgBundle(msgBundle)
             .render());
 
@@ -226,21 +217,22 @@ public class FeaturesUsage {
             .render());
 
     writeExampleHeader("demoFor");
-    SoyListData persons = new SoyListData();
-    persons.add(new SoyMapData("name", "Jen", "numWaffles", 1));
-    persons.add(new SoyMapData("name", "Kai", "numWaffles", 3));
-    persons.add(new SoyMapData("name", "Lex", "numWaffles", 1));
-    persons.add(new SoyMapData("name", "Mel", "numWaffles", 2));
+    List<ImmutableMap<String, Object>> persons =
+        ImmutableList.of(
+            ImmutableMap.of("name", "Jen", "numWaffles", 1),
+            ImmutableMap.of("name", "Kai", "numWaffles", 3),
+            ImmutableMap.of("name", "Lex", "numWaffles", 1),
+            ImmutableMap.of("name", "Mel", "numWaffles", 2));
     System.out.println(
         tofu.newRenderer(DEMO_FOR)
-            .setData(new SoyMapData(DemoForSoyTemplateInfo.PERSONS, persons))
+            .setData(ImmutableMap.of(DemoForSoyTemplateInfo.PERSONS, persons))
             .setMsgBundle(msgBundle)
             .render());
 
     writeExampleHeader("demoFor_Range");
     System.out.println(
         tofu.newRenderer(DEMO_FOR_RANGE)
-            .setData(new SoyMapData(DemoForRangeSoyTemplateInfo.NUM_LINES, 3))
+            .setData(ImmutableMap.of(DemoForRangeSoyTemplateInfo.NUM_LINES, 3))
             .setMsgBundle(msgBundle)
             .render());
 
@@ -248,11 +240,11 @@ public class FeaturesUsage {
     System.out.println(
         tofu.newRenderer(DEMO_CALL_WITHOUT_PARAM)
             .setData(
-                new SoyMapData(
+                ImmutableMap.of(
                     DemoCallWithoutParamSoyTemplateInfo.NAME,
                     "Neo",
                     DemoCallWithoutParamSoyTemplateInfo.TRIP_INFO,
-                    new SoyMapData("name", "Neo", "destination", "The Matrix")))
+                    ImmutableMap.of("name", "Neo", "destination", "The Matrix")))
             .setMsgBundle(msgBundle)
             .render());
 
@@ -275,20 +267,21 @@ public class FeaturesUsage {
     writeExampleHeader("demoCallWithParamBlock");
     System.out.println(
         tofu.newRenderer(DEMO_CALL_WITH_PARAM_BLOCK)
-            .setData(new SoyMapData(DemoCallWithParamBlockSoyTemplateInfo.NAME, "Quo"))
+            .setData(ImmutableMap.of(DemoCallWithParamBlockSoyTemplateInfo.NAME, "Quo"))
             .setMsgBundle(msgBundle)
             .render());
 
     writeExampleHeader("demoExpressions");
-    SoyListData students = new SoyListData();
-    students.add(new SoyMapData("name", "Rob", "major", "Physics", "year", 1999));
-    students.add(new SoyMapData("name", "Sha", "major", "Finance", "year", 1980));
-    students.add(new SoyMapData("name", "Tim", "major", "Engineering", "year", 2005));
-    students.add(new SoyMapData("name", "Uma", "major", "Biology", "year", 1972));
+    ImmutableList<ImmutableMap<String, Object>> students =
+        ImmutableList.<ImmutableMap<String, Object>>of(
+            ImmutableMap.of("name", "Rob", "major", "Physics", "year", 1999),
+            ImmutableMap.of("name", "Sha", "major", "Finance", "year", 1980),
+            ImmutableMap.of("name", "Tim", "major", "Engineering", "year", 2005),
+            ImmutableMap.of("name", "Uma", "major", "Biology", "year", 1972));
     System.out.println(
         tofu.newRenderer(DEMO_EXPRESSIONS)
             .setData(
-                new SoyMapData(
+                ImmutableMap.of(
                     DemoExpressionsSoyTemplateInfo.STUDENTS,
                     students,
                     DemoExpressionsSoyTemplateInfo.CURRENT_YEAR,
@@ -322,7 +315,7 @@ public class FeaturesUsage {
                     DemoBidiSupportSoyTemplateInfo.AUTHOR,
                     "John Doe, Esq.",
                     DemoBidiSupportSoyTemplateInfo.YEAR,
-                    "1973",
+                    1973,
                     DemoBidiSupportSoyTemplateInfo.KEYWORDS,
                     ImmutableList.of("Bi(Di)", "2008 (\u05E9\u05E0\u05D4)", "2008 (year)")))
             .setMsgBundle(msgBundle)

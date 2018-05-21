@@ -90,8 +90,8 @@
  * Demo 'print'.
  */
 {template .demoPrint}
-  {@param boo: ?}  /** Something scary. */
-  {@param two: ?}  /** Preferably the number 2. */
+  {@param boo: string}  /** Something scary. */
+  {@param two: number}  /** Preferably the number 2. */
   {print 'Boo!'}<br>  // print a string
   {'Boo!'}<br>  // the command name 'print' is implied
   {1 + 2}<br>  // print the result of an expression
@@ -105,7 +105,7 @@
  * Demo autoescape true.
  */
 {template .demoAutoescapeTrue}
-  {@param italicHtml: ?}  /** A string surrounded by HTML italics tags. */
+  {@param italicHtml: string}  /** A string surrounded by HTML italics tags. */
   // Note: autoescape="strict" is the default.
 
   {$italicHtml}<br>  // autoescape causes HTML tags to appear literally
@@ -116,15 +116,10 @@
  * Demo 'msg'.
  */
 {template .demoMsg}
-  {@param name: ?}  /** The name of the person to say hello to. */
-  {@param labsUrl: ?}  /** The URL of the unreleased 'Labs' feature. */
+  {@param name: string}  /** The name of the person to say hello to. */
 
   {msg desc="Says hello to a person."}
     Hello {$name}!
-  {/msg}<br>
-
-  {msg desc="Link to the unreleased 'Labs' feature."}
-    Click <a href="{$labsUrl}">here</a> to access Labs.
   {/msg}<br>
 
   // The 'meaning' attribute is used when you have two messages that are exactly the same string in
@@ -146,7 +141,7 @@
  * Demo 'if'.
  */
 {template .demoIf}
-  {@param pi: ?}  /** An approximate value for pi. */
+  {@param pi: float}  /** An approximate value for pi. */
   {if round($pi, 2) == 3.14}
     {msg desc="Example: 3.1416 is a good approximation of pi."}
       {$pi} is a good approximation of pi.
@@ -168,7 +163,7 @@
  * Demo 'switch'.
  */
 {template .demoSwitch}
-  {@param name: ?}  /** The name of a kid. */
+  {@param name: string}  /** The name of a kid. */
   Dear {$name}, &nbsp;
 
   {switch $name}
@@ -188,7 +183,10 @@
  * Demo 'for'.
  */
 {template .demoFor}
-  {@param persons: ?}  /** List of persons. Each person must have 'name' and 'numWaffles'. */
+  {@param persons: list<[name: string, numWaffles: int]>}  /**
+                                                            * List of persons. Each person must have
+                                                            * 'name' and 'numWaffles'.
+                                                            */
 
   {for $person in $persons}
 
@@ -220,7 +218,7 @@
  * Demo 'for' using range.
  */
 {template .demoFor_Range}
-  {@param numLines: ?}  /** The number of lines to display. */
+  {@param numLines: int}  /** The number of lines to display. */
 
   {for $i in range($numLines)}
     Line {$i + 1} of {$numLines}.<br>
@@ -238,8 +236,8 @@
  * Demo 'call' without 'param's.
  */
 {template .demoCallWithoutParam}
-  {@param name: ?}  /** The name of the person who took a trip. */
-  {@param tripInfo: ?}  /** The full record of the trip ('name' and 'destination'). */
+  {@param name: string}  /** The name of the person who took a trip. */
+  {@param tripInfo: [name: string, destination: string]}  /** The full record of the trip. */
 
   // Call template defined in this file.
   {call .tripReport_ /}<br>
@@ -270,10 +268,10 @@
  * Demo 'call' with 'param's.
  */
 {template .demoCallWithParam}
-  {@param name: ?}  /** The name of the person who took the trips. */
-  {@param companionName: ?}  /** The name of the person who went along for the odd-numbered
+  {@param name: string}  /** The name of the person who took the trips. */
+  {@param companionName: string}  /** The name of the person who went along for the odd-numbered
                                  trips only. */
-  {@param destinations: ?}  /** List of destinations visited by this person. */
+  {@param destinations: list<string>}  /** List of destinations visited by this person. */
 
   {for $destination in $destinations}
 
@@ -302,7 +300,7 @@
  * Demo 'call' with a 'param' block.
  */
 {template .demoCallWithParamBlock}
-  {@param name: ?}  /** The name of the person who took the trip. */
+  {@param name: string}  /** The name of the person who took the trip. */
   // Pass 2 parameters, one of which is built using Soy code.
   {call .tripReport_}
     {param name: $name /}
@@ -323,8 +321,8 @@
  * Reports on a trip.
  */
 {template .tripReport_ visibility="private" kind="text"}
-  {@param? name: ?}  /** The name of the person who took a trip (optional). */
-  {@param? destination: ?}  /** The destination of the trip (optional). */
+  {@param? name: string}  /** The name of the person who took a trip (optional). */
+  {@param? destination: string}  /** The destination of the trip (optional). */
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 
@@ -351,8 +349,8 @@
  * Demo {param} blocks with 'kind' attribute.
  */
 {template .demoParamWithKindAttribute}
-  {@param message: ?}  /** A message text. */
-  {@param list: ?}  /** A list of things. */
+  {@param message: string}  /** A message text. */
+  {@param list: list<string>}  /** A list of things. */
   <div>
     {call .demoParamWithKindAttributeCallee_}
       // Note that the {param} blocks for the message and listItems parameter are declared to have
@@ -376,8 +374,8 @@
  * Demo {param} blocks with 'kind' attribute.
  */
 {template .demoParamWithKindAttributeCallee_ visibility="private" }
-  {@param message: ?}  /** A message with HTML markup. */
-  {@param listItems: ?}  /** A HTML-formatted list. */
+  {@param message: html}  /** A message with HTML markup. */
+  {@param listItems: html}  /** A HTML-formatted list. */
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
   // the calling template. Since the {param} blocks are declared to have HTML content, their values
   // are wrapped as goog.soy.data.SanitizedHtml objects. This in turn causes them to be emitted here
@@ -394,7 +392,7 @@
  */
 {template .demoExpressions}
   {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
-  {@param currentYear: ?}  /** The current year. */
+  {@param currentYear: number}  /** The current year. */
 
   First student's major: {$students[0].major}<br>
   Last student's year: {$students[length($students) - 1].year}<br>
@@ -433,8 +431,8 @@
  * Demo double braces.
  */
 {template .demoDoubleBraces kind="text"}
-  {@param setName: ?}  /** The name of the infinite set. */
-  {@param setMembers: ?}  /** List of the first few members of the set. */
+  {@param setName: string}  /** The name of the infinite set. */
+  {@param setMembers: list<?>}  /** List of the first few members of the set. */
   {msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}
     // Note: This message also demonstrates a useful trick. Since a 'msg' block cannot contain a
     // 'for' statement (impossible to translate as one message), we use a 'call' to a helper
@@ -456,7 +454,7 @@
  * Private helper to build a comma separated list.
  */
 {template .buildCommaSeparatedList_ visibility="private" kind="text"}
-  {@param items: ?}  /** The list of items. */
+  {@param items: list<?>}  /** The list of items. */
   {for $item in $items}
     {if not isFirst($item)}
       ,{sp}
@@ -470,10 +468,10 @@
  * Demo BiDi support.
  */
 {template .demoBidiSupport}
-  {@param title: ?}  /** Book title. */
-  {@param author: ?}  /** Author's name. */
-  {@param year: ?}  /** Year published. */
-  {@param keywords: ?}  /** List of keywords. */
+  {@param title: string}  /** Book title. */
+  {@param author: string}  /** Author's name. */
+  {@param year: number}  /** Year published. */
+  {@param keywords: list<string>}  /** List of keywords. */
 
   // If $title has the opposite directionality relative to the overall locale, it needs to be
   // declared as such using the dir attribute on the element around it. Otherwise, it may be
@@ -552,8 +550,8 @@
  * Template for printing the header to add before each example.
  */
 {template .exampleHeader}
-  {@param exampleNum: ?}  /** The number of the example. */
-  {@param exampleName: ?}  /** The name of the example. */
+  {@param exampleNum: number}  /** The number of the example. */
+  {@param exampleName: string}  /** The name of the example. */
   <hr>
   <b>{$exampleNum}. {$exampleName}</b><br>
 {/template}

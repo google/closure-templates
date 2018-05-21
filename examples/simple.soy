@@ -32,7 +32,7 @@
  * Says hello to a person (or to the world if no person is given).
  */
 {template .helloName}
-  {@param? name: ?}  /** The name of the person to say hello to. */
+  {@param? name: string}  /** The name of the person to say hello to. */
   {if $name}
     {msg desc="Says hello to a person."}
       Hello {$name}!
@@ -47,7 +47,7 @@
  * Say hello to a list of people.
  */
 {template .helloNames}
-  {@param names: ?}  /** List of names of the people to say hello to. */
+  {@param names: list<string>}  /** List of names of the people to say hello to. */
   {for $name in $names}
     {call .helloName}
       {param name: $name /}
