@@ -24191,9 +24191,9 @@ goog.loadModule(function(exports) {'use strict';/*
 /**
  * @fileoverview Interfaces and helper functions for Soy maps/proto maps/ES6
  *     maps.
- * MOE:begin_strip
+ * MOE:begin_intracomment_strip
  * See go/soy-proto-map.
- * MOE:end_strip
+ * MOE:end_intracomment_strip
  */
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
