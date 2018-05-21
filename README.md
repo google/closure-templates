@@ -35,8 +35,8 @@ Closure Templates are precompiled into efficient JavaScript.
   of XSS.
 
 ## Getting Started
-* Download the latest [JavaScript compiler](https://dl.google.com/closure-templates/closure-templates-for-javascript-latest.zip)
-  or [Java compiler](https://dl.google.com/closure-templates/closure-templates-for-java-latest.zip).
+* Download the latest release on [GitHub](https://github.com/google/closure-templates/releases)
+  or [Maven Central](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.google.template%22%20AND%20a%3A%22soy%22).
 * Work through [Hello World Using JavaScript](https://developers.google.com/closure/templates/docs/helloworld_js).
 * Work through [Hello World Using Java](https://developers.google.com/closure/templates/docs/helloworld_java).
 * Read the [Documentation](https://developers.google.com/closure/templates/docs/overview).
