@@ -33,13 +33,13 @@ public final class ConditionalBuilder {
   }
 
   /** Adds an {@code else if} clause with the given predicate and consequent to this conditional. */
-  public ConditionalBuilder elseif_(Expression predicate, Statement consequent) {
+  public ConditionalBuilder addElseIf(Expression predicate, Statement consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }
 
   /** Adds an {@code else} clause encapsulating the given chunk to this conditional. */
-  public ConditionalBuilder else_(Statement trailingElse) {
+  public ConditionalBuilder setElse(Statement trailingElse) {
     Preconditions.checkState(this.trailingElse == null);
     this.trailingElse = trailingElse;
     return this;

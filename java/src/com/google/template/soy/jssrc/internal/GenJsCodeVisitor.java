@@ -955,14 +955,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         if (conditional == null) {
           conditional = ifStatement(predicate, consequent);
         } else {
-          conditional.elseif_(predicate, consequent);
+          conditional.addElseIf(predicate, consequent);
         }
 
       } else if (child instanceof IfElseNode) {
         // Convert body.
         Statement trailingElse = visitChildrenReturningCodeChunk((IfElseNode) child);
         // Add else-block to conditional.
-        conditional.else_(trailingElse);
+        conditional.setElse(trailingElse);
       } else {
         throw new AssertionError();
       }
@@ -1015,10 +1015,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           caseChunks.add(caseChunk);
         }
         Statement body = visitChildrenReturningCodeChunk(scn);
-        switchBuilder.case_(caseChunks.build(), body);
+        switchBuilder.addCase(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
         Statement body = visitChildrenReturningCodeChunk((SwitchDefaultNode) child);
-        switchBuilder.default_(body);
+        switchBuilder.setDefault(body);
       } else {
         throw new AssertionError();
       }
@@ -1039,7 +1039,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
       Expression tmp = codeGenerator.declarationBuilder().setRhs(switchOn).build().ref();
       return Expression.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
-          .else_(tmp)
+          .setElse(tmp)
           .build(codeGenerator);
     }
     // For everything else just pass through.  switching on objects/collections is unlikely to
@@ -1156,7 +1156,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Statement ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
       Expression limitCheck = limit.op(Operator.GREATER_THAN, number(0));
 
-      foreachBody = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
+      foreachBody = ifStatement(limitCheck, foreachBody).setElse(ifemptyBody).build();
     }
     statements.add(foreachBody);
     jsCodeBuilder.append(Statement.of(statements));

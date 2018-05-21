@@ -184,8 +184,8 @@ public abstract class Expression extends CodeChunk {
    * you need to call the constructor with arguments, call {@link Expression#call} on the returned
    * chunk.
    */
-  public static Expression new_(Expression ctor) {
-    return New.create(ctor);
+  public static Expression construct(Expression ctor, Expression... args) {
+    return New.create(ctor).call(args);
   }
 
   /**
@@ -327,7 +327,7 @@ public abstract class Expression extends CodeChunk {
     return Call.create(this, ImmutableList.copyOf(args));
   }
 
-  public final Expression instanceof_(Expression identifier) {
+  public final Expression instanceOf(Expression identifier) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
     // instanceof has the same precedence as LESS_THAN
     return BinaryOperation.create(

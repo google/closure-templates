@@ -287,13 +287,13 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     ConditionalExpressionBuilder builder = Expression.ifExpression(ifs.get(0), thens.get(0));
 
     for (int i = 1; i < ifs.size(); i++) {
-      builder.elseif_(ifs.get(i), thens.get(i));
+      builder.addElseIf(ifs.get(i), thens.get(i));
     }
 
     Expression ifChunk =
         trailingElse != null
-            ? builder.else_(trailingElse).build(generator)
-            : builder.else_(LITERAL_EMPTY_STRING).build(generator);
+            ? builder.setElse(trailingElse).build(generator)
+            : builder.setElse(LITERAL_EMPTY_STRING).build(generator);
 
     chunks.add(ifChunk);
   }

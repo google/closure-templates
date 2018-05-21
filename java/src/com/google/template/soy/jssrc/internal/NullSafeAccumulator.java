@@ -160,7 +160,7 @@ final class NullSafeAccumulator {
         base = generator.declarationBuilder().setRhs(base).build().ref();
       }
       return ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
-          .else_(buildAccessChain(link.extend(base), generator, chain))
+          .setElse(buildAccessChain(link.extend(base), generator, chain))
           .build(generator);
     }
     return buildAccessChain(link.extend(base), generator, chain);

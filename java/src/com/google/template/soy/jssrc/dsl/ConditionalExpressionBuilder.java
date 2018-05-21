@@ -41,12 +41,12 @@ public final class ConditionalExpressionBuilder {
     conditions.add(new IfThenPair<>(predicate, consequent));
   }
 
-  public ConditionalExpressionBuilder elseif_(Expression predicate, Expression consequent) {
+  public ConditionalExpressionBuilder addElseIf(Expression predicate, Expression consequent) {
     conditions.add(new IfThenPair<>(predicate, consequent));
     return this;
   }
 
-  public ConditionalExpressionBuilder else_(Expression trailingElse) {
+  public ConditionalExpressionBuilder setElse(Expression trailingElse) {
     Preconditions.checkState(this.trailingElse == null);
     this.trailingElse = trailingElse;
     return this;
@@ -86,11 +86,11 @@ public final class ConditionalExpressionBuilder {
       if (builder == null) {
         builder = ifStatement(oldCondition.predicate, newConsequent.asStatement());
       } else {
-        builder.elseif_(oldCondition.predicate, newConsequent.asStatement());
+        builder.addElseIf(oldCondition.predicate, newConsequent.asStatement());
       }
     }
     if (trailingElse != null) {
-      builder.else_(var.assign(trailingElse).asStatement());
+      builder.setElse(var.assign(trailingElse).asStatement());
     }
     return var.withInitialStatements(ImmutableList.of(decl, builder.build()));
   }

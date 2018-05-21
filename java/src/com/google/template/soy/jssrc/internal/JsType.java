@@ -152,7 +152,7 @@ final class JsType {
                   return Optional.of(
                       GOOG_IS_STRING
                           .call(value)
-                          .or(value.instanceof_(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator));
+                          .or(value.instanceOf(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator));
                 }
               })
           .build();
@@ -193,7 +193,7 @@ final class JsType {
                   return Optional.of(
                       GOOG_IS_FUNCTION
                           .call(value)
-                          .or(value.instanceof_(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
+                          .or(value.instanceOf(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
                 }
               })
           .build();
@@ -332,7 +332,7 @@ final class JsType {
                   @Override
                   public Optional<Expression> maybeCheck(
                       Expression value, Generator codeGenerator) {
-                    return Optional.of(value.instanceof_(JsRuntime.protoConstructor(protoType)));
+                    return Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType)));
                   }
                 })
             .build();

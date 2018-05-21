@@ -34,20 +34,20 @@ public final class SwitchBuilder {
    * Adds a case clause (one or more {@code case} labels followed by a body) to this switch
    * statement.
    */
-  public SwitchBuilder case_(ImmutableList<Expression> caseLabels, Statement body) {
+  public SwitchBuilder addCase(ImmutableList<Expression> caseLabels, Statement body) {
     Preconditions.checkState(!caseLabels.isEmpty(), "at least one case required");
     clauses.add(new Switch.CaseClause(caseLabels, body));
     return this;
   }
 
   /** Adds a case clause to this switch statement. */
-  public SwitchBuilder case_(Expression caseLabel, Statement body) {
+  public SwitchBuilder addCase(Expression caseLabel, Statement body) {
     clauses.add(new Switch.CaseClause(ImmutableList.of(caseLabel), body));
     return this;
   }
 
   /** Adds a {@code default} clause to this switch statement. */
-  public SwitchBuilder default_(Statement body) {
+  public SwitchBuilder setDefault(Statement body) {
     Preconditions.checkState(defaultCaseBody == null);
     defaultCaseBody = body;
     return this;

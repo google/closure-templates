@@ -22,10 +22,10 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
+import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.new_;
 import static com.google.template.soy.jssrc.dsl.Expression.not;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.operation;
@@ -255,7 +255,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitMapLiteralNode(MapLiteralNode node) {
     Expression map =
-        codeGenerator.declarationBuilder().setRhs(Expression.new_(id("Map")).call()).build().ref();
+        codeGenerator.declarationBuilder().setRhs(Expression.construct(id("Map"))).build().ref();
     ImmutableList.Builder<Statement> setCalls = ImmutableList.builder();
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
@@ -436,7 +436,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       consequent = codeGenerator.declarationBuilder().setRhs(consequent).build().ref();
     }
     return Expression.ifExpression(consequent.doubleNotEquals(Expression.LITERAL_NULL), consequent)
-        .else_(alternate)
+        .setElse(alternate)
         .build(codeGenerator);
   }
 
@@ -492,7 +492,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
-    Expression proto = new_(protoConstructor(type)).call();
+    Expression proto = construct(protoConstructor(type));
     if (node.numChildren() == 0) {
       // If there's no further structure to the proto, no need to declare a variable.
       return proto;

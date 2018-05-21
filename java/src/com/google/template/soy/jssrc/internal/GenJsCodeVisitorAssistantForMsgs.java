@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.new_;
 import static com.google.template.soy.jssrc.dsl.Expression.objectLiteral;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
@@ -246,7 +246,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
               selectedMsg.doubleEquals(primaryCodeGenInfo.googMsgVar),
               selectedMsg.assign(getMessageFormatCall(primaryCodeGenInfo)).asStatement());
       if (fallbackCodeGenInfo.placeholders != null) {
-        builder.else_(selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement());
+        builder.setElse(
+            selectedMsg.assign(getMessageFormatCall(fallbackCodeGenInfo)).asStatement());
       }
       condition = builder.build();
     } else {
@@ -373,8 +374,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * message.
    */
   private static Expression getMessageFormatCall(GoogMsgCodeGenInfo codeGenInfo) {
-    return new_(GOOG_I18N_MESSAGE_FORMAT)
-        .call(codeGenInfo.googMsgVar)
+    return construct(GOOG_I18N_MESSAGE_FORMAT, codeGenInfo.googMsgVar)
         .dotAccess("formatIgnoringPound")
         .call(codeGenInfo.placeholders);
   }
