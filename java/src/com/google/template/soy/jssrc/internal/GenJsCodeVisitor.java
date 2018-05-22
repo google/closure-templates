@@ -59,6 +59,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
@@ -380,16 +381,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // are comments, they are not controlled by an option, and will be removed by minifiers that do
     // not understand them.
     file.append("\n");
-    file.append("/**\n");
-    String fileOverviewDescription = " Templates in namespace " + node.getNamespace() + ".";
-    file.append(" * @fileoverview").append(fileOverviewDescription).append('\n');
+    String fileOverviewDescription = "Templates in namespace " + node.getNamespace() + ".";
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
+    jsDocBuilder.addTag("fileoverview", fileOverviewDescription);
     if (node.getDelPackageName() != null) {
-      file.append(" * @modName {").append(node.getDelPackageName()).append("}\n");
+      jsDocBuilder.addParameterizedTag("modName", node.getDelPackageName());
     }
-    addJsDocToProvideDelTemplates(file, node);
-    addJsDocToRequireDelTemplates(file, node);
-    addCodeToRequireCss(file, node);
-    file.append(" * @public\n").append(" */\n\n");
+    addJsDocToProvideDelTemplates(jsDocBuilder, node);
+    addJsDocToRequireDelTemplates(jsDocBuilder, node);
+    addCodeToRequireCss(jsDocBuilder, node);
+    jsDocBuilder.addTag("public");
+    file.append(jsDocBuilder.build());
+    file.append("\n\n");
 
     // Add code to define JS namespaces or add provide/require calls for Closure Library.
     templateAliases = AliasUtils.IDENTITY_ALIASES;
@@ -424,7 +427,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * @param soyFile The file with the templates..
    */
-  private static void addCodeToRequireCss(StringBuilder header, SoyFileNode soyFile) {
+  private static void addCodeToRequireCss(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> requiredCssNamespaces = new TreeSet<>();
     requiredCssNamespaces.addAll(soyFile.getRequiredCssNamespaces());
@@ -435,7 +438,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // NOTE: CSS requires in JS can only be done on a file by file basis at this time.  Perhaps in
     // the future, this might be supported per function.
     for (String requiredCssNamespace : requiredCssNamespaces) {
-      header.append(" * @requirecss {").append(requiredCssNamespace).append("}\n");
+      header.addParameterizedTag("requirecss", requiredCssNamespace);
     }
   }
 
@@ -521,8 +524,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
   }
 
-
-  private void addJsDocToProvideDelTemplates(StringBuilder header, SoyFileNode soyFile) {
+  private void addJsDocToProvideDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (TemplateNode template : soyFile.getChildren()) {
@@ -531,11 +533,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
     for (String delTemplateName : delTemplateNames) {
-      header.append(" * @hassoydeltemplate {").append(delTemplateName).append("}\n");
+      header.addParameterizedTag("hassoydeltemplate", delTemplateName);
     }
   }
 
-  private void addJsDocToRequireDelTemplates(StringBuilder header, SoyFileNode soyFile) {
+  private void addJsDocToRequireDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
     for (CallDelegateNode delCall :
@@ -543,7 +545,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
     }
     for (String delTemplateName : delTemplateNames) {
-      header.append(" * @hassoydelcall {").append(delTemplateName).append("}\n");
+      header.addParameterizedTag("hassoydelcall", delTemplateName);
     }
   }
 
@@ -640,29 +642,24 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     assistantForMsgs = null;
 
     String paramsRecordType = null;
-    String jsDoc = null;
     // ------ Generate JS Doc. ------
-    StringBuilder jsDocBuilder = new StringBuilder();
-    jsDocBuilder.append("/**\n");
-    jsDocBuilder.append(" * @param {");
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
     if (useStrongTyping) {
       paramsRecordType = genParamsRecordType(node);
-      jsDocBuilder.append(alias).append(".Params");
+      jsDocBuilder.addParam("opt_data", alias + ".Params");
     } else {
-      jsDocBuilder.append("Object<string, *>=");
+      jsDocBuilder.addParam("opt_data", "Object<string, *>=");
     }
-    jsDocBuilder.append("} opt_data\n");
-    jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData\n");
-    jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData_deprecated\n");
+    jsDocBuilder.addParam("opt_ijData", "Object<string, *>=");
+    jsDocBuilder.addParam("opt_ijData_deprecated", "Object<string, *>=");
+
     String returnType = getTemplateReturnType(node);
-    jsDocBuilder.append(" * @return {").append(returnType).append("}\n");
+    jsDocBuilder.addParameterizedTag("return", returnType);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
-    jsDocBuilder.append(" * @suppress {").append("checkTypes").append("}\n");
+    jsDocBuilder.addParameterizedTag("suppress", "checkTypes");
     if (node.getVisibility() == Visibility.PRIVATE) {
-      jsDocBuilder.append(" * @private\n");
+      jsDocBuilder.addTag("private");
     }
-    jsDocBuilder.append(" */\n");
-    jsDoc = jsDocBuilder.toString();
 
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
@@ -678,28 +675,22 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // ------ Generate function body. ------
     bodyStatements.add(generateFunctionBody(node));
 
-    Expression function =
-        Expression.function(
-            // TODO(lukes): come up with a different abstraction for parameter names.  stringsc
-            // are too brittle.
-            ImmutableList.of("opt_data", "opt_ijData", "opt_ijData_deprecated"),
-            Statement.of(bodyStatements.build()));
+    JsDoc jsDoc = jsDocBuilder.build();
+    Expression function = Expression.function(jsDoc, Statement.of(bodyStatements.build()));
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     if (addToExports) {
-      declarations.add(VariableDeclaration.builder(alias).setRhs(function).build());
+      declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
       declarations.add(
           assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
     } else {
-      declarations.add(Statement.assign(alias, function));
+      declarations.add(Statement.assign(alias, function, jsDoc));
     }
 
     // ------ Add the @typedef of opt_data. ------
     if (paramsRecordType != null) {
-      // TODO(b/35203585): find a way to represent jsdoc using code chunks
       StringBuilder sb = new StringBuilder();
-      sb.append("/**\n");
-      sb.append(" * @typedef {").append(paramsRecordType).append("}\n");
-      sb.append(" */\n");
+      sb.append(JsDoc.builder().addParameterizedTag("typedef", paramsRecordType).build());
+      sb.append("\n");
       // TODO(b/35203585): find a way to represent declarations like this in codechunks
       sb.append(alias).append(".Params");
       declarations.add(
@@ -726,10 +717,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .asStatement());
     }
 
-    // TODO(b/35203585): find a way to represent jsdoc using code chunks
-    if (jsDoc != null) {
-      jsCodeBuilder.append(jsDoc);
-    }
     jsCodeBuilder.append(Statement.of(declarations.build()));
   }
 
@@ -1478,7 +1465,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           VariableDeclaration.builder(paramAlias)
               .setRhs(value)
               .setGoogRequires(jsType.getGoogRequires());
-      declarationBuilder.setJsDoc("/** @type {" + jsType.typeExpr() + "} */");
+      declarationBuilder.setJsDoc(
+          JsDoc.builder().addParameterizedTag("type", jsType.typeExpr()).build());
       VariableDeclaration declaration = declarationBuilder.build();
       declarations.add(declaration);
 

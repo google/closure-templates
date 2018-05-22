@@ -45,7 +45,12 @@ public abstract class Statement extends CodeChunk {
 
   /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
   public static Statement assign(String varName, Expression rhs) {
-    return Assignment.create(varName, rhs);
+    return Assignment.create(varName, rhs, null);
+  }
+
+  /** Creates a code chunk that assigns and prints jsDoc above the assignment. */
+  public static Statement assign(String varName, Expression rhs, JsDoc jsDoc) {
+    return Assignment.create(varName, rhs, jsDoc);
   }
 
   /** Starts a {@code switch} statement dispatching on the given chunk. */

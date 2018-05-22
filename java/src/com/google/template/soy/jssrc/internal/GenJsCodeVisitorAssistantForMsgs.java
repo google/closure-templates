@@ -33,6 +33,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
@@ -297,20 +298,18 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         new GoogMsgPlaceholderCodeGenInfo(msgNode.isPlrselMsg());
     genGoogMsgCodeForChildren(msgParts, msgNode, placeholderInfo);
     // Generate JS comment (JSDoc) block for the goog.getMsg() call.
-    StringBuilder jsDocBuilder = new StringBuilder();
-    jsDocBuilder.append("/** ");
+    JsDoc.Builder jsDocBuilder = JsDoc.builder();
     if (msgNode.getMeaning() != null) {
-      jsDocBuilder.append("@meaning ").append(msgNode.getMeaning()).append("\n *  ");
+      jsDocBuilder.addTag("meaning", msgNode.getMeaning());
     }
-    jsDocBuilder.append("@desc ").append(msgNode.getDesc());
+    jsDocBuilder.addTag("desc", msgNode.getDesc());
     if (msgNode.isHidden()) {
-      jsDocBuilder.append("\n *  @hidden");
+      jsDocBuilder.addTag("hidden");
     }
-    jsDocBuilder.append(" */");
 
     // Generate goog.getMsg() call.
     VariableDeclaration.Builder builder =
-        VariableDeclaration.builder(googMsgVarName).setJsDoc(jsDocBuilder.toString());
+        VariableDeclaration.builder(googMsgVarName).setJsDoc(jsDocBuilder.build());
     if (msgNode.isPlrselMsg() || placeholderInfo.placeholders.isEmpty()) {
       // For plural/select msgs, we're letting goog.i18n.MessageFormat handle all placeholder
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case

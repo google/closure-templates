@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nullable;
 
 /** Represents an assignment to a variable. */
 @AutoValue
@@ -27,10 +28,17 @@ abstract class Assignment extends Statement {
 
   abstract Expression rhs();
 
-  static Assignment create(String varName, Expression rhs) {
-    return new AutoValue_Assignment(varName, rhs);
+  @Nullable
+  abstract JsDoc jsDoc();
+
+  static Assignment create(String varName, Expression rhs, JsDoc jsDoc) {
+    return new AutoValue_Assignment(varName, rhs, jsDoc);
   }
-  
+
+  static Assignment create(String varName, Expression rhs) {
+    return new AutoValue_Assignment(varName, rhs, null);
+  }
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     rhs().collectRequires(collector);
@@ -38,6 +46,9 @@ abstract class Assignment extends Statement {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
+    if (jsDoc() != null) {
+      ctx.append(jsDoc().toString()).endLine();
+    }
     ctx.appendInitialStatements(rhs())
         .append(varName())
         .append(" = ")

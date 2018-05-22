@@ -38,7 +38,7 @@ public abstract class VariableDeclaration extends Statement {
   abstract Expression rhs();
 
   @Nullable
-  abstract String jsDoc();
+  abstract JsDoc jsDoc();
 
   abstract ImmutableSet<GoogRequire> googRequires();
 
@@ -68,7 +68,7 @@ public abstract class VariableDeclaration extends Statement {
       ctx.appendInitialStatements(rhs());
     }
     if (jsDoc() != null) {
-      ctx.append(jsDoc()).endLine();
+      ctx.append(jsDoc().toString()).endLine();
     }
     ctx.append("var ").append(varName());
     if (rhs() != null) {
@@ -93,7 +93,7 @@ public abstract class VariableDeclaration extends Statement {
 
     abstract Builder setVarName(String name);
 
-    public abstract Builder setJsDoc(String jsDoc);
+    public abstract Builder setJsDoc(JsDoc jsDoc);
 
     public abstract Builder setRhs(Expression value);
 

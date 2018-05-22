@@ -170,7 +170,7 @@ public abstract class Expression extends CodeChunk {
   }
 
   /** Creates a code chunk representing an anonymous function literal. */
-  public static Expression function(Iterable<String> parameters, Statement body) {
+  public static Expression function(JsDoc parameters, Statement body) {
     return FunctionDeclaration.create(parameters, body);
   }
 

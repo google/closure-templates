@@ -17,7 +17,10 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents an anonymous JavaScript function declaration.
@@ -30,15 +33,14 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  */
 @AutoValue
 abstract class FunctionDeclaration extends Expression {
-  abstract ImmutableList<String> params();
+
+  abstract JsDoc jsDoc();
 
   abstract Statement body();
 
-  static FunctionDeclaration create(Iterable<String> parameters, Statement body) {
+  static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(),
-        ImmutableList.copyOf(parameters),
-        body);
+        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body);
   }
 
   @Override
@@ -61,10 +63,16 @@ abstract class FunctionDeclaration extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("function(");
-    ImmutableList<String> params = params();
-    for (int i = 0; i < params.size(); i++) {
-      ctx.append(params.get(i));
-      if (i + 1 < params.size()) {
+    ImmutableList<JsDoc.Param> params = jsDoc().params();
+    List<String> functionParameters = new ArrayList<>();
+    for (JsDoc.Param param : params) {
+      if ("param".equals(param.annotationType())) {
+        functionParameters.add(param.paramTypeName());
+      }
+    }
+    for (int i = 0; i < functionParameters.size(); i++) {
+      ctx.append(functionParameters.get(i));
+      if (i + 1 < functionParameters.size()) {
         ctx.append(", ");
       }
     }
