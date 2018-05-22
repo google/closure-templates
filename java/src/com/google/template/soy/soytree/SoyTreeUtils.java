@@ -365,6 +365,7 @@ public final class SoyTreeUtils {
               // Continue to evaluate the const-ness of the pure function's parameters.
               return VisitDirective.CONTINUE;
             } else {
+              isConstant = false;
               return VisitDirective.ABORT;
             }
           default:

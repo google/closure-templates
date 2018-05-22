@@ -336,6 +336,19 @@ public final class SoyTreeUtilsTest {
         }
       };
 
+  private static final SoyFunction NONPURE_FUNCTION =
+      new SoyFunction() {
+        @Override
+        public String getName() {
+          return "notPure";
+        }
+
+        @Override
+        public Set<Integer> getValidArgsSizes() {
+          return ImmutableSet.of(1);
+        }
+      };
+
   @Test
   public final void testIsConstantExpr() throws Exception {
     String testFileContent =
@@ -367,10 +380,12 @@ public final class SoyTreeUtilsTest {
             + "  {assertIsNonconst(1 + $p)}\n"
             + "  {assertIsNonconst(floor($p))}\n"
             + "  {assertIsNonconst('<div>' + $p + '</div>')}\n"
+            + "  {assertIsNonconst(notPure($p))}\n"
             + "{/template}\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .addSoyFunction(ASSERT_IS_NONCONST_FUNCTION)
+            .addSoyFunction(NONPURE_FUNCTION)
             .parse()
             .fileSet();
     assertIsConsts(soyTree);
