@@ -68,7 +68,7 @@ public class SoyListDataTest {
     sld.add(8);
     assertThat(sld.getInteger(3)).isEqualTo(8);
     sld.add(3.14);
-    assertThat(sld.getFloat(4)).isWithin(0.0).of(3.14);
+    assertThat(sld.getFloat(4)).isEqualTo(3.14);
     sld.add("woohoo");
     assertThat(sld.getString(5)).isEqualTo("woohoo");
 
@@ -77,7 +77,7 @@ public class SoyListDataTest {
     sld.set(6, -8);
     assertThat(sld.getInteger(6)).isEqualTo(-8);
     sld.set(7, -3.14);
-    assertThat(sld.getFloat(7)).isWithin(0.0).of(-3.14);
+    assertThat(sld.getFloat(7)).isEqualTo(-3.14);
     sld.set(7, "boohoo");
     assertThat(sld.getString(7)).isEqualTo("boohoo");
 
@@ -116,7 +116,7 @@ public class SoyListDataTest {
     sld.put("0.2.boo", "foo");
     sld.put("0.2.goo", 1.618);
     assertThat(sld.getString("0.2.boo")).isEqualTo("foo");
-    assertThat(sld.getMapData("0.2").getFloat("goo")).isWithin(0.0).of(1.618);
+    assertThat(sld.getMapData("0.2").getFloat("goo")).isEqualTo(1.618);
   }
 
   @Test
@@ -131,7 +131,7 @@ public class SoyListDataTest {
     assertThat(sld.get(1)).isInstanceOf(NullData.class);
     assertThat(sld.getString("2.0")).isEqualTo("blah");
     assertThat(sld.getBoolean("2.1")).isTrue();
-    assertThat(sld.getFloat("2.2")).isWithin(0.0).of(2.71828);
+    assertThat(sld.getFloat("2.2")).isEqualTo(2.71828);
     assertThat(sld.getString(3)).isEqualTo("bleh");
 
     sld = new SoyListData(8, null, new SoyListData("blah", true));
@@ -142,7 +142,7 @@ public class SoyListDataTest {
     assertThat(sld.get(1)).isInstanceOf(NullData.class);
     assertThat(sld.getString("2.0")).isEqualTo("blah");
     assertThat(sld.getBoolean("2.1")).isTrue();
-    assertThat(sld.getFloat("2.2")).isWithin(0.0).of(2.71828);
+    assertThat(sld.getFloat("2.2")).isEqualTo(2.71828);
     assertThat(sld.getString(3)).isEqualTo("bleh");
   }
 

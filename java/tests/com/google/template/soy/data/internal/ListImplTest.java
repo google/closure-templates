@@ -75,7 +75,7 @@ public class ListImplTest {
     assertThat(list.get(0)).isSameAs(BLAH_0);
     assertThat(list.get(0)).isNotSameAs(BLAH_2);
     assertThat(list.get(0)).isEqualTo(BLAH_2); // not same, but they compare equal
-    assertThat(list.getProvider(1).resolve().floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list.getProvider(1).resolve().floatValue()).isEqualTo(3.14);
   }
 
   @Test
@@ -86,14 +86,14 @@ public class ListImplTest {
     assertThat(list.getItemCnt()).isEqualTo(2);
     assertThat(list.getItemKeys()).containsExactly(IntegerData.ZERO, IntegerData.ONE).inOrder();
     assertThat(list.hasItem(IntegerData.ONE)).isTrue();
-    assertThat(list.getItem(IntegerData.ZERO).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list.getItem(IntegerData.ZERO).floatValue()).isEqualTo(3.14);
     assertThat(list.getItemProvider(IntegerData.ONE).resolve().booleanValue()).isTrue();
 
     // For backwards compatibility: accept string arguments.
     assertThat(list.hasItem(StringData.forValue("0"))).isTrue();
     assertThat(list.hasItem(StringData.forValue("-99"))).isFalse();
     assertThat(list.hasItem(StringData.forValue("99"))).isFalse();
-    assertThat(list.getItem(StringData.forValue("0")).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list.getItem(StringData.forValue("0")).floatValue()).isEqualTo(3.14);
     assertThat(list.getItemProvider(StringData.forValue("1")).resolve().booleanValue()).isTrue();
   }
 }

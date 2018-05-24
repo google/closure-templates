@@ -71,7 +71,7 @@ public class DictImplTest {
     assertThat(m1.get("boo").resolve().stringValue()).isEqualTo("aaah");
     Map<String, ? extends SoyValue> m2 = dict.asResolvedJavaStringMap();
     assertThat(m2).hasSize(2);
-    assertThat(m2.get("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(m2.get("foo").floatValue()).isEqualTo(3.14);
   }
 
   @Test
@@ -94,7 +94,7 @@ public class DictImplTest {
     providerMap.put("foo", FloatData.forValue(3.14));
     providerMap.put("too", BooleanData.TRUE);
     assertThat(dict.hasField("foo")).isTrue();
-    assertThat(dict.getField("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict.getField("foo").floatValue()).isEqualTo(3.14);
     assertThat(dict.getField("too").booleanValue()).isTrue();
   }
 

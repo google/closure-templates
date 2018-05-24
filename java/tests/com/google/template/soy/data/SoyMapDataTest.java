@@ -56,7 +56,7 @@ public final class SoyMapDataTest {
     smd.put("wooi", 8);
     assertThat(smd.getInteger("wooi")).isEqualTo(8);
     smd.put("woof", 3.14);
-    assertThat(smd.getFloat("woof")).isWithin(0.0).of(3.14);
+    assertThat(smd.getFloat("woof")).isEqualTo(3.14);
     smd.put("woos", "woohoo");
     assertThat(smd.getString("woos")).isEqualTo("woohoo");
 
@@ -87,7 +87,7 @@ public final class SoyMapDataTest {
     smd.put("boo.zoo.0", "too");
     smd.put("boo.zoo.1", 1.618);
     assertThat(smd.getString("boo.zoo.0")).isEqualTo("too");
-    assertThat(smd.getListData("boo.zoo").getFloat("1")).isWithin(0.0).of(1.618);
+    assertThat(smd.getListData("boo.zoo").getFloat("1")).isEqualTo(1.618);
   }
 
   @Test
@@ -105,7 +105,7 @@ public final class SoyMapDataTest {
     assertThat(smd.getString("goo.buntu")).isEqualTo("blah");
     assertThat(smd.getBoolean("goo.dy")).isTrue();
     assertThat(smd.getString("moo")).isEqualTo("bleh");
-    assertThat(smd.getFloat("too.seven")).isWithin(0.0).of(2.71828);
+    assertThat(smd.getFloat("too.seven")).isEqualTo(2.71828);
   }
 
   @Test

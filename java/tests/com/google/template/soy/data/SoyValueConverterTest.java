@@ -43,7 +43,7 @@ public class SoyValueConverterTest {
     assertThat(dict1.getItemCnt()).isEqualTo(0);
 
     SoyDict dict2 = SoyValueConverterUtility.newDict("foo", 3.14, "too", true);
-    assertThat(dict2.getField("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict2.getField("foo").floatValue()).isEqualTo(3.14);
     assertThat(dict2.getField("too").booleanValue()).isTrue();
 
     SoyDict dict3 = SoyValueConverterUtility.newDict("boo", 111, "foo.goo", 222);
@@ -51,18 +51,18 @@ public class SoyValueConverterTest {
     assertThat(((SoyDict) dict3.getField("foo")).getField("goo").integerValue()).isEqualTo(222);
 
     SoyDict dict4 = CONVERTER.newDictFromMap(ImmutableMap.of("foo", 3.14, "too", true));
-    assertThat(dict4.getField("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict4.getField("foo").floatValue()).isEqualTo(3.14);
     assertThat(dict4.getField("too").booleanValue()).isTrue();
   }
 
   @Test
   public void testListCreation() {
     SoyList list2 = SoyValueConverterUtility.newList(3.14, true);
-    assertThat(list2.get(0).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list2.get(0).floatValue()).isEqualTo(3.14);
     assertThat(list2.get(1).booleanValue()).isTrue();
 
     SoyList list4 = SoyValueConverterUtility.newList(3.14, true);
-    assertThat(list4.get(0).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list4.get(0).floatValue()).isEqualTo(3.14);
     assertThat(list4.get(1).booleanValue()).isTrue();
   }
 
@@ -83,8 +83,8 @@ public class SoyValueConverterTest {
         .isEqualTo("goo");
     assertThat(((SoyList) CONVERTER.convert(ImmutableSet.of("hoo"))).get(0).stringValue())
         .isEqualTo("hoo");
-    assertThat(CONVERTER.convert(3.14).resolve().floatValue()).isWithin(0.0).of(3.14);
-    assertThat((float) CONVERTER.convert(3.14F).resolve().floatValue()).isWithin(0.0f).of(3.14F);
+    assertThat(CONVERTER.convert(3.14).resolve().floatValue()).isEqualTo(3.14);
+    assertThat((float) CONVERTER.convert(3.14F).resolve().floatValue()).isEqualTo(3.14F);
   }
 
   @Test

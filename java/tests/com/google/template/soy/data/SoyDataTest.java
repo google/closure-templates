@@ -52,7 +52,7 @@ public class SoyDataTest {
     assertThat(((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo"))).getString(0))
         .isEqualTo("hoo");
 
-    assertThat(SoyData.createFromExistingData(3.14).floatValue()).isWithin(0.0).of(3.14);
-    assertThat((float) SoyData.createFromExistingData(3.14F).floatValue()).isWithin(0.0f).of(3.14F);
+    assertThat(SoyData.createFromExistingData(3.14).floatValue()).isEqualTo(3.14);
+    assertThat((float) SoyData.createFromExistingData(3.14F).floatValue()).isEqualTo(3.14F);
   }
 }
