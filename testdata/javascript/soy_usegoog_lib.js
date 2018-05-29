@@ -503,7 +503,6 @@ goog.ModuleType = {
  * @private {?{
  *   moduleName: (string|undefined),
  *   declareLegacyNamespace:boolean,
- *   path:(string|undefined),
  *   type: goog.ModuleType
  * }}
  */
@@ -558,15 +557,6 @@ goog.isInEs6ModuleLoader_ = function() {
   }
 
   return false;
-};
-
-
-/**
- * @private
- * @return {?string|undefined} Path of the current module being initialized.
- */
-goog.getModulePath_ = function() {
-  return goog.moduleLoaderState_ && goog.moduleLoaderState_.path;
 };
 
 
@@ -1054,10 +1044,8 @@ goog.workaroundSafari10EvalBug = function(moduleDef) {
 
 /**
  * @param {function(?):?|string} moduleDef The module definition.
- * @param {string=} opt_path Path of this module. Required to goog.require ES6
- *     modules by path.
  */
-goog.loadModule = function(moduleDef, opt_path) {
+goog.loadModule = function(moduleDef) {
   // NOTE: we allow function definitions to be either in the from
   // of a string to eval (which keeps the original source intact) or
   // in a eval forbidden environment (CSP) we allow a function definition
@@ -1068,8 +1056,7 @@ goog.loadModule = function(moduleDef, opt_path) {
     goog.moduleLoaderState_ = {
       moduleName: '',
       declareLegacyNamespace: false,
-      type: goog.ModuleType.GOOG,
-      path: opt_path
+      type: goog.ModuleType.GOOG
     };
     var exports;
     if (goog.isFunction(moduleDef)) {
@@ -1102,7 +1089,6 @@ goog.loadModule = function(moduleDef, opt_path) {
         moduleId: goog.moduleLoaderState_.moduleName
       };
       goog.loadedModules_[moduleName] = data;
-      opt_path && (goog.loadedModules_[opt_path] = data);
     } else {
       throw new Error('Invalid module name \"' + moduleName + '\"');
     }
@@ -2859,12 +2845,10 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
             return pending;
           },
           /**
-           * @param {string} path
            * @param {goog.ModuleType} type
            */
-          setModuleState: function(path, type) {
+          setModuleState: function(type) {
             goog.moduleLoaderState_ = {
-              path: path,
               type: type,
               moduleName: '',
               declareLegacyNamespace: false
@@ -3082,13 +3066,11 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
 
 
   /**
-   * Sets the current module state. Allows goog.modules to require by path
-   * and lets goog.require return values.
+   * Sets the current module state.
    *
-   * @param {string} path Full path of the current module.
    * @param {goog.ModuleType} type Type of module.
    */
-  goog.LoadController.prototype.setModuleState = function(path, type) {};
+  goog.LoadController.prototype.setModuleState = function(type) {};
 
 
   /**
@@ -3461,7 +3443,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
     //    error in the module).
     var beforeKey = goog.Dependency.registerCallback_(function() {
       goog.Dependency.unregisterCallback_(beforeKey);
-      controller.setModuleState(dep.path, goog.ModuleType.ES6);
+      controller.setModuleState(goog.ModuleType.ES6);
     });
     create(undefined, 'goog.Dependency.callback_("' + beforeKey + '")');
 
@@ -3550,7 +3532,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
       }
 
       if (isEs6) {
-        controller.setModuleState(dep.path, goog.ModuleType.ES6);
+        controller.setModuleState(goog.ModuleType.ES6);
       }
 
       var namespace;
@@ -3742,14 +3724,14 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
           '"use strict";' + contents +
           '\n' +  // terminate any trailing single line comment.
           ';return exports' +
-          '}, "' + this.path + '");' +
+          '});' +
           '\n//# sourceURL=' + this.path + '\n';
     } else {
       return '' +
           'goog.loadModule(' +
           goog.global.JSON.stringify(
               contents + '\n//# sourceURL=' + this.path + '\n') +
-          ', "' + this.path + '");';
+          ');';
     }
   };
 
