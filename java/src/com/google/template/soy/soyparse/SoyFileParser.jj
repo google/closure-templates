@@ -642,15 +642,17 @@ public class SoyFileParser {
   private Token skipToTemplateToken(int... kinds) {
     ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
     Token t;
-    do {
+    while (true) {
       t = getNextToken();
-      if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
+      if (skipTo.contains(t.kind)) {
+        return t;
+      }
+      // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+      // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+      if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE || t.kind == EOF) {
         throw new AbortParsingError();
       }
-    // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
-    // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-    } while (!skipTo.contains(t.kind) && t.kind != EOF);
-    return t;
+    }
   }
 
   /** Create a SourceLocation spanning all given tokens. */
@@ -725,16 +727,6 @@ TOKEN_MGR_DECLS: {
     prevState = -1;
   }
 
-  void skipTo(int kind) {
-    Token t;
-    do {
-      t = getNextToken();
-      if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
-        throw new SoyFileParser.AbortParsingError();
-      }
-    } while (t.kind != kind && t.kind != EOF);
-  }
-
   @Override
   public String toString() {
     return "TokenManager{" + lexStateNames[curLexState] + "}";
@@ -754,7 +746,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
 
-<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
+<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SKIP: {
   < <WS> >
 | < <LINE_COMMENT> >
 }
@@ -769,7 +761,7 @@ TOKEN_MGR_DECLS: {
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> SKIP: {
+<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -1010,7 +1002,7 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
+<IN_CMD_TAG, EXPR> TOKEN: {
   < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
