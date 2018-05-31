@@ -16,8 +16,6 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyValue;
@@ -32,7 +30,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -55,22 +52,28 @@ import javax.annotation.Nullable;
 public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
-  public static SimplifyVisitor create() {
-    return new SimplifyVisitor(new SimplifyExprVisitor(), new PreevalVisitorFactory());
+  public static SimplifyVisitor create(IdGenerator idGenerator, TemplateRegistry registry) {
+    return new SimplifyVisitor(
+        idGenerator, registry, new SimplifyExprVisitor(), new PreevalVisitorFactory());
   }
 
+  private final Impl impl;
   private final SimplifyExprVisitor simplifyExprVisitor;
   private final PreevalVisitorFactory preevalVisitorFactory;
 
   private SimplifyVisitor(
-      SimplifyExprVisitor simplifyExprVisitor, PreevalVisitorFactory preevalVisitorFactory) {
+      IdGenerator idGenerator,
+      TemplateRegistry registry,
+      SimplifyExprVisitor simplifyExprVisitor,
+      PreevalVisitorFactory preevalVisitorFactory) {
+    this.impl = new Impl(registry, idGenerator);
     this.simplifyExprVisitor = simplifyExprVisitor;
     this.preevalVisitorFactory = preevalVisitorFactory;
   }
 
   /** Simplifies the given file set. */
-  public void simplify(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    new Impl(registry, fileSet.getNodeIdGenerator()).exec(fileSet);
+  public void simplify(SoyFileNode file) {
+    impl.exec(file);
   }
 
   private final class Impl extends AbstractSoyNodeVisitor<Void> {
@@ -85,18 +88,11 @@ public final class SimplifyVisitor {
     @Override
     public Void exec(SoyNode node) {
 
-      Preconditions.checkArgument(node instanceof SoyFileSetNode);
-      SoyFileSetNode nodeAsRoot = (SoyFileSetNode) node;
-
-      // no point in optimizing non-src files
-      for (SoyFileNode file :
-          Iterables.filter(nodeAsRoot.getChildren(), SoyFileNode.MATCH_SRC_FILENODE)) {
-        // First simplify all expressions in the subtree.
-        SoyTreeUtils.execOnAllV2Exprs(file, simplifyExprVisitor);
-
-        // Simpify the subtree.
-        visit(file);
-      }
+      SoyFileNode file = (SoyFileNode) node;
+      // First simplify all expressions in the subtree.
+      SoyTreeUtils.execOnAllV2Exprs(file, simplifyExprVisitor);
+      // Simpify the subtree.
+      visit(file);
 
       return null;
     }

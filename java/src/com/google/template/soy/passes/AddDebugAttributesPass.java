@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -67,9 +66,6 @@ import com.google.template.soy.soytree.TemplateNode;
 final class AddDebugAttributesPass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    if (file.getSoyFileKind() != SoyFileKind.SRC) {
-      return; // don't bother instrumenting non SRC files
-    }
     new Visitor(nodeIdGen).exec(file);
   }
 

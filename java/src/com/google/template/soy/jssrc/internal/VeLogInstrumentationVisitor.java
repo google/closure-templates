@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -69,19 +68,12 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Retrieve the node id generator.
     nodeIdGen = node.getNodeIdGenerator();
-    visitChildren(node);
-    // Run the desugaring pass and combine raw text nodes after we instrument velog node.
-    new DesugarHtmlNodesPass().run(node, templateRegistry);
-  }
-
-  @Override
-  protected void visitSoyFileNode(SoyFileNode node) {
-    // only instrument source files, deps haven't had the logging passes run so the logging ids
-    // aren't available.  Also, it is pointless.
-    if (node.getSoyFileKind() != SoyFileKind.SRC) {
-      return;
+    ImmutableList<SoyFileNode> sourceFiles = node.getSourceFiles();
+    for (SoyFileNode fileNode : sourceFiles) {
+      visitSoyFileNode(fileNode);
     }
-    super.visitSoyFileNode(node);
+    // Run the desugaring pass and combine raw text nodes after we instrument velog node.
+    new DesugarHtmlNodesPass().run(sourceFiles, nodeIdGen, templateRegistry);
   }
 
   /** Adds data-soylog attribute to the top-level DOM node in this {velog} block. */

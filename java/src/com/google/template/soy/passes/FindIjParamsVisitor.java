@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -119,10 +119,6 @@ public final class FindIjParamsVisitor {
         for (String localIjParam : templateToLocalIjParamsMap.get(template)) {
           ijParamToCalleesMultimapBuilder.put(localIjParam, template);
         }
-
-        for (TemplateParam injectedParam : template.getInjectedParams()) {
-          ijParamToCalleesMultimapBuilder.put(injectedParam.name(), template);
-        }
       }
 
       IjParamsInfo ijParamsInfo = new IjParamsInfo(ijParamToCalleesMultimapBuilder.build());
@@ -155,11 +151,16 @@ public final class FindIjParamsVisitor {
     return resultMapBuilder.build();
   }
 
-  /** Returns all ij parameters found in the subtree. */
-  private static Set<String> getAllIjs(Node soyTree) {
-    final Set<String> ijs = new HashSet<>();
+  /** Returns all injected parameters found in the template. */
+  private static Set<String> getAllIjs(TemplateNode template) {
+    // first scan for @inject params
+    final Set<String> ijs = new LinkedHashSet<>();
+    for (TemplateParam injectedParam : template.getInjectedParams()) {
+      ijs.add(injectedParam.name());
+    }
+    // then $ij params
     SoyTreeUtils.visitAllNodes(
-        soyTree,
+        template,
         new NodeVisitor<Node, VisitDirective>() {
           @Override
           public VisitDirective exec(Node node) {
@@ -175,7 +176,7 @@ public final class FindIjParamsVisitor {
   private static boolean isIj(Node node) {
     if (node instanceof VarRefNode) {
       VarRefNode varRef = (VarRefNode) node;
-      if (varRef.isInjected()) {
+      if (varRef.isDollarSignIjParameter()) {
         return true;
       }
     }

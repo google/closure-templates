@@ -16,6 +16,8 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -23,7 +25,6 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -41,10 +42,6 @@ public final class StrictDepsPass extends CompilerFileSetPass {
           "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency."
           ,
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind CALL_FROM_DEP_TO_SRC =
-      SoyErrorKind.of(
-          "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
-              + "not the other way around.");
 
   private final ErrorReporter errorReporter;
 
@@ -53,10 +50,12 @@ public final class StrictDepsPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    // TODO(lukes): only run on sources
-    for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(fileSet, CallBasicNode.class)) {
-      checkBasicCall(node, registry);
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    for (SoyFileNode file : sourceFiles) {
+      for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
+        checkBasicCall(node, registry);
+      }
     }
   }
 
@@ -76,28 +75,15 @@ public final class StrictDepsPass extends CompilerFileSetPass {
           node.getCalleeName(),
           extraErrorMessage);
     } else {
-      SoyFileKind callerKind = node.getNearestAncestor(SoyFileNode.class).getSoyFileKind();
       SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
       String callerFilePath = node.getSourceLocation().getFilePath();
       String calleeFilePath = callee.getSourceLocation().getFilePath();
-      if (calleeKind == SoyFileKind.INDIRECT_DEP && callerKind == SoyFileKind.SRC) {
+      if (calleeKind == SoyFileKind.INDIRECT_DEP) {
         errorReporter.report(
             node.getSourceLocation(),
             CALL_TO_INDIRECT_DEPENDENCY,
             calleeFilePath);
       }
-
-      // Double check if a dep calls a source. We shouldn't usually see this since the dependency
-      // should fail due to unknown template, but it doesn't hurt to add this.
-      if (calleeKind == SoyFileKind.SRC && callerKind != SoyFileKind.SRC) {
-        errorReporter.report(
-            node.getSourceLocation(),
-            CALL_FROM_DEP_TO_SRC,
-            callee.getTemplateNameForUserMsgs(),
-            calleeFilePath,
-            callerFilePath);
-      }
     }
-
   }
 }

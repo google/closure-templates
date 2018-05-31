@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
@@ -61,6 +63,11 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /** Returns the node id generator for this parse tree. */
   public IdGenerator getNodeIdGenerator() {
     return nodeIdGen;
+  }
+
+  /** Returns all child {@link SoyFileNode} that have {@link SoyFileKind#SRC}. */
+  public ImmutableList<SoyFileNode> getSourceFiles() {
+    return ImmutableList.copyOf(Iterables.filter(getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
   }
 
   @Deprecated

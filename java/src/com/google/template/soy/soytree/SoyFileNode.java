@@ -36,8 +36,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE =
       new Predicate<SoyFileNode>() {
         @Override
-        public boolean apply(@Nullable SoyFileNode input) {
-          return input != null && input.getSoyFileKind() == SoyFileKind.SRC;
+        public boolean apply(SoyFileNode input) {
+          return input.getSoyFileKind() == SoyFileKind.SRC;
         }
       };
 

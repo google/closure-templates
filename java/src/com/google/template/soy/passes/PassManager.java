@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
@@ -204,8 +205,12 @@ public final class PassManager {
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
+    boolean isSourceFile = file.getSoyFileKind() == SoyFileKind.SRC;
     for (CompilerFilePass pass : singleFilePasses) {
-      pass.run(file, nodeIdGen);
+      // All passes run on source files, but only some passes should run on deps.
+      if (isSourceFile || pass.shouldRunOnDepsAndIndirectDeps()) {
+        pass.run(file, nodeIdGen);
+      }
     }
   }
 
@@ -217,8 +222,10 @@ public final class PassManager {
   @CheckReturnValue
   public TemplateRegistry runWholeFilesetPasses(SoyFileSetNode soyTree) {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, errorReporter);
+    ImmutableList<SoyFileNode> sourceFiles = soyTree.getSourceFiles();
+    IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
-      pass.run(soyTree, templateRegistry);
+      pass.run(sourceFiles, idGenerator, templateRegistry);
     }
     if (errorReporter.hasErrors()) {
       return templateRegistry;
@@ -237,7 +244,7 @@ public final class PassManager {
       }
     }
     for (CompilerFileSetPass pass : simplificationPasses) {
-      pass.run(soyTree, templateRegistry);
+      pass.run(sourceFiles, idGenerator, templateRegistry);
     }
     return templateRegistry;
   }

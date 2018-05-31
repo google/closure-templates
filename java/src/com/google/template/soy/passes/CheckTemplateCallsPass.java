@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.error.ErrorReporter;
@@ -37,16 +38,15 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -117,40 +117,47 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    new CheckCallsVisitor(registry).exec(fileSet);
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    CheckCallsHelper helper = new CheckCallsHelper(registry);
+    for (SoyFileNode file : sourceFiles) {
+      for (TemplateNode template : file.getChildren()) {
+        for (CallBasicNode callNode :
+            SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {
+          helper.checkCall(template, callNode);
+        }
+        for (CallDelegateNode callNode :
+            SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
+          helper.checkCall(template, callNode);
+        }
+      }
+    }
   }
 
-  private final class CheckCallsVisitor extends AbstractSoyNodeVisitor<Void> {
+  private final class CheckCallsHelper {
 
     /** Registry of all templates in the Soy tree. */
     private final TemplateRegistry templateRegistry;
 
-    /** The current template being checked. */
-    private TemplateNode callerTemplate;
-
     /** Map of all template parameters, both explicit and implicit, organized by template. */
     private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = new HashMap<>();
 
-    CheckCallsVisitor(TemplateRegistry registry) {
+    CheckCallsHelper(TemplateRegistry registry) {
       this.templateRegistry = registry;
     }
 
-    @Override
-    protected void visitCallBasicNode(CallBasicNode node) {
+    void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
       TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
       if (callee != null) {
-        Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(node, callee);
+        Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(callerTemplate, node, callee);
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
         checkCallParamNames(node, callee);
         checkPassesUnusedParams(node, callee);
       }
-      checkStrictHtml(node, callee);
-      visitChildren(node);
+      checkStrictHtml(callerTemplate, node, callee);
     }
 
-    @Override
-    protected void visitCallDelegateNode(CallDelegateNode node) {
+    void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
       ImmutableMap.Builder<TemplateDelegateNode, ImmutableList<TemplateParam>>
           paramsToCheckByTemplate = ImmutableMap.builder();
       ImmutableList<TemplateDelegateNode> potentialCallees =
@@ -159,7 +166,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
               .delTemplateNameToValues()
               .get(node.getDelCalleeName());
       for (TemplateDelegateNode delTemplate : potentialCallees) {
-        Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
+        Set<TemplateParam> params = checkCallParamTypes(callerTemplate, node, delTemplate);
         paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
         checkCallParamNames(node, delTemplate);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
@@ -169,30 +176,16 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
       // as an error independently.
       if (!potentialCallees.isEmpty()) {
-        checkStrictHtml(node, potentialCallees.get(0));
+        checkStrictHtml(callerTemplate, node, potentialCallees.get(0));
       }
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-    }
-
-    @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      callerTemplate = node;
-      visitChildren(node);
-      callerTemplate = null;
     }
 
     /**
      * Returns the subset of {@link TemplateNode#getParams() callee params} that require runtime
      * type checking.
      */
-    private Set<TemplateParam> checkCallParamTypes(CallNode call, TemplateNode callee) {
+    private Set<TemplateParam> checkCallParamTypes(
+        TemplateNode callerTemplate, CallNode call, TemplateNode callee) {
       TemplateParamTypes calleeParamTypes = getTemplateParamTypes(callee);
       // Explicit params being passed by the CallNode
       Set<String> explicitParams = new HashSet<>();
@@ -480,7 +473,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
      * Helper method that reports an error if a strict html template calls a non-strict html
      * template from HTML context.
      */
-    private void checkStrictHtml(CallNode caller, @Nullable TemplateNode callee) {
+    private void checkStrictHtml(
+        TemplateNode callerTemplate, CallNode caller, @Nullable TemplateNode callee) {
       // We should only check strict html if 1) the current template
       // sets stricthtml to true, and 2) the current call node is in HTML context.
       // Then we report an error if the callee is HTML but is not a strict HTML template.

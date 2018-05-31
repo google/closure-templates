@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -146,13 +147,13 @@ public final class ContextualAutoescaper {
     // templates.
     this.inferences = inferences;
 
-    runVisitorOnAllTemplatesIncludingNewOnes(
+    runVisitorOnAllSrcTemplatesIncludingNewOnes(
         inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     List<TemplateNode> extraTemplates = new Rewriter(inferences, printDirectives).rewrite(fileSet);
 
-    runVisitorOnAllTemplatesIncludingNewOnes(
+    runVisitorOnAllSrcTemplatesIncludingNewOnes(
         inferences,
         new PerformDeprecatedNonContextualAutoescapeVisitor(fileSet.getNodeIdGenerator()));
 
@@ -170,23 +171,18 @@ public final class ContextualAutoescaper {
    * is called by a contextual one, the call subtree will be rewritten for the alternate context
    * (even though they remain non-contextually autoescaped).
    */
-  private void runVisitorOnAllTemplatesIncludingNewOnes(
+  private void runVisitorOnAllSrcTemplatesIncludingNewOnes(
       Inferences inferences, AbstractSoyNodeVisitor<?> visitor) {
     List<TemplateNode> allTemplatesIncludingNewOnes = inferences.getAllTemplates();
     for (TemplateNode templateNode : allTemplatesIncludingNewOnes) {
-      visitor.exec(templateNode);
+      // TODO(b/80336719): For newly derived templates, they don't have a parent yet.  So just
+      // always run on them. Otherwise only run on sources.  Once deprecated-contextual is gone we
+      // can simplify this.
+      if (templateNode.getParent() == null
+          || templateNode.getParent().getSoyFileKind() == SoyFileKind.SRC) {
+        visitor.exec(templateNode);
+      }
     }
-  }
-
-  /**
-   * Null if no typing has been done for the named template, or otherwise the context after a call
-   * to the named template. Since we derive templates by start context at the call site, there is no
-   * start context parameter.
-   *
-   * @param templateName A qualified template name.
-   */
-  public Context getTemplateEndContext(String templateName) {
-    return inferences.getTemplateEndContext(templateName);
   }
 
   /** Reports an autoescape exception. */
@@ -244,8 +240,9 @@ public final class ContextualAutoescaper {
           // not really enforced strongly by the Closure JS Compiler. (Prior to changing this,
           // there were a few templates that weren't contextually autoescaped because they were
           // private, but were still being called directly from JS.)
-          return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT
-              || templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL;
+          return templateNode.getParent().getSoyFileKind() == SoyFileKind.SRC
+              && (templateNode.getAutoescapeMode() == AutoescapeMode.STRICT
+                  || templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL);
         }
       };
 

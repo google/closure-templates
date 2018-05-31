@@ -33,6 +33,13 @@ final class SoyConformancePass extends CompilerFilePass {
   }
 
   @Override
+  public boolean shouldRunOnDepsAndIndirectDeps() {
+    // TODO(b/74256690): This is necessary to ensure correctness but unfortunate. Long term plan is
+    // to kick conformance out of the compiler.
+    return true;
+  }
+
+  @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     conformance.check(file, errorReporter);
   }

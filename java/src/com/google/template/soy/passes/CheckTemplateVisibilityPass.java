@@ -16,12 +16,12 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -44,27 +44,27 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    // TODO(lukes): only run on sources
-    for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(fileSet, CallBasicNode.class)) {
-      String calleeName = node.getCalleeName();
-      TemplateNode definition = registry.getBasicTemplate(calleeName);
-      if (definition != null && !isVisible(node, definition)) {
-        errorReporter.report(
-            node.getSourceLocation(),
-            CALLEE_NOT_VISIBLE,
-            calleeName,
-            definition.getVisibility().getAttributeValue(),
-            definition.getParent().getFilePath());
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    for (SoyFileNode file : sourceFiles) {
+      for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
+        String calleeName = node.getCalleeName();
+        TemplateNode definition = registry.getBasicTemplate(calleeName);
+        if (definition != null && !isVisible(file, definition)) {
+          errorReporter.report(
+              node.getSourceLocation(),
+              CALLEE_NOT_VISIBLE,
+              calleeName,
+              definition.getVisibility().getAttributeValue(),
+              definition.getParent().getFilePath());
+        }
       }
     }
-
   }
 
-  private static boolean isVisible(CallNode caller, TemplateNode callee) {
+  private static boolean isVisible(SoyFileNode calledFrom, TemplateNode callee) {
     // The only visibility level that this pass currently cares about is PRIVATE.
     // Templates are visible if they are not private or are defined in the same file.
-    return callee.getVisibility() != Visibility.PRIVATE
-        || callee.getParent().equals(caller.getNearestAncestor(SoyFileNode.class));
+    return callee.getVisibility() != Visibility.PRIVATE || callee.getParent().equals(calledFrom);
   }
 }

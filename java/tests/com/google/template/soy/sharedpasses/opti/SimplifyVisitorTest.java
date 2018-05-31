@@ -21,17 +21,16 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +49,8 @@ public class SimplifyVisitorTest {
             + "{for $i in range(5)}"
             + "  blah{$boo}blah"
             + "{/for}";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
+    ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    SoyFileSetNode soyTree = parseResult.fileSet();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     ForNonemptyNode forNode = (ForNonemptyNode) ((ForNode) template.getChild(3)).getChild(0);
@@ -62,8 +62,9 @@ public class SimplifyVisitorTest {
     assertThat(template.numChildren()).isEqualTo(6);
     assertThat(forNode.numChildren()).isEqualTo(5);
 
-    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
-    simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ErrorReporter.exploding()));
+    SimplifyVisitor simplifyVisitor =
+        SimplifyVisitor.create(soyTree.getNodeIdGenerator(), parseResult.registry());
+    simplifyVisitor.simplify(soyTree.getChild(0));
 
     assertThat(template.numChildren()).isEqualTo(4);
     assertThat(forNode.numChildren()).isEqualTo(3);
@@ -250,17 +251,20 @@ public class SimplifyVisitorTest {
   }
 
   private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
-
     ParseResult parse = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
-    simplifyVisitor.simplify(parse.fileSet(), parse.registry());
+    SimplifyVisitor simplifyVisitor =
+        SimplifyVisitor.create(parse.fileSet().getNodeIdGenerator(), parse.registry());
+    simplifyVisitor.simplify(parse.fileSet().getChild(0));
     return parse.fileSet().getChild(0).getChild(0).getChildren();
   }
 
   private SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
-    simplifyVisitor.simplify(parse.fileSet(), parse.registry());
+    SimplifyVisitor simplifyVisitor =
+        SimplifyVisitor.create(parse.fileSet().getNodeIdGenerator(), parse.registry());
+    for (SoyFileNode file : parse.fileSet().getChildren()) {
+      simplifyVisitor.simplify(file);
+    }
     return parse.fileSet();
   }
 }

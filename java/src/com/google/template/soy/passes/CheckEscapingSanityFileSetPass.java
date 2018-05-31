@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -28,7 +29,7 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -72,8 +73,12 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    new Visitor(errorReporter, registry).exec(fileSet);
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    Visitor visitor = new Visitor(errorReporter, registry);
+    for (SoyFileNode file : sourceFiles) {
+      visitor.exec(file);
+    }
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {

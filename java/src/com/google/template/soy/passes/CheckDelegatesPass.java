@@ -17,6 +17,8 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Equivalence;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -25,7 +27,6 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -73,12 +74,12 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
     checkTemplates(registry);
 
-    // TODO(lukes): only run on sources
-    for (SoyFileNode fileNode : fileSet.getChildren()) {
+    for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
         String currDelPackageName = template.getDelPackageName();

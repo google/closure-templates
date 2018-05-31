@@ -18,9 +18,10 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -37,8 +38,9 @@ import java.util.List;
 public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPass {
 
   @Override
-  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-    for (SoyFileNode file : fileSet.getChildren()) {
+  public void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    for (SoyFileNode file : sourceFiles) {
       for (TemplateNode template : file.getChildren()) {
         run(template);
       }
@@ -47,7 +49,7 @@ public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPas
 
   /** Run the pass on a single node. */
   public void run(ParentSoyNode<?> node) {
-     visit(node);
+    visit(node);
   }
 
   private void visit(ParentSoyNode<?> node) {

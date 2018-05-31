@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -53,9 +52,6 @@ final class ValidateAliasesPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    if (file.getSoyFileKind() != SoyFileKind.SRC) {
-      return;
-    }
     for (AliasDeclaration alias : file.getAliasDeclarations()) {
       if (options.getCompileTimeGlobals().containsKey(alias.alias().identifier())) {
         errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.alias());

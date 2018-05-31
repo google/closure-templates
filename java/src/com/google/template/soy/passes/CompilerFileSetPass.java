@@ -16,17 +16,20 @@
 
 package com.google.template.soy.passes;
 
-import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
- * A pass that runs over the entire {@link SoyFileSetNode}.
+ * A pass that runs over all {@link SoyFileKind#SRC source} files.
  *
  * <p>Prefer implementing {@link CompilerFilePass} whenever possible. This should only be used for
  * passes that need to access transitive callee information.
  */
 abstract class CompilerFileSetPass {
-  public abstract void run(SoyFileSetNode fileSet, TemplateRegistry registry);
+  public abstract void run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
 
   public String name() {
     String simpleName = getClass().getSimpleName();

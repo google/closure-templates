@@ -17,7 +17,6 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -99,11 +98,6 @@ final class VeLogValidationPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    if (file.getSoyFileKind() != SoyFileKind.SRC) {
-      // don't run non deps/indirect deps
-      // There is no need
-      return;
-    }
     for (TemplateNode template : file.getChildren()) {
       for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
         if (template.isStrictHtml()) {
