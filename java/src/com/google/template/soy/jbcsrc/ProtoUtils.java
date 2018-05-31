@@ -622,7 +622,7 @@ final class ProtoUtils {
     private ImmutableList<Statement> getFieldSetters() {
       ImmutableList.Builder<Statement> setters = ImmutableList.builder();
       for (int i = 0; i < args.size(); i++) {
-        FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i));
+        FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i).identifier());
         SoyExpression baseArg = args.get(i);
 
         Statement setter;

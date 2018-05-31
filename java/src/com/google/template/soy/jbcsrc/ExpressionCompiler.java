@@ -16,7 +16,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
@@ -30,12 +29,12 @@ import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
-import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -316,41 +315,40 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
-      return visitRecordLiteralOrMapLiteralNode(node);
-    }
-
-    @Override
-    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
-      return visitRecordLiteralOrMapLiteralNode(node);
-    }
-
-    private SoyExpression visitRecordLiteralOrMapLiteralNode(AbstractParentExprNode node) {
-      checkState(
-          node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE
-              || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
-      final boolean useRecord = node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE;
-      final int numItems = node.numChildren() / 2;
+      final int numItems = node.numChildren();
       if (numItems == 0) {
-        return useRecord
-            ? SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor())
-            : SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor());
       }
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings (for record literals) or boxed SoyValues (for map literals). Values are
-        // boxed SoyValues.
-        SoyExpression key = visit(node.getChild(2 * i));
-        keys.add(useRecord ? key.unboxAs(String.class) : key.box());
+        // Keys are strings and values are boxed SoyValues.
+        keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
+        values.add(visit(node.getChild(i)).box());
+      }
+      Expression soyDict =
+          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+              BytecodeUtils.newLinkedHashMap(keys, values),
+              FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
+                  .accessor());
+      return SoyExpression.forSoyValue(node.getType(), soyDict);
+    }
+
+    @Override
+    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+      final int numItems = node.numChildren() / 2;
+      if (numItems == 0) {
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
+      }
+      List<Expression> keys = new ArrayList<>(numItems);
+      List<Expression> values = new ArrayList<>(numItems);
+      for (int i = 0; i < numItems; i++) {
+        // Keys and values are boxed SoyValues.
+        keys.add(visit(node.getChild(2 * i)).box());
         values.add(visit(node.getChild(2 * i + 1)).box());
       }
       Expression soyDict =
-          useRecord
-              ? MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
-                  BytecodeUtils.newLinkedHashMap(keys, values),
-                  FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
-                      .accessor())
-              : MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
+          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
       return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
@@ -1127,8 +1125,8 @@ final class ExpressionCompiler {
 
       // Proto init calls require detach if any of the specified fields are repeated.
       SoyProtoType protoType = (SoyProtoType) node.getType();
-      for (String paramName : node.getParamNames()) {
-        if (protoType.getFieldDescriptor(paramName).isRepeated()) {
+      for (Identifier paramName : node.getParamNames()) {
+        if (protoType.getFieldDescriptor(paramName.identifier()).isRepeated()) {
           return true;
         }
       }

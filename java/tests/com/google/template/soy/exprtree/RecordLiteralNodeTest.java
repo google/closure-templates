@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,17 +38,17 @@ public final class RecordLiteralNodeTest {
 
     RecordLiteralNode recordLit =
         new RecordLiteralNode(
-            ImmutableList.<ExprNode>of(
-                new StringNode("aaa", QuoteStyle.SINGLE, X),
-                new StringNode("blah", QuoteStyle.SINGLE, X),
-                new StringNode("bbb", QuoteStyle.SINGLE, X),
-                new IntegerNode(123, X),
-                new StringNode("boo", QuoteStyle.SINGLE, X),
-                fooDataRef),
+            ImmutableList.of(
+                Identifier.create("aaa", X),
+                Identifier.create("bbb", X),
+                Identifier.create("boo", X)),
             X);
-    assertThat(recordLit.toSourceString()).isEqualTo("['aaa': 'blah', 'bbb': 123, 'boo': $foo]");
+    recordLit.addChildren(
+        ImmutableList.of(
+            new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), fooDataRef));
+    assertThat(recordLit.toSourceString()).isEqualTo("record(aaa: 'blah', bbb: 123, boo: $foo)");
 
-    RecordLiteralNode emptyRecordLit = new RecordLiteralNode(ImmutableList.<ExprNode>of(), X);
-    assertThat(emptyRecordLit.toSourceString()).isEqualTo("[:]");
+    RecordLiteralNode emptyRecordLit = new RecordLiteralNode(ImmutableList.of(), X);
+    assertThat(emptyRecordLit.toSourceString()).isEqualTo("record()");
   }
 }

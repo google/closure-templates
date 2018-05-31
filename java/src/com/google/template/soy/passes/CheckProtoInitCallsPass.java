@@ -20,9 +20,9 @@ import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYP
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -39,6 +39,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -82,7 +83,10 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
   private void checkProto(ProtoInitNode node, SoyProtoType soyType) {
     // Check that all proto required fields are present.
     // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
-    Set<String> givenParams = Sets.newHashSet(node.getParamNames());
+    Set<String> givenParams = new HashSet<>();
+    for (Identifier id : node.getParamNames()) {
+      givenParams.add(id.identifier());
+    }
     for (FieldDescriptor field : soyType.getDescriptor().getFields()) {
       if (field.isRequired() && !givenParams.contains(field.getName())) {
         errorReporter.report(node.getSourceLocation(), MISSING_REQUIRED_FIELD, field.getName());
@@ -91,7 +95,7 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
 
     ImmutableSet<String> fields = soyType.getFieldNames();
     for (int i = 0; i < node.numChildren(); i++) {
-      String fieldName = node.getParamNames().get(i);
+      String fieldName = node.getParamNames().get(i).identifier();
       ExprNode expr = node.getChild(i);
 
       // Check that each arg exists in the proto.

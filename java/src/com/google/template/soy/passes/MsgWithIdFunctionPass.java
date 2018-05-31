@@ -21,6 +21,7 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -135,16 +136,17 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
         explanation);
 
     // this way we don't trigger a cascade of errors about incorrect types
-    fn.getParent()
-        .replaceChild(
-            fn,
-            new RecordLiteralNode(
-                ImmutableList.of(
-                    new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                    new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                    new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                    fn.getChild(0).copy(new CopyState())),
-                fn.getSourceLocation()));
+    RecordLiteralNode recordLiteral =
+        new RecordLiteralNode(
+            ImmutableList.of(
+                Identifier.create("id", fn.getSourceLocation()),
+                Identifier.create("msg", fn.getSourceLocation())),
+            fn.getSourceLocation());
+    recordLiteral.addChildren(
+        ImmutableList.of(
+            new StringNode("error", QuoteStyle.SINGLE, fn.getSourceLocation()),
+            fn.getChild(0).copy(new CopyState())));
+    fn.getParent().replaceChild(fn, recordLiteral);
   }
 
   /**
@@ -180,11 +182,10 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
     RecordLiteralNode recordLiteral =
         new RecordLiteralNode(
             ImmutableList.of(
-                new StringNode("id", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                msgIdNode,
-                new StringNode("msg", QuoteStyle.SINGLE, fn.getSourceLocation()),
-                fn.getChild(0).copy(new CopyState())),
+                Identifier.create("id", fn.getSourceLocation()),
+                Identifier.create("msg", fn.getSourceLocation())),
             fn.getSourceLocation());
+    recordLiteral.addChildren(ImmutableList.of(msgIdNode, fn.getChild(0).copy(new CopyState())));
     fn.getParent().replaceChild(fn, recordLiteral);
   }
 

@@ -83,15 +83,23 @@ public final class SimplifyExprVisitorTest {
   @Test
   public void testSimplifyListAndMapLiterals() {
     assertThat("['a' + 'b', 1 - 3]").simplifiesTo("['ab', -2]");
-    assertThat("['a' + 'b': 1 - 3]").simplifiesTo("['ab': -2]");
+    assertThat("map('a' + 'b': 1 - 3)").simplifiesTo("map('ab': -2)");
     assertThat("[8, ['a' + 'b', 1 - 3]]").simplifiesTo("[8, ['ab', -2]]");
-    assertThat("['z': ['a' + 'b': 1 - 3]]").simplifiesTo("['z': ['ab': -2]]");
+    assertThat("map('z': map('a' + 'b': 1 - 3))").simplifiesTo("map('z': map('ab': -2))");
 
     // With functions.
     // Note: Currently, ListLiteralNode and MapLiteralNode are never considered to be constant, even
     // though in reality, they can be constant. So in the current implementation, this mapKeys()
     // call cannot be simplified away.
     assertThat("mapKeys(map('a' + 'b': 1 - 3))").simplifiesTo("mapKeys(map('ab': -2))");
+  }
+
+  @Test
+  public void testSimplifyRecordLiterals() {
+    assertThat("['a': 1 - 3]").simplifiesTo("record(a: -2)");
+    assertThat("record(a: 2 + 4)").simplifiesTo("record(a: 6)");
+    assertThat("['z': ['a': 1 - 3]]").simplifiesTo("record(z: record(a: -2))");
+    assertThat("record(a: -2).a").simplifiesTo("-2");
   }
 
   @Test

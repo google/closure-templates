@@ -61,6 +61,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -135,7 +136,7 @@ import com.google.template.soy.types.NullType;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -434,8 +435,10 @@ public class SoyFileParser {
   );
 
   // Expression errors:
-  private static final SoyErrorKind DUPLICATE_PARAM_NAME =
-      SoyErrorKind.of("Duplicate param name ''{0}''.");
+  private static final SoyErrorKind DUPLICATE_KEY_NAME =
+      SoyErrorKind.of("Duplicate {0} ''{1}''.");
+  private static final SoyErrorKind INVALID_KEY_NAME = SoyErrorKind.of(
+      "Invalid {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
       SoyErrorKind.of(
           "Soy integers are constrained to the range of JavaScript integers: "
@@ -447,9 +450,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind INVALID_VAR_NAME_IJ =
       SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
-  private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_RECORD_LITERAL =
-      SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in record literal "
-          + "(please surround with quotes).");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
 
@@ -3497,7 +3497,7 @@ private VarRefNode VarRef() :
 
 
 /**
- * Parses a global, a function call, a proto init call, or a map literal.
+ * Parses a global, a function call, a proto init call, a record literal, or a map literal.
  * These share a production because they share a common prefix.
  *
  * GlobalOrFunctionOrMapLiteral ->
@@ -3511,19 +3511,23 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
   ExprNode key, val;
   List<ExprNode> params = new ArrayList<ExprNode>();
   ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
-  LinkedHashSet<String> paramNames;
+  Set<String> paramNames;
+  List<Identifier> paramIds;
 }
 {
   ident = Identifier()
+  {
+    boolean isRecord = "record".equals(ident.identifier());
+  }
 
   [
     openParen = <LPAREN>
     // A simple approach to parsing map literals would be to parse a sequence of comma-delimited
     // Expr <COLON> Exprs. At the end, if ident is "map", it's a map literal, otherwise it's a proto
-    // init literal. Proto init literals require simple identifiers as keys, while map literals
-    // allow any expression. Parsing them using the same rules makes the error messages
-    // for malformed proto init literals confusing. So use a lookahead to parse the map literals
-    // separately.
+    // init or record literal. Proto init and record literals require simple identifiers as keys,
+    // while map literals allow any expression. Parsing them using the same rules makes the error
+    // messages for malformed proto init and record literals confusing. So use a lookahead to parse
+    // the map literals separately.
     (
       LOOKAHEAD( {ident.identifier().equals("map")} )
       [
@@ -3548,30 +3552,40 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
         // It could be a 0-arg function call to a function called "map".
         // (Function calls and map literals are usually distinguished by their parameter syntax
         // (positional vs. named), but that's not helpful when there are no params.)
-        // TODO(b/69433057): ban functions named "map".
         SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
         return new MapLiteralNode(kvPairs.build(), srcLoc);
       }
     |
       [
-        // this can be any expr, for a function call; for proto init, must be a single-ident global
+        // this can be any expr, for a function call; for proto init or record literal, must be a
+        // single-ident global
         key = Expr()
 
         (
-          // parens contain a list of ident : expr pairs - this is a proto init call
+          // parens contain a list of ident : expr pairs - this is a proto init call or record
+          // literal
           <COLON>
           val = Expr()
           {
             if (!(key instanceof GlobalNode)
                 || !BaseUtils.isIdentifier(((GlobalNode) key).getName())) {
               errorReporter.report(
-                  key.getSourceLocation(), INVALID_PARAM_NAME, key.toSourceString());
+                  key.getSourceLocation(),
+                  INVALID_KEY_NAME,
+                  isRecord ? "record key name" : "param name",
+                  key.toSourceString(),
+                  isRecord
+                      ? " A record key must be a valid Soy identifier. Did you mean to use a map?"
+                      : "");
               key = GlobalNode.error(key.getSourceLocation());
             }
 
-            paramNames = new LinkedHashSet<String>();
+            paramNames = new HashSet<String>();
+            paramIds = new ArrayList<Identifier>();
 
             paramNames.add(((GlobalNode) key).getName());
+            paramIds.add(
+                Identifier.create(((GlobalNode) key).getName(), key.getSourceLocation()));
             params.add(val);
           }
 
@@ -3582,7 +3596,12 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
             {
               if (!paramNames.add(paramName.image)) {
                 errorReporter.report(
-                    createSrcLoc(paramName), DUPLICATE_PARAM_NAME, paramName.image);
+                    createSrcLoc(paramName),
+                    DUPLICATE_KEY_NAME,
+                    isRecord ? "record key" : "param name",
+                    paramName.image);
+              } else {
+                paramIds.add(Identifier.create(paramName.image, createSrcLoc(paramName)));
               }
             }
             <COLON>
@@ -3592,13 +3611,17 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
 
           closeParen = <RPAREN>
           {
-            // TODO(user): Add source locations to paramNames
-            // TODO(user): Also add type, then remove code from RETV
-            ProtoInitNode pNode = new ProtoInitNode(
-                headerInfo.resolveAlias(ident.identifier()), paramNames,
-                ident.location().extend(createSrcLoc(closeParen)));
-            pNode.addChildren(params);
-            return pNode;
+            AbstractParentExprNode node;
+            SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
+            if (isRecord) {
+              node = new RecordLiteralNode(paramIds, loc);
+            } else {
+              // TODO(user): Also add type, then remove code from RETV
+              node = new ProtoInitNode(
+                  headerInfo.resolveAlias(ident.identifier()), paramIds, loc);
+            }
+            node.addChildren(params);
+            return node;
           }
         |
           // parens contain a list of exprs - this is a function
@@ -3632,13 +3655,17 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
       return new GlobalNode(headerInfo.resolveAlias(ident.identifier()), ident.location());
     }
 
-    // Look up ident in the type registry, see if it's a proto. Otherwise, it is a function.
+    // Check if this is a record. If not, look up ident in the type registry to see if it's a proto.
+    // Otherwise, it is a function.
+    SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
+    if (isRecord) {
+      return new RecordLiteralNode(ImmutableList.of(), loc);
+    }
     String name = ident.identifier();
     String resolvedName = headerInfo.resolveAlias(name);
-    SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
     SoyType type = (typeRegistry == null) ? null : typeRegistry.getType(resolvedName);
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
-      return new ProtoInitNode(resolvedName, ImmutableList.<String>of(), loc);
+      return new ProtoInitNode(resolvedName, ImmutableList.of(), loc);
     } else {
       return new FunctionNode(pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
@@ -3663,14 +3690,14 @@ private ExprNode CollectionLiteral() :
     // empty record
     <COLON>
     end = <RBRACKET>
-    { return new RecordLiteralNode(items, createSrcLoc(begin, end)); }
+    { return new RecordLiteralNode(ImmutableList.of(), createSrcLoc(begin, end)); }
   |
     // empty list
     end = <RBRACKET>
     { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
   |
     // The first item of a non-empty list/record will be an expression
-    itemExpr = RecordKeyOrExpr()
+    itemExpr = Expr()
     { items = new ArrayList<ExprNode>();
       items.add(itemExpr);
     }
@@ -3695,7 +3722,7 @@ private ExprNode CollectionLiteral() :
         // this lookahead is necessary to make this loop unambiguous with the trailing comma
         LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
         <COMMA>
-        itemExpr = RecordKeyOrExpr()
+        itemExpr = Expr()
         { items.add(itemExpr); }
         <COLON>
         itemExpr = Expr()
@@ -3703,42 +3730,10 @@ private ExprNode CollectionLiteral() :
       )*
       [ <COMMA> ]  // trailing comma
       end = <RBRACKET>
-      { return new RecordLiteralNode(items, createSrcLoc(begin, end)); }
+      { return RecordLiteralNode.create(items, createSrcLoc(begin, end), errorReporter); }
     )
   )
 }
-
-/**
- * Matches an expression that can be used as a record key, or a normal expression if it isn't for a
- * record key.
- */
-private ExprNode RecordKeyOrExpr() :
-{
-  ExprNode itemExpr;
-  Token ident;
-}
-{
-  ( LOOKAHEAD( <IDENT> <COLON> )
-    ident = <IDENT>
-    {
-      // If it wasn't for the LOOKAHEAD this would have parsed as a global, just create one here
-      // so we can keep parsing.
-      itemExpr = new GlobalNode(headerInfo.resolveAlias(ident.image), createSrcLoc(ident));
-      // TODO(lukes): consider how important this check is.  The theory is that users might
-      // think that our record literals work like keys in js object literals.  Though what will
-      // really happen is that we will parse it as a global and then it just will get whatever
-      // value is assigned (the risk is in the jssrc backend where undefined globals are
-      // allowed).
-      errorReporter.report(
-          createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_RECORD_LITERAL, ident.image);
-    }
-  |
-    itemExpr = Expr()
-  )
-
-  { return itemExpr; }
-}
-
 
 /**
  * Primitive -> Null | Boolean | Integer | Float | String

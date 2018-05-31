@@ -239,13 +239,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     LinkedHashMap<Expression, Expression> objLiteral = new LinkedHashMap<>();
 
     // Process children
-    for (int i = 0; i < node.numChildren(); i += 2) {
-      ExprNode keyNode = node.getChild(i);
-      Preconditions.checkState(keyNode instanceof StringNode);
-      ExprNode valueNode = node.getChild(i + 1);
-
-      String strKey = ((StringNode) keyNode).getValue();
-      objLiteral.put(id(strKey), visit(valueNode));
+    for (int i = 0; i < node.numChildren(); i++) {
+      objLiteral.put(id(node.getKey(i).identifier()), visit(node.getChild(i)));
     }
 
     // Build the record literal
@@ -501,7 +496,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
 
     for (int i = 0; i < node.numChildren(); i++) {
-      String fieldName = node.getParamName(i);
+      String fieldName = node.getParamName(i).identifier();
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
       Expression fieldValue = visit(node.getChild(i));
       if (ProtoUtils.isSanitizedContentField(fieldDesc)) {

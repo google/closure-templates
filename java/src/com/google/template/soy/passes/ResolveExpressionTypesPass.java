@@ -17,8 +17,6 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.exprtree.ExprNode.Kind.MAP_LITERAL_NODE;
-import static com.google.template.soy.exprtree.ExprNode.Kind.RECORD_LITERAL_NODE;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
@@ -26,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
@@ -42,7 +39,6 @@ import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -144,16 +140,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Type {0} does not support dot access.");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
-  private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL =
-      SoyErrorKind.of("{0} literals with duplicate keys are not allowed.  Duplicate key: ''{1}''");
+  private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
+      SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
   private static final SoyErrorKind ILLEGAL_MAP_RESOLVED_KEY_TYPE =
       SoyErrorKind.of(
           "A map''s keys must all be the same type. This map has keys of multiple types "
               + "(''{0}'').");
-  private static final SoyErrorKind ILLEGAL_RECORD_KEY_NAME =
-      SoyErrorKind.of("Record key ''{0}'' must be a valid Soy identifier.");
-  private static final SoyErrorKind ILLEGAL_RECORD_KEY_TYPE =
-      SoyErrorKind.of("Record key ''{0}'' must be a string literal. Did you mean to use a map?");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
       SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
@@ -446,27 +438,32 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     protected void visitRecordLiteralNode(RecordLiteralNode node) {
       visitChildren(node);
-      setMapLiteralNodeType(node);
+
+      int numChildren = node.numChildren();
+      checkState(numChildren == node.getKeys().size());
+      if (numChildren == 0) {
+        // TODO(b/79869432): Remove support for the empty record.
+        node.setType(RecordType.EMPTY_RECORD);
+        return;
+      }
+
+      Map<String, SoyType> fieldTypes = Maps.newHashMapWithExpectedSize(numChildren);
+      for (int i = 0; i < numChildren; i++) {
+        fieldTypes.put(node.getKey(i).identifier(), node.getChild(i).getType());
+      }
+      node.setType(typeRegistry.getOrCreateRecordType(fieldTypes));
+
       tryApplySubstitution(node);
     }
 
     @Override
     protected void visitMapLiteralNode(MapLiteralNode node) {
       visitChildren(node);
-      setMapLiteralNodeType(node);
-      tryApplySubstitution(node);
-    }
 
-    // TODO(b/79368576): consider splitting this into separate methods for maps and records, if that
-    // makes it easier to understand.
-    private void setMapLiteralNodeType(AbstractParentExprNode node) {
-      Kind nodeKind = node.getKind();
-      checkState(nodeKind == MAP_LITERAL_NODE || nodeKind == RECORD_LITERAL_NODE);
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        // TODO(b/79869432): Remove support for the empty record.
-        node.setType(nodeKind == MAP_LITERAL_NODE ? MapType.EMPTY_MAP : RecordType.EMPTY_RECORD);
+        node.setType(MapType.EMPTY_MAP);
         return;
       }
 
@@ -483,51 +480,24 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           String fieldName = ((StringNode) key).getValue();
           SoyType prev = recordFieldTypes.put(fieldName, value.getType());
           if (prev != null && duplicateKeyErrors.add(fieldName)) {
-            errorReporter.report(
-                key.getSourceLocation(),
-                DUPLICATE_KEY_IN_MAP_OR_RECORD_LITERAL,
-                nodeKind == MAP_LITERAL_NODE ? "Map" : "Record",
-                fieldName);
+            errorReporter.report(key.getSourceLocation(), DUPLICATE_KEY_IN_MAP_LITERAL, fieldName);
           }
-          if (nodeKind == RECORD_LITERAL_NODE && !BaseUtils.isIdentifier(fieldName)) {
-            errorReporter.report(key.getSourceLocation(), ILLEGAL_RECORD_KEY_NAME, fieldName);
-            node.setType(ErrorType.getInstance());
-          }
-        } else if (nodeKind == RECORD_LITERAL_NODE) {
-          errorReporter.report(
-              key.getSourceLocation(), ILLEGAL_RECORD_KEY_TYPE, key.toSourceString());
-          node.setType(ErrorType.getInstance());
         }
         keyTypes.add(key.getType());
-        if (nodeKind == MAP_LITERAL_NODE && !MapType.isAllowedKeyType(key.getType())) {
+        if (!MapType.isAllowedKeyType(key.getType())) {
           errorReporter.report(key.getSourceLocation(), MapType.BAD_MAP_KEY_TYPE, key.getType());
         }
         valueTypes.add(value.getType());
       }
       SoyType commonKeyType = SoyTypes.computeLowestCommonType(typeRegistry, keyTypes);
-      if (!errorReporter.errorsSince(checkpoint)
-          && nodeKind == MAP_LITERAL_NODE
-          && !MapType.isAllowedKeyType(commonKeyType)) {
+      if (!errorReporter.errorsSince(checkpoint) && !MapType.isAllowedKeyType(commonKeyType)) {
         errorReporter.report(
             node.getSourceLocation(), ILLEGAL_MAP_RESOLVED_KEY_TYPE, commonKeyType);
       }
       SoyType commonValueType = SoyTypes.computeLowestCommonType(typeRegistry, valueTypes);
+      node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
 
-      if (nodeKind == RECORD_LITERAL_NODE) {
-        if (!duplicateKeyErrors.isEmpty()) {
-          node.setType(ErrorType.getInstance());
-        } else {
-          Map<String, SoyType> leastCommonFieldTypes =
-              Maps.newHashMapWithExpectedSize(recordFieldTypes.size());
-          for (String fieldName : recordFieldTypes.keySet()) {
-            leastCommonFieldTypes.put(fieldName, recordFieldTypes.get(fieldName));
-          }
-          node.setType(typeRegistry.getOrCreateRecordType(leastCommonFieldTypes));
-        }
-      } else {
-        Preconditions.checkState(nodeKind == MAP_LITERAL_NODE);
-        node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
-      }
+      tryApplySubstitution(node);
     }
 
     @Override

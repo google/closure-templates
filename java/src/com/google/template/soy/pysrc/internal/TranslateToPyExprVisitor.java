@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -171,40 +170,33 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitRecordLiteralNode(RecordLiteralNode node) {
-    return visitRecordLiteralOrMapLiteralNode(node);
+    Preconditions.checkArgument(node.numChildren() == node.getKeys().size());
+    Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
+
+    for (int i = 0; i < node.numChildren(); i++) {
+      dict.put(new PyStringExpr("'" + node.getKey(i) + "'"), visit(node.getChild(i)));
+    }
+
+    // TODO(b/69064788): Switch records to use namedtuple so that if a record is accessed as a map
+    // (or if a map is accessed as a record) it's a runtime error.
+    return PyExprUtils.convertMapToOrderedDict(dict);
   }
 
   @Override
   protected PyExpr visitMapLiteralNode(MapLiteralNode node) {
-    return visitRecordLiteralOrMapLiteralNode(node);
-  }
-
-  private PyExpr visitRecordLiteralOrMapLiteralNode(AbstractParentExprNode node) {
-    Preconditions.checkState(
-        node.getKind() == ExprNode.Kind.RECORD_LITERAL_NODE
-            || node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE);
     Preconditions.checkArgument(node.numChildren() % 2 == 0);
     Map<PyExpr, PyExpr> dict = new LinkedHashMap<>();
-    boolean needsRuntimeNullCheck = node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE;
 
     for (int i = 0, n = node.numChildren(); i < n; i += 2) {
       ExprNode keyNode = node.getChild(i);
       PyExpr key = visit(keyNode);
-      if (needsRuntimeNullCheck) {
-        key = new PyFunctionExprBuilder("runtime.check_not_null").addArg(key).asPyExpr();
-      }
+      key = new PyFunctionExprBuilder("runtime.check_not_null").addArg(key).asPyExpr();
       key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
       ExprNode valueNode = node.getChild(i + 1);
       dict.put(key, visit(valueNode));
     }
 
-    // TODO(b/69064788): OrderedDict is being used to represent both record literals and map
-    // literals, but we know here which one is intended. Add OrderedDict APIs to tell it which kind
-    // of object it "really" is, so it can throw a runtime exception if a template tries to index
-    // into the object with the wrong convention.
-    return node.getKind() == ExprNode.Kind.MAP_LITERAL_NODE
-        ? PyExprUtils.convertMapToPyExpr(dict)
-        : PyExprUtils.convertMapToOrderedDict(dict);
+    return PyExprUtils.convertMapToPyExpr(dict);
   }
 
   // -----------------------------------------------------------------------------------------------

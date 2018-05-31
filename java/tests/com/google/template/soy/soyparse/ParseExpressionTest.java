@@ -21,7 +21,9 @@ import static com.google.template.soy.soyparse.ExpressionSubject.assertThatExpre
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.common.truth.Correspondence;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
@@ -180,18 +182,37 @@ public final class ParseExpressionTest {
   }
 
   @Test
-  public void testRecognizeListsAndMaps() {
+  public void testRecognizeLists() {
     assertThatExpression("[]").isValidExpression();
     assertThatExpression("[55]").isValidExpression();
     assertThatExpression("[55,]").isValidExpression();
     assertThatExpression("['blah', 123, $boo]").isValidExpression();
     assertThatExpression("['blah', 123, $boo,]").isValidExpression();
+  }
 
+  @Test
+  public void testRecognizeMaps() {
+    assertThatExpression("map()").isValidExpression();
+    assertThatExpression("map('aa': 55)").isValidExpression();
+    assertThatExpression("map('aa': 55,)").isValidExpression();
+    assertThatExpression("map('aaa': 'blah', 'bbb': 123, $foo.bar: $boo)").isValidExpression();
+    assertThatExpression("map('aaa': 'blah', 'bbb': 123, $foo.bar: $boo,)").isValidExpression();
+  }
+
+  @Test
+  public void testRecognizeRecordLiterals() {
     assertThatExpression("[:]").isValidExpression();
     assertThatExpression("['aa': 55]").isValidExpression();
     assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
-    assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
+    assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo]").isValidExpression();
+    assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo,]").isValidExpression();
+
+    assertThatExpression("record()").isValidExpression();
+    assertThatExpression("record(aa: 55)").isValidExpression();
+    // TODO(b/80429224): Allow trailing comma in new record literal syntax
+    assertThatExpression("record(aa': 55,)").isNotValidExpression();
+    assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo)").isValidExpression();
+    assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo,)").isNotValidExpression();
   }
 
   @Test
@@ -403,8 +424,7 @@ public final class ParseExpressionTest {
   }
 
   @Test
-  public void testParseListsAndRecords() throws Exception {
-
+  public void testParseLists() throws Exception {
     ExprNode expr = assertThatExpression("[]").isValidExpression();
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("[55]").isValidExpression();
@@ -415,17 +435,23 @@ public final class ParseExpressionTest {
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
     expr = assertThatExpression("['blah', 123, $boo,]").isValidExpression();
     assertThat(((ListLiteralNode) expr).numChildren()).isEqualTo(3);
+  }
 
-    expr = assertThatExpression("[:]").isValidExpression();
+  @Test
+  public void testParseRecords() {
+    ExprNode expr = assertThatExpression("[:]").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("['aa': 55]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(2);
-    expr = assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(2);
-    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(6);
-    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(6);
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
+    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo]").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(3);
+
+    expr = assertThatExpression("record()").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
+    expr = assertThatExpression("record(aa: 55)").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
+    expr = assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo)").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(3);
   }
 
   @Test
@@ -460,7 +486,21 @@ public final class ParseExpressionTest {
         assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'))").isValidExpression();
     ProtoInitNode protoFn = (ProtoInitNode) expr;
     assertThat(protoFn.getProtoName()).isEqualTo("my.Proto");
-    assertThat(protoFn.getParamNames()).containsExactly("a", "b", "c").inOrder();
+    assertThat(protoFn.getParamNames())
+        .comparingElementsUsing(
+            new Correspondence<Identifier, String>() {
+              @Override
+              public boolean compare(Identifier actual, String expected) {
+                return actual.identifier().equals(expected);
+              }
+
+              @Override
+              public String toString() {
+                return "is equal to";
+              }
+            })
+        .containsExactly("a", "b", "c")
+        .inOrder();
     assertThat(protoFn.numChildren()).isEqualTo(3);
     assertThat(((IntegerNode) protoFn.getChild(0)).getValue()).isEqualTo(1);
     assertThat(((GlobalNode) protoFn.getChild(1)).getName()).isEqualTo("glo.bal");

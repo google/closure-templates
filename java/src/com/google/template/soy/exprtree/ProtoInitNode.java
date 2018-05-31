@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 
 /**
@@ -30,7 +31,7 @@ public final class ProtoInitNode extends AbstractParentExprNode {
   /** The function name. */
   private final String protoName;
   /** List of proto initialization param names. */
-  private final ImmutableList<String> paramNames;
+  private final ImmutableList<Identifier> paramNames;
 
   /**
    * @param protoName The fully qualified name of the proto.
@@ -38,7 +39,7 @@ public final class ProtoInitNode extends AbstractParentExprNode {
    * @param sourceLocation The node's source location.
    */
   public ProtoInitNode(
-      String protoName, Iterable<String> paramNames, SourceLocation sourceLocation) {
+      String protoName, Iterable<Identifier> paramNames, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.protoName = protoName;
     this.paramNames = ImmutableList.copyOf(paramNames);
@@ -70,11 +71,11 @@ public final class ProtoInitNode extends AbstractParentExprNode {
    *
    * <p>Each param name corresponds to each of this node's children, which are the param values.
    */
-  public ImmutableList<String> getParamNames() {
+  public ImmutableList<Identifier> getParamNames() {
     return paramNames;
   }
 
-  public String getParamName(int i) {
+  public Identifier getParamName(int i) {
     return paramNames.get(i);
   }
 

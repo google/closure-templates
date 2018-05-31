@@ -152,17 +152,22 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     ExprNode baseExpr = node.getChild(0);
     if (baseExpr instanceof RecordLiteralNode) {
       RecordLiteralNode recordLiteral = (RecordLiteralNode) baseExpr;
-      for (int i = 0; i < recordLiteral.numChildren(); i += 2) {
-        StringNode key = (StringNode) recordLiteral.getChild(i);
-        if (key.getValue().equals(node.getFieldName())) {
-          node.getParent().replaceChild(node, recordLiteral.getChild(i + 1));
+      for (int i = 0; i < recordLiteral.numChildren(); i++) {
+        if (recordLiteral.getKey(i).identifier().equals(node.getFieldName())) {
+          node.getParent().replaceChild(node, recordLiteral.getChild(i));
           return;
         }
       }
       // replace with null?  this should have been a compiler error.
     } else if (baseExpr instanceof ProtoInitNode) {
       ProtoInitNode protoInit = (ProtoInitNode) baseExpr;
-      int fieldIndex = protoInit.getParamNames().indexOf(node.getFieldName());
+      int fieldIndex = -1;
+      for (int i = 0; i < protoInit.getParamNames().size(); i++) {
+        if (protoInit.getParamNames().get(i).identifier().equals(node.getFieldName())) {
+          fieldIndex = i;
+          break;
+        }
+      }
       if (fieldIndex != -1) {
         node.getParent().replaceChild(node, protoInit.getChild(fieldIndex));
       } else {

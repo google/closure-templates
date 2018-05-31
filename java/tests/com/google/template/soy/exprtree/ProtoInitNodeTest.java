@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +34,12 @@ public class ProtoInitNodeTest {
   public void testToSourceString() {
     ProtoInitNode fn =
         new ProtoInitNode(
-            "my.awesome.Proto", ImmutableList.of("f", "i", "s"), SourceLocation.UNKNOWN);
+            "my.awesome.Proto",
+            ImmutableList.of(
+                Identifier.create("f", SourceLocation.UNKNOWN),
+                Identifier.create("i", SourceLocation.UNKNOWN),
+                Identifier.create("s", SourceLocation.UNKNOWN)),
+            SourceLocation.UNKNOWN);
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
     fn.addChild(new StringNode("str", QuoteStyle.SINGLE, SourceLocation.UNKNOWN));

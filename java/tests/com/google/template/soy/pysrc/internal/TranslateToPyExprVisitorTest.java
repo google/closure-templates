@@ -66,14 +66,10 @@ public class TranslateToPyExprVisitorTest {
     assertThatSoyExpr("[:]").translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
     assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']")
         .translatesTo(
-            "collections.OrderedDict([(runtime.maybe_coerce_key_to_string('aaa'), 123), "
-                + "(runtime.maybe_coerce_key_to_string('bbb'), 'blah')])",
-            Integer.MAX_VALUE);
+            "collections.OrderedDict([('aaa', 123), ('bbb', 'blah')])", Integer.MAX_VALUE);
     assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']")
         .translatesTo(
-            "collections.OrderedDict(["
-                + "(runtime.maybe_coerce_key_to_string('aaa'), data.get('foo')), "
-                + "(runtime.maybe_coerce_key_to_string('bbb'), 'blah')])",
+            "collections.OrderedDict([('aaa', data.get('foo')), ('bbb', 'blah')])",
             Integer.MAX_VALUE);
   }
 

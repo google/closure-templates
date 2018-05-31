@@ -45,6 +45,9 @@ public final class PluginResolver {
         reporter);
   }
 
+  /** Names of Soy constructs that can't be used as plugin names. */
+  public static final ImmutableSet<String> ILLEGAL_PLUGIN_NAMES = ImmutableSet.of("map", "record");
+
   private static final SoyErrorKind UNKNOWN_PLUGIN =
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
 
@@ -55,10 +58,10 @@ public final class PluginResolver {
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
       SoyErrorKind.of("{0} called with {1} arguments (expected {2}).");
 
-  private static final SoyErrorKind PLUGIN_NAMED_MAP_NOT_ALLOWED =
+  private static final SoyErrorKind PLUGIN_NAME_NOT_ALLOWED =
       SoyErrorKind.of(
-          "Plugins named ''map'' are not allowed, "
-              + "since they conflict with Soy''s map() literal syntax."
+          "Plugins named ''{0}'' are not allowed, "
+              + "since they conflict with Soy''s {0}() literal syntax."
           );
 
   /** Configures the behavior of the resolver when a lookup fails. */
@@ -93,8 +96,10 @@ public final class PluginResolver {
     this.printDirectives = checkNotNull(printDirectives);
     this.functions = checkNotNull(functions);
     this.reporter = checkNotNull(reporter);
-    if (functions.containsKey("map")) {
-      reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAMED_MAP_NOT_ALLOWED);
+    for (String illegalName : ILLEGAL_PLUGIN_NAMES) {
+      if (functions.containsKey(illegalName)) {
+        reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
+      }
     }
   }
 

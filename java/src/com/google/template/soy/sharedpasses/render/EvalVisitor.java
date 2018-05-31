@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -29,6 +28,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -224,14 +224,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitRecordLiteralNode(RecordLiteralNode node) {
-    int numItems = node.numChildren() / 2;
+    int numItems = node.numChildren();
 
-    // Not an ImmutableMap, because record literals allow null values.
     Map<String, SoyValue> map = new LinkedHashMap<>();
     for (int i = 0; i < numItems; i++) {
-      SoyValue key = visit(node.getChild(2 * i));
-      checkState(key instanceof StringData);
-      map.put(key.stringValue(), visit(node.getChild(2 * i + 1)));
+      map.put(node.getKey(i).identifier(), visit(node.getChild(i)));
     }
     return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
   }
@@ -646,7 +643,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitProtoInitNode(ProtoInitNode node) {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
-    ImmutableList<String> paramNames = node.getParamNames();
+    ImmutableList<Identifier> paramNames = node.getParamNames();
     SoyProtoValue.Builder builder = new SoyProtoValue.Builder(soyProto.getDescriptor());
     for (int i = 0; i < node.numChildren(); i++) {
       SoyValue visit = visit(node.getChild(i));
@@ -654,7 +651,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       if (visit instanceof NullData || visit instanceof UndefinedData) {
         continue;
       }
-      builder.setField(paramNames.get(i), visit);
+      builder.setField(paramNames.get(i).identifier(), visit);
     }
     return builder.build();
   }
