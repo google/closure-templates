@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -42,6 +43,11 @@ final class ControlFlow {
     abstract Expression condition();
 
     abstract Statement block();
+
+    /** Returns this single {@code if} as a standalone statement. */
+    Statement asStatement() {
+      return ifElseChain(ImmutableList.of(this), Optional.<Statement>absent());
+    }
   }
 
   /**

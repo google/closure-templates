@@ -52,7 +52,7 @@ final class AppendableExpression extends Expression {
   private static final MethodRef SOFT_LIMITED =
       MethodRef.create(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
 
-  private static final MethodRef ENTER_LOGGABLE_STATEMENT =
+  static final MethodRef ENTER_LOGGABLE_STATEMENT =
       MethodRef.create(LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class)
           .asNonNullable();
 

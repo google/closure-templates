@@ -828,58 +828,83 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override
-  protected Statement visitVeLogNode(VeLogNode node) {
-
+  protected Statement visitVeLogNode(final VeLogNode node) {
     final Label restartPoint = new Label();
+    final Expression configExpression =
+        node.getConfigExpression() == null
+            ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
+            : exprCompiler.compile(node.getConfigExpression(), restartPoint).unboxAs(Message.class);
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
-    final boolean hasLogonlyExpression = node.getLogonlyExpression() != null;
-    final Expression logonlyExpression =
-        hasLogonlyExpression
-            ? exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAs(boolean.class)
-            : BytecodeUtils.constant(false);
-    final Statement enterStatement =
-        appendableExpression
-            .enterLoggableElement(
-                MethodRef.LOG_STATEMENT_CREATE.invoke(
-                    BytecodeUtils.constant(node.getLoggingId()),
-                    node.getConfigExpression() == null
-                        ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
-                        : exprCompiler
-                            .compile(node.getConfigExpression(), restartPoint)
-                            .unboxAs(Message.class),
-                    logonlyExpression))
-            .toStatement();
     final Statement body = Statement.concat(visitChildren(node));
-    final Statement exitStatement = appendableExpression.exitLoggableElement().toStatement();
-    return new Statement() {
-      @Override
-      protected void doGen(CodeBuilder cb) {
-        Label noLogger = new Label();
-        hasLogger.gen(cb);
-        cb.ifZCmp(EQ, noLogger);
-        enterStatement.gen(cb);
-        if (hasLogonlyExpression) {
+    final Statement exitStatement =
+        ControlFlow.IfBlock.create(
+                hasLogger, appendableExpression.exitLoggableElement().toStatement())
+            .asStatement();
+    if (node.getLogonlyExpression() != null) {
+      final Expression logonlyExpression =
+          exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAs(boolean.class);
+      final Expression appendable = appendableExpression;
+      return new Statement() {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          // Key
+          // LO: logonly
+          // HL: hasLogger
+          // id: logging id
+          // data: config expression
+          // LS: LogStatement
+          // A: appendable
+          //
+          // Each en end of line comments represents the state of the stack  _after_ the instruction
+          // is executed, the top of the stack is on the left.
+          // These shenanigans are necessary to ensure that
+          // 1. we only generate/evaluate the logonly code once
+          // 2. the arguments are put into the correct order for the LogStatement constructor
+          cb.mark(restartPoint);
+          logonlyExpression.gen(cb); // LO
+          Label noLogger = new Label();
+          hasLogger.gen(cb); // HL, LO
+          cb.ifZCmp(EQ, noLogger); // LO
+          cb.pushLong(node.getLoggingId()); // id, LO
+          cb.dup2X1(); // id, LO, id
+          cb.pop2(); // LO, id
+          configExpression.gen(cb); // data, LO, id
+          cb.swap(); // LO, data, id
+          MethodRef.LOG_STATEMENT_CREATE.invokeUnchecked(cb); // LS
+          appendable.gen(cb); // A, LS
+          cb.swap(); // LS, A
+          AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // appendable
+          cb.pop();
           Label bodyLabel = new Label();
           cb.goTo(bodyLabel);
-          cb.mark(noLogger);
-          // if we get here then we have a logonly expression and no logger.
-          logonlyExpression.gen(cb);
+          cb.mark(noLogger); // LO
           cb.ifZCmp(EQ, bodyLabel);
           cb.throwException(
               BytecodeUtils.ILLEGAL_STATE_EXCEPTION_TYPE,
               "Cannot set logonly=\"true\" unless there is a logger configured");
           cb.mark(bodyLabel);
-        } else {
-          cb.mark(noLogger);
+
+          body.gen(cb);
+          exitStatement.gen(cb);
         }
-        body.gen(cb);
-        Label end = new Label();
-        hasLogger.gen(cb);
-        cb.ifZCmp(EQ, end);
-        exitStatement.gen(cb);
-        cb.mark(end);
-      }
-    }.labelStart(restartPoint);
+      };
+
+    } else {
+      final Statement enterStatement =
+          ControlFlow.IfBlock.create(
+                  hasLogger,
+                  appendableExpression
+                      .enterLoggableElement(
+                          MethodRef.LOG_STATEMENT_CREATE.invoke(
+                              BytecodeUtils.constant(node.getLoggingId()),
+                              configExpression,
+                              BytecodeUtils.constant(false)))
+                      .toStatement()
+                      .labelStart(restartPoint))
+              .asStatement();
+      ;
+      return Statement.concat(enterStatement, body, exitStatement);
+    }
   }
 
   /**
