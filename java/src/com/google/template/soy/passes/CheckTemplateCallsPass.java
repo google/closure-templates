@@ -165,6 +165,9 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
+      // NOTE: we only need to check one of them.  If there is more than one of them and they have
+      // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
+      // as an error independently.
       if (!potentialCallees.isEmpty()) {
         checkStrictHtml(node, potentialCallees.get(0));
       }
