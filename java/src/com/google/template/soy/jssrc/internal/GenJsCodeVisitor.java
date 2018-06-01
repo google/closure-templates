@@ -623,7 +623,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String alias;
     boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
 
-    // TODO(lukes): does it make sense to add deltempaltes or private templates to exports?
+    // TODO(lukes): does it make sense to add deltemplates or private templates to exports?
     if (addToExports && node instanceof TemplateDelegateNode) {
       alias = node.getPartialTemplateName().substring(1);
     } else {

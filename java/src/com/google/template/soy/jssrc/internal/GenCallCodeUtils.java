@@ -122,38 +122,7 @@ public class GenCallCodeUtils {
       ErrorReporter errorReporter) {
 
     // Build the JS CodeChunk for the callee's name.
-    Expression callee;
-    if (callNode instanceof CallBasicNode) {
-      // Case 1: Basic call.
-      // TODO(lukes): add the logic for the goog.require here.  The simplest strategy requires a
-      // TemplateRegistry to detect external templates.
-      callee =
-          Expression.dottedIdNoRequire(
-              templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
-    } else {
-      // Case 2: Delegate call.
-      CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
-      Expression calleeId =
-          JsRuntime.SOY_GET_DELTEMPLATE_ID.call(
-              stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
-
-      ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
-      Expression variant;
-      if (variantSoyExpr == null) {
-        // Case 2a: Delegate call with empty variant.
-        variant = LITERAL_EMPTY_STRING;
-      } else {
-        // Case 2b: Delegate call with variant expression.
-        variant =
-            new TranslateExprNodeVisitor(translationContext, errorReporter).exec(variantSoyExpr);
-      }
-
-      callee =
-          SOY_GET_DELEGATE_FN.call(
-              calleeId,
-              variant,
-              callDelegateNode.allowEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
-    }
+    Expression callee = genCallee(callNode, templateAliases, translationContext, errorReporter);
 
     // Generate the data object to pass to callee
     Expression objToPass =
@@ -190,6 +159,54 @@ public class GenCallCodeUtils {
     }
 
     return fromExpr(callResult, collector.get()).withInitialStatements(call.initialStatements());
+  }
+
+  /**
+   * @param callNode The call to generate code for.
+   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
+   * @param translationContext
+   * @param errorReporter
+   * @return The JS expression for the template to call
+   */
+  public Expression genCallee(
+      CallNode callNode,
+      TemplateAliases templateAliases,
+      TranslationContext translationContext,
+      ErrorReporter errorReporter) {
+    // Build the JS CodeChunk for the callee's name.
+    Expression callee;
+    if (callNode instanceof CallBasicNode) {
+      // Case 1: Basic call.
+      // TODO(b/80597216): add the logic for the goog.require here.  The simplest strategy requires
+      // a TemplateRegistry to detect external templates.
+      callee =
+          Expression.dottedIdNoRequire(
+              templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
+    } else {
+      // Case 2: Delegate call.
+      CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
+      Expression calleeId =
+          JsRuntime.SOY_GET_DELTEMPLATE_ID.call(
+              stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
+
+      ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
+      Expression variant;
+      if (variantSoyExpr == null) {
+        // Case 2a: Delegate call with empty variant.
+        variant = LITERAL_EMPTY_STRING;
+      } else {
+        // Case 2b: Delegate call with variant expression.
+        variant =
+            new TranslateExprNodeVisitor(translationContext, errorReporter).exec(variantSoyExpr);
+      }
+
+      callee =
+          SOY_GET_DELEGATE_FN.call(
+              calleeId,
+              variant,
+              callDelegateNode.allowEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
+    }
+    return callee;
   }
 
   /**
@@ -234,7 +251,7 @@ public class GenCallCodeUtils {
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the object to pass in the call.
    */
-  private Expression genObjToPass(
+  public Expression genObjToPass(
       CallNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,

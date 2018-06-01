@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -27,6 +29,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -61,6 +64,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   /** The user-supplied placeholder example, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderExample;
+
+  /** The HTML context that the call is in, such as in HTML or Attributes. */
+  @Nullable private HtmlContext htmlContext;
 
   /**
    * Escaping directives to apply to the return value. With strict autoescaping, the result of each
@@ -132,6 +138,19 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.escapingDirectives = orig.escapingDirectives;
     this.isPcData = orig.getIsPcData();
+  }
+
+  /**
+   * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
+   * this node emits in. This affects how the node is escaped (for traditional backends) or how it's
+   * passed to incremental DOM APIs.
+   */
+  public HtmlContext getHtmlContext() {
+    return checkNotNull(htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
   public boolean isPassingData() {
