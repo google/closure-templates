@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -71,7 +72,7 @@ public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
      * generate additional HTML comments. We also guard this condition by goog.DEBUG so that it will
      * be stripped in optimized mode.
      */
-    return new JsExpr("(goog.DEBUG && soy.$$debugSoyTemplateInfo)", Integer.MAX_VALUE);
+    return new JsExpr("goog.DEBUG && soy.$$debugSoyTemplateInfo", Operator.AND.getPrecedence());
   }
 
   @Override
