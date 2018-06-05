@@ -3590,6 +3590,8 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
           }
 
           (
+            // Disambiguate with a trailing comma
+            LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
             <COMMA>
 
             paramName = <IDENT>
@@ -3608,6 +3610,7 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
             val = Expr()
             { params.add(val); }
           )*
+          [ <COMMA> ]  // trailing comma
 
           closeParen = <RPAREN>
           {

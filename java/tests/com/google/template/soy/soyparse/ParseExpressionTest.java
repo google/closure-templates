@@ -208,11 +208,11 @@ public final class ParseExpressionTest {
     assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo,]").isValidExpression();
 
     assertThatExpression("record()").isValidExpression();
+    assertThatExpression("record(,)").isNotValidExpression();
     assertThatExpression("record(aa: 55)").isValidExpression();
-    // TODO(b/80429224): Allow trailing comma in new record literal syntax
-    assertThatExpression("record(aa': 55,)").isNotValidExpression();
+    assertThatExpression("record(aa: 55,)").isValidExpression();
     assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo)").isValidExpression();
-    assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo,)").isNotValidExpression();
+    assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo,)").isValidExpression();
   }
 
   @Test
@@ -450,7 +450,11 @@ public final class ParseExpressionTest {
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("record(aa: 55)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
+    expr = assertThatExpression("record(aa: 55,)").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
     expr = assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo)").isValidExpression();
+    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(3);
+    expr = assertThatExpression("record(aaa: 'blah', bbb: 123, bar: $boo,)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(3);
   }
 
@@ -506,6 +510,8 @@ public final class ParseExpressionTest {
     assertThat(((GlobalNode) protoFn.getChild(1)).getName()).isEqualTo("glo.bal");
     assertThat(((StringNode) ((FunctionNode) protoFn.getChild(2)).getChild(0)).getValue())
         .isEqualTo("str");
+
+    assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'),)").isValidExpression();
   }
 
   @Test
