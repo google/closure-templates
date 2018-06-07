@@ -13607,7 +13607,7 @@ goog.string.Const.unwrap = function(stringConst) {
  * Creates a Const object from a compile-time constant string.
  *
  * It is illegal to invoke this function on an expression whose
- * compile-time-contant value cannot be determined by the Closure compiler.
+ * compile-time-constant value cannot be determined by the Closure compiler.
  *
  * Correct invocations include,
  * <pre>
@@ -16678,7 +16678,7 @@ goog.require('goog.string.TypedString');
  * goog.html.SafeHtml.concat(
  *     goog.html.SafeHtml.fromConstant(goog.string.Const.from('<script>')),
  *     goog.html.SafeHtml.htmlEscape(userInput),
- *     goog.html.SafeHtml.fromConstant(goog.string.Const.from('</script>')));
+ *     goog.html.SafeHtml.fromConstant(goog.string.Const.from('<\/script>')));
  *
  * There's goog.dom.constHtmlToNode to create a node from constant strings only.
  *
