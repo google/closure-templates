@@ -17655,9 +17655,6 @@ goog.html.SafeHtml.BR =
  * If adding functions here also add them to analyzer's list at
  * j/c/g/devtools/staticanalysis/pipeline/analyzers/shared/SafeHtmlAnalyzers.java.
  * MOE:end_intracomment_strip
- *
- * @visibility {//javascript/closure/html:approved_for_unchecked_conversion}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
  */
 
 
