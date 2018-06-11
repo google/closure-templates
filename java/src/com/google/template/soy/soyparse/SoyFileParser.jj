@@ -370,10 +370,9 @@ import javax.annotation.Nullable;
  *       Examples:   []   ['blah', 123, $foo]
  *
  *    9. Record literal:
- *       + Delimited by brackets.
- *       + Empty literal has a single colon within the brackets (to distinguish from empty list).
- *       + Keys must be strings.
- *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, 'boo': $foo]
+ *       + Delimited by record().
+ *       + Keys must be identifiers.
+ *       Examples:   record()   record(aaa: 'blah', bbb: 123, boo: $foo)
  *
  *    10. Operator:
  *       + Parentheses can be used to override precedence rules:   ( )
@@ -452,6 +451,11 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
+  private static final SoyErrorKind OLD_RECORD_LITERAL_SYNTAX =
+      SoyErrorKind.of(
+          "Parse error at '':''. If this is a record literal, use the new syntax: "
+              + "''record(key1: \"value1\", key2: 2)''. If this is a legacy_object_map literal, "
+              + "there is no syntax for that, consider using ''map()'' instead.");
 
   private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
       "foreach loops are no longer supported, please switch to the for loop."
@@ -3432,7 +3436,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunctionOrMapLiteral | CollectionLiteral | Primitive
+ * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunctionCallLike | ListLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3448,11 +3452,9 @@ private ExprNode Primary() :
   |
     primary = VarRef()
   |
-    primary = GlobalOrFunctionOrMapLiteral()
+    primary = GlobalOrFunctionCallLike()
   |
-    // This matches both legacy map literals and list literals. They have been 'left-factored' in to
-    // the same production because they start with the same token.
-    primary = CollectionLiteral()
+    primary = ListLiteral()
   |
     primary = Primitive()
   )
@@ -3500,11 +3502,11 @@ private VarRefNode VarRef() :
  * Parses a global, a function call, a proto init call, a record literal, or a map literal.
  * These share a production because they share a common prefix.
  *
- * GlobalOrFunctionOrMapLiteral ->
+ * GlobalOrFunctionCallLike ->
  *     Identifier [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
  *     | "map(" [ Expr ":" Expr ("," Expr ":" Expr)* ] ")"
  */
-private ExprNode GlobalOrFunctionOrMapLiteral() :
+private ExprNode GlobalOrFunctionCallLike() :
 {
   Identifier ident;
   Token openParen = null, closeParen = null, paramName;
@@ -3562,6 +3564,11 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
         key = Expr()
 
         (
+          // Force "record" down this path. For something like "record(a, b)" (with a command
+          // instead of a colon) this could get parsed as a function call, in which case the error
+          // message wouldn't make sense.
+          // TODO(b/80429224): Simplify this by pulling map and record out into separate methods.
+          LOOKAHEAD( { isRecord || getToken(1).kind == COLON } )
           // parens contain a list of ident : expr pairs - this is a proto init call or record
           // literal
           <COLON>
@@ -3676,12 +3683,11 @@ private ExprNode GlobalOrFunctionOrMapLiteral() :
 }
 
 /**
- * Parses record literals and list literals.  Both are primary expressions that start with "[".
+ * Parses list literals, a primary expression that starts with "[".
  *
- * CollectionLiteral -> "[" ( "]" | ":" "]"
- *                      | Expr ( ( ("," Expr)* | ( ":" Expr ( "," Expr ":" Expr )* ) ) [","] "]" ) )
+ * ListLiteral -> "[" ( "]" | Expr ( ( ("," Expr)* ) [","] "]" ) )
  */
-private ExprNode CollectionLiteral() :
+private ExprNode ListLiteral() :
 {
   Token begin, end;
   ExprNode itemExpr;
@@ -3690,23 +3696,27 @@ private ExprNode CollectionLiteral() :
 {
   begin = <LBRACKET>
   (
-    // empty record
-    <COLON>
-    end = <RBRACKET>
-    { return new RecordLiteralNode(ImmutableList.of(), createSrcLoc(begin, end)); }
-  |
     // empty list
     end = <RBRACKET>
     { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
   |
-    // The first item of a non-empty list/record will be an expression
+    // The first item of a non-empty list will be an expression
     itemExpr = Expr()
     { items = new ArrayList<ExprNode>();
       items.add(itemExpr);
     }
 
-    // The next item will be a comma for a list, or a colon for a record
     (
+      // If there's a colon here, this could be an attempt at the old legacy_object_map or record
+      // literal syntax, so report a custom error.
+      // TODO(b/80429224): Remove this custom error message after 8 June 2019.
+      end = <COLON>
+      {
+        errorReporter.report(createSrcLoc(end), OLD_RECORD_LITERAL_SYNTAX);
+        skipToTemplateToken();
+      }
+    |
+      // The next item will be a comma for a list
       ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
         LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
         <COMMA>
@@ -3714,27 +3724,9 @@ private ExprNode CollectionLiteral() :
         { items.add(itemExpr); }
       )*
       [ <COMMA> ]  // trailing comma
-      end = <RBRACKET>
-      { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
-    |
-      // nonempty record
-      <COLON>
-      itemExpr = Expr()  // value
-      { items.add(itemExpr); }
-      (
-        // this lookahead is necessary to make this loop unambiguous with the trailing comma
-        LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
-        <COMMA>
-        itemExpr = Expr()
-        { items.add(itemExpr); }
-        <COLON>
-        itemExpr = Expr()
-        { items.add(itemExpr); }
-      )*
-      [ <COMMA> ]  // trailing comma
-      end = <RBRACKET>
-      { return RecordLiteralNode.create(items, createSrcLoc(begin, end), errorReporter); }
     )
+    end = <RBRACKET>
+    { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
   )
 }
 

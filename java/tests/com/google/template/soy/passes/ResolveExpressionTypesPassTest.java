@@ -380,7 +380,7 @@ public final class ResolveExpressionTypesPassTest {
                 constructTemplateSource(
                     "{@param pi: int}",
                     "{@param pf: float}",
-                    "{let $record: ['a': $pi, 'b':$pf]/}",
+                    "{let $record: record(a: $pi, b: $pf)/}",
                     "{assertType('[a: int, b: float]', $record)}"))
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
@@ -393,13 +393,13 @@ public final class ResolveExpressionTypesPassTest {
   public void testRecordLiteral_duplicateKeys() {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
-            constructTemplateSource("{let $record: ['a': 1, 'a': 2]/}"))
+            constructTemplateSource("{let $record: record(a: 1, a: 2)/}"))
         .errorReporter(reporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse()
         .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
-        .isEqualTo("Record literals with duplicate keys are not allowed.  Duplicate key: 'a'");
+        .isEqualTo("Duplicate record key 'a'.");
   }
 
   @Test

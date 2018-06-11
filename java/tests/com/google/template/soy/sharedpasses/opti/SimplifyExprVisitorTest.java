@@ -96,9 +96,8 @@ public final class SimplifyExprVisitorTest {
 
   @Test
   public void testSimplifyRecordLiterals() {
-    assertThat("['a': 1 - 3]").simplifiesTo("record(a: -2)");
     assertThat("record(a: 2 + 4)").simplifiesTo("record(a: 6)");
-    assertThat("['z': ['a': 1 - 3]]").simplifiesTo("record(z: record(a: -2))");
+    assertThat("record(z: record(a: 1 - 3))").simplifiesTo("record(z: record(a: -2))");
     assertThat("record(a: -2).a").simplifiesTo("-2");
   }
 
@@ -114,8 +113,8 @@ public final class SimplifyExprVisitorTest {
     assertThat("map('a':1, 'b':3)['a']").simplifiesTo("1");
     assertThat("map('a':1, 'b':3)?['a']").simplifiesTo("1");
 
-    assertThat("['a':1, 'b':3].a").simplifiesTo("1");
-    assertThat("['a':1, 'b':3]?.a").simplifiesTo("1");
+    assertThat("record(a:1, b:3).a").simplifiesTo("1");
+    assertThat("record(a:1, b:3)?.a").simplifiesTo("1");
   }
 
   @Test

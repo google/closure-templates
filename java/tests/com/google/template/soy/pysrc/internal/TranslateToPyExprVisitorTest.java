@@ -63,11 +63,11 @@ public class TranslateToPyExprVisitorTest {
 
   @Test
   public void testRecordLiteral() {
-    assertThatSoyExpr("[:]").translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
-    assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']")
+    assertThatSoyExpr("record()").translatesTo("collections.OrderedDict([])", Integer.MAX_VALUE);
+    assertThatSoyExpr("record(aaa: 123, bbb: 'blah')")
         .translatesTo(
             "collections.OrderedDict([('aaa', 123), ('bbb', 'blah')])", Integer.MAX_VALUE);
-    assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']")
+    assertThatSoyExpr("record(aaa: $foo, bbb: 'blah')")
         .translatesTo(
             "collections.OrderedDict([('aaa', data.get('foo')), ('bbb', 'blah')])",
             Integer.MAX_VALUE);

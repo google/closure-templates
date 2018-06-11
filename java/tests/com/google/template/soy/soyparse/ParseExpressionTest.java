@@ -88,7 +88,7 @@ public final class ParseExpressionTest {
       "function.with.Dots($arg).field",
       "proto().field",
       "pro.to(a: $a).field",
-      "['a' : 'b'].a"
+      "record(a : 'b').a"
     };
     for (String dataRef : dataRefs) {
       assertThatExpression(dataRef).isValidExpression();
@@ -201,12 +201,6 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeRecordLiterals() {
-    assertThatExpression("[:]").isValidExpression();
-    assertThatExpression("['aa': 55]").isValidExpression();
-    assertThatExpression("['aa': 55,]").isValidExpression();
-    assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo]").isValidExpression();
-    assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo,]").isValidExpression();
-
     assertThatExpression("record()").isValidExpression();
     assertThatExpression("record(,)").isNotValidExpression();
     assertThatExpression("record(aa: 55)").isValidExpression();
@@ -439,14 +433,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testParseRecords() {
-    ExprNode expr = assertThatExpression("[:]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
-    expr = assertThatExpression("['aa': 55]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
-    expr = assertThatExpression("['aaa': 'blah', 'bbb': 123, 'bar': $boo]").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(3);
-
-    expr = assertThatExpression("record()").isValidExpression();
+    ExprNode expr = assertThatExpression("record()").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
     expr = assertThatExpression("record(aa: 55)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);

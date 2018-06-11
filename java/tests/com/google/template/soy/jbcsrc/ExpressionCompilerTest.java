@@ -202,13 +202,13 @@ public class ExpressionCompilerTest {
   }
 
   @Test
-  public void testCollectionLiterals_map() {
-    assertExpression("[:]").evaluatesTo(SoyValueConverter.EMPTY_DICT);
+  public void testCollectionLiterals_record() {
+    assertExpression("record()").evaluatesTo(SoyValueConverter.EMPTY_DICT);
 
-    // Map values are always boxed.  SoyMaps use == for equality, so check equivalence by comparing
-    // their string representations.
+    // Record values are always boxed.  SoyMaps use == for equality, so check equivalence by
+    // comparing their string representations.
     SoyExpression compile =
-        compileExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false]").coerceToString();
+        compileExpression("record(a: 1, b: 1.0, c: 'asdf', d: false)").coerceToString();
     ExpressionTester.assertThatExpression(compile)
         .evaluatesTo(
             DictImpl.forProviderMap(
@@ -583,7 +583,7 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testFieldAccess() {
-    variables.put("record", compileExpression("['a': 0, 'b': 1, 'c': 2]").box());
+    variables.put("record", compileExpression("record(a: 0, b: 1, c: 2)").box());
     // By default all values are boxed
     assertExpression("$record.a").evaluatesTo(IntegerData.forValue(0));
     assertExpression("$record.b").evaluatesTo(IntegerData.forValue(1));
@@ -606,7 +606,7 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testBuiltinFunctions() {
-    variables.put("x", compileExpression("['a': 1]").box());
+    variables.put("x", compileExpression("record(a: 1)").box());
     variables.put(
         "y",
         SoyExpression.forSoyValue(

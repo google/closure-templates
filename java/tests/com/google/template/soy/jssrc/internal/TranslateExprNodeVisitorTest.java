@@ -63,13 +63,13 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testRecordLiteral() {
-    assertThatSoyExpr("[:]").generatesCode("{};");
+    assertThatSoyExpr("record()").generatesCode("{};");
 
-    assertThatSoyExpr("['aaa': 123, 'bbb': 'blah']").generatesCode("{aaa: 123, bbb: 'blah'};");
-    assertThatSoyExpr("['aaa': $foo, 'bbb': 'blah']")
+    assertThatSoyExpr("record(aaa: 123, bbb: 'blah')").generatesCode("{aaa: 123, bbb: 'blah'};");
+    assertThatSoyExpr("record(aaa: $foo, bbb: 'blah')")
         .generatesCode("{aaa: opt_data.foo, bbb: 'blah'};");
 
-    assertThatSoyExpr("['aaa': ['bbb': 'blah']]").generatesCode("{aaa: {bbb: 'blah'}};");
+    assertThatSoyExpr("record(aaa: record(bbb: 'blah'))").generatesCode("{aaa: {bbb: 'blah'}};");
   }
 
   @Test

@@ -73,7 +73,7 @@ public final class ExprEquivalenceTest {
     // map, keys are in different order
     runTest("{assertEquals(map('a': 1.2, 'b': true), map('b': true, 'a': 1.2))}");
     // records are layed out differently
-    runTest("{assertEquals(['a': 1.2, 'b': true], ['b': true, 'a': 1.2])}");
+    runTest("{assertEquals(record(a: 1.2, b: true), record(b: true, a: 1.2))}");
     // order matters for lists
     runTest("{assertNotEquals(['a', 1.2, 'b', true], ['b', 1.2, 'a', true])}");
     // proto inits
