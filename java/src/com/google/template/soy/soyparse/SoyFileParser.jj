@@ -3564,10 +3564,9 @@ private ExprNode GlobalOrFunctionCallLike() :
         key = Expr()
 
         (
-          // Force "record" down this path. For something like "record(a, b)" (with a command
-          // instead of a colon) this could get parsed as a function call, in which case the error
-          // message wouldn't make sense.
-          // TODO(b/80429224): Simplify this by pulling map and record out into separate methods.
+          // Force "record" down this path. For something like "record(a, b)" (with a comma instead
+          // of a colon) this could get parsed as a function call, in which case the error message
+          // wouldn't make sense.
           LOOKAHEAD( { isRecord || getToken(1).kind == COLON } )
           // parens contain a list of ident : expr pairs - this is a proto init call or record
           // literal
