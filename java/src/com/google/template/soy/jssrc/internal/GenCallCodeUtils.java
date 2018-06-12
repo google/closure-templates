@@ -177,8 +177,9 @@ public class GenCallCodeUtils {
     Expression callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      // TODO(b/80597216): add the logic for the goog.require here.  The simplest strategy requires
-      // a TemplateRegistry to detect external templates.
+      // TODO(b/80597216): remove the call to dottedIdNoRequire here by calculating the goog.require
+      // this will require knowing the current require strategy and whether or not the template is
+      // defined in this file.
       callee =
           Expression.dottedIdNoRequire(
               templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
