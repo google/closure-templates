@@ -426,9 +426,12 @@ public class EvalVisitorTest {
 
     assertEval("false and $undefinedName", false); // short-circuit evaluation
     assertEval("$t and -1 and $goo and $foo.bar", true);
+  }
 
-    assertEval("true or $undefinedName", true); // short-circuit evaluation
-    assertEval("$f or 0.0 or ''", false);
+  @Test
+  public void testEvalNullCoalescingOperator() throws Exception {
+    assertEval("true ?: $undefinedName", true); // short-circuit evaluation
+    assertEval("$f ?: 0.0 ?: ''", false);
   }
 
   @Test

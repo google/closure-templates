@@ -88,6 +88,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.AbstractMapType;
@@ -161,6 +162,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_A_PROTO_TYPE =
       SoyErrorKind.of("''{0}'' is a ''{1}'', expected a protocol buffer.");
+  private static final SoyErrorKind OR_OPERATOR_HAS_CONSTANT_OPERAND =
+      SoyErrorKind.of(
+          "Constant operand ''{0}'' used with ''or'' operator. "
+              + "Consider simplifying or using the ?: operator, see "
+              + "go/soy/reference/expressions.md#logical-operators",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind STRING_LENGTH_ERROR =
       SoyErrorKind.of(
           "Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
@@ -648,7 +655,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
-      visit(node.getChild(0)); // Assign normal types to left child
+      ExprNode lhs = node.getChild(0);
+      if (SoyTreeUtils.isConstantExpr(lhs)) {
+        errorReporter.warn(
+            node.getSourceLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
+      }
+      visit(lhs); // Assign normal types to left child
 
       // Save the state of substitutions.
       TypeSubstitution savedSubstitutionState = substitutions;
@@ -660,7 +672,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       // For 'or' the second child only gets evaluated if node 0 is falsy.  So apply the negative
       // assertions.
       addTypeSubstitutions(visitor.negativeTypeConstraints);
-      visit(node.getChild(1));
+      ExprNode rhs = node.getChild(1);
+      visit(rhs);
+      if (SoyTreeUtils.isConstantExpr(rhs)) {
+        errorReporter.warn(
+            node.getSourceLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
+      }
 
       // Restore substitutions to previous state
       substitutions = savedSubstitutionState;
@@ -679,7 +696,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
       visitor.visitAndImplicitlyCastToBoolean(node.getChild(0));
 
-      // Now, re-visit the first node but with subsitutions. The reason is because
+      // Now, re-visit the first node but with substitutions. The reason is because
       // the value of node 0 is what will be returned if node 0 is truthy.
       addTypeSubstitutions(visitor.positiveTypeConstraints);
       visit(node.getChild(0));

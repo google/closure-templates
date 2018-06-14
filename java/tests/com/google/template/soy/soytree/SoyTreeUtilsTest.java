@@ -358,7 +358,6 @@ public final class SoyTreeUtilsTest {
             + "  {assertIsConst('CONST')}\n"
             + "  {assertIsConst(1 + 2)}\n"
             + "  {assertIsConst(true)}\n"
-            + "  {assertIsConst('foo' or 0)}\n"
             + "  {assertIsConst(floor(1.5))}\n"
             + "{/template}\n";
     SoyFileSetNode soyTree =

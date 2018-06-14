@@ -382,20 +382,17 @@ public class ExpressionCompilerTest {
   public void testConditionalOperators() {
     variables.put("true", untypedBoxedSoyExpression(SoyExpression.TRUE));
     variables.put("false", untypedBoxedSoyExpression(SoyExpression.FALSE));
+    String trueExpr = "$true";
+    String falseExpr = "$false";
+    assertExpression(falseExpr + " or " + falseExpr).evaluatesTo(false);
+    assertExpression(falseExpr + " or " + trueExpr).evaluatesTo(true);
+    assertExpression(trueExpr + " or " + falseExpr).evaluatesTo(true);
+    assertExpression(trueExpr + " or " + trueExpr).evaluatesTo(true);
 
-    for (String trueExpr : ImmutableList.of("true", "$true")) {
-      for (String falseExpr : ImmutableList.of("false", "$false")) {
-        assertExpression(falseExpr + " or " + falseExpr).evaluatesTo(false);
-        assertExpression(falseExpr + " or " + trueExpr).evaluatesTo(true);
-        assertExpression(trueExpr + " or " + falseExpr).evaluatesTo(true);
-        assertExpression(trueExpr + " or " + trueExpr).evaluatesTo(true);
-
-        assertExpression(falseExpr + " and " + falseExpr).evaluatesTo(false);
-        assertExpression(falseExpr + " and " + trueExpr).evaluatesTo(false);
-        assertExpression(trueExpr + " and " + falseExpr).evaluatesTo(false);
-        assertExpression(trueExpr + " and " + trueExpr).evaluatesTo(true);
-      }
-    }
+    assertExpression(falseExpr + " and " + falseExpr).evaluatesTo(false);
+    assertExpression(falseExpr + " and " + trueExpr).evaluatesTo(false);
+    assertExpression(trueExpr + " and " + falseExpr).evaluatesTo(false);
+    assertExpression(trueExpr + " and " + trueExpr).evaluatesTo(true);
   }
 
   // The arithmetic types are handled by testComparisonOperators, the == and != operators have
@@ -646,6 +643,7 @@ public class ExpressionCompilerTest {
     PrintNode code =
         (PrintNode)
             SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
                 .addSoyFunction(
                     new SoyFunction() {
                       @Override

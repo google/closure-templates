@@ -712,7 +712,7 @@ public class RenderVisitorTest {
             + "{@param f: ?}\n"
             + "  {if $boo}{$boo}{/if}\n"
             + "  {if ''}-{else}+{/if}\n"
-            + "  {if $f or 0.0}\n"
+            + "  {if $f ?: 0.0}\n"
             + "    Blah\n"
             + "  {elseif $goo[2] > 2 and $ij.ijBool}\n"
             + "    {$moo}\n"
