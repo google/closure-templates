@@ -28,6 +28,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -85,10 +86,10 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.MapType;
@@ -593,7 +594,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitFunctionNode(FunctionNode node) {
-    SoyFunction soyFunction = node.getSoyFunction();
+    Object soyFunction = node.getSoyFunction();
     // Handle nonplugin functions.
     if (soyFunction instanceof BuiltinFunction) {
       BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
@@ -624,6 +625,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else if (soyFunction instanceof SoyJavaFunction) {
       List<SoyValue> args = this.visitChildren(node);
       SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
+      // Note: Arity has already been checked by CheckFunctionCallsVisitor.
+      return computeFunctionHelper(fn, args, node);
+    } else if (soyFunction instanceof SoyJavaSourceFunction) {
+      List<SoyValue> args = this.visitChildren(node);
+      SoyJavaSourceFunction fn = (SoyJavaSourceFunction) soyFunction;
       // Note: Arity has already been checked by CheckFunctionCallsVisitor.
       return computeFunctionHelper(fn, args, node);
     } else if (soyFunction instanceof LoggingFunction) {
@@ -665,14 +671,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   /**
-   * Protected helper for {@code computeFunction}. This helper exists so that subclasses can
-   * override it.
+   * Protected helper for {@code computeFunction}.
    *
    * @param fn The function object.
    * @param args The arguments to the function.
    * @param fnNode The function node. Only used for error reporting.
    * @return The result of the function called on the given arguments.
    */
+  @ForOverride
   protected SoyValue computeFunctionHelper(
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
     if (fn instanceof DebugSoyTemplateInfoFunction) {
@@ -687,6 +693,20 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Protected helper for {@code computeFunction}.
+   *
+   * @param fn The function object.
+   * @param args The arguments to the function.
+   * @param fnNode The function node. Only used for error reporting.
+   * @return The result of the function called on the given arguments.
+   */
+  @ForOverride
+  protected SoyValue computeFunctionHelper(
+      SoyJavaSourceFunction fn, List<SoyValue> args, FunctionNode fnNode) {
+    throw new UnsupportedOperationException("TODO(sameb): Implement this");
   }
 
   private SoyValue visitIsFirstFunction(FunctionNode node) {

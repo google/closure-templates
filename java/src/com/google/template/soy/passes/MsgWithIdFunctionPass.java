@@ -132,7 +132,7 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
     errorReporter.report(
         fn.getChild(0).getSourceLocation(),
         MSG_VARIABLE_NOT_IN_SCOPE,
-        fn.getSoyFunction().getName(),
+        fn.getFunctionName(),
         explanation);
 
     // this way we don't trigger a cascade of errors about incorrect types

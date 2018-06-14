@@ -360,8 +360,7 @@ public final class SoyTreeUtils {
             return VisitDirective.ABORT;
           case FUNCTION_NODE:
             FunctionNode fn = (FunctionNode) node;
-            if (fn.getSoyFunction() != null
-                && fn.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
+            if (fn.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
               // Continue to evaluate the const-ness of the pure function's parameters.
               return VisitDirective.CONTINUE;
             } else {

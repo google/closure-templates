@@ -21,6 +21,7 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -75,6 +76,17 @@ final class PreevalVisitor extends EvalVisitor {
   @Override
   protected SoyValue computeFunctionHelper(
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
+
+    if (!fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
+      throw RenderException.create("Cannot preevaluate impure function.");
+    }
+
+    return super.computeFunctionHelper(fn, args, fnNode);
+  }
+
+  @Override
+  protected SoyValue computeFunctionHelper(
+      SoyJavaSourceFunction fn, List<SoyValue> args, FunctionNode fnNode) {
 
     if (!fn.getClass().isAnnotationPresent(SoyPureFunction.class)) {
       throw RenderException.create("Cannot preevaluate impure function.");

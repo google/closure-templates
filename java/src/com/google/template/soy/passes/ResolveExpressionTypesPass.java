@@ -69,10 +69,10 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -303,7 +303,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       }
     }
   }
-
 
   // Given a map of type subsitutions, add all the entries to the current set of
   // active substitutions.
@@ -785,12 +784,13 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
-      SoyFunction knownFunction = node.getSoyFunction();
+      Object knownFunction = node.getSoyFunction();
       if (knownFunction.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
         checkState(
-            knownFunction instanceof TypedSoyFunction,
-            "Function that uses @SoyFunctionSignature annotation must extend TypedSoyFunction.");
-        visitTypedSoyFunction(
+            knownFunction instanceof TypedSoyFunction || knownFunction instanceof SoySourceFunction,
+            "Classes annotated with @SoyFunctionSignature must either extend "
+                + "TypedSoyFunction or implement SoySourceFunction.");
+        visitSoyFunctionWithSignature(
             knownFunction.getClass().getAnnotation(SoyFunctionSignature.class),
             knownFunction.getClass().getCanonicalName(),
             node);
@@ -806,7 +806,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
      * For soy functions with type annotation, perform the strict type checking and set the return
      * type.
      */
-    private void visitTypedSoyFunction(
+    private void visitSoyFunctionWithSignature(
         SoyFunctionSignature fnSignature, String className, FunctionNode node) {
       ResolvedSignature matchedSignature = null;
       // Found the matched signature for the current function call.
@@ -1257,7 +1257,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
      * Private helper that checks types of the arguments and tries to set the return type for some
      * basic functions provided by Soy.
      */
-    private void visitSoyFunction(SoyFunction fn, FunctionNode node) {
+    private void visitSoyFunction(Object fn, FunctionNode node) {
       // Here we have special handling for a variety of 'generic' function.
       if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
@@ -1347,7 +1347,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         errorReporter.report(
             arg.getSourceLocation(),
             INCORRECT_ARG_TYPE,
-            node.getSoyFunction().getName(),
+            node.getFunctionName(),
             arg.getType(),
             expectedType);
         return false;

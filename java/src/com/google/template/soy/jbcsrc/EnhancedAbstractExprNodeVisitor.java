@@ -22,7 +22,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -75,7 +74,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   @Override
   protected final T visitFunctionNode(FunctionNode node) {
-    SoyFunction function = node.getSoyFunction();
+    Object function = node.getSoyFunction();
 
     if (function instanceof BuiltinFunction) {
       BuiltinFunction builtinFn = (BuiltinFunction) function;

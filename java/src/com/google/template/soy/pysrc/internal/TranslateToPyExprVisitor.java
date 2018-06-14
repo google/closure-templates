@@ -55,7 +55,6 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.LinkedHashMap;
@@ -405,7 +404,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    */
   @Override
   protected PyExpr visitFunctionNode(FunctionNode node) {
-    SoyFunction soyFunction = node.getSoyFunction();
+    Object soyFunction = node.getSoyFunction();
     if (soyFunction instanceof BuiltinFunction) {
       return visitNonPluginFunction(node, (BuiltinFunction) soyFunction);
     } else if (soyFunction instanceof SoyPySrcFunction) {

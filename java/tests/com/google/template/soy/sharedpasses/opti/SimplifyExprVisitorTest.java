@@ -179,7 +179,7 @@ public final class SimplifyExprVisitorTest {
                   new PluginResolver(
                       Mode.REQUIRE_DEFINITIONS,
                       ImmutableMap.<String, SoyPrintDirective>of(),
-                      SOY_FUNCTIONS,
+                      ImmutableMap.copyOf(SOY_FUNCTIONS),
                       ErrorReporter.exploding()),
                   ErrorReporter.exploding()));
       new SimplifyExprVisitor().exec(exprRoot);

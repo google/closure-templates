@@ -92,7 +92,6 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -540,7 +539,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitFunctionNode(FunctionNode node) {
-    SoyFunction soyFunction = node.getSoyFunction();
+    Object soyFunction = node.getSoyFunction();
 
     if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {

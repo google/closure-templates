@@ -16,10 +16,11 @@
 
 package com.google.template.soy.exprtree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 
 /**
@@ -30,15 +31,28 @@ import com.google.template.soy.shared.restricted.SoyFunction;
  */
 public final class FunctionNode extends AbstractParentExprNode {
 
-  private final SoyFunction soyFunction;
+  private final String name;
+
+  /**
+   * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
+   * SoySourceFunction everywhere.
+   */
+  private final Object soyFunction;
+
+  /** Convenience constructor for SoyFunctions. */
+  public FunctionNode(SoyFunction soyFunction, SourceLocation sourceLocation) {
+    this(soyFunction.getName(), soyFunction, sourceLocation);
+  }
 
   /**
    * @param soyFunction The SoyFunction.
    * @param sourceLocation The node's source location.
    */
-  public FunctionNode(SoyFunction soyFunction, SourceLocation sourceLocation) {
+  public FunctionNode(String name, Object soyFunction, SourceLocation sourceLocation) {
     super(sourceLocation);
-    this.soyFunction = checkNotNull(soyFunction);
+    this.name = name;
+    checkState(soyFunction instanceof SoyFunction || soyFunction instanceof SoySourceFunction);
+    this.soyFunction = soyFunction;
   }
 
   /**
@@ -48,6 +62,7 @@ public final class FunctionNode extends AbstractParentExprNode {
    */
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.name = orig.name;
     this.soyFunction = orig.soyFunction;
   }
 
@@ -58,10 +73,10 @@ public final class FunctionNode extends AbstractParentExprNode {
 
   /** Returns the function name. */
   public String getFunctionName() {
-    return soyFunction.getName();
+    return name;
   }
 
-  public SoyFunction getSoyFunction() {
+  public Object getSoyFunction() {
     return soyFunction;
   }
 
