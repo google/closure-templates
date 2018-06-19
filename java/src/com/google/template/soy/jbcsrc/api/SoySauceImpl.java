@@ -33,11 +33,14 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -53,7 +56,7 @@ import java.util.Map;
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
   private final GuiceSimpleScope apiCallScope;
-  private final ImmutableMap<String, SoyJavaFunction> functions;
+  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
@@ -63,14 +66,18 @@ public final class SoySauceImpl implements SoySauce {
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
-    // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
-    // (it generates Java source code implementing BuiltinFunctions).
-    // Filter them out.
-    ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
+
+    ImmutableMap.Builder<String, JavaPluginRuntime> runtimeBuilder = ImmutableMap.builder();
+
     for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
-      SoyFunction function = entry.getValue();
-      if (function instanceof SoyJavaFunction) {
-        soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
+      String fnName = entry.getKey();
+      // Store runtime adapters for all SoyJavaFunctions that *aren't* also SoyJbcSrcFunction.
+      // (We don't need to capture SoyJbcSrcFunction functions because the compiler will never
+      // delegate to them at runtime -- they are only needed at compile time.)
+      if (entry.getValue() instanceof SoyJavaFunction
+          && !(entry.getValue() instanceof SoyJbcSrcFunction)) {
+        SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
+        runtimeBuilder.put(fnName, new LegacyFunctionAdapter(fn));
       }
     }
 
@@ -84,8 +91,8 @@ public final class SoySauceImpl implements SoySauce {
         soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
       }
     }
-    this.functions = soyJavaFunctions.build();
     this.printDirectives = soyJavaPrintDirectives.build();
+    this.functionRuntimes = runtimeBuilder.build();
   }
 
   @Override
@@ -109,7 +116,6 @@ public final class SoySauceImpl implements SoySauce {
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder()
             .withCompiledTemplates(templates)
-            .withSoyFunctions(functions)
             .withSoyPrintDirectives(printDirectives);
 
     private SoyRecord data = SoyValueConverter.EMPTY_DICT;
@@ -220,6 +226,7 @@ public final class SoySauceImpl implements SoySauce {
     private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
       RenderContext context =
           contextBuilder
+              .withFunctionRuntimes(functionRuntimes)
               .withMessageBundle(msgs)
               .withActiveDelPackageSelector(activeDelegatePackages)
               .build();

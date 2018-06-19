@@ -45,6 +45,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
@@ -53,7 +54,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.internal.ShortCircuitable;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
@@ -189,18 +189,20 @@ public final class JbcSrcRuntime {
   }
 
   /**
-   * Helper function to translate null -> NullData when calling SoyJavaFunctions that may expect it.
+   * Helper function to translate null -> NullData when calling LegacyFunctionAdapters that may
+   * expect it.
    *
    * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or
    * we should introduce custom SoyFunction implementations for have come from SoyValueProvider.
    */
-  public static SoyValue callSoyFunction(SoyJavaFunction function, List<SoyValue> args) {
+  public static SoyValue callLegacySoyFunction(
+      LegacyFunctionAdapter fnAdapter, List<SoyValue> args) {
     for (int i = 0; i < args.size(); i++) {
       if (args.get(i) == null) {
         args.set(i, NullData.INSTANCE);
       }
     }
-    return handleTofuNull(function.computeForJava(args));
+    return handleTofuNull(fnAdapter.computeForJava(args));
   }
 
   /**

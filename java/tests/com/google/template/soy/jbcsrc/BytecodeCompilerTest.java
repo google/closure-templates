@@ -593,7 +593,7 @@ public class BytecodeCompilerTest {
             return IntegerData.forValue(args.get(0).integerValue() + 1);
           }
         };
-    assertThatTemplateBody("{plusOne(1)}").withSoyFunction(plusOneFunction).rendersAs("2");
+    assertThatTemplateBody("{plusOne(1)}").withLegacySoyFunction(plusOneFunction).rendersAs("2");
   }
 
   @Test

@@ -46,8 +46,10 @@ import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -80,14 +82,15 @@ public final class TemplateTester {
                 ImmutableMap<String, ? extends SoyFunction> functions,
                 ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
               return new RenderContext.Builder()
-                  .withSoyFunctions(
+                  .withFunctionRuntimes(
                       functions
                           .entrySet()
                           .stream()
                           .filter(e -> e.getValue() instanceof SoyJavaFunction)
                           .collect(
                               toImmutableMap(
-                                  Map.Entry::getKey, e -> (SoyJavaFunction) e.getValue())))
+                                  Map.Entry::getKey,
+                                  e -> new LegacyFunctionAdapter((SoyJavaFunction) e.getValue()))))
                   .withSoyPrintDirectives(
                       printDirectives
                           .entrySet()
@@ -182,7 +185,7 @@ public final class TemplateTester {
       return this;
     }
 
-    CompiledTemplateSubject withSoyFunction(SoyFunction soyFunction) {
+    CompiledTemplateSubject withLegacySoyFunction(SoyFunction soyFunction) {
       classData = null;
       factory = null;
       this.soyFunctions.add(checkNotNull(soyFunction));
@@ -311,10 +314,12 @@ public final class TemplateTester {
         // them out.
         fileSet = fileSet.copy(new CopyState());
 
-        Map<String, SoyJavaFunction> functions = new LinkedHashMap<>();
+        Map<String, JavaPluginRuntime> functionRuntimes = new LinkedHashMap<>();
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
           if (fnNode.getSoyFunction() instanceof SoyJavaFunction) {
-            functions.put(fnNode.getFunctionName(), (SoyJavaFunction) fnNode.getSoyFunction());
+            functionRuntimes.put(
+                fnNode.getFunctionName(),
+                new LegacyFunctionAdapter((SoyJavaFunction) fnNode.getSoyFunction()));
           }
         }
 
@@ -334,8 +339,8 @@ public final class TemplateTester {
         factory = compiledTemplates.getTemplateFactory(templateName);
         defaultContext =
             defaultContextBuilder
+                .withFunctionRuntimes(functionRuntimes)
                 .withCompiledTemplates(compiledTemplates)
-                .withSoyFunctions(ImmutableMap.copyOf(functions))
                 .withMessageBundle(SoyMsgBundle.EMPTY)
                 .build();
       }

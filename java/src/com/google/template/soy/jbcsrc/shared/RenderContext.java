@@ -34,9 +34,9 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.util.Map;
@@ -72,7 +72,7 @@ public final class RenderContext {
   private final CompiledTemplates templates;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
-  private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
+  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
@@ -85,8 +85,8 @@ public final class RenderContext {
     this.templates = checkNotNull(builder.templates);
     this.cssRenamingMap = builder.cssRenamingMap;
     this.xidRenamingMap = builder.xidRenamingMap;
-    this.soyJavaFunctionsMap = builder.soyJavaFunctionsMap;
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
+    this.functionRuntimes = builder.functionRuntimes;
     this.msgBundle = builder.msgBundle;
     this.debugSoyTemplateInfo = builder.debugSoyTemplateInfo;
     this.hasLogger = builder.hasLogger;
@@ -111,12 +111,16 @@ public final class RenderContext {
     return string == null ? id + "_" : string;
   }
 
-  public SoyJavaFunction getFunction(String name) {
-    SoyJavaFunction fn = soyJavaFunctionsMap.get(name);
-    if (fn == null) {
-      throw new IllegalStateException("Failed to find Soy function with name '" + name + "'");
+  public JavaPluginRuntime getFunctionRuntime(String name) {
+    JavaPluginRuntime runtime = functionRuntimes.get(name);
+    if (runtime == null) {
+      // TODO(sameb): Throw a more meaningful exception once users can register their own runtimes.
+      // This is the path they'll hit if the user calls JavaValueFactory.callRuntimeMethod without
+      // having supplied a runtime for that function.
+      throw new IllegalStateException(
+          "No runtime registered for function with name '" + name + "'");
     }
-    return fn;
+    return runtime;
   }
 
   public SoyJavaPrintDirective getPrintDirective(String name) {
@@ -205,7 +209,7 @@ public final class RenderContext {
   public Builder toBuilder() {
     return new Builder()
         .withActiveDelPackageSelector(this.activeDelPackageSelector)
-        .withSoyFunctions(soyJavaFunctionsMap)
+        .withFunctionRuntimes(functionRuntimes)
         .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
@@ -219,8 +223,8 @@ public final class RenderContext {
     private Predicate<String> activeDelPackageSelector = Predicates.alwaysFalse();
     private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
     private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
-    private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
+    private ImmutableMap<String, JavaPluginRuntime> functionRuntimes = ImmutableMap.of();
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
     private boolean debugSoyTemplateInfo = false;
     private boolean hasLogger;
@@ -245,8 +249,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withSoyFunctions(ImmutableMap<String, SoyJavaFunction> functions) {
-      this.soyJavaFunctionsMap = functions;
+    public Builder withFunctionRuntimes(Map<String, JavaPluginRuntime> runtimes) {
+      this.functionRuntimes = ImmutableMap.copyOf(runtimes);
       return this;
     }
 
@@ -273,6 +277,5 @@ public final class RenderContext {
     public RenderContext build() {
       return new RenderContext(this);
     }
-
   }
 }

@@ -51,10 +51,10 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.io.Closeable;
 import java.io.PrintStream;
@@ -248,8 +248,8 @@ public abstract class MethodRef {
           SoyValue.class,
           List.class);
 
-  public static final MethodRef RUNTIME_CALL_SOY_FUNCTION =
-      create(JbcSrcRuntime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
+  public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
+      create(JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
 
   public static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
       create(JbcSrcRuntime.class, "coerceToBoolean", double.class);
@@ -407,6 +407,9 @@ public abstract class MethodRef {
           .asNonNullable();
 
   public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
+
+  public static final MethodRef LEGACY_ADAPTER_COMPUTE =
+      MethodRef.create(LegacyFunctionAdapter.METHOD);
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

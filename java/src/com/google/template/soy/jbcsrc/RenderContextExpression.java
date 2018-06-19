@@ -43,8 +43,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
           SoyRecord.class,
           SoyRecord.class);
 
-  private static final MethodRef GET_FUNCTION =
-      MethodRef.create(RenderContext.class, "getFunction", String.class);
+  private static final MethodRef GET_FUNCTION_RUNTIME =
+      MethodRef.create(RenderContext.class, "getFunctionRuntime", String.class);
 
   private static final MethodRef GET_LOCALE = MethodRef.create(RenderContext.class, "getLocale");
 
@@ -97,8 +97,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_DEBUG_SOY_TEMPLATE_INFO);
   }
 
-  Expression getFunction(String functionName) {
-    return delegate.invoke(GET_FUNCTION, constant(functionName));
+  Expression getFunctionRuntime(String functionName) {
+    return delegate.invoke(GET_FUNCTION_RUNTIME, constant(functionName));
   }
 
   Expression renameXid(String value) {

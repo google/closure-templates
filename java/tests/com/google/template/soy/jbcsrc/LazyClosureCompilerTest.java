@@ -252,10 +252,10 @@ public class LazyClosureCompilerTest {
     // There used to be a bug where we wouldn't properly box the expression into a SoyValueProvider
     // when it dynamically resolved to null.
     assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
-        .withSoyFunction(new IdentityFunction())
+        .withLegacySoyFunction(new IdentityFunction())
         .rendersAs("null");
     assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
-        .withSoyFunction(new IdentityFunction())
+        .withLegacySoyFunction(new IdentityFunction())
         .rendersAs("1");
   }
 

@@ -80,6 +80,8 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
@@ -918,16 +920,24 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJbcSrcFunction) {
         return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getPluginContext(), args);
       }
-      // We support a fallback to dynamically lookup the function at runtime.  In the long run we
-      // should consider migrating everyone to use SoyJbcSrcFunction.
-      Expression soyJavaFunctionExpr =
-          parameters.getRenderContext().getFunction(node.getFunctionName());
+
+      if (fn instanceof SoyJavaSourceFunction) {
+        throw new IllegalStateException("TODO(sameb): Implement this.");
+      }
+
+      // Functions that are not a SoyJbcSrcFunction nor a SoyJavaSourceFunction
+      // are registered with a LegacyFunctionAdapter by SoySauceImpl.
+      Expression legacyFunctionRuntimeExpr =
+          parameters
+              .getRenderContext()
+              .getFunctionRuntime(node.getFunctionName())
+              .checkedCast(LegacyFunctionAdapter.class);
       Expression list = SoyExpression.asBoxedList(args);
       // Most soy functions don't have return types, but if they do we should enforce it
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRef.RUNTIME_CALL_SOY_FUNCTION
-              .invoke(soyJavaFunctionExpr, list)
+          MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
+              .invoke(legacyFunctionRuntimeExpr, list)
               .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
     }
 
