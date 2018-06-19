@@ -21,14 +21,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.Map;
 import java.util.Set;
 
 /** Encapsulates the logic for looking up plugins. */
@@ -39,10 +44,7 @@ public final class PluginResolver {
    */
   public static PluginResolver nullResolver(Mode mode, ErrorReporter reporter) {
     return new PluginResolver(
-        mode,
-        ImmutableMap.<String, SoyPrintDirective>of(),
-        ImmutableMap.<String, SoyFunction>of(),
-        reporter);
+        mode, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(), reporter);
   }
 
   /** Names of Soy constructs that can't be used as plugin names. */
@@ -64,6 +66,13 @@ public final class PluginResolver {
               + "since they conflict with Soy''s {0}() literal syntax."
           );
 
+  private static final SoyErrorKind DIFFERENT_IMPLS_REGISTERED =
+      SoyErrorKind.of(
+          "Plugin named ''{0}'' has two different implementations registered: "
+              + "''{1}'' and ''{2}''.");
+
+  private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
+
   /** Configures the behavior of the resolver when a lookup fails. */
   public enum Mode {
     /**
@@ -83,24 +92,45 @@ public final class PluginResolver {
   }
 
   private final Mode mode;
-  private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
-  private final ImmutableMap<String, ? extends SoyFunction> functions;
+  private final ImmutableMap<String, SoyPrintDirective> printDirectives;
+  private final ImmutableMap<String, Object> functions;
   private final ErrorReporter reporter;
 
   public PluginResolver(
       Mode mode,
-      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
-      ImmutableMap<String, ? extends SoyFunction> functions,
+      ImmutableMap<String, SoyPrintDirective> printDirectives,
+      ImmutableMap<String, SoyFunction> functions,
+      ImmutableMap<String, SoySourceFunction> sourceFunctions,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
     this.printDirectives = checkNotNull(printDirectives);
-    this.functions = checkNotNull(functions);
     this.reporter = checkNotNull(reporter);
     for (String illegalName : ILLEGAL_PLUGIN_NAMES) {
-      if (functions.containsKey(illegalName)) {
+      if (functions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
         reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
       }
     }
+    // Merge the SoyFunctions & SoySourceFunctions.  While merging, confirm that we only have
+    // one implementation for each plugin. They can overlap, but impl must be the same. This
+    // indicates a partially migrated plugin.
+    ImmutableMap.Builder<String, Object> mergedFunctions = ImmutableMap.builder();
+    for (Map.Entry<String, SoyFunction> entry : functions.entrySet()) {
+      SoySourceFunction source = sourceFunctions.get(entry.getKey());
+      if (source != null && source != entry.getValue()) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            DIFFERENT_IMPLS_REGISTERED,
+            entry.getKey(),
+            entry.getValue(),
+            source);
+      } else {
+        // We only insert valid functions into the merged map to avoid IllegalArugmentExceptions
+        // building the map.
+        mergedFunctions.put(entry.getKey(), entry.getValue());
+      }
+    }
+    mergedFunctions.putAll(sourceFunctions);
+    this.functions = mergedFunctions.build();
   }
 
   /**
@@ -134,8 +164,8 @@ public final class PluginResolver {
    * <p>An error will be reported according to the current {@link Mode} and a placeholder function
    * will be returned if it cannot be found.
    */
-  public SoyFunction lookupSoyFunction(String name, int numArgs, SourceLocation location) {
-    SoyFunction soyFunction = functions.get(name);
+  public Object lookupSoyFunction(String name, int numArgs, SourceLocation location) {
+    Object soyFunction = functions.get(name);
     if (soyFunction == null) {
       if (mode == Mode.REQUIRE_DEFINITIONS) {
         reporter.report(
@@ -145,11 +175,27 @@ public final class PluginResolver {
             name,
             SoyErrors.getDidYouMeanMessage(functions.keySet(), name));
       }
-      soyFunction = createPlaceholderSoyFunction(name, numArgs);
+      return ERROR_PLACEHOLDER_FUNCTION;
     }
-    checkNumArgs("function", soyFunction.getValidArgsSizes(), numArgs, location);
+    Set<Integer> validArgsSize;
+    if (soyFunction instanceof SoyFunction) {
+      validArgsSize = ((SoyFunction) soyFunction).getValidArgsSizes();
+    } else {
+      validArgsSize =
+          getValidArgsSizes(
+              soyFunction.getClass().getAnnotation(SoyFunctionSignature.class).value());
+    }
+    checkNumArgs("function", validArgsSize, numArgs, location);
     warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
+  }
+
+  private static Set<Integer> getValidArgsSizes(Signature[] signatures) {
+    ImmutableSortedSet.Builder<Integer> builder = ImmutableSortedSet.naturalOrder();
+    for (Signature signature : signatures) {
+      builder.add(signature.parameterTypes().length);
+    }
+    return builder.build();
   }
 
   private void checkNumArgs(
@@ -183,21 +229,6 @@ public final class PluginResolver {
       @Override
       public boolean shouldCancelAutoescape() {
         return false;
-      }
-    };
-  }
-
-  private static SoyFunction createPlaceholderSoyFunction(final String name, int arity) {
-    final ImmutableSet<Integer> validArgSizes = ImmutableSet.of(arity);
-    return new SoyFunction() {
-      @Override
-      public String getName() {
-        return name;
-      }
-
-      @Override
-      public Set<Integer> getValidArgsSizes() {
-        return validArgSizes;
       }
     };
   }

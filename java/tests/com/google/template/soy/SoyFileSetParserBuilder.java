@@ -30,10 +30,12 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -60,6 +62,7 @@ public final class SoyFileSetParserBuilder {
   private boolean allowUnboundGlobals;
   @Inject private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
+  private ImmutableMap<String, SoySourceFunction> sourceFunctionMap;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
@@ -134,6 +137,7 @@ public final class SoyFileSetParserBuilder {
     this.soyFileSuppliers = builder.build();
     // inject our @Inject fields to get the default set of functions and print directives
     Guice.createInjector(new SharedModule()).injectMembers(this);
+    this.sourceFunctionMap = InternalPlugins.internalFunctionMap();
   }
 
   /** Sets the parser's declared syntax version. Returns this object, for chaining. */
@@ -158,6 +162,26 @@ public final class SoyFileSetParserBuilder {
       functions.put(function.getName(), function);
     }
     this.soyFunctionMap = ImmutableMap.copyOf(functions);
+    return this;
+  }
+
+  /** Warning: This SoySourceFunctions are not yet working completely. Do not use this method. */
+  @Deprecated
+  public SoyFileSetParserBuilder addSoySourceFunction(SoySourceFunction function) {
+    return addSoySourceFunction(ImmutableList.of(function));
+  }
+
+  /** Warning: This SoySourceFunctions are not yet working completely. Do not use this method. */
+  @Deprecated
+  public SoyFileSetParserBuilder addSoySourceFunction(
+      Iterable<? extends SoySourceFunction> sourceFunctions) {
+    Map<String, SoySourceFunction> functions = new LinkedHashMap<>();
+    functions.putAll(sourceFunctionMap);
+    for (Map.Entry<String, SoySourceFunction> entry :
+        InternalPlugins.fromFunctions(sourceFunctions).entrySet()) {
+      functions.put(entry.getKey(), entry.getValue());
+    }
+    this.sourceFunctionMap = ImmutableMap.copyOf(functions);
     return this;
   }
 
@@ -266,8 +290,9 @@ public final class SoyFileSetParserBuilder {
         .setPluginResolver(
             new PluginResolver(
                 PluginResolver.Mode.REQUIRE_DEFINITIONS,
-                soyPrintDirectiveMap,
-                soyFunctionMap,
+                ImmutableMap.copyOf(soyPrintDirectiveMap),
+                ImmutableMap.copyOf(soyFunctionMap),
+                sourceFunctionMap,
                 errorReporter))
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)

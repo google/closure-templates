@@ -27,7 +27,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -178,8 +177,9 @@ public final class SimplifyExprVisitorTest {
                   actual(),
                   new PluginResolver(
                       Mode.REQUIRE_DEFINITIONS,
-                      ImmutableMap.<String, SoyPrintDirective>of(),
+                      ImmutableMap.of(),
                       ImmutableMap.copyOf(SOY_FUNCTIONS),
+                      ImmutableMap.of(),
                       ErrorReporter.exploding()),
                   ErrorReporter.exploding()));
       new SimplifyExprVisitor().exec(exprRoot);

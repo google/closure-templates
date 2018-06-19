@@ -3648,6 +3648,7 @@ private ExprNode GlobalOrFunctionCallLike() :
             SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
             FunctionNode fnNode =
                 new FunctionNode(
+                    ident.identifier(),
                     pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
                     loc);
             fnNode.addChildren(params);
@@ -3676,7 +3677,7 @@ private ExprNode GlobalOrFunctionCallLike() :
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
       return new ProtoInitNode(resolvedName, ImmutableList.of(), loc);
     } else {
-      return new FunctionNode(pluginResolver.lookupSoyFunction(name, 0, loc), loc);
+      return new FunctionNode(name, pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
   }
 }
