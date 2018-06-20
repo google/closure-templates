@@ -197,11 +197,12 @@ public final class SanitizedContents {
   }
 
   /** Wraps an assumed-safe constant string. */
+  @SuppressWarnings("ReferenceEquality") // need to use a reference check to ensure it is a constant
   private static SanitizedContent fromConstant(
       String constant, ContentKind kind, @Nullable Dir dir) {
     // Extra runtime check in case the compile-time check doesn't work.
     Preconditions.checkArgument(
-        constant.intern().equals(constant),
+        constant.intern() == constant,
         "The provided argument does not look like a compile-time constant.");
     return SanitizedContent.create(constant, kind, dir);
   }
