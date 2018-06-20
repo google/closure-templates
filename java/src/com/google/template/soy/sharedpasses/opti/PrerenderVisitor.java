@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -64,7 +65,8 @@ final class PrerenderVisitor extends RenderVisitor {
         /* msgBundle= */ null,
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,
-        /* debugSoyTemplateInfo= */ false);
+        /* debugSoyTemplateInfo= */ false,
+        /* functionRuntimes= */ ImmutableMap.of());
   }
 
   @Override

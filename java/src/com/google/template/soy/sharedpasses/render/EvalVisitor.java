@@ -27,6 +27,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.Identifier;
@@ -86,6 +87,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -126,6 +128,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      * @param ijData The current injected data.
      * @param cssRenamingMap The CSS renaming map, or null if not applicable.
      * @param xidRenamingMap The XID renaming map, or null if not applicable.
+     * @param functionRuntimes The instances used for evaluating functions that call instance
+     *     methods.
      * @return The newly created EvalVisitor instance.
      */
     EvalVisitor create(
@@ -134,7 +138,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyCssRenamingMap cssRenamingMap,
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
-        boolean debugSoyTemplateInfo);
+        boolean debugSoyTemplateInfo,
+        ImmutableMap<String, JavaPluginRuntime> functionRuntimes);
   }
 
   /** The current environment. */
@@ -154,9 +159,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** If we should render additional HTML comments for runtime insepction. */
   private final boolean debugSoyTemplateInfo;
 
+  /** The context for running plugins. */
+  private final TofuPluginContext context;
+
+  /**
+   * The runtimes for functions that implement {@link SoyJavaSourceFunction} and require runtimes.
+   * (Source functions that use callStaticMethod don't need runtimes.)
+   */
+  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
+
   /**
    * @param ijData The current injected data.
    * @param env The current environment.
+   * @param functionRuntimes The instances used for evaluating functions that call instance methods.
    */
   protected EvalVisitor(
       Environment env,
@@ -164,13 +179,16 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
-      boolean debugSoyTemplateInfo) {
+      boolean debugSoyTemplateInfo,
+      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
     this.env = checkNotNull(env);
     this.ijData = ijData;
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
+    this.context = new TofuPluginContext(msgBundle);
+    this.functionRuntimes = checkNotNull(functionRuntimes);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -705,8 +723,24 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   @ForOverride
   protected SoyValue computeFunctionHelper(
-      SoyJavaSourceFunction fn, List<SoyValue> args, FunctionNode fnNode) {
-    throw new UnsupportedOperationException("TODO(sameb): Implement this");
+      SoyJavaSourceFunction fn, List<SoyValue> args, final FunctionNode fnNode) {
+    // TODO(b/19252021): Uncomment once DebugSoyTemplateInfoFunction makes the transition.
+    /*
+    if (fn instanceof DebugSoyTemplateInfoFunction) {
+      // DebugSoyTemplateInfoFunction is a special plugin. We should not call computeForJava method
+      // on it; instead we should directly return a boolean here, based on debugSoyTemplateInfo that
+      // is not visible to the plugin.
+      return BooleanData.forValue(debugSoyTemplateInfo);
+    }
+    */
+
+    try {
+      return new TofuValueFactory(fnNode.getFunctionName(), functionRuntimes)
+          .computeForJava(fn, args, context);
+    } catch (Exception e) {
+      throw RenderException.create(
+          "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
+    }
   }
 
   private SoyValue visitIsFirstFunction(FunctionNode node) {

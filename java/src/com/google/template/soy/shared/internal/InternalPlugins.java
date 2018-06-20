@@ -29,7 +29,7 @@ public final class InternalPlugins {
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableMap<String, SoySourceFunction> internalFunctionMap() {
-    // TODO(sameb): Include the actual functions when they're converted.
+    // TODO(b/19252021): Include the actual functions when they're converted.
     // (Something like Iterables.concat(BasicFunctions.functions(), BidiFunctions.functions()))
     return fromFunctions(ImmutableList.of());
   }

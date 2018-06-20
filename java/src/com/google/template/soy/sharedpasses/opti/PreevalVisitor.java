@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -49,7 +50,8 @@ final class PreevalVisitor extends EvalVisitor {
         /* cssRenamingMap= */ null,
         /* xidRenamingMap= */ null,
         /* msgBundle= */ null,
-        /* debugSoyTemplateInfo= */ false);
+        /* debugSoyTemplateInfo= */ false,
+        /* functionRuntimes= */ ImmutableMap.of());
   }
 
   // -----------------------------------------------------------------------------------------------
