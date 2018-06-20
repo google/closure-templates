@@ -17,6 +17,7 @@
 package com.google.template.soy.plugin.java.restricted;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * A factory for instructing soy how to implement a {@link SoyJavaSourceFunction} or {@link
@@ -32,6 +33,12 @@ public abstract class JavaValueFactory {
    * runtime is within must be registered with Soy as the {@link JavaPluginRuntime} for this plugin.
    */
   public abstract JavaValue callRuntimeMethod(Method method, JavaValue... params);
+
+  /**
+   * Returns a JavaValue that corresponds to a list containing each of the values. The values will
+   * be wrapped in {@code SoyValue} instances if they are not already SoyValues.
+   */
+  public abstract JavaValue listOf(List<JavaValue> args);
 
   /**
    * Convenience method for retrieving a {@link Method} from a class.
