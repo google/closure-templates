@@ -15,7 +15,7 @@
 // Features examples.
 // Author: Kai Huang
 
-{namespace soy.examples.features autoescape="strict"}
+{namespace soy.examples.features}
 
 
 /**
@@ -88,26 +88,25 @@
 
 /**
  * Demo 'print'.
- * @param boo Something scary.
- * @param two Preferably the number 2.
  */
 {template .demoPrint}
+  {@param boo: string}  /** Something scary. */
+  {@param two: number}  /** Preferably the number 2. */
   {print 'Boo!'}<br>  // print a string
   {'Boo!'}<br>  // the command name 'print' is implied
   {1 + 2}<br>  // print the result of an expression
   {$boo}<br>  // print a data value
   {1 + $two}<br>  // print the result of an expression that uses a data value
-  {GLOBAL_INT}, {GLOBAL_BOOL}.<br>  // print globals
+  {GLOBAL_INT}, {GLOBAL_STR}<br>  // print globals
 {/template}
 
 
 /**
  * Demo autoescape true.
- * @param italicHtml A string surrounded by HTML italics tags.
  */
-{template .demoAutoescapeTrue autoescape="strict"}
-  // Note: We explicitly list autoescape="strict" in the 'template' tag for demonstration. Usually
-  // it's omitted because "strict" is the attribute's default value.
+{template .demoAutoescapeTrue}
+  {@param italicHtml: string}  /** A string surrounded by HTML italics tags. */
+  // Note: autoescape="strict" is the default.
 
   {$italicHtml}<br>  // autoescape causes HTML tags to appear literally
 {/template}
@@ -115,17 +114,12 @@
 
 /**
  * Demo 'msg'.
- * @param name The name of the person to say hello to.
- * @param labsUrl The URL of the unreleased 'Labs' feature.
  */
 {template .demoMsg}
+  {@param name: string}  /** The name of the person to say hello to. */
 
   {msg desc="Says hello to a person."}
     Hello {$name}!
-  {/msg}<br>
-
-  {msg desc="Link to the unreleased 'Labs' feature."}
-    Click <a href="{$labsUrl}">here</a> to access Labs.
   {/msg}<br>
 
   // The 'meaning' attribute is used when you have two messages that are exactly the same string in
@@ -145,9 +139,9 @@
 
 /**
  * Demo 'if'.
- * @param pi An approximate value for pi.
  */
 {template .demoIf}
+  {@param pi: float}  /** An approximate value for pi. */
   {if round($pi, 2) == 3.14}
     {msg desc="Example: 3.1416 is a good approximation of pi."}
       {$pi} is a good approximation of pi.
@@ -167,9 +161,9 @@
 
 /**
  * Demo 'switch'.
- * @param name The name of a kid.
  */
 {template .demoSwitch}
+  {@param name: string}  /** The name of a kid. */
   Dear {$name}, &nbsp;
 
   {switch $name}
@@ -186,12 +180,15 @@
 
 
 /**
- * Demo 'foreach'.
- * @param persons List of persons. Each person must have 'name' and 'numWaffles'.
+ * Demo 'for'.
  */
-{template .demoForeach}
+{template .demoFor}
+  {@param persons: list<[name: string, numWaffles: int]>}  /**
+                                                            * List of persons. Each person must have
+                                                            * 'name' and 'numWaffles'.
+                                                            */
 
-  {foreach $person in $persons}
+  {for $person in $persons}
 
     {if isFirst($person)}
       First,
@@ -212,16 +209,16 @@
   {ifempty}
     Nobody here ate any waffles.<br>
 
-  {/foreach}
+  {/for}
 
 {/template}
 
 
 /**
- * Demo 'for'.
- * @param numLines The number of lines to display.
+ * Demo 'for' using range.
  */
-{template .demoFor}
+{template .demoFor_Range}
+  {@param numLines: int}  /** The number of lines to display. */
 
   {for $i in range($numLines)}
     Line {$i + 1} of {$numLines}.<br>
@@ -237,10 +234,10 @@
 
 /**
  * Demo 'call' without 'param's.
- * @param name The name of the person who took a trip.
- * @param tripInfo The full record of the trip ('name' and 'destination').
  */
 {template .demoCallWithoutParam}
+  {@param name: string}  /** The name of the person who took a trip. */
+  {@param tripInfo: [name: string, destination: string]}  /** The full record of the trip. */
 
   // Call template defined in this file.
   {call .tripReport_ /}<br>
@@ -269,13 +266,14 @@
 
 /**
  * Demo 'call' with 'param's.
- * @param name The name of the person who took the trips.
- * @param companionName The name of the person who went along for the odd-numbered trips only.
- * @param destinations List of destinations visited by this person.
  */
 {template .demoCallWithParam}
+  {@param name: string}  /** The name of the person who took the trips. */
+  {@param companionName: string}  /** The name of the person who went along for the odd-numbered
+                                 trips only. */
+  {@param destinations: list<string>}  /** List of destinations visited by this person. */
 
-  {foreach $destination in $destinations}
+  {for $destination in $destinations}
 
     // Pass the current template data and also pass a parameter.
     // Note: Only passing data="all" is not sufficient for providing the 'destination' parameter of
@@ -293,16 +291,16 @@
       {/call}<br>
     {/if}
 
-  {/foreach}
+  {/for}
 
 {/template}
 
 
 /**
  * Demo 'call' with a 'param' block.
- * @param name The name of the person who took the trip.
  */
 {template .demoCallWithParamBlock}
+  {@param name: string}  /** The name of the person who took the trip. */
   // Pass 2 parameters, one of which is built using Soy code.
   {call .tripReport_}
     {param name: $name /}
@@ -321,16 +319,13 @@
 /**
  * Private helper for demoCallWithoutParams, demoCallWithParams, and demoCallWithParamBlock.
  * Reports on a trip.
- * @param? name The name of the person who took a trip (optional).
- * @param? destination The destination of the trip (optional).
  */
-{template .tripReport_ private="true" kind="text"}
+{template .tripReport_ visibility="private" kind="text"}
+  {@param? name: string}  /** The name of the person who took a trip (optional). */
+  {@param? destination: string}  /** The destination of the trip (optional). */
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 
-  // Note: All parameters to this template are optional. Therefore, below, we must check for
-  // "not (hasData() and $name)" rather than simply "not $name" because if absolutely no data is
-  // passed, then evaluating "$name" will cause an exception.
   {if not $name}
     // Note: The message below demonstrates that the 'desc' attribute can be left empty. However,
     // this is not recommended except for the simplest messages, otherwise you risk confusing some
@@ -352,23 +347,23 @@
 
 /**
  * Demo {param} blocks with 'kind' attribute.
- * @param message A message text.
- * @param list A list of things.
  */
 {template .demoParamWithKindAttribute}
+  {@param message: string}  /** A message text. */
+  {@param list: list<string>}  /** A list of things. */
   <div>
     {call .demoParamWithKindAttributeCallee_}
       // Note that the {param} blocks for the message and listItems parameter are declared to have
       // content of kind HTML. This instructs the contextual autoescaper to process the content of
-      // these blocks as HTML, and to wrap the the value of the parameter as a soydata.SanitizedHtml
-      // object.
+      // these blocks as HTML, and to wrap the value of the parameter as a
+      // goog.soy.data.SanitizedHtml object.
       {param message kind="html"}
         <b>{$message}</b>
       {/param}
       {param listItems kind="html"}
-        {foreach $i in $list}
+        {for $i in $list}
           <li>{$i}</li>
-        {/foreach}
+        {/for}
       {/param}
     {/call}
   </div>
@@ -377,13 +372,13 @@
 
 /**
  * Demo {param} blocks with 'kind' attribute.
- * @param message A message with HTML markup.
- * @param listItems A HTML-formatted list.
  */
-{template .demoParamWithKindAttributeCallee_ private="true"}
+{template .demoParamWithKindAttributeCallee_ visibility="private" }
+  {@param message: html}  /** A message with HTML markup. */
+  {@param listItems: html}  /** A HTML-formatted list. */
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
-  // the calling template.  Since the {param} blocks are declared to have HTML content, their values
-  // are wrapped as soydata.SanitizedHtml objects.  This in turn causes them to be emitted here
+  // the calling template. Since the {param} blocks are declared to have HTML content, their values
+  // are wrapped as goog.soy.data.SanitizedHtml objects. This in turn causes them to be emitted here
   // without further escaping.
   <div>{$message}</div>
   <ol>
@@ -394,16 +389,16 @@
 
 /**
  * Demo expressions.
- * @param students Nonempty list of students. Each student must have 'name', 'major', and 'year'.
- * @param currentYear The current year.
  */
 {template .demoExpressions}
+  {@param students: list<[name: string, major: string, year: number]>}  /** List of students. */
+  {@param currentYear: number}  /** The current year. */
 
   First student's major: {$students[0].major}<br>
   Last student's year: {$students[length($students) - 1].year}<br>
   Random student's major: {$students[randomInt(length($students))].major}<br>
 
-  {foreach $student in $students}
+  {for $student in $students}
     {$student.name}:
 
     {if isFirst($student)}
@@ -427,22 +422,21 @@
     {sp}{if $student.year < 2000}{round($student.year - 1905, -1)}{else}00{/if}s.
 
     <br>
-  {/foreach}
+  {/for}
 
 {/template}
 
 
 /**
  * Demo double braces.
- * @param setName The name of the infinite set.
- * @param setMembers List of the first few members of the set.
  */
 {template .demoDoubleBraces kind="text"}
-  // If a Soy tag needs to have brace characters within, use double braces to delimit the tag.
-  {{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
+  {@param setName: string}  /** The name of the infinite set. */
+  {@param setMembers: list<?>}  /** List of the first few members of the set. */
+  {msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}
     // Note: This message also demonstrates a useful trick. Since a 'msg' block cannot contain a
-    // 'foreach' statement (impossible to translate as one message), we use a 'call' to a helper
-    // template that contains the 'foreach' loop. In order to use this trick, please observe the
+    // 'for' statement (impossible to translate as one message), we use a 'call' to a helper
+    // template that contains the 'for' loop. In order to use this trick, please observe the
     // following: (a) the output of the 'call' must not contain translated content, otherwise the
     // message would be translated in multiple parts and may not read correctly in some languages,
     // (b) since the whole 'call' turns into a single placeholder, be sure to provide a clear
@@ -458,26 +452,26 @@
 
 /**
  * Private helper to build a comma separated list.
- * @param items The list of items.
  */
-{template .buildCommaSeparatedList_ private="true" kind="text"}
-  {foreach $item in $items}
+{template .buildCommaSeparatedList_ visibility="private" kind="text"}
+  {@param items: list<?>}  /** The list of items. */
+  {for $item in $items}
     {if not isFirst($item)}
       ,{sp}
     {/if}
     {$item}
-  {/foreach}
+  {/for}
 {/template}
 
 
 /**
  * Demo BiDi support.
- * @param title Book title.
- * @param author Author's name.
- * @param year Year published.
- * @param keywords List of keywords.
  */
 {template .demoBidiSupport}
+  {@param title: string}  /** Book title. */
+  {@param author: string}  /** Author's name. */
+  {@param year: number}  /** Year published. */
+  {@param keywords: list<string>}  /** List of keywords. */
 
   // If $title has the opposite directionality relative to the overall locale, it needs to be
   // declared as such using the dir attribute on the element around it. Otherwise, it may be
@@ -521,7 +515,7 @@
     // not be of the opposite directionality and do not need directionality declaration.
     {msg desc="Ask user to pick best keyword"}Your favorite keyword{/msg}:{sp}
     <select>
-      {foreach $keyword in $keywords}
+      {for $keyword in $keywords}
         // Mark-up is not allowed under the option element, and setting its dir attribute does not
         // do what one would expect. The only way to prevent the garbling of opposite-
         // directionality options is to use |bidiUnicodeWrap, which wraps its input in Unicode BiDi
@@ -529,7 +523,7 @@
         // |bidiUnicodeWrap instead of |bidiSpanWrap? Because the W3C strongly deprecates the use
         // of the formatting characters it uses except in places where mark-up cannot be used.
         <option value="{$keyword}">{$keyword |bidiUnicodeWrap}</option>
-      {/foreach}
+      {/for}
     </select>
   </div>
 
@@ -554,10 +548,10 @@
 
 /**
  * Template for printing the header to add before each example.
- * @param exampleNum The number of the example.
- * @param exampleName The name of the example.
  */
 {template .exampleHeader}
+  {@param exampleNum: number}  /** The number of the example. */
+  {@param exampleName: string}  /** The name of the example. */
   <hr>
   <b>{$exampleNum}. {$exampleName}</b><br>
 {/template}

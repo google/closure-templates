@@ -22,14 +22,12 @@ import com.google.inject.Key;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
-
 import javax.annotation.Nullable;
-
 
 /**
  * Shared utilities for working with the ApiCallScope.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class ApiCallScopeUtils {
@@ -38,49 +36,50 @@ public class ApiCallScopeUtils {
 
   private ApiCallScopeUtils() {}
 
-
   /**
    * Helper utility to seed params shared by multiple backends.
    *
-   * @param apiCallScope The scope object that manages the API call scope.
+   * @param inScope The scope object that manages the API call scope.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    */
-  public static void seedSharedParams(GuiceSimpleScope apiCallScope,
-      @Nullable SoyMsgBundle msgBundle) {
-    seedSharedParams(apiCallScope, msgBundle, null);
+  public static void seedSharedParams(
+      GuiceSimpleScope.InScope inScope, @Nullable SoyMsgBundle msgBundle) {
+    seedSharedParams(inScope, msgBundle, null);
   }
-
 
   /**
    * Helper utility to seed params shared by multiple backends.
    *
-   * @param apiCallScope The scope object that manages the API call scope.
+   * @param inScope The scope object that manages the API call scope.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    * @param bidiGlobalDir The bidi global directionality. If null, it is derived from the msgBundle
    *     locale, if any, otherwise ltr.
    */
   public static void seedSharedParams(
-      GuiceSimpleScope apiCallScope, @Nullable SoyMsgBundle msgBundle,
+      GuiceSimpleScope.InScope inScope,
+      @Nullable SoyMsgBundle msgBundle,
       @Nullable BidiGlobalDir bidiGlobalDir) {
 
     String localeString = (msgBundle != null) ? msgBundle.getLocaleString() : null;
     if (bidiGlobalDir == null) {
-        bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
+      bidiGlobalDir = BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl());
     }
 
-    seedSharedParams(apiCallScope, bidiGlobalDir, localeString);
+    seedSharedParams(inScope, bidiGlobalDir, localeString);
   }
 
   /**
    * Helper utility to seed params shared by multiple backends.
    *
-   * @param apiCallScope The scope object that manages the API call scope.
+   * @param inScope The scope object that manages the API call scope.
    * @param bidiGlobalDir The bidi global directionality.
    * @param localeString The current locale.
    */
   public static void seedSharedParams(
-      GuiceSimpleScope apiCallScope, BidiGlobalDir bidiGlobalDir, @Nullable String localeString) {
-    apiCallScope.seed(LOCALE_STRING_KEY, localeString);
-    apiCallScope.seed(GLOBAL_DIR_KEY, checkNotNull(bidiGlobalDir));
+      GuiceSimpleScope.InScope inScope,
+      BidiGlobalDir bidiGlobalDir,
+      @Nullable String localeString) {
+    inScope.seed(LOCALE_STRING_KEY, localeString);
+    inScope.seed(GLOBAL_DIR_KEY, checkNotNull(bidiGlobalDir));
   }
 }

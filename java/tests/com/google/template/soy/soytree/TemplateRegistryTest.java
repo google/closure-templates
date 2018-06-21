@@ -19,160 +19,235 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThatRegistry;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.FormattingErrorReporter;
-import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link TemplateRegistry}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class TemplateRegistryTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class TemplateRegistryTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ImmutableList<CommandTagAttribute> NO_ATTRS = ImmutableList.of();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
+  @Test
   public void testSimple() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
-        SoyFileSupplier.Factory.create(
-            "{namespace ns}\n"
-                + "/** Simple template. */\n"
-                + "{template .foo}\n"
-                + "{/template}\n"
-                + "/** Simple deltemplate. */\n"
-                + "{deltemplate bar.baz}\n"
-                + "{/deltemplate}",
-            SoyFileKind.SRC, "example.soy"))
-        .parse();
-    TemplateRegistry registry = new TemplateRegistry(soyTree, FAIL);
-    assertThatRegistry(registry).containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("example.soy", 3, 1, 4, 11));
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{template .foo}\n"
+                        + "{/template}\n"
+                        + "/** Simple deltemplate. */\n"
+                        + "{deltemplate bar.baz}\n"
+                        + "{/deltemplate}",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    assertThatRegistry(registry)
+        .containsBasicTemplate("ns.foo")
+        .definedAt(new SourceLocation("example.soy", 3, 1, 3, 15));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
-    assertThatRegistry(registry).containsDelTemplate("bar.baz")
-        .definedAt(new SourceLocation("example.soy", 6, 1, 7, 14));
+    assertThatRegistry(registry)
+        .containsDelTemplate("bar.baz")
+        .definedAt(new SourceLocation("example.soy", 6, 1, 6, 21));
     assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
   }
 
-  public void testGenerateTemplateRegistryRequiresSyntaxV2() {
-    try {
-      SoyFileSet.builder()
-          .add(
-              "{namespace ns}\n"
-                  + "{template .foo}\n"
-                  + "{/template}\n",
-              "bar.soy")
-          .build()
-          .generateTemplateRegistry();
-      fail();
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage())
-          .contains("Found error where declared syntax version 2.0 is not satisfied");
-    }
-  }
-
+  @Test
   public void testBasicTemplatesWithSameNamesInDifferentFiles() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
-        SoyFileSupplier.Factory.create(
-            "{namespace ns}\n"
-                + "/** Template. */\n"
-                + "{template .foo}\n"
-                + "{/template}\n",
-            SoyFileKind.SRC, "bar.soy"),
-        SoyFileSupplier.Factory.create(
-            "{namespace ns2}\n"
-                + "/** Template. */\n"
-                + "{template .foo}\n"
-                + "{/template}\n",
-            SoyFileKind.SRC, "baz.soy"))
-        .parse();
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Template. */\n"
+                        + "{template .foo}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "bar.soy"),
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns2}\n"
+                        + "/** Template. */\n"
+                        + "{template .foo}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "baz.soy"))
+            .parse()
+            .registry();
 
-    TemplateRegistry registry = new TemplateRegistry(soyTree, FAIL);
-    assertThatRegistry(registry).containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("bar.soy", 3, 1, 4, 11));
-    assertThatRegistry(registry).containsBasicTemplate("ns2.foo")
-        .definedAt(new SourceLocation("baz.soy", 3, 1, 4, 11));
+    assertThatRegistry(registry)
+        .containsBasicTemplate("ns.foo")
+        .definedAt(new SourceLocation("bar.soy", 3, 1, 3, 15));
+    assertThatRegistry(registry)
+        .containsBasicTemplate("ns2.foo")
+        .definedAt(new SourceLocation("baz.soy", 3, 1, 3, 15));
   }
 
+  @Test
   public void testDelTemplates() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
-        SoyFileSupplier.Factory.create(
-            "{namespace ns}\n"
-                + "/** Deltemplate. */\n"
-                + "{deltemplate foo.bar}\n"
-                + "{/deltemplate}",
-            SoyFileKind.SRC, "foo.soy"),
-        SoyFileSupplier.Factory.create(
-            "{delpackage foo}\n"
-                + "{namespace ns}\n"
-                + "/** Deltemplate. */\n"
-                + "{deltemplate foo.bar}\n"
-                + "{/deltemplate}",
-            SoyFileKind.SRC, "bar.soy"))
-        .parse();
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Deltemplate. */\n"
+                        + "{deltemplate foo.bar}\n"
+                        + "{/deltemplate}",
+                    SoyFileKind.SRC,
+                    "foo.soy"),
+                SoyFileSupplier.Factory.create(
+                    "{delpackage foo}\n"
+                        + "{namespace ns}\n"
+                        + "/** Deltemplate. */\n"
+                        + "{deltemplate foo.bar}\n"
+                        + "{/deltemplate}",
+                    SoyFileKind.SRC,
+                    "bar.soy"))
+            .parse()
+            .registry();
 
-    TemplateRegistry registry = new TemplateRegistry(soyTree, FAIL);
-
-    assertThatRegistry(registry).containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("foo.soy", 3, 1, 4, 14));
-    assertThatRegistry(registry).containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("bar.soy", 4, 1, 5, 14));
+    assertThatRegistry(registry)
+        .containsDelTemplate("foo.bar")
+        .definedAt(new SourceLocation("foo.soy", 3, 1, 3, 21));
+    assertThatRegistry(registry)
+        .containsDelTemplate("foo.bar")
+        .definedAt(new SourceLocation("bar.soy", 4, 1, 4, 21));
   }
 
+  @Test
   public void testDuplicateBasicTemplates() {
-    String file = "{namespace ns}\n"
-        + "/** Foo. */\n"
-        + "{template .foo}\n"
-        + "{/template}\n"
-        + "/** Foo. */\n"
-        + "{template .foo}\n"
-        + "{/template}\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(file).parse();
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new TemplateRegistry(soyTree, errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
-        "Template 'ns.foo' already defined at no-path:3:1");
+    String file =
+        "{namespace ns}\n"
+            + "/** Foo. */\n"
+            + "{template .foo}\n"
+            + "{/template}\n"
+            + "/** Foo. */\n"
+            + "{template .foo}\n"
+            + "{/template}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Template 'ns.foo' already defined at no-path:3:1.");
   }
 
+  @Test
   public void testDuplicateDefaultDeltemplates() {
-    String file = "{namespace ns}\n"
-        + "/** Foo. */\n"
-        + "{deltemplate foo.bar}\n"
-        + "{/deltemplate}\n"
-        + "/** Foo. */\n"
-        + "{deltemplate foo.bar}\n"
-        + "{/deltemplate}\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(file).parse();
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new TemplateRegistry(soyTree, errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
-        "Delegate template 'foo.bar' already has a default defined at no-path:3:1");
+    String file =
+        "{namespace ns}\n"
+            + "/** Foo. */\n"
+            + "{deltemplate foo.bar}\n"
+            + "{/deltemplate}\n"
+            + "/** Foo. */\n"
+            + "{deltemplate foo.bar}\n"
+            + "{/deltemplate}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Delegate template 'foo.bar' already has a default defined at no-path:3:1.");
   }
 
+  @Test
   public void testDuplicateDeltemplatesInSameDelpackage() {
-    String file = "{delpackage foo}\n"
-        + "{namespace ns}\n"
-        + "/** Foo. */\n"
-        + "{deltemplate foo.bar}\n"
-        + "{/deltemplate}\n"
-        + "/** Foo. */\n"
-        + "{deltemplate foo.bar}\n"
-        + "{/deltemplate}\n";
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(file).parse();
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new TemplateRegistry(soyTree, errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
-        "Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
+    String file =
+        "{delpackage foo}\n"
+            + "{namespace ns}\n"
+            + "/** Foo. */\n"
+            + "{deltemplate foo.bar}\n"
+            + "{/deltemplate}\n"
+            + "/** Foo. */\n"
+            + "{deltemplate foo.bar}\n"
+            + "{/deltemplate}\n";
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
+  }
+
+  @Test
+  public void testGetCallContentKind_basicTemplate() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallBasicNode node =
+        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", "ns.foo", NO_ATTRS, FAIL);
+    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
+  }
+
+  @Test
+  public void testGetCallContentKind_basicTemplateMissing() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallBasicNode node =
+        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.moo", "ns.moo", NO_ATTRS, FAIL);
+    assertThat(registry.getCallContentKind(node)).isAbsent();
+  }
+
+  @Test
+  public void testGetCallContentKind_delTemplate() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
+                        + "{/deltemplate}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallDelegateNode node =
+        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
+    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
+  }
+
+  @Test
+  public void testGetCallContentKind_delTemplateMissing() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
+                        + "{/deltemplate}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallDelegateNode node =
+        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.moo", NO_ATTRS, FAIL);
+    assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 }

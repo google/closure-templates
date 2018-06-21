@@ -16,16 +16,17 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.StringType;
 
 /**
  * Node representing a string value.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class StringNode extends AbstractPrimitiveNode {
@@ -33,66 +34,67 @@ public final class StringNode extends AbstractPrimitiveNode {
   /** The string value. */
   private final String value;
 
+  private final QuoteStyle quoteStyle;
+
   /**
    * @param value The string value.
    * @param sourceLocation The node's source location.
    */
-  public StringNode(String value, SourceLocation sourceLocation) {
+  public StringNode(String value, QuoteStyle quoteStyle, SourceLocation sourceLocation) {
     super(sourceLocation);
-    this.value = value;
+    this.value = Preconditions.checkNotNull(value);
+    this.quoteStyle = quoteStyle;
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private StringNode(StringNode orig, CopyState copyState) {
     super(orig, copyState);
     this.value = orig.value;
+    this.quoteStyle = orig.quoteStyle;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.STRING_NODE;
   }
 
-
-  @Override public SoyType getType() {
+  @Override
+  public StringType getType() {
     return StringType.getInstance();
   }
-
 
   /** Returns the string value. */
   public String getValue() {
     return value;
   }
 
-
   /**
    * Equivalent to {@code toSourceString(false)}.
    *
-   * {@inheritDoc}
+   * <p>{@inheritDoc}
    */
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return toSourceString(false);
   }
-
 
   /**
    * Builds a Soy string literal for this string value (including the surrounding single quotes).
    *
-   * @param escapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes
-   *     (backslash + 'u' + 4 hex digits).
+   * @param escapeToAscii Whether to escape non-ASCII characters as Unicode hex escapes (backslash +
+   *     'u' + 4 hex digits).
    * @return A Soy string literal for this string value (including the surrounding single quotes).
    */
   public String toSourceString(boolean escapeToAscii) {
-    return BaseUtils.escapeToSoyString(value, escapeToAscii);
+    return BaseUtils.escapeToSoyString(value, escapeToAscii, quoteStyle);
   }
 
-
-  @Override public StringNode copy(CopyState copyState) {
+  @Override
+  public StringNode copy(CopyState copyState) {
     return new StringNode(this, copyState);
   }
-
 }

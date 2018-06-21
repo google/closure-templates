@@ -16,46 +16,55 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.defineDefaultConstructor;
-import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
-import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.defineDefaultConstructor;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
+import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-
+import com.google.template.soy.jbcsrc.internal.InnerClasses;
+import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Flags;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 /**
- * Generates {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory} implementations.
+ * Generates {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory} implementations.
  *
- * <p>Each factory is incredibly simple, essentially we are generating this class: <pre>{@code
- *   public final class FooFactory implements CompiledTemplate.Factory {
- *     public CompiledTemplate create(SoyRecord params) {
- *       return new Foo(params);
- *     }
- *   }}</pre>
+ * <p>Each factory is incredibly simple, essentially we are generating this class:
+ *
+ * <pre>{@code
+ * public final class FooFactory implements CompiledTemplate.Factory {
+ *   public CompiledTemplate create(SoyRecord params) {
+ *     return new Foo(params);
+ *   }
+ * }
+ * }</pre>
  *
  * <p>Where the only thing that differs is the name of the template being constructed.
  */
 final class TemplateFactoryCompiler {
-  private static final String[] INTERFACES =
-      { Type.getInternalName(CompiledTemplate.Factory.class) };
+  private static final TypeInfo FACTORY_TYPE = TypeInfo.create(CompiledTemplate.Factory.class);
 
-  private static final int FACTORY_ACCESS = 
-      Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL;
+  private static final int FACTORY_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL;
 
   private static final Method CREATE_METHOD;
+
   static {
     try {
-      CREATE_METHOD = Method.getMethod(
-          CompiledTemplate.Factory.class.getDeclaredMethod(
-              "create", SoyRecord.class, SoyRecord.class));
+      CREATE_METHOD =
+          Method.getMethod(
+              CompiledTemplate.Factory.class.getDeclaredMethod(
+                  "create", SoyRecord.class, SoyRecord.class));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new AssertionError(e);
     }
@@ -71,48 +80,43 @@ final class TemplateFactoryCompiler {
 
   /** Compiles the factory. */
   void compile() {
-    SoyClassWriter cw = new SoyClassWriter();
     TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, FACTORY_ACCESS);
-    cw.visit(Opcodes.V1_7,
-        FACTORY_ACCESS,
-        factoryType.internalName(),
-        null, // not a generic type
-        Type.getInternalName(Object.class), // super class
-        INTERFACES);
+    SoyClassWriter cw =
+        SoyClassWriter.builder(factoryType)
+            .implementing(FACTORY_TYPE)
+            .setAccess(FACTORY_ACCESS)
+            .sourceFileName(template.node().getSourceLocation().getFileName())
+            .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
 
     generateStaticInitializer(cw);
     defineDefaultConstructor(cw, factoryType);
     generateCreateMethod(cw, factoryType);
     cw.visitEnd();
-    byte[] byteArray = cw.toByteArray();
-    innerClasses.add(ClassData.create(factoryType, byteArray));
+    innerClasses.add(cw.toClassData());
   }
 
   /**
    * Generates a static initializer that references the CompiledTemplate class to force eager
-   * classloading (and thus verification errors). For example, <pre>{@code
-   *   static {
-   *     Class<?> clz = GeneratedTemplateClass.class;
-   *   }}</pre>
+   * classloading (and thus verification errors). For example,
    *
-   * <p>TODO(lukes): this is useful for now since it will trigger verification errors during
-   * compilation (since we load all factories). But we should consider deleting it when the compiler
-   * is more mature since it is likely that servers ship dead templates and there is no point
-   * loading them.
+   * <pre>{@code
+   * static {
+   *   Class<?> clz = GeneratedTemplateClass.class;
+   * }
+   * }</pre>
    */
   private void generateStaticInitializer(ClassVisitor cv) {
-    GeneratorAdapter ga = new GeneratorAdapter(
-        Opcodes.ACC_STATIC,
-        BytecodeUtils.CLASS_INIT,
-        null /* no generic signature */,
-        null /* no checked exceptions */,
-        cv);
-    ga.visitCode();
-    ga.push(template.typeInfo().type());
-    ga.visitVarInsn(Opcodes.ASTORE, 0);
-    ga.returnValue();
-    ga.endMethod();
+    if (Flags.DEBUG) {
+      new Statement() {
+        @Override
+        protected void doGen(CodeBuilder adapter) {
+          adapter.pushType(template.typeInfo().type());
+          adapter.visitVarInsn(Opcodes.ASTORE, 0);
+          adapter.returnValue();
+        }
+      }.writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, cv);
+    }
   }
 
   /**
@@ -123,13 +127,13 @@ final class TemplateFactoryCompiler {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(factoryType, start, end);
-    final LocalVariable paramsVar = 
-        createLocal("params", 1, Type.getType(SoyRecord.class), start, end);
-    final LocalVariable ijVar = createLocal("ij", 2, Type.getType(SoyRecord.class), start, end);
-    final Statement returnTemplate = 
+    final LocalVariable paramsVar = createLocal("params", 1, SOY_RECORD_TYPE, start, end);
+    final LocalVariable ijVar = createLocal("ij", 2, SOY_RECORD_TYPE, start, end);
+    final Statement returnTemplate =
         Statement.returnExpression(template.constructor().construct(paramsVar, ijVar));
     new Statement() {
-      @Override void doGen(CodeBuilder ga) {
+      @Override
+      protected void doGen(CodeBuilder ga) {
         ga.mark(start);
         returnTemplate.gen(ga);
         ga.mark(end);

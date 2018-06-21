@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option java_package = "com.google.template.soy.testing";
+option java_multiple_files = true;
+
+package soy.test;
+
+message Proto3Message {
+  message InnerMessage {
+    int32 field = 1;
+  }
+
+  int32 int_field = 1;
+  string string_field = 2;
+  InnerMessage message_field = 3;
+  oneof these {
+    InnerMessage another_message_field = 4;
+    int32 another_int_field = 5;
+  }
+
+  enum AnEnum {
+    ZERO = 0;
+    ONE = 1;
+    TWO = 2;
+  }
+  AnEnum an_enum = 6;
+  repeated AnEnum an_enums = 7;
+}
+
+message Proto3ImplicitDefaults {
+  int32 int = 1;
+  int64 long = 2;
+  float float = 3;
+  double double = 4;
+  string string = 5;
+  bool bool = 6;
+  SubMessage msg = 7;
+  message SubMessage {
+    string field = 1;
+  }
+}

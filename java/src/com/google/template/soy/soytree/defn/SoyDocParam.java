@@ -16,9 +16,9 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.UnknownType;
-
+import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -31,40 +31,34 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class SoyDocParam extends TemplateParam {
 
-  public SoyDocParam(String name, boolean isRequired, @Nullable String desc) {
-    super(name, UnknownType.getInstance(), isRequired, false, desc);
+  public SoyDocParam(
+      String name, boolean isRequired, @Nullable String desc, @Nullable SourceLocation location) {
+    super(name, UnknownType.getInstance(), isRequired, false, desc, location);
   }
 
   private SoyDocParam(SoyDocParam soyDocParam) {
     super(soyDocParam);
   }
 
-  @Override public DeclLoc declLoc() {
+  @Override
+  public DeclLoc declLoc() {
     return DeclLoc.SOY_DOC;
   }
 
-  @Override public SoyType type() {
+  @Override
+  public SoyType type() {
     return UnknownType.getInstance();
   }
 
-  @Override public SoyDocParam copyEssential() {
-    // Note: 'desc' is nonessential.
-    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null);
+  @Override
+  public SoyDocParam copyEssential() {
+    // Note: 'desc', nameLocation are nonessential.
+    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null, null);
     soyDocParam.setLocalVariableIndex(localVariableIndex());
     return soyDocParam;
   }
 
-  @SuppressWarnings("SimplifiableIfStatement")  // for IntelliJ
-  @Override public boolean equals(Object o) {
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    return super.abstractEquals(o);
-  }
-
-  @Override public int hashCode() {
-    return super.abstractHashCode();
-  }
-
+  @Override
   public SoyDocParam clone() {
     return new SoyDocParam(this);
   }

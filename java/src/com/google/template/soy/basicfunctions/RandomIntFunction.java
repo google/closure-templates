@@ -16,21 +16,24 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
+import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,40 +41,51 @@ import javax.inject.Singleton;
  * Soy function that generates a random integer in the range [0, n-1].
  *
  */
+@SoyFunctionSignature(
+  name = "randomInt",
+  value = @Signature(returnType = "int", parameterTypes = "number")
+)
 @Singleton
-class RandomIntFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+public final class RandomIntFunction extends TypedSoyFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
-  RandomIntFunction() {}
+  public RandomIntFunction() {}
 
-
-  @Override public String getName() {
-    return "randomInt";
-  }
-
-  @Override public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
-
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    return IntegerData.forValue((long) Math.floor(Math.random() * arg.longValue()));
+    long longValue = arg.longValue();
+    return IntegerData.forValue(BasicFunctionsRuntime.randomInt(longValue));
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     JsExpr random = new JsExpr("Math.random()", Integer.MAX_VALUE);
     JsExpr randomTimesArg =
-        SoyJsCodeUtils.genJsExprUsingSoySyntax(Operator.TIMES, Lists.newArrayList(random, arg));
+        SoyJsPluginUtils.genJsExprUsingSoySyntax(Operator.TIMES, Lists.newArrayList(random, arg));
     return new JsExpr("Math.floor(" + randomTimesArg.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
     // Subtract 1 from the argument as the python randint function is inclusive on both sides.
     return new PyExpr("random.randint(0, " + arg.getText() + " - 1)", Integer.MAX_VALUE);
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef RANDOM_INT_FN =
+        MethodRef.create(BasicFunctionsRuntime.class, "randomInt", long.class).asCheap();
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
+    return SoyExpression.forInt(
+        JbcSrcMethods.RANDOM_INT_FN.invoke(args.get(0).unboxAs(long.class)));
   }
 }

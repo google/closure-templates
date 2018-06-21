@@ -19,7 +19,7 @@ package com.google.template.soy.base.internal;
 /**
  * A generator of fixed ids.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class FixedIdGenerator implements IdGenerator {
@@ -32,6 +32,7 @@ public final class FixedIdGenerator implements IdGenerator {
 
   /**
    * Constructor that takes a value for the fixed id to be generated.
+   *
    * @param fixedId The value for the fixed id to be generated.
    */
   public FixedIdGenerator(int fixedId) {
@@ -39,18 +40,20 @@ public final class FixedIdGenerator implements IdGenerator {
   }
 
   /**
-   * Constructor that does not take a value for the fixed id to be generated.
-   * The fixed id value will be 0.
+   * Constructor that does not take a value for the fixed id to be generated. The fixed id value
+   * will be 0.
    */
   public FixedIdGenerator() {
     this(DEFAULT_FIXED_ID);
   }
 
-  @Override public int genId() {
+  @Override
+  public int genId() {
     return fixedId;
   }
 
-  @Override public FixedIdGenerator copy() {
+  @Override
+  public FixedIdGenerator copy() {
     return new FixedIdGenerator(fixedId);
   }
 }

@@ -15,14 +15,14 @@
 // Delegates examples (total 3 files).
 // Author: Kai Huang
 
-{namespace soy.examples.delegates autoescape="strict"}
+{namespace soy.examples.delegates}
 
 
 /**
  * Main template that calls delegates.
- * @param moo
  */
 {template .main}
+  {@param moo: ?}
   {delcall delegateBoo allowemptydefault="true" /}{\n}
   {delcall myDelegates.foo data="all" /}
 {/template}
@@ -33,9 +33,9 @@
 
 /**
  * Default implementation of 'myDelegates.foo'.
- * @param moo Note: Must list same params for all implementations, even if not all implementations
- *     use a param.
  */
 {deltemplate myDelegates.foo kind="text"}
+  {@param moo: ?}  /** Note: Must list same params for all implementations, even if not all
+                       implementations use a param. */
   myDelegates.foo default.
 {/deltemplate}

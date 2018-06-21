@@ -18,86 +18,69 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
+import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
-
-import junit.framework.TestCase;
+import com.google.template.soy.exprtree.VarRefNode;
+import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PrintNode.
  *
  */
-public final class PrintNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class PrintNodeTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
+  private static final SourceLocation X = SourceLocation.UNKNOWN;
 
-  public void testPlaceholderMethods() throws SoySyntaxException {
-    PrintNode pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo")
-        .build(FAIL);
+  @Test
+  public void testPlaceholderMethods() {
+    String template =
+        "{@param boo: ?}\n"
+            + "{$boo}\n" // 0
+            + "{$boo}\n" // 1
+            + "{$boo.foo}\n" // 2
+            + "{$boo.foo}\n" // 3
+            + "{$boo.foo |insertWordBreaks:3}\n" // 4
+            + "{$boo['moo']}\n" // 5
+            + "{$boo + $boo.foo}\n"; // 6
+
+    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+    List<PrintNode> printNodes = getAllNodesOfType(templateNode, PrintNode.class);
+
+    assertThat(printNodes).hasSize(7);
+
+    PrintNode pn = printNodes.get(0);
     assertThat(pn.genBasePhName()).isEqualTo("BOO");
-    assertThat(pn.genSamenessKey()).isEqualTo(
-        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo")
-            .build(FAIL)
-            .genSamenessKey());
-    assertThat(pn.genSamenessKey()).isEqualTo(
-        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("  $boo  ")
-            .build(FAIL)
-            .genSamenessKey());
+    assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(1).genSamenessKey());
 
-    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo.foo")
-        .build(FAIL);
+    pn = printNodes.get(2);
     assertThat(pn.genBasePhName()).isEqualTo("FOO");
-    assertThat(pn.genSamenessKey()).isNotEqualTo(
-        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo")
-            .build(FAIL)
-            .genSamenessKey());
+    assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(3).genSamenessKey());
+    assertThat(pn.genSamenessKey()).isNotEqualTo(printNodes.get(4).genSamenessKey());
 
-    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo.foo")
-        .build(FAIL);
-    pn.addChild(new PrintDirectiveNode.Builder(0, "|insertWordBreaks", "8", SourceLocation.UNKNOWN)
-            .build(FAIL));
-    assertThat(pn.genBasePhName()).isEqualTo("FOO");
-    assertThat(pn.genSamenessKey()).isNotEqualTo(
-        new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo.foo")
-            .build(FAIL)
-            .genSamenessKey());
-
-    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo['foo']")
-        .build(FAIL);
+    pn = printNodes.get(5);
     assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
 
-    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo + $foo")
-        .build(FAIL);
-    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
-
-    // V1 syntax.
-    pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("\"blah\"")
-        .build(FAIL);
+    pn = printNodes.get(6);
     assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
   }
 
+  @Test
   public void testToSourceString() {
-    PrintNode pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo")
-        .build(FAIL);
+    VarRefNode boo = new VarRefNode("boo", X, false, null);
+
+    PrintNode pn = new PrintNode(0, X, true /* isImplicit */, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{$boo}");
 
-    pn = new PrintNode.Builder(0, false /* isImplicit */, SourceLocation.UNKNOWN)
-        .exprText("$boo")
-        .build(FAIL);
+    pn = new PrintNode(0, X, false /* isImplicit */, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{print $boo}");
   }
 }

@@ -1,17 +1,17 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 // Author: Kai Huang
 
-{namespace boo.foo autoescape="deprecated-noncontextual"}
+{namespace boo.foo}
 
 
 /**
  * Print information about cow and moose.
- * @param cow Don't have one.
- * @param moose The moose to print info about.
  */
-{template .mooseTemplate}
+{template .mooseTemplate autoescape="deprecated-noncontextual"}
+  {@param cow: ?}  /** Don't have one. */
+  {@param moose: ?}  /** The moose to print info about. */
 
-  {foreach $moo in $moose}
+  {for $moo in $moose}
     {if isFirst($moo)}
       {call .mooHelper_}
         {param moo : $moo /}
@@ -21,9 +21,9 @@
         {param moo: $moo /}
       {/call}
     {/if}
-  {/foreach}
+  {/for}
   {msg desc="Tells what a moose says."}
-    Moose <i>also</i> says {$moose.0}.  // oops, "forgot" the noAutoescape directive
+    Moose <i>also</i> says {$moose[0]}.  // oops, "forgot" the noAutoescape directive
   {/msg}{\n}
 
   {if $cow > length($moose)}
@@ -44,9 +44,9 @@
 {/template}
 
 
-/** @param moo One moo. */
-{template .mooHelper_ private="true" autoescape="deprecated-noautoescape"}
+{template .mooHelper_ visibility="private" autoescape="deprecated-noncontextual"}
+  {@param moo: ?}  /** One moo. */
   {msg desc="Tells what a cow says."}
-    Cow says {$moo}.
+    Cow says {$moo phex="MOOOooooOOOO"}.
   {/msg}{\n}
 {/template}

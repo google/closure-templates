@@ -18,64 +18,87 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
-import com.google.template.soy.shared.restricted.Sanitizers;
+import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
+import com.google.template.soy.types.SanitizedType;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 
 /**
  * Implements the |filterImageDataUri directive, which only accepts data URI's corresponding to
  * images.
  *
- * <p>
- * Note that this directive is not autoescape cancelling, and can thus be
- * used in strict templates.  The directive returns its result as an object
- * of type SanitizedContent of kind URI.
+ * <p>Note that this directive is not autoescape cancelling, and can thus be used in strict
+ * templates. The directive returns its result as an object of type SanitizedContent of kind URI.
  */
 @Singleton
 @SoyPurePrintDirective
-final class FilterImageDataUriDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective,
-    SoyPySrcPrintDirective{
+final class FilterImageDataUriDirective
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective {
 
-
-  private static final Set<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
-
+  private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   @Inject
   public FilterImageDataUriDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|filterImageDataUri";
   }
 
-  @Override public final Set<Integer> getValidArgsSizes() {
+  @Override
+  public final Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterImageDataUri(value);
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  private static final class JbcSrcMethods {
+    static final MethodRef FILTER_IMAGE_DATA =
+        MethodRef.create(Sanitizers.class, "filterImageDataUri", SoyValue.class).asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SanitizedType.UriType.getInstance(), JbcSrcMethods.FILTER_IMAGE_DATA.invoke(value.box()));
+  }
+
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$filterImageDataUri(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr("sanitize.filter_image_data_uri(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 }

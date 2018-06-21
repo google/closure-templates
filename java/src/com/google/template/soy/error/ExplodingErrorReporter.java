@@ -16,47 +16,61 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 
 /**
- * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error
- * is reported to it. This is seldom desirable in production code, but often desirable in tests,
- * which should fail in the presence of any errors that are not specifically checked for.
+ * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error is
+ * reported to it. This should only be used when no errors are expected. This is seldom desirable in
+ * production code, but often desirable in tests, which should fail in the presence of any errors
+ * that are not specifically checked for.
  *
- * <p>To write a test that does not have this exploding behavior (for example, a test that needs
- * to check the full list of errors encountered during compilation), pass a non-exploding
- * ErrorReporter instance to
- * {@link com.google.template.soy.SoyFileSetParserBuilder#errorReporter}.
+ * <p>To write a test that does not have this exploding behavior (for example, a test that needs to
+ * check the full list of errors encountered during compilation), pass a non-exploding ErrorReporter
+ * instance to {@link com.google.template.soy.SoyFileSetParserBuilder#errorReporter}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ExplodingErrorReporter implements ErrorReporter {
+final class ExplodingErrorReporter extends ErrorReporter {
+  static final ErrorReporter EXPLODING = new ExplodingErrorReporter(false);
+  static final ErrorReporter EXPLODING_IGNORE_WARNINGS = new ExplodingErrorReporter(true);
 
-  private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
+  private final boolean ignoreWarnings;
 
-  private ExplodingErrorReporter() {}
-
-  @Override
-  public Checkpoint checkpoint() {
-    // It's okay to return null here, because the only possible user of the return value
-    // is errorsSince, which doesn't actually use it.
-    return null;
+  private ExplodingErrorReporter(boolean ignoreWarnings) {
+    this.ignoreWarnings = ignoreWarnings;
   }
 
   @Override
-  public boolean errorsSince(Checkpoint checkpoint) {
-    // If we are here, either no error has been reported, or a caller inappropriately swallowed
-    // the IllegalStateException that arose from an error (which is not this class' fault).
-    return false;
+  public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+    checkNotNull(sourceLocation);
+    throw new AssertionError(
+        String.format("Unexpected error: %s at %s", error.format(args), sourceLocation));
   }
 
   @Override
-  public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
-    throw new IllegalStateException(
-        String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
+  public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+    checkNotNull(sourceLocation);
+    if (!ignoreWarnings) {
+      throw new AssertionError(
+          String.format("Unexpected warning: %s at %s", error.format(args), sourceLocation));
+    }
   }
 
-  public static ErrorReporter get() {
-    return INSTANCE;
+  @Override
+  int getCurrentNumberOfErrors() {
+    return 0;
+  }
+
+  @Override
+  public ImmutableList<SoyError> getErrors() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public ImmutableList<SoyError> getWarnings() {
+    return ImmutableList.of();
   }
 }

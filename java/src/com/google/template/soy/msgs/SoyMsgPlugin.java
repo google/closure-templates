@@ -16,15 +16,14 @@
 
 package com.google.template.soy.msgs;
 
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-
 
 /**
  * Plugin for implementing a specific message file format.
  *
  */
 public interface SoyMsgPlugin {
-
 
   /**
    * Builds the content of an extracted messages file (source messages to be translated) from a
@@ -33,12 +32,12 @@ public interface SoyMsgPlugin {
    * @param msgBundle The bundle of messages extracted from source files.
    * @param options The options to use for generating the extracted messages file (e.g. the source
    *     locale/language of the messages). Not all options will apply to all message plugins.
+   * @param errorReporter For reporting errors.
    * @return The content of the generated extracted messages file.
    * @throws SoyMsgException If there was an error building the file content.
    */
-  public CharSequence generateExtractedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
-      throws SoyMsgException;
-
+  public CharSequence generateExtractedMsgsFile(
+      SoyMsgBundle msgBundle, OutputFileOptions options, ErrorReporter errorReporter);
 
   /**
    * Parses the content of a translated messages file and builds a message bundle object.
@@ -47,7 +46,5 @@ public interface SoyMsgPlugin {
    * @return The message bundle object built from the messages file.
    * @throws SoyMsgException If there was an error parsing the file content.
    */
-  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent)
-      throws SoyMsgException;
-
+  public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent);
 }

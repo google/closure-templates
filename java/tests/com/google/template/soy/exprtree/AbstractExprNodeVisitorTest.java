@@ -16,59 +16,62 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
-
-import junit.framework.TestCase;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractExprNodeVisitor.
  *
  */
-public final class AbstractExprNodeVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractExprNodeVisitorTest {
 
   private static final SourceLocation LOC = SourceLocation.UNKNOWN;
 
-  public void testConcreteImplementation() throws SoySyntaxException {
+  @Test
+  public void testConcreteImplementation() {
 
     IntegerNode expr = new IntegerNode(17, LOC);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(null);
-    assertEquals(17.0, iev.exec(expr));
+    assertThat(iev.exec(expr)).isEqualTo(17.0);
   }
 
-
-  public void testInterfaceImplementation() throws SoySyntaxException {
+  @Test
+  public void testInterfaceImplementation() {
 
     MinusOpNode expr = new MinusOpNode(LOC);
     expr.addChild(new IntegerNode(17, LOC));
 
-    VarRefNode dataRef = new VarRefNode("boo", LOC, false, false, null);
+    VarRefNode dataRef = new VarRefNode("boo", LOC, false, null);
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
-    assertEquals(4.0, iev.exec(expr));
+    assertThat(iev.exec(expr)).isEqualTo(4.0);
 
     expr.replaceChild(0, new IntegerNode(34, LOC));
 
-    assertEquals(21.0, iev.exec(expr));
+    assertThat(iev.exec(expr)).isEqualTo(21.0);
   }
 
-
-  public void testNotImplemented() throws SoySyntaxException {
+  @Test
+  public void testNotImplemented() {
 
     MinusOpNode expr = new MinusOpNode(LOC);
     expr.addChild(new FloatNode(17.0, LOC));
 
-    VarRefNode dataRef = new VarRefNode("boo", LOC, false, false, null);
+    VarRefNode dataRef = new VarRefNode("boo", LOC, false, null);
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
@@ -81,7 +84,6 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
     }
   }
 
-
   private static final class IncompleteEvalVisitor extends AbstractExprNodeVisitor<Double> {
 
     private final Map<String, Double> env;
@@ -89,35 +91,37 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
     private Deque<Double> resultStack;
 
     IncompleteEvalVisitor(Map<String, Double> env) {
-      super(ExplodingErrorReporter.get());
       this.env = env;
     }
 
-    @Override public Double exec(ExprNode node) {
+    @Override
+    public Double exec(ExprNode node) {
       resultStack = new ArrayDeque<>();
       visit(node);
       return resultStack.peek();
     }
 
-    @Override protected void visitIntegerNode(IntegerNode node) {
+    @Override
+    protected void visitIntegerNode(IntegerNode node) {
       resultStack.push((double) node.getValue());
     }
 
-    @Override protected void visitVarRefNode(VarRefNode node) {
+    @Override
+    protected void visitVarRefNode(VarRefNode node) {
       resultStack.push(env.get(node.getName()));
     }
 
-    @Override protected void visitOperatorNode(OperatorNode node) {
+    @Override
+    protected void visitOperatorNode(OperatorNode node) {
       // Note: This isn't the "right" way to implement this, but we want to override the interface
       // implementation for the purpose of testing.
       if (node.getOperator() != Operator.MINUS) {
         throw new UnsupportedOperationException();
       }
-      visitChildren(node);  // results will be on stack in reverse operand order
+      visitChildren(node); // results will be on stack in reverse operand order
       double operand1 = resultStack.pop();
       double operand0 = resultStack.pop();
       resultStack.push(operand0 - operand1);
     }
   }
-
 }

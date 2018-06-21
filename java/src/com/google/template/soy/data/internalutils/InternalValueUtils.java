@@ -18,10 +18,10 @@ package com.google.template.soy.data.internalutils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -34,48 +34,52 @@ import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
-
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Internal utilities related to Soy values.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class InternalValueUtils {
 
-
   private InternalValueUtils() {}
-
 
   /**
    * Converts a primitive data object into a primitive expression node.
+   *
    * @param primitiveData The primitive data object to convert. Must not be undefined.
+   * @param location The node's source location.
    * @return The resulting primitive expression node.
    */
-  public static PrimitiveNode convertPrimitiveDataToExpr(PrimitiveData primitiveData) {
-
+  @Nullable
+  public static PrimitiveNode convertPrimitiveDataToExpr(
+      PrimitiveData primitiveData, SourceLocation location) {
     if (primitiveData instanceof StringData) {
-      return new StringNode(primitiveData.stringValue(), SourceLocation.UNKNOWN);
+      return new StringNode(primitiveData.stringValue(), QuoteStyle.SINGLE, location);
     } else if (primitiveData instanceof BooleanData) {
-      return new BooleanNode(primitiveData.booleanValue(), SourceLocation.UNKNOWN);
+      return new BooleanNode(primitiveData.booleanValue(), location);
     } else if (primitiveData instanceof IntegerData) {
-      // NOTE: We don't support longs here, since this needs to work both across all target
-      // languages, and Javascript doesn't support longs.
-      return new IntegerNode(primitiveData.integerValue(), SourceLocation.UNKNOWN);
+      // NOTE: We only support numbers in the range of JS [MIN_SAFE_INTEGER, MAX_SAFE_INTEGER]
+      if (!IntegerNode.isInRange(primitiveData.longValue())) {
+        return null;
+      } else {
+        return new IntegerNode(primitiveData.longValue(), location);
+      }
     } else if (primitiveData instanceof FloatData) {
-      return new FloatNode(primitiveData.floatValue(), SourceLocation.UNKNOWN);
+      return new FloatNode(primitiveData.floatValue(), location);
     } else if (primitiveData instanceof NullData) {
-      return new NullNode(SourceLocation.UNKNOWN);
+      return new NullNode(location);
     } else {
       throw new IllegalArgumentException();
     }
   }
 
-
   /**
    * Converts a primitive expression node into a primitive data object.
+   *
    * @param primitiveNode The primitive expression node to convert.
    * @return The resulting primitive data object.
    */
@@ -96,16 +100,15 @@ public class InternalValueUtils {
     }
   }
 
-
   /**
    * Converts a compile-time globals map in user-provided format into one in the internal format.
    *
-   * <p> The returned map will have the same iteration order as the provided map.
+   * <p>The returned map will have the same iteration order as the provided map.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
+   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @return An equivalent map in the internal format.
-   * @throws SoySyntaxException If the map contains an invalid value.
+   * @throws IllegalArgumentException If the map contains an invalid value.
    */
   public static ImmutableMap<String, PrimitiveData> convertCompileTimeGlobalsMap(
       Map<String, ?> compileTimeGlobalsMap) {
@@ -118,18 +121,21 @@ public class InternalValueUtils {
       PrimitiveData value;
       boolean isValidValue = true;
       try {
-        SoyValue value0 = SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(valueObj).resolve();
+        SoyValue value0 = SoyValueConverter.INSTANCE.convert(valueObj).resolve();
         if (!(value0 instanceof PrimitiveData)) {
           isValidValue = false;
         }
         value = (PrimitiveData) value0;
       } catch (SoyDataException sde) {
         isValidValue = false;
-        value = null;  // make compiler happy
+        value = null; // make compiler happy
       }
       if (!isValidValue) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Compile-time globals map contains invalid value: " + valueObj + ".");
+        throw new IllegalArgumentException(
+            "Compile-time globals map contains invalid value: "
+                + valueObj
+                + " for key: "
+                + entry.getKey());
       }
 
       resultMapBuilder.put(entry.getKey(), value);
@@ -137,5 +143,4 @@ public class InternalValueUtils {
 
     return resultMapBuilder.build();
   }
-
 }

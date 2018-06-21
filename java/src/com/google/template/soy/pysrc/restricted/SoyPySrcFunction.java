@@ -17,18 +17,15 @@
 package com.google.template.soy.pysrc.restricted;
 
 import com.google.template.soy.shared.restricted.SoyFunction;
-
 import java.util.List;
-
 
 /**
  * Interface for a Soy function implemented for the Python Source backend.
  *
- * <p> Important: This may only be used in implementing function plugins.
+ * <p>Important: This may only be used in implementing function plugins.
  *
  */
 public interface SoyPySrcFunction extends SoyFunction {
-
 
   /**
    * Computes this function on the given arguments for the Python Source backend.
@@ -37,5 +34,4 @@ public interface SoyPySrcFunction extends SoyFunction {
    * @return The computed result of this function.
    */
   public PyExpr computeForPySrc(List<PyExpr> args);
-
 }

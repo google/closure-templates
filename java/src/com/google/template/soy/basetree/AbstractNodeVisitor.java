@@ -16,69 +16,66 @@
 
 package com.google.template.soy.basetree;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.template.soy.error.ErrorReporter;
+import java.util.List;
 
 /**
  * Base class for {@code AbstractXxxNodeVisitor} classes.
  *
- * <p> Same as {@link AbstractReturningNodeVisitor} except that in this class, internal
- * {@code visit()} calls do not return a value.
+ * <p>Same as {@link AbstractReturningNodeVisitor} except that in this class, internal {@code
+ * visit()} calls do not return a value.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * @param <N> A more specific subinterface of Node, or just Node if not applicable.
  * @param <R> The return type of this visitor.
- *
  * @see AbstractReturningNodeVisitor
  */
 public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
+  private static final Node[] EMPTY_NODE_ARRAY = new Node[0];
 
-  protected final ErrorReporter errorReporter;
-
-  public AbstractNodeVisitor(ErrorReporter errorReporter) {
-    this.errorReporter = Preconditions.checkNotNull(errorReporter);
-  }
-
-  @Override public R exec(N node) {
+  @Override
+  public R exec(N node) {
     visit(node);
     return null;
   }
 
-
   /**
    * Visits the given node to execute the function defined by this visitor.
+   *
    * @param node The node to visit.
    */
   protected abstract void visit(N node);
 
-
   /**
    * Helper to visit all the children of a node, in order.
+   *
    * @param node The parent node whose children to visit.
    * @see #visitChildrenAllowingConcurrentModification
    */
   protected void visitChildren(ParentNode<? extends N> node) {
-    for (N child : node.getChildren()) {
-      visit(child);
+    List<? extends N> children = node.getChildren();
+    int size = children.size();
+    for (int i = 0; i < size; i++) {
+      visit(children.get(i));
     }
   }
-
 
   /**
    * Helper to visit all the children of a node, in order.
    *
-   * This method differs from {@code visitChildren} in that we are iterating through a copy of the
-   * children. Thus, concurrent modification of the list of children is allowed.
+   * <p>This method differs from {@code visitChildren} in that we are iterating through a copy of
+   * the children. Thus, concurrent modification of the list of children is allowed.
    *
    * @param node The parent node whose children to visit.
    * @see #visitChildren
    */
   protected void visitChildrenAllowingConcurrentModification(ParentNode<? extends N> node) {
-    for (N child : Lists.newArrayList(node.getChildren()) /*copy*/) {
-      visit(child);
+    // use toArray to create a copy to avoid concurrent modification exception
+    for (Node child : node.getChildren().toArray(EMPTY_NODE_ARRAY)) {
+      // safe since the parent only contains subtypes of N.
+      @SuppressWarnings("unchecked")
+      N typedChild = (N) child;
+      visit(typedChild);
     }
   }
-
 }

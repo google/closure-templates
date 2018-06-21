@@ -20,9 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
-
-import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 /**
@@ -31,69 +28,69 @@ import javax.annotation.Nullable;
  */
 public final class VarRefNode extends AbstractExprNode {
 
-  public static final VarRefNode ERROR
-      = new VarRefNode("error", SourceLocation.UNKNOWN, false, false, null);
+  public static VarRefNode error(SourceLocation location) {
+    return new VarRefNode("error", location, false, null);
+  }
 
-  /** The name of the variable. */
+  /** The name of the variable, without the preceding dollar sign. */
   private final String name;
 
   /** Whether this is an injected parameter reference. */
-  private final boolean isInjected;
-
-  /** Whether this a null-safe access to an injected parameter. */
-  private final boolean isNullSafeInjected;
+  private final boolean isDollarSignIjParameter;
 
   /** Reference to the variable declaration. */
   private VarDefn defn;
 
   /**
-   * For cases where we are able to infer a stronger type than the variable, this
-   * will contain the stronger type which overrides the variable's type.
+   * For cases where we are able to infer a stronger type than the variable, this will contain the
+   * stronger type which overrides the variable's type.
    */
   private SoyType subtituteType;
 
   /**
    * @param name The name of the variable.
    * @param sourceLocation The node's source location.
-   * @param injected Whether this is an injected variable.
-   * @param nullSafeInjected Whether this a null-safe access to an injected parameter.
+   * @param isDollarSignIjParameter Whether this is an {@code $ij} variable.
    * @param defn (optional) The variable declaration for this variable.
    */
   public VarRefNode(
       String name,
       SourceLocation sourceLocation,
-      boolean injected,
-      boolean nullSafeInjected,
+      boolean isDollarSignIjParameter,
       @Nullable VarDefn defn) {
     super(sourceLocation);
-    Preconditions.checkArgument(name != null);
-    this.name = name;
-    this.isInjected = injected;
-    this.isNullSafeInjected = nullSafeInjected;
+    this.name = Preconditions.checkNotNull(name);
+    this.isDollarSignIjParameter = isDollarSignIjParameter;
     this.defn = defn;
   }
 
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.isInjected = orig.isInjected;
-    this.isNullSafeInjected = orig.isNullSafeInjected;
+    this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
     this.subtituteType = orig.subtituteType;
-    // N.B. don't clone here.  If the tree is getting cloned then our defn will also need to be
-    // reset.  However, defns are problematic because they create non-tree edges in the AST.
-    // 1. all defns for the same variable should be the same (induces a dag structure).
-    // 2. local variables have declaringNode references (induces cycles).
-    // so calling copy() here could create an infinite loop and even if it didn't it would still be
-    // wrong.  So instead we just use the prior defn and rely on our caller to manually fix up the
-    // defn after cloning.  This should be handled by SoytreeUtils.cloneNode.
+    // Maintain the original def in case only a subtree is getting cloned, but also register a
+    // listener so that if the defn is replaced we will get updated also.
     this.defn = orig.defn;
+    if (orig.defn != null) {
+      copyState.registerRefListener(
+          orig.defn,
+          new CopyState.Listener<VarDefn>() {
+            @Override
+            public void newVersion(VarDefn newObject) {
+              setDefn(newObject);
+            }
+          });
+    }
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.VAR_REF_NODE;
   }
 
-  @Override public SoyType getType() {
+  @Override
+  public SoyType getType() {
     // We won't know the type until we know the variable declaration.
     Preconditions.checkState(defn != null);
     return subtituteType != null ? subtituteType : defn.type();
@@ -104,72 +101,63 @@ public final class VarRefNode extends AbstractExprNode {
     return name;
   }
 
+  /**
+   * Returns Whether this is an {@code $ij} parameter reference.
+   *
+   * <p>You almost certainly don't want to use this method and instead want {@link #isInjected()}.
+   */
+  public boolean isDollarSignIjParameter() {
+    return isDollarSignIjParameter;
+  }
+
   /** Returns Whether this is an injected parameter reference. */
   public boolean isInjected() {
-    return isInjected;
+    return defn.isInjected();
   }
 
-  /** Returns whether this a null-safe access to an injected parameter. */
-  public boolean isNullSafeInjected() {
-    return isNullSafeInjected;
-  }
-
-  /**
-   * @param defn the varDecl to set
-   */
+  /** @param defn the varDecl to set */
   public void setDefn(VarDefn defn) {
     this.defn = defn;
   }
 
-  /**
-   * @return the varDecl
-   */
+  /** @return the varDecl */
   public VarDefn getDefnDecl() {
     return defn;
   }
 
   /** Returns whether this is a local variable reference. */
-  public Boolean isLocalVar() {
-    return defn == null ? null : defn.kind() == VarDefn.Kind.LOCAL_VAR;
+  public boolean isLocalVar() {
+    return defn.kind() == VarDefn.Kind.LOCAL_VAR;
   }
 
   /**
-   * Returns whether this might be a local variable reference. If the variable definition
-   * is unknown, then it returns true.
+   * Returns whether this might be a local variable reference. If the variable definition is
+   * unknown, then it returns true.
    */
   public Boolean isPossibleParam() {
-    // TODO: Get rid of the null check - needs to revise EvalVisitorTest to run
-    // the resolve names pass in order for this to be true.
-    return defn == null || defn.kind() == VarDefn.Kind.PARAM ||
-        defn.kind() == VarDefn.Kind.UNDECLARED;
+    if (defn == null) {
+      throw new NullPointerException(getSourceLocation().toString());
+    }
+    return defn.kind() == VarDefn.Kind.PARAM || defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 
   /**
-   * Override the type of the variable when used in this context. This is set by
-   * the flow analysis in the type resolution pass which can infer a stronger type.
+   * Override the type of the variable when used in this context. This is set by the flow analysis
+   * in the type resolution pass which can infer a stronger type.
+   *
    * @param type The overridden type value.
    */
   public void setSubstituteType(SoyType type) {
     subtituteType = type;
   }
 
-  @Override public String toSourceString() {
-    return "$" + (isInjected ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
+  @Override
+  public String toSourceString() {
+    return "$" + (isDollarSignIjParameter ? "ij." : "") + name;
   }
 
-  @Override public VarRefNode copy(CopyState copyState) {
+  @Override
+  public VarRefNode copy(CopyState copyState) {
     return new VarRefNode(this, copyState);
-  }
-
-  @Override public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) { return false; }
-    VarRefNode otherVar = (VarRefNode) other;
-    return name.equals(otherVar.name) &&
-        isInjected == otherVar.isInjected &&
-        isNullSafeInjected == otherVar.isNullSafeInjected;
-  }
-
-  @Override public int hashCode() {
-    return Objects.hash(this.getClass(), name, isInjected, isNullSafeInjected);
   }
 }

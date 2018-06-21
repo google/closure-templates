@@ -25,20 +25,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-
 /**
- * Record for one input Soy file whose content should be considered prone to change without
- * warning.
+ * Record for one input Soy file whose content should be considered prone to change without warning.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
 
-
   /** The file to read. */
   private final File file;
-
 
   /**
    * Creates a Soy file supplier whose content is backed by the given file which is prone to change
@@ -52,7 +48,6 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
     this.file = file;
   }
 
-
   @Override
   public boolean hasChangedSince(Version version) {
     if (!(version instanceof VolatileFileVersion)) {
@@ -60,7 +55,6 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
     }
     return file.lastModified() != ((VolatileFileVersion) version).lastModified;
   }
-
 
   @Override
   public Reader open() throws IOException {
@@ -72,38 +66,29 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
     return new VolatileFileVersion(file.lastModified());
   }
 
-  /**
-   * A file version based on {@link File#lastModified}.
-   * Like last modified
-   */
+  /** A file version based on {@link File#lastModified}. Like last modified */
   private static final class VolatileFileVersion implements Version {
 
     final long lastModified;
-
 
     VolatileFileVersion(long lastModified) {
       this.lastModified = lastModified;
     }
 
-
     @Override
     public boolean equals(Object other) {
-      return other instanceof VolatileFileVersion &&
-          lastModified == ((VolatileFileVersion) other).lastModified;
+      return other instanceof VolatileFileVersion
+          && lastModified == ((VolatileFileVersion) other).lastModified;
     }
-
 
     @Override
     public int hashCode() {
       return (int) lastModified;
     }
 
-
     @Override
     public String toString() {
       return String.valueOf(lastModified);
     }
-
   }
-
 }

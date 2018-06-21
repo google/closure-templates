@@ -17,10 +17,10 @@
 package com.google.template.soy.pysrc.restricted;
 
 /**
- * Value class to represent a Python List expression. Includes the text of the expression as well
- * as the precedence of the top-most operator.
+ * Value class to represent a Python List expression. Includes the text of the expression as well as
+ * the precedence of the top-most operator.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 public final class PyListExpr extends PyExpr {
@@ -33,7 +33,8 @@ public final class PyListExpr extends PyExpr {
     super(text, precedence);
   }
 
-  @Override public PyStringExpr toPyString() {
+  @Override
+  public PyStringExpr toPyString() {
     // Lists are converted by concatenating all of their values.
     return new PyStringExpr("''.join(" + getText() + ")", Integer.MAX_VALUE);
   }

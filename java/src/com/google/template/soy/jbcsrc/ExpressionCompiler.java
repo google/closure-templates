@@ -16,28 +16,35 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.compare;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ternary;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNull;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -60,38 +67,63 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.aggregate.MapType;
-import com.google.template.soy.types.aggregate.RecordType;
-import com.google.template.soy.types.primitive.SanitizedType;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Compiles a {@link ExprNode} to a {@link SoyExpression}.
+ * Compiles an {@link ExprNode} to a {@link SoyExpression}.
+ *
+ * <p>A note on how we use soy types. We generally try to limit the places where we read type
+ * information from the AST. This is because it tends to be not very accurate. Specifically, the
+ * places where we rely on type information from the AST are:
+ *
+ * <ul>
+ *   <li>{@link VarRefNode}
+ *   <li>{@link PrimitiveNode}
+ *   <li>{@link DataAccessNode}
+ * </ul>
+ *
+ * <p>This is because these are the points that are most likely to be in direct control of the user.
+ * All other type information is derived directly from operations on SoyExpression objects.
  */
 final class ExpressionCompiler {
 
   static final class BasicExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
-    private BasicExpressionCompiler(VariableLookup variables, ErrorReporter errorReporter) {
+    private BasicExpressionCompiler(
+        TemplateParameterLookup parameters, TemplateVariableManager varManager) {
       this.compilerVisitor =
-          new CompilerVisitor(errorReporter, variables,
+          new CompilerVisitor(
+              parameters,
+              varManager,
               Suppliers.ofInstance(BasicDetacher.INSTANCE));
     }
 
@@ -99,9 +131,7 @@ final class ExpressionCompiler {
       this.compilerVisitor = visitor;
     }
 
-    /**
-     * Compile an expression.
-     */
+    /** Compile an expression. */
     SoyExpression compile(ExprNode expr) {
       return compilerVisitor.exec(expr);
     }
@@ -109,48 +139,48 @@ final class ExpressionCompiler {
     /**
      * Returns an expression that evaluates to a {@code List<SoyValue>} containing all the children.
      */
-    Expression compileToList(List<? extends ExprNode> children) {
+    List<SoyExpression> compileToList(List<? extends ExprNode> children) {
       List<SoyExpression> soyExprs = new ArrayList<>(children.size());
       for (ExprNode expr : children) {
         soyExprs.add(compile(expr));
       }
-      return SoyExpression.asBoxedList(soyExprs);
+      return soyExprs;
     }
   }
 
   /**
-   * Create an expression compiler that can implement complex detaching logic with the given
-   * {@link ExpressionDetacher.Factory}
+   * Create an expression compiler that can implement complex detaching logic with the given {@link
+   * ExpressionDetacher.Factory}
    */
   static ExpressionCompiler create(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables,
-      ErrorReporter errorReporter) {
-    return new ExpressionCompiler(detacherFactory, variables, errorReporter);
+      TemplateParameterLookup parameters,
+      TemplateVariableManager varManager) {
+    return new ExpressionCompiler(detacherFactory, parameters, varManager);
   }
 
   /**
    * Create a basic compiler with trivial detaching logic.
    *
-   * <p>All generated detach points are implemented as {@code return} statements so it is only valid
-   * for use by the {@link LazyClosureCompiler}.
+   * <p>All generated detach points are implemented as {@code return} statements and the returned
+   * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
-  static BasicExpressionCompiler createBasicCompiler(VariableLookup variables,
-      ErrorReporter reporter) {
-    return new BasicExpressionCompiler(variables, reporter);
+  static BasicExpressionCompiler createBasicCompiler(
+      TemplateParameterLookup parameters, TemplateVariableManager varManager) {
+    return new BasicExpressionCompiler(parameters, varManager);
   }
 
-  private final VariableLookup variables;
-  private final ErrorReporter reporter;
+  private final TemplateParameterLookup parameters;
+  private final TemplateVariableManager varManager;
   private final ExpressionDetacher.Factory detacherFactory;
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables,
-      ErrorReporter errorReporter) {
+      TemplateParameterLookup parameters,
+      TemplateVariableManager varManager) {
     this.detacherFactory = detacherFactory;
-    this.reporter = errorReporter;
-    this.variables = variables;
+    this.parameters = parameters;
+    this.varManager = varManager;
   }
 
   /**
@@ -165,6 +195,19 @@ final class ExpressionCompiler {
   }
 
   /**
+   * Compiles the given expression tree to a sequence of bytecode in the current method visitor.
+   *
+   * <p>The generated bytecode expects that the evaluation stack is empty when this method is called
+   * and it will generate code such that the stack contains a single SoyValue when it returns. The
+   * SoyValue object will have a runtime type equal to {@code node.getType().javaType()}.
+   */
+  SoyExpression compile(ExprNode node) {
+    Label reattachPoint = new Label();
+    final SoyExpression exec = compile(node, reattachPoint);
+    return exec.withSource(exec.labelStart(reattachPoint));
+  }
+
+  /**
    * Compiles the given expression tree to a sequence of bytecode if it can be done without
    * generating any detach operations.
    */
@@ -173,12 +216,14 @@ final class ExpressionCompiler {
     if (RequiresDetachVisitor.INSTANCE.exec(node)) {
       return Optional.absent();
     }
-    Supplier<ExpressionDetacher> throwingSupplier = new Supplier<ExpressionDetacher>() {
-      @Override public ExpressionDetacher get() {
-        throw new AssertionError();
-      }
-    };
-    return Optional.of(new CompilerVisitor(reporter, variables, throwingSupplier).exec(node));
+    Supplier<ExpressionDetacher> throwingSupplier =
+        new Supplier<ExpressionDetacher>() {
+          @Override
+          public ExpressionDetacher get() {
+            throw new AssertionError();
+          }
+        };
+    return Optional.of(new CompilerVisitor(parameters, varManager, throwingSupplier).exec(node));
   }
 
   /**
@@ -187,235 +232,311 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(final Label reattachPoint) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(reporter, variables,
+        new CompilerVisitor(
+            parameters,
+            varManager,
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // neccesary.
-            Suppliers.memoize(new Supplier<ExpressionDetacher>() {
-              @Override public ExpressionDetacher get() {
-                return detacherFactory.createExpressionDetacher(reattachPoint);
-              }
-            })));
-  }
-
-  /**
-   * Compiles the given expression tree to a sequence of bytecode in the current method visitor.
-   *
-   * <p>The generated bytecode expects that the evaluation stack is empty when this method is
-   * called and it will generate code such that the stack contains a single SoyValue when it
-   * returns.  The SoyValue object will have a runtime type equal to
-   * {@code node.getType().javaType()}.
-   */
-  SoyExpression compile(ExprNode node) {
-    Label reattachPoint = new Label();
-    final SoyExpression exec = compile(node, reattachPoint);
-    return exec.withSource(exec.labelStart(reattachPoint));
+            Suppliers.memoize(
+                new Supplier<ExpressionDetacher>() {
+                  @Override
+                  public ExpressionDetacher get() {
+                    return detacherFactory.createExpressionDetacher(reattachPoint);
+                  }
+                })));
   }
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     final Supplier<? extends ExpressionDetacher> detacher;
-    final VariableLookup variables;
+    final TemplateParameterLookup parameters;
+    final TemplateVariableManager varManager;
 
-    CompilerVisitor(ErrorReporter errorReporter, VariableLookup variables,
+    CompilerVisitor(
+        TemplateParameterLookup parameters,
+        TemplateVariableManager varManager,
         Supplier<? extends ExpressionDetacher> detacher) {
-      super(errorReporter);
       this.detacher = detacher;
-      this.variables = variables;
+      this.parameters = parameters;
+      this.varManager = varManager;
     }
 
-    @Override protected final SoyExpression visitExprRootNode(ExprRootNode node) {
+    @Override
+    protected final SoyExpression visit(ExprNode node) {
+      return super.visit(node).withSourceLocation(node.getSourceLocation());
+    }
+
+    @Override
+    protected final SoyExpression visitExprRootNode(ExprRootNode node) {
       return visit(node.getRoot());
     }
 
-  // Primitive value constants
+    // Primitive value constants
 
-    @Override protected final SoyExpression visitNullNode(NullNode node) {
+    @Override
+    protected final SoyExpression visitNullNode(NullNode node) {
       return SoyExpression.NULL;
     }
 
-    @Override protected final SoyExpression visitFloatNode(FloatNode node) {
+    @Override
+    protected final SoyExpression visitFloatNode(FloatNode node) {
       return SoyExpression.forFloat(constant(node.getValue()));
     }
 
-    @Override protected final SoyExpression visitStringNode(StringNode node) {
-      return SoyExpression.forString(constant(node.getValue()));
+    @Override
+    protected final SoyExpression visitStringNode(StringNode node) {
+      return SoyExpression.forString(constant(node.getValue(), varManager));
     }
 
-    @Override protected final SoyExpression visitBooleanNode(BooleanNode node) {
+    @Override
+    protected final SoyExpression visitBooleanNode(BooleanNode node) {
       return node.getValue() ? SoyExpression.TRUE : SoyExpression.FALSE;
     }
 
-    @Override protected final SoyExpression visitIntegerNode(IntegerNode node) {
-      return SoyExpression.forInt(BytecodeUtils.constant((long) node.getValue()));
+    @Override
+    protected final SoyExpression visitIntegerNode(IntegerNode node) {
+      return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
     }
 
-  // Collection literals
+    @Override
+    protected final SoyExpression visitGlobalNode(GlobalNode node) {
+      return visit(node.getValue());
+    }
 
-    @Override protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
+    // Collection literals
+
+    @Override
+    protected final SoyExpression visitListLiteralNode(ListLiteralNode node) {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
-      // anyway and could additionally delay detach generation.  Ditto for MapLiteralNode.
-      return SoyExpression.forList((ListType) node.getType(),
-          SoyExpression.asBoxedList(visitChildren(node)));
+      // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
+      return SoyExpression.forList(
+          (ListType) node.getType(), SoyExpression.asBoxedList(visitChildren(node)));
     }
 
-    @Override protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
-      // map literals are either records (if all the strings are literals) or maps if they aren't
-      // constants.
-      final int numItems = node.numChildren() / 2;
+    @Override
+    protected final SoyExpression visitRecordLiteralNode(RecordLiteralNode node) {
+      final int numItems = node.numChildren();
       if (numItems == 0) {
-        MapType mapType = (MapType) node.getType();
-        return SoyExpression.forMap(mapType, MethodRef.IMMUTABLE_MAP_OF.invoke().asCheap());
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_DICT.accessor());
       }
-      boolean isRecord = node.getType().getKind() == Kind.RECORD;
       List<Expression> keys = new ArrayList<>(numItems);
       List<Expression> values = new ArrayList<>(numItems);
       for (int i = 0; i < numItems; i++) {
-        // Keys are strings and values are boxed SoyValues
-        // Note: The soy grammar and type system both allow for maps to have arbitrary keys for
-        // types but none of the implementations support this.  So we don't support it either.
-        // b/20468013
-        keys.add(visit(node.getChild(2 * i)).unboxAs(String.class));
-        values.add(visit(node.getChild(2 * i + 1)).box());
+        // Keys are strings and values are boxed SoyValues.
+        keys.add(BytecodeUtils.constant(node.getKey(i).identifier()));
+        values.add(visit(node.getChild(i)).box());
       }
-      Expression mapExpr = BytecodeUtils.newLinkedHashMap(keys, values);
-      if (isRecord) {
-        return SoyExpression.forRecord((RecordType) node.getType(), mapExpr);
-      }
-      return SoyExpression.forMap((MapType) node.getType(), mapExpr);
+      Expression soyDict =
+          MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invoke(
+              BytecodeUtils.newLinkedHashMap(keys, values),
+              FieldRef.enumReference(RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD)
+                  .accessor());
+      return SoyExpression.forSoyValue(node.getType(), soyDict);
     }
 
-  // Comparison operators.
+    @Override
+    protected final SoyExpression visitMapLiteralNode(MapLiteralNode node) {
+      final int numItems = node.numChildren() / 2;
+      if (numItems == 0) {
+        return SoyExpression.forSoyValue(node.getType(), FieldRef.EMPTY_MAP.accessor());
+      }
+      List<Expression> keys = new ArrayList<>(numItems);
+      List<Expression> values = new ArrayList<>(numItems);
+      for (int i = 0; i < numItems; i++) {
+        // Keys and values are boxed SoyValues.
+        keys.add(visit(node.getChild(2 * i)).box());
+        values.add(visit(node.getChild(2 * i + 1)).box());
+      }
+      Expression soyDict =
+          MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(BytecodeUtils.newHashMap(keys, values));
+      return SoyExpression.forSoyValue(node.getType(), soyDict);
+    }
 
-    @Override protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
+    // Comparison operators
+
+    @Override
+    protected final SoyExpression visitEqualOpNode(EqualOpNode node) {
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
     }
 
-    @Override protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
+    @Override
+    protected final SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
       return SoyExpression.forBool(
           logicalNot(
               BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
     }
 
-    @Override protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
+    // binary comparison operators.  N.B. it is ok to coerce 'number' values to floats because that
+    // coercion preserves ordering
+
+    @Override
+    protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble()));
+      }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFLT, left, right);
       }
       return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
     }
 
-    @Override protected final SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
+    @Override
+    protected final SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble()));
       }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFGT, left, right);
+      }
       // Note the argument reversal
-      return SoyExpression.forBool(
-          MethodRef.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
+      return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
     }
 
-    @Override protected final SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
+    @Override
+    protected final SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble()));
+      }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFLE, left, right);
       }
       return SoyExpression.forBool(
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
     }
 
-    @Override protected final SoyExpression visitGreaterThanOrEqualOpNode(
-        GreaterThanOrEqualOpNode node) {
+    @Override
+    protected final SoyExpression visitGreaterThanOrEqualOpNode(GreaterThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble()));
+      }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFGE, left, right);
       }
       // Note the reversal of the arguments.
       return SoyExpression.forBool(
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
     }
 
-  // Binary operators
+    private SoyExpression createStringComparisonOperator(
+        int operator, SoyExpression left, SoyExpression right) {
+      return SoyExpression.forBool(
+          compare(
+              operator,
+              left.coerceToString().invoke(MethodRef.STRING_COMPARE_TO, right.coerceToString()),
+              BytecodeUtils.constant(0)));
+    }
 
-    @Override protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
+    // Binary operators
+    // For the binary math operators we try to do unboxed arithmetic as much as possible.
+    // If both args are definitely ints -> do int math
+    // If both args are definitely numbers and at least one is definitely a float -> do float math
+    // otherwise use our boxed runtime methods.
+
+    @Override
+    protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
+      SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
-        return applyBinaryIntOperator(Opcodes.LADD, left, right);
-      }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DADD, left, right);
+      SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
+      // They are both definitely numbers
+      if (leftRuntimeType.assignableToNullableNumber()
+          && rightRuntimeType.assignableToNullableNumber()) {
+        if (leftRuntimeType.assignableToNullableInt()
+            && rightRuntimeType.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LADD, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (leftRuntimeType.assignableToNullableFloat()
+            || rightRuntimeType.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DADD, left, right);
+        }
       }
       // '+' is overloaded for string arguments to mean concatenation.
-      if (left.isKnownString() || right.isKnownString()) {
+      if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
         SoyExpression leftString = left.coerceToString();
         SoyExpression rightString = right.coerceToString();
         return SoyExpression.forString(leftString.invoke(MethodRef.STRING_CONCAT, rightString));
       }
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()).cast(node.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
     }
 
-    @Override protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
+    @Override
+    protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
-        return applyBinaryIntOperator(Opcodes.LSUB, left, right);
+      // They are both definitely numbers
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LSUB, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
+        }
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
-      }
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
+      return SoyExpression.forSoyValue(
+          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
     }
 
-    @Override protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
+    @Override
+    protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
-        return applyBinaryIntOperator(Opcodes.LMUL, left, right);
+      // They are both definitely numbers
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LMUL, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
+        }
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
-      }
-
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
+      return SoyExpression.forSoyValue(
+          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
     }
 
-    @Override protected final SoyExpression visitDivideByOpNode(DivideByOpNode node) {
+    @Override
+    protected final SoyExpression visitDivideByOpNode(DivideByOpNode node) {
       // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
       // Note that this *will* lose precision for longs.
       return applyBinaryFloatOperator(
           Opcodes.DDIV, visit(node.getChild(0)), visit(node.getChild(1)));
     }
 
-    @Override protected final SoyExpression visitModOpNode(ModOpNode node) {
+    @Override
+    protected final SoyExpression visitModOpNode(ModOpNode node) {
       // If the underlying expression is not an int, then this will throw a SoyDataExpression at
       // runtime.  This is how the current tofu works.
       // If the expression is known not to be an int, then this will throw an exception at compile
@@ -423,13 +544,14 @@ final class ExpressionCompiler {
       return applyBinaryIntOperator(Opcodes.LREM, visit(node.getChild(0)), visit(node.getChild(1)));
     }
 
-    private SoyExpression applyBinaryIntOperator(final int operator, SoyExpression left,
-        SoyExpression right) {
+    private static SoyExpression applyBinaryIntOperator(
+        final int operator, SoyExpression left, SoyExpression right) {
       final SoyExpression leftInt = left.unboxAs(long.class);
       final SoyExpression rightInt = right.unboxAs(long.class);
       return SoyExpression.forInt(
           new Expression(Type.LONG_TYPE) {
-            @Override void doGen(CodeBuilder mv) {
+            @Override
+            protected void doGen(CodeBuilder mv) {
               leftInt.gen(mv);
               rightInt.gen(mv);
               mv.visitInsn(operator);
@@ -437,13 +559,14 @@ final class ExpressionCompiler {
           });
     }
 
-    private SoyExpression applyBinaryFloatOperator(final int operator, SoyExpression left,
-        SoyExpression right) {
+    private static SoyExpression applyBinaryFloatOperator(
+        final int operator, SoyExpression left, SoyExpression right) {
       final SoyExpression leftFloat = left.coerceToDouble();
       final SoyExpression rightFloat = right.coerceToDouble();
       return SoyExpression.forFloat(
           new Expression(Type.DOUBLE_TYPE) {
-            @Override void doGen(CodeBuilder mv) {
+            @Override
+            protected void doGen(CodeBuilder mv) {
               leftFloat.gen(mv);
               rightFloat.gen(mv);
               mv.visitInsn(operator);
@@ -451,117 +574,152 @@ final class ExpressionCompiler {
           });
     }
 
-  // Unary negation
+    // Unary negation
 
-    @Override protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
+    @Override
+    protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       final SoyExpression child = visit(node.getChild(0));
-      if (child.isKnownInt()) {
+      if (child.assignableToNullableInt()) {
         final SoyExpression intExpr = child.unboxAs(long.class);
-        return SoyExpression.forInt(new Expression(Type.LONG_TYPE, child.features()) {
-          @Override void doGen(CodeBuilder mv) {
-            intExpr.gen(mv);
-            mv.visitInsn(Opcodes.LNEG);
-          }
-        });
+        return SoyExpression.forInt(
+            new Expression(Type.LONG_TYPE, child.features()) {
+              @Override
+              protected void doGen(CodeBuilder mv) {
+                intExpr.gen(mv);
+                mv.visitInsn(Opcodes.LNEG);
+              }
+            });
       }
-      if (child.isKnownNumber()) {
-        final SoyExpression floatExpr = child.coerceToDouble();
-        return SoyExpression.forFloat(new Expression(Type.DOUBLE_TYPE, child.features()) {
-          @Override void doGen(CodeBuilder mv) {
-            floatExpr.gen(mv);
-            mv.visitInsn(Opcodes.DNEG);
-          }
-        });
+      if (child.assignableToNullableFloat()) {
+        final SoyExpression floatExpr = child.unboxAs(double.class);
+        return SoyExpression.forFloat(
+            new Expression(Type.DOUBLE_TYPE, child.features()) {
+              @Override
+              protected void doGen(CodeBuilder mv) {
+                floatExpr.gen(mv);
+                mv.visitInsn(Opcodes.DNEG);
+              }
+            });
       }
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_NEGATIVE.invoke(child.box()));
+      return SoyExpression.forSoyValue(
+          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
-  // Boolean operators
+    // Boolean operators
 
-    @Override protected final SoyExpression visitNotOpNode(NotOpNode node) {
+    @Override
+    protected final SoyExpression visitNotOpNode(NotOpNode node) {
       // All values are convertible to boolean
       return SoyExpression.forBool(logicalNot(visit(node.getChild(0)).coerceToBoolean()));
     }
 
-    @Override protected final SoyExpression visitAndOpNode(AndOpNode node) {
+    @Override
+    protected final SoyExpression visitAndOpNode(AndOpNode node) {
       SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalAnd(left, right));
     }
 
-    @Override protected final SoyExpression visitOrOpNode(OrOpNode node) {
+    @Override
+    protected final SoyExpression visitOrOpNode(OrOpNode node) {
       SoyExpression left = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression right = visit(node.getChild(1)).coerceToBoolean();
       return SoyExpression.forBool(BytecodeUtils.logicalOr(left, right));
     }
 
-    @Override protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
-      // TODO(lukes): we should be able to avoid boxing the right hand side at least some of the
-      // time but it is tricky.  Consider adding specific primitive optimizations ($foo ?: 0 is not
-      // uncommon).
-      Class<? extends SoyValue> javaType = node.getType().javaType();
-      Expression left = visit(node.getLeftChild()).box().cast(javaType);
-      Expression right = visit(node.getRightChild()).box().cast(javaType);
-      return SoyExpression.forSoyValue(node.getType(), BytecodeUtils.firstNonNull(left, right));
+    // Null coalescing operator
+
+    @Override
+    protected SoyExpression visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+      final SoyExpression left = visit(node.getLeftChild());
+      if (left.isNonNullable()) {
+        // This would be for when someone writes '1 ?: 2', we just compile that to '1'
+        // This case is insane and should potentially be a compiler error, for now we just assume
+        // it is dead code.
+        return left;
+      }
+      // It is extremely common for a user to write '<complex-expression> ?: <primitive-expression>
+      // so try to generate code that doesn't involve unconditionally boxing the right hand side.
+      final SoyExpression right = visit(node.getRightChild());
+      if (SoyTypes.removeNull(left.soyType()).equals(right.soyType())) {
+        SoyExpression result;
+        if (left.isBoxed() == right.isBoxed()) {
+          // no conversions!
+          result = right.withSource(firstNonNull(left, right));
+        } else {
+          SoyExpression boxedRight = right.box();
+          result = boxedRight.withSource(firstNonNull(left.box(), boxedRight));
+        }
+        if (Expression.areAllCheap(left, right)) {
+          result = result.asCheap();
+        }
+        return result;
+      }
+      // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
+      // safe (and I assume that the jit can eliminate the resulting redundant branches)
+      Type runtimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          firstNonNull(left.box().checkedCast(runtimeType), right.box().checkedCast(runtimeType)));
     }
 
-    @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
+    // Ternary operator
+
+    @Override
+    protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
       final SoyExpression condition = visit(node.getChild(0)).coerceToBoolean();
       SoyExpression trueBranch = visit(node.getChild(1));
       SoyExpression falseBranch = visit(node.getChild(2));
       // If types are == and they are both boxed (or both not boxed) then we can just use them
       // directly.
+      // Otherwise we need to do boxing conversions.
+      // In the past there have been several attempts to eliminate unnecessary boxing operations
+      // in these conditions however it is too difficult given the type information we have
+      // available to us and the primitive operations available on SoyExpression.  For example, the
+      // expressions may have non-nullable types and yet take on null values at runtime, if we were
+      // to introduce aggressive unboxing operations it could result in unexpected
+      // NullPointerExceptions at runtime.  To fix these issues we would need to have a better
+      // notion of what expressions are nullable (or really, non-nullable) at runtime.
+      // TODO(lukes): Simple ideas that could help the above:
+      // 1. expose the 'non-null' prover from ResolveExpressionTypesPass, this can in fact be
+      //    relied on.  However it is currently mixed in with other parts of the type system which
+      //    cannot be trusted
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
-      if (typesEqual && (trueBranch.isBoxed() == falseBranch.isBoxed())) {
-        return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
-      }
-      // Otherwise try some simple unboxing conversions to get bytecode compatible types.
-      if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
-        final SoyExpression trueAsLong = trueBranch.unboxAs(long.class);
-        final SoyExpression falseAsLong = falseBranch.unboxAs(long.class);
-        return SoyExpression.forInt(ternary(condition, trueAsLong, falseAsLong));
-      }
-      if (trueBranch.isKnownNumber() && falseBranch.isKnownNumber()) {
-        final SoyExpression trueAsFloat = trueBranch.coerceToDouble();
-        final SoyExpression falseAsFloat = falseBranch.coerceToDouble();
-        return SoyExpression.forFloat(ternary(condition, trueAsFloat, falseAsFloat));
-      }
-      if (typesEqual && trueBranch.isKnownStringOrSanitizedContent()
-          && falseBranch.isKnownStringOrSanitizedContent()) {
-        final SoyExpression trueAsString = trueBranch.coerceToString();
-        final SoyExpression falseAsString = falseBranch.coerceToString();
-        Expression ternary = ternary(condition, trueAsString, falseAsString);
-        if (trueBranch.isKnownSanitizedContent()) {
-          return SoyExpression.forSanitizedString(ternary,
-              ((SanitizedType) trueBranch.soyType()).getContentKind());
+      if (typesEqual) {
+        if (trueBranch.isBoxed() == falseBranch.isBoxed()) {
+          return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
         }
-        return SoyExpression.forString(ternary);
+        SoyExpression boxedTrue = trueBranch.box();
+        return boxedTrue.withSource(ternary(condition, boxedTrue, falseBranch.box()));
       }
-      // Fallback to boxing and use the type from the type checker as our node type.
-      // TODO(lukes): can we do better here? other types? if the types match can we generically
-      // unbox? in the common case the runtime type will just be SoyValue, which is not very useful.
-      final Expression trueBoxed = trueBranch.box().cast(node.getType().javaType());
-      final Expression falseBoxed = falseBranch.box().cast(node.getType().javaType());
-      return SoyExpression.forSoyValue(node.getType(), ternary(condition, trueBoxed, falseBoxed));
+      Type boxedRuntimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          ternary(
+              condition,
+              trueBranch.box().checkedCast(boxedRuntimeType),
+              falseBranch.box().checkedCast(boxedRuntimeType)));
     }
 
-    @Override SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {
-      // an index variable in a {for $index in range(...)} statement
-      // These are special because they do not need any attaching/detaching logic and are
-      // always unboxed ints
-      return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(variables.getLocal(local), Type.LONG_TYPE));
+    @Override
+    SoyExpression visitForLoopVar(VarRefNode varRef, LocalVar local) {
+      Expression expression = parameters.getLocal(local);
+      if (expression.resultType().equals(Type.LONG_TYPE)) {
+        // it can be an unboxed long when executing a foreach over a range
+        return SoyExpression.forInt(expression);
+      } else {
+        // otherwise it must be a SoyValueProvider, resolve and cast
+        expression = detacher.get().resolveSoyValueProvider(expression);
+        return SoyExpression.forSoyValue(
+            varRef.getType(),
+            expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+      }
     }
 
-    @Override SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
-      Expression expression = variables.getLocal(local);
-      expression = detacher.get().resolveSoyValueProvider(expression);
-      return SoyExpression.forSoyValue(varRef.getType(),
-          expression.cast(varRef.getType().javaType()));
-    }
+    // Params
 
-    @Override SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
+    @Override
+    SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
       // TODO(lukes): It would be nice not to generate a detach for every param access, since
       // after the first successful 'resolve()' we know that all later ones will also resolve
       // successfully. This means that we will generate a potentially large amount of dead
@@ -570,131 +728,241 @@ final class ExpressionCompiler {
       // _not_ the first one. This would be super awesome and would save bytecode/branches/states
       // and technically be useful for all varrefs. For the time being we do the naive thing and
       // just assume that the jit can handle all the dead branches effectively.
-      Expression paramExpr = detacher.get().resolveSoyValueProvider(variables.getParam(param));
+      Expression paramExpr = detacher.get().resolveSoyValueProvider(parameters.getParam(param));
       // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
       // since we do not have good checking for unions (or nullability)
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
       // will show up here, and in the unboxing conversions performed during expression
       // manipulation. And, presumably, in NullPointerExceptions.
-      return SoyExpression.forSoyValue(varRef.getType(),
-          paramExpr.cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          paramExpr.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
-    @Override SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
-      Expression ij = MethodRef.RUNTIME_GET_FIELD_PROVIDER
-          .invoke(variables.getIjRecord(), constant(param.name()));
-      return SoyExpression.forSoyValue(varRef.getType(),
-          detacher.get().resolveSoyValueProvider(ij).cast(varRef.getType().javaType()));
+    @Override
+    SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
+      Expression ij =
+          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+              parameters.getIjRecord(), constant(param.name()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          detacher
+              .get()
+              .resolveSoyValueProvider(ij)
+              .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
-    @Override SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
-      Expression expression = variables.getLocal(local);
+    // Let vars
+
+    @Override
+    SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
+      Expression expression = parameters.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
-      return SoyExpression.forSoyValue(varRef.getType(),
-          expression.cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
-    @Override protected SoyExpression visitDataAccessNode(DataAccessNode node) {
+    // Data access
+
+    @Override
+    protected SoyExpression visitDataAccessNode(DataAccessNode node) {
       return new NullSafeAccessVisitor().visit(node);
     }
 
-    @Override protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
+    // Field access
+
+    @Override
+    protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
       return new NullSafeAccessVisitor().visit(node);
     }
 
-    @Override SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
-      final Expression expr = variables.getLocal(indexVar);
+    // Builtin functions
 
-      return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
-        @Override void doGen(CodeBuilder adapter) {
-          // implements index == 0 ? true : false
-          expr.gen(adapter);
-          Label ifFirst = new Label();
-          adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
-          adapter.pushBoolean(false);
-          Label end = new Label();
-          adapter.goTo(end);
-          adapter.mark(ifFirst);
-          adapter.pushBoolean(true);
-          adapter.mark(end);
-        }
-      });
+    @Override
+    SoyExpression visitIsFirstFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
+      final Expression expr = parameters.getLocal(indexVar);
+
+      return SoyExpression.forBool(
+          new Expression(Type.BOOLEAN_TYPE) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              // implements index == 0 ? true : false
+              expr.gen(adapter);
+              Label ifFirst = new Label();
+              adapter.ifZCmp(Opcodes.IFEQ, ifFirst);
+              adapter.pushBoolean(false);
+              Label end = new Label();
+              adapter.goTo(end);
+              adapter.mark(ifFirst);
+              adapter.pushBoolean(true);
+              adapter.mark(end);
+            }
+          });
     }
 
-    @Override SoyExpression visitIsLastFunction(
-        FunctionNode node, SyntheticVarName indexVar, SyntheticVarName lengthVar) {
-      final Expression index = variables.getLocal(indexVar);
-      final Expression length = variables.getLocal(lengthVar);
+    @Override
+    SoyExpression visitIsLastFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
+      SyntheticVarName lengthVar = foreachLoopLength((ForNonemptyNode) foreach);
+
+      final Expression index = parameters.getLocal(indexVar);
+      final Expression length = parameters.getLocal(lengthVar);
       // basically 'index + 1 == length'
-      return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
-        @Override void doGen(CodeBuilder adapter) {
-          // 'index + 1 == length ? true : false'
-          index.gen(adapter);
-          adapter.pushInt(1);
-          adapter.visitInsn(Opcodes.IADD);
-          length.gen(adapter);
-          Label ifLast = new Label();
-          adapter.ifICmp(Opcodes.IFEQ, ifLast);
-          adapter.pushBoolean(false);
-          Label end = new Label();
-          adapter.goTo(end);
-          adapter.mark(ifLast);
-          adapter.pushBoolean(true);
-          adapter.mark(end);
-        }
-      });
+      return SoyExpression.forBool(
+          new Expression(Type.BOOLEAN_TYPE) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              // 'index + 1 == length ? true : false'
+              index.gen(adapter);
+              adapter.pushInt(1);
+              adapter.visitInsn(Opcodes.IADD);
+              length.gen(adapter);
+              Label ifLast = new Label();
+              adapter.ifICmp(Opcodes.IFEQ, ifLast);
+              adapter.pushBoolean(false);
+              Label end = new Label();
+              adapter.goTo(end);
+              adapter.mark(ifLast);
+              adapter.pushBoolean(true);
+              adapter.mark(end);
+            }
+          });
     }
 
-    @Override SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
+    @Override
+    SoyExpression visitIndexFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForNonemptyNode) foreach);
+
       // '(long) index'
       return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(variables.getLocal(indexVar), Type.LONG_TYPE));
+          BytecodeUtils.numericConversion(parameters.getLocal(indexVar), Type.LONG_TYPE));
     }
 
-    @Override SoyExpression visitCheckNotNullFunction(FunctionNode node) {
+    @Override
+    SoyExpression visitCheckNotNullFunction(FunctionNode node) {
       // there is only ever a single child
       final ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
       final SoyExpression childExpr = visit(childNode);
-      return SoyExpression.forSoyValue(node.getType(),
-          new Expression(Type.getType(node.getType().javaType()), childExpr.features()) {
-            @Override void doGen(CodeBuilder adapter) {
-              childExpr.gen(adapter);
-              adapter.dup();
-              Label end = new Label();
-              adapter.ifNonNull(end);
-              adapter.throwException(Type.getType(NullPointerException.class),
-                  "'" + childNode.toSourceString() + "' evaluates to null");
-              adapter.mark(end);
-            }
-          }).asNonNullable();
+      return childExpr
+          .withSource(
+              new Expression(childExpr.resultType(), childExpr.features()) {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  childExpr.gen(adapter);
+                  adapter.dup();
+                  Label end = new Label();
+                  adapter.ifNonNull(end);
+                  adapter.throwException(
+                      NULL_POINTER_EXCEPTION_TYPE,
+                      "'" + childNode.toSourceString() + "' evaluates to null");
+                  adapter.mark(end);
+                }
+              })
+          .asNonNullable();
     }
 
-    // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext
-    // and pull it out of there.  However, it seems like we should be able to turn some of those
-    // calls into static method calls (maybe be stashing instances in static fields in our
-    // template). We would probably need to introduce a new mechanism for registering functions.
-    // Or we should just 'intrinsify' a number of extra function (isNonnull for example)
-    @Override SoyExpression visitPluginFunction(FunctionNode node) {
-      Expression soyJavaFunctionExpr =
-          MethodRef.RENDER_CONTEXT_GET_FUNCTION
-              .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
-      Expression list = SoyExpression.asBoxedList(visitChildren(node));
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
+    // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
+    // the CSS node itself (keyed off the identity of the renaming map).  We could easily add such
+    // an optimization via a static field in the Template class. Though im not sure it makes sense
+    // as an optimization... this should just be an immutable map lookup keyed off of a constant
+    // string. If we cared a lot, we could employ a simpler (and more compact) optimization by
+    // assigning each selector a unique integer id and then instead of hashing we can just reference
+    // an array (aka perfect hashing).  This could be part of our runtime library and ids could be
+    // assigned at startup.
+
+    @Override
+    SoyExpression visitCssFunction(FunctionNode node) {
+      StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
+      Expression renamedSelector = parameters.getRenderContext().renameCss(selector.getValue());
+
+      if (node.numChildren() == 1) {
+        return SoyExpression.forString(renamedSelector);
+      } else {
+        SoyExpression base = visit(node.getChild(0)).coerceToString();
+        Expression fullSelector =
+            base.invoke(MethodRef.STRING_CONCAT, constant("-"))
+                .invoke(MethodRef.STRING_CONCAT, renamedSelector);
+        return SoyExpression.forString(fullSelector);
+      }
     }
 
-    @Override protected final SoyExpression visitExprNode(ExprNode node) {
+    @Override
+    SoyExpression visitXidFunction(FunctionNode node) {
+      StringNode xid = (StringNode) Iterables.getOnlyElement(node.getChildren());
+      Expression renamedXid = parameters.getRenderContext().renameXid(xid.getValue());
+      return SoyExpression.forString(renamedXid);
+    }
+
+    @Override
+    SoyExpression visitIsPrimaryMsgInUse(FunctionNode node) {
+      return SoyExpression.forBool(
+          parameters
+              .getRenderContext()
+              .usePrimaryMsg(
+                  ((IntegerNode) node.getChild(1)).getValue(),
+                  ((IntegerNode) node.getChild(2)).getValue()));
+    }
+
+    // Non-builtin functions
+
+    @Override
+    SoyExpression visitPluginFunction(FunctionNode node) {
+      Object fn = node.getSoyFunction();
+      List<SoyExpression> args = visitChildren(node);
+      if (fn instanceof SoyJbcSrcFunction) {
+        return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getPluginContext(), args);
+      }
+
+      if (fn instanceof SoyJavaSourceFunction) {
+        throw new IllegalStateException("TODO(sameb): Implement this.");
+      }
+
+      // Functions that are not a SoyJbcSrcFunction nor a SoyJavaSourceFunction
+      // are registered with a LegacyFunctionAdapter by SoySauceImpl.
+      Expression legacyFunctionRuntimeExpr =
+          parameters
+              .getRenderContext()
+              .getFunctionRuntime(node.getFunctionName())
+              .checkedCast(LegacyFunctionAdapter.class);
+      Expression list = SoyExpression.asBoxedList(args);
+      // Most soy functions don't have return types, but if they do we should enforce it
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
+              .invoke(legacyFunctionRuntimeExpr, list)
+              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    // Proto initialization calls
+
+    @Override
+    protected final SoyExpression visitProtoInitNode(ProtoInitNode node) {
+      List<SoyExpression> args = visitChildren(node);
+      return ProtoUtils.createProto(node, args, detacher, varManager);
+    }
+
+    // Catch-all for unimplemented nodes
+
+    @Override
+    protected final SoyExpression visitExprNode(ExprNode node) {
       throw new UnsupportedOperationException(
-          "Support for " + node.getKind() + " has node been added yet");
+          "Support for " + node.getKind() + " has not been added yet");
     }
 
     /**
      * A helper for generating code for null safe access expressions.
      *
-     * <p>A null safe access {@code $foo?.bar?.baz} is syntactic sugar for
-     * {@code $foo == null ? null : ($foo.bar == null ? null : $foo.bar.baz)}.  So to generate code
-     * for it we need to have a way to 'exit' the full access chain as soon as we observe a failed
-     * null safety check.
+     * <p>A null safe access {@code $foo?.bar?.baz} is syntactic sugar for {@code $foo == null ?
+     * null : ($foo.bar == null ? null : $foo.bar.baz)}. So to generate code for it we need to have
+     * a way to 'exit' the full access chain as soon as we observe a failed null safety check.
      */
     private final class NullSafeAccessVisitor {
       Label nullSafeExit;
@@ -705,52 +973,55 @@ final class ExpressionCompiler {
       }
 
       SoyExpression visit(DataAccessNode node) {
-        final SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
+        SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
         if (nullSafeExit == null) {
           return dataAccess;
         }
-        return dataAccess.withSource(
-            new Expression(dataAccess.resultType(), dataAccess.features()) {
-              @Override void doGen(CodeBuilder adapter) {
-                dataAccess.gen(adapter);
-                // At this point either 'orig' will be on the top of stack, or it will be a null
-                // value (if a null safety check failed).
-                adapter.mark(nullSafeExit);
-              }
-            }).asNonNullable();
+        if (BytecodeUtils.isPrimitive(dataAccess.resultType())) {
+          // proto accessors will return primitives, so in order to allow it to be compatible with
+          // a nullable expression we need to box.
+          dataAccess = dataAccess.box();
+        }
+        return dataAccess.asNullable().labelEnd(nullSafeExit);
       }
 
-      SoyExpression addNullSafetyCheck(SoyExpression baseExpr) {
+      SoyExpression addNullSafetyCheck(final SoyExpression baseExpr) {
         // need to check if baseExpr == null
-        final SoyExpression orig = baseExpr;
         final Label nullSafeExit = getNullSafeExit();
-        return SoyExpression.forSoyValue(SoyTypes.removeNull(orig.soyType()),
-            new Expression(orig.resultType(), orig.features().plus(Feature.NON_NULLABLE)) {
-          @Override void doGen(CodeBuilder adapter) {
-            orig.gen(adapter);                                       // S
-            adapter.dup();                                           // S, S
-            adapter.ifNull(nullSafeExit);                            // S
-            // Note. When we jump to nullSafeExit there is still an instance of 'orig' on the
-            // stack but we know it is == null.
-          }
-        });
+        return baseExpr
+            .withSource(
+                new Expression(baseExpr.resultType(), baseExpr.features()) {
+                  @Override
+                  protected void doGen(CodeBuilder adapter) {
+                    baseExpr.gen(adapter);
+                    BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
+                  }
+                })
+            .asNonNullable();
       }
 
       SoyExpression visitNullSafeNodeRecurse(ExprNode node) {
         switch (node.getKind()) {
-          // Note: unlike the other backends we don't support nullsafe injected data (i.e. $ij?.foo)
-          // because we generally don't support $ij!
           case FIELD_ACCESS_NODE:
           case ITEM_ACCESS_NODE:
             SoyExpression baseExpr =
                 visitNullSafeNodeRecurse(((DataAccessNode) node).getBaseExprChild());
             if (((DataAccessNode) node).isNullSafe()) {
               baseExpr = addNullSafetyCheck(baseExpr);
+            } else {
+              // Mark non nullable.
+              // Dereferencing for access below may require unboxing and there is no point in
+              // adding null safety checks to the unboxing code.  So we just mark non nullable. In
+              // otherwords, if we are going to hit an NPE while dereferencing this expression, it
+              // makes no difference if it is due to the unboxing or the actual dereference.
+              baseExpr = baseExpr.asNonNullable();
             }
             if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
-              return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node);
+              return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
+                  .withSourceLocation(node.getSourceLocation());
             } else {
-              return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node);
+              return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
+                  .withSourceLocation(node.getSourceLocation());
             }
           default:
             return CompilerVisitor.this.visit(node);
@@ -758,23 +1029,33 @@ final class ExpressionCompiler {
       }
 
       SoyExpression visitNullSafeFieldAccess(SoyExpression baseExpr, FieldAccessNode node) {
-        switch (baseExpr.soyType().getKind()) {
-          case OBJECT:
-          case UNKNOWN:
-          case UNION:
-          case RECORD:
-            // Always fall back to SoyRecord.  All known object and record types implement this
-            // interface.
-            Expression fieldProvider = MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExpr.box().cast(SoyRecord.class),
-                constant(node.getFieldName()));
-            return SoyExpression.forSoyValue(node.getType(),
-                detacher.get()
-                    .resolveSoyValueProvider(fieldProvider)
-                    .cast(node.getType().javaType()));
-          default:
-            throw new AssertionError("unexpected field access operation");
+        if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
+          if (baseExpr.soyType().getKind() == Kind.PROTO) {
+            // It is a single known proto field.  Generate code to call the getter directly
+            SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+            return ProtoUtils.accessField(protoType, baseExpr, node);
+          } else {
+            // this must be some kind of union of protos which has support via the boxing apis
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                MethodRef.RUNTIME_GET_PROTO_FIELD
+                    .invoke(
+                        baseExpr.box().checkedCast(SoyProtoValue.class),
+                        BytecodeUtils.constant(node.getFieldName()))
+                    .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+          }
         }
+        // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the
+        // provider
+        Expression fieldProvider =
+            MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
+        return SoyExpression.forSoyValue(
+            node.getType(),
+            detacher
+                .get()
+                .resolveSoyValueProvider(fieldProvider)
+                .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
       }
 
       SoyExpression visitNullSafeItemAccess(SoyExpression baseExpr, ItemAccessNode node) {
@@ -784,19 +1065,27 @@ final class ExpressionCompiler {
         Expression soyValueProvider;
         // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
         // optimized the same way because there is no real way to 'unbox' a SoyMap.
-        if (baseExpr.isKnownList()) {
+        if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
           soyValueProvider =
               MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
                   baseExpr.unboxAs(List.class), keyExpr.unboxAs(long.class));
+        } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
+          // Box and do a map style lookup.
+          soyValueProvider =
+              MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
+                  baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
         } else {
           // Box and do a map style lookup.
-          soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
-              baseExpr.box().cast(SoyMap.class),
-              keyExpr.box());
+          soyValueProvider =
+              MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
+                  baseExpr.box().checkedCast(SoyLegacyObjectMap.class), keyExpr.box());
         }
-        Expression soyValue = detacher.get().resolveSoyValueProvider(soyValueProvider)
-            // Just like javac, we insert cast operations when removing from a collection.
-            .cast(node.getType().javaType());
+        Expression soyValue =
+            detacher
+                .get()
+                .resolveSoyValueProvider(soyValueProvider)
+                // Just like javac, we insert cast operations when removing from a collection.
+                .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
         return SoyExpression.forSoyValue(node.getType(), soyValue);
       }
     }
@@ -804,37 +1093,58 @@ final class ExpressionCompiler {
 
   /**
    * A visitor that scans an expression to see if it has any subexpression that may require detach
-   * operations.  Should be kept in sync with {@link CompilerVisitor}.
+   * operations. Should be kept in sync with {@link CompilerVisitor}.
    */
-  private static final class RequiresDetachVisitor extends
-      EnhancedAbstractExprNodeVisitor<Boolean> {
+  private static final class RequiresDetachVisitor
+      extends EnhancedAbstractExprNodeVisitor<Boolean> {
     static final RequiresDetachVisitor INSTANCE = new RequiresDetachVisitor();
 
-    RequiresDetachVisitor() {
-      super(ExplodingErrorReporter.get());
-    }
-
-    @Override Boolean visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+    @Override
+    Boolean visitForLoopVar(VarRefNode varRef, LocalVar local) {
       return true;
     }
 
-    @Override Boolean visitParam(VarRefNode varRef, TemplateParam param) {
+    @Override
+    Boolean visitParam(VarRefNode varRef, TemplateParam param) {
       return true;
     }
 
-    @Override Boolean visitLetNodeVar(VarRefNode node, LocalVar local) {
+    @Override
+    Boolean visitLetNodeVar(VarRefNode node, LocalVar local) {
       return true;
     }
 
-    @Override protected Boolean visitDataAccessNode(DataAccessNode node) {
+    @Override
+    protected Boolean visitDataAccessNode(DataAccessNode node) {
       return true;
     }
 
-    @Override Boolean visitIjParam(VarRefNode node, InjectedParam param) {
+    @Override
+    Boolean visitIjParam(VarRefNode node, InjectedParam param) {
       return true;
     }
 
-    @Override protected Boolean visitExprNode(ExprNode node) {
+    @Override
+    protected Boolean visitProtoInitNode(ProtoInitNode node) {
+      for (Boolean i : visitChildren(node)) {
+        if (i) {
+          return true;
+        }
+      }
+
+      // Proto init calls require detach if any of the specified fields are repeated.
+      SoyProtoType protoType = (SoyProtoType) node.getType();
+      for (Identifier paramName : node.getParamNames()) {
+        if (protoType.getFieldDescriptor(paramName.identifier()).isRepeated()) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    @Override
+    protected Boolean visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         for (Boolean i : visitChildren((ParentExprNode) node)) {
           if (i) {

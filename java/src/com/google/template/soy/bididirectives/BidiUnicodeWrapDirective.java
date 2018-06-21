@@ -17,24 +17,24 @@
 package com.google.template.soy.bididirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-
+import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -48,84 +48,84 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiUnicodeWrapDirective
-    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
-
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective.Streamable {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiUnicodeWrapDirective(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|bidiUnicodeWrap";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    ContentKind valueKind = null;
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueKind = sanitizedContent.getContentKind();
-      valueDir = sanitizedContent.getContentDirection();
-    }
-    BidiFormatter bidiFormatter =
-        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
-
-    // We treat the value as HTML if and only if it says it's HTML, even though in legacy usage, we
-    // sometimes have an HTML string (not SanitizedContent) that is passed to an autoescape="false"
-    // template or a {print $foo |noAutoescape}, with the output going into an HTML context without
-    // escaping. We simply have no way of knowing if this is what is happening when we get
-    // non-SanitizedContent input, and most of the time it isn't.
-    boolean isHtml = valueKind == ContentKind.HTML;
-    String wrappedValue = bidiFormatter.unicodeWrapWithKnownDir(
-        valueDir, value.coerceToString(), isHtml);
-
-    // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
-    // anything, we will indicate this known direction in the output SanitizedContent, even though
-    // the intended consumer of that information - a bidi wrapping directive - has already been run.
-    Dir wrappedValueDir = bidiFormatter.getContextDir();
-
-    // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
-    // Unicode-wrapping safe HTML.
-    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML) {
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, wrappedValueDir);
-    }
-
-    // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
-    // anything better to do, we output non-SanitizedContent.
-    // TODO(user): Consider throwing a runtime error on receipt of SanitizedContent other than
-    // TEXT, or HTML.
-    if (valueKind != null) {
-      return StringData.forValue(wrappedValue);
-    }
-
-    // The input was not SanitizedContent, so our output isn't SanitizedContent either.
-    return StringData.forValue(wrappedValue);
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    return BidiDirectivesRuntime.bidiUnicodeWrap(bidiGlobalDirProvider.get(), value);
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  private static final class JbcSrcMethods {
+    static final MethodRef BIDI_UNICODE_WRAP =
+        MethodRef.create(
+                BidiDirectivesRuntime.class, "bidiUnicodeWrap", BidiGlobalDir.class, SoyValue.class)
+            .asNonNullable();
+    static final MethodRef BIDI_UNICODE_WRAP_STREAMING =
+        MethodRef.create(
+                BidiDirectivesRuntime.class,
+                "bidiUnicodeWrapStreaming",
+                LoggingAdvisingAppendable.class,
+                BidiGlobalDir.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
+        JbcSrcMethods.BIDI_UNICODE_WRAP.invoke(context.getBidiGlobalDir(), value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.createCloseable(
+        JbcSrcMethods.BIDI_UNICODE_WRAP_STREAMING.invoke(
+            delegateAppendable, context.getBidiGlobalDir()));
+  }
+
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
         "soy.$$bidiUnicodeWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new PyExpr(
         "bidi.unicode_wrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);

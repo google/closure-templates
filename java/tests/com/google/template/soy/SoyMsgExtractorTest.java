@@ -19,77 +19,46 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.collect.Lists;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
-
-import junit.framework.TestCase;
-
 import java.io.File;
-import java.util.List;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public class SoyMsgExtractorTest extends TestCase {
-  private List<File> filesToDelete;
-
-  @Override protected void setUp() throws Exception {
-    super.setUp();
-    filesToDelete = Lists.newArrayList();
-  }
-
-
-  @Override protected void tearDown() throws Exception {
-    super.tearDown();
-    for (File fileToDelete : filesToDelete) {
-      fileToDelete.delete();
-    }
-    filesToDelete = null;
-  }
+@RunWith(JUnit4.class)
+public class SoyMsgExtractorTest {
+  @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
 
-  private File getTempFile(String ext) throws Exception {
-    File tmpFile = File.createTempFile(getName(), ext);
-    filesToDelete.add(tmpFile);
-    return tmpFile;
-  }
-
-
-  public final void testOutputPathFormatFlag() throws Exception {
-    File soyFile = getTempFile(".soy");
+  @Test
+  public void testOutputFileFlag() throws Exception {
+    File soyFile1 = temp.newFile("temp.soy");
     Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-        soyFile, UTF_8);
-
-    String dir = soyFile.getParent().toString();
-    String name = soyFile.getName();
-    File xmlFile = new File(dir, name.substring(0, name.length() - 4) + ".xml");
-
-    SoyMsgExtractor.main(
-        "--outputPathFormat", "{INPUT_DIRECTORY}/{INPUT_FILE_NAME_NO_EXT}.xml",
-        soyFile.toString());
-
-    String xmlContent = Files.toString(xmlFile, UTF_8);
-    assertThat(xmlContent).contains("<source>H\uff49</source>");
-  }
-
-
-  public final void testOutputFileFlag() throws Exception {
-    File soyFile1 = getTempFile(".soy");
+        "{namespace ns}\n" + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
+        soyFile1,
+        UTF_8);
+    File soyFile2 = temp.newFile("temp2.soy");
     Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-        soyFile1, UTF_8);
-    File soyFile2 = getTempFile(".soy");
-    Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
-        soyFile2, UTF_8);
+        "{namespace ns}\n" + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
+        soyFile2,
+        UTF_8);
+    File xmlFile = temp.newFile("temp.xml");
 
-    File xmlFile = getTempFile(".xml");
-
-    SoyMsgExtractor.main(
-        "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
-
-    String xmlContent = Files.toString(xmlFile, UTF_8);
+    int exitCode =
+        new SoyMsgExtractor()
+            .run(
+                new String[] {
+                  "--outputFile",
+                  xmlFile.toString(),
+                  "--srcs",
+                  Joiner.on(',').join(soyFile1.toString(), soyFile2.toString())
+                },
+                System.err);
+    assertThat(exitCode).isEqualTo(0);
+    String xmlContent = Files.asCharSource(xmlFile, UTF_8).read();
     assertThat(xmlContent).contains("<source>H\uff49</source>");
     assertThat(xmlContent).contains("<source>World</source>");
   }

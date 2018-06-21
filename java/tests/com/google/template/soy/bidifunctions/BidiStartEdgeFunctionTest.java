@@ -28,15 +28,16 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiStartEdgeFunction.
  *
  */
-public class BidiStartEdgeFunctionTest extends TestCase {
-
+@RunWith(JUnit4.class)
+public class BidiStartEdgeFunctionTest {
 
   private static final BidiStartEdgeFunction BIDI_START_EDGE_FUNCTION_FOR_STATIC_LTR =
       new BidiStartEdgeFunction(Providers.of(BidiGlobalDir.LTR));
@@ -44,7 +45,7 @@ public class BidiStartEdgeFunctionTest extends TestCase {
   private static final BidiStartEdgeFunction BIDI_START_EDGE_FUNCTION_FOR_STATIC_RTL =
       new BidiStartEdgeFunction(Providers.of(BidiGlobalDir.RTL));
 
-
+  @Test
   public void testComputeForJava() {
     assertThat(BIDI_START_EDGE_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
         .isEqualTo(StringData.forValue("left"));
@@ -52,26 +53,32 @@ public class BidiStartEdgeFunctionTest extends TestCase {
         .isEqualTo(StringData.forValue("right"));
   }
 
+  @Test
   public void testComputeForJsSrc() {
     assertThat(BIDI_START_EDGE_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("'left'", Integer.MAX_VALUE));
     assertThat(BIDI_START_EDGE_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("'right'", Integer.MAX_VALUE));
 
-    BidiStartEdgeFunction codeSnippet = new BidiStartEdgeFunction(
-        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
-    assertThat(
-        codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr(
-            "(IS_RTL?-1:1) < 0 ? 'right' : 'left'", Operator.CONDITIONAL.getPrecedence()));
+    BidiStartEdgeFunction codeSnippet =
+        new BidiStartEdgeFunction(
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
+    assertThat(codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
+        .isEqualTo(
+            new JsExpr(
+                "(IS_RTL?-1:1) < 0 ? 'right' : 'left'", Operator.CONDITIONAL.getPrecedence()));
   }
 
+  @Test
   public void testComputeForPySrc() {
-    BidiStartEdgeFunction codeSnippet = new BidiStartEdgeFunction(
-        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+    BidiStartEdgeFunction codeSnippet =
+        new BidiStartEdgeFunction(
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
 
     assertThat(codeSnippet.computeForPySrc(ImmutableList.<PyExpr>of()))
-        .isEqualTo(new PyExpr("'right' if (-1 if IS_RTL else 1) < 0 else 'left'",
-            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+        .isEqualTo(
+            new PyExpr(
+                "'right' if (-1 if IS_RTL else 1) < 0 else 'left'",
+                PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 }

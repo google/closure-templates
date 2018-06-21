@@ -19,7 +19,7 @@ package com.google.template.soy.base.internal;
 /**
  * A generator of incrementing unique integer ids, starting from 0.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class IncrementingIdGenerator implements IdGenerator {
@@ -35,11 +35,13 @@ public final class IncrementingIdGenerator implements IdGenerator {
     this.currId = orig.currId;
   }
 
-  @Override public int genId() {
+  @Override
+  public int genId() {
     return currId++;
   }
 
-  @Override public IncrementingIdGenerator copy() {
+  @Override
+  public IncrementingIdGenerator copy() {
     return new IncrementingIdGenerator(this);
   }
 }

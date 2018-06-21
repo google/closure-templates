@@ -16,10 +16,8 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
-
-import java.util.Objects;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -31,9 +29,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public abstract class TemplateParam extends AbstractVarDefn {
-  /**
-   * Enum for the location of the declaration.
-   */
+  /** Enum for the location of the declaration. */
   public static enum DeclLoc {
     // Declaration in template SoyDoc, e.g.
     //     @param foo Blah blah blah.
@@ -46,6 +42,8 @@ public abstract class TemplateParam extends AbstractVarDefn {
   /** Whether the param is required. */
   private final boolean isRequired;
 
+  private final SourceLocation nameLocation;
+
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
@@ -57,11 +55,13 @@ public abstract class TemplateParam extends AbstractVarDefn {
       SoyType type,
       boolean isRequired,
       boolean isInjected,
-      @Nullable String desc) {
+      @Nullable String desc,
+      @Nullable SourceLocation nameLocation) {
     super(name, type);
     this.isRequired = isRequired;
     this.isInjected = isInjected;
     this.desc = desc;
+    this.nameLocation = nameLocation;
   }
 
   TemplateParam(TemplateParam param) {
@@ -69,10 +69,21 @@ public abstract class TemplateParam extends AbstractVarDefn {
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
     this.desc = param.desc;
+    this.nameLocation = param.nameLocation;
   }
 
-  @Override public Kind kind() {
+  @Override
+  public Kind kind() {
     return Kind.PARAM;
+  }
+
+  /**
+   * Returns the location of the name.
+   *
+   * <p>May be null if this is a param from a {@link #copyEssential()} call.
+   */
+  public SourceLocation nameLocation() {
+    return nameLocation;
   }
 
   /** Returns the location of the parameter declaration. */
@@ -84,6 +95,7 @@ public abstract class TemplateParam extends AbstractVarDefn {
   }
 
   /** Returns whether the param is required. */
+  @Override
   public boolean isInjected() {
     return isInjected;
   }
@@ -92,27 +104,10 @@ public abstract class TemplateParam extends AbstractVarDefn {
     return desc;
   }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{name = " + name() + ", desc = " + desc + "}";
+  }
+
   public abstract TemplateParam copyEssential();
-
-  // Subclasses must implement equals().
-  @Override public abstract boolean equals(Object o);
-
-  // Subclasses must implement hashCode().
-  @Override public abstract int hashCode();
-
-  protected boolean abstractEquals(Object o) {
-    // Note: 'type' and 'desc' are nonessential with respect to equality.
-    // Note: This is valid only if you don't try and mix parameters from
-    // different templates in the same set.
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    AbstractVarDefn other = (AbstractVarDefn) o;
-    return this.name().equals(other.name()) && this.kind() == other.kind();
-  }
-
-  protected int abstractHashCode() {
-    // Note: This is valid only if you don't try and mix parameters from
-    // different templates in the same set.
-    return Objects.hash(this.getClass(), name(), isRequired, isInjected);
-  }
 }

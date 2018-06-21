@@ -16,10 +16,9 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 /**
@@ -27,7 +26,6 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyMsgSelectPart extends SoyMsgPart {
-
 
   /** The select variable name. */
   private final String selectVarName;
@@ -39,12 +37,10 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
    * @param selectVarName The select variable name.
    * @param cases The list of cases for this select statement.
    */
-  public SoyMsgSelectPart(
-      String selectVarName, ImmutableList<Case<String>> cases) {
+  public SoyMsgSelectPart(String selectVarName, Iterable<Case<String>> cases) {
     this.selectVarName = selectVarName;
-    this.cases = cases;
+    this.cases = ImmutableList.copyOf(cases);
   }
-
 
   /** Returns the select variable name. */
   public String getSelectVarName() {
@@ -76,18 +72,25 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
     return caseParts;
   }
 
-
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     if (!(other instanceof SoyMsgSelectPart)) {
       return false;
     }
     SoyMsgSelectPart otherSelect = (SoyMsgSelectPart) other;
-    return selectVarName.equals(otherSelect.selectVarName)
-        && cases.equals(otherSelect.cases);
+    return selectVarName.equals(otherSelect.selectVarName) && cases.equals(otherSelect.cases);
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(SoyMsgSelectPart.class, selectVarName, cases);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("Select")
+        .addValue(selectVarName)
+        .add("cases", cases)
+        .toString();
   }
 }

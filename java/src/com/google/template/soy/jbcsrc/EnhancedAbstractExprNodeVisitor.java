@@ -16,18 +16,12 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
-import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
-
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.NonpluginFunction;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -39,32 +33,28 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  */
 abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprNodeVisitor<T> {
 
-  protected EnhancedAbstractExprNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
-
-  @Override protected final T visit(ExprNode node) {
+  @Override
+  protected T visit(ExprNode node) {
     try {
       return super.visit(node);
     } catch (UnexpectedCompilerFailureException e) {
-      e.addLocation(node.getSourceLocation());
+      e.addLocation(node);
       throw e;
     } catch (Throwable t) {
-      throw new UnexpectedCompilerFailureException(node.getSourceLocation(), t);
+      throw new UnexpectedCompilerFailureException(node, t);
     }
   }
 
-  @Override protected final T visitVarRefNode(VarRefNode node) {
+  @Override
+  protected final T visitVarRefNode(VarRefNode node) {
     VarDefn defn = node.getDefnDecl();
     switch (defn.kind()) {
       case LOCAL_VAR:
         LocalVar local = (LocalVar) defn;
         LocalVarNode declaringNode = local.declaringNode();
         switch (declaringNode.getKind()) {
-          case FOR_NODE:
-            return visitForLoopIndex(node, local);
-          case FOREACH_NONEMPTY_NODE:
-            return visitForeachLoopVar(node, local);
+          case FOR_NONEMPTY_NODE:
+            return visitForLoopVar(node, local);
           case LET_CONTENT_NODE:
           case LET_VALUE_NODE:
             return visitLetNodeVar(node, local);
@@ -82,43 +72,40 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     }
   }
 
-  @Override protected final T visitFunctionNode(FunctionNode node) {
-    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(node.getFunctionName());
-    if (nonpluginFn != null) {
-      if (nonpluginFn == NonpluginFunction.QUOTE_KEYS_IF_JS) {
-        // this function is a no-op in non JS backends, the CheckFunctionCallsVisitor ensures that
-        // there is only one child and it is a MapLiteralNode
-        return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-      }
-      if (nonpluginFn == NonpluginFunction.CHECK_NOT_NULL) {
-        return visitCheckNotNullFunction(node);
-      }
-      // the rest of the builtins all deal with indexing operations on foreach variables.
-      VarRefNode varRef = (VarRefNode) node.getChild(0);
-      ForeachNonemptyNode declaringNode =
-          (ForeachNonemptyNode) ((LocalVar) varRef.getDefnDecl()).declaringNode();
-      switch (nonpluginFn) {
+  @Override
+  protected final T visitFunctionNode(FunctionNode node) {
+    Object function = node.getSoyFunction();
+
+    if (function instanceof BuiltinFunction) {
+      BuiltinFunction builtinFn = (BuiltinFunction) function;
+      switch (builtinFn) {
         case IS_FIRST:
-          return visitIsFirstFunction(node, foreachLoopIndex(declaringNode));
+          return visitIsFirstFunction(node);
         case IS_LAST:
-          return visitIsLastFunction(
-              node, foreachLoopIndex(declaringNode), foreachLoopLength(declaringNode));
+          return visitIsLastFunction(node);
         case INDEX:
-          return visitIndexFunction(node, foreachLoopIndex(declaringNode));
-        case CHECK_NOT_NULL:  // handled before the switch above
-        case QUOTE_KEYS_IF_JS:  
-        default:
+          return visitIndexFunction(node);
+        case CHECK_NOT_NULL:
+          return visitCheckNotNullFunction(node);
+        case CSS:
+          return visitCssFunction(node);
+        case XID:
+          return visitXidFunction(node);
+        case IS_PRIMARY_MSG_IN_USE:
+          return visitIsPrimaryMsgInUse(node);
+        case MSG_WITH_ID:
+        case REMAINDER:
+          // should have been removed earlier in the compiler
+        case V1_EXPRESSION:
+          // V1 expressions should not exist in jbcsrc
           throw new AssertionError();
       }
     }
+
     return visitPluginFunction(node);
   }
 
-  T visitForLoopIndex(VarRefNode varRef, LocalVar local) {
-    return visitExprNode(varRef);
-  }
-
-  T visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
+  T visitForLoopVar(VarRefNode varRef, LocalVar local) {
     return visitExprNode(varRef);
   }
 
@@ -134,23 +121,35 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar)  {
+  T visitIsFirstFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
-  T visitIsLastFunction(FunctionNode node, SyntheticVarName indexVar, SyntheticVarName lengthVar) {
+  T visitIsLastFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
-  T visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
+  T visitIndexFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitCheckNotNullFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitCssFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitXidFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIsPrimaryMsgInUse(FunctionNode node) {
     return visitExprNode(node);
   }
 
   T visitPluginFunction(FunctionNode node) {
-    return visitExprNode(node);
-  }
-  
-  T visitCheckNotNullFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

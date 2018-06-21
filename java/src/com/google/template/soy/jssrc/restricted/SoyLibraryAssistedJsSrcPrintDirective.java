@@ -18,24 +18,21 @@ package com.google.template.soy.jssrc.restricted;
 
 import com.google.common.collect.ImmutableSet;
 
-
 /**
  * Interface for a Soy print directive with more Closure Library requirements than typical Soy
  * templates, implemented for the JS Source backend.
  *
- * <p> Important: This may only be used in implementing print directive plugins.
+ * <p>Important: This may only be used in implementing print directive plugins.
  *
  */
 public interface SoyLibraryAssistedJsSrcPrintDirective extends SoyJsSrcPrintDirective {
 
-
   /**
    * Returns a list of Closure library names to require when this directive is used.
    *
-   * <p> Note: Return the raw Closure library names, Soy will wrap them in goog.require for you.
+   * <p>Note: Return the raw Closure library names, Soy will wrap them in goog.require for you.
    *
    * @return A collection of strings representing Closure JS library names
    */
   public ImmutableSet<String> getRequiredJsLibNames();
-
 }

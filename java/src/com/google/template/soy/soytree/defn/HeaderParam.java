@@ -17,8 +17,9 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
-
+import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -30,49 +31,42 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class HeaderParam extends TemplateParam {
-  // TODO(brndn): this should have SourceLocation information
-
-  /** The original source string for the param type. May be null if unavailable. */
-  @Nullable private final String typeSrc;
+  private final TypeNode typeNode;
 
   public HeaderParam(
       String name,
-      String typeSrc,
+      SourceLocation nameLocation,
       SoyType type,
+      TypeNode typeNode,
       boolean isRequired,
       boolean isInjected,
       @Nullable String desc) {
-    super(name, type, isRequired, isInjected, desc);
+    super(name, type, isRequired, isInjected, desc, nameLocation);
     Preconditions.checkArgument(type != null);
-    this.typeSrc = typeSrc;
+    this.typeNode = typeNode;
   }
 
-  @Override public DeclLoc declLoc() {
+  @Override
+  public DeclLoc declLoc() {
     return DeclLoc.HEADER;
   }
 
-  /** Returns the original source string for the param type. May be null if unavailable. */
-  public String typeSrc() {
-    return typeSrc;
+  /**
+   * Returns the TypeNode.
+   *
+   * <p>May be null if type parsing failed.
+   */
+  @Nullable
+  public TypeNode getTypeNode() {
+    return typeNode;
   }
 
-  @Override public HeaderParam copyEssential() {
-    // Note: 'typeSrc' and 'desc' are nonessential.
-    HeaderParam headerParam = new HeaderParam(name(), null, type, isRequired(), isInjected(), null);
+  @Override
+  public HeaderParam copyEssential() {
+    // Note: 'desc', nameLocation is nonessential.
+    HeaderParam headerParam =
+        new HeaderParam(name(), null, type, null, isRequired(), isInjected(), null);
     headerParam.setLocalVariableIndex(localVariableIndex());
     return headerParam;
-  }
-
-  @Override public boolean equals(Object o) {
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    HeaderParam other = (HeaderParam) o;
-    // Note: 'typeSrc' is nonessential.
-    return super.abstractEquals(o) && this.type.equals(other.type);
-  }
-
-  @Override public int hashCode() {
-    // Note: 'typeSrc' is nonessential.
-    return super.abstractHashCode() * 31 + type.hashCode();
   }
 }

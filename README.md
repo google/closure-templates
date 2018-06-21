@@ -29,12 +29,54 @@ Closure Templates are precompiled into efficient JavaScript.
   You can put multiple templates in one source file.
 * **A tool, not a framework**. Works well in any web application environment
   in conjunction with any libraries, frameworks, or other tools.
-* **Battle-tested**. Closure Templates are used extensively in some of the largest
-  web applications in the world, including Gmail and Google Docs.
+* **Battle-tested**. Closure Templates are used extensively in some of the
+  largest web applications in the world, including Gmail and Google Docs.
 * **Secure**. Closure Templates are contextually autoescaped to reduce the risk
   of XSS.
 
 ## Getting Started
+* Download the latest release on [GitHub](https://github.com/google/closure-templates/releases)
+  or [Maven Central](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.google.template%22%20AND%20a%3A%22soy%22).
 * Work through [Hello World Using JavaScript](https://developers.google.com/closure/templates/docs/helloworld_js).
 * Work through [Hello World Using Java](https://developers.google.com/closure/templates/docs/helloworld_java).
 * Read the [Documentation](https://developers.google.com/closure/templates/docs/overview).
+
+## Support and Project status
+
+Closure Templates is widely used and well maintained internally at Google but
+does not currently have staffing to support the open source release.  As such
+this project is mostly a 'code dump' and support is _minimal_.  For certain
+issues, like build integration we are in an especially bad position to offer
+support.
+
+To get assistance you can use any of the following forums
+
+1. Look through the [documentation](https://developers.google.com/closure/templates/docs/overview).
+2. Post a question to the [closure-templates-discuss](https://groups.google.com/forum/#!forum/closure-templates-discuss)
+   mailing list.
+3. File a [bug on github](https://github.com/google/closure-templates/issues)
+
+Though, given our support staffing, we may not be able to help.
+
+## Using Closure Templates with other open source frameworks
+
+There are many Closure Template integrations with other popular open source
+frameworks. Here are a few options for getting started:
+
+* Node.js
+  * https://github.com/Medium/soynode
+* Gulp
+  * https://www.npmjs.com/package/gulp-soynode
+  * https://www.npmjs.com/package/gulp-soy
+* Grunt
+  * https://www.npmjs.com/package/grunt-closure-soy
+  * https://www.npmjs.com/package/grunt-soy
+* NPM
+  * https://www.npmjs.com/package/google-closure-templates
+* Maven
+  * http://mvnrepository.com/artifact/com.google.template/soy
+* Yeoman
+  * https://github.com/andrewpmckenzie/generator-closure-stack
+* Bazel
+  * https://github.com/bazelbuild/rules_closure/#closure_js_template_library
+  * https://github.com/mknichel/closure-templates-bazel

@@ -20,15 +20,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyFunction;
 
-
 /**
  * Guice module for bidi Soy functions.
  *
  */
 public class BidiFunctionsModule extends AbstractModule {
 
-
-  @Override public void configure() {
+  @Override
+  public void configure() {
 
     Multibinder<SoyFunction> soyFunctionsSetBinder =
         Multibinder.newSetBinder(binder(), SoyFunction.class);
@@ -40,5 +39,4 @@ public class BidiFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(BidiStartEdgeFunction.class);
     soyFunctionsSetBinder.addBinding().to(BidiTextDirFunction.class);
   }
-
 }

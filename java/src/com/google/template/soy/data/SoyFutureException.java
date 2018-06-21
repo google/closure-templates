@@ -17,15 +17,11 @@
 package com.google.template.soy.data;
 
 /**
- * Exception thrown when a future fails.  Similar to ExecutionException.
+ * Exception thrown when a future fails. Similar to ExecutionException.
  *
  */
 public final class SoyFutureException extends RuntimeException {
   public SoyFutureException(Throwable cause) {
-    super("Error dereferencing future", cause,
-        true,  // allow suppressions
-        // No stack trace.  If we had a stack trace it would just point at renderer code which is
-        // irrelevant to programmers.
-        false);
+    super("Error dereferencing future", cause);
   }
 }

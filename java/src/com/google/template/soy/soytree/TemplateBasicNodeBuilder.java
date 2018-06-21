@@ -20,21 +20,13 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.types.SoyTypeRegistry;
-
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.google.template.soy.soytree.defn.TemplateParam;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -45,118 +37,51 @@ import javax.annotation.Nullable;
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
-  /** Pattern for a template name. */
-  private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
-      Pattern.compile("^ [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
-
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("template",
-          new Attribute("private", Attribute.BOOLEAN_VALUES, "false"),
-          new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
-          new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
-          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("visibility", Visibility.getAttributeValues(), null));
-
-  /**
-   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param sourceLocation The template's source location.
-   */
+  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateBasicNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter) {
-    super(soyFileHeaderInfo, sourceLocation, errorReporter, null /* typeRegistry */);
+      SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
+    super(soyFileHeaderInfo, errorReporter);
   }
 
-  /**
-   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param sourceLocation The template's source location.
-   * @param typeRegistry Type registry used for parsing type expressions.
-   */
-  public TemplateBasicNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter,
-      SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, sourceLocation, errorReporter, typeRegistry);
-  }
-
-  @Override public TemplateBasicNodeBuilder setId(int id) {
+  @Override
+  public TemplateBasicNodeBuilder setId(int id) {
     return (TemplateBasicNodeBuilder) super.setId(id);
   }
 
-  @Override public TemplateBasicNodeBuilder setCmdText(String cmdText) {
+  @Override
+  public TemplateBasicNodeBuilder setSourceLocation(SourceLocation location) {
+    return (TemplateBasicNodeBuilder) super.setSourceLocation(location);
+  }
 
-    Preconditions.checkState(this.cmdText == null);
-    this.cmdText = cmdText;
+  @Override
+  public TemplateNodeBuilder setCommandValues(
+      Identifier templateName, List<CommandTagAttribute> attrs) {
+    this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
+    setCommonCommandValues(attrs);
 
-    String commandTextForParsing = cmdText;
-
-    String nameAttr;
-    Matcher ntnMatcher = NONATTRIBUTE_TEMPLATE_NAME.matcher(commandTextForParsing);
-    if (ntnMatcher.find()) {
-      nameAttr = ntnMatcher.group();
-      commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
-    } else {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid 'template' command missing template name: {template " + cmdText + "}.");
-    }
-
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
-        commandTextForParsing, errorReporter, sourceLocation);
-
-    if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
-      if (soyFileHeaderInfo.namespace == null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Missing namespace in Soy file containing 'template' with namespace-relative name" +
-                " ({template " + cmdText + "}).");
+    visibility = Visibility.PUBLIC;
+    for (CommandTagAttribute attribute : attrs) {
+      Identifier name = attribute.getName();
+      if (COMMON_ATTRIBUTE_NAMES.contains(name.identifier())) {
+        continue;
       }
-      setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
-    } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
-      SyntaxVersionBound newSyntaxVersionBound = new SyntaxVersionBound(
-          SyntaxVersion.V2_0,
-          "Soy V2 template names must be relative to the namespace, i.e. a dot followed by an" +
-              " identifier.");
-      this.syntaxVersionBound =
-          SyntaxVersionBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
-      setTemplateNames(nameAttr, null);
-    } else {
-      throw SoySyntaxException.createWithoutMetaInfo("Invalid template name \"" + nameAttr + "\".");
-    }
-
-    this.templateNameForUserMsgs = getTemplateName();
-
-    // See go/soy-visibility for why this is considered "legacy private".
-    if (attributes.get("private").equals("true")) {
-      visibility = Visibility.LEGACY_PRIVATE;
-    }
-
-    String visibilityName = attributes.get("visibility");
-    if (visibilityName != null) {
-      // It is an error to specify both "private" and "visibility" attrs.
-      if (visibility != null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Template cannot specify both private=\"true\""
-            + "and visibility=\"" + visibilityName + "\".");
-      }
-      visibility = Visibility.forAttributeValue(visibilityName);
-      if (visibility == null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid visibility type \"" + visibilityName + "\".");
+      switch (name.identifier()) {
+        case "visibility":
+          visibility = attribute.valueAsVisibility(errorReporter);
+          break;
+        default:
+          errorReporter.report(
+              name.location(),
+              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+              name.identifier(),
+              "template",
+              ImmutableList.builder().add("visibility").addAll(COMMON_ATTRIBUTE_NAMES).build());
       }
     }
 
-    // If the visibility hasn't been set, through either the old "private" attr
-    // or the new "visibility" attr, default to public.
-    if (visibility == null) {
-      visibility = Visibility.PUBLIC;
-    }
-
-    setAutoescapeCmdText(attributes);
-    setRequireCssCmdText(attributes);
-    setCssBaseCmdText(attributes);
+    setTemplateNames(
+        soyFileHeaderInfo.namespace + templateName.identifier(),
+        templateName.identifier());
     return this;
   }
 
@@ -174,10 +99,14 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
    * @return This builder.
    */
   public TemplateBasicNodeBuilder setCmdTextInfo(
-      String templateName, @Nullable String partialTemplateName,
-      Visibility visibility, AutoescapeMode autoescapeMode,
-      ContentKind contentKind, ImmutableList<String> requiredCssNamespaces) {
+      String templateName,
+      @Nullable String partialTemplateName,
+      Visibility visibility,
+      AutoescapeMode autoescapeMode,
+      SanitizedContentKind contentKind,
+      ImmutableList<String> requiredCssNamespaces) {
 
+    Preconditions.checkState(this.sourceLocation != null);
     Preconditions.checkState(this.cmdText == null);
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(templateName));
     Preconditions.checkArgument(
@@ -185,39 +114,44 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     Preconditions.checkArgument((contentKind != null) == (autoescapeMode == AutoescapeMode.STRICT));
 
     setTemplateNames(templateName, partialTemplateName);
-    this.templateNameForUserMsgs = templateName;
     this.visibility = visibility;
-    setAutoescapeInfo(autoescapeMode, contentKind);
+    setAutoescapeInfo(autoescapeMode, contentKind, sourceLocation);
     setRequiredCssNamespaces(requiredCssNamespaces);
 
     StringBuilder cmdTextBuilder = new StringBuilder();
     cmdTextBuilder.append((partialTemplateName != null) ? partialTemplateName : templateName);
     cmdTextBuilder.append(" autoescape=\"").append(autoescapeMode.getAttributeValue()).append('"');
     if (contentKind != null) {
-      cmdTextBuilder.append(" kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + '"');
+      cmdTextBuilder.append(" kind=\"").append(contentKind.asAttributeValue()).append('"');
     }
-    if (visibility == Visibility.LEGACY_PRIVATE) {
-      // TODO(brndn): generate code for other visibility levels. b/15190131
-      cmdTextBuilder.append(" private=\"true\"");
+    // public is the default, don't generate code for it
+    if (visibility != Visibility.PUBLIC) {
+      cmdTextBuilder.append(" visibility=\"").append(visibility.getAttributeValue()).append("\"");
     }
     if (!requiredCssNamespaces.isEmpty()) {
-      cmdTextBuilder.append(" requirecss=\"" + Joiner.on(", ").join(requiredCssNamespaces) + "\"");
+      cmdTextBuilder
+          .append(" requirecss=\"")
+          .append(Joiner.on(", ").join(requiredCssNamespaces))
+          .append("\"");
     }
     this.cmdText = cmdTextBuilder.toString();
 
     return this;
   }
 
-  @Override public TemplateBasicNodeBuilder setSoyDoc(String soyDoc) {
-    return (TemplateBasicNodeBuilder) super.setSoyDoc(soyDoc);
+  @Override
+  public TemplateBasicNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
+    return (TemplateBasicNodeBuilder) super.setSoyDoc(soyDoc, soyDocLocation);
   }
 
-  @Override public TemplateBasicNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
-    return (TemplateBasicNodeBuilder) super.setHeaderDecls(declInfos);
+  @Override
+  public TemplateBasicNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
+    return (TemplateBasicNodeBuilder) super.addParams(allParams);
   }
 
-  @Override public TemplateBasicNode build() {
-    Preconditions.checkState(id != null && isSoyDocSet && cmdText != null);
+  @Override
+  public TemplateBasicNode build() {
+    Preconditions.checkState(id != null && cmdText != null);
     return new TemplateBasicNode(this, soyFileHeaderInfo, visibility, params);
   }
 }

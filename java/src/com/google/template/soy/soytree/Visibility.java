@@ -17,15 +17,22 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
-
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.Set;
 
+/**
+ * Template visibility levels.
+ *
+ * <p>Soy templates have two visibility-related attributes, the older boolean-valued {@code private}
+ * attribute and the newer string-valued {@code visibility} attribute. {@code visibility} was
+ * introduced to address inconsistencies in the behavior of {@code private}.
+ *
+ * @author brndn@google.com
+ */
 public enum Visibility {
   // {template .foo visibility="private"}
   PRIVATE("private"),
-  // {template .foo private="true"}, or {template .foo visibility="legacy-private"}
-  LEGACY_PRIVATE("legacy-private"),
-  // {template .foo visibility="public"} or just {template .foo}
+  // {template .foo}
   PUBLIC("public");
 
   private final String attributeValue;
@@ -41,7 +48,7 @@ public enum Visibility {
   private static final ImmutableMap<String, Visibility> attrValuesToVisibilityLevels;
 
   static {
-    ImmutableMap.Builder<String, Visibility> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<String, Visibility> builder = ImmutableSortedMap.naturalOrder();
     for (Visibility v : Visibility.values()) {
       builder.put(v.attributeValue, v);
     }

@@ -17,7 +17,6 @@
 package com.google.template.soy.data;
 
 import java.io.IOException;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -30,27 +29,28 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface SoyValue extends SoyValueProvider {
 
-
   /**
    * Compares this value against another for equality in the sense of the '==' operator of Soy.
+   *
    * @param other The other value to compare against.
    * @return True if this value is equal to the other in the sense of Soy.
    */
-  @Override public boolean equals(Object other);
-
+  @Override
+  boolean equals(Object other);
 
   /**
    * Coerces this value into a boolean.
+   *
    * @return This value coerced into a boolean.
    */
-  public boolean coerceToBoolean();
-
+  boolean coerceToBoolean();
 
   /**
    * Coerces this value into a string.
+   *
    * @return This value coerced into a string.
    */
-  public String coerceToString();
+  String coerceToString();
 
   /**
    * Renders this value to the given appendable.
@@ -61,64 +61,73 @@ public interface SoyValue extends SoyValueProvider {
    * @param appendable The appendable to render to.
    * @throws IOException
    */
-  public void render(Appendable appendable) throws IOException;
+  void render(LoggingAdvisingAppendable appendable) throws IOException;
+
+  /**
+   * Renders this value to the given appendable.
+   *
+   * <p>This should behave identically to {@code appendable.append(coerceToString())} but is
+   * provided separately to allow more incremental approaches.
+   *
+   * @param appendable The appendable to render to.
+   * @throws IOException
+   */
+  void render(Appendable appendable) throws IOException;
 
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.
 
-
   /**
-   * Precondition: Only call this method if you know that this SoyValue object is a boolean.
-   * This method gets the boolean value of this boolean object.
+   * Precondition: Only call this method if you know that this SoyValue object is a boolean. This
+   * method gets the boolean value of this boolean object.
+   *
    * @return The boolean value of this boolean object.
    * @throws SoyDataException If this object is not actually a boolean.
    */
-  public boolean booleanValue();
-
+  boolean booleanValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a 32-bit integer.
    * This method gets the integer value of this integer object.
+   *
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  public int integerValue();
-
+  int integerValue();
 
   /**
-   * Precondition: Only call this method if you know that this SoyValue object is an integer
-   * or long. This method gets the integer value of this integer object.
+   * Precondition: Only call this method if you know that this SoyValue object is an integer or
+   * long. This method gets the integer value of this integer object.
+   *
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  public long longValue();
-
+  long longValue();
 
   /**
-   * Precondition: Only call this method if you know that this SoyValue object is a float.
-   * This method gets the float value of this float object.
+   * Precondition: Only call this method if you know that this SoyValue object is a float. This
+   * method gets the float value of this float object.
+   *
    * @return The float value of this float object.
    * @throws SoyDataException If this object is not actually a float.
    */
-  public double floatValue();
-
+  double floatValue();
 
   /**
-   * Precondition: Only call this method if you know that this SoyValue object is a number.
-   * This method gets the float value of this number object (converting integer to float if
-   * necessary).
+   * Precondition: Only call this method if you know that this SoyValue object is a number. This
+   * method gets the float value of this number object (converting integer to float if necessary).
+   *
    * @return The float value of this number object.
    * @throws SoyDataException If this object is not actually a number.
    */
-  public double numberValue();
-
+  double numberValue();
 
   /**
-   * Precondition: Only call this method if you know that this SoyValue object is a string.
-   * This method gets the string value of this string object.
+   * Precondition: Only call this method if you know that this SoyValue object is a string. This
+   * method gets the string value of this string object.
+   *
    * @return The string value of this string object.
    * @throws SoyDataException If this object is not actually a string.
    */
-  public String stringValue();
-
+  String stringValue();
 }

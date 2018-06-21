@@ -16,23 +16,15 @@
 
 package com.google.template.soy.data;
 
-/**
- * Enum for data directionality.
- */
+/** Enum for data directionality. */
 public enum Dir {
-  /**
-   * Left-to-right.
-   */
+  /** Left-to-right. */
   LTR(1),
 
-  /**
-   * Right-to-left.
-   */
+  /** Right-to-left. */
   RTL(-1),
 
-  /**
-   * Neither left-to-right nor right-to-left.
-   */
+  /** Neither left-to-right nor right-to-left. */
   NEUTRAL(0);
 
   public final int ord;

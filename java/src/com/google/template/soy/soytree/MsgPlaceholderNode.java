@@ -18,11 +18,16 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
+import javax.annotation.Nullable;
 
 /**
  * A node that is the direct child of a MsgBlockNode and will turn into a placeholder.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>Note: there is no guarantee that the child of this node is a {@link
+ * SoyNode.MsgPlaceholderInitialNode}, the optimizer may inline and replace constant placeholders as
+ * {@link RawTextNode}s.
  *
  */
 public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
@@ -30,75 +35,86 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
   /** The base placeholder name (what the translator sees). */
   private final String basePhName;
 
+  /** A user supplied example for the placeholder, or null if it doesn't exist. */
+  @Nullable private final String phExample;
+
   /** The initial child's SoyNode kind. */
   private final SoyNode.Kind initialNodeKind;
 
-  /** Key object for determining whether this node and another node should be represented by the
-   *  same placeholder. */
+  /**
+   * Key object for determining whether this node and another node should be represented by the same
+   * placeholder.
+   */
   private final Object samenessKey;
-
 
   /**
    * @param id The id for this node.
-   * @param initialNode Will be set as the only child of this node being created. The child is
-   *     the node that represents the content of this placeholder. It is called the initial node
-   *     because it may be modified/replaced later by compiler passes.
+   * @param initialNode Will be set as the only child of this node being created. The child is the
+   *     node that represents the content of this placeholder. It is called the initial node because
+   *     it may be modified/replaced later by compiler passes.
    */
   public MsgPlaceholderNode(int id, MsgPlaceholderInitialNode initialNode) {
     super(id, initialNode.getSourceLocation());
     this.basePhName = initialNode.genBasePhName();
+    this.phExample = initialNode.getUserSuppliedPhExample();
     this.initialNodeKind = initialNode.getKind();
     this.samenessKey = initialNode.genSamenessKey();
     this.addChild(initialNode);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgPlaceholderNode(MsgPlaceholderNode orig, CopyState copyState) {
     super(orig, copyState);
     this.basePhName = orig.basePhName;
+    this.phExample = orig.phExample;
     this.initialNodeKind = orig.initialNodeKind;
     this.samenessKey = orig.samenessKey;
+    copyState.updateRefs(orig, this);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_PLACEHOLDER_NODE;
   }
 
-
   /** Returns the base placeholder name (what the translator sees). */
-  @Override public String getBaseVarName() {
+  @Override
+  public String getBaseVarName() {
     return basePhName;
   }
 
+  @Nullable
+  public String getPhExample() {
+    return phExample;
+  }
 
   /**
    * Returns whether this node and the given other node are the same, such that they should be
    * represented by the same placeholder.
    */
-  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
-    return (other instanceof  MsgPlaceholderNode) &&
-        this.initialNodeKind == ((MsgPlaceholderNode) other).initialNodeKind &&
-        this.samenessKey.equals(((MsgPlaceholderNode) other).samenessKey);
+  @Override
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    return (other instanceof MsgPlaceholderNode)
+        && this.initialNodeKind == ((MsgPlaceholderNode) other).initialNodeKind
+        && this.samenessKey.equals(((MsgPlaceholderNode) other).samenessKey);
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return getChild(0).toSourceString();
   }
 
-
-  @Override public MsgBlockNode getParent() {
+  @Override
+  public MsgBlockNode getParent() {
     return (MsgBlockNode) super.getParent();
   }
 
-
-  @Override public MsgPlaceholderNode copy(CopyState copyState) {
+  @Override
+  public MsgPlaceholderNode copy(CopyState copyState) {
     return new MsgPlaceholderNode(this, copyState);
   }
-
 }

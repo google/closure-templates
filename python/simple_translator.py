@@ -90,7 +90,16 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
   def render_icu(self, msg, values):
     return msg.format(values.keys(), map(_format_icu, values.values()))
 
-  def format_num(self, value, target_format):
+  def format_num(self,
+                 value,
+                 target_format,
+                 min_fraction_digits=None,
+                 max_fraction_digits=None):
+
+    if min_fraction_digits is not None or max_fraction_digits is not None:
+      raise ValueError(
+          'Min and max fraction digits arguments are not supported in python')
+
     if target_format in _NUM_FORMAT_PATTERNS:
       result = _NUM_FORMAT_PATTERNS[target_format].format(value)
       if target_format == 'decimal':

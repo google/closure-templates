@@ -16,6 +16,9 @@
 
 package com.google.template.soy.pysrc;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Compilation options for the Python backend.
@@ -28,19 +31,40 @@ public final class SoyPySrcOptions implements Cloneable {
   /** The base module path for loading the runtime modules. */
   private final String runtimePath;
 
+  /** The custom environment module path. */
+  private final String environmentModulePath;
+
   /** The full module and class path to a runtime library for translation. */
   private final String translationClass;
 
-  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn, String translationClass) {
+  /** A namespace manifest mapping soy namespaces to their python path. */
+  private final ImmutableMap<String, String> namespaceManifest;
+
+  /** The name of a manifest file to generate, or null. */
+  @Nullable private final String namespaceManifestFile;
+
+  public SoyPySrcOptions(
+      String runtimePath,
+      String environmentModulePath,
+      String bidiIsRtlFn,
+      String translationClass,
+      ImmutableMap<String, String> namespaceManifest,
+      String namespaceManifestFile) {
     this.runtimePath = runtimePath;
+    this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
+    this.namespaceManifest = namespaceManifest;
+    this.namespaceManifestFile = namespaceManifestFile;
   }
 
   private SoyPySrcOptions(SoyPySrcOptions orig) {
     this.runtimePath = orig.runtimePath;
+    this.environmentModulePath = orig.environmentModulePath;
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
+    this.namespaceManifest = orig.namespaceManifest;
+    this.namespaceManifestFile = orig.namespaceManifestFile;
   }
 
   public String getBidiIsRtlFn() {
@@ -51,12 +75,25 @@ public final class SoyPySrcOptions implements Cloneable {
     return runtimePath;
   }
 
+  public String getEnvironmentModulePath() {
+    return environmentModulePath;
+  }
+
   public String getTranslationClass() {
     return translationClass;
   }
 
-  @Override public final SoyPySrcOptions clone() {
-    return new SoyPySrcOptions(this);
+  public Map<String, String> getNamespaceManifest() {
+    return namespaceManifest;
   }
 
+  @Nullable
+  public String namespaceManifestFile() {
+    return namespaceManifestFile;
+  }
+
+  @Override
+  public final SoyPySrcOptions clone() {
+    return new SoyPySrcOptions(this);
+  }
 }

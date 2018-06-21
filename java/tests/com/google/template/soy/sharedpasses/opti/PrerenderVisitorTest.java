@@ -14,109 +14,89 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.template.soy.ErrorReporterModule;
-import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.bididirectives.BidiDirectivesModule;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.sharedpasses.SharedPassesModule;
-import com.google.template.soy.sharedpasses.render.RenderException;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
-import junit.framework.TestCase;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.sharedpasses.render.RenderException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PrerenderVisitor.
  *
  */
-public class PrerenderVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public class PrerenderVisitorTest {
 
-
+  @Test
   public void testPrerenderBasic() throws Exception {
 
     String templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo > 4}\n" +
-        "  {sp}+ 7 equals {$boo + 7}.\n" +
-        "{/if}\n";
-    assertEquals("8 + 7 equals 15.", prerender(templateBody));
+        "{let $boo: 8 /}\n"
+            + "{$boo}\n"
+            + "{if $boo > 4}\n"
+            + "  {sp}+ 7 equals {$boo + 7}.\n"
+            + "{/if}\n";
+    assertThat(prerender(templateBody)).isEqualTo("8 + 7 equals 15.");
   }
 
-
+  @Test
   public void testPrerenderWithDirectives() throws Exception {
 
     String printNodesSource =
-        "{let $boo: 8 /}\n" +
-        "{'<b>&</b>' |escapeHtml}   {sp}\n" +
-        "{'aaa+bbb = ccc' |escapeUri}   {sp}\n" +
-        "{'0123456789' |truncate:5,true}   {sp}\n" +
-        "{'0123456789' |truncate:$boo,false}   {sp}\n" +
-        "{'0123456789' |escapeHtml |insertWordBreaks:5}   {sp}\n" +
-        "{'0123456789' |insertWordBreaks:$boo |escapeHtml}   {sp}\n";
+        "{let $boo: 8 /}\n"
+            + "{'<b>&</b>' |escapeHtml}   {sp}\n"
+            + "{'aaa+bbb = ccc' |escapeUri}   {sp}\n"
+            + "{'0123456789' |truncate:5,true}   {sp}\n"
+            + "{'0123456789' |truncate:$boo,false}   {sp}\n"
+            + "{'0123456789' |escapeHtml |insertWordBreaks:5}   {sp}\n"
+            + "{'0123456789' |insertWordBreaks:$boo |escapeHtml}   {sp}\n";
     String expectedResult =
-        "&lt;b&gt;&amp;&lt;/b&gt;    " +
-        "aaa%2Bbbb%20%3D%20ccc    " +
-        "01...    " +
-        "01234567    " +
-        "01234<wbr>56789    " +
-        "01234567&lt;wbr&gt;89    ";
-    assertEquals(expectedResult, prerender(printNodesSource));
+        "&lt;b&gt;&amp;&lt;/b&gt;    "
+            + "aaa%2Bbbb%20%3D%20ccc    "
+            + "01...    "
+            + "01234567    "
+            + "01234<wbr>56789    "
+            + "01234567&lt;wbr&gt;89    ";
+    assertThat(prerender(printNodesSource)).isEqualTo(expectedResult);
   }
 
-
+  @Test
   public void testPrerenderWithUnsupportedNode() throws Exception {
 
     // Cannot prerender MsgFallbackGroupNode.
-    String templateBody =
-        "{msg desc=\"\"}\n" +
-        "  Hello world.\n" +
-        "{/msg}\n";
+    String templateBody = "{msg desc=\"\"}\n" + "  Hello world.\n" + "{/msg}\n";
     try {
       prerender(templateBody);
       fail();
     } catch (RenderException re) {
-      assertTrue(re.getMessage().contains("Cannot prerender MsgFallbackGroupNode."));
+      assertThat(re).hasMessageThat().contains("Cannot prerender MsgFallbackGroupNode.");
     }
 
-    // Cannot prerender CssNode.
-    templateBody =
-        "{let $boo: 8 /}\n" +
-        "{if $boo > 4}\n" +
-        "  <div class=\"{css foo}\">blah</div>\n" +
-        "{/if}\n";
+    // Cannot prerender Debugger.
+    templateBody = "{let $boo: 8 /}\n" + "{if $boo > 4}\n" + "{debugger}" + "{/if}\n";
     try {
       prerender(templateBody);
       fail();
     } catch (RenderException re) {
-      assertTrue(re.getMessage().contains("Cannot prerender CssNode."));
+      assertThat(re).hasMessageThat().contains("Cannot prerender DebuggerNode.");
     }
 
-    // This should work because the if-condition is false, thus skipping the CssNode.
-    templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo < 4}\n" +
-        "  <div class=\"{css foo}\">blah</div>\n" +
-        "{/if}\n";
-    assertEquals("8", prerender(templateBody));
+    // This should work because the if-condition is false, thus skipping the DebuggerNode.
+    templateBody = "{let $boo: 8 /}\n" + "{$boo}\n" + "{if $boo < 4}\n" + "{debugger}" + "{/if}\n";
+    assertThat(prerender(templateBody)).isEqualTo("8");
   }
 
-
+  @Test
   public void testPrerenderWithUndefinedData() throws Exception {
 
     String templateBody =
-        "{let $boo: 8 /}\n" +
-        "{if $boo > 4}\n" +
-        "  {$foo}\n" +
-        "{/if}\n";
+        "{@param foo : ? }\n" + "{let $boo: 8 /}\n" + "{if $boo > 4}\n" + "  {$foo}\n" + "{/if}\n";
     try {
       prerender(templateBody);
       fail();
@@ -126,55 +106,46 @@ public class PrerenderVisitorTest extends TestCase {
 
     // This should work because the if-condition is false, thus skipping the undefined data.
     templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo < 4}\n" +
-        "  {$foo}\n" +
-        "{/if}\n";
-    assertEquals("8", prerender(templateBody));
+        "{@param foo : ? }\n"
+            + "{let $boo: 8 /}\n"
+            + "{$boo}\n"
+            + "{if $boo < 4}\n"
+            + "  {$foo}\n"
+            + "{/if}\n";
+    assertThat(prerender(templateBody)).isEqualTo("8");
   }
 
-
+  @Test
   public void testPrerenderWithDirectiveError() throws Exception {
 
     try {
       prerender("  {'blah' |bidiSpanWrap}\n");
       fail();
     } catch (Exception e) {
-      assertTrue(e instanceof RenderException &&
-          e.getMessage().contains("Cannot prerender a node with some impure print directive."));
+      assertThat(e).isInstanceOf(RenderException.class);
+      assertThat(e)
+          .hasMessageThat()
+          .contains("Cannot prerender a node with some impure print directive.");
     }
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-
-  private static final Injector INJECTOR = Guice.createInjector(
-      new ErrorReporterModule(),
-      new SharedModule(),
-      new SharedPassesModule(),
-      new BasicDirectivesModule(),
-      new BidiDirectivesModule());
-
-
   /**
    * Renders the given input string (should be a template body) and returns the result.
+   *
    * @param input The input string to prerender.
    * @return The rendered result.
    * @throws Exception If there's an error.
    */
-  private static String prerender(String input) throws Exception {
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forTemplateContents(input).parse();
+  private String prerender(String input) throws Exception {
+    ParseResult result = SoyFileSetParserBuilder.forTemplateContents(input).parse();
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        INJECTOR.getInstance(PrerenderVisitorFactory.class).create(
-            outputSb,
-            new TemplateRegistry(fileSet, ExplodingErrorReporter.get()));
-    prerenderVisitor.exec(fileSet.getChild(0).getChild(0));
+        new PrerenderVisitor(new PreevalVisitorFactory(), outputSb, result.registry());
+    prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();
   }
-
 }

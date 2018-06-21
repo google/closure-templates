@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Runtime module for compiled soy templates.
 
 This module provides utility functions required by soy templates compiled with
@@ -24,11 +23,19 @@ from __future__ import unicode_literals
 
 __author__ = 'dcphillips@google.com (David Phillips)'
 
-import imp
 import importlib
+import math
 import os
 import re
 import sys
+
+from . import environment
+from . import sanitize
+
+try:
+  import scandir
+except ImportError:
+  scandir = None
 
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
@@ -37,18 +44,35 @@ try:
 except NameError:
   pass
 
-
 # Map from registered delegate template key to the priority, function, and
 # function name tuple.
 _DELEGATE_REGISTRY = {}
 
-
 # All number types for use during custom type functions.
 _NUMBER_TYPES = (int, long, float)
 
-
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
+
+# The xid map for get_xid_name.
+_xid_name_mapping = None
+
+
+def get_xid_name(xid):
+  """Return the mapped xid name.
+
+  Args:
+    xid: The xid name to modify.
+
+  Returns:
+    The renamed xid.
+  """
+  if _xid_name_mapping:
+    renamed = _xid_name_mapping.get(xid)
+    if renamed:
+      return renamed
+
+  return xid + '_'
 
 
 def get_css_name(class_name, modifier=None):
@@ -95,6 +119,16 @@ def set_css_name_mapping(mapping):
   _css_name_mapping = mapping
 
 
+def set_xid_name_mapping(mapping):
+  """Sets the mapping of xids.
+
+  Args:
+    mapping: A dictionary of xid names.
+  """
+  global _xid_name_mapping
+  _xid_name_mapping = mapping
+
+
 def get_delegate_fn(template_id, variant, allow_empty_default):
   """Get the delegate function associated with the given template_id/variant.
 
@@ -130,9 +164,9 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   elif allow_empty_default:
     return _empty_template_function
   else:
-    msg = ('Found no active impl for delegate call to "%s:%s"'
-           '(and not allow_empty_default="true").')
-    raise RuntimeError(msg % (template_id, variant))
+    msg = ('Found no active impl for delegate call to "%s%s" '
+           '(and delcall does not set allowemptydefault="true").')
+    raise RuntimeError(msg % (template_id, ':' + variant if variant else ''))
 
 
 def merge_into_dict(original, secondary):
@@ -152,7 +186,7 @@ def merge_into_dict(original, secondary):
   return original
 
 
-def namespaced_import(name, namespace=None):
+def namespaced_import(name, namespace=None, environment_path=None):
   """A function to import compiled soy modules using the Soy namespace.
 
   This function attempts to first import the module directly. If it isn't found
@@ -172,6 +206,8 @@ def namespaced_import(name, namespace=None):
   Args:
     name: The name of the module to import.
     namespace: The namespace of the module to import.
+    environment_path: A custom environment module path for interacting with the
+        runtime environment.
 
   Returns:
     The Module object.
@@ -183,18 +219,19 @@ def namespaced_import(name, namespace=None):
   except ImportError:
     # If the module isn't found, search without the namespace and check the
     # namespaces.
-    # TODO(dcphillips): After namespace sharing limits are in place, remove the
-    # logic to combine modules (b/16628735).
     if namespace:
-      regex_safe_namespace = full_namespace.replace('.', r'\.')
-      namespace_key = re.compile(
-          r"^SOY_NAMESPACE = '%s'$" % regex_safe_namespace, flags=re.MULTILINE)
-      full_module = imp.new_module(full_namespace)
-      found = False
+      namespace_key = "SOY_NAMESPACE: '%s'." % full_namespace
+      module = None
+      if environment_path:
+        file_loader = importlib.import_module(environment_path).file_loader
+      else:
+        file_loader = environment.file_loader
       for sys_path, f_path, f_name in _find_modules(name):
-        # Verify the file namespace with a regex before loading.
-        with open('%s/%s' % (f_path, f_name), 'r') as f:
-          if not namespace_key.search(f.read(2000)):
+        # Verify the file namespace by comparing the 5th line.
+        with file_loader(f_path, f_name, 'r') as f:
+          for _ in range(4):
+            next(f)
+          if namespace_key != next(f).rstrip():
             continue
 
         # Strip the root path and the file extension.
@@ -203,13 +240,23 @@ def namespaced_import(name, namespace=None):
         module = getattr(
             __import__(module_path, globals(), locals(), [module_name], -1),
             module_name)
-        full_module.__dict__.update(module.__dict__)
-        found = True
-      if found:
+        break
+      if module:
         # Add this to the global modules list for faster loading in the future.
-        _cache_module(full_namespace, full_module)
-        return full_module
+        _cache_module(full_namespace, module)
+        return module
     raise
+
+
+def manifest_import(namespace, manifest):
+  """Imports a module using a namespace manifest to find the module.
+  """
+  if not manifest:
+    raise ImportError('No manifest provided')
+  elif namespace not in manifest:
+    raise ImportError('Manfest does not contain namespace: %s' % namespace)
+
+  return importlib.import_module(manifest[namespace])
 
 
 def key_safe_data_access(data, key):
@@ -261,6 +308,20 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
     raise RuntimeError(
         'Encountered two active delegates with the same priority (%s:%s:%s).' %
         (template_id, variant, priority))
+
+
+def simplify_num(value, precision):
+  """Convert the given value to an int if the precision is below 1.
+
+  Args:
+    value: A number value (int, float, etc.).
+    precision: The desired precision.
+  Returns:
+    A number typed as an int if the precision is low enough.
+  """
+  if precision <= 0:
+    return int(value)
+  return value
 
 
 def type_safe_add(*args):
@@ -373,6 +434,76 @@ def check_not_null(val):
   return val
 
 
+def parse_int(s):
+  """A function that attempts to convert the input string into an int.
+
+  Returns None if the input is not a valid int.
+
+  Args:
+    s: String to convert.
+
+  Returns:
+    int if s is a valid int string, otherwise None.
+  """
+  try:
+    return int(s)
+  except ValueError:
+    return None
+
+
+def parse_float(s):
+  """A function that attempts to convert the input string into a float.
+
+  Returns None if the input is not a valid float, or if the input is NaN.
+
+  Args:
+    s: String to convert.
+
+  Returns:
+    float if s is a valid float string that is not NaN, otherwise None.
+  """
+  try:
+    f = float(s)
+  except ValueError:
+    return None
+  return None if math.isnan(f) else f
+
+def unsupported(str):
+  raise Exception("unsupported feature: " + str)
+
+
+def map_to_legacy_object_map(m):
+  """Converts a Soy map to a Soy legacy_object_map.
+
+  legacy_object_maps must have string keys, but maps do not have this
+  restriction.
+
+  Args:
+    m: Map to convert.
+
+  Returns:
+    An equivalent legacy_object_map, with keys coerced to strings.
+  """
+  return {str(key): m[key] for key in m}
+
+
+def maybe_coerce_key_to_string(key):
+  """Coerce an UnsanitizedText key to string.
+
+  SoyMaps, like ES6 Maps and proto maps, allow non-string values as map keys.
+  But UnsanitizedText keys still need to be coerced to strings so that instances
+  with identical textual content are considered identical for map lookups.
+
+  Args:
+    key: The key that is being inserted into or looked up in the map.
+
+  Returns:
+    The key, coerced to a string if it is an UnsanitizedText object.
+  """
+  if sanitize.is_content_kind(key, sanitize.CONTENT_KIND.TEXT):
+    return key.content
+  return key
+
 ######################
 # Utility functions. #
 ######################
@@ -433,10 +564,12 @@ def _find_modules(name):
   """
   # TODO(dcphillips): Allow for loading of compiled source once namespaces are
   # limited to one file (b/16628735).
-  module_file_name = re.compile(r'^%s.*\.(?:py|pyc)$' % name)
+  module_file_name = re.compile(r'^%s.*\.py$' % name)
+  # If scandir is available, it offers 5-20x improvement of walk performance.
+  walk = scandir.walk if scandir else os.walk
   for path in sys.path:
     try:
-      for root, _, files in os.walk(path):
+      for root, _, files in walk(path):
         for f in files:
           if module_file_name.match(f):
             yield path, root, f

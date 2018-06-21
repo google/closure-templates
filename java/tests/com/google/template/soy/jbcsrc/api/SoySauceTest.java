@@ -18,6 +18,8 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
@@ -28,26 +30,25 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyAbstractCachingValueProvider;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
-
-import junit.framework.TestCase;
-
+import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import java.io.IOException;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- * Tests basic soy sauce interaction
- */
-@SuppressWarnings("CheckReturnValue")
-public class SoySauceTest extends TestCase {
+/** Tests basic soy sauce interaction */
+@RunWith(JUnit4.class)
+public class SoySauceTest {
 
   private SoySauce sauce;
 
-  @Override protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     Injector injector = Guice.createInjector(new SoyModule());
     SoyFileSet.Builder builder = injector.getInstance(SoyFileSet.Builder.class);
     builder.add(SoySauceTest.class.getResource("strict.soy"));
@@ -55,184 +56,221 @@ public class SoySauceTest extends TestCase {
     sauce = builder.build().compileTemplates();
   }
 
+  @Test
   public void testStrictContentKindHandling_html() {
-    assertEquals("Hello world", 
-        sauce.renderTemplate("strict_test.helloHtml").render().get());
-    assertEquals(ordainAsSafe("Hello world", ContentKind.HTML),
-        sauce.renderTemplate("strict_test.helloHtml").renderStrict().get());
-    assertEquals(SanitizedContents.unsanitizedText("Hello world"),
-        sauce.renderTemplate("strict_test.helloHtml")
-            .setExpectedContentKind(ContentKind.TEXT)
-            .renderStrict()
-            .get());
+    assertThat(sauce.renderTemplate("strict_test.helloHtml").render().get())
+        .isEqualTo("Hello world");
+    assertThat(sauce.renderTemplate("strict_test.helloHtml").renderStrict().get())
+        .isEqualTo(ordainAsSafe("Hello world", ContentKind.HTML));
+    assertThat(
+            sauce
+                .renderTemplate("strict_test.helloHtml")
+                .setExpectedContentKind(ContentKind.TEXT)
+                .renderStrict()
+                .get())
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello world"));
     try {
-      sauce.renderTemplate("strict_test.helloHtml")
+      sauce
+          .renderTemplate("strict_test.helloHtml")
           .setExpectedContentKind(ContentKind.JS)
           .renderStrict()
           .get();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"js\" but was kind=\"html\":"
-              + " strict_test.helloHtml");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloHtml' to be kind=\"js\" but was kind=\"html\"");
     }
   }
 
-  public void testStrictContentKindHandling_js() {  
+  @Test
+  public void testStrictContentKindHandling_js() {
     try {
       sauce.renderTemplate("strict_test.helloJs").render();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js\":"
-              + " strict_test.helloJs");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
     }
     try {
       sauce.renderTemplate("strict_test.helloJs").renderStrict();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
-          .isEqualTo("Expected template to be kind=\"html\" but was kind=\"js\":"
-              + " strict_test.helloJs");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
     }
-    assertEquals(ordainAsSafe("'Hello world'", ContentKind.JS),
-        sauce.renderTemplate("strict_test.helloJs")
-            .setExpectedContentKind(ContentKind.JS)
+    assertThat(
+            sauce
+                .renderTemplate("strict_test.helloJs")
+                .setExpectedContentKind(ContentKind.JS)
+                .renderStrict()
+                .get())
+        .isEqualTo(ordainAsSafe("'Hello world'", ContentKind.JS));
+    assertEquals(
+        ordainAsSafe("'Hello world'", ContentKind.TEXT),
+        sauce
+            .renderTemplate("strict_test.helloJs")
+            .setExpectedContentKind(ContentKind.TEXT) // TEXT always works
             .renderStrict()
             .get());
-    assertEquals(ordainAsSafe("'Hello world'", ContentKind.TEXT),
-        sauce.renderTemplate("strict_test.helloJs")
-            .setExpectedContentKind(ContentKind.TEXT)  // TEXT always works
-            .renderStrict()
-            .get());
-    assertEquals("'Hello world'",
-        sauce.renderTemplate("strict_test.helloJs")
-            .setExpectedContentKind(ContentKind.TEXT)
-            .render()
-            .get());
+    assertThat(
+            sauce
+                .renderTemplate("strict_test.helloJs")
+                .setExpectedContentKind(ContentKind.TEXT)
+                .render()
+                .get())
+        .isEqualTo("'Hello world'");
   }
 
+  @Test
   public void testNonStrictContentHandling() {
-    assertEquals("Hello world", 
-        sauce.renderTemplate("nonstrict_test.hello").render().get());
-    assertEquals("Hello world", 
-        sauce.renderTemplate("nonstrict_test.hello")
-            .setExpectedContentKind(ContentKind.TEXT)  // text is always fine
+    assertThat(sauce.renderTemplate("nonstrict_test.hello").render().get())
+        .isEqualTo("Hello world");
+    assertEquals(
+        "Hello world",
+        sauce
+            .renderTemplate("nonstrict_test.hello")
+            .setExpectedContentKind(ContentKind.TEXT) // text is always fine
             .render()
+            .get());
+    assertEquals(
+        SanitizedContents.unsanitizedText("Hello world"),
+        sauce
+            .renderTemplate("nonstrict_test.hello")
+            .setExpectedContentKind(ContentKind.TEXT) // text is always fine, even with renderStrict
+            .renderStrict()
             .get());
     try {
       sauce.renderTemplate("nonstrict_test.hello").renderStrict();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
-          .isEqualTo("Cannot render non strict templates to SanitizedContent");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'html'");
     }
-    
+
     try {
       sauce.renderTemplate("nonstrict_test.hello").setExpectedContentKind(ContentKind.JS).render();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).isEqualTo("Cannot render a non strict template as 'js'");
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'js'");
     }
   }
 
+  @Test
   public void testDetaching_string() {
-    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
 
     SettableFuture<String> p = SettableFuture.create();
     Continuation<String> stringContinuation = tmpl.setData(ImmutableMap.of("p", p)).render();
-    assertEquals(RenderResult.Type.DETACH, stringContinuation.result().type());
-    assertEquals(p, stringContinuation.result().future());
+    assertThat(stringContinuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(stringContinuation.result().future()).isEqualTo(p);
     p.set("tigger");
     stringContinuation = stringContinuation.continueRender();
-    assertEquals(RenderResult.done(), stringContinuation.result());
-    assertEquals("Hello, tigger", stringContinuation.get());
+    assertThat(stringContinuation.result()).isEqualTo(RenderResult.done());
+    assertThat(stringContinuation.get()).isEqualTo("Hello, tigger");
   }
-  
+
+  @Test
   public void testDetaching_strict() {
-    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
 
     SettableFuture<String> p = SettableFuture.create();
-    Continuation<SanitizedContent> strictContinuation = 
+    Continuation<SanitizedContent> strictContinuation =
         tmpl.setData(ImmutableMap.of("p", p)).renderStrict();
-    assertEquals(RenderResult.Type.DETACH, strictContinuation.result().type());
-    assertEquals(p, strictContinuation.result().future());
+    assertThat(strictContinuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(strictContinuation.result().future()).isEqualTo(p);
     p.set("pooh bear");
     strictContinuation = strictContinuation.continueRender();
-    assertEquals(RenderResult.done(), strictContinuation.result());
-    assertEquals("Hello, pooh bear", strictContinuation.get().getContent());
+    assertThat(strictContinuation.result()).isEqualTo(RenderResult.done());
+    assertThat(strictContinuation.get().getContent()).isEqualTo("Hello, pooh bear");
   }
-  
+
+  @Test
   public void testDetaching_appendable() throws IOException {
-    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.withParam");
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
     TestAppendable builder = new TestAppendable();
     builder.softLimitReached = true;
     SettableFuture<String> p = SettableFuture.create();
     WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).render(builder);
-    assertEquals(RenderResult.Type.LIMITED, continuation.result().type());
-    assertEquals("Hello, ", builder.toString());
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.LIMITED);
+    assertThat(builder.toString()).isEqualTo("Hello, ");
     builder.softLimitReached = false;
-    
+
     continuation = continuation.continueRender();
-    assertEquals(RenderResult.Type.DETACH, continuation.result().type());
-    assertEquals(p, continuation.result().future());
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+    assertThat(continuation.result().future()).isEqualTo(p);
     p.set("piglet");
     continuation = continuation.continueRender();
-    assertEquals(RenderResult.done(), continuation.result());
-    assertEquals("Hello, piglet", builder.toString());
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("Hello, piglet");
   }
-  
-  public void testExceptionRewriting() {
-    SoySauce.Renderer tmpl =  sauce.renderTemplate("strict_test.callsItself");
 
-    SoyValueProvider intProvider = new SoyAbstractCachingValueProvider() {
-      @Override public RenderResult status() {
-        return RenderResult.done();
-      }
-      @Override protected SoyValue compute() {
-        return IntegerData.ZERO;
-      }
-    };
+  @Test
+  public void testExceptionRewriting() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");
+
+    SoyValueProvider intProvider =
+        new DetachableSoyValueProvider() {
+          @Override
+          protected RenderResult doResolve() {
+            resolvedValue = IntegerData.ZERO;
+            return RenderResult.done();
+          }
+        };
+
     try {
       tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).render();
       fail();
     } catch (ClassCastException cce) {
       // we get an CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
-      assertThat(stackTrace[0].toString())
+      assertThat(stackTrace[1].toString())
           .isEqualTo("strict_test.callsItself.render(strict.soy:32)");
-      
-      for (int i = 1; i < 11; i++) {
+
+      for (int i = 2; i < 12; i++) {
         assertThat(stackTrace[i].toString())
             .isEqualTo("strict_test.callsItself.render(strict.soy:34)");
       }
     }
   }
-  
+
   private static final class TestAppendable implements AdvisingAppendable {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
-    @Override public TestAppendable append(CharSequence s) {
+    @Override
+    public TestAppendable append(CharSequence s) {
       delegate.append(s);
       return this;
     }
 
-    @Override public TestAppendable append(CharSequence s, int start, int end) {
+    @Override
+    public TestAppendable append(CharSequence s, int start, int end) {
       delegate.append(s, start, end);
       return this;
     }
 
-    @Override public TestAppendable append(char c) {
+    @Override
+    public TestAppendable append(char c) {
       delegate.append(c);
       return this;
     }
 
-    @Override public boolean softLimitReached() {
+    @Override
+    public boolean softLimitReached() {
       return softLimitReached;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return delegate.toString();
     }
   }

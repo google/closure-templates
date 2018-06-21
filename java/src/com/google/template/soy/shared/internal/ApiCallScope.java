@@ -21,17 +21,15 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.google.inject.ScopeAnnotation;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-
 /**
- * Guice scope for a Soy API method call. Only used in some API methods where it would be useful
- * to be able to inject API call parameters (such as the message bundle) directly into lower-level
+ * Guice scope for a Soy API method call. Only used in some API methods where it would be useful to
+ * be able to inject API call parameters (such as the message bundle) directly into lower-level
  * objects (such as passes) created during the handling of the API call.
  *
- * <p> Important: This may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This may only be used in implementing plugins (e.g. functions, directives).
  */
 @ScopeAnnotation
 @Target({TYPE, METHOD})

@@ -16,16 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
-
-import javax.annotation.Nullable;
+import com.google.common.base.Supplier;
+import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 
 /**
  * Utilities for unit tests in the Js Src backend.
@@ -35,47 +27,41 @@ final class JsSrcTestUtils {
 
   private JsSrcTestUtils() {}
 
-
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   */
-  public static void simulateNewApiCall(Injector injector) {
-    simulateNewApiCall(injector, new SoyJsSrcOptions());
+  static GenJsExprsVisitorFactory createGenJsExprsVisitorFactory() {
+    return createObjects().factory;
   }
 
-
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   * @param jsSrcOptions The options for generating JS source code.
-   */
-  public static void simulateNewApiCall(Injector injector, SoyJsSrcOptions jsSrcOptions) {
-    simulateNewApiCall(injector, jsSrcOptions, null, BidiGlobalDir.LTR);
+  static GenCallCodeUtils createGenCallCodeUtils() {
+    return createObjects().utils.get();
   }
 
+  private static Objects createObjects() {
+    final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
+    final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
+        new IsComputableAsJsExprsVisitor();
+    class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
+      GenJsExprsVisitorFactory factory;
 
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   * @param jsSrcOptions The options for generating JS source code.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
-   * @param bidiGlobalDir The bidi global directionality
-   */
-  private static void simulateNewApiCall(
-      Injector injector, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle,
-      BidiGlobalDir bidiGlobalDir) {
+      @Override
+      public GenCallCodeUtils get() {
+        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+      }
+    }
+    GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
+    GenJsExprsVisitorFactory genJsExprsVisitorFactory =
+        new GenJsExprsVisitorFactory(supplier, isComputableAsJsExprsVisitor);
+    supplier.factory = genJsExprsVisitorFactory;
 
-    GuiceSimpleScope apiCallScope =
-        SharedTestUtils.simulateNewApiCall(injector, msgBundle, bidiGlobalDir);
-    apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-    apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), jsSrcOptions.isUsingIjData());
+    return new Objects(supplier, genJsExprsVisitorFactory);
+  }
+
+  private static final class Objects {
+    final Supplier<GenCallCodeUtils> utils;
+    final GenJsExprsVisitorFactory factory;
+
+    Objects(Supplier<GenCallCodeUtils> utils, GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
+      this.utils = utils;
+      this.factory = genJsExprsVisitorFactory;
+    }
   }
 }

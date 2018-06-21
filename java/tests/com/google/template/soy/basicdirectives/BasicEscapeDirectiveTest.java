@@ -25,11 +25,15 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- */
+/** @author Mike Samuel */
+@RunWith(JUnit4.class)
 public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
+  @Test
   public final void testApplyEscapeJsString() {
     BasicEscapeDirective escapeJsString = new BasicEscapeDirective.EscapeJsString();
     assertTofuOutput("", "", escapeJsString);
@@ -38,8 +42,8 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput(
         "foo\\\\bar",
         // Sanitized HTML is not exempt from escaping when embedded in JS.
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "foo\\bar", SanitizedContent.ContentKind.HTML), escapeJsString);
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("foo\\bar", SanitizedContent.ContentKind.HTML),
+        escapeJsString);
     assertTofuOutput("\\\\", "\\", escapeJsString);
     assertTofuOutput("\\x27\\x27", "''", escapeJsString);
     assertTofuOutput("\\x22foo\\x22", "\"foo\"", escapeJsString);
@@ -49,8 +53,8 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("", " '' ", escapeJsString)
         .addTest("foo", " 'foo' ", escapeJsString)
         .addTest("a\\\\b", " 'a\\\\b' ", escapeJsString)
-        .addTest("foo\\\\bar", " soydata.VERY_UNSAFE.ordainSanitizedHtml('foo\\\\bar') ",
-            escapeJsString)
+        .addTest(
+            "foo\\\\bar", " soydata.VERY_UNSAFE.ordainSanitizedHtml('foo\\\\bar') ", escapeJsString)
         .addTest("\\x27\\x27", " '\\'\\'' ", escapeJsString)
         .addTest("\\x22foo\\x22", " '\"foo\"' ", escapeJsString)
         .addTest("\\r\\n \\u2028", " '\\r\\n \\u2028' ", escapeJsString)
@@ -58,6 +62,7 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
+  @Test
   public final void testApplyEscapeJsValue() {
     BasicEscapeDirective escapeJsValue = new BasicEscapeDirective.EscapeJsValue();
     assertTofuOutput("''", "", escapeJsValue);
@@ -85,6 +90,7 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
+  @Test
   public final void testApplyEscapeHtml() {
     EscapeHtmlDirective escapeHtml = new EscapeHtmlDirective();
     assertTofuOutput("", "", escapeHtml);
@@ -98,23 +104,24 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .runTests();
   }
 
+  @Test
   public final void testApplyFilterNormalizeUri() {
     BasicEscapeDirective filterNormalizeUri = new BasicEscapeDirective.FilterNormalizeUri();
     assertTofuOutput("", "", filterNormalizeUri);
     assertTofuOutput(
         "http://www.google.com/a%20b", "http://www.google.com/a b", filterNormalizeUri);
-    assertTofuOutput("#zSoyz", "javascript:alert(1337)", filterNormalizeUri);
+    assertTofuOutput("about:invalid#zSoyz", "javascript:alert(1337)", filterNormalizeUri);
     assertTofuOutput("42", 42, filterNormalizeUri);
 
     new JsSrcPrintDirectiveTestBuilder()
         .addTest("", " '' ", filterNormalizeUri)
-        .addTest(
-            "http://www.google.com/a%20b", " 'http://www.google.com/a b' ", filterNormalizeUri)
-        .addTest("#zSoyz", " 'javascript:alert(1337)' ", filterNormalizeUri)
+        .addTest("http://www.google.com/a%20b", " 'http://www.google.com/a b' ", filterNormalizeUri)
+        .addTest("about:invalid#zSoyz", " 'javascript:alert(1337)' ", filterNormalizeUri)
         .addTest("42", " 42 ", filterNormalizeUri)
         .runTests();
   }
 
+  @Test
   public final void testEscapeHtmlAttributeNospace() {
     BasicEscapeDirective htmlNospaceDirective =
         new BasicEscapeDirective.EscapeHtmlAttributeNospace();
@@ -122,7 +129,8 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput("a&amp;b&#32;&gt;&#32;c", "a&b > c", htmlNospaceDirective);
     assertTofuOutput(
         "&lt;script&gt;alert(&#39;boo&#39;);&lt;&#47;script&gt;",
-        "<script>alert('boo');</script>",  htmlNospaceDirective);
+        "<script>alert('boo');</script>",
+        htmlNospaceDirective);
 
     assertTofuOutput(
         "&#32;&lt;&#32;",
@@ -131,11 +139,10 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "<foo> < <bar>", SanitizedContent.ContentKind.HTML),
         htmlNospaceDirective);
-     assertTofuOutput(
+    assertTofuOutput(
         "&lt;foo&gt;",
         // But JS_STR_CHARS are.
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<foo>", SanitizedContent.ContentKind.JS),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.JS),
         htmlNospaceDirective);
 
     new JsSrcPrintDirectiveTestBuilder()
@@ -143,15 +150,18 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("a&amp;b&#32;&gt;&#32;c", " 'a&b > c' ", htmlNospaceDirective)
         .addTest(
             "&lt;script&gt;alert(&#39;boo&#39;);&lt;&#47;script&gt;",
-            " '<script>alert(\\'boo\\');</script>' ", htmlNospaceDirective)
+            " '<script>alert(\\'boo\\');</script>' ",
+            htmlNospaceDirective)
         .addTest(
-            "&#32;&lt;&#32;", "soydata.VERY_UNSAFE.ordainSanitizedHtml('<foo> < <bar>')",
+            "&#32;&lt;&#32;",
+            "soydata.VERY_UNSAFE.ordainSanitizedHtml('<foo> < <bar>')",
             htmlNospaceDirective)
-        .addTest("&lt;foo&gt;", "soydata.VERY_UNSAFE.ordainSanitizedJs('<foo>')",
-            htmlNospaceDirective)
+        .addTest(
+            "&lt;foo&gt;", "soydata.VERY_UNSAFE.ordainSanitizedJs('<foo>')", htmlNospaceDirective)
         .runTests();
   }
 
+  @Test
   public final void testEscapeUri() {
     BasicEscapeDirective escapeUri = new BasicEscapeDirective.EscapeUri();
     assertTofuOutput("", "", escapeUri);
@@ -170,24 +180,27 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     new JsSrcPrintDirectiveTestBuilder()
         .addTest("", "''", escapeUri)
         .addTest("a%25b%20%3E%20c", " 'a%b > c' ", escapeUri)
-        .addTest("a%25bc%20%3E%20d",
-            "soydata.VERY_UNSAFE.ordainSanitizedHtml('a%bc > d')", escapeUri)
-        .addTest("a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')",
-            escapeUri)
+        .addTest(
+            "a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedHtml('a%bc > d')", escapeUri)
+        .addTest(
+            "a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')", escapeUri)
         .runTests();
   }
 
+  @Test
   public final void testFilterCssValue() {
     BasicEscapeDirective filterCssValue = new BasicEscapeDirective.FilterCssValue();
     assertTofuOutput("", "", filterCssValue);
     assertTofuOutput("green", "green", filterCssValue);
     assertTofuOutput("zSoyz", "color:expression('foo')", filterCssValue);
-    assertTofuOutput("zSoyz",
+    assertTofuOutput(
+        "zSoyz",
         // NOTE: HTML content kind should not override CSS filtering :-)
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "color:expression('foo')", SanitizedContent.ContentKind.HTML),
         filterCssValue);
-    assertTofuOutput("color:expression('foo')",
+    assertTofuOutput(
+        "color:expression('foo')",
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "color:expression('foo')", SanitizedContent.ContentKind.CSS),
         filterCssValue);
@@ -196,13 +209,18 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         .addTest("", "''", filterCssValue)
         .addTest("green", "'green'", filterCssValue)
         .addTest("zSoyz", "'color:expression(\\'foo\\')'", filterCssValue)
-        .addTest("zSoyz", "soydata.VERY_UNSAFE.ordainSanitizedHtml('color:expression(\\'foo\\')')",
+        .addTest(
+            "zSoyz",
+            "soydata.VERY_UNSAFE.ordainSanitizedHtml('color:expression(\\'foo\\')')",
             filterCssValue)
-        .addTest("color:expression('foo')",
-            "soydata.VERY_UNSAFE.ordainSanitizedCss('color:expression(\\'foo\\')')", filterCssValue)
+        .addTest(
+            "color:expression('foo')",
+            "soydata.VERY_UNSAFE.ordainSanitizedCss('color:expression(\\'foo\\')')",
+            filterCssValue)
         .runTests();
   }
 
+  @Test
   public final void testPySrc() {
     PyExpr data = new PyStringExpr("'data'");
 

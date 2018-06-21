@@ -19,47 +19,21 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Node representing a 'plural' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
-
-  private static final SoyError INVALID_PLURAL_COMMAND_TEXT
-      = SoyError.of("Invalid ''plural'' command text \"{0}\".");
-  private static final SoyError PLURAL_OFFSET_OUT_OF_BOUNDS
-      = SoyError.of("The ''offset'' for plural must be a nonnegative integer.");
-  private static final SoyError MALFORMED_PLURAL_OFFSET
-      = SoyError.of("Invalid offset in ''plural'' command text \"{0}\".");
-
-  /** An expression, and optional "offset" attribute. */
-  private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile("(.+?) ( \\s+ offset= .+ )?", Pattern.COMMENTS);
-
-  /** Parser for the attributes in the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("plural",
-          new Attribute("offset", Attribute.ALLOW_ALL_VALUES, null));
 
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
@@ -73,22 +47,17 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
 
-  private MsgPluralNode(
-      int id,
-      SourceLocation sourceLocation,
-      String commandText,
-      int offset,
-      ExprRootNode pluralExpr,
-      String basePluralVarName) {
-    super(id, sourceLocation, "plural", commandText);
+  public MsgPluralNode(int id, SourceLocation location, ExprNode expr, int offset) {
+    super(id, location, "plural");
     this.offset = offset;
-    this.pluralExpr = pluralExpr;
-    this.basePluralVarName = basePluralVarName;
+    this.pluralExpr = new ExprRootNode(expr);
+    this.basePluralVarName =
+        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME);
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgPluralNode(MsgPluralNode orig, CopyState copyState) {
@@ -96,125 +65,60 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
     this.offset = orig.offset;
     this.pluralExpr = orig.pluralExpr.copy(copyState);
     this.basePluralVarName = orig.basePluralVarName;
+    copyState.updateRefs(orig, this);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_PLURAL_NODE;
   }
-
 
   /** Returns the offset. */
   public int getOffset() {
     return offset;
   }
 
-
-  /** Returns the expression text. */
-  public String getExprText() {
-    return pluralExpr.toSourceString();
-  }
-
-
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return pluralExpr;
   }
 
-
   /** Returns the base plural var name (what the translator sees). */
-  @Override public String getBaseVarName() {
+  @Override
+  public String getBaseVarName() {
     return basePluralVarName;
   }
 
+  @Override
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    if (!(other instanceof MsgPluralNode)) {
+      return false;
+    }
 
-  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
-    return (other instanceof MsgPluralNode) &&
-        this.getCommandText().equals(((MsgPluralNode) other).getCommandText());
+    MsgPluralNode that = (MsgPluralNode) other;
+    return ExprEquivalence.get().equivalent(this.pluralExpr, that.pluralExpr)
+        && this.offset == that.offset;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(new ExprUnion(pluralExpr));
+  @Override
+  public String getCommandText() {
+    return (offset > 0)
+        ? pluralExpr.toSourceString() + " offset=" + offset
+        : pluralExpr.toSourceString();
   }
 
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(pluralExpr);
+  }
 
-  @Override public MsgBlockNode getParent() {
+  @Override
+  public MsgBlockNode getParent() {
     return (MsgBlockNode) super.getParent();
   }
 
-
-  @Override public MsgPluralNode copy(CopyState copyState) {
+  @Override
+  public MsgPluralNode copy(CopyState copyState) {
     return new MsgPluralNode(this, copyState);
-  }
-
-  /**
-   * Builder for {@link MsgPluralNode}.
-   */
-  public static final class Builder {
-
-    private static MsgPluralNode error() {
-      return new Builder(-1, "plural", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
-    }
-
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link MsgPluralNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to {@code errorReporter} and {@link Builder#error}
-     * is returned.
-     */
-    public MsgPluralNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-
-      Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
-      if (!matcher.matches()) {
-        errorReporter.report(sourceLocation, INVALID_PLURAL_COMMAND_TEXT, commandText);
-      }
-
-      ExprNode pluralExpr = new ExpressionParser(matcher.group(1), sourceLocation, errorReporter)
-          .parseExpression();
-
-      int offset = 0;
-
-      // If attributes were given, parse them.
-      if (matcher.group(2) != null) {
-        try {
-          Map<String, String> attributes
-              = ATTRIBUTES_PARSER.parse(matcher.group(2).trim(), errorReporter, sourceLocation);
-          String offsetAttribute = attributes.get("offset");
-          offset = Integer.parseInt(offsetAttribute);
-          if (offset < 0) {
-            errorReporter.report(sourceLocation, PLURAL_OFFSET_OUT_OF_BOUNDS);
-          }
-        } catch (NumberFormatException nfe) {
-          errorReporter.report(sourceLocation, MALFORMED_PLURAL_OFFSET, commandText);
-        }
-      }
-
-      String basePluralVarName = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-          pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new MsgPluralNode(
-          id, sourceLocation, commandText, offset, new ExprRootNode(pluralExpr), basePluralVarName);
-    }
   }
 }

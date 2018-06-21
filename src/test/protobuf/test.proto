@@ -1,0 +1,188 @@
+// LINT: LEGACY_NAMES
+syntax = "proto2";
+
+
+option java_package = "com.google.template.soy.testing";
+option java_multiple_files = true;
+
+package soy.test;
+
+message Foo {
+  message InnerMessage {
+    optional int32 field = 1;
+  }
+  enum InnerEnum {
+    ONE = 1;
+    TWO = 2;
+    THREE = 3;
+  }
+
+  optional int32 some_num_with_default = 1 [default = 31337];
+  optional int32 some_num_no_default = 2;
+  optional int32 num_with_jspb_ignore = 14
+      ;
+
+  optional string some_string = 3 [default = "eleet"];
+
+  optional InnerEnum some_enum = 4;
+
+  optional InnerMessage some_embedded_message = 5;
+
+  optional int32 camelCaseField = 6;
+
+  optional bool bool_field = 15;
+  optional bytes bytes_field = 7;
+  optional float float_field = 16;
+  optional double double_field = 17;
+  optional string string_field = 18;
+  optional int32 int_field = 19;
+  optional int64 long_field = 20;
+  map<string, string> map_field = 21;
+  map<int32, InnerMessage> map_message_field = 22;
+  map<string, InnerMessage> map_string_message_field = 23;
+
+  repeated string string_a = 25;
+  optional string string_b_map = 26;
+  optional MessageField message_field = 27;
+}
+
+// These fields have the same names as fields in Foo to test accessing fields
+// from a union type.
+message FooUnion {
+  optional string string_field = 1;
+  optional int32 int_field = 2;
+  // Different types than in Foo
+  optional bool some_string = 3;
+
+  // These field names collide with those in Foo when Soy adds its List/Map
+  // suffixes.
+  optional string string_a_list = 5;
+  map<string, string> string_b = 6;
+  optional MessageField message_field = 7;
+}
+
+message SixtyFourBitIntFieldsAsStrings {
+  optional int64 int64 = 1 [jstype = JS_STRING];
+  optional sint64 sint64 = 2 [jstype = JS_STRING];
+  optional uint64 uint64 = 3 [jstype = JS_STRING];
+  optional fixed64 fixed64 = 4 [jstype = JS_STRING];
+  optional sfixed64 sfixed64 = 5 [jstype = JS_STRING];
+  extensions 1000 to max;
+}
+
+extend SixtyFourBitIntFieldsAsStrings {
+  optional int64 ext_int64 = 1001 [jstype = JS_STRING];
+  optional sint64 ext_sint64 = 1002 [jstype = JS_STRING];
+  optional uint64 ext_uint64 = 1003 [jstype = JS_STRING];
+  optional fixed64 ext_fixed64 = 1004 [jstype = JS_STRING];
+  optional sfixed64 ext_sfixed64 = 1005 [jstype = JS_STRING];
+}
+
+message ThirtyTwoBitIntFields {
+  optional int32 int32 = 1;
+  optional sint32 sint32 = 2;
+  optional uint32 uint32 = 3;
+  optional fixed32 fixed32 = 4;
+  optional fixed32 sfixed32 = 5;
+  extensions 1000 to max;
+}
+extend ThirtyTwoBitIntFields {
+  optional int32 ext_int32 = 1001;
+  optional sint32 ext_sint32 = 1002;
+  optional uint32 ext_uint32 = 1003;
+  optional fixed32 ext_fixed32 = 1004;
+  optional sfixed32 ext_sfixed32 = 1005;
+}
+
+message JsType {
+  optional int64 long_with_no_js_type = 1;
+
+  optional int64 long_with_int52_js_type = 2
+      ;
+  optional int64 long_with_string_js_type = 3
+      ;
+  optional int64 long_with_number_js_type = 4
+      ;
+
+  // It's important that we test repeated longs, to ensure that the jstype
+  // annotation is respected in lists.
+  repeated int64 repeated_long_with_int52_js_type = 5
+      ;
+  repeated int64 repeated_long_with_string_js_type = 6
+      ;
+  repeated int64 repeated_long_with_number_js_type = 7
+      ;
+}
+
+message Repeated {
+  repeated bool bool_field = 15;
+  repeated bytes bytes_field = 7;
+  repeated float float_field = 16;
+  repeated double double_field = 17;
+  repeated string string_field = 18;
+  repeated int32 int_field = 19;
+  repeated int64 long_field = 20;
+  message Item {
+  }
+  repeated Item msg_field = 21;
+}
+
+message Defaults {
+  optional int32 int_with_default = 1 [default = 1234];
+  optional int64 long_with_default = 2 [default = 5678];
+  optional float float_with_default = 3 [default = 1.5];
+  optional double double_with_default = 4 [default = 2.5];
+  optional string string_with_default = 5 [default = 'string'];
+  optional bool bool_with_default = 6 [default = true];
+}
+
+message Proto2ImplicitDefaults {
+  optional int32 int = 1;
+  optional int64 long = 2;
+  optional float float = 3;
+  optional double double = 4;
+  optional string string = 5;
+  optional bool bool = 6;
+  optional SubMessage msg = 7;
+  message SubMessage {
+    optional string field = 1;
+  }
+}
+
+message MessageField {
+  optional Foo foo = 1;
+}
+
+
+message Extendable {
+  extensions 1000 to max;
+}
+
+extend Extendable {
+  optional bool bool_field = 1001;
+  optional bytes bytes_field = 1002;
+  optional float float_field = 1003;
+  optional double double_field = 1004;
+
+  repeated int32 int_repeated = 1101;
+  repeated int64 long_repeated = 1102;
+  repeated bytes bytes_repeated = 1103;
+  repeated Foo foo_repeated = 1104;
+  repeated Foo.InnerEnum enum_repeated = 1105;
+
+  optional int64 long_with_string_js_type = 1201
+      ;
+  repeated int64 repeated_long_with_string_js_type = 1202
+      ;
+}
+
+message Extension {
+  extend Extendable {
+    optional Extension extension = 2001;
+  }
+
+  optional string string_field = 1;
+  optional int32 int_field = 2;
+  optional int64 long_field = 3;
+  optional Foo.InnerEnum enum_field = 4;
+}

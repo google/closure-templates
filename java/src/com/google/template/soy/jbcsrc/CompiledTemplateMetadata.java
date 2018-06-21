@@ -16,14 +16,17 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.Names;
-import com.google.template.soy.jbcsrc.api.RenderContext;
-import com.google.template.soy.soytree.TemplateNode;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 
+import com.google.auto.value.AutoValue;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.soytree.TemplateNode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -33,28 +36,32 @@ import org.objectweb.asm.commons.Method;
  * <p>This should contain basic information about a single template that will be useful for
  * generating that template as well as calls to the template.
  */
-@AutoValue abstract class CompiledTemplateMetadata {
+@AutoValue
+abstract class CompiledTemplateMetadata {
   /**
    * The {@link Method} signature of all generated constructors for the {@link CompiledTemplate}
    * classes.
    */
-  private static final Method GENERATED_CONSTRUCTOR = new Method("<init>",
-      Type.getMethodDescriptor(Type.VOID_TYPE, 
-          Type.getType(SoyRecord.class), Type.getType(SoyRecord.class)));
+  private static final Method GENERATED_CONSTRUCTOR =
+      new Method(
+          "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
 
-  /** 
-   * The {@link Method} signature of the 
-   * {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)}  
-   * method. 
+  /**
+   * The {@link Method} signature of the {@link CompiledTemplate#render(AdvisingAppendable,
+   * RenderContext)} method.
    */
   private static final Method RENDER_METHOD;
+
+  /** The {@link Method} signature of the {@link CompiledTemplate#kind()} method. */
+  private static final Method KIND_METHOD;
 
   static {
     try {
       RENDER_METHOD =
           Method.getMethod(
               CompiledTemplate.class.getMethod(
-                  "render", AdvisingAppendable.class, RenderContext.class));
+                  "render", LoggingAdvisingAppendable.class, RenderContext.class));
+      KIND_METHOD = Method.getMethod(CompiledTemplate.class.getMethod("kind"));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);
     }
@@ -66,20 +73,24 @@ import org.objectweb.asm.commons.Method;
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
-        type, 
+        MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
+        type,
         node);
   }
 
-  /** 
+  /**
    * The template constructor.
-   * 
-   * <p>The constructor has the same interface as 
-   * {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory#create}
+   *
+   * <p>The constructor has the same interface as {@link
+   * com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
    */
   abstract ConstructorRef constructor();
-  
+
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
+
+  /** The {@link CompiledTemplate#kind()} method. */
+  abstract MethodRef kindMethod();
 
   /** The name of the compiled template. */
   abstract TypeInfo typeInfo();

@@ -17,23 +17,27 @@
 package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
+import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
-
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,58 +48,83 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-final class ChangeNewlineToBrDirective implements SanitizedContentOperator, SoyJavaPrintDirective,
-    SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
-
-
-  private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\r\\n|\\r|\\n");
-
+final class ChangeNewlineToBrDirective
+    implements SanitizedContentOperator,
+        SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective.Streamable {
 
   @Inject
   public ChangeNewlineToBrDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|changeNewlineToBr";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override @Nonnull public SanitizedContent.ContentKind getContentKind() {
+  @Override
+  @Nonnull
+  public SanitizedContent.ContentKind getContentKind() {
     // This directive expects HTML as input and produces HTML as output.
     return SanitizedContent.ContentKind.HTML;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    String result = NEWLINE_PATTERN.matcher(value.coerceToString()).replaceAll("<br>");
-
-    // Make sure to transmit the known direction, if any, to any downstream directive that may need
-    // it, e.g. BidiSpanWrapDirective. Since a known direction is carried only by SanitizedContent,
-    // and the transformation we make is only valid in HTML, we only transmit the direction when we
-    // get HTML SanitizedContent.
-    // TODO(user): Consider always returning HTML SanitizedContent.
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == ContentKind.HTML) {
-        return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            result, ContentKind.HTML, sanitizedContent.getContentDirection());
-      }
-    }
-
-    return StringData.forValue(result);
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    return BasicDirectivesRuntime.changeNewlineToBr(value);
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  private static final class JbcSrcMethods {
+
+    static final MethodRef CHANGE_NEWLINE_TO_BR =
+        MethodRef.create(BasicDirectivesRuntime.class, "changeNewlineToBr", SoyValue.class)
+            .asNonNullable();
+    static final MethodRef CHANGE_NEWLINE_TO_BR_STREAMING =
+        MethodRef.create(
+                BasicDirectivesRuntime.class,
+                "changeNewlineToBrStreaming",
+                LoggingAdvisingAppendable.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
+        JbcSrcMethods.CHANGE_NEWLINE_TO_BR.invoke(value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.create(
+        JbcSrcMethods.CHANGE_NEWLINE_TO_BR_STREAMING.invoke(delegateAppendable));
+  }
+
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$changeNewlineToBr(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr("sanitize.change_newline_to_br(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 }

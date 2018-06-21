@@ -16,74 +16,94 @@
 
 package com.google.template.soy.data.internalutils;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import static org.junit.Assert.assertEquals;
 
-import junit.framework.TestCase;
-
-import java.util.Set;
+import com.google.template.soy.base.internal.SanitizedContentKind;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for NodeContentKinds.
  *
  */
-public class NodeContentKindsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class NodeContentKindsTest {
 
-  public void testForAttributeValue() {
-    assertEquals(ContentKind.HTML, NodeContentKinds.forAttributeValue("html"));
-    assertEquals(ContentKind.TEXT, NodeContentKinds.forAttributeValue("text"));
-    assertNull(NodeContentKinds.forAttributeValue("blarg"));
-  }
-
-  public void testGetAttributeValues() {
-    Set<String> attributeValues = NodeContentKinds.getAttributeValues();
-    assertEquals(
-        ImmutableSet.of("attributes", "css", "html", "js", "text", "uri"),
-        attributeValues);
-  }
-
+  @Test
   public void testToJsSanitizedContentCtorName() {
-    assertEquals("soydata.SanitizedHtml",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.HTML));
-    assertEquals("soydata.SanitizedHtmlAttribute",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.ATTRIBUTES));
-    assertEquals("soydata.SanitizedCss",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.CSS));
-    assertEquals("soydata.SanitizedUri",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.URI));
-    assertEquals("soydata.SanitizedJs",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.JS));
-    assertEquals("soydata.UnsanitizedText",
-         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.TEXT));
+    assertEquals(
+        "goog.soy.data.SanitizedHtml",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.HTML));
+    assertEquals(
+        "goog.soy.data.SanitizedHtmlAttribute",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.ATTRIBUTES));
+    assertEquals(
+        "goog.soy.data.SanitizedCss",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.CSS));
+    assertEquals(
+        "goog.soy.data.SanitizedUri",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.URI));
+    assertEquals(
+        "goog.soy.data.SanitizedTrustedResourceUri",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TRUSTED_RESOURCE_URI));
+    assertEquals(
+        "goog.soy.data.SanitizedJs",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.JS));
+    assertEquals(
+        "goog.soy.data.UnsanitizedText",
+        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TEXT));
   }
 
+  @Test
   public void testToJsSanitizedContentOrdainer() {
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedHtml",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.HTML));
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.ATTRIBUTES));
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedCss",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.CSS));
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedUri",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.URI));
-    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedJs",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.JS));
-    assertEquals("soydata.markUnsanitizedText",
-         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.TEXT));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedHtml",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.HTML));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.ATTRIBUTES));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedCss",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.CSS));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedUri",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.URI));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TRUSTED_RESOURCE_URI));
+    assertEquals(
+        "soydata.VERY_UNSAFE.ordainSanitizedJs",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.JS));
+    assertEquals(
+        "soydata.markUnsanitizedText",
+        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TEXT));
   }
 
+  @Test
   public void testToJsSanitizedContentOrdainerForInternalBlocks() {
-    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.HTML));
-    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.ATTRIBUTES));
-    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.CSS));
-    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.URI));
-    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.JS));
-    assertEquals("soydata.$$markUnsanitizedTextForInternalBlocks",
-         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.TEXT));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.HTML));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(
+            SanitizedContentKind.ATTRIBUTES));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.CSS));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.URI));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(
+            SanitizedContentKind.TRUSTED_RESOURCE_URI));
+    assertEquals(
+        "soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.JS));
+    assertEquals(
+        "soydata.$$markUnsanitizedTextForInternalBlocks",
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.TEXT));
   }
 }

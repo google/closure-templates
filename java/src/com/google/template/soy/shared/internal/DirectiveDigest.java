@@ -17,7 +17,6 @@
 package com.google.template.soy.shared.internal;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
@@ -53,7 +52,6 @@ public final class DirectiveDigest {
   /** Innocuous output for this context. */
   private final String innocuousOutput;
 
-
   /**
    * @param directiveName The name of the directive being generated.
    * @param escapeMapVar The index of the associated escape map name.
@@ -62,8 +60,13 @@ public final class DirectiveDigest {
    * @param nonAsciiPrefix The prefix used for non-ASCII characters not in the escape map.
    * @param innocuousOutput Innocuous output for failed filters in this context.
    */
-  DirectiveDigest(String directiveName, int escapeMapVar, int matcherVar, int filterVar,
-      @Nullable String nonAsciiPrefix, String innocuousOutput) {
+  DirectiveDigest(
+      String directiveName,
+      int escapeMapVar,
+      int matcherVar,
+      int filterVar,
+      @Nullable String nonAsciiPrefix,
+      String innocuousOutput) {
     this.directiveName = directiveName;
     this.escapeMapVar = escapeMapVar;
     this.matcherVar = matcherVar;
@@ -72,7 +75,6 @@ public final class DirectiveDigest {
     this.innocuousOutput = innocuousOutput;
   }
 
-
   /**
    * Update the escaper, matcher, and filter names based on the supplied lists and indices.
    *
@@ -80,58 +82,40 @@ public final class DirectiveDigest {
    * @param matcherNames The list of matcher regex names.
    * @param filterNames The list of filter regex names.
    */
-  public void updateNames(List<String> escapeMapNames, List<String> matcherNames,
-      List<String> filterNames) {
+  public void updateNames(
+      List<String> escapeMapNames, List<String> matcherNames, List<String> filterNames) {
     // Store the names for this directive for use in building the helper function.
     escapesName = escapeMapVar >= 0 ? escapeMapNames.get(escapeMapVar) : null;
     matcherName = matcherVar >= 0 ? matcherNames.get(matcherVar) : null;
     filterName = filterVar >= 0 ? filterNames.get(filterVar) : null;
   }
 
-
-  /**
-   * @return the directiveName
-   */
+  /** @return the directiveName */
   public String getDirectiveName() {
     return directiveName;
   }
 
-
-  /**
-   * @return the escapesName
-   */
+  /** @return the escapesName */
   public String getEscapesName() {
     return escapesName;
   }
 
-
-  /**
-   * @return the matcherName
-   */
+  /** @return the matcherName */
   public String getMatcherName() {
     return matcherName;
   }
 
-
-  /**
-   * @return the filterName
-   */
+  /** @return the filterName */
   public String getFilterName() {
     return filterName;
   }
 
-
-  /**
-   * @return the nonAsciiPrefix
-   */
+  /** @return the nonAsciiPrefix */
   public String getNonAsciiPrefix() {
     return nonAsciiPrefix;
   }
 
-
-  /**
-   * @return the innocuousOutput
-   */
+  /** @return the innocuousOutput */
   public String getInnocuousOutput() {
     return innocuousOutput;
   }

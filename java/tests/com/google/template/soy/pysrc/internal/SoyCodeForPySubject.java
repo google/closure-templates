@@ -19,25 +19,25 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.truth.FailureStrategy;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.SoyModule;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-
 import java.util.List;
 
 /**
@@ -51,12 +51,15 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private String bidiIsRtlFn = "";
 
+  private String environmentModulePath = "";
+
   private String translationClass = "";
+
+  private ImmutableMap<String, String> namespaceManifest = ImmutableMap.<String, String>of();
 
   private boolean isFile;
 
   private final Injector injector;
-
 
   /**
    * A Subject for testing sections of Soy code. The provided data can either be an entire Soy file,
@@ -67,12 +70,16 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
    * @param code The input Soy code to be compiled and tested.
    * @param isFile Whether the provided code represents a full file.
    */
-  SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
-    super(failureStrategy, code);
+  SoyCodeForPySubject(FailureMetadata failureMetadata, String code, boolean isFile) {
+    super(failureMetadata, code);
     this.isFile = isFile;
-    this.injector = Guice.createInjector(new ErrorReporterModule(), new PySrcModule());
+    this.injector = Guice.createInjector(new SoyModule());
   }
 
+  public SoyCodeForPySubject withEnvironmentModule(String environmentModulePath) {
+    this.environmentModulePath = environmentModulePath;
+    return this;
+  }
 
   public SoyCodeForPySubject withBidi(String bidiIsRtlFn) {
     this.bidiIsRtlFn = bidiIsRtlFn;
@@ -84,10 +91,15 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     return this;
   }
 
+  public SoyCodeForPySubject withNamespaceManifest(ImmutableMap<String, String> namespaceManifest) {
+    this.namespaceManifest = namespaceManifest;
+    return this;
+  }
+
   /**
    * Asserts that the subject compiles to the expected Python output.
    *
-   * <p> During compilation, freestanding bodies are compiled as strict templates with the output
+   * <p>During compilation, freestanding bodies are compiled as strict templates with the output
    * variable already being initialized. Additionally, any automatically generated variables have
    * generated IDs replaced with '###'. Thus 'name123' would become 'name###'.
    *
@@ -99,6 +111,22 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     } else {
       assertThat(compileBody()).isEqualTo(expectedPyOutput);
     }
+  }
+
+  /**
+   * Asserts that the subject compiles to the expected Python output.
+   *
+   * <p>During compilation, freestanding bodies are compiled as strict templates with the output
+   * variable already being initialized. Additionally, any automatically generated variables have
+   * generated IDs replaced with '###'. Thus 'name123' would become 'name###'.
+   *
+   * <p>This is preferable to {@link #compilesTo(String)} because it provides a slightly more
+   * readable way to break long Python source lines passed into this.
+   *
+   * @param expectedPyOutputLines Lines of the expected Python result of compilation.
+   */
+  public void compilesTo(String... expectedPyOutputLines) {
+    compilesTo(Joiner.on('\n').join(expectedPyOutputLines));
   }
 
   /**
@@ -127,7 +155,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     try {
       if (isFile) {
         compileFile();
-      } else{
+      } else {
         compileBody();
       }
       fail("Compilation suceeded when it should have failed.");
@@ -136,66 +164,78 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
-  private GenPyCodeVisitor getGenPyCodeVisitor() {
-    // Setup default configs.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, bidiIsRtlFn, translationClass);
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(injector);
-    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), RUNTIME_PATH);
+  private GuiceSimpleScope.InScope enterScope() {
+    GuiceSimpleScope apiCallScope1 =
+        injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
 
-    // Add customizable bidi fn and translation module.
-    apiCallScope.seed(Key.get(String.class, PyBidiIsRtlFn.class), bidiIsRtlFn);
-    apiCallScope.seed(Key.get(String.class, PyTranslationClass.class), translationClass);
-
-    // Execute the compiler.
-    return injector.getInstance(GenPyCodeVisitor.class);
+    GuiceSimpleScope.InScope scope = apiCallScope1.enter();
+    ApiCallScopeUtils.seedSharedParams(scope, null, BidiGlobalDir.LTR);
+    return scope;
   }
 
   private String compileFile() {
-    SoyNode node = SoyFileSetParserBuilder.forFileContents(getSubject()).parse();
-    List<String> fileContents = getGenPyCodeVisitor().exec(node);
-    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
+    try (GuiceSimpleScope.InScope inScope = enterScope()) {
+      List<String> fileContents =
+          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of())
+              .gen(node, ErrorReporter.exploding());
+      return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    }
   }
 
   private String compileBody() {
-    SoyNode node = SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, getSubject())
-            .declaredSyntaxVersion(SyntaxVersion.V2_2)
-            .parse(), 0);
+    SoyNode node =
+        SharedTestUtils.getNode(
+            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, actual())
+                .parse()
+                .fileSet(),
+            0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
-    GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();
-    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
-    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
-    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
-    genPyCodeVisitor.localVarExprs = new LocalVariableStack();
-    genPyCodeVisitor.localVarExprs.pushFrame();
-    genPyCodeVisitor.genPyExprsVisitor =
-        injector.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
+    try (GuiceSimpleScope.InScope inScope = enterScope()) {
+      GenPyCodeVisitor genPyCodeVisitor =
+          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of());
+      genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+      genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+      genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+      genPyCodeVisitor.localVarExprs = new LocalVariableStack();
+      genPyCodeVisitor.localVarExprs.pushFrame();
+      genPyCodeVisitor.genPyExprsVisitor =
+          genPyCodeVisitor.genPyExprsVisitorFactory.create(
+              genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
 
-    genPyCodeVisitor.visitForTesting(node); // note: we're calling visit(), not exec()
+      genPyCodeVisitor.visitForTesting(node, ErrorReporter.exploding());
 
-    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
+      return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    }
   }
 
-
-  //-----------------------------------------------------------------------------------------------
+  private SoyPySrcOptions defaultOptions() {
+    // Setup default configs.
+    return new SoyPySrcOptions(
+        RUNTIME_PATH,
+        environmentModulePath,
+        bidiIsRtlFn,
+        translationClass,
+        namespaceManifest,
+        null);
+  }
+  // -----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyCodeForPySubject test.
 
-
-  private static final SubjectFactory<SoyCodeForPySubject, String> SOYCODE =
-      new SubjectFactory<SoyCodeForPySubject, String>() {
+  private static final Subject.Factory<SoyCodeForPySubject, String> SOYCODE =
+      new Subject.Factory<SoyCodeForPySubject, String>() {
         @Override
-        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String code) {
-          return new SoyCodeForPySubject(failureStrategy, code, false);
+        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String code) {
+          return new SoyCodeForPySubject(failureMetadata, code, false);
         }
       };
 
-  private static final SubjectFactory<SoyCodeForPySubject, String> SOYFILE =
-      new SubjectFactory<SoyCodeForPySubject, String>() {
+  private static final Subject.Factory<SoyCodeForPySubject, String> SOYFILE =
+      new Subject.Factory<SoyCodeForPySubject, String>() {
         @Override
-        public SoyCodeForPySubject getSubject(FailureStrategy failureStrategy, String file) {
-          return new SoyCodeForPySubject(failureStrategy, file, true);
+        public SoyCodeForPySubject createSubject(FailureMetadata failureMetadata, String file) {
+          return new SoyCodeForPySubject(failureMetadata, file, true);
         }
       };
 

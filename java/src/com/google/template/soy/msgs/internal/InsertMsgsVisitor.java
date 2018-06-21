@@ -19,27 +19,27 @@ package com.google.template.soy.msgs.internal;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
-import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
+import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
@@ -48,92 +48,65 @@ import javax.annotation.Nullable;
  * exception is plural/select messages. This pass currently does not replace MsgFallbackGroupNodes
  * that contain plural/select messages.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> If the Soy tree doesn't contain plural/select messages, then after this pass, the Soy tree
+ * <p>If the Soy tree doesn't contain plural/select messages, then after this pass, the Soy tree
  * should no longer contain MsgFallbackGroupNodes, MsgNodes, MsgPlaceholderNodes, or
  * MsgHtmlTagNodes. If the Soy tree contains plural/select messages, then the only messages left in
  * the tree after this pass runs should be the plural/select messages.
  *
- * <p> Note that the Soy tree is usually simplifiable after this pass is run (e.g. it usually
+ * <p>Note that the Soy tree is usually simplifiable after this pass is run (e.g. it usually
  * contains consecutive RawTextNodes). It's usually advisable to run a simplification pass after
  * this pass.
  *
  */
-public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class InsertMsgsVisitor {
 
-  /**
-   * Exception thrown when a plural or select message is encountered.
-   */
-  public static class EncounteredPlrselMsgException extends RuntimeException {
+  private static final SoyErrorKind ENCOUNTERED_PLURAL_OR_SELECT =
+      SoyErrorKind.of(
+          "JS code generation currently only supports plural/select messages when "
+              + "shouldGenerateGoogMsgDefs is true.");
 
-    public final MsgNode msgNode;
+  @Nullable private final SoyMsgBundle msgBundle;
+  private final ErrorReporter errorReporter;
 
-    public EncounteredPlrselMsgException(MsgNode msgNode) {
-      this.msgNode = msgNode;
-    }
-  }
-
-
-  /** The bundle of translated messages, or null to use the messages from the Soy source. */
-  private final SoyMsgBundle msgBundle;
-
-  /** If set to true, then don't report an error when encountering plural or select messages. */
-  private final boolean dontErrorOnPlrselMsgs;
-
-  /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
 
   /** The replacement nodes for the current MsgFallbackGroupNode we're visiting (during a pass). */
   private List<StandaloneNode> currReplacementNodes;
 
-
   /**
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
-   * @param dontErrorOnPlrselMsgs If set to true, then this pass won't report an error when
-   *     encountering a plural or select message. Instead, plural and select messages will simply
-   *     not be replaced ({@code MsgNode} left in the tree as-is). If set to false, then this pass
-   *     will throw an {@link EncounteredPlrselMsgException} when encountering a plural or
-   *     select message.
+   * @param errorReporter For reporting errors.
    */
-  public InsertMsgsVisitor(
-      @Nullable SoyMsgBundle msgBundle,
-      boolean dontErrorOnPlrselMsgs,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, ErrorReporter errorReporter) {
     this.msgBundle = msgBundle;
-    this.dontErrorOnPlrselMsgs = dontErrorOnPlrselMsgs;
+    this.errorReporter = errorReporter;
   }
 
-
-  @Override public Void exec(SoyNode node) {
+  public void insertMsgs(SoyNode node) {
 
     // Retrieve the node id generator from the root of the parse tree.
     nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
-
-    // Execute the pass.
-    super.exec(node);
-
-    return null;
+    for (MsgFallbackGroupNode msgNode :
+        SoyTreeUtils.getAllNodesOfType(node, MsgFallbackGroupNode.class)) {
+      replaceMsgNode(msgNode);
+    }
+    for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
+      if (fnNode.getSoyFunction() == BuiltinFunction.IS_PRIMARY_MSG_IN_USE) {
+        replaceIsPrimaryMsgInUseFunction(fnNode);
+      }
+    }
   }
 
-
-  // -----------------------------------------------------------------------------------------------
-  // Implementations for specific nodes.
-
-
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  private void replaceMsgNode(MsgFallbackGroupNode node) {
 
     // Check for plural or select message. Either report error or don't replace.
     for (MsgNode msg : node.getChildren()) {
-      if (msg.numChildren() == 1 &&
-          (msg.getChild(0) instanceof MsgSelectNode || msg.getChild(0) instanceof MsgPluralNode)) {
-        if (dontErrorOnPlrselMsgs) {
-          return;
-        } else {
-          throw new EncounteredPlrselMsgException(msg);
-        }
+      if (msg.isPlrselMsg()) {
+        errorReporter.report(node.getSourceLocation(), ENCOUNTERED_PLURAL_OR_SELECT);
+        return;
       }
     }
 
@@ -153,13 +126,12 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Replace this MsgFallbackGroupNode with the replacement nodes.
-    BlockNode parent = node.getParent();
+    ParentSoyNode<StandaloneNode> parent = node.getParent();
     int indexInParent = parent.getChildIndex(node);
     parent.removeChild(indexInParent);
     parent.addChildren(indexInParent, currReplacementNodes);
     currReplacementNodes = null;
   }
-
 
   /**
    * Private helper for visitMsgFallbackGroupNode() to build the list of replacement nodes for a
@@ -186,7 +158,7 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
           // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
           // simply add the content node to the currReplacementNodes list being built.
           if (contentNode instanceof MsgHtmlTagNode) {
-            visit(contentNode);
+            currReplacementNodes.addAll(((MsgHtmlTagNode) contentNode).getChildren());
           } else {
             currReplacementNodes.add(contentNode);
           }
@@ -197,7 +169,6 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     }
   }
-
 
   /**
    * Private helper for visitMsgFallbackGroupNode() to build the list of replacement nodes for a
@@ -218,7 +189,7 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
           // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
           // simply add the content node to the currReplacementNodes list being built.
           if (contentNode instanceof MsgHtmlTagNode) {
-            visit(contentNode);
+            currReplacementNodes.addAll(((MsgHtmlTagNode) contentNode).getChildren());
           } else {
             currReplacementNodes.add(contentNode);
           }
@@ -230,20 +201,20 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-    currReplacementNodes.addAll(node.getChildren());
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Fallback implementation.
-
-
-  @Override protected void visitSoyNode(SoyNode node) {
-    if ((node instanceof ParentSoyNode<?>)) {
-      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
+  private void replaceIsPrimaryMsgInUseFunction(FunctionNode node) {
+    boolean isPrimaryMsgInUse;
+    if (msgBundle == null) {
+      isPrimaryMsgInUse = true;
+    } else {
+      // if the primary message id is available or the fallback message is not available, then we
+      // are using the primary message.
+      long primaryMsgId = ((IntegerNode) node.getChild(1)).getValue();
+      long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
+      isPrimaryMsgInUse =
+          !msgBundle.getMsgParts(primaryMsgId).isEmpty()
+              || msgBundle.getMsgParts(fallbackMsgId).isEmpty();
     }
+    node.getParent()
+        .replaceChild(node, new BooleanNode(isPrimaryMsgInUse, node.getSourceLocation()));
   }
-
 }

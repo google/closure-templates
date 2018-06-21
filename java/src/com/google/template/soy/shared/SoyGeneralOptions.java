@@ -18,23 +18,22 @@ package com.google.template.soy.shared;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
-
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
@@ -42,104 +41,127 @@ import javax.annotation.Nullable;
  */
 public final class SoyGeneralOptions implements Cloneable {
 
-  /** User-declared syntax version, or null if not set. */
-  @Nullable private SyntaxVersion declaredSyntaxVersion;
+  /** User-declared syntax version, or V2_0 if not set. */
+  private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
 
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
-  private Boolean allowExternalCalls;
+  private TriState allowExternalCalls = TriState.UNSET;
 
   /** Whether Strict autoescaping is required. */
-  private boolean strictAutoescapingRequired;
+  private TriState strictAutoescapingRequired = TriState.UNSET;
 
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
-  /** Whether to automatically mark scripts that appear literally in templates as allowed to run. */
-  private boolean supportContentSecurityPolicy;
+  /** A list of experimental features that are not generally available. */
+  private ImmutableSet<String> experimentalFeatures = ImmutableSet.of();
 
+  /** Whether we should run optimizer. */
+  private boolean enabledOptimizer = true;
 
-  public SoyGeneralOptions() {
-    declaredSyntaxVersion = null;
-    allowExternalCalls = null;
-    strictAutoescapingRequired = false;
-    compileTimeGlobals = null;
-    supportContentSecurityPolicy = false;
-  }
+  public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
     this.declaredSyntaxVersion = orig.declaredSyntaxVersion;
     this.allowExternalCalls = orig.allowExternalCalls;
     this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
     this.compileTimeGlobals = orig.compileTimeGlobals;
-    this.supportContentSecurityPolicy = orig.supportContentSecurityPolicy;
+    this.experimentalFeatures = ImmutableSet.copyOf(orig.experimentalFeatures);
+    this.enabledOptimizer = orig.isOptimizerEnabled();
+  }
+
+  /** Disallow optimizer. */
+  public SoyGeneralOptions disableOptimizer() {
+    this.enabledOptimizer = false;
+    return this;
+  }
+
+  /** Return true if we want to run optimizer in the compiler. */
+  public boolean isOptimizerEnabled() {
+    return this.enabledOptimizer;
+  }
+
+  /** Sets experimental features. These features are unreleased and are not generally available. */
+  public SoyGeneralOptions setExperimentalFeatures(Iterable<String> experimentalFeatures) {
+    this.experimentalFeatures = ImmutableSet.copyOf(experimentalFeatures);
+    return this;
+  }
+
+  /** Returns the set of enabled experimental features. */
+  public ImmutableSet<String> getExperimentalFeatures() {
+    return experimentalFeatures;
   }
 
   /**
    * Sets the user-declared syntax version name for the Soy file bundle.
+   *
    * @param versionName The syntax version name, e.g. "1.0", "2.0", "2.3".
    */
-  public void setDeclaredSyntaxVersionName(@Nonnull String versionName) {
+  public SoyGeneralOptions setDeclaredSyntaxVersionName(@Nonnull String versionName) {
     this.declaredSyntaxVersion = SyntaxVersion.forName(versionName);
+    return this;
   }
 
   /**
    * Returns the user-declared syntax version, or the given default value if the user did not
    * declare a syntax version.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param defaultSyntaxVersion The default value to return if the user did not declare a syntax
-   *     version.
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public SyntaxVersion getDeclaredSyntaxVersion(SyntaxVersion defaultSyntaxVersion) {
-    return (declaredSyntaxVersion != null) ? declaredSyntaxVersion : defaultSyntaxVersion;
+  public SyntaxVersion getDeclaredSyntaxVersion() {
+    return declaredSyntaxVersion;
   }
 
   /**
    * Sets whether to allow external calls (calls to undefined templates).
+   *
    * @param allowExternalCalls The value to set.
    */
-  public void setAllowExternalCalls(boolean allowExternalCalls) {
-    this.allowExternalCalls = allowExternalCalls;
+  public SoyGeneralOptions setAllowExternalCalls(boolean allowExternalCalls) {
+    this.allowExternalCalls = TriState.from(allowExternalCalls);
+    return this;
   }
 
   /**
    * Returns whether to allow external calls (calls to undefined templates). If this option was
-   * never explicitly set, then returns null.
+   * never explicitly set, then returns {@link TriState#UNSET}.
    */
-  public Boolean allowExternalCalls() {
+  public TriState allowExternalCalls() {
     return allowExternalCalls;
   }
 
   /**
    * Sets whether strict autoescaping is required.
+   *
    * @param strictAutoescapingRequired Whether autoescaping is required.
    */
-  public void setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
-    this.strictAutoescapingRequired = strictAutoescapingRequired;
+  public SoyGeneralOptions setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
+    this.strictAutoescapingRequired = TriState.from(strictAutoescapingRequired);
+    return this;
   }
 
   /**
-   * Returns whether strict autoescaping is required.
+   * Returns whether strict autoescaping is required. If this option was never explicitly set, then
+   * returns {@link TriState#UNSET}.
    */
-  public boolean isStrictAutoescapingRequired() {
+  public TriState isStrictAutoescapingRequired() {
     return strictAutoescapingRequired;
   }
 
   /**
    * Sets the map from compile-time global name to value.
    *
-   * <p> The values can be any of the Soy primitive types: null, boolean, integer, float (Java
+   * <p>The values can be any of the Soy primitive types: null, boolean, integer, float (Java
    * double), or string.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-   * @throws com.google.template.soy.base.SoySyntaxException If one of the values is not a valid
-   *        Soy primitive type.
+   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
+   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @throws IllegalArgumentException If one of the values is not a valid Soy primitive type.
    */
-  public void setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
+  public SoyGeneralOptions setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
     setCompileTimeGlobalsInternal(
         InternalValueUtils.convertCompileTimeGlobalsMap(compileTimeGlobalsMap));
+    return this;
   }
 
   /**
@@ -156,77 +178,76 @@ public final class SoyGeneralOptions implements Cloneable {
   /**
    * Sets the file containing compile-time globals.
    *
-   * <p> Each line of the file should have the format
+   * <p>Each line of the file should have the format
+   *
    * <pre>
    *     &lt;global_name&gt; = &lt;primitive_data&gt;
    * </pre>
+   *
    * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
    * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
    * should be encoded in UTF-8.
    *
-   * <p> If you need to generate a file in this format from Java, consider using the utility
-   * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+   * <p>If you need to generate a file in this format from Java, consider using the utility {@code
+   * SoyUtils.generateCompileTimeGlobalsFile()}.
    *
    * @param compileTimeGlobalsFile The file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
    */
-  public void setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
-    setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
+  public SoyGeneralOptions setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
+    setCompileTimeGlobalsInternal(
+        SoyUtils.parseCompileTimeGlobals(Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
+    return this;
   }
 
   /**
    * Sets the resource file containing compile-time globals.
    *
-   * <p> Each line of the file should have the format
+   * <p>Each line of the file should have the format
+   *
    * <pre>
    *     &lt;global_name&gt; = &lt;primitive_data&gt;
    * </pre>
+   *
    * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
    * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
    * should be encoded in UTF-8.
    *
-   * <p> If you need to generate a file in this format from Java, consider using the utility
-   * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+   * <p>If you need to generate a file in this format from Java, consider using the utility {@code
+   * SoyUtils.generateCompileTimeGlobalsFile()}.
    *
    * @param compileTimeGlobalsResource The resource file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
    */
-  public void setCompileTimeGlobals(URL compileTimeGlobalsResource) throws IOException {
-    setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Resources.asCharSource(compileTimeGlobalsResource, UTF_8)));
+  public SoyGeneralOptions setCompileTimeGlobals(URL compileTimeGlobalsResource)
+      throws IOException {
+    setCompileTimeGlobalsInternal(
+        SoyUtils.parseCompileTimeGlobals(
+            Resources.asCharSource(compileTimeGlobalsResource, UTF_8)));
+    return this;
   }
 
-  /**
-   * Returns the map from compile-time global name to value.
-   */
+  /** Returns the map from compile-time global name to value. */
   public ImmutableMap<String, PrimitiveData> getCompileTimeGlobals() {
-    return compileTimeGlobals;
+    return compileTimeGlobals == null
+        ? ImmutableMap.<String, PrimitiveData>of()
+        : compileTimeGlobals;
   }
 
-  /**
-   * Pass true to enable CSP (Content Security Policy) support which adds an extra pass that marks
-   * inline scripts in templates specially so the browser can distinguish scripts written by trusted
-   * template authors from scripts injected via XSS.
-   * <p>
-   * Scripts are marked using a per-page-render secret stored in the injected variable
-   * {@code $ij.csp_nonce}.
-   * Scripts in non-contextually auto-escaped templates may not be found.
-   */
-  public void setSupportContentSecurityPolicy(boolean supportContentSecurityPolicy) {
-    this.supportContentSecurityPolicy = supportContentSecurityPolicy;
-  }
-
-  /**
-   * True when CSP (Content Security Policy) support is enabled causing inline scripts to be marked
-   * so that the browser can run scripts specified by the template author but not ones injected via
-   * XSS.
-   */
-  public boolean supportContentSecurityPolicy() {
-    return supportContentSecurityPolicy;
-  }
-
-  @Override public final SoyGeneralOptions clone() {
+  @Override
+  public final SoyGeneralOptions clone() {
     return new SoyGeneralOptions(this);
+  }
+
+  @Override
+  public final String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("declaredSyntaxVersion", declaredSyntaxVersion)
+        .add("allowExternalCalls", allowExternalCalls)
+        .add("strictAutoescapingRequired", strictAutoescapingRequired)
+        .add("compileTimeGlobals", compileTimeGlobals)
+        .add("experimentalFeatures", experimentalFeatures)
+        .add("enabledOptimizer", enabledOptimizer)
+        .toString();
   }
 }

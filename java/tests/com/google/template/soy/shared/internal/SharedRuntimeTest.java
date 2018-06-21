@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEqual;
@@ -23,67 +24,95 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SharedRuntime}
- * 
+ *
  * <p>Mostly {@link SharedRuntime} is either trivial or covered by higher level tests, this tests
  * some of the weirder features explicitly.
  */
-public class SharedRuntimeTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SharedRuntimeTest {
 
+  @Test
   public void testEqual() {
-    assertTrue(equal(IntegerData.forValue(1), IntegerData.forValue(1)));
-    assertFalse(equal(IntegerData.forValue(1), IntegerData.forValue(2)));
+    assertThat(equal(IntegerData.forValue(1), IntegerData.forValue(1))).isTrue();
+    assertThat(equal(IntegerData.forValue(1), IntegerData.forValue(2))).isFalse();
 
-    assertTrue(equal(StringData.forValue("1"), IntegerData.forValue(1)));
-    assertTrue(equal(IntegerData.forValue(1), StringData.forValue("1")));
+    assertThat(equal(StringData.forValue("1"), IntegerData.forValue(1))).isTrue();
+    assertThat(equal(IntegerData.forValue(1), StringData.forValue("1"))).isTrue();
 
-    assertFalse(equal(StringData.forValue("2"), IntegerData.forValue(1)));
-    assertFalse(equal(IntegerData.forValue(1), StringData.forValue("3")));
+    assertThat(equal(StringData.forValue("2"), IntegerData.forValue(1))).isFalse();
+    assertThat(equal(IntegerData.forValue(1), StringData.forValue("3"))).isFalse();
   }
-  
+
+  @Test
   public void testPlus() {
-    assertEquals(3, plus(IntegerData.forValue(1), IntegerData.forValue(2)).integerValue());
-    
+    assertThat(plus(IntegerData.forValue(1), IntegerData.forValue(2)).integerValue()).isEqualTo(3);
+
     // N.B. coerced to float
-    assertEquals(3.0, plus(FloatData.forValue(1), IntegerData.forValue(2)).numberValue());
-    
+    assertThat(plus(FloatData.forValue(1), IntegerData.forValue(2)).numberValue()).isEqualTo(3.0);
+
     // coerced to string
-    assertEquals("32", plus(StringData.forValue("3"), IntegerData.forValue(2)).stringValue());
+    assertThat(plus(StringData.forValue("3"), IntegerData.forValue(2)).stringValue())
+        .isEqualTo("32");
 
     // SanitizedContent:
-    assertEquals("HelloWorld", plus(SanitizedContents.unsanitizedText("Hello"),
-        SanitizedContents.unsanitizedText("World")).stringValue());
+    assertThat(
+            plus(
+                    SanitizedContents.unsanitizedText("Hello"),
+                    SanitizedContents.unsanitizedText("World"))
+                .stringValue())
+        .isEqualTo("HelloWorld");
 
     // Even arrays:
-    SoyValueHelper helper = new SoyValueHelper();
-    assertEquals("[Hello][World]", plus(
-        helper.convert(ImmutableList.of("Hello")).resolve(),
-        helper.convert(ImmutableList.of("World")).resolve()).stringValue());
+    SoyValueConverter converter = SoyValueConverter.INSTANCE;
+    assertThat(
+            plus(
+                    converter.convert(ImmutableList.of("Hello")).resolve(),
+                    converter.convert(ImmutableList.of("World")).resolve())
+                .stringValue())
+        .isEqualTo("[Hello][World]");
   }
 
+  @Test
   public void testLessThan() {
-    assertFalse(lessThan(IntegerData.forValue(1), IntegerData.forValue(1)));
-    assertTrue(lessThan(IntegerData.forValue(1), IntegerData.forValue(2)));
+    assertThat(lessThan(IntegerData.forValue(1), IntegerData.forValue(1))).isFalse();
+    assertThat(lessThan(IntegerData.forValue(1), IntegerData.forValue(2))).isTrue();
 
-    assertFalse(lessThan(FloatData.forValue(1), FloatData.forValue(1)));
-    assertTrue(lessThan(FloatData.forValue(1), FloatData.forValue(2)));
+    assertThat(lessThan(FloatData.forValue(1), FloatData.forValue(1))).isFalse();
+    assertThat(lessThan(FloatData.forValue(1), FloatData.forValue(2))).isTrue();
+
+    assertThat(lessThan(StringData.forValue("World"), StringData.forValue("Hello"))).isFalse();
+    assertThat(lessThan(StringData.forValue("Hello"), StringData.forValue("World"))).isTrue();
+
+    assertThat(lessThan(StringData.forValue("foobar"), StringData.forValue("foo"))).isFalse();
+    assertThat(lessThan(StringData.forValue("foo"), StringData.forValue("foobar"))).isTrue();
   }
 
+  @Test
   public void testLessThanOrEqual() {
-    assertFalse(lessThanOrEqual(IntegerData.forValue(2), IntegerData.forValue(1)));
-    assertTrue(lessThanOrEqual(IntegerData.forValue(1), IntegerData.forValue(1)));
-    assertTrue(lessThanOrEqual(IntegerData.forValue(1), IntegerData.forValue(2)));
+    assertThat(lessThanOrEqual(IntegerData.forValue(2), IntegerData.forValue(1))).isFalse();
+    assertThat(lessThanOrEqual(IntegerData.forValue(1), IntegerData.forValue(1))).isTrue();
+    assertThat(lessThanOrEqual(IntegerData.forValue(1), IntegerData.forValue(2))).isTrue();
 
-    assertFalse(lessThanOrEqual(FloatData.forValue(2), FloatData.forValue(1)));
-    assertTrue(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(1)));
-    assertTrue(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(2)));
+    assertThat(lessThanOrEqual(FloatData.forValue(2), FloatData.forValue(1))).isFalse();
+    assertThat(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(1))).isTrue();
+    assertThat(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(2))).isTrue();
+
+    assertThat(lessThanOrEqual(StringData.forValue("foobar"), StringData.forValue("foo")))
+        .isFalse();
+    assertThat(lessThanOrEqual(StringData.forValue("foo"), StringData.forValue("foobar"))).isTrue();
+    assertThat(lessThanOrEqual(StringData.forValue("foo"), StringData.forValue("foo"))).isTrue();
+
+    assertThat(lessThanOrEqual(StringData.forValue(""), StringData.forValue("!?_"))).isTrue();
+    assertThat(lessThanOrEqual(StringData.forValue(""), StringData.forValue(""))).isTrue();
   }
 }

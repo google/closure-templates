@@ -18,32 +18,30 @@ package com.google.template.soy.msgs;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.base.internal.BaseUtils;
-
+import com.google.template.soy.error.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.regex.Pattern;
 
-import javax.inject.Inject;
-
 /**
  * Handler for writing {@code SoyMsgBundle}s to file format and for creating {@code SoyMsgBundle}s
  * from files or resources.
  *
- * <p> Uses a {@code SoyMsgPlugin} to do the actual generation of the output data and the actual
+ * <p>Uses a {@code SoyMsgPlugin} to do the actual generation of the output data and the actual
  * parsing of the input data. The {@code SoyMsgPlugin} implements the specific message file format.
  *
  */
 public class SoyMsgBundleHandler {
 
-
   /**
    * Options for generating an output messages file.
    *
-   * This same class is used for both extracted messages files (source messages to be translated)
+   * <p>This same class is used for both extracted messages files (source messages to be translated)
    * and translated messages files. Not all options will apply to both types of output files, and
    * not all options will apply to all message plugins.
    */
@@ -66,48 +64,41 @@ public class SoyMsgBundleHandler {
 
     /**
      * Sets the source locale string for an output messages file.
+     *
      * @param sourceLocaleString The source locale string.
      */
     public void setSourceLocaleString(String sourceLocaleString) {
       this.sourceLocaleString = sourceLocaleString;
     }
 
-    /**
-     * Returns the source locale string.
-     */
+    /** Returns the source locale string. */
     public String getSourceLocaleString() {
       return sourceLocaleString;
     }
 
     /**
      * Sets the target locale string for an output messages file.
+     *
      * @param targetLocaleString The target locale string.
      */
     public void setTargetLocaleString(String targetLocaleString) {
       this.targetLocaleString = targetLocaleString;
     }
 
-    /**
-     * Returns the target locale string.
-     */
+    /** Returns the target locale string. */
     public String getTargetLocaleString() {
       return targetLocaleString;
     }
   }
 
-
   /** For backwards-compatibility checking of file names that start with "en". */
   private static final Pattern FIRST_WORD_IS_EN_PATTERN = Pattern.compile("^en[^A-Za-z].*");
 
-
   private final SoyMsgPlugin msgPlugin;
 
-
-  @Inject
   public SoyMsgBundleHandler(SoyMsgPlugin msgPlugin) {
     this.msgPlugin = msgPlugin;
   }
-
 
   /**
    * Reads a translated messages file and creates a SoyMsgBundle.
@@ -117,7 +108,7 @@ public class SoyMsgBundleHandler {
    * @throws IOException If there's an error while accessing the file.
    * @throws SoyMsgException If there's an error while processing the messages.
    */
-  public SoyMsgBundle createFromFile(File inputFile) throws IOException, SoyMsgException {
+  public SoyMsgBundle createFromFile(File inputFile) throws IOException {
 
     // TODO: This is for backwards-compatibility. Figure out how to get rid of this.
     // We special-case English locales because they often don't have translated files and falling
@@ -127,7 +118,10 @@ public class SoyMsgBundleHandler {
     }
 
     try {
-      String inputFileContent = Files.toString(inputFile, UTF_8);
+      // reading the file as a byte array and then invoking the string constructor is the fastest
+      // way to read a full file as a string.  it avoids copies incurred by CharSource and picks a
+      // faster path for charset decoding.
+      String inputFileContent = Files.asCharSource(inputFile, UTF_8).read();
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {
@@ -135,7 +129,6 @@ public class SoyMsgBundleHandler {
       throw sme;
     }
   }
-
 
   /**
    * Reads a translated messages resource and creates a SoyMsgBundle.
@@ -145,10 +138,10 @@ public class SoyMsgBundleHandler {
    * @throws IOException If there's an error while accessing the resource.
    * @throws SoyMsgException If there's an error while processing the messages.
    */
-  public SoyMsgBundle createFromResource(URL inputResource) throws IOException, SoyMsgException {
+  public SoyMsgBundle createFromResource(URL inputResource) throws IOException {
 
     try {
-      String inputFileContent = Resources.toString(inputResource, UTF_8);
+      String inputFileContent = Resources.asCharSource(inputResource, UTF_8).read();
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {
@@ -157,39 +150,39 @@ public class SoyMsgBundleHandler {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Soy internal methods.
 
-
   /**
-   * Generates an extracted messages file (source messages to be translated) from a given message
-   * bundle, and writes it to file.
+   * Generates extracted messages (source messages to be translated) from a given message bundle,
+   * and writes it out.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * @param msgBundle The message bundle to write to file.
-   * @param options The options for generating the output extracted messages file (depending on the
+   * @param msgBundle The message bundle to write.
+   * @param options The options for generating the output extracted messages (depending on the
    *     message plugin being used, none or some of the options may be applicable).
-   * @param outputFile The output file to write to.
+   * @param output The output to write to.
+   * @param errorReporter For reporting errors.
    * @throws SoyMsgException If there's an error while processing the messages.
-   * @throws IOException If there's an error while accessing the file.
+   * @throws IOException If there's an error writing the messages.
    */
-  public void writeToExtractedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
-      throws IOException, SoyMsgException {
+  public void writeExtractedMsgs(
+      SoyMsgBundle msgBundle,
+      OutputFileOptions options,
+      ByteSink output,
+      ErrorReporter errorReporter)
+      throws IOException {
 
-    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
-    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.write(cs, outputFile, UTF_8);
+    CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options, errorReporter);
+    output.asCharSink(UTF_8).write(cs);
   }
-
 
   /**
    * Generates an translated messages file (source messages to be translated) from a given message
    * bundle, and writes it to file.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param msgBundle The message bundle to write to file.
    * @param options The options for generating the output translated messages file (depending on the
@@ -199,10 +192,9 @@ public class SoyMsgBundleHandler {
    * @throws SoyMsgException If there's an error while processing the messages.
    */
   public void writeToTranslatedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
-      throws IOException, SoyMsgException {
+      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile) throws IOException {
 
-    if (! (msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
+    if (!(msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
       throw new SoyMsgException(
           "writeToTranslatedMsgsFile() only works if using a SoyBidirectionalMsgPlugin.");
     }
@@ -210,7 +202,6 @@ public class SoyMsgBundleHandler {
 
     CharSequence cs = msgPluginCast.generateTranslatedMsgsFile(msgBundle, options);
     BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.write(cs, outputFile, UTF_8);
+    Files.asCharSink(outputFile, UTF_8).write(cs);
   }
-
 }

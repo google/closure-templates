@@ -16,159 +16,96 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 import com.google.inject.Injector;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
-
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-
+import com.google.template.soy.msgs.SoyMsgPlugin;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for extracting messages from a set of Soy files into an output messages file.
  *
- * <p> The command-line arguments should contain command-line flags and the list of paths to the
- * Soy files.
+ * <p>The command-line arguments should contain command-line flags and the list of paths to the Soy
+ * files.
  *
  */
-public final class SoyMsgExtractor {
+public final class SoyMsgExtractor extends AbstractSoyCompiler {
 
-
-  /** The string to prepend to the usage message. */
-  private static final String USAGE_PREFIX =
-      "Usage:\n" +
-      "java com.google.template.soy.SoyMsgExtractor  \\\n" +
-      "     [<flag1> <flag2> ...] --outputFile <path>  \\\n" +
-      "     --srcs <soyFilePath>,...\n";
-
-
-  @Option(name = "--inputPrefix",
-          usage = "If provided, this path prefix will be prepended to each input file path" +
-                  " listed on the command line. This is a literal string prefix, so you'll need" +
-                  " to include a trailing slash if necessary.")
-  private String inputPrefix = "";
-
-  @Option(name = "--srcs",
-          usage = "[Required] The list of source Soy files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = Lists.newArrayList();
-
-  @Option(name = "--allowExternalCalls",
-          usage = "Whether to allow external calls. New projects should set this to false, and" +
-                  " existing projects should remove existing external calls and then set this" +
-                  " to false. It will save you a lot of headaches. Currently defaults to true" +
-                  " for backward compatibility.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+  @Option(
+    name = "--allowExternalCalls",
+    usage =
+        "Whether to allow external calls. New projects should set this to false, and"
+            + " existing projects should remove existing external calls and then set this"
+            + " to false. It will save you a lot of headaches. Currently defaults to true"
+            + " for backward compatibility."
+  )
   private boolean allowExternalCalls = true;
 
-  @Option(name = "--outputFile",
-          usage = "The path to the output file to write. If a file already" +
-                  " exists at this location, it will be overwritten. The file extension must" +
-                  " match the output format requested.")
-  private String outputFile = "";
+  @Option(
+    name = "--outputFile",
+    required = true,
+    usage =
+        "The path to the output file to write. If a file already"
+            + " exists at this location, it will be overwritten. The file extension must"
+            + " match the output format requested."
+  )
+  private File outputFile;
 
-  @Option(name = "--outputPathFormat",
-          usage = "A format string that specifies how to build the path to each" +
-                  " output file. The format string can include literal characters as well as the" +
-                  " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}," +
-                  " {INPUT_FILE_NAME_NO_EXT}")
-  private String outputPathFormat = "";
-
-  @Option(name = "--sourceLocaleString",
-          usage = "The locale string of the source language (default 'en').")
+  @Option(
+    name = "--sourceLocaleString",
+    usage = "The locale string of the source language (default 'en')."
+  )
   private String sourceLocaleString = "en";
 
-  @Option(name = "--targetLocaleString",
-          usage = "The locale string of the target language (default empty). If empty, then the" +
-                  " output messages file will not specify a target locale string. Note that this" +
-                  " option may not be applicable for certain message plugins (in which case this" +
-                  " value will be ignored by the message plugin).")
+  @Option(
+    name = "--targetLocaleString",
+    usage =
+        "The locale string of the target language (default empty). If empty, then the"
+            + " output messages file will not specify a target locale string. Note that this"
+            + " option may not be applicable for certain message plugins (in which case this"
+            + " value will be ignored by the message plugin)."
+  )
   private String targetLocaleString = "";
 
-  @Option(name = "--messagePluginModule",
-          usage = "Specifies the full class name of a Guice module that binds a SoyMsgPlugin." +
-                  " If not specified, the default is" +
-                  " com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule, which binds" +
-                  " the XliffMsgPlugin.")
-  private String messagePluginModule = XliffMsgPluginModule.class.getName();
-
-  /** The remaining arguments after parsing command-line flags. */
-  @Argument
-  private List<String> arguments = Lists.newArrayList();
-
+  @Option(
+    name = "--messagePlugin",
+    usage =
+        "Specifies the full class name of a SoyMsgPlugin.  If not specified, the default is "
+            + "com.google.template.soy.xliffmsgplugin.XliffMsgPlugin."
+  )
+  private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
   /**
    * Extracts messages from a set of Soy files into an output messages file.
    *
    * @param args Should contain command-line flags and the list of paths to the Soy files.
    * @throws IOException If there are problems reading the input files or writing the output file.
-   * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(String... args) throws IOException {
-    (new SoyMsgExtractor()).execMain(args);
+    new SoyMsgExtractor().runMain(args);
   }
 
+  SoyMsgExtractor(ClassLoader loader) {
+    super(loader);
+  }
 
-  private SoyMsgExtractor() {}
+  SoyMsgExtractor() {}
 
-
-  private void execMain(String[] args) throws IOException, SoySyntaxException {
-
-    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-
-    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
-      @Override public Void apply(String errorMsg) {
-        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
-        return null;
-      }
-    };
-
-    Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
-
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments,
-        ImmutableList.<String>of(), ImmutableList.<String>of(), exitWithErrorFn);
+  @Override
+  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-
-    File outputFile0;
-    if (outputPathFormat.length() != 0) {
-      if (outputFile.length() != 0) {
-        exitWithErrorFn.apply("Must provide one of output file path or output path format.");
-      }
-      String inputFilePath = inputPrefix + (Iterables.getFirst(srcs, arguments.get(0)));
-      String outputFilePath = MainEntryPointUtils.buildFilePath(
-          outputPathFormat, null, inputFilePath, inputPrefix);
-      outputFile0 = new File(outputFilePath);
-    } else if (outputFile.length() != 0) {
-      outputFile0 = new File(outputFile);
-    } else {
-      exitWithErrorFn.apply("Must provide output file path or output path format.");
-      return;
-    }
-
     SoyFileSet sfs = sfsBuilder.build();
 
-    SoyMsgBundle msgBundle = sfs.extractMsgs();
-
-    SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
     OutputFileOptions options = new OutputFileOptions();
     options.setSourceLocaleString(sourceLocaleString);
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToExtractedMsgsFile(msgBundle, options, outputFile0);
+    sfs.extractAndWriteMsgs(
+        new SoyMsgBundleHandler(messagePlugin), options, Files.asByteSink(outputFile));
   }
-
 }

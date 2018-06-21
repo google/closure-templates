@@ -16,159 +16,66 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
-
 /**
  * Abstract node representing a 'let' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
-  public static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
-
-  /**
-   * Return value for {@code parseCommandTextHelper()}.
-   */
-  protected static class CommandTextParseResult {
-
-    /** The parsed local var name (without '$'). */
-    final String localVarName;
-    /** The parsed value expr, or null if none. */
-    @Nullable final ExprRootNode valueExpr;
-    /** The parsed param's content kind, or null if none. */
-    @Nullable final ContentKind contentKind;
-
-    private CommandTextParseResult(
-        String localVarName, @Nullable ExprRootNode valueExpr,
-        @Nullable ContentKind contentKind) {
-      this.localVarName = localVarName;
-      this.valueExpr = valueExpr;
-      this.contentKind = contentKind;
-    }
-  }
-
-
-  /** Pattern for a variable name plus optional value or attributes (but not both). */
-  // Note: group 1 = local var name, group 2 = value expr (or null), group 3 = trailing attributes
-  // (or null).
-  private static final Pattern COMMAND_TEXT_PATTERN = Pattern.compile(
-      "( [$] \\w+ ) (?: \\s* : \\s* (\\S .*) | \\s+ (\\S .*) )?",
-      Pattern.COMMENTS | Pattern.DOTALL);
-
-
-  /** Parser for optional attributes in the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser(
-          "let",
-          new Attribute("kind", NodeContentKinds.getAttributeValues(), null));
-
-
   /** The local variable defined by this node. */
   protected final LocalVar var;
 
-
   /**
    * @param id The id for this node.
-   * @param commandText The command text.
+   * @param sourceLocation The node's source location.
+   * @param localVarName The let variable name.
    */
-  protected LetNode(
-      int id, SourceLocation sourceLocation, String localVarName, String commandText) {
-    super(id, sourceLocation, "let", commandText);
+  protected LetNode(int id, SourceLocation sourceLocation, String localVarName) {
+    super(id, sourceLocation, "let");
     this.var = new LocalVar(localVarName, this, null /* type */);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected LetNode(LetNode orig, CopyState copyState) {
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
+    copyState.updateRefs(orig.var, this.var);
   }
 
-
-  /**
-   * Helper used by subclass constructors to parse the command text.
-   * @param commandText The command text.
-   * @return An info object containing the parse results.
-   */
-  protected static CommandTextParseResult parseCommandTextHelper(
-      String commandText, ErrorReporter errorReporter, SourceLocation sourceLocation) {
-
-    Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
-    if (!matcher.matches()) {
-      errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
-      return new CommandTextParseResult("error", null, null);
-    }
-
-    String localVarName = new ExpressionParser(
-        matcher.group(1), sourceLocation, errorReporter)
-        .parseVariable()
-        .getName();
-
-    String valueExprString = matcher.group(2);
-    ExprRootNode valueExpr = valueExprString != null
-        ? new ExprRootNode(
-            new ExpressionParser(valueExprString, sourceLocation, errorReporter).parseExpression())
-        : null;
-
-    ContentKind contentKind;
-    if (matcher.group(3 /* optional attributes */) != null) {
-      Preconditions.checkState(matcher.group(2) == null,
-          "Match groups for value expression and optional attributes should be mutually exclusive");
-      // Parse optional attributes
-      Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(matcher.group(3), errorReporter, sourceLocation);
-      contentKind = (attributes.get("kind") != null)
-          ? NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
-    } else {
-      contentKind = null;
-    }
-
-    return new CommandTextParseResult(localVarName, valueExpr, contentKind);
+  /** Return The local variable name (without the preceding '$'). */
+  @Override
+  public final String getVarName() {
+    return var.name();
   }
 
-
-  /**
-   * Gets a unique version of the local var name (e.g. appending "__soy##" if necessary).
-   */
+  /** Gets a unique version of the local var name (e.g. appending "__soy##" if necessary). */
   public String getUniqueVarName() {
     return getVarName() + "__soy" + getId();
   }
 
-
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
-
-  /**
-   * Get the local variable defined by this node.
-   */
-  @Override public final LocalVar getVar() {
+  /** Get the local variable defined by this node. */
+  @Override
+  public final LocalVar getVar() {
     return var;
   }
 }

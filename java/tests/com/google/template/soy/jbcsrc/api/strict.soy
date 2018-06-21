@@ -1,9 +1,9 @@
 // Copyright 2015 Google Inc. All Rights Reserved.
 
-{namespace strict_test autoescape="strict"}
+{namespace strict_test}
 
 /** hello html */
-{template .helloHtml kind="html"}
+{template .helloHtml}
   {call .hello /}
 {/template}
 
@@ -29,7 +29,7 @@ Hello world
   {@param depth : int}
   {@param p : string}
   {if $depth == 0}
-    {$p}
+    {$p + 1}
   {else}
     {call .callsItself data="all"}
       {param depth : $depth - 1/}

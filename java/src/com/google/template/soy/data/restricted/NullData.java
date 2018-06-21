@@ -18,51 +18,51 @@ package com.google.template.soy.data.restricted;
 
 import javax.annotation.concurrent.Immutable;
 
-
 /**
  * Null data.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p>NullData is only used by Tofu, jbcsrc internally represents null as {@code null}.  Ideally,
+ * <p>NullData is only used by Tofu, jbcsrc internally represents null as {@code null}. Ideally,
  * Tofu would switch to using {@code null} also, but that may be infeasible.
  *
  */
 @Immutable
 public final class NullData extends PrimitiveData {
 
-
   /** Static singleton instance of NullData. */
   public static final NullData INSTANCE = new NullData();
 
-
   private NullData() {}
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "null";
   }
-
 
   /**
    * {@inheritDoc}
    *
-   * <p> Null is falsy.
+   * <p>Null is falsy.
    */
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return false;
   }
 
+  @Override
+  public String coerceToString() {
+    return toString();
+  }
 
   @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-  @Override public boolean equals(Object other) {
-    return other == NullData.INSTANCE;
+  @Override
+  public boolean equals(Object other) {
+    return other == NullData.INSTANCE || other == UndefinedData.INSTANCE;
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return getClass().hashCode();
   }
-
 }

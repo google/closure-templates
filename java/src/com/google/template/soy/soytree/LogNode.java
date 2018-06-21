@@ -28,33 +28,32 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 public final class LogNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode {
 
-
   public LogNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "log", "");
+    super(id, sourceLocation, "log");
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private LogNode(LogNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.LOG_NODE;
   }
 
-
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
-
-  @Override public LogNode copy(CopyState copyState) {
+  @Override
+  public LogNode copy(CopyState copyState) {
     return new LogNode(this, copyState);
   }
-
 }

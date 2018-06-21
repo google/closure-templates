@@ -21,33 +21,33 @@ import com.google.common.primitives.Longs;
 /**
  * Abstract superclass for number data (integers and floats).
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
- * <p> Important: Even though this class is not marked 'final', do not extend this class.
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ *
+ * <p>Important: Even though this class is not marked 'final', do not extend this class.
  *
  */
 public abstract class NumberData extends PrimitiveData {
 
-
   /**
    * Gets the float value of this number data object. If this object is actually an integer, its
    * value will be converted to a float before being returned.
+   *
    * @return The float value of this number data object.
    */
   public abstract double toFloat();
 
-
-  @Override public double numberValue() {
+  @Override
+  public double numberValue() {
     return toFloat();
   }
 
-
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other instanceof NumberData && ((NumberData) other).toFloat() == this.toFloat();
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Longs.hashCode(Double.doubleToLongBits(toFloat()));
   }
-
 }

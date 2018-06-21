@@ -16,139 +16,74 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
-
+import com.google.template.soy.soytree.TemplateNode;
 import javax.annotation.Nullable;
 
 /**
  * Indicates failure to propagate contexts through a template or an existing escaping directive on a
  * 'print' tag that is inconsistent with the contexts in which it appears.
  */
-public final class SoyAutoescapeException extends SoySyntaxException {
-
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message.
-   * @return The new SoyAutoescapeException object.
-   */
-  public static SoyAutoescapeException createWithoutMetaInfo(String message) {
-    return new SoyAutoescapeException(message);
-  }
-
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message, or null to use the message from the cause.
-   * @param cause The cause of this exception.
-   * @return The new SoyAutoescapeException object.
-   */
-  public static SoyAutoescapeException createCausedWithoutMetaInfo(
-      @Nullable String message, Throwable cause) {
-
-    Preconditions.checkNotNull(cause);
-    if (message != null) {
-      return new SoyAutoescapeException(message, cause);
-    } else {
-      return new SoyAutoescapeException(cause);
-    }
-  }
-
-
+final class SoyAutoescapeException extends RuntimeException {
   /**
    * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
-   *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message.
    * @param node The node from which to derive the exception meta info.
    * @return The new SoyAutoescapeException object.
    */
-  public static SoyAutoescapeException createWithNode(String message, SoyNode node) {
-
-    return SoyAutoescapeException.createWithoutMetaInfo(message).associateNode(node);
+  static SoyAutoescapeException createWithNode(String message, SoyNode node) {
+    return new SoyAutoescapeException(message, /*cause=*/ null, node);
   }
-
 
   /**
    * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message, or null to use the message from the cause.
+   * @param message The error message.
    * @param cause The cause of this exception.
    * @param node The node from which to derive the exception meta info.
    * @return The new SoyAutoescapeException object.
    */
-  public static SoyAutoescapeException createCausedWithNode(
-      @Nullable String message, Throwable cause, SoyNode node) {
-
-    return SoyAutoescapeException.createCausedWithoutMetaInfo(message, cause).associateNode(node);
+  static SoyAutoescapeException createCausedWithNode(
+      String message, Throwable cause, SoyNode node) {
+    return new SoyAutoescapeException(message, cause, node);
   }
 
+  /** The location in the soy file at which the error occurred. */
+  private final SourceLocation srcLoc;
 
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message A detailed description of what the error is.
-   */
-  @SuppressWarnings({"deprecation"})
-  private SoyAutoescapeException(String message) {
-    super(message);
-  }
+  /** The name of the template with the syntax error if any. */
+  @Nullable private final String templateName;
 
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message A detailed description of what the error is.
-   * @param cause The Throwable underlying this error.
-   */
-  private SoyAutoescapeException(String message, Throwable cause) {
+  private SoyAutoescapeException(String message, Throwable cause, SoyNode node) {
     super(message, cause);
+    // If srcLoc not yet set, then set it, else assert existing value equals new value.
+    this.srcLoc = node.getSourceLocation();
+
+    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
+    // TemplateName not existing is just for unit tests
+    this.templateName = (template != null) ? template.getTemplateNameForUserMsgs() : null;
   }
 
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * <p> Note: For this constructor, the message will be set to the cause's message.
-   *
-   * @param cause The Throwable underlying this error.
-   */
-  private SoyAutoescapeException(Throwable cause) {
-    super(cause.getMessage(), cause);
+  /** The source location at which the error occurred or {@link SourceLocation#UNKNOWN}. */
+  SourceLocation getSourceLocation() {
+    return srcLoc;
   }
 
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param node The node from which to derive the exception meta info.
-   * @return This same SoyAutoescapeException object, for convenience.
-   */
-  public SoyAutoescapeException associateNode(SoyNode node) {
-    SoySyntaxExceptionUtils.associateNode(this, node);
-    return this;
+  /** Returns the original exception message, without any source location formatting. */
+  String getOriginalMessage() {
+    return super.getMessage();
   }
 
-
-  /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param node The node from which to derive the exception meta info.
-   * @return This same SoyAutoescapeException object, for convenience.
-   */
-  public SoyAutoescapeException maybeAssociateNode(SoyNode node) {
-    if (getSourceLocation() == SourceLocation.UNKNOWN) {
-      associateNode(node);
+  @Override
+  public String getMessage() {
+    boolean templateKnown = templateName != null;
+    String message = super.getMessage();
+    if (templateKnown) {
+      return "In file " + srcLoc + ", template " + templateName + ": " + message;
+    } else {
+      return "In file " + srcLoc + ": " + message;
     }
-    return this;
   }
 }

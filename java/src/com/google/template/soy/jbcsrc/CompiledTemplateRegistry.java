@@ -16,53 +16,83 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
-/**
- * A registry of information about every compiled template.
- */
+/** A registry of information about every compiled template. */
 final class CompiledTemplateRegistry {
-  private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToGeneratedClassName;
-  private final ImmutableMap<String, ContentKind> deltemplateNameToContentKind;
+  private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
+  private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
+  private final ImmutableMap<String, Optional<SanitizedContentKind>> deltemplateNameToContentKind;
+  private final ImmutableSet<String> delegateTemplateNames;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
-    Map<String, ContentKind> deltemplateNameToContentKind = new HashMap<>();
-    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> builder = ImmutableBiMap.builder();
+    Map<String, Optional<SanitizedContentKind>> deltemplateNameToContentKind = new HashMap<>();
+    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
+        ImmutableBiMap.builder();
+    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
+        ImmutableBiMap.builder();
+    ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
     for (TemplateNode template : registry.getAllTemplates()) {
-      builder.put(template.getTemplateName(), 
-          CompiledTemplateMetadata.create(template.getTemplateName(), template));
-      if (template instanceof TemplateDelegateNode && template.getContentKind() != null) {
-        // all delegates are guaranteed to have the same content kind by the checkdelegatesvisitor
+      CompiledTemplateMetadata metadata =
+          CompiledTemplateMetadata.create(template.getTemplateName(), template);
+      templateToMetadata.put(template.getTemplateName(), metadata);
+      classToMetadata.put(metadata.typeInfo().className(), metadata);
+      if (template instanceof TemplateDelegateNode) {
+        delegateTemplateNames.add(template.getTemplateName());
+        // all delegates are guaranteed to have the same content kind by the
+        // checkdelegatesvisitor
         deltemplateNameToContentKind.put(
             ((TemplateDelegateNode) template).getDelTemplateName(),
-            template.getContentKind());
+            Optional.fromNullable(template.getContentKind()));
       }
     }
-    this.templateNameToGeneratedClassName = builder.build();
+    this.templateNameToMetadata = templateToMetadata.build();
+    this.classNameToMetadata = classToMetadata.build();
     this.deltemplateNameToContentKind = ImmutableMap.copyOf(deltemplateNameToContentKind);
+    this.delegateTemplateNames = delegateTemplateNames.build();
+  }
+
+  ImmutableSet<String> getTemplateNames() {
+    return templateNameToMetadata.keySet();
+  }
+
+  /** Returns the names of all delegate template implementations. */
+  ImmutableSet<String> getDelegateTemplateNames() {
+    return delegateTemplateNames;
+  }
+
+  /** Returns information about the generated class for the given fully qualified template name. */
+  CompiledTemplateMetadata getTemplateInfoByTemplateName(String templateName) {
+    return templateNameToMetadata.get(templateName);
+  }
+
+  /** Returns information about the generated class for the given fully qualified template name. */
+  CompiledTemplateMetadata getTemplateInfoByClassName(String templateName) {
+    return classNameToMetadata.get(templateName);
   }
 
   /**
-   * Returns information about the generated class for the given fully qualified template name.
+   * Returns the {@link SanitizedContentKind} (if any) of a deltemplate.
+   *
+   * @throws IllegalArgumentException if it is unknown because there are no implementations of the
+   *     delegate available at compile time.
    */
-  CompiledTemplateMetadata getTemplateInfo(String templateName) {
-    return templateNameToGeneratedClassName.get(templateName);
+  @Nullable
+  SanitizedContentKind getDelTemplateContentKind(String delTemplateName) {
+    return deltemplateNameToContentKind.get(delTemplateName).orNull();
   }
 
-  /**
-   * Returns the {@link ContentKind} (if any) of a deltemplate.
-   */
-  @Nullable ContentKind getDelTemplateContentKind(String delTemplateName) {
-    return deltemplateNameToContentKind.get(delTemplateName);
+  boolean hasDelTemplateDefinition(String delTemplateName) {
+    return deltemplateNameToContentKind.containsKey(delTemplateName);
   }
 }

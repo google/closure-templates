@@ -19,32 +19,31 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
-
+import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
-
 import javax.annotation.Nullable;
 
 /**
  * Represents a full set of messages in some language/locale.
  *
- * Important: Only use this class from message plugins!
+ * <p>Important: Only use this class from message plugins!
  *
  */
-public class SoyMsgBundleImpl implements SoyMsgBundle {
-
-
+public class SoyMsgBundleImpl extends SoyMsgBundle {
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
+  private final ULocale locale;
+  private final boolean isRtl;
 
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
   private final Map<Long, SoyMsg> msgMap;
-
 
   /**
    * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
@@ -52,26 +51,29 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
    * message.
    *
    * @param localeString The language/locale string of this bundle of messages, or null if unknown.
-   *     Should only be null for bundles newly extracted from source files. Should always be set
-   *     for bundles parsed from message files/resources.
+   *     Should only be null for bundles newly extracted from source files. Should always be set for
+   *     bundles parsed from message files/resources.
    * @param msgs The list of messages. List order will become the iteration order.
    */
   public SoyMsgBundleImpl(@Nullable String localeString, List<SoyMsg> msgs) {
 
     this.localeString = localeString;
+    this.locale = localeString == null ? null : new ULocale(localeString);
+    this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
-    SortedMap<Long, SoyMsg> tempMsgMap = Maps.newTreeMap();
+    // Preserve the ordering of the input.
+    Map<Long, SoyMsg> tempMsgMap = new LinkedHashMap<>();
     for (SoyMsg msg : msgs) {
       checkArgument(Objects.equals(msg.getLocaleString(), localeString));
       long msgId = msg.getId();
 
-      if (!tempMsgMap.containsKey(msgId)) {  // new message id
+      SoyMsg existingMsg = tempMsgMap.get(msgId);
+      if (existingMsg == null) { // new message id
         tempMsgMap.put(msgId, msg);
 
-      } else {  // duplicate message id
-        SoyMsg existingMsg = tempMsgMap.get(msgId);
-        for (String source : msg.getSourcePaths()) {
-          existingMsg.addSourcePath(source);
+      } else { // duplicate message id
+        for (SourceLocation source : msg.getSourceLocations()) {
+          existingMsg.addSourceLocation(source);
         }
       }
     }
@@ -79,24 +81,34 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
     msgMap = ImmutableMap.copyOf(tempMsgMap);
   }
 
-
-  @Override public String getLocaleString() {
+  @Override
+  public String getLocaleString() {
     return localeString;
   }
 
+  @Override
+  @Nullable
+  public ULocale getLocale() {
+    return locale;
+  }
 
-  @Override public SoyMsg getMsg(long msgId) {
+  @Override
+  public boolean isRtl() {
+    return isRtl;
+  }
+
+  @Override
+  public SoyMsg getMsg(long msgId) {
     return msgMap.get(msgId);
   }
 
-
-  @Override public int getNumMsgs() {
+  @Override
+  public int getNumMsgs() {
     return msgMap.size();
   }
 
-
-  @Override public Iterator<SoyMsg> iterator() {
+  @Override
+  public Iterator<SoyMsg> iterator() {
     return msgMap.values().iterator();
   }
-
 }

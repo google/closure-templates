@@ -23,14 +23,18 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for NoAutoescapeDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
-
+  @Test
   public void testApplyForTofu() {
 
     NoAutoescapeDirective noAutoescapeDirective = new NoAutoescapeDirective();
@@ -39,7 +43,8 @@ public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase
     assertTofuOutput("<b>rich text</b>", "<b>rich text</b>", noAutoescapeDirective);
     assertTofuOutput(
         "not.html { font-name: \"Arial\" 'Helvetica' }",
-        "not.html { font-name: \"Arial\" 'Helvetica' }", noAutoescapeDirective);
+        "not.html { font-name: \"Arial\" 'Helvetica' }",
+        noAutoescapeDirective);
     // Explicitly reject "text".
     assertTofuOutput(
         "zSoyz",
@@ -47,7 +52,7 @@ public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase
         noAutoescapeDirective);
   }
 
-
+  @Test
   public void testApplyForJsSrc() {
 
     NoAutoescapeDirective noAutoescapeDirective = new NoAutoescapeDirective();
@@ -55,5 +60,4 @@ public class NoAutoescapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase
     assertThat(noAutoescapeDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("soy.$$filterNoAutoescape(opt_data.myKey)");
   }
-
 }

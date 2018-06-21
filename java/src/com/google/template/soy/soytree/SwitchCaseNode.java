@@ -16,110 +16,62 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
-import java.util.List;
-
 /**
  * Node representing a 'case' block in a 'switch' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {
 
-
-  /** The text for this case's expression list. */
-  private final String exprListText;
-
   /** The parsed expression list. */
-  private final List<ExprRootNode> exprList;
+  private final ImmutableList<ExprRootNode> exprList;
 
-  private SwitchCaseNode(
-      int id, String commandText, List<ExprRootNode> exprList, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "case", commandText);
-    this.exprList = exprList;
-    this.exprListText = commandText;
+  public SwitchCaseNode(int id, SourceLocation location, ImmutableList<ExprNode> exprList) {
+    super(id, location, "case");
+    this.exprList = ExprRootNode.wrap(exprList);
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private SwitchCaseNode(SwitchCaseNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.exprListText = orig.exprListText;
-    this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());
+    ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     for (ExprRootNode origExpr : orig.exprList) {
-      this.exprList.add(origExpr.copy(copyState));
+      builder.add(origExpr.copy(copyState));
     }
+    this.exprList = builder.build();
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.SWITCH_CASE_NODE;
   }
 
-
-  /** Returns the text for this case's expression list. */
-  public String getExprListText() {
-    return exprListText;
+  @Override
+  public String getCommandText() {
+    return SoyTreeUtils.toSourceString(exprList);
   }
 
-
-  /** Returns the parsed expression list, or null if the expression list is not in V2 syntax. */
-  public List<ExprRootNode> getExprList() {
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
     return exprList;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(exprList);
-  }
-
-
-  @Override public SwitchCaseNode copy(CopyState copyState) {
+  @Override
+  public SwitchCaseNode copy(CopyState copyState) {
     return new SwitchCaseNode(this, copyState);
   }
-
-  /**
-   * Builder for {@link SwitchCaseNode}.
-   */
-  public static final class Builder {
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link SwitchCaseNode} from the state of this builder, reporting syntax errors
-     * to the given {@link ErrorReporter}.
-     */
-    public SwitchCaseNode build(ErrorReporter errorReporter) {
-      List<ExprRootNode> exprList = ExprRootNode.wrap(
-          new ExpressionParser(commandText, sourceLocation, errorReporter)
-              .parseExpressionList());
-      return new SwitchCaseNode(id, commandText, exprList, sourceLocation);
-    }
-  }
-
 }

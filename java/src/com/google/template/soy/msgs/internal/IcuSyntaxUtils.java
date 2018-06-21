@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
@@ -30,46 +29,36 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
-
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Utilities for building msg parts with ICU syntax.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class IcuSyntaxUtils {
 
-
   private IcuSyntaxUtils() {}
 
-
   /**
-   * Given a list of msg parts:
-   * (a) if it contains any plural/select parts, then builds a new list of msg parts where
-   *     plural/select parts in the original msg parts are all embedded as raw text in ICU format,
-   * (b) if it doesn't contain any plural/select parts, then simply returns the original msg parts
-   *     instead of creating a new list of identical msg parts.
+   * Given a list of msg parts: (a) if it contains any plural/select parts, then builds a new list
+   * of msg parts where plural/select parts in the original msg parts are all embedded as raw text
+   * in ICU format, (b) if it doesn't contain any plural/select parts, then simply returns the
+   * original msg parts instead of creating a new list of identical msg parts.
    *
    * @param origMsgParts The msg parts to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    * @return A new list of msg parts with embedded ICU syntax if the original msg parts contain
    *     plural/select parts, otherwise the original msg parts.
    */
   public static ImmutableList<SoyMsgPart> convertMsgPartsToEmbeddedIcuSyntax(
-      List<SoyMsgPart> origMsgParts, boolean allowIcuEscapingInRawText) {
+      ImmutableList<SoyMsgPart> origMsgParts) {
 
     // If origMsgParts doesn't have plural/select parts, simply return it.
-    if (! MsgPartUtils.hasPlrselPart(origMsgParts)) {
-      // TODO: Once ImmutableList<SoyMsgPart> is everywhere, remove ImmutableList.copyOf() here.
-      return ImmutableList.copyOf(origMsgParts);
+    if (!MsgPartUtils.hasPlrselPart(origMsgParts)) {
+      return origMsgParts;
     }
 
     // Build the new msg parts.
@@ -77,14 +66,13 @@ public class IcuSyntaxUtils {
     StringBuilder currRawTextSb = new StringBuilder();
 
     convertMsgPartsHelper(
-        newMsgPartsBuilder, currRawTextSb, origMsgParts, false, allowIcuEscapingInRawText);
+        newMsgPartsBuilder, currRawTextSb, origMsgParts, /* isInPlrselPart= */ false);
     if (currRawTextSb.length() > 0) {
       newMsgPartsBuilder.add(SoyMsgRawTextPart.of(currRawTextSb.toString()));
     }
 
     return newMsgPartsBuilder.build();
   }
-
 
   /**
    * Private helper for {@code convertMsgPartsToEmbeddedIcuSyntax()} to convert msg parts.
@@ -94,24 +82,19 @@ public class IcuSyntaxUtils {
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origMsgParts The msg parts to convert.
    * @param isInPlrselPart Whether we're currently within a plural/select part's subtree.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertMsgPartsHelper(
-      Builder<SoyMsgPart> newMsgPartsBuilder, StringBuilder currRawTextSb,
-      List<SoyMsgPart> origMsgParts, boolean isInPlrselPart, boolean allowIcuEscapingInRawText) {
+      ImmutableList.Builder<SoyMsgPart> newMsgPartsBuilder,
+      StringBuilder currRawTextSb,
+      List<SoyMsgPart> origMsgParts,
+      boolean isInPlrselPart) {
 
     for (SoyMsgPart origMsgPart : origMsgParts) {
 
       if (origMsgPart instanceof SoyMsgRawTextPart) {
         String rawText = ((SoyMsgRawTextPart) origMsgPart).getRawText();
         if (isInPlrselPart) {
-          if (allowIcuEscapingInRawText) {
-            rawText = icuEscape(rawText);
-          } else {
-            checkIcuEscapingIsNotNeeded(rawText);
-          }
+          rawText = icuEscape(rawText);
         }
         currRawTextSb.append(rawText);
 
@@ -129,18 +112,13 @@ public class IcuSyntaxUtils {
         currRawTextSb.append(getPluralRemainderString());
 
       } else if (origMsgPart instanceof SoyMsgPluralPart) {
-        convertPluralPartHelper(
-            newMsgPartsBuilder, currRawTextSb, (SoyMsgPluralPart) origMsgPart,
-            allowIcuEscapingInRawText);
+        convertPluralPartHelper(newMsgPartsBuilder, currRawTextSb, (SoyMsgPluralPart) origMsgPart);
 
       } else if (origMsgPart instanceof SoyMsgSelectPart) {
-        convertSelectPartHelper(
-            newMsgPartsBuilder, currRawTextSb, (SoyMsgSelectPart) origMsgPart,
-            allowIcuEscapingInRawText);
+        convertSelectPartHelper(newMsgPartsBuilder, currRawTextSb, (SoyMsgSelectPart) origMsgPart);
       }
     }
   }
-
 
   /**
    * Private helper for {@code convertMsgPartsToEmbeddedIcuSyntax()} to convert a plural part.
@@ -149,13 +127,11 @@ public class IcuSyntaxUtils {
    * @param currRawTextSb The collector for the current raw text, which hasn't yet been turned into
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origPluralPart The plural part to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertPluralPartHelper(
-      Builder<SoyMsgPart> newMsgPartsBuilder, StringBuilder currRawTextSb,
-      SoyMsgPluralPart origPluralPart, boolean allowIcuEscapingInRawText) {
+      Builder<SoyMsgPart> newMsgPartsBuilder,
+      StringBuilder currRawTextSb,
+      SoyMsgPluralPart origPluralPart) {
 
     currRawTextSb.append(
         getPluralOpenString(origPluralPart.getPluralVarName(), origPluralPart.getOffset()));
@@ -163,13 +139,12 @@ public class IcuSyntaxUtils {
     for (Case<SoyMsgPluralCaseSpec> pluralCase : origPluralPart.getCases()) {
       currRawTextSb.append(getPluralCaseOpenString(pluralCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder, currRawTextSb, pluralCase.parts(), true, allowIcuEscapingInRawText);
+          newMsgPartsBuilder, currRawTextSb, pluralCase.parts(), /* isInPlrselPart= */ true);
       currRawTextSb.append(getPluralCaseCloseString());
     }
 
     currRawTextSb.append(getPluralCloseString());
   }
-
 
   /**
    * Private helper for {@code convertMsgPartsToEmbeddedIcuSyntax()} to convert a select part.
@@ -178,34 +153,26 @@ public class IcuSyntaxUtils {
    * @param currRawTextSb The collector for the current raw text, which hasn't yet been turned into
    *     a SoyMsgRawTextPart and added to newMsgPartsBuilder because it might not be complete.
    * @param origSelectPart The select part to convert.
-   * @param allowIcuEscapingInRawText If true, then ICU syntax chars needing escaping in will be
-   *     escaped. If false, then a SoySyntaxException will be thrown if an ICU syntax char needing
-   *     escaping is encountered in raw text.
    */
   private static void convertSelectPartHelper(
-      Builder<SoyMsgPart> newMsgPartsBuilder, StringBuilder currRawTextSb,
-      SoyMsgSelectPart origSelectPart, boolean allowIcuEscapingInRawText) {
+      Builder<SoyMsgPart> newMsgPartsBuilder,
+      StringBuilder currRawTextSb,
+      SoyMsgSelectPart origSelectPart) {
 
     currRawTextSb.append(getSelectOpenString(origSelectPart.getSelectVarName()));
 
     for (Case<String> selectCase : origSelectPart.getCases()) {
       currRawTextSb.append(getSelectCaseOpenString(selectCase.spec()));
       convertMsgPartsHelper(
-          newMsgPartsBuilder,
-          currRawTextSb,
-          selectCase.parts(),
-          true /* isInPlrselPart */,
-          allowIcuEscapingInRawText);
+          newMsgPartsBuilder, currRawTextSb, selectCase.parts(), /* isInPlrselPart= */ true);
       currRawTextSb.append(getSelectCaseCloseString());
     }
 
     currRawTextSb.append(getSelectCloseString());
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Private low-level helpers.
-
 
   // A typical Plural command is as follows:
   // {plural $num_people offset="1"}
@@ -240,20 +207,18 @@ public class IcuSyntaxUtils {
   // (The variable names "gender" and "person" may be different depending on what purpose the
   // string is generated.)
 
-
   /**
-   * Regex pattern for ICU syntax chars needing escaping.
-   * Reference: http://userguide.icu-project.org/formatparse/messages
+   * Regex pattern for ICU syntax chars needing escaping. Reference:
+   * http://userguide.icu-project.org/formatparse/messages
    *
-   * Syntax chars are single quote, braces, and hash. Single quotes not followed by another syntax
-   * char do not need escaping. We match for:
-   * (a) a single quote that precedes another syntax char,
-   * (b) a single quote at the end of the raw text part (presumably the raw text is followed by some
-   *     ICU syntax, such as a placeholder or the end of a plural/select case), or
-   * (c) any brace char but not the hash char (see important note below).
+   * <p>Syntax chars are single quote, braces, and hash. Single quotes not followed by another
+   * syntax char do not need escaping. We match for: (a) a single quote that precedes another syntax
+   * char, (b) a single quote at the end of the raw text part (presumably the raw text is followed
+   * by some ICU syntax, such as a placeholder or the end of a plural/select case), or (c) any brace
+   * char but not the hash char (see important note below).
    *
-   * Important: In case (c), we do not match for the hash char '#' because we specifically turn off
-   * ICU special handling of '#' in both (1) generating JS code for goog.getMsg
+   * <p>Important: In case (c), we do not match for the hash char '#' because we specifically turn
+   * off ICU special handling of '#' in both (1) generating JS code for goog.getMsg
    * (GenJsCodeVisitorAssistantForMsgs.genI18nMessageFormatExprHelper) and (2) reading translated
    * msgs files (XtbIcuMsgParser.processIcuMessage),
    */
@@ -262,16 +227,12 @@ public class IcuSyntaxUtils {
       Pattern.compile(" ' (?= ['{}\\#] ) | ' $ | [{}] ", Pattern.COMMENTS);
 
   /** Map from ICU syntax char to its escape sequence. */
-  private static final Map<String, String> ICU_SYNTAX_CHAR_ESCAPE_MAP =
+  private static final ImmutableMap<String, String> ICU_SYNTAX_CHAR_ESCAPE_MAP =
       ImmutableMap.of("'", "''", "{", "'{'", "}", "'}'");
-
-  /** Regex pattern for ICU syntax chars other than single quote. Used in
-   *  checkIcuEscapingIsNotNeeded() to provide better error messages in some cases. */
-  private static final Pattern ICU_SYNTAX_CHAR_NOT_SINGLE_QUOTE_PATTERN = Pattern.compile("[{}]");
-
 
   /**
    * Escapes ICU syntax characters in raw text.
+   *
    * @param rawText The raw text to escaped.
    * @return The escaped raw text. If the given raw text doesn't need escaping, then the same string
    *     object is returned.
@@ -280,7 +241,7 @@ public class IcuSyntaxUtils {
   static String icuEscape(String rawText) {
 
     Matcher matcher = ICU_SYNTAX_CHAR_NEEDING_ESCAPE_PATTERN.matcher(rawText);
-    if (! matcher.find()) {
+    if (!matcher.find()) {
       return rawText;
     }
 
@@ -294,56 +255,11 @@ public class IcuSyntaxUtils {
   }
 
 
-  /**
-   * Checks that there are no ICU syntax characters needing escaping in the given raw text. Throws
-   * a SoySyntaxException if the check fails.
-   *
-   * @param rawText The raw text to check.
-   */
-  @VisibleForTesting
-  static void checkIcuEscapingIsNotNeeded(String rawText) {
-
-    Matcher matcher = ICU_SYNTAX_CHAR_NEEDING_ESCAPE_PATTERN.matcher(rawText);
-    if (! matcher.find()) {
-      return;
-    }
-
-    if (ICU_SYNTAX_CHAR_NOT_SINGLE_QUOTE_PATTERN.matcher(rawText).find()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Apologies, Soy currently does not support open/close brace characters in plural/gender" +
-              " source msgs.");
-    } else {
-      if (! matcher.group().equals("'")) {
-        throw new AssertionError();
-      }
-      String errorMsgSuffix =
-          " One possible workaround is to use the Unicode RIGHT SINGLE QUOTATION MARK character" +
-              " (\\u2019) instead of a basic apostrophe.";
-      if (matcher.end() == rawText.length()) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character at the end of a" +
-                " text part in plural/gender source msgs (including immediately preceding an HTML" +
-                " tag or Soy tag)." + errorMsgSuffix);
-      } else if (rawText.charAt(matcher.end()) == '#') {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character preceding a hash" +
-                " character in plural/gender source msgs." + errorMsgSuffix);
-      } else if (rawText.charAt(matcher.end()) == '\'') {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support consecutive single quote characters in" +
-                " plural/gender source msgs." + errorMsgSuffix);
-      } else {
-        throw new AssertionError();
-      }
-    }
-  }
-
-
   // ------ Plural related strings. ------
-
 
   /**
    * Gets the opening (left) string for a plural statement.
+   *
    * @param varName The plural var name.
    * @param offset The offset.
    * @return the ICU syntax string for the plural opening string.
@@ -357,51 +273,52 @@ public class IcuSyntaxUtils {
     return openingPartSb.toString();
   }
 
-
   /**
    * Gets the closing (right) string for a plural statement.
+   *
    * @return the ICU syntax string for the plural closing string.
    */
   private static String getPluralCloseString() {
     return "}";
   }
 
-
   /**
    * Gets the opening (left) string for a plural case statement.
+   *
    * @param pluralCaseSpec The plural case spec object.
    * @return the ICU syntax string for the plural case opening string.
    */
   private static String getPluralCaseOpenString(SoyMsgPluralCaseSpec pluralCaseSpec) {
-    String icuCaseName = (pluralCaseSpec.getType() == SoyMsgPluralCaseSpec.Type.EXPLICIT) ?
-        "=" + pluralCaseSpec.getExplicitValue() : pluralCaseSpec.getType().name().toLowerCase();
+    String icuCaseName =
+        (pluralCaseSpec.getType() == SoyMsgPluralCaseSpec.Type.EXPLICIT)
+            ? "=" + pluralCaseSpec.getExplicitValue()
+            : pluralCaseSpec.getType().name().toLowerCase();
     return icuCaseName + "{";
   }
 
-
- /**
+  /**
    * Gets the closing (right) string for a plural case statement.
+   *
    * @return the ICU syntax string for the plural case closing string.
    */
   private static String getPluralCaseCloseString() {
     return "}";
   }
 
-
   /**
    * Gets the closing string for a plural remainder statement.
+   *
    * @return the ICU syntax string for the plural remainder string.
    */
   private static String getPluralRemainderString() {
     return "#";
   }
 
-
   // ------ Select related strings. ------
-
 
   /**
    * Gets the opening (left) string for a select statement.
+   *
    * @param varName The select var name.
    * @return the ICU syntax string for the select opening string.
    */
@@ -409,18 +326,18 @@ public class IcuSyntaxUtils {
     return "{" + varName + ",select,";
   }
 
-
   /**
    * Gets the closing (right) string for a select statement.
+   *
    * @return the ICU syntax string for the select closing string.
    */
   private static String getSelectCloseString() {
     return "}";
   }
 
-
   /**
    * Gets the opening (left) string for a select case statement.
+   *
    * @param caseValue The case value, or {@code null} is it is the default statement.
    * @return the ICU syntax string for the select case opening string.
    */
@@ -428,13 +345,12 @@ public class IcuSyntaxUtils {
     return ((caseValue != null) ? caseValue : "other") + "{";
   }
 
-
   /**
    * Gets the closing string for a plural remainder statement.
+   *
    * @return the ICU syntax string for the plural remainder string.
    */
   private static String getSelectCaseCloseString() {
     return "}";
   }
-
 }

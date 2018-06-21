@@ -18,20 +18,17 @@ package com.google.template.soy.data.restricted;
 
 import javax.annotation.concurrent.Immutable;
 
-
 /**
  * Float data.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 @Immutable
 public final class FloatData extends NumberData {
 
-
   /** The float value. */
   private final double value;
-
 
   /**
    * @param value The float value.
@@ -42,9 +39,9 @@ public final class FloatData extends NumberData {
     this.value = value;
   }
 
-
   /**
    * Gets a FloatData instance for the given value.
+   *
    * @param value The desired value.
    * @return A FloatData instance with the given value.
    */
@@ -53,25 +50,22 @@ public final class FloatData extends NumberData {
     return new FloatData(value);
   }
 
-
   /** Returns the float value. */
   public double getValue() {
     return value;
   }
 
-
-  @Override public double floatValue() {
+  @Override
+  public double floatValue() {
     return value;
   }
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return toString(value);
   }
 
-  /**
-   * Returns Soy's idea of a double as a string.
-   */
+  /** Returns Soy's idea of a double as a string. */
   public static String toString(double value) {
     // This approximately consistent with Javascript for important cases.
     // Reference: http://www.ecma-international.org/ecma-262/5.1/#sec-9.8.1
@@ -93,16 +87,20 @@ public final class FloatData extends NumberData {
   /**
    * {@inheritDoc}
    *
-   * <p> 0.0 is falsy as is NaN.
+   * <p>0.0 is falsy as is NaN.
    */
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return value != 0.0 && !Double.isNaN(value);
   }
 
-
-  @Override public double toFloat() {
-    return value;
+  @Override
+  public String coerceToString() {
+    return toString();
   }
 
+  @Override
+  public double toFloat() {
+    return value;
+  }
 }

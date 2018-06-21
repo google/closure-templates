@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 
 /**
  * A reference to an undeclared variable, used in legacy templates.
@@ -24,9 +24,7 @@ import com.google.template.soy.types.primitive.UnknownType;
  */
 public final class UndeclaredVar extends AbstractVarDefn {
 
-  /**
-   * @param name The variable name.
-   */
+  /** @param name The variable name. */
   public UndeclaredVar(String name) {
     super(name, UnknownType.getInstance());
   }
@@ -35,11 +33,18 @@ public final class UndeclaredVar extends AbstractVarDefn {
     super(var);
   }
 
-  @Override public Kind kind() {
+  @Override
+  public Kind kind() {
     return Kind.UNDECLARED;
   }
 
-  @Override public UndeclaredVar clone() {
+  @Override
+  public UndeclaredVar clone() {
     return new UndeclaredVar(this);
+  }
+
+  @Override
+  public boolean isInjected() {
+    return false;
   }
 }

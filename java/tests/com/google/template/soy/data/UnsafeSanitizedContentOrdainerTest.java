@@ -16,48 +16,47 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for UnsafeSanitizedContentOrdainer utility class.
  *
  */
-public class UnsafeSanitizedContentOrdainerTest extends TestCase {
+@RunWith(JUnit4.class)
+public class UnsafeSanitizedContentOrdainerTest {
 
+  @Test
   public void testOrdainAsSafe() {
-    assertEquals(
-        SanitizedContent.create("Hello World", ContentKind.TEXT, null),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT));
-    assertEquals(
-        SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML));
-    assertEquals(
-        SanitizedContent.create("hello_world();", ContentKind.JS, Dir.LTR),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS));
-    assertEquals(
-        SanitizedContent.create("hello_world();", ContentKind.CSS, Dir.LTR),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.CSS));
-    assertEquals(
-        SanitizedContent.create("hello/world", ContentKind.URI, Dir.LTR),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("hello/world", ContentKind.URI));
-    assertEquals(
-        SanitizedContent.create("hello=world", ContentKind.ATTRIBUTES, Dir.LTR),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("hello=world", ContentKind.ATTRIBUTES));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT))
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", null));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML))
+        .isEqualTo(SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS))
+        .isEqualTo(SanitizedContent.create("hello_world();", ContentKind.JS, Dir.LTR));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.CSS))
+        .isEqualTo(SanitizedContent.create("hello_world();", ContentKind.CSS, Dir.LTR));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello/world", ContentKind.URI))
+        .isEqualTo(SanitizedContent.create("hello/world", ContentKind.URI, Dir.LTR));
+    assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello=world", ContentKind.ATTRIBUTES))
+        .isEqualTo(SanitizedContent.create("hello=world", ContentKind.ATTRIBUTES, Dir.LTR));
   }
 
+  @Test
   public void testOrdainAsSafeWithDir() {
-    assertEquals(
-        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.LTR),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR));
-    assertEquals(
-        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.RTL),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.RTL));
-    assertEquals(
-        SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.NEUTRAL),
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.NEUTRAL));
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR))
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.LTR));
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.RTL))
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.RTL));
+    assertThat(
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "Hello World", ContentKind.TEXT, Dir.NEUTRAL))
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.NEUTRAL));
   }
-
 }

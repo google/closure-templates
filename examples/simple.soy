@@ -15,7 +15,7 @@
 // Simple examples.
 // Author: Kai Huang
 
-{namespace soy.examples.simple autoescape="strict"}
+{namespace soy.examples.simple}
 
 
 /**
@@ -30,9 +30,9 @@
 
 /**
  * Says hello to a person (or to the world if no person is given).
- * @param? name The name of the person to say hello to.
  */
 {template .helloName}
+  {@param? name: string}  /** The name of the person to say hello to. */
   {if $name}
     {msg desc="Says hello to a person."}
       Hello {$name}!
@@ -45,10 +45,10 @@
 
 /**
  * Say hello to a list of people.
- * @param names List of names of the people to say hello to.
  */
 {template .helloNames}
-  {foreach $name in $names}
+  {@param names: list<string>}  /** List of names of the people to say hello to. */
+  {for $name in $names}
     {call .helloName}
       {param name: $name /}
     {/call}
@@ -58,5 +58,5 @@
   {ifempty}
     // If names list is empty, say "Hello world".
     {call .helloWorld /}
-  {/foreach}
+  {/for}
 {/template}

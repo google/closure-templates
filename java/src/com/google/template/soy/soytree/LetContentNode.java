@@ -16,53 +16,84 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
+
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-
+import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'let' statement with content.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class LetContentNode extends LetNode implements RenderUnitNode {
 
-  public static final SoyError NON_SELF_ENDING_WITH_VALUE
-      = SoyError.of("A ''let'' tag should contain a value if and only if it is also self-ending "
-          + "(with a trailing ''/'').");
+  /**
+   * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
+   * tree and introduce local temporary variables.
+   */
+  public static LetContentNode forVariable(
+      int id,
+      SourceLocation sourceLocation,
+      String varName,
+      @Nullable SanitizedContentKind contentKind) {
+    LetContentNode node = new LetContentNode(id, sourceLocation, varName, contentKind);
+    SoyType type =
+        (contentKind != null)
+            ? SanitizedType.getTypeForContentKind(contentKind)
+            : StringType.getInstance();
+    node.getVar().setType(type);
+    return node;
+  }
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The let node's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private final ContentKind contentKind;
+  @Nullable private final SanitizedContentKind contentKind;
 
-
-  private LetContentNode(
+  public LetContentNode(
       int id,
-      SourceLocation sourceLocation,
-      String localVarName,
-      String commandText,
-      ContentKind contentKind) {
-    super(id, sourceLocation, localVarName, commandText);
-    this.contentKind = contentKind;
-    parentMixin = new MixinParentNode<>(this);
+      SourceLocation location,
+      String varName,
+      @Nullable CommandTagAttribute kindAttr,
+      ErrorReporter errorReporter) {
+    super(id, location, varName);
+    this.parentMixin = new MixinParentNode<>(this);
+
+    if (kindAttr != null && !kindAttr.hasName("kind")) {
+      errorReporter.report(
+          kindAttr.getName().location(),
+          UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+          kindAttr.getName().identifier(),
+          "let",
+          "kind");
+      kindAttr = null;
+    }
+    this.contentKind = (kindAttr != null) ? kindAttr.valueAsContentKind(errorReporter) : null;
   }
 
+  private LetContentNode(
+      int id, SourceLocation location, String varName, @Nullable SanitizedContentKind contentKind) {
+    super(id, location, varName);
+    this.parentMixin = new MixinParentNode<>(this);
+    this.contentKind = contentKind;
+  }
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private LetContentNode(LetContentNode orig, CopyState copyState) {
@@ -71,33 +102,26 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     this.contentKind = orig.contentKind;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.LET_CONTENT_NODE;
   }
 
-
-  /**
-   * Return The local variable name (without preceding '$').
-   */
-  @Override public final String getVarName() {
-    return var.name();
-  }
-
-
-  @Override @Nullable public ContentKind getContentKind() {
+  @Override
+  @Nullable
+  public SanitizedContentKind getContentKind() {
     return contentKind;
   }
 
+  @Override
+  public String getCommandText() {
+    return (contentKind == null)
+        ? "$" + getVarName()
+        : "$" + getVarName() + " kind=\"" + contentKind.asAttributeValue() + "\"";
+  }
 
-  // -----------------------------------------------------------------------------------------------
-  // ParentSoyNode stuff.
-  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
-  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
-  // it needs to subclass LetNode (and Java doesn't allow multiple inheritance).
-
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -105,118 +129,84 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     return sb.toString();
   }
 
-  @Override public int numChildren() {
-    return parentMixin.numChildren();
-  }
-
-  @Override public StandaloneNode getChild(int index) {
-    return parentMixin.getChild(index);
-  }
-
-  @Override public int getChildIndex(StandaloneNode child) {
-    return parentMixin.getChildIndex(child);
-  }
-
-  @Override public List<StandaloneNode> getChildren() {
-    return parentMixin.getChildren();
-  }
-
-  @Override public void addChild(StandaloneNode child) {
-    parentMixin.addChild(child);
-  }
-
-  @Override public void addChild(int index, StandaloneNode child) {
-    parentMixin.addChild(index, child);
-  }
-
-  @Override public void removeChild(int index) {
-    parentMixin.removeChild(index);
-  }
-
-  @Override public void removeChild(StandaloneNode child) {
-    parentMixin.removeChild(child);
-  }
-
-  @Override public void replaceChild(int index, StandaloneNode newChild) {
-    parentMixin.replaceChild(index, newChild);
-  }
-
-  @Override public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
-    parentMixin.replaceChild(currChild, newChild);
-  }
-
-  @Override public void clearChildren() {
-    parentMixin.clearChildren();
-  }
-
-  @Override public void addChildren(List<? extends StandaloneNode> children) {
-    parentMixin.addChildren(children);
-  }
-
-  @Override public void addChildren(int index, List<? extends StandaloneNode> children) {
-    parentMixin.addChildren(index, children);
-  }
-
-  @Override public void appendSourceStringForChildren(StringBuilder sb) {
-    parentMixin.appendSourceStringForChildren(sb);
-  }
-
-  @Override public void appendTreeStringForChildren(StringBuilder sb, int indent) {
-    parentMixin.appendTreeStringForChildren(sb, indent);
-  }
-
-  @Override public String toTreeString(int indent) {
-    return parentMixin.toTreeString(indent);
-  }
-
-  @Override public LetContentNode copy(CopyState copyState) {
+  @Override
+  public LetContentNode copy(CopyState copyState) {
     return new LetContentNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link LetContentNode}.
-   */
-  public static final class Builder {
+  // -----------------------------------------------------------------------------------------------
+  // ParentSoyNode stuff.
+  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
+  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
+  // it needs to subclass LetNode (and Java doesn't allow multiple inheritance).
 
-    private static LetContentNode error() {
-      return new LetContentNode.Builder(-1, "$error", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
-    }
+  @Override
+  public int numChildren() {
+    return parentMixin.numChildren();
+  }
 
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
+  @Override
+  public StandaloneNode getChild(int index) {
+    return parentMixin.getChild(index);
+  }
 
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
+  @Override
+  public int getChildIndex(Node child) {
+    return parentMixin.getChildIndex(child);
+  }
 
-    /**
-     * Returns a new {@link LetContentNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
-     */
-    public LetContentNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      CommandTextParseResult parseResult
-          = parseCommandTextHelper(commandText, errorReporter, sourceLocation);
+  @Override
+  public List<StandaloneNode> getChildren() {
+    return parentMixin.getChildren();
+  }
 
-      if (parseResult.valueExpr != null) {
-        errorReporter.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
-      }
+  @Override
+  public void addChild(StandaloneNode child) {
+    parentMixin.addChild(child);
+  }
 
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
+  @Override
+  public void addChild(int index, StandaloneNode child) {
+    parentMixin.addChild(index, child);
+  }
 
-      return new LetContentNode(
-          id, sourceLocation, parseResult.localVarName, commandText, parseResult.contentKind);
-    }
+  @Override
+  public void removeChild(int index) {
+    parentMixin.removeChild(index);
+  }
+
+  @Override
+  public void removeChild(StandaloneNode child) {
+    parentMixin.removeChild(child);
+  }
+
+  @Override
+  public void replaceChild(int index, StandaloneNode newChild) {
+    parentMixin.replaceChild(index, newChild);
+  }
+
+  @Override
+  public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
+    parentMixin.replaceChild(currChild, newChild);
+  }
+
+  @Override
+  public void clearChildren() {
+    parentMixin.clearChildren();
+  }
+
+  @Override
+  public void addChildren(List<? extends StandaloneNode> children) {
+    parentMixin.addChildren(children);
+  }
+
+  @Override
+  public void addChildren(int index, List<? extends StandaloneNode> children) {
+    parentMixin.addChildren(index, children);
+  }
+
+  @Override
+  public void appendSourceStringForChildren(StringBuilder sb) {
+    parentMixin.appendSourceStringForChildren(sb);
   }
 }

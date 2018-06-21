@@ -16,78 +16,80 @@
 
 package com.google.template.soy.base.internal;
 
-import junit.framework.TestCase;
+import static com.google.common.truth.Truth.assertThat;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BaseUtils.
  *
  */
-public final class BaseUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class BaseUtilsTest {
 
-
+  @Test
   public void testIsIdentifier() {
 
-    assertTrue(BaseUtils.isIdentifier("boo"));
-    assertTrue(BaseUtils.isIdentifier("boo8Foo"));
-    assertTrue(BaseUtils.isIdentifier("_8"));
-    assertTrue(BaseUtils.isIdentifier("BOO_FOO"));
-    assertTrue(BaseUtils.isIdentifier("boo_foo"));
-    assertTrue(BaseUtils.isIdentifier("BooFoo_"));
-    assertFalse(BaseUtils.isIdentifier(""));
-    assertFalse(BaseUtils.isIdentifier("boo."));
-    assertFalse(BaseUtils.isIdentifier(".boo"));
-    assertFalse(BaseUtils.isIdentifier("boo.foo"));
-    assertFalse(BaseUtils.isIdentifier("boo-foo"));
-    assertFalse(BaseUtils.isIdentifier("8boo"));
+    assertThat(BaseUtils.isIdentifier("boo")).isTrue();
+    assertThat(BaseUtils.isIdentifier("boo8Foo")).isTrue();
+    assertThat(BaseUtils.isIdentifier("_8")).isTrue();
+    assertThat(BaseUtils.isIdentifier("BOO_FOO")).isTrue();
+    assertThat(BaseUtils.isIdentifier("boo_foo")).isTrue();
+    assertThat(BaseUtils.isIdentifier("BooFoo_")).isTrue();
+    assertThat(BaseUtils.isIdentifier("")).isFalse();
+    assertThat(BaseUtils.isIdentifier("boo.")).isFalse();
+    assertThat(BaseUtils.isIdentifier(".boo")).isFalse();
+    assertThat(BaseUtils.isIdentifier("boo.foo")).isFalse();
+    assertThat(BaseUtils.isIdentifier("boo-foo")).isFalse();
+    assertThat(BaseUtils.isIdentifier("8boo")).isFalse();
   }
 
-
+  @Test
   public void testIsIdentifierWithLeadingDot() {
 
-    assertTrue(BaseUtils.isIdentifierWithLeadingDot(".boo"));
-    assertTrue(BaseUtils.isIdentifierWithLeadingDot("._8"));
-    assertTrue(BaseUtils.isIdentifierWithLeadingDot(".BOO_FOO"));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot(""));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot("boo."));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot("boo"));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot("boo.foo"));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot(".boo-foo"));
-    assertFalse(BaseUtils.isIdentifierWithLeadingDot(".8boo"));
+    assertThat(BaseUtils.isIdentifierWithLeadingDot(".boo")).isTrue();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot("._8")).isTrue();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot(".BOO_FOO")).isTrue();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot("")).isFalse();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo.")).isFalse();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo")).isFalse();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot("boo.foo")).isFalse();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot(".boo-foo")).isFalse();
+    assertThat(BaseUtils.isIdentifierWithLeadingDot(".8boo")).isFalse();
   }
 
-
+  @Test
   public void testIsDottedIdentifier() {
 
-    assertTrue(BaseUtils.isDottedIdentifier("boo"));
-    assertTrue(BaseUtils.isDottedIdentifier("boo.foo8.goo"));
-    assertTrue(BaseUtils.isDottedIdentifier("Boo.FooGoo"));
-    assertTrue(BaseUtils.isDottedIdentifier("___I_._I._I_.__"));
-    assertFalse(BaseUtils.isDottedIdentifier(".boo.fooGoo"));
-    assertFalse(BaseUtils.isDottedIdentifier("boo."));
-    assertFalse(BaseUtils.isDottedIdentifier("boo.8"));
-    assertFalse(BaseUtils.isDottedIdentifier("boo-foo"));
-    assertFalse(BaseUtils.isDottedIdentifier("_...I._I_.."));
+    assertThat(BaseUtils.isDottedIdentifier("boo")).isTrue();
+    assertThat(BaseUtils.isDottedIdentifier("boo.foo8.goo")).isTrue();
+    assertThat(BaseUtils.isDottedIdentifier("Boo.FooGoo")).isTrue();
+    assertThat(BaseUtils.isDottedIdentifier("___I_._I._I_.__")).isTrue();
+    assertThat(BaseUtils.isDottedIdentifier(".boo.fooGoo")).isFalse();
+    assertThat(BaseUtils.isDottedIdentifier("boo.")).isFalse();
+    assertThat(BaseUtils.isDottedIdentifier("boo.8")).isFalse();
+    assertThat(BaseUtils.isDottedIdentifier("boo-foo")).isFalse();
+    assertThat(BaseUtils.isDottedIdentifier("_...I._I_..")).isFalse();
   }
 
-
+  @Test
   public void testConvertToUpperUnderscore() {
 
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("booFoo"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("_booFoo"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("booFoo_"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("BooFoo"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("boo_foo"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("BOO_FOO"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("__BOO__FOO__"));
-    assertEquals("BOO_FOO", BaseUtils.convertToUpperUnderscore("Boo_Foo"));
-    assertEquals("BOO_8_FOO", BaseUtils.convertToUpperUnderscore("boo8Foo"));
-    assertEquals("BOO_FOO_88", BaseUtils.convertToUpperUnderscore("booFoo88"));
-    assertEquals("BOO_88_FOO", BaseUtils.convertToUpperUnderscore("boo88_foo"));
-    assertEquals("BOO_8_FOO", BaseUtils.convertToUpperUnderscore("_boo_8foo"));
-    assertEquals("BOO_FOO_8", BaseUtils.convertToUpperUnderscore("boo_foo8"));
-    assertEquals("BOO_8_FOO", BaseUtils.convertToUpperUnderscore("_BOO__8_FOO_"));
+    assertThat(BaseUtils.convertToUpperUnderscore("booFoo")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("_booFoo")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("booFoo_")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("BooFoo")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("boo_foo")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("BOO_FOO")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("__BOO__FOO__")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("Boo_Foo")).isEqualTo("BOO_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("boo8Foo")).isEqualTo("BOO_8_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("booFoo88")).isEqualTo("BOO_FOO_88");
+    assertThat(BaseUtils.convertToUpperUnderscore("boo88_foo")).isEqualTo("BOO_88_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("_boo_8foo")).isEqualTo("BOO_8_FOO");
+    assertThat(BaseUtils.convertToUpperUnderscore("boo_foo8")).isEqualTo("BOO_FOO_8");
+    assertThat(BaseUtils.convertToUpperUnderscore("_BOO__8_FOO_")).isEqualTo("BOO_8_FOO");
   }
-
-
 }

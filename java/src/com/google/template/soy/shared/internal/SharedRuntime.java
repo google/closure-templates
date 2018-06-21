@@ -18,11 +18,12 @@ package com.google.template.soy.shared.internal;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.UnsanitizedString;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
-
 import java.util.Objects;
 
 /**
@@ -38,18 +39,17 @@ public final class SharedRuntime {
   public static boolean equal(SoyValue operand0, SoyValue operand1) {
     // Treat the case where either is a string specially.
     // TODO(gboyer): This should probably handle SanitizedContent == SanitizedContent, even though
-    if (operand0 instanceof StringData) {
-      return compareString((StringData) operand0, operand1);
+    // Javascript doesn't handle that case properly. http://b/21461181
+    if (operand0 instanceof StringData || operand0 instanceof UnsanitizedString) {
+      return compareString(operand0.stringValue(), operand1);
     }
-    if (operand1 instanceof StringData) {
-      return compareString((StringData) operand1, operand0);
+    if (operand1 instanceof StringData || operand1 instanceof UnsanitizedString) {
+      return compareString(operand1.stringValue(), operand0);
     }
     return Objects.equals(operand0, operand1);
   }
 
-  /**
-   * Performs the {@code +} operator on the two values.
-   */
+  /** Performs the {@code +} operator on the two values. */
   public static SoyValue plus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() + operand1.longValue());
@@ -62,9 +62,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code -} operator on the two values.
-   */
+  /** Performs the {@code -} operator on the two values. */
   public static SoyValue minus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() - operand1.longValue());
@@ -73,9 +71,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code *} operator on the two values.
-   */
+  /** Performs the {@code *} operator on the two values. */
   public static NumberData times(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() * operand1.longValue());
@@ -84,9 +80,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code /} operator on the two values.
-   */
+  /** Performs the {@code /} operator on the two values. */
   public static double dividedBy(SoyValue operand0, SoyValue operand1) {
     // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
     // Note that this *will* lose precision for longs.
@@ -94,20 +88,24 @@ public final class SharedRuntime {
   }
 
   /** Performs the {@code <} operator on the two values. */
-  public static boolean lessThan(SoyValue operand0, SoyValue operand1) {
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return operand0.longValue() < operand1.longValue();
+  public static boolean lessThan(SoyValue left, SoyValue right) {
+    if (left instanceof SoyString && right instanceof SoyString) {
+      return left.stringValue().compareTo(right.stringValue()) < 0;
+    } else if (left instanceof IntegerData && right instanceof IntegerData) {
+      return left.longValue() < right.longValue();
     } else {
-      return operand0.numberValue() < operand1.numberValue();
+      return left.numberValue() < right.numberValue();
     }
   }
 
   /** Performs the {@code <=} operator on the two values. */
-  public static boolean lessThanOrEqual(SoyValue operand0, SoyValue operand1) {
-    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
-      return operand0.longValue() <= operand1.longValue();
+  public static boolean lessThanOrEqual(SoyValue left, SoyValue right) {
+    if (left instanceof SoyString && right instanceof SoyString) {
+      return left.stringValue().compareTo(right.stringValue()) <= 0;
+    } else if (left instanceof IntegerData && right instanceof IntegerData) {
+      return left.longValue() <= right.longValue();
     } else {
-      return operand0.numberValue() <= operand1.numberValue();
+      return left.numberValue() <= right.numberValue();
     }
   }
 
@@ -120,19 +118,17 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Determines if the operand's string form can be equality-compared with a string.
-   */
-  private static boolean compareString(StringData stringData, SoyValue other) {
+  /** Determines if the operand's string form can be equality-compared with a string. */
+  public static boolean compareString(String string, SoyValue other) {
     // This follows similarly to the Javascript specification, to ensure similar operation
     // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3
     if (other instanceof StringData || other instanceof SanitizedContent) {
-      return stringData.stringValue().equals(other.toString());
+      return string.equals(other.toString());
     }
     if (other instanceof NumberData) {
       try {
         // Parse the string as a number.
-        return Double.parseDouble(stringData.stringValue()) == other.numberValue();
+        return Double.parseDouble(string) == other.numberValue();
       } catch (NumberFormatException nfe) {
         // Didn't parse as a number.
         return false;

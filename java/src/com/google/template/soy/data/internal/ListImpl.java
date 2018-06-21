@@ -16,16 +16,15 @@
 
 package com.google.template.soy.data.internal;
 
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-
 import java.util.List;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * Internal implementation of SoyList backed by a list of SoyValueProviders. Do not use directly;
- * instead, use {@link SoyValueHelper#convert}.
+ * instead, use {@link SoyValueConverter#convert}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -33,14 +32,17 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public final class ListImpl extends ListBackedList {
 
-
-  /** Creates a Soy list implementation backed by the given map. */
+  /** Creates a Soy list implementation backed by the given list. */
   public static ListImpl forProviderList(List<? extends SoyValueProvider> providerList) {
+    return new ListImpl(ImmutableList.copyOf(providerList));
+  }
+
+  /** Creates a Soy list implementation backed by the given list. */
+  public static ListImpl forProviderList(ImmutableList<? extends SoyValueProvider> providerList) {
     return new ListImpl(providerList);
   }
 
-
-  ListImpl(List<? extends SoyValueProvider> providerList) {
+  private ListImpl(ImmutableList<? extends SoyValueProvider> providerList) {
     super(providerList);
   }
 }

@@ -17,73 +17,88 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.objectweb.asm.Type;
 
 /**
  * A function that returns a substring of a given string.
  *
- * <p><code>strSub(expr1, expr2, expr3)</code> requires
- * <code>expr1</code> to be of type string or
- * {@link com.google.template.soy.data.SanitizedContent} and <code>expr2</code>
- * and <code>expr3</code> to be of type integer. <code>expr3</code> is
- * optional.
- * <p>This function returns a new string that is a substring of
- * <code>expr1</code>. The returned substring begins at the index specified by
- * <code>expr2</code>. If <code>expr3</code> is not specified, the substring will
- * extend to the end of <code>expr1</code>. Otherwise it will extend to the
- * character at index <code>expr3 - 1</code>.
+ * <p><code>strSub(expr1, expr2, expr3)</code> requires <code>expr1</code> to be of type string or
+ * {@link com.google.template.soy.data.SanitizedContent} and <code>expr2</code> and <code>expr3
+ * </code> to be of type integer. <code>expr3</code> is optional.
+ *
+ * <p>This function returns a new string that is a substring of <code>expr1</code>. The returned
+ * substring begins at the index specified by <code>expr2</code>. If <code>expr3</code> is not
+ * specified, the substring will extend to the end of <code>expr1</code>. Otherwise it will extend
+ * to the character at index <code>expr3 - 1</code>.
  *
  */
+@SoyFunctionSignature(
+  name = "strSub",
+  value = {
+    @Signature(
+      returnType = "string",
+      // TODO(b/62134073): should be string, int
+      parameterTypes = {"?", "?"}
+    ),
+    @Signature(
+      returnType = "string",
+      // TODO(b/62134073): should be string, int, int
+      parameterTypes = {"?", "?", "?"}
+    ),
+  }
+)
 @Singleton
 @SoyPureFunction
-class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class StrSubFunction extends TypedSoyFunction
+    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Inject
   StrSubFunction() {}
 
-
-  @Override public String getName() {
-    return "strSub";
-  }
-
-
-  @Override public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2, 3);
-  }
-
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
     SoyValue arg2 = args.size() == 3 ? args.get(2) : null;
 
-    Preconditions.checkArgument(arg0 instanceof StringData || arg0 instanceof SanitizedContent,
-        "First argument to strSub() function is not StringData or SanitizedContent: %s", arg0);
+    Preconditions.checkArgument(
+        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
+        "First argument to strSub() function is not StringData or SanitizedContent: %s",
+        arg0);
 
-    Preconditions.checkArgument(arg1 instanceof IntegerData,
-        "Second argument to strSub() function is not IntegerData: %s", arg1);
+    Preconditions.checkArgument(
+        arg1 instanceof IntegerData,
+        "Second argument to strSub() function is not IntegerData: %s",
+        arg1);
 
     if (arg2 != null) {
-      Preconditions.checkArgument(arg2 instanceof IntegerData,
-          "Third argument to strSub() function is not IntegerData: %s", arg2);
+      Preconditions.checkArgument(
+          arg2 instanceof IntegerData,
+          "Third argument to strSub() function is not IntegerData: %s",
+          arg2);
     }
 
     String strArg0 = arg0.coerceToString();
@@ -96,23 +111,67 @@ class StrSubFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunct
     }
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
     JsExpr arg1 = args.get(1);
     JsExpr arg2 = args.size() == 3 ? args.get(2) : null;
 
-    return new JsExpr("(" + arg0 + ").substring(" + arg1.getText()
-        + (arg2 != null ? "," + arg2.getText() : "") + ")", Integer.MAX_VALUE);
+    return new JsExpr(
+        "("
+            + arg0
+            + ").substring("
+            + arg1.getText()
+            + (arg2 != null ? "," + arg2.getText() : "")
+            + ")",
+        Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     // Coerce SanitizedContent args to strings.
     String base = args.get(0).toPyString().getText();
     PyExpr start = args.get(1);
     PyExpr end = args.size() == 3 ? args.get(2) : null;
 
-    return new PyStringExpr("(" + base + ")[" + start.getText() + ":"
-        + (end != null ? end.getText() : "") + "]");
+    return new PyStringExpr(
+        "(" + base + ")[" + start.getText() + ":" + (end != null ? end.getText() : "") + "]");
+  }
+
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef STRING_SUBSTR_START =
+        MethodRef.create(String.class, "substring", int.class).asNonNullable();
+    static final MethodRef STRING_SUBSTR_START_END =
+        MethodRef.create(String.class, "substring", int.class, int.class);
+  }
+
+  @Override
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
+    if (args.size() == 2) {
+      return invokeStrSubFunction(args.get(0), args.get(1));
+    }
+    return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
+  }
+
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
+  private SoyExpression invokeStrSubFunction(SoyExpression str, SoyExpression startIndex) {
+    return SoyExpression.forString(
+        str.unboxAs(String.class)
+            .invoke(
+                JbcSrcMethods.STRING_SUBSTR_START,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
+  }
+
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
+  private SoyExpression invokeStrSubFunction(
+      SoyExpression str, SoyExpression startIndex, SoyExpression endIndex) {
+    return SoyExpression.forString(
+        str.unboxAs(String.class)
+            .invoke(
+                JbcSrcMethods.STRING_SUBSTR_START_END,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
+                BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 }

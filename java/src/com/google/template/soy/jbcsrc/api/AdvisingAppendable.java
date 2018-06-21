@@ -23,17 +23,22 @@ import java.io.IOException;
  * exceeded.
  *
  * <p>When {@link #softLimitReached} returns {@code true}, the writer should attempt to pause
- * writing operations and return control to the calling thread as soon as possible.  This is a
+ * writing operations and return control to the calling thread as soon as possible. This is a
  * <em>cooperative</em> rate limiting mechanism and is best effort.
  *
  * <p>Implementers should note that if {@link #softLimitReached} returns {@code true}, they should
- * continue to accept writes via the {@code .append(...)} methods.  Throwing an exception when in
+ * continue to accept writes via the {@code .append(...)} methods. Throwing an exception when in
  * this state is a violation of the contract.
  */
 public interface AdvisingAppendable extends Appendable {
-  @Override AdvisingAppendable append(CharSequence csq) throws IOException;
-  @Override AdvisingAppendable append(CharSequence csq, int start, int end) throws IOException;
-  @Override AdvisingAppendable append(char c) throws IOException;
+  @Override
+  AdvisingAppendable append(CharSequence csq) throws IOException;
+
+  @Override
+  AdvisingAppendable append(CharSequence csq, int start, int end) throws IOException;
+
+  @Override
+  AdvisingAppendable append(char c) throws IOException;
 
   /**
    * Indicates that an internal limit has been reached or exceeded and that write operations should

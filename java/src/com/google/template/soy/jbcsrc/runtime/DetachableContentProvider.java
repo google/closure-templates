@@ -18,63 +18,85 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.LogStatement;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
 
 /**
- * A special implementation of {@link SoyValueProvider} to use as a shared base class for the
- * {@code jbcsrc} implementations of the generated {@code LetContentNode} and 
- * {@code CallParamContentNode} implementations.
+ * A special implementation of {@link SoyValueProvider} to use as a shared base class for the {@code
+ * jbcsrc} implementations of the generated {@code LetContentNode} and {@code CallParamContentNode}
+ * implementations.
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
   @Nullable private final ContentKind contentKind;
-  
-  // Will be either a SanitizedContent or a StringData, but there is no common super type besides
-  // this.
-  private SoyValue resolvedValue;
 
-  // Will be either an AdvisingStringBuilder or a TeeAdvisingAppendable depending on whether we are
-  // being resolved via 'status()' or via 'renderAndResolve'
-  private AdvisingAppendable builder;
-  
+  // Will be either a SanitizedContent or a StringData.
+  private SoyValue resolvedValue;
+  private BufferingAppendable buffer;
+
+  // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
+  // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
+  private LoggingAdvisingAppendable builder;
+
   protected DetachableContentProvider(@Nullable ContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
-  @Override public final SoyValue resolve() {
-    SoyValue local = resolvedValue;
-    checkState(local != null, "called resolve() before status() returned ready.");
-    checkState(local != TombstoneValue.INSTANCE,
+  @Override
+  public final SoyValue resolve() {
+    checkState(isDone(), "called resolve() before status() returned ready.");
+    SoyValue local = getResolvedValue();
+    checkState(
+        local != TombstoneValue.INSTANCE,
         "called resolve() after calling renderAndResolve with isLast == true");
     return local;
   }
 
-  @Override public final RenderResult status() {
-    if (resolvedValue != null) {
+  @Override
+  public final RenderResult status() {
+    if (isDone()) {
       return RenderResult.done();
     }
-    AdvisingStringBuilder currentBuilder = (AdvisingStringBuilder) builder;
+    LoggingAdvisingAppendable.BufferingAppendable currentBuilder =
+        (LoggingAdvisingAppendable.BufferingAppendable) builder;
     if (currentBuilder == null) {
-      builder = currentBuilder = new AdvisingStringBuilder();
+      builder = currentBuilder = LoggingAdvisingAppendable.buffering();
     }
-    return doRenderIntoBufferingAppendable(currentBuilder);
+    RenderResult result;
+    try {
+      result = doRender(currentBuilder);
+    } catch (IOException ioe) {
+      throw new AssertionError("impossible", ioe);
+    }
+    if (result.isDone()) {
+      buffer = currentBuilder;
+      builder = null;
+    }
+    return result;
   }
 
-  @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  @Override
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
-    SoyValue value = resolvedValue;
-    if (value != null) {
-      value.render(appendable);
+    if (isDone()) {
+      if (buffer == null && resolvedValue == TombstoneValue.INSTANCE) {
+        throw new IllegalStateException(
+            "calling renderAndResolve after setting isLast = true is not supported");
+      }
+      buffer.replayOn(appendable);
       return RenderResult.done();
     }
     if (isLast) {
@@ -84,68 +106,125 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       }
       return result;
     }
+
     TeeAdvisingAppendable currentBuilder = (TeeAdvisingAppendable) builder;
     if (currentBuilder == null) {
       builder = currentBuilder = new TeeAdvisingAppendable(appendable);
     }
-    return doRenderIntoBufferingAppendable(currentBuilder);
-  }
-
-  private RenderResult doRenderIntoBufferingAppendable(AdvisingAppendable target) {
-    RenderResult result = doRender(target);
+    RenderResult result = doRender(currentBuilder);
     if (result.isDone()) {
-      if (contentKind != null) {
-        resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(target.toString(), contentKind);
-      } else {
-        resolvedValue = StringData.forValue(target.toString()); 
-      }
+      buffer = currentBuilder.buffer;
+      builder = null;
     }
     return result;
   }
 
+  private boolean isDone() {
+    return resolvedValue != null || buffer != null;
+  }
+
+  private SoyValue getResolvedValue() {
+    SoyValue local = resolvedValue;
+    if (local == null) {
+      if (buffer != null) {
+        String string = buffer.toString();
+        // This drops logs, but that is sometimes necessary.  We should make sure this only happens
+        // when it has to by making sure that renderAndResolve is used for all printing usecases
+        if (contentKind != null) {
+          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
+        } else {
+          local = StringData.forValue(string);
+        }
+        resolvedValue = local;
+      } else {
+        throw new AssertionError("getResolvedValue() should only be called if the value isDone.");
+      }
+    }
+    return local;
+  }
+
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doRender(AdvisingAppendable appendable);
+  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable) throws IOException;
 
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the
    * same forwarded content into a buffer.
    *
-   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command</p> for the unix
+   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command for the unix
    * command on which this is based.
    */
-  private static final class TeeAdvisingAppendable implements AdvisingAppendable {
-    final StringBuilder buffer = new StringBuilder();
-    final AdvisingAppendable delegate;
+  private static final class TeeAdvisingAppendable extends LoggingAdvisingAppendable {
+    final BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    final LoggingAdvisingAppendable delegate;
 
-    TeeAdvisingAppendable(AdvisingAppendable delegate) {
+    TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
     }
 
-    @Override public AdvisingAppendable append(CharSequence csq) throws IOException {
+    @Override
+    protected void notifyContentKind(ContentKind kind) throws IOException {
+      delegate.setSanitizedContentKind(kind);
+      buffer.setSanitizedContentKind(kind);
+    }
+
+    @Override
+    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
+      delegate.setSanitizedContentDirectionality(contentDir);
+      buffer.setSanitizedContentDirectionality(contentDir);
+    }
+
+    @Override
+    public TeeAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
       buffer.append(csq);
       return this;
     }
 
-    @Override public AdvisingAppendable append(CharSequence csq, int start, int end) 
-        throws IOException {
+    @Override
+    public TeeAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
       buffer.append(csq, start, end);
       return this;
     }
 
-    @Override public AdvisingAppendable append(char c) throws IOException {
+    @Override
+    public TeeAdvisingAppendable append(char c) throws IOException {
       delegate.append(c);
       buffer.append(c);
       return this;
     }
 
-    @Override public boolean softLimitReached() {
+    @Override
+    public boolean softLimitReached() {
       return delegate.softLimitReached();
     }
-    
-    @Override public String toString() {
+
+    @Override
+    public String toString() {
       return buffer.toString();
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      delegate.enterLoggableElement(statement);
+      buffer.enterLoggableElement(statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      delegate.exitLoggableElement();
+      buffer.exitLoggableElement();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      buffer.appendLoggingFunctionInvocation(funCall, escapers);
+      return this;
     }
   }
 }

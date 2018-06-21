@@ -18,7 +18,6 @@ package com.google.template.soy.data;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-
 /**
  * A record containing name-to-value mappings referred to as fields. Each name is a string and each
  * value is a SoyValue (can be unresolved).
@@ -30,28 +29,27 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface SoyRecord extends SoyValue {
 
-
   /**
    * Checks whether this SoyRecord has a field of the given name.
+   *
    * @param name The field name to check.
    * @return Whether this SoyRecord has a field of the given name.
    */
   public boolean hasField(String name);
 
-
   /**
    * Gets a field value of this SoyRecord.
+   *
    * @param name The field name to get.
    * @return The field value for the given field name, or null if no such field name.
    */
   public SoyValue getField(String name);
 
-
   /**
    * Gets a provider of a field value of this SoyRecord.
+   *
    * @param name The field name to get.
    * @return A provider of the field value for the given field name, or null if no such field name.
    */
   public SoyValueProvider getFieldProvider(String name);
-
 }

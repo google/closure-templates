@@ -19,26 +19,23 @@ package com.google.template.soy.shared;
 import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-
 import javax.inject.Provider;
 
 /**
  * Shared utilities for unit tests.
  *
- * <p> Important: This class may only be used when testing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used when testing plugins (e.g. functions, directives).
  *
  */
 public class SharedRestrictedTestUtils {
 
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET =
-      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.JS_SRC);
+      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", null, SoyBackendKind.JS_SRC);
 
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET =
-      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", SoyBackendKind.PYTHON_SRC);
-
+      BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", null, SoyBackendKind.PYTHON_SRC);
 
   private SharedRestrictedTestUtils() {}
-
 
   public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER =
       Providers.of(BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET);

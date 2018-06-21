@@ -17,18 +17,23 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.shared.restricted.Sanitizers;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
+import com.google.template.soy.types.UnknownType;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 
 /**
  * A directive that turns off autoescape for this 'print' tag (if it's on for the template).
@@ -36,38 +41,66 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class NoAutoescapeDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
-
+public class NoAutoescapeDirective
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyJbcSrcPrintDirective.Streamable {
 
   public static final String NAME = "|noAutoescape";
-
 
   @Inject
   public NoAutoescapeDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return NAME;
   }
 
-
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return true;
   }
 
-
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterNoAutoescape(value);
   }
 
+  private static final class JbcSrcMethods {
+    static final MethodRef FILTER_NO_AUTOESCAPE =
+        MethodRef.create(Sanitizers.class, "filterNoAutoescape", SoyValue.class);
+    static final MethodRef FILTER_NO_AUTOESCAPE_STREAMING =
+        MethodRef.create(
+            Sanitizers.class, "filterNoAutoescapeStreaming", LoggingAdvisingAppendable.class);
+  }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        UnknownType.getInstance(), JbcSrcMethods.FILTER_NO_AUTOESCAPE.invoke(value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.create(
+        JbcSrcMethods.FILTER_NO_AUTOESCAPE_STREAMING.invoke(delegateAppendable));
+  }
+
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$filterNoAutoescape(" + value.getText() + ")", Integer.MAX_VALUE);
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
 }

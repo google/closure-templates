@@ -21,16 +21,20 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -40,37 +44,43 @@ import javax.inject.Singleton;
  * directionality.
  *
  */
+@SoyFunctionSignature(name = "bidiEndEdge", value = @Signature(returnType = "string"))
 @Singleton
-class BidiEndEdgeFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class BidiEndEdgeFunction extends TypedSoyFunction
+    implements SoyJavaFunction,
+        SoyLibraryAssistedJsSrcFunction,
+        SoyPySrcFunction,
+        SoyJbcSrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiEndEdgeFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
-    return "bidiEndEdge";
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
+    return StringData.forValue(BidiFunctionsRuntime.bidiEndEdge(bidiGlobalDirProvider.get()));
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(0);
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class JbcSrcMethods {
+    static final MethodRef END_EDGE =
+        MethodRef.create(BidiFunctionsRuntime.class, "bidiEndEdge", BidiGlobalDir.class)
+            .asCheap()
+            .asNonNullable();
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
-    return StringData.forValue(
-        (bidiGlobalDirProvider.get().getStaticValue() < 0) ? "left" : "right");
+  @Override
+  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
+    return SoyExpression.forString(JbcSrcMethods.END_EDGE.invoke(context.getBidiGlobalDir()));
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     if (bidiGlobalDir.isStaticValue()) {
       return new JsExpr(
@@ -81,7 +91,13 @@ class BidiEndEdgeFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrc
         Operator.CONDITIONAL.getPrecedence());
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.copyOf(bidiGlobalDirProvider.get().getNamespace().asSet());
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     return new PyExpr(
         "'left' if (" + bidiGlobalDir.getCodeSnippet() + ") < 0 else 'right'",

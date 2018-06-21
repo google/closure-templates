@@ -11,7 +11,7 @@ except NameError:
 
 
 def escape_uri_helper(v):
-  return urllib.quote(str(v))
+  return urllib.quote(str(v), '')
 
 _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE = {
   '\x00': '&#0;',
@@ -115,7 +115,7 @@ def _REPLACER_FOR_ESCAPE_CSS_STRING(match):
   ch = match.group(0)
   return _ESCAPE_MAP_FOR_ESCAPE_CSS_STRING[ch]
 
-_ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI = {
+_ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI = {
   '\x00': '%00',
   '\x01': '%01',
   '\x02': '%02',
@@ -183,9 +183,9 @@ _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI = {
   '\uff3d': '%EF%BC%BD'
 }
 
-def _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI(match):
+def _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI(match):
   ch = match.group(0)
-  return _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI[ch]
+  return _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI[ch]
 
 
 _MATCHER_FOR_ESCAPE_HTML = re.compile(r'[\x00\x22\x26\x27\x3c\x3e]', re.U)
@@ -196,23 +196,29 @@ _MATCHER_FOR_ESCAPE_HTML_NOSPACE = re.compile(r'[\x00\x09-\x0d \x22\x26\x27\x2d\
 
 _MATCHER_FOR_NORMALIZE_HTML_NOSPACE = re.compile(r'[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]', re.U)
 
-_MATCHER_FOR_ESCAPE_JS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\\\x85\u2028\u2029]', re.U)
+_MATCHER_FOR_ESCAPE_JS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]', re.U)
 
 _MATCHER_FOR_ESCAPE_JS_REGEX = re.compile(r'[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]', re.U)
 
 _MATCHER_FOR_ESCAPE_CSS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26-\x2a\/\x3a-\x3e@\\\x7b\x7d\x85\xa0\u2028\u2029]', re.U)
 
-_MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI = re.compile(r'[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]', re.U)
+_MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI = re.compile(r'[\x00- \x22\x27-\x29\x3c\x3e\\\x7b\x7d\x7f\x85\xa0\u2028\u2029\uff01\uff03\uff04\uff06-\uff0c\uff0f\uff1a\uff1b\uff1d\uff1f\uff20\uff3b\uff3d]', re.U)
 
-_FILTER_FOR_FILTER_CSS_VALUE = re.compile(r"""^(?!-*(?:expression|(?:moz-)?binding))(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,2}|%)?|!important|)\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_CSS_VALUE = re.compile(r"""^(?!-*(?:expression|(?:moz-)?binding))(?!\s+)(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|hsl)a?\([0-9.%, ]+\)|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,2}|%)?|!important|\s+)*\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?![^#?]*/(?:\.|%2E){2}(?:[/?#]|\Z))(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
 
+_FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^data:image/[a-z0-9+]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
+
 _FILTER_FOR_FILTER_IMAGE_DATA_URI = re.compile(r"""^data:image/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+/]+=*\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|src|usemap)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_SIP_URI = re.compile(r"""^sip:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!script|style|title|textarea|xmp|no)[a-z0-9_$:-]*\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
+
+_FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
+
+_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
 def escape_html_helper(value):
   value = str(value)
@@ -266,23 +272,48 @@ def filter_css_value_helper(value):
 
 def normalize_uri_helper(value):
   value = str(value)
-  return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI.sub(
-      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI, value)
+  return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
+      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
 
 
 def filter_normalize_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_NORMALIZE_URI.search(value):
-    return '#zSoyz'
+    return 'about:invalid#zSoyz'
 
-  return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI.sub(
-      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI, value)
+  return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
+      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
+
+
+def filter_normalize_media_uri_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI.search(value):
+    return 'about:invalid#zSoyz'
+
+  return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
+      _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
 
 
 def filter_image_data_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_IMAGE_DATA_URI.search(value):
     return 'data:image/gif;base64,zSoyz'
+
+  return value
+
+
+def filter_sip_uri_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_SIP_URI.search(value):
+    return 'about:invalid#zSoyz'
+
+  return value
+
+
+def filter_tel_uri_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_TEL_URI.search(value):
+    return 'about:invalid#zSoyz'
 
   return value
 
@@ -306,7 +337,7 @@ _HTML_TAG_REGEX = re.compile(r"""<(?:!|/?([a-zA-Z][a-zA-Z0-9:\-]*))(?:[^>'"]|"[^
 
 _LT_REGEX = re.compile('<')
 
-_SAFE_TAG_WHITELIST = ('b', 'br', 'em', 'i', 's', 'sub', 'sup', 'u')
+_SAFE_TAG_WHITELIST = ('b', 'br', 'em', 'i', 's', 'strong', 'sub', 'sup', 'u')
 
 
 # END GENERATED CODE

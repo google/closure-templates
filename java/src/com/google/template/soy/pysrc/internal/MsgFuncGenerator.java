@@ -19,8 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -31,7 +30,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -44,10 +42,11 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -55,12 +54,7 @@ import java.util.Map;
  * Class to generate python code for one {@link MsgNode}.
  *
  */
-final class MsgFuncGenerator {
-
-  static interface MsgFuncGeneratorFactory {
-    public MsgFuncGenerator create(MsgNode node, LocalVariableStack localVarExprs);
-  }
-
+public final class MsgFuncGenerator {
   /** The msg node to generate the function calls from. */
   private final MsgNode msgNode;
 
@@ -71,23 +65,22 @@ final class MsgFuncGenerator {
 
   private final GenPyExprsVisitor genPyExprsVisitor;
 
-  /** The function builder for the prepare_*() method **/
+  /** The function builder for the prepare_*() method */
   private final PyFunctionExprBuilder prepareFunc;
 
-  /** The function builder for the render_*() method **/
+  /** The function builder for the render_*() method */
   private final PyFunctionExprBuilder renderFunc;
 
   private final TranslateToPyExprVisitor translateToPyExprVisitor;
 
-
-  @AssistedInject
-  MsgFuncGenerator(GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
-      @Assisted MsgNode msgNode,
-      @Assisted LocalVariableStack localVarExprs) {
+  MsgFuncGenerator(
+      GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      MsgNode msgNode,
+      LocalVariableStack localVarExprs,
+      ErrorReporter errorReporter) {
     this.msgNode = msgNode;
-    this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
-    this.translateToPyExprVisitor = translateToPyExprVisitorFactory.create(localVarExprs);
+    this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
+    this.translateToPyExprVisitor = new TranslateToPyExprVisitor(localVarExprs, errorReporter);
     String translator = PyExprUtils.TRANSLATOR_NAME;
 
     if (this.msgNode.isPlrselMsg()) {
@@ -119,7 +112,6 @@ final class MsgFuncGenerator {
    * Return the PyStringExpr for the render function call, because we know render always return a
    * string in Python runtime.
    */
-
   PyStringExpr getPyExpr() {
     if (this.msgNode.isPlrselMsg()) {
       return this.msgNode.isPluralMsg() ? pyFuncForPluralMsg() : pyFuncForSelectMsg();
@@ -131,21 +123,21 @@ final class MsgFuncGenerator {
   private PyStringExpr pyFuncForRawTextMsg() {
     String pyMsgText = processMsgPartsHelper(msgParts, escaperForPyFormatString);
 
-    prepareFunc.addArg(msgId)
-        .addArg(pyMsgText);
-    return renderFunc.addArg(prepareFunc.asPyExpr())
-        .asPyStringExpr();
+    prepareFunc.addArg(msgId).addArg(pyMsgText);
+    return renderFunc.addArg(prepareFunc.asPyExpr()).asPyStringExpr();
   }
 
   private PyStringExpr pyFuncForGeneralMsg() {
     String pyMsgText = processMsgPartsHelper(msgParts, escaperForPyFormatString);
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
 
-    prepareFunc.addArg(msgId)
+    prepareFunc
+        .addArg(msgId)
         .addArg(pyMsgText)
         .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
 
-    return renderFunc.addArg(prepareFunc.asPyExpr())
+    return renderFunc
+        .addArg(prepareFunc.asPyExpr())
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
   }
@@ -159,10 +151,12 @@ final class MsgFuncGenerator {
     for (Case<SoyMsgPluralCaseSpec> pluralCase : pluralPart.getCases()) {
       caseSpecStrToMsgTexts.put(
           new PyStringExpr("'" + pluralCase.spec() + "'"),
-          new PyStringExpr("'" + processMsgPartsHelper(pluralCase.parts(), nullEscaper) + "'"));
+          new PyStringExpr(
+              "'" + processMsgPartsHelper(pluralCase.parts(), escaperForIcuSection) + "'"));
     }
 
-    prepareFunc.addArg(msgId)
+    prepareFunc
+        .addArg(msgId)
         .addArg(PyExprUtils.convertMapToPyExpr(caseSpecStrToMsgTexts))
         .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
 
@@ -170,7 +164,8 @@ final class MsgFuncGenerator {
     // Note that pluralExpr represent the Soy expression inside the attributes of a plural tag.
     PyExpr pluralPyExpr = translateToPyExprVisitor.exec(pluralNode.getExpr());
 
-    return renderFunc.addArg(prepareFunc.asPyExpr())
+    return renderFunc
+        .addArg(prepareFunc.asPyExpr())
         .addArg(pluralPyExpr)
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
@@ -180,14 +175,16 @@ final class MsgFuncGenerator {
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = collectVarNameListAndToPyExprMap();
 
     ImmutableList<SoyMsgPart> msgPartsInIcuSyntax =
-        IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts, true);
-    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax, nullEscaper);
+        IcuSyntaxUtils.convertMsgPartsToEmbeddedIcuSyntax(msgParts);
+    String pyMsgText = processMsgPartsHelper(msgPartsInIcuSyntax, escaperForIcuSection);
 
-    prepareFunc.addArg(msgId)
+    prepareFunc
+        .addArg(msgId)
         .addArg(pyMsgText)
         .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
 
-    return renderFunc.addArg(prepareFunc.asPyExpr())
+    return renderFunc
+        .addArg(prepareFunc.asPyExpr())
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
         .asPyStringExpr();
   }
@@ -196,8 +193,8 @@ final class MsgFuncGenerator {
    * Private helper to process and collect all variables used within this msg node for code
    * generation.
    *
-   * @return A Map populated with all the variables used with in this message node, using
-   *         {@link MsgPlaceholderInitialNode#genBasePhName}.
+   * @return A Map populated with all the variables used with in this message node, using {@link
+   *     MsgPlaceholderInitialNode#genBasePhName}.
    */
   private Map<PyExpr, PyExpr> collectVarNameListAndToPyExprMap() {
     Map<PyExpr, PyExpr> nodePyVarToPyExprMap = new LinkedHashMap<>();
@@ -206,19 +203,21 @@ final class MsgFuncGenerator {
       PyExpr substPyExpr = null;
 
       if (substUnitNode instanceof MsgPlaceholderNode) {
-        MsgPlaceholderInitialNode phInitialNode =
-            (MsgPlaceholderInitialNode) ((AbstractParentSoyNode<?>) substUnitNode).getChild(0);
+        SoyNode phInitialNode = ((AbstractParentSoyNode<?>) substUnitNode).getChild(0);
 
-        if (phInitialNode instanceof PrintNode || phInitialNode instanceof CallNode) {
-          substPyExpr = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(phInitialNode))
-              .toPyString();
+        if (phInitialNode instanceof PrintNode
+            || phInitialNode instanceof CallNode
+            || phInitialNode instanceof RawTextNode) {
+          substPyExpr =
+              PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(phInitialNode)).toPyString();
         }
 
         // when the placeholder is generated by HTML tags
         if (phInitialNode instanceof MsgHtmlTagNode) {
-          substPyExpr = PyExprUtils.concatPyExprs(
-              genPyExprsVisitor.execOnChildren((ParentSoyNode<?>) phInitialNode))
-              .toPyString();
+          substPyExpr =
+              PyExprUtils.concatPyExprs(
+                      genPyExprsVisitor.execOnChildren((ParentSoyNode<?>) phInitialNode))
+                  .toPyString();
         }
       } else if (substUnitNode instanceof MsgPluralNode) {
         // Translates {@link MsgPluralNode#pluralExpr} into a Python lookup expression.
@@ -249,23 +248,20 @@ final class MsgFuncGenerator {
    *
    * @param parts The SoyMsgPart parts to convert.
    * @param escaper A Function which provides escaping for raw text.
-   *
    * @return A String representing all the {@code parts} in Python.
    */
-  private static String processMsgPartsHelper(ImmutableList<SoyMsgPart> parts,
-      Function<String, String> escaper) {
+  private static String processMsgPartsHelper(
+      ImmutableList<SoyMsgPart> parts, Function<String, String> escaper) {
     StringBuilder rawMsgTextSb = new StringBuilder();
     for (SoyMsgPart part : parts) {
       if (part instanceof SoyMsgRawTextPart) {
-        rawMsgTextSb.append(escaper.apply(
-            ((SoyMsgRawTextPart) part).getRawText()));
+        rawMsgTextSb.append(escaper.apply(((SoyMsgRawTextPart) part).getRawText()));
       }
 
       if (part instanceof SoyMsgPlaceholderPart) {
         String phName = ((SoyMsgPlaceholderPart) part).getPlaceholderName();
         rawMsgTextSb.append("{" + phName + "}");
       }
-
     }
     return rawMsgTextSb.toString();
   }
@@ -274,23 +270,26 @@ final class MsgFuncGenerator {
    * A mapper to apply escaping for python format string.
    *
    * <p>It escapes '{' and '}' to '{{' and '}}' in the String.
+   *
    * @see "https://docs.python.org/2/library/string.html#formatstrings"
    */
-  private static Function<String, String> escaperForPyFormatString =
+  private static final Function<String, String> escaperForPyFormatString =
       new Function<String, String>() {
-    @Override
-    public String apply(String str) {
-      return str.replaceAll("\\{", "{{").replaceAll("\\}", "}}");
-    }
-  };
+        @Override
+        public String apply(String str) {
+          return str.replaceAll("\\{", "{{").replaceAll("\\}", "}}").replace("'", "\\\'");
+        }
+      };
 
   /**
-   * A mapper which does nothing.
+   * ICU messages use single quotes for escaping internal parts. This will escape the single quotes
+   * so they can be embedded in a python string literal.
    */
-  private static Function<String, String> nullEscaper = new Function<String, String>() {
-    @Override
-    public String apply(String str) {
-      return str;
-    }
-  };
+  private static final Function<String, String> escaperForIcuSection =
+      new Function<String, String>() {
+        @Override
+        public String apply(String str) {
+          return str.replace("'", "\\\'");
+        }
+      };
 }

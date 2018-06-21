@@ -16,277 +16,151 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Collection;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import java.util.List;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call to a basic template.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallBasicNode extends CallNode {
 
-  public static final SoyError MISSING_CALLEE_NAME
-      = SoyError.of("Invalid ''call'' command missing callee name: '{'call {0}'}'.");
-  public static final SoyError BAD_CALLEE_NAME
-      = SoyError.of("Invalid callee name \"{0}\" for ''call'' command.");
-
   /**
-   * Helper class used by constructors. Encapsulates all the info derived from the command
-   * text.
+   * The full name of the template being called, after namespace / alias resolution.
+   *
+   * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
+   * template is called into from two different contexts, and the autoescaper needs to clone a
+   * template and retarget the call.
    */
-  @Immutable
-  private static final class CommandTextInfo extends CallNode.CommandTextInfo {
-
-    /** The callee name string as it appears in the source code. */
-    private final String srcCalleeName;
-
-    CommandTextInfo(
-        String commandText, String srcCalleeName, DataAttribute dataAttr,
-        @Nullable String userSuppliedPlaceholderName,
-        @Nullable SyntaxVersionBound syntaxVersionBound) {
-      super(commandText, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
-      this.srcCalleeName = srcCalleeName;
-    }
-  }
-
-  /** Pattern for a callee name not listed as an attribute function="...". */
-  private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^\\s* ([.\\w]+) (?= \\s | $)", Pattern.COMMENTS);
-
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("call",
-          new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
+  private String fullCalleeName;
 
   /** The callee name string as it appears in the source code. */
-  private final String sourceCalleeName;
-
-  /** The full name of the template being called. Briefly null before being set. */
-  private String calleeName;
+  private String sourceCalleeName;
 
   /**
-   * The list of params that need to be type checked when this node is run.  All the params that
-   * could be statically verified will be checked up front (by the
-   * {@code CheckCallingParamTypesVisitor}), this list contains the params that could not be
-   * statically checked.
+   * The list of params that need to be type checked when this node is run. All the params that
+   * could be statically verified will be checked up front (by the {@code
+   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
+   * checked.
    *
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
    */
-  private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck;
+  @Nullable private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck = null;
 
-  /**
-   * Private constructor. {@link Builder} is the public API.
-   *
-   * @param id The id for this node.
-   * @param sourceLocation The node's source location.
-   * @param commandTextInfo All the info derived from the command text.
-   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
-   */
-  private CallBasicNode(
+  public CallBasicNode(
       int id,
-      SourceLocation sourceLocation,
-      CommandTextInfo commandTextInfo,
-      ImmutableList<String> escapingDirectiveNames,
-      @Nullable String calleeName) {
-    super(id, sourceLocation, "call", commandTextInfo, escapingDirectiveNames);
-    this.sourceCalleeName = commandTextInfo.srcCalleeName;
-    this.calleeName = calleeName;
+      SourceLocation location,
+      String sourceCalleeName,
+      String fullCalleeName,
+      List<CommandTagAttribute> attributes,
+      ErrorReporter errorReporter) {
+    super(id, location, "call", attributes, errorReporter);
+    checkArgument(BaseUtils.isDottedIdentifier(fullCalleeName));
+
+    this.sourceCalleeName = sourceCalleeName;
+    this.fullCalleeName = fullCalleeName;
+
+    for (CommandTagAttribute attr : attributes) {
+      String name = attr.getName().identifier();
+
+      switch (name) {
+        case "data":
+        case MessagePlaceholders.PHNAME_ATTR:
+        case MessagePlaceholders.PHEX_ATTR:
+          // Parsed in CallNode.
+          break;
+        default:
+          errorReporter.report(
+              attr.getName().location(),
+              UNSUPPORTED_ATTRIBUTE_KEY,
+              name,
+              "call",
+              ImmutableList.of(
+                  "data", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+      }
+    }
   }
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.sourceCalleeName = orig.sourceCalleeName;
-    this.calleeName = orig.calleeName;
+    this.fullCalleeName = orig.fullCalleeName;
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_BASIC_NODE;
   }
 
   /** Returns the callee name string as it appears in the source code. */
-  public String getSrcCalleeName() {
+  public String getSourceCalleeName() {
     return sourceCalleeName;
-  }
-
-
-  /**
-   * Sets the full name of the template being called (must not be a partial name).
-   * @param calleeName The full name of the template being called.
-   */
-  public void setCalleeName(String calleeName) {
-    Preconditions.checkState(this.calleeName == null);
-    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(calleeName));
-    this.calleeName = calleeName;
-  }
-
-  /**
-   * Sets the names of the parameters that require runtime type checking against the callees formal
-   * types.
-   */
-  public void setParamsToRuntimeCheck(Collection<TemplateParam> paramNames) {
-    this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
-  }
-
-  @Override public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
-    return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
   }
 
   /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {
-    return calleeName;
+    return fullCalleeName;
   }
 
-  @Override public CallBasicNode copy(CopyState copyState) {
+  /** Do not call this method outside the contextual autoescaper. */
+  public void setNewCalleeName(String name) {
+    checkArgument(BaseUtils.isDottedIdentifier(name));
+    this.sourceCalleeName = name;
+    this.fullCalleeName = name;
+  }
+
+  /** Sets the names of the params that require runtime type checking against callee's types. */
+  public void setParamsToRuntimeCheck(Collection<TemplateParam> paramNames) {
+    checkState(this.paramsToRuntimeTypeCheck == null);
+    this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
+  }
+
+  @Override
+  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+    return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
+  }
+
+  @Override
+  public String getCommandText() {
+    StringBuilder commandText = new StringBuilder(sourceCalleeName);
+
+    if (isPassingAllData()) {
+      commandText.append(" data=\"all\"");
+    } else if (getDataExpr() != null) {
+      commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
+    }
+    if (getUserSuppliedPhName() != null) {
+      commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
+    }
+    if (getUserSuppliedPhExample() != null) {
+      commandText.append(" phex=\"").append(getUserSuppliedPhExample()).append('"');
+    }
+
+    return commandText.toString();
+  }
+
+  @Override
+  public CallBasicNode copy(CopyState copyState) {
     return new CallBasicNode(this, copyState);
-  }
-
-  public static final class Builder {
-
-    private static CallBasicNode error() {
-      return new Builder(-1, SourceLocation.UNKNOWN)
-          .commandText(".error")
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
-    }
-
-    private final int id;
-    private final SourceLocation sourceLocation;
-
-    private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
-    private DataAttribute dataAttr = DataAttribute.none();
-
-    @Nullable private String commandText;
-    @Nullable private String userSuppliedPlaceholderName;
-    @Nullable private String calleeName;
-    @Nullable private String sourceCalleeName;
-    @Nullable private SyntaxVersionBound syntaxVersionBound;
-
-    public Builder(int id, SourceLocation sourceLocation) {
-      this.id = id;
-      this.sourceLocation = sourceLocation;
-    }
-
-    public Builder calleeName(String calleeName) {
-      this.calleeName = calleeName;
-      return this;
-    }
-
-    public Builder commandText(String commandText) {
-      this.commandText = commandText;
-      return this;
-    }
-
-    public Builder escapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
-      this.escapingDirectiveNames = escapingDirectiveNames;
-      return this;
-    }
-
-    public Builder dataAttribute(DataAttribute dataAttr) {
-      this.dataAttr = dataAttr;
-      return this;
-    }
-
-    public Builder sourceCalleeName(String sourceCalleeName) {
-      this.sourceCalleeName = sourceCalleeName;
-      return this;
-    }
-
-    public Builder syntaxVersionBound(SyntaxVersionBound syntaxVersionBound) {
-      this.syntaxVersionBound = syntaxVersionBound;
-      return this;
-    }
-
-    public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
-      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      return this;
-    }
-
-    public CallBasicNode build(ErrorReporter errorReporter) {
-      Checkpoint c = errorReporter.checkpoint();
-      CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(errorReporter)
-          : buildCommandText();
-      if (errorReporter.errorsSince(c)) {
-        return error();
-      }
-      CallBasicNode callBasicNode = new CallBasicNode(
-          id, sourceLocation, commandTextInfo, escapingDirectiveNames, calleeName);
-      return callBasicNode;
-    }
-
-    // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
-    private CommandTextInfo parseCommandText(ErrorReporter errorReporter) {
-      String cmdText =
-          commandText +
-              ((userSuppliedPlaceholderName != null) ?
-                  " phname=\"" + userSuppliedPlaceholderName + "\"" : "");
-
-      String cmdTextForParsing = commandText;
-
-      SyntaxVersionBound syntaxVersionBound = null;
-
-      Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(cmdTextForParsing);
-      if (ncnMatcher.find()) {
-        sourceCalleeName = ncnMatcher.group(1);
-        cmdTextForParsing = cmdTextForParsing.substring(ncnMatcher.end()).trim();
-        if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
-            BaseUtils.isDottedIdentifier(sourceCalleeName))) {
-          errorReporter.report(sourceLocation, BAD_CALLEE_NAME, sourceCalleeName);
-        }
-      } else {
-        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
-      }
-
-      Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorReporter, sourceLocation);
-
-      DataAttribute dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
-
-      return new CommandTextInfo(
-          cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName, syntaxVersionBound);
-    }
-
-    // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
-    private CommandTextInfo buildCommandText() {
-      String commandText = sourceCalleeName;
-      if (dataAttr.isPassingAllData()) {
-        commandText += " data=\"all\"";
-      } else if (dataAttr.isPassingData()) {
-        assert dataAttr.dataExpr() != null;  // suppress warnings
-        commandText += " data=\"" + dataAttr.dataExpr().toSourceString() + '"';
-      }
-      if (userSuppliedPlaceholderName != null) {
-        commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
-      }
-
-      return new CommandTextInfo(
-          commandText, sourceCalleeName, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
-    }
   }
 }

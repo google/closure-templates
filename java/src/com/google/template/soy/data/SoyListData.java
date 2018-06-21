@@ -23,32 +23,33 @@ import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.annotation.Nonnull;
-
 
 /**
  * A list data node in a Soy data tree.
  *
+ * @deprecated Users of this class should use normal {@code java.util.List}s instead. The Soy
+ *     rendering APIs can automatically handle conversion of native Java types and Soy plugin users
+ *     can directly use {@link SoyValueConverter#convert(Object)}. This class offers no benefits
+ *     over those APIs.
  */
+@Deprecated
 public final class SoyListData extends CollectionData implements Iterable<SoyData>, SoyList {
   /** The underlying list. */
   private final List<SoyData> list;
-
 
   public SoyListData() {
     list = Lists.newArrayList();
   }
 
-
   /**
    * Constructor that initializes this SoyListData from an existing list.
+   *
    * @param data The initial data in an existing Iterable.
    */
   public SoyListData(Iterable<?> data) {
@@ -56,43 +57,43 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     add(data);
   }
 
-
   /**
    * Constructor that initializes this SoyListData with the given elements.
+   *
    * @param values The initial data to add.
    */
   public SoyListData(Object... values) {
     this(Arrays.asList(values));
   }
 
-
   /**
    * Important: Please treat this method as superpackage-private. Do not call this method from
    * outside the 'tofu' and 'data' packages.
    *
-   * Returns a view of this SoyListData object as a List.
+   * <p>Returns a view of this SoyListData object as a List.
    */
   public List<SoyData> asList() {
     return Collections.unmodifiableList(list);
   }
 
-
   /**
    * {@inheritDoc}
    *
-   * <p> This method should only be used for debugging purposes.
+   * <p>This method should only be used for debugging purposes.
    */
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
+  @Override
+  public String toString() {
+    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       render(sb);
     } catch (IOException e) {
-      throw new RuntimeException(e);  // impossible
+      throw new RuntimeException(e); // impossible
     }
     return sb.toString();
   }
 
-  @Override public void render(Appendable appendable) throws IOException {
+  @Override
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append("[");
     int size = list.size();
     if (size != 0) {
@@ -108,39 +109,48 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   /**
    * {@inheritDoc}
    *
-   * <p> A list is always truthy.
+   * <p>A list is always truthy.
    */
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return true;
   }
 
-
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-  @Override public boolean equals(Object other) {
-    return this == other;  // fall back to object equality
+  @Override
+  public String coerceToString() {
+    return toString();
   }
 
+  @Override
+  public final boolean equals(Object other) {
+    return this == other; // fall back to object equality
+  }
+
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
+  }
 
   /**
    * Gets the length of this list.
+   *
    * @return The length of this list.
    */
+  @Override
   public int length() {
     return list.size();
   }
 
-
-  @Override public Iterator<SoyData> iterator() {
+  @Override
+  public Iterator<SoyData> iterator() {
     return Collections.unmodifiableList(list).iterator();
   }
 
-
   // ------------ add() ------------
-
 
   /**
    * Private helper shared by constructor SoyListData(Iterable) and add(Object...).
+   *
    * @param data The data to add.
    */
   private void add(Iterable<?> data) {
@@ -156,18 +166,18 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     }
   }
 
-
   /**
    * Convenience function to add multiple values in one call.
+   *
    * @param values The data to add.
    */
   public void add(Object... values) {
     add(Arrays.asList(values));
   }
 
-
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(SoyData value) {
@@ -176,6 +186,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(boolean value) {
@@ -184,6 +195,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(int value) {
@@ -192,6 +204,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(long value) {
@@ -200,6 +213,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(double value) {
@@ -208,17 +222,18 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Adds a data value.
+   *
    * @param value The data to add.
    */
   public void add(String value) {
     add(StringData.forValue(value));
   }
 
-
   // ------------ set() ------------
 
   /**
    * Sets a data value at a given index.
+   *
    * @param index The index.
    * @param value The data to set.
    */
@@ -232,6 +247,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Sets a data value at a given index.
+   *
    * @param index The index.
    * @param value The data to set.
    */
@@ -241,6 +257,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Sets a data value at a given index.
+   *
    * @param index The index.
    * @param value The data to set.
    */
@@ -250,6 +267,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Sets a data value at a given index.
+   *
    * @param index The index.
    * @param value The data to set.
    */
@@ -259,6 +277,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
 
   /**
    * Sets a data value at a given index.
+   *
    * @param index The index.
    * @param value The data to set.
    */
@@ -266,25 +285,26 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     set(index, StringData.forValue(value));
   }
 
-
   // ------------ remove() ------------
 
   /**
    * Removes the data value at a given index.
+   *
    * @param index The index.
    */
   public void remove(int index) {
     list.remove(index);
   }
 
-
   // ------------ get*() ------------
 
   /**
    * Gets the data value at a given index.
+   *
    * @param index The index.
    * @return The data at the given index, or null of the index is undefined.
    */
+  @Override
   public SoyData get(int index) {
     try {
       return list.get(index);
@@ -294,8 +314,9 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a SoyMapData object.
-   * Gets the SoyMapData at the given index.
+   * Precondition: The specified index contains a SoyMapData object. Gets the SoyMapData at the
+   * given index.
+   *
    * @param index The index.
    * @return The SoyMapData at the given index, or null of the index is undefined.
    */
@@ -304,8 +325,9 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a SoyListData object.
-   * Gets the SoyListData at the given index.
+   * Precondition: The specified index contains a SoyListData object. Gets the SoyListData at the
+   * given index.
+   *
    * @param index The index.
    * @return The SoyListData at the given index, or null of the index is undefined.
    */
@@ -314,8 +336,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a boolean.
-   * Gets the boolean at the given index.
+   * Precondition: The specified index contains a boolean. Gets the boolean at the given index.
+   *
    * @param index The index.
    * @return The boolean at the given index, or null of the index is undefined.
    */
@@ -324,8 +346,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains an integer.
-   * Gets the integer at the given index.
+   * Precondition: The specified index contains an integer. Gets the integer at the given index.
+   *
    * @param index The index.
    * @return The integer at the given index, or null of the index is undefined.
    */
@@ -334,8 +356,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a long.
-   * Gets the long at the given index.
+   * Precondition: The specified index contains a long. Gets the long at the given index.
+   *
    * @param index The index.
    * @return The long at the given index, or null of the index is undefined.
    */
@@ -344,8 +366,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a float.
-   * Gets the float at the given index.
+   * Precondition: The specified index contains a float. Gets the float at the given index.
+   *
    * @param index The index.
    * @return The float at the given index, or null of the index is undefined.
    */
@@ -354,8 +376,8 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   /**
-   * Precondition: The specified index contains a string.
-   * Gets the string at the given index.
+   * Precondition: The specified index contains a string. Gets the string at the given index.
+   *
    * @param index The index.
    * @return The string at the given index, or null of the index is undefined.
    */
@@ -363,75 +385,78 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     return get(index).stringValue();
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Superpackage-private methods.
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Puts data into this data object at the specified key.
+   * <p>Puts data into this data object at the specified key.
+   *
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
-  @Override public void putSingle(String key, SoyData value) {
+  @Override
+  public void putSingle(String key, SoyData value) {
     set(Integer.parseInt(key), value);
   }
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Removes the data at the specified key.
+   * <p>Removes the data at the specified key.
+   *
    * @param key An individual key.
    */
-  @Override public void removeSingle(String key) {
+  @Override
+  public void removeSingle(String key) {
     remove(Integer.parseInt(key));
   }
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Gets the data at the specified key.
+   * <p>Gets the data at the specified key.
+   *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  @Override public SoyData getSingle(String key) {
+  @Override
+  public SoyData getSingle(String key) {
     return get(Integer.parseInt(key));
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // SoyList.
 
-
-  @Override @Nonnull public List<? extends SoyValueProvider> asJavaList() {
+  @Override
+  @Nonnull
+  public List<? extends SoyValueProvider> asJavaList() {
     return asList();
   }
 
-
-  @Override @Nonnull public List<? extends SoyValue> asResolvedJavaList() {
+  @Override
+  @Nonnull
+  public List<? extends SoyValue> asResolvedJavaList() {
     return asList();
   }
 
-
-  @Override public SoyValueProvider getProvider(int index) {
+  @Override
+  public SoyValueProvider getProvider(int index) {
     return get(index);
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // SoyMap.
 
-
-  @Override public int getItemCnt() {
+  @Override
+  public int getItemCnt() {
     return length();
   }
 
-
-  @Override @Nonnull public Iterable<? extends SoyValue> getItemKeys() {
+  @Override
+  @Nonnull
+  public Iterable<? extends SoyValue> getItemKeys() {
     ImmutableList.Builder<IntegerData> indexesBuilder = ImmutableList.builder();
     for (int i = 0, n = length(); i < n; i++) {
       indexesBuilder.add(IntegerData.forValue(i));
@@ -439,26 +464,26 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     return indexesBuilder.build();
   }
 
-
-  @Override public boolean hasItem(SoyValue key) {
+  @Override
+  public boolean hasItem(SoyValue key) {
     int index = getIntegerIndex(key);
     return 0 <= index && index < length();
   }
 
-
-  @Override public SoyValue getItem(SoyValue key) {
+  @Override
+  public SoyValue getItem(SoyValue key) {
     return get(getIntegerIndex(key));
   }
 
-
-  @Override public SoyValueProvider getItemProvider(SoyValue key) {
+  @Override
+  public SoyValueProvider getItemProvider(SoyValue key) {
     return get(getIntegerIndex(key));
   }
-
 
   /**
    * Gets the integer index out of a SoyValue key, or throws SoyDataException if the key is not an
    * integer.
+   *
    * @param key The SoyValue key.
    * @return The index.
    */
@@ -471,10 +496,10 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
         return Integer.parseInt(key.coerceToString());
       } catch (NumberFormatException nfe) {
         throw new SoyDataException(
-            "SoyList accessed with non-integer key (got key type " + key.getClass().getName() +
-                ").");
+            "SoyList accessed with non-integer key (got key type "
+                + key.getClass().getName()
+                + ").");
       }
     }
   }
-
 }

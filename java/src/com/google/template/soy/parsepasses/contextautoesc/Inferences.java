@@ -16,23 +16,23 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -40,32 +40,27 @@ import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 /**
  * Encapsulates information inferred about a Soy file and decisions made to change it.
  *
- * <p>
- * The mutator methods on this class do not change the Soy file.  All changes are delayed until
+ * <p>The mutator methods on this class do not change the Soy file. All changes are delayed until
  * after all inference has been done so that we can safely try a variety of speculative techniques.
  *
- * <p>
- * To make it easier to do speculative inference, this class cascades : each instance has a parent,
- * and it delegates to that when it does not have info itself.
- * And there is a {@link Inferences#foldIntoParent()} method that propagates all decisions into the
- * parent when a set of inference decisions are considered final.
+ * <p>To make it easier to do speculative inference, this class cascades : each instance has a
+ * parent, and it delegates to that when it does not have info itself. And there is a {@link
+ * Inferences#foldIntoParent()} method that propagates all decisions into the parent when a set of
+ * inference decisions are considered final.
  *
- * <p>
- * The {@link ContextualAutoescaper} creates a single root instance and its passes fold successful
- * inferences into the parent until it ends up with a final set of rewriting decisions that the
- * {@link Rewriter} applies to the input Soy parse tree.
+ * <p>The {@link ContextualAutoescaper} creates a single root instance and its passes fold
+ * successful inferences into the parent until it ends up with a final set of rewriting decisions
+ * that the {@link Rewriter} applies to the input Soy parse tree.
  *
  */
 final class Inferences {
@@ -73,29 +68,25 @@ final class Inferences {
   /** Null or an instance to inherit state from. */
   private final @Nullable Inferences parent;
 
-  /**
-   * Soy directives that cancel autoescaping (see {@link SoyPrintDirective#shouldCancelAutoescape}).
-   */
-  private final ImmutableSet<String> autoescapeCancellingDirectives;
-
   /** Used to generate unique IDs for cloned templates. */
   private final IdGenerator idGen;
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
-  private final Map<String, List<TemplateNode>> templatesByName = Maps.newLinkedHashMap();
+  private final ListMultimap<String, TemplateNode> templatesByName =
+      MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
   /** The types of templates. */
   private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
 
-  /** Maps IDs of <code>{print}</code> commands to the context in which they start. */
-  private final Map<Integer, Context> idToStartContext = Maps.newLinkedHashMap();
+  /** Maps print, msg and call commands to the inferred escaping modes. */
+  private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
+      Maps.newIdentityHashMap();
 
-  /** Maps IDs of print and call commands to the inferred escaping modes. */
-  private final Map<Integer, ImmutableList<EscapingMode>> idToEscapingModes =
-      Maps.newLinkedHashMap();
+  /** Maps print, msg and call commands to the context. */
+  private final Map<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
 
   /** Maps IDs of <code>{call}</code> commands to the derived template they should use. */
-  private final Map<Integer, String> callIdToDerivedCalleeName = Maps.newLinkedHashMap();
+  private final Map<CallNode, String> callNodeToDerivedCalleeName = Maps.newIdentityHashMap();
 
   /** The set of template names checked.  Used to identify re-entrant templates. */
   private final Set<String> templatesChecked = Sets.newHashSet();
@@ -105,24 +96,19 @@ final class Inferences {
    */
   public Inferences(Inferences parent) {
     this.parent = parent;
-    this.autoescapeCancellingDirectives = parent.autoescapeCancellingDirectives;
     this.idGen = parent.idGen;
   }
 
   /**
    * An instance that does not inherit from a parent.
    *
-   * @param autoescapeCancellingDirectives Soy directives that
-   *     {@link SoyPrintDirective#shouldCancelAutoescape cancel} autoescaping.
    * @param idGen Used to generate unique IDs for cloned templates.
    * @param templatesByName Map of template names to instances used to type <code>{call}</code>
    *     commands.
    */
   public Inferences(
-      Set<String> autoescapeCancellingDirectives, IdGenerator idGen,
-      Map<String, ImmutableList<TemplateNode>> templatesByName) {
+      IdGenerator idGen, ImmutableListMultimap<String, TemplateNode> templatesByName) {
     this.parent = null;
-    this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.idGen = idGen;
     this.templatesByName.putAll(templatesByName);
   }
@@ -137,16 +123,17 @@ final class Inferences {
 
   /**
    * Finds the named templates.
+   *
    * @param templateName A qualified template name.
    */
-  public List<TemplateNode> lookupTemplates(String templateName) {
+  List<TemplateNode> lookupTemplates(String templateName) {
     for (Inferences inferences = this; inferences != null; inferences = inferences.parent) {
       List<TemplateNode> tn = inferences.templatesByName.get(templateName);
-      if (tn != null) {
+      if (!tn.isEmpty()) {
         return tn;
       }
     }
-    return null;
+    return ImmutableList.of();
   }
 
   /**
@@ -171,9 +158,8 @@ final class Inferences {
    */
   public ImmutableList<EscapingMode> getEscapingMode(PrintNode printNode) {
     // See if we have already inferred an escaping mode for the node.
-    int id = printNode.getId();
     for (Inferences inferences = this; inferences != null; inferences = inferences.parent) {
-      ImmutableList<EscapingMode> escapingModes = inferences.idToEscapingModes.get(id);
+      ImmutableList<EscapingMode> escapingModes = inferences.nodeToEscapingModes.get(printNode);
       if (escapingModes != null) {
         return escapingModes;
       }
@@ -181,125 +167,154 @@ final class Inferences {
 
     // Look for an escaping mode in the existing directives.
     ImmutableList.Builder<EscapingMode> modes = ImmutableList.builder();
-    for (PrintDirectiveNode directive : printNode.getChildren()) {
-      String directiveName = directive.getName();
-      EscapingMode dirMode = EscapingMode.fromDirective(directiveName);
-      if (dirMode != null) {
-        modes.add(dirMode);
-      } else if (autoescapeCancellingDirectives.contains(directiveName)) {
+    for (PrintDirectiveNode directiveNode : printNode.getChildren()) {
+      EscapingMode mode = EscapingMode.fromDirective(directiveNode.getName());
+      if (mode != null) {
+        modes.add(mode);
+      } else if (directiveNode.getPrintDirective() != null
+          && directiveNode.getPrintDirective().shouldCancelAutoescape()) {
         modes.add(EscapingMode.NO_AUTOESCAPE);
       }
     }
     return modes.build();
   }
 
-  /**
-   * Records inferred escaping modes so a directive can be later added to the Soy parse tree.
-   */
+  /** Records inferred escaping modes so a directive can be later added to the Soy parse tree. */
   public void setEscapingDirectives(
-      SoyNode node, Context startContext, List<EscapingMode> escapingModes) {
+      SoyNode node, Context context, List<EscapingMode> escapingModes) {
     Preconditions.checkArgument(
         (node instanceof PrintNode)
             || (node instanceof CallNode)
             || (node instanceof MsgFallbackGroupNode),
-        "Escaping directives may only be set for {print} or {call} nodes");
-    int id = node.getId();
-    idToStartContext.put(id, startContext);
+        "Escaping directives may only be set for {print}, {msg}, or {call} nodes");
     if (escapingModes != null) {
-      idToEscapingModes.put(id, ImmutableList.copyOf(escapingModes));
+      nodeToEscapingModes.put(node, ImmutableList.copyOf(escapingModes));
     }
+    nodeToContext.put(node, context);
   }
 
   /**
    * The escaping modes for the print command with the given ID in the order in which they should be
    * applied.
-   * @param nodeId Like {@link SoyNode#getId}.
+    *
+   * @param node a node instance
    */
-  public ImmutableList<EscapingMode> getEscapingModesForId(int nodeId) {
-    ImmutableList<EscapingMode> modes = idToEscapingModes.get(nodeId);
+  public ImmutableList<EscapingMode> getEscapingModesForNode(SoyNode node) {
+    ImmutableList<EscapingMode> modes = nodeToEscapingModes.get(node);
     if (modes == null) {
       modes = ImmutableList.of();
     }
     return modes;
   }
 
-  public ImmutableMap<Integer, Context> getPrintNodeStartContexts() {
-    return ImmutableMap.copyOf(idToStartContext);
+  @VisibleForTesting
+  Context getContextForNode(SoyNode node) {
+    return nodeToContext.get(node);
   }
-
   /**
-   * Derives a <code>{call}</code> site so that it uses a version of the template appropriate to
-   * the start context.
+   * Derives a <code>{call}</code> site so that it uses a version of the template appropriate to the
+   * start context.
+   *
    * @param derivedCalleeName A qualified template name.
    */
   public void retargetCall(CallNode cn, String derivedCalleeName) {
-    callIdToDerivedCalleeName.put(cn.getId(), derivedCalleeName);
+    callNodeToDerivedCalleeName.put(cn, derivedCalleeName);
   }
 
   /**
    * The name of the derived template that the call with the given id should call, or null if the
    * call with the given id should not be retargeted to a derived template.
    */
-  public String getDerivedCalleeNameForCallId(int callId) {
-    return callIdToDerivedCalleeName.get(callId);
+  @Nullable
+  public String getDerivedCalleeNameForCall(CallNode callNode) {
+    return callNodeToDerivedCalleeName.get(callNode);
   }
 
   /**
    * Clones a template, changing the name.
-   * @return A copy of tn, differing semantically only in name and auto-generated IDs.
-   *     The new templates will be available via {@link #lookupTemplates} with the given name.
+   *
+   * @return A copy of tn, differing semantically only in name and auto-generated IDs. The new
+   *     templates will be available via {@link #lookupTemplates} with the given name.
    */
-  public List<TemplateNode> cloneTemplates(String baseName, String derivedName) {
-    if (lookupTemplates(derivedName) != null) {
-      throw new AssertionError(derivedName);
+  public List<TemplateNode> cloneTemplates(String baseName, String derivedName, CallNode callNode) {
+    if (!lookupTemplates(derivedName).isEmpty()) {
+      throw new AssertionError(
+          derivedName + " already has templates: " + lookupTemplates(derivedName));
     }
 
     ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
 
     for (TemplateNode tn : lookupTemplates(baseName)) {
+      if (SoyTreeUtils.hasHtmlNodes(tn)) {
+        throw SoyAutoescapeException.createWithNode(
+            "Non-strict template '"
+                + baseName
+                + "' contains HTML nodes but does not specify the kind. "
+                + "This is no longer allowed, please migrate the template to strict and "
+                + "specify a content kind by adding a kind attribute",
+            callNode);
+      }
       SoyFileHeaderInfo soyFileHeaderInfo = tn.getSoyFileHeaderInfo();
 
-      int cloneId = tn.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator().genId();
+      // We trivially clone the template with new ids, this ensures that all the varrefs have proper
+      // vardefns assigned.  Then we manually recopy to a new template in order to modify the name.
+      // TODO(lukes): we should add direct support for swapping template names to TemplateNode
+      // or just eliminate usecases for this method.
+      TemplateNode trivialClonedTemplate = SoyTreeUtils.cloneWithNewIds(tn, idGen);
+      int cloneId = trivialClonedTemplate.getId();
 
       // We need to use the unnamespaced name in the command text since we'll be inserting this
       // template into a file node that already has a namespace declaration.
       TemplateNode clone;
 
       if (tn instanceof TemplateBasicNode) {
-        String derivedPartialName = (tn.getPartialTemplateName() != null) ?
-            derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
-        clone = new TemplateBasicNodeBuilder(
-            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
-            .setId(cloneId)
-            .setCmdTextInfo(
-                derivedName, derivedPartialName,
-                tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
-                tn.getRequiredCssNamespaces())
-            .setSoyDoc(tn.getSoyDoc())
-            .build();
+        String derivedPartialName =
+            (tn.getPartialTemplateName() != null)
+                ? derivedName.substring(soyFileHeaderInfo.namespace.length())
+                : null;
+        clone =
+            new TemplateBasicNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
+                .setId(cloneId)
+                .setSourceLocation(tn.getSourceLocation())
+                .setCmdTextInfo(
+                    derivedName,
+                    derivedPartialName,
+                    tn.getVisibility(),
+                    tn.getAutoescapeMode(),
+                    tn.getContentKind(),
+                    tn.getRequiredCssNamespaces())
+                .addParams(trivialClonedTemplate.getAllParams())
+                .build();
 
-        if (! (derivedName.equals(clone.getTemplateName()) &&
-            Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
+        if (!(derivedName.equals(clone.getTemplateName())
+            && Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
           throw new AssertionError();
         }
 
       } else if (tn instanceof TemplateDelegateNode) {
         TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
-        clone = new TemplateDelegateNodeBuilder(
-            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
-            .setId(cloneId)
-            .setCmdTextInfo(
-                derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),
-                tn.getAutoescapeMode(), tn.getContentKind(), tn.getRequiredCssNamespaces())
-            .setSoyDoc(tn.getSoyDoc())
-            .build();
-        if (! (derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
+        clone =
+            new TemplateDelegateNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
+                .setId(cloneId)
+                .setSourceLocation(tn.getSourceLocation())
+                .setCmdTextInfo(
+                    derivedName,
+                    tdn.getDelTemplateVariant(),
+                    tdn.getDelPriority(),
+                    tn.getAutoescapeMode(),
+                    tn.getContentKind(),
+                    tn.getRequiredCssNamespaces())
+                .addParams(trivialClonedTemplate.getAllParams())
+                .build();
+        if (!(derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
           throw new AssertionError();
         }
 
       } else {
         throw new AssertionError("Unknown template node type: " + tn.getClass());
       }
+      clone.addChildren(trivialClonedTemplate.getChildren());
+
       // Reassign all the local variable data which isn't maintained by the cloning process above.
       clone.setMaxLocalVariableTableSize(tn.getMaxLocalVariableTableSize());
       Iterator<TemplateParam> tnIterator = tn.getAllParams().iterator();
@@ -308,15 +323,11 @@ final class Inferences {
         cloneIterator.next().setLocalVariableIndex(tnIterator.next().localVariableIndex());
       }
 
-      for (StandaloneNode child : tn.getChildren()) {
-        clone.addChild(SoytreeUtils.cloneWithNewIds(child, idGen));
-      }
-
       b.add(clone);
     }
 
     ImmutableList<TemplateNode> clones = b.build();
-    templatesByName.put(derivedName, clones);
+    templatesByName.putAll(derivedName, clones);
     return clones;
   }
 
@@ -325,10 +336,9 @@ final class Inferences {
    * This instance should not be used after folding.
    */
   public void foldIntoParent() {
-    parent.idToEscapingModes.putAll(idToEscapingModes);
-    parent.idToStartContext.putAll(idToStartContext);
+    parent.nodeToEscapingModes.putAll(nodeToEscapingModes);
     parent.templateNameToEndContext.putAll(templateNameToEndContext);
-    parent.callIdToDerivedCalleeName.putAll(callIdToDerivedCalleeName);
+    parent.callNodeToDerivedCalleeName.putAll(callNodeToDerivedCalleeName);
     parent.templatesByName.putAll(templatesByName);
     parent.templatesChecked.addAll(templatesChecked);
   }
@@ -337,11 +347,7 @@ final class Inferences {
    * All known templates.
    */
   public List<TemplateNode> getAllTemplates() {
-    ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
-    for (List<TemplateNode> templates : templatesByName.values()) {
-      b.addAll(templates);
-    }
-    return b.build();
+    return ImmutableList.copyOf(templatesByName.values());
   }
 
   /**

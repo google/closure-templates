@@ -16,76 +16,158 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.template.soy.data.SoyValue;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
+
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
-/**
- * A helper for generating detach operations in soy expressions.
- */
+/** A helper for generating detach operations in soy expressions. */
 interface ExpressionDetacher {
   interface Factory {
     /**
-     * Returns a new {@link ExpressionDetacher}.  Any given soy expression requires at most one
+     * Returns a new {@link ExpressionDetacher}. Any given soy expression requires at most one
      * detacher.
      */
     ExpressionDetacher createExpressionDetacher(Label reattachPoint);
   }
 
   /**
-   * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider, 
+   * Returns an expression for the SoyValue that is resolved by the given SoyValueProvider,
    * potentially detaching if it is not {@link SoyValueProvider#status() resolvable}.
-   * 
+   *
    * @param soyValueProvider an expression yielding a SoyValueProvider
    * @return an expression yielding a SoyValue returned by {@link SoyValueProvider#resolve()}.
    */
   Expression resolveSoyValueProvider(Expression soyValueProvider);
-  
+
   /**
-   * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from
-   * {@link SoyValueProvider#status()} if it isn't done.
-   * 
-   * <p>Generates code that looks like:<pre>    {@code
-   *   
-   *   SoyValueProvider expr = ...;
-   *   if (!expr.status().isDone()) { 
-   *     return expr.status();
-   *   }
-   *   expr.resolve();
+   * Given a list of SoyValueProviders, await for all members to be resolved.
+   *
+   * @param soyValueProviderList an expression yielding a list of SoyValueProviders
+   * @return an expression yielding the soyValueProviderList, but it is guaranteed that all items
+   *     will be ready to be resolved.
+   */
+  Expression resolveSoyValueProviderList(Expression soyValueProviderList);
+
+  /**
+   * Given a map that values are SoyValueProviders, await for all members to be resolved.
+   *
+   * @param soyValueProviderMap an expression yielding a map that values are SoyValueProviders.
+   * @return an expression yielding the soyValueProviderMap, but it is guaranteed that all values
+   *     will be ready to be resolved.
+   */
+  Expression resolveSoyValueProviderMap(Expression soyValueProviderMap);
+
+  /**
+   * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from {@link
+   * SoyValueProvider#status()} if it isn't done.
+   *
+   * <p>Generates code that looks like:
+   *
+   * <pre>{@code
+   * SoyValueProvider expr = ...;
+   * if (!expr.status().isDone()) {
+   *   return expr.status();
+   * }
+   * expr.resolve();
    * }</pre>
    */
   static final class BasicDetacher implements ExpressionDetacher {
-    static final BasicDetacher INSTANCE = new BasicDetacher();
+    static final BasicDetacher INSTANCE = new BasicDetacher(Statement.NULL_STATEMENT);
+    private final Statement saveOperation;
 
-    private BasicDetacher() {}
+    BasicDetacher(Statement saveOperation) {
+      this.saveOperation = saveOperation;
+    }
 
-    @Override public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      soyValueProvider.checkAssignableTo(Type.getType(SoyValueProvider.class));
-      return new Expression(Type.getType(SoyValue.class)) {
-        @Override void doGen(CodeBuilder adapter) {
+    @Override
+    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      return new Expression(SOY_VALUE_TYPE) {
+        @Override
+        protected void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
-          // invocations.  This makes the expression api difficult/confusing to use.  So instead 
+          // invocations.  This makes it difficult/confusing to use the expression api. So instead
           // call a bunch of unchecked invocations.
-          // Legend: SVP = SoyValueProvider, RS = ResolveStatus, Z = boolean, SV = SoyValue
-          soyValueProvider.gen(adapter);                                  // Stack: SVP
-          adapter.dup();                                                  // Stack: SVP, SVP
-          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter);   // Stack: SVP, RS
-          adapter.dup();                                                  // Stack: SVP, RS, RS
-          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter);       // Stack: SVP, RS, Z
+          // Legend: SVP = SoyValueProvider, RR = RenderResult, Z = boolean, SV = SoyValue
+          soyValueProvider.gen(adapter); // Stack: SVP
+          adapter.dup(); // Stack: SVP, SVP
+          MethodRef.SOY_VALUE_PROVIDER_STATUS.invokeUnchecked(adapter); // Stack: SVP, RR
+          adapter.dup(); // Stack: SVP, RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: SVP, RR, Z
           Label end = new Label();
-          // if isReady goto end
-          adapter.ifZCmp(Opcodes.IFNE, end);                              // Stack: SVP, RS
+          // if isDone goto end
+          adapter.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
+
+          saveOperation.gen(adapter);
           adapter.returnValue();
           adapter.mark(end);
-          adapter.pop();                                                  // Stack: SVP
-          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter);  // Stack: SV
+          adapter.pop(); // Stack: SVP
+          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter); // Stack: SV
         }
       };
     }
-    
+
+    @Override
+    public Expression resolveSoyValueProviderList(final Expression soyValueProviderList) {
+      soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
+      return new Expression(soyValueProviderList.resultType()) {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          // We use a bunch of dup() operations in order to save extra field reads and method
+          // invocations.  This makes it difficult/confusing to use the expression api. So instead
+          // call a bunch of unchecked invocations.
+          // Legend: List = SoyValueProviderList, RR = RenderResult, Z = boolean
+          soyValueProviderList.gen(cb); // Stack: List
+          cb.dup(); // Stack: List, List
+          MethodRef.RUNTIME_GET_LIST_STATUS.invokeUnchecked(cb); // Stack: List, RR
+          cb.dup(); // Stack: List, RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: List, RR, Z
+          Label end = new Label();
+          // if isDone goto end
+          cb.ifZCmp(Opcodes.IFNE, end); // Stack: List, RR
+
+          saveOperation.gen(cb);
+          cb.returnValue();
+          cb.mark(end);
+          cb.pop(); // Stack: List
+        }
+      };
+    }
+
+    @Override
+    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+      soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
+      return new Expression(soyValueProviderMap.resultType()) {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          // We use a bunch of dup() operations in order to save extra field reads and method
+          // invocations.  This makes it difficult/confusing to use the expression api. So instead
+          // call a bunch of unchecked invocations.
+          // Legend: Map = SoyValueProviderMap, RR = RenderResult, Z = boolean
+          soyValueProviderMap.gen(cb); // Stack: Map
+          cb.dup(); // Stack: Map, Map
+          MethodRef.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
+          cb.dup(); // Stack: Map, RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
+          Label end = new Label();
+          // if isDone go to end
+          cb.ifZCmp(Opcodes.IFNE, end); // Stack: Map, RR
+
+          saveOperation.gen(cb);
+          cb.returnValue();
+          cb.mark(end);
+          cb.pop(); // Stack: Map
+        }
+      };
+    }
   }
 }

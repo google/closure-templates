@@ -1,0 +1,99 @@
+// LINT: LEGACY_NAMES
+
+syntax = "proto2";
+
+option java_package = "com.google.template.soy.testing";
+option java_multiple_files = true;
+
+package example;
+
+message ExampleExtendable {
+  message InnerMessage {
+    optional int32 field = 1;
+  }
+  extensions 1000 to max;
+
+  optional int32 some_num_with_default = 1 [default = 31337];
+  optional int32 some_num_no_default = 2;
+  optional int32 num_with_jspb_ignore = 14
+      ;
+
+  optional string some_string = 3 [default = "eleet"];
+
+  optional SomeEnum some_enum = 4;
+
+  optional SomeEmbeddedMessage some_embedded_message = 5;
+
+  optional int32 camelCaseField = 6;
+
+  optional bytes byte_field = 7;
+
+  optional int32 _field_withMixed_CASES_andLeading_AndTrailingUnderscore_ = 8;
+
+  // It's important that we test repeated longs, to ensure that the jstype
+  // annotation is respected in lists.
+  optional int64 long_with_default_js_type = 10;
+  repeated int64 repeated_long_with_int52_js_type = 11
+      ;
+  repeated int64 repeated_long_with_string_js_type = 12
+      ;
+  repeated int64 repeated_long_with_number_js_type = 13
+      ;
+
+  // different types
+  optional bool bool_field = 15;
+  optional float float_field = 16;
+  optional double double_field = 17;
+  optional string string_field = 18;
+  optional int32 int_field = 19;
+  optional int64 long_field = 20;
+
+  optional int64 long_field_jstype_string = 21
+      ;
+
+  repeated SomeEmbeddedMessage repeated_embedded_message = 25;
+}
+
+extend ExampleExtendable {
+  optional bool some_bool_extension = 93184314;
+  optional int32 some_int_extension = 93184315;
+  repeated int32 list_extension = 93184316;
+}
+
+enum SomeEnum {
+  FIRST = 1;
+  SECOND = 2;
+  LAST = 10;
+}
+
+message SomeEmbeddedMessage {
+  optional int32 some_embedded_num = 1;
+  optional string some_embedded_string = 2;
+  repeated string some_embedded_repeated_string = 3;
+}
+
+message SomeExtension {
+  extend ExampleExtendable {
+    optional SomeExtension some_extension_field = 314159;
+  }
+  optional int32 some_extension_num = 1;
+}
+
+message KvPair {
+  optional string key = 1;
+  optional string value = 2;
+  optional int32 another_value = 3;
+}
+
+message ProtoMap {
+  message InnerMessage {
+    optional int32 field = 1;
+  }
+  map<string, string> map_field = 1;
+  map<int32, InnerMessage> map_message_field = 2;
+}
+
+message ProtoWithInaccessibleField {
+  optional uint64 cant_touch_this = 1;
+  optional int32 can_touch_this = 2;
+}

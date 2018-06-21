@@ -17,9 +17,7 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.template.soy.data.SoyValue;
-
 import java.util.List;
-
 
 /**
  * Interface for a Soy print directive implemented for Java runtime rendering. Directives
@@ -27,21 +25,19 @@ import java.util.List;
  * optimization passes if the directive is also marked with annotation
  * {@code @SoyPurePrintDirective}.
  *
- * <p> Important: This may only be used in implementing print directive plugins.
+ * <p>Important: This may only be used in implementing print directive plugins.
  *
  */
 public interface SoyJavaPrintDirective extends SoyPrintDirective {
 
-
   /**
    * Applies this directive on the given value.
    *
-   * @param value The input to the directive. This is not necessarily a string. If a directive
-   *     only applies to string inputs, then it should first call {@code coerceToString()} on this
-   *     input value.
+   * @param value The input to the directive. This is not necessarily a string. If a directive only
+   *     applies to string inputs, then it should first call {@code coerceToString()} on this input
+   *     value.
    * @param args The directive's arguments, if any (often none).
    * @return The resulting value. Must be either {@code StringData} or {@code SanitizedContent}.
    */
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args);
-
 }

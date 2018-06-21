@@ -18,127 +18,189 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 /**
  * Abstract base class for all SoyNode visitors. A visitor is basically a function implemented for
  * some or all SoyNodes, where the implementation can be different for each specific node class.
  *
- * <p> Same as {@link AbstractReturningSoyNodeVisitor} except that in this class, internal
- * {@code visit()} calls do not return a value.
+ * <p>Same as {@link AbstractReturningSoyNodeVisitor} except that in this class, internal {@code
+ * visit()} calls do not return a value.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>
- * To create a visitor:
+ * <p>To create a visitor:
+ *
  * <ol>
- * <li> Subclass this class.
- * <li> Implement {@code visit*Node()} methods for some specific node types.
- * <li> Implement fallback methods for node types not specifically handled. The most general
- *      fallback method is {@link #visitSoyNode visitSoyNode()}, which is usually needed. Other
- *      fallback methods include {@code visitLoopNode()} and {@code visitCallParamNode()}.
- * <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- * <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final result
- *      and/or if this visitor has state that needs to be setup/reset before each unrelated use of
- *      {@code visit()}.
+ *   <li> Subclass this class.
+ *   <li> Implement {@code visit*Node()} methods for some specific node types.
+ *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *       fallback method is {@link #visitSoyNode visitSoyNode()}, which is usually needed. Other
+ *       fallback methods include {@code visitLoopNode()} and {@code visitCallParamNode()}.
+ *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
+ *       use of {@code visit()}.
  * </ol>
  *
  * @param <R> The return type of this visitor.
- *
  * @see AbstractReturningSoyNodeVisitor
  */
 public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
 
-  public AbstractSoyNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
-
-  @Override protected void visit(SoyNode node) {
+  @Override
+  protected void visit(SoyNode node) {
 
     switch (node.getKind()) {
+      case SOY_FILE_SET_NODE:
+        visitSoyFileSetNode((SoyFileSetNode) node);
+        break;
+      case SOY_FILE_NODE:
+        visitSoyFileNode((SoyFileNode) node);
+        break;
 
-      case SOY_FILE_SET_NODE: visitSoyFileSetNode((SoyFileSetNode) node); break;
-      case SOY_FILE_NODE: visitSoyFileNode((SoyFileNode) node); break;
+      case TEMPLATE_BASIC_NODE:
+        visitTemplateBasicNode((TemplateBasicNode) node);
+        break;
+      case TEMPLATE_DELEGATE_NODE:
+        visitTemplateDelegateNode((TemplateDelegateNode) node);
+        break;
 
-      case TEMPLATE_BASIC_NODE: visitTemplateBasicNode((TemplateBasicNode) node); break;
-      case TEMPLATE_DELEGATE_NODE: visitTemplateDelegateNode((TemplateDelegateNode) node); break;
+      case RAW_TEXT_NODE:
+        visitRawTextNode((RawTextNode) node);
+        break;
 
-      case RAW_TEXT_NODE: visitRawTextNode((RawTextNode) node); break;
+      case MSG_FALLBACK_GROUP_NODE:
+        visitMsgFallbackGroupNode((MsgFallbackGroupNode) node);
+        break;
+      case MSG_NODE:
+        visitMsgNode((MsgNode) node);
+        break;
+      case MSG_PLURAL_NODE:
+        visitMsgPluralNode((MsgPluralNode) node);
+        break;
+      case MSG_PLURAL_CASE_NODE:
+        visitMsgPluralCaseNode((MsgPluralCaseNode) node);
+        break;
+      case MSG_PLURAL_DEFAULT_NODE:
+        visitMsgPluralDefaultNode((MsgPluralDefaultNode) node);
+        break;
+      case MSG_SELECT_NODE:
+        visitMsgSelectNode((MsgSelectNode) node);
+        break;
+      case MSG_SELECT_CASE_NODE:
+        visitMsgSelectCaseNode((MsgSelectCaseNode) node);
+        break;
+      case MSG_SELECT_DEFAULT_NODE:
+        visitMsgSelectDefaultNode((MsgSelectDefaultNode) node);
+        break;
+      case MSG_PLACEHOLDER_NODE:
+        visitMsgPlaceholderNode((MsgPlaceholderNode) node);
+        break;
+      case MSG_HTML_TAG_NODE:
+        visitMsgHtmlTagNode((MsgHtmlTagNode) node);
+        break;
 
-      case GOOG_MSG_DEF_NODE: visitGoogMsgDefNode((GoogMsgDefNode) node); break;
-      case GOOG_MSG_REF_NODE: visitGoogMsgRefNode((GoogMsgRefNode) node); break;
+      case PRINT_NODE:
+        visitPrintNode((PrintNode) node);
+        break;
+      case PRINT_DIRECTIVE_NODE:
+        visitPrintDirectiveNode((PrintDirectiveNode) node);
+        break;
 
-      case MSG_FALLBACK_GROUP_NODE: visitMsgFallbackGroupNode((MsgFallbackGroupNode) node); break;
-      case MSG_NODE: visitMsgNode((MsgNode) node); break;
-      case MSG_PLURAL_NODE: visitMsgPluralNode((MsgPluralNode) node); break;
-      case MSG_PLURAL_CASE_NODE: visitMsgPluralCaseNode((MsgPluralCaseNode) node); break;
-      case MSG_PLURAL_DEFAULT_NODE: visitMsgPluralDefaultNode((MsgPluralDefaultNode) node); break;
-      case MSG_SELECT_NODE: visitMsgSelectNode((MsgSelectNode) node); break;
-      case MSG_SELECT_CASE_NODE: visitMsgSelectCaseNode((MsgSelectCaseNode) node); break;
-      case MSG_SELECT_DEFAULT_NODE: visitMsgSelectDefaultNode((MsgSelectDefaultNode) node); break;
-      case MSG_PLACEHOLDER_NODE: visitMsgPlaceholderNode((MsgPlaceholderNode) node); break;
-      case MSG_HTML_TAG_NODE: visitMsgHtmlTagNode((MsgHtmlTagNode) node); break;
+      case LET_VALUE_NODE:
+        visitLetValueNode((LetValueNode) node);
+        break;
+      case LET_CONTENT_NODE:
+        visitLetContentNode((LetContentNode) node);
+        break;
 
-      case PRINT_NODE: visitPrintNode((PrintNode) node); break;
-      case PRINT_DIRECTIVE_NODE: visitPrintDirectiveNode((PrintDirectiveNode) node); break;
+      case IF_NODE:
+        visitIfNode((IfNode) node);
+        break;
+      case IF_COND_NODE:
+        visitIfCondNode((IfCondNode) node);
+        break;
+      case IF_ELSE_NODE:
+        visitIfElseNode((IfElseNode) node);
+        break;
 
-      case CSS_NODE: visitCssNode((CssNode) node); break;
-      case XID_NODE: visitXidNode((XidNode) node); break;
+      case SWITCH_NODE:
+        visitSwitchNode((SwitchNode) node);
+        break;
+      case SWITCH_CASE_NODE:
+        visitSwitchCaseNode((SwitchCaseNode) node);
+        break;
+      case SWITCH_DEFAULT_NODE:
+        visitSwitchDefaultNode((SwitchDefaultNode) node);
+        break;
 
-      case LET_VALUE_NODE: visitLetValueNode((LetValueNode) node); break;
-      case LET_CONTENT_NODE: visitLetContentNode((LetContentNode) node); break;
+      case FOR_NODE:
+        visitForNode((ForNode) node);
+        break;
+      case FOR_NONEMPTY_NODE:
+        visitForNonemptyNode((ForNonemptyNode) node);
+        break;
+      case FOR_IFEMPTY_NODE:
+        visitForIfemptyNode((ForIfemptyNode) node);
+        break;
 
-      case IF_NODE: visitIfNode((IfNode) node); break;
-      case IF_COND_NODE: visitIfCondNode((IfCondNode) node); break;
-      case IF_ELSE_NODE: visitIfElseNode((IfElseNode) node); break;
+      case CALL_BASIC_NODE:
+        visitCallBasicNode((CallBasicNode) node);
+        break;
+      case CALL_DELEGATE_NODE:
+        visitCallDelegateNode((CallDelegateNode) node);
+        break;
+      case CALL_PARAM_VALUE_NODE:
+        visitCallParamValueNode((CallParamValueNode) node);
+        break;
+      case CALL_PARAM_CONTENT_NODE:
+        visitCallParamContentNode((CallParamContentNode) node);
+        break;
 
-      case SWITCH_NODE: visitSwitchNode((SwitchNode) node); break;
-      case SWITCH_CASE_NODE: visitSwitchCaseNode((SwitchCaseNode) node); break;
-      case SWITCH_DEFAULT_NODE: visitSwitchDefaultNode((SwitchDefaultNode) node); break;
+      case HTML_CLOSE_TAG_NODE:
+        visitHtmlCloseTagNode((HtmlCloseTagNode) node);
+        break;
+      case HTML_OPEN_TAG_NODE:
+        visitHtmlOpenTagNode((HtmlOpenTagNode) node);
+        break;
+      case HTML_COMMENT_NODE:
+        visitHtmlCommentNode((HtmlCommentNode) node);
+        break;
+      case HTML_ATTRIBUTE_NODE:
+        visitHtmlAttributeNode((HtmlAttributeNode) node);
+        break;
+      case HTML_ATTRIBUTE_VALUE_NODE:
+        visitHtmlAttributeValueNode((HtmlAttributeValueNode) node);
+        break;
 
-      case FOREACH_NODE: visitForeachNode((ForeachNode) node); break;
-      case FOREACH_NONEMPTY_NODE: visitForeachNonemptyNode((ForeachNonemptyNode) node); break;
-      case FOREACH_IFEMPTY_NODE: visitForeachIfemptyNode((ForeachIfemptyNode) node); break;
+      case VE_LOG_NODE:
+        visitVeLogNode((VeLogNode) node);
+        break;
 
-      case FOR_NODE: visitForNode((ForNode) node); break;
+      case LOG_NODE:
+        visitLogNode((LogNode) node);
+        break;
+      case DEBUGGER_NODE:
+        visitDebuggerNode((DebuggerNode) node);
+        break;
 
-      case CALL_BASIC_NODE: visitCallBasicNode((CallBasicNode) node); break;
-      case CALL_DELEGATE_NODE: visitCallDelegateNode((CallDelegateNode) node); break;
-      case CALL_PARAM_VALUE_NODE: visitCallParamValueNode((CallParamValueNode) node); break;
-      case CALL_PARAM_CONTENT_NODE: visitCallParamContentNode((CallParamContentNode) node); break;
-
-      case LOG_NODE: visitLogNode((LogNode) node); break;
-      case DEBUGGER_NODE: visitDebuggerNode((DebuggerNode) node); break;
-
-      case HTML_ATTRIBUTE: visitGenericHtmlNode(node); break;
-      case HTML_OPEN_TAG: visitGenericHtmlNode(node); break;
-      case HTML_OPEN_TAG_START: visitGenericHtmlNode(node); break;
-      case HTML_OPEN_TAG_END: visitGenericHtmlNode(node); break;
-      case HTML_CLOSE_TAG: visitGenericHtmlNode(node); break;
-      case HTML_VOID_TAG: visitGenericHtmlNode(node); break;
-      case HTML_TEXT: visitGenericHtmlNode(node); break;
-      case HTML_PRINT_NODE: visitGenericHtmlNode(node); break;
-
-
-      default: visitSoyNode(node); break;
+      default:
+        visitSoyNode(node);
+        break;
     }
   }
 
-
   /**
    * Helper to visit all the children of a node, in order.
+   *
    * @param node The parent node whose children to visit.
    * @see #visitChildrenAllowingConcurrentModification
    */
   protected void visitChildren(ParentSoyNode<?> node) {
     visitChildren((ParentNode<? extends SoyNode>) node);
   }
-
 
   /**
    * Helper to visit all the children of a node, in order.
@@ -153,10 +215,8 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitChildrenAllowingConcurrentModification((ParentNode<? extends SoyNode>) node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for concrete nodes.
-
 
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
     visitSoyNode(node);
@@ -179,14 +239,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitRawTextNode(RawTextNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
     visitSoyNode(node);
   }
 
@@ -242,13 +294,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitCssNode(CssNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitXidNode(XidNode node) {
-    visitSoyNode(node);
-  }
 
   protected void visitLetValueNode(LetValueNode node) {
     visitLetNode(node);
@@ -286,23 +331,15 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitForeachNode(ForeachNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
-    visitLoopNode(node);
-  }
-
   protected void visitForNode(ForNode node) {
-    visitLoopNode(node);
+    visitSoyNode(node);
   }
 
-  protected void visitLoopNode(LoopNode node) {
+  protected void visitForIfemptyNode(ForIfemptyNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitForNonemptyNode(ForNonemptyNode node) {
     visitSoyNode(node);
   }
 
@@ -330,6 +367,30 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
+  protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitHtmlCommentNode(HtmlCommentNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitVeLogNode(VeLogNode node) {
+    visitSoyNode(node);
+  }
+
   protected void visitLogNode(LogNode node) {
     visitSoyNode(node);
   }
@@ -338,21 +399,11 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  /**
-   * @param node the visited node.
-   */
+  /** @param node the visited node. */
   protected void visitSoyNode(SoyNode node) {
-    throw new UnsupportedOperationException();
-  }
-
-  private final void visitGenericHtmlNode(SoyNode node) {
-    throw new IllegalStateException("This visitor does not handle nodes created by "
-          + "HtmlTransformVisitor. This visitor should implement AbstractHtmlSoyNodeVisitor "
-          + "instead. The visited node was" + node + ".");
+    throw new UnsupportedOperationException("no implementation for: " + node);
   }
 }

@@ -16,15 +16,16 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+
+import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -32,235 +33,268 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 import java.util.List;
-
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
-    implements StandaloneNode, SplitLevelTopNode<PrintDirectiveNode>, StatementNode,
-    ExprHolderNode, MsgPlaceholderInitialNode {
-
+    implements StandaloneNode,
+        SplitLevelTopNode<PrintDirectiveNode>,
+        StatementNode,
+        ExprHolderNode,
+        MsgPlaceholderInitialNode {
 
   /** Fallback base placeholder name. */
-  public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
-
+  private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
   /** Whether the command 'print' is implicit. */
   private final boolean isImplicit;
 
   /** The parsed expression. */
-  private final ExprUnion exprUnion;
+  private final ExprRootNode expr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
-  private PrintNode(
-      int id,
-      boolean isImplicit,
-      ExprUnion exprUnion,
-      SourceLocation sourceLocation,
-      @Nullable String userSuppliedPlaceholderName) {
-    super(id, sourceLocation, "print", "");
-    this.isImplicit = isImplicit;
-    this.exprUnion = exprUnion;
-    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-  }
+  /** The user-supplied placeholder example, or null if not supplied. */
+  @Nullable private final String userSuppliedPlaceholderExample;
 
+  @Nullable private HtmlContext htmlContext;
+
+  // TODO(user): Consider adding static factory methods for implicit vs explicit print.
+  public PrintNode(
+      int id,
+      SourceLocation location,
+      boolean isImplicit,
+      ExprNode expr,
+      Iterable<CommandTagAttribute> attributes,
+      ErrorReporter errorReporter) {
+    super(id, location, isImplicit ? "" : "print");
+    this.isImplicit = isImplicit;
+    this.expr = new ExprRootNode(expr);
+
+    String placeholderName = null;
+    String placeholderExample = null;
+    CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
+    for (CommandTagAttribute attribute : attributes) {
+      switch (attribute.getName().identifier()) {
+        case MessagePlaceholders.PHNAME_ATTR:
+          placeholderName =
+              MessagePlaceholders.validatePlaceholderName(
+                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          break;
+        case MessagePlaceholders.PHEX_ATTR:
+          placeholderExample =
+              MessagePlaceholders.validatePlaceholderExample(
+                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          break;
+        default:
+          errorReporter.report(
+              attribute.getName().location(),
+              UNSUPPORTED_ATTRIBUTE_KEY,
+              attribute.getName().identifier(),
+              "print",
+              ImmutableList.of(MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+      }
+    }
+    this.userSuppliedPlaceholderName = placeholderName;
+    this.userSuppliedPlaceholderExample = placeholderExample;
+  }
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private PrintNode(PrintNode orig, CopyState copyState) {
     super(orig, copyState);
     this.isImplicit = orig.isImplicit;
-    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.copy(copyState) : null;
+    this.expr = orig.expr.copy(copyState);
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
+    this.htmlContext = orig.htmlContext;
   }
 
+  /**
+   * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
+   * this node emits in. This affects how the node is escaped (for traditional backends) or how it's
+   * passed to incremental DOM APIs.
+   */
+  public HtmlContext getHtmlContext() {
+    return Preconditions.checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
 
-  @Override public Kind getKind() {
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
+  }
+
+  @Override
+  public Kind getKind() {
     return Kind.PRINT_NODE;
   }
-
 
   /** Returns whether the 'print' command name was implicit. */
   public boolean isImplicit() {
     return isImplicit;
   }
 
-
-  /** Returns the text of the expression to print. */
-  public String getExprText() {
-    return exprUnion.getExprText();
+  /** Returns the parsed expression. */
+  public ExprRootNode getExpr() {
+    return expr;
   }
 
-
-  /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
-  public ExprUnion getExprUnion() {
-    return exprUnion;
-  }
-
-
-  @Override public String getUserSuppliedPhName() {
+  @Nullable
+  @Override
+  public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
+  @Nullable
+  @Override
+  public String getUserSuppliedPhExample() {
+    return userSuppliedPlaceholderExample;
+  }
 
-  @Override public String genBasePhName() {
+  @Override
+  public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
 
-    ExprRootNode exprRoot = exprUnion.getExpr();
-    if (exprRoot == null) {
-      return FALLBACK_BASE_PLACEHOLDER_NAME;
+    return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+        expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
+  }
+
+  @Override
+  public Object genSamenessKey() {
+    return new SamenessKey(this);
+  }
+
+  private static final class SamenessKey {
+    final PrintNode node;
+
+    SamenessKey(PrintNode node) {
+      this.node = node;
     }
 
-    return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        exprRoot.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof SamenessKey)) {
+        return false;
+      }
+      PrintNode other = ((SamenessKey) obj).node;
+      return Objects.equals(node.getUserSuppliedPhName(), other.getUserSuppliedPhName())
+          && PrintEquivalence.get().equivalent(node, other);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(node.getUserSuppliedPhName(), PrintEquivalence.get().wrap(node));
+    }
   }
 
-
-  @Override public Object genSamenessKey() {
-    // PrintNodes are considered the same placeholder if they have the same command text.
-    return getCommandText();
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(expr);
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(exprUnion);
+  @Override
+  public String getCommandText() {
+    return doGetCommandText(true);
   }
 
-
-  @Override public String getCommandText() {
+  private String doGetCommandText(boolean includePhExample) {
     StringBuilder sb = new StringBuilder();
-    sb.append(exprUnion.getExprText());
+    sb.append(expr.toSourceString());
     for (PrintDirectiveNode child : getChildren()) {
       sb.append(' ').append(child.toSourceString());
     }
     if (userSuppliedPlaceholderName != null) {
       sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
     }
+    if (includePhExample && userSuppliedPlaceholderExample != null) {
+      sb.append(" phex=\"").append(userSuppliedPlaceholderExample).append('"');
+    }
     return sb.toString();
   }
 
-
-  @Override public String getTagString() {
-    return buildTagStringHelper(false, isImplicit);
-  }
-
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return getTagString();
   }
 
-
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
-
-  @Override public PrintNode copy(CopyState copyState) {
+  @Override
+  public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
   }
 
   /**
-   * Builder for {@link PrintNode}.
+   * Equivalence relation for print nodes.
+   *
+   * <p>Doesn't account for {@code phname} or {@code phex} attributes
    */
-  public static final class Builder {
-    private final int id;
-    private final boolean isImplicit;
-    private final SourceLocation sourceLocation;
+  static final class PrintEquivalence extends Equivalence<PrintNode> {
+    private static final PrintEquivalence INSTANCE = new PrintEquivalence();
 
-    @Nullable private String exprText;
-    @Nullable private ExprUnion exprUnion;
-    @Nullable private String userSuppliedPlaceholderName;
-
-    /**
-     * @param id The node's id.
-     * @param isImplicit Whether the command {@code print} is implicit.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, boolean isImplicit, SourceLocation sourceLocation) {
-      this.id = id;
-      this.isImplicit = isImplicit;
-      this.sourceLocation = sourceLocation;
+    static PrintEquivalence get() {
+      return INSTANCE;
     }
 
-    /**
-     * @param exprText The node's expression text.
-     * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
-     * has already been set.
-     */
-    public Builder exprText(String exprText) {
-      Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.exprUnion == null);
-      this.exprText = exprText;
-      return this;
-    }
-
-    /**
-     * @param exprUnion The parsed expression for this print node.
-     * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
-     * has already been set.
-     */
-    public Builder exprUnion(ExprUnion exprUnion) {
-      Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.exprUnion == null);
-      this.exprUnion = exprUnion;
-      return this;
-    }
-
-    /**
-     * @param userSuppliedPlaceholderName The user-supplied placeholder name.
-     * @return This object, for chaining.
-     */
-    public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
-      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      return this;
-    }
-
-    /**
-     * Returns a new {@link PrintNode} built from this builder's state.
-     * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
-     * have been set.
-     * TODO(user): Most node builders report syntax errors to the {@link ErrorReporter}
-     * argument. This builder ignores the error reporter argument because print nodes have
-     * {@linkplain PrintNode#FALLBACK_BASE_PLACEHOLDER_NAME special fallback logic} for when
-     * parsing of the user-supplied placeholder name fails. Such parsing failures should thus not
-     * currently be reported as "errors". It seems possible and desirable to change Soy to consider
-     * these to be errors, but it's not trivial, because it could break templates that currently
-     * compile.
-     */
-    public PrintNode build(ErrorReporter unusedForNow) {
-      ExprUnion exprUnion = getOrParseExprUnion();
-      return new PrintNode(id, isImplicit, exprUnion, sourceLocation, userSuppliedPlaceholderName);
-    }
-
-    private ExprUnion getOrParseExprUnion() {
-      if (exprUnion != null) {
-        return exprUnion;
+    @Override
+    protected boolean doEquivalent(PrintNode a, PrintNode b) {
+      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      if (!exprEquivalence.equivalent(a.getExpr(), b.getExpr())) {
+        return false;
       }
-      Preconditions.checkNotNull(exprText);
-      ErrorReporter internal = new ErrorReporterImpl();
-      Checkpoint checkpoint = internal.checkpoint();
-      ExprNode expr = new ExpressionParser(exprText, sourceLocation, internal)
-          .parseExpression();
-      return internal.errorsSince(checkpoint)
-          ? new ExprUnion(exprText)
-          : new ExprUnion(expr);
+      List<PrintDirectiveNode> aDirectives = a.getChildren();
+      List<PrintDirectiveNode> bDirectives = b.getChildren();
+      if (aDirectives.size() != bDirectives.size()) {
+        return false;
+      }
+      for (int i = 0; i < aDirectives.size(); ++i) {
+        PrintDirectiveNode aDirective = aDirectives.get(i);
+        PrintDirectiveNode bDirective = bDirectives.get(i);
+        if (!aDirective.getName().equals(bDirective.getName())) {
+          return false;
+        }
+        // cast ImmutableList<ExprRootNode> to List<ExprNode>
+        @SuppressWarnings("unchecked")
+        List<ExprNode> one = (List<ExprNode>) ((List<?>) aDirective.getExprList());
+        @SuppressWarnings("unchecked")
+        List<ExprNode> two = (List<ExprNode>) ((List<?>) bDirective.getExprList());
+        if (!exprEquivalence.pairwise().equivalent(one, two)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    protected int doHash(PrintNode t) {
+      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      int hc = exprEquivalence.hash(t.getExpr());
+      for (PrintDirectiveNode child : t.getChildren()) {
+        // cast ImmutableList<ExprRootNode> to List<ExprNode>
+        @SuppressWarnings("unchecked")
+        List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
+        hc = 31 * hc + child.getName().hashCode();
+        hc = 31 * hc + exprEquivalence.pairwise().hash(list);
+      }
+      return hc;
     }
   }
-
 }

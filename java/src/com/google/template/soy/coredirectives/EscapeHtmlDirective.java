@@ -17,25 +17,27 @@
 package com.google.template.soy.coredirectives;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
-import com.google.template.soy.shared.restricted.EscapingConventions;
+import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
+import com.google.template.soy.types.SanitizedType;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 
 /**
  * A directive that HTML-escapes the output.
@@ -43,49 +45,78 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class EscapeHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective,
-    SoyPySrcPrintDirective {
-
+public class EscapeHtmlDirective
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        SoyJbcSrcPrintDirective.Streamable,
+        ShortCircuitable {
 
   public static final String NAME = "|escapeHtml";
-
 
   @Inject
   public EscapeHtmlDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return NAME;
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return true;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    // Pass through known content direction, if any, for use in BidiSpanWrapDirective.
-    Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
-      if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
-        return value;
-      }
-      valueDir = sanitizedContent.getContentDirection();
-    }
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        EscapingConventions.EscapeHtml.INSTANCE.escape(value.coerceToString()),
-        ContentKind.HTML, valueDir);
+  @Override
+  public boolean isNoopForKind(ContentKind kind) {
+    return kind == SanitizedContent.ContentKind.HTML;
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    return CoreDirectivesRuntime.escapeHtml(value);
+  }
+
+  private static final class JbcSrcMethods {
+    static final MethodRef ESCAPE_HTML =
+        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class).asNonNullable();
+    static final MethodRef STREAMING_ESCAPE_HTML =
+        MethodRef.create(
+                CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class)
+            .asNonNullable();
+  }
+
+  @Override
+  public SoyExpression applyForJbcSrc(
+      JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    return SoyExpression.forSoyValue(
+        SanitizedType.HtmlType.getInstance(), JbcSrcMethods.ESCAPE_HTML.invoke(value.box()));
+  }
+
+  @Override
+  public AppendableAndOptions applyForJbcSrcStreaming(
+      JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
+    return AppendableAndOptions.create(
+        JbcSrcMethods.STREAMING_ESCAPE_HTML.invoke(delegateAppendable));
+  }
+
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$escapeHtml(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr("sanitize.escape_html(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 }

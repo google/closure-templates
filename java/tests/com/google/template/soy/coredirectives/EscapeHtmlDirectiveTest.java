@@ -24,13 +24,18 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for EscapeHtmlDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
+  @Test
   public void testApplyForTofu() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
 
@@ -38,7 +43,8 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput("a&amp;b &gt; c", "a&b > c", escapeHtmlDirective);
     assertTofuOutput(
         "&lt;script&gt;alert(&#39;boo&#39;);&lt;/script&gt;",
-        "<script>alert('boo');</script>", escapeHtmlDirective);
+        "<script>alert('boo');</script>",
+        escapeHtmlDirective);
     SanitizedContent fooTagHtml =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.HTML);
     assertTofuOutput(
@@ -49,8 +55,7 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput(
         "&lt;foo&gt;",
         // But JS_STR_CHARS are.
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<foo>", SanitizedContent.ContentKind.JS),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.JS),
         escapeHtmlDirective);
     assertTofuOutput(
         "&lt;foo&gt;",
@@ -59,6 +64,7 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
         escapeHtmlDirective);
   }
 
+  @Test
   public void testApplyForJsSrc() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
@@ -66,6 +72,7 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
         .isEqualTo("soy.$$escapeHtml(opt_data.myKey)");
   }
 
+  @Test
   public void testApplyForPySrc() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
     PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);

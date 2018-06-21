@@ -16,202 +16,148 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Sets;
-import com.google.template.soy.base.SourceLocation;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.parsepasses.CheckCallsVisitor;
-import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
-import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
-import com.google.template.soy.parsepasses.ReplaceHasDataFunctionVisitor;
-import com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor;
-import com.google.template.soy.parsepasses.RewriteRemaindersVisitor;
-import com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor;
-import com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor;
-import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
+import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
-import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
-import com.google.template.soy.sharedpasses.CheckTemplateVisibility;
-import com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor;
-import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
-import com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor;
-import com.google.template.soy.sharedpasses.ResolveNamesVisitor;
+import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-
 import java.io.IOException;
 import java.io.Reader;
-import java.util.List;
-import java.util.Set;
-
 import javax.annotation.Nullable;
 
 /**
  * Static functions for parsing a set of Soy files into a {@link SoyFileSetNode}.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SoyFileSetParser {
+@AutoValue
+public abstract class SoyFileSetParser {
+  /** A simple tuple for the result of a parse operation. */
+  @AutoValue
+  public abstract static class ParseResult {
+    static ParseResult create(SoyFileSetNode soyTree, TemplateRegistry registry) {
+      return new AutoValue_SoyFileSetParser_ParseResult(soyTree, registry);
+    }
 
-  private static final SoyError VERSION_SKEW_IN_SOY_FILE =
-      SoyError.of("Version skew in Soy file {0}");
+    public abstract SoyFileSetNode fileSet();
 
-  /** The type registry to resolve type names. */
-  private final SoyTypeRegistry typeRegistry;
+    public abstract TemplateRegistry registry();
+  }
+
+  public static Builder newBuilder() {
+    return new AutoValue_SoyFileSetParser.Builder();
+  }
 
   /** Optional file cache. */
-  @Nullable private final SoyAstCache cache;
+  @Nullable
+  abstract SoyAstCache cache();
+  /** Files to parse. Each must have a unique file name. */
+  abstract ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers();
 
-  /** User-declared syntax version. */
-  private final SyntaxVersion declaredSyntaxVersion;
+  abstract PassManager passManager();
 
-  /** The suppliers of the Soy files to parse. */
-  private final List<? extends SoyFileSupplier> soyFileSuppliers;
+  abstract ErrorReporter errorReporter();
 
-  /** Whether to run initial parsing passes. */
-  private final boolean doRunInitialParsingPasses;
+  abstract SoyTypeRegistry typeRegistry();
 
-  /** Whether to run checking passes. */
-  private final boolean doRunCheckingPasses;
+  abstract PluginResolver pluginResolver();
 
-  /** For reporting parse errors. */
-  private final ErrorReporter errorReporter;
+  @Nullable
+  abstract SoyGeneralOptions generalOptions();
 
-  /**
-   * @param typeRegistry The type registry to resolve type names.
-   * @param astCache The AST cache to use, if any.
-   * @param declaredSyntaxVersion User-declared syntax version.
-   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
-   */
-  public SoyFileSetParser(
-      SoyTypeRegistry typeRegistry,
-      @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion,
-      List<? extends SoyFileSupplier> soyFileSuppliers,
-      ErrorReporter errorReporter) {
-    // By default, run all the parsing and checking passes.
-    this(
-        typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, errorReporter, true, true);
+  /** Builder for {@link SoyFileSetParser}. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+    public abstract Builder setCache(SoyAstCache cache);
+
+    public abstract Builder setSoyFileSuppliers(
+        ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers);
+
+    public abstract Builder setPassManager(PassManager passManager);
+
+    public abstract Builder setErrorReporter(ErrorReporter errorReporter);
+
+    public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
+
+    public abstract Builder setPluginResolver(PluginResolver pluginResolver);
+
+    public abstract Builder setGeneralOptions(SoyGeneralOptions generalOptions);
+
+    public abstract SoyFileSetParser build();
   }
 
-  /**
-   * @param typeRegistry The type registry to resolve type names.
-   * @param astCache The AST cache to use, if any.
-   * @param declaredSyntaxVersion User-declared syntax version.
-   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
-   * @param errorReporter For reporting errors during parsing.
-   * @param doRunInitialParsingPasses Whether to run initial parsing passes.
-   * @param doRunCheckingPasses Whether to run checking passes.
-   */
-  SoyFileSetParser(
-      SoyTypeRegistry typeRegistry,
-      @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion,
-      List<? extends SoyFileSupplier> soyFileSuppliers,
-      ErrorReporter errorReporter,
-      boolean doRunInitialParsingPasses,
-      boolean doRunCheckingPasses) {
-
-    this.typeRegistry = typeRegistry;
-    this.cache = astCache;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
-    this.soyFileSuppliers = soyFileSuppliers;
-    this.errorReporter = errorReporter;
-    verifyUniquePaths(soyFileSuppliers);
-
-    this.doRunInitialParsingPasses = doRunInitialParsingPasses;
-    this.doRunCheckingPasses = doRunCheckingPasses;
-  }
-
-
-  /**
-   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
-   */
-  public SoyFileSetNode parse() {
+  /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
+  public ParseResult parse() {
     try {
       return parseWithVersions();
     } catch (IOException e) {
       // parse has 9 callers in SoyFileSet, and those are public API methods,
       // whose signatures it is infeasible to change.
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
-
   /**
-   * Ensures all SoyFileSuppliers have unique paths.
+   * Parses a set of Soy files, returning a structure containing the parse tree and template
+   * registry.
    */
-  private static void verifyUniquePaths(Iterable<? extends SoyFileSupplier> soyFileSuppliers) {
-    Set<String> paths = Sets.newHashSet();
-    for (SoyFileSupplier supplier : soyFileSuppliers) {
-      Preconditions.checkArgument(
-          !paths.contains(supplier.getFilePath()), "Two file suppliers have the same path: %s",
-          supplier.getFilePath());
-      paths.add(supplier.getFilePath());
-    }
-  }
-
-
-  /**
-   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
-   */
-  private SoyFileSetNode parseWithVersions() throws IOException {
-    Preconditions.checkState((cache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
-        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
-            "caching inconsistent versions");
+  private ParseResult parseWithVersions() throws IOException {
     IdGenerator nodeIdGen =
-        (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
+        (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-
-    for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
-      VersionedFile fileAndVersion = (cache != null) ? cache.get(soyFileSupplier) : null;
-      if (fileAndVersion == null) {
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
-        synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
-          fileAndVersion = parseSoyFileHelper(soyFileSupplier, nodeIdGen, typeRegistry);
+    boolean filesWereSkipped = false;
+    // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
+    // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
+    synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
+      for (SoyFileSupplier fileSupplier : soyFileSuppliers().values()) {
+        SoyFileSupplier.Version version = fileSupplier.getVersion();
+        VersionedFile cachedFile =
+            cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
+        SoyFileNode node;
+        if (cachedFile == null) {
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry());
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
-          if (fileAndVersion.file() == null) {
-            return soyTree;
+          if (node == null) {
+            filesWereSkipped = true;
+            continue;
           }
-          if (doRunInitialParsingPasses) {
-            // Run passes that are considered part of initial parsing.
-            runSingleFileParsingPasses(fileAndVersion.file(), nodeIdGen);
-          }
-        }
-        if (doRunCheckingPasses) {
+          // Run passes that are considered part of initial parsing.
+          passManager().runSingleFilePasses(node, nodeIdGen);
           // Run passes that check the tree.
-          runSingleFileCheckingPasses(fileAndVersion.file());
+          if (cache() != null) {
+            cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
+          }
+        } else {
+          node = cachedFile.file();
         }
-        if (cache != null) {
-          cache.put(soyFileSupplier, fileAndVersion);
-        }
+        soyTree.addChild(node);
       }
-      if (fileAndVersion.file() != null) {
-        soyTree.addChild(fileAndVersion.file());
+
+      TemplateRegistry registry;
+      // Run passes that check the tree iff we successfully parsed every file.
+      if (!filesWereSkipped) {
+        registry = passManager().runWholeFilesetPasses(soyTree);
+      } else {
+        registry = new TemplateRegistry(soyTree, errorReporter());
       }
+      return ParseResult.create(soyTree, registry);
     }
-
-    // Run passes that check the tree.
-    if (doRunCheckingPasses) {
-      runWholeFileSetCheckingPasses(soyTree);
-    }
-
-    return soyTree;
   }
-
 
   /**
    * Private helper for {@code parseWithVersions()} to parse one Soy file.
@@ -220,87 +166,28 @@ public final class SoyFileSetParser {
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    */
-  private VersionedFile parseSoyFileHelper(
+  private SoyFileNode parseSoyFileHelper(
       SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
       throws IOException {
-    String filePath = soyFileSupplier.getFilePath();
-    SoyFileSupplier.Version version = soyFileSupplier.getVersion();
     try (Reader soyFileReader = soyFileSupplier.open()) {
-      SoyFileNode soyFileNode = new SoyFileParser(
-          typeRegistry,
-          nodeIdGen,
-          soyFileReader,
-          soyFileSupplier.getSoyFileKind(),
-          filePath,
-          errorReporter)
-          .parseSoyFile();
-      if (soyFileSupplier.hasChangedSince(version)) {
-        errorReporter.report(
-            new SourceLocation(filePath, -1, -1, -1, -1), VERSION_SKEW_IN_SOY_FILE, filePath);
+      String filePath = soyFileSupplier.getFilePath();
+      int lastBangIndex = filePath.lastIndexOf('!');
+      if (lastBangIndex != -1) {
+        // This is a resource in a JAR file. Only keep everything after the bang.
+        filePath = filePath.substring(lastBangIndex + 1);
       }
-      return VersionedFile.of(soyFileNode, version);
+      return new SoyFileParser(
+              typeRegistry,
+              pluginResolver(),
+              nodeIdGen,
+              soyFileReader,
+              soyFileSupplier.getSoyFileKind(),
+              filePath,
+              errorReporter(),
+              generalOptions() == null
+                  ? ImmutableSet.of()
+                  : generalOptions().getExperimentalFeatures())
+          .parseSoyFile();
     }
-  }
-
-
-  /**
-   * Runs initial parsing passes that work on a file-by-file basis.
-   */
-  private void runSingleFileParsingPasses(SoyFileNode fileNode, IdGenerator nodeIdGen) {
-    // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
-    // MsgNode.getAllExprUnions().
-    new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter)
-        .exec(fileNode);
-    new RewriteRemaindersVisitor(errorReporter)
-        .exec(fileNode);
-    new ReplaceHasDataFunctionVisitor(declaredSyntaxVersion, errorReporter)
-        .exec(fileNode);
-    new SetFullCalleeNamesVisitor(errorReporter)
-        .exec(fileNode);
-    new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion, errorReporter)
-        .exec(fileNode);
-    if (declaredSyntaxVersion == SyntaxVersion.V1_0) {
-      new RemoveHtmlCommentsVisitor(nodeIdGen, errorReporter).exec(fileNode);
-    }
-    new ResolveNamesVisitor(declaredSyntaxVersion, errorReporter)
-        .exec(fileNode);
-    new ResolveExpressionTypesVisitor(typeRegistry, declaredSyntaxVersion, errorReporter)
-        .exec(fileNode);
-  }
-
-
-  /**
-   * Private helper for {@code parseWithVersion()} that operate on single files.
-   */
-  private void runSingleFileCheckingPasses(SoyFileNode fileNode) {
-    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter)
-        .exec(fileNode);
-    new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter)
-        .exec(fileNode);
-    // Check for errors based on inferred (as opposed to declared) required syntax version.
-    SyntaxVersion inferredSyntaxVersion = new InferRequiredSyntaxVersionVisitor(errorReporter)
-        .exec(fileNode);
-    if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-      new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
-          .exec(fileNode);
-    }
-  }
-
-
-  /**
-   * Private helper for {@code parseWithVersions()} to run checking passes that require the whole
-   * tree.
-   */
-  private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
-    new CheckTemplateParamsVisitor(declaredSyntaxVersion, errorReporter)
-        .exec(soyTree);
-    new CheckDelegatesVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckCallsVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckCallingParamTypesVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckTemplateVisibility(errorReporter)
-        .exec(soyTree);
   }
 }

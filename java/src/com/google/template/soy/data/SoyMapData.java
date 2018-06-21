@@ -16,11 +16,13 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
@@ -28,31 +30,29 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Nonnull;
 
 /**
  * A map data node in a Soy data tree.
  *
- * <p> Important: Even though this class is not marked 'final', do not extend this class.
+ * <p>Important: Even though this class is not marked 'final', do not extend this class.
  *
+ * @deprecated Users of this class should use normal {@code java.util.Map}s instead. The Soy
+ *     rendering APIs can automatically handle conversion of native Java types and Soy plugin users
+ *     can directly use {@link SoyValueConverter#convert(Object)}. This class offers no benefits
+ *     over those APIs.
  */
-public class SoyMapData extends CollectionData implements SoyDict {
-
+@Deprecated
+public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
 
   /** Underlying map. */
   private final Map<String, SoyData> map;
-
 
   public SoyMapData() {
     map = Maps.newLinkedHashMap();
   }
 
-
-  /**
-   * Constructor that initializes this SoyMapData from an existing map.
-   * @param data The initial data in an existing map.
-   */
+  /** Initializes this SoyMapData from an existing map. */
   public SoyMapData(Map<String, ?> data) {
     map = new LinkedHashMap<>(data.size());
 
@@ -62,8 +62,9 @@ public class SoyMapData extends CollectionData implements SoyDict {
         key = entry.getKey();
       } catch (ClassCastException cce) {
         throw new SoyDataException(
-            "Attempting to convert a map with non-string key to Soy data (key type " +
-            ((Map.Entry<?, ?>) entry).getKey().getClass().getName() + ").");
+            "Attempting to convert a map with non-string key to Soy data (key type "
+                + ((Map.Entry<?, ?>) entry).getKey().getClass().getName()
+                + ").");
       }
 
       Object value = entry.getValue();
@@ -77,9 +78,9 @@ public class SoyMapData extends CollectionData implements SoyDict {
     }
   }
 
-
   /**
    * Constructor that directly takes the keys/values as parameters.
+   *
    * @param data The initial data, with alternating keys/values.
    */
   public SoyMapData(Object... data) {
@@ -87,43 +88,43 @@ public class SoyMapData extends CollectionData implements SoyDict {
     put(data);
   }
 
-
   /**
    * Important: Please treat this method as superpackage-private. Do not call this method from
    * outside the 'tofu' and 'data' packages.
    *
-   * Returns a view of this SoyMapData object as a Map.
+   * <p>Returns a view of this SoyMapData object as a Map.
    */
   public Map<String, SoyData> asMap() {
     return Collections.unmodifiableMap(map);
   }
 
-
   /**
    * Gets the keys in this map data.
+   *
    * @return A set containing the keys in this map data.
    */
   public Set<String> getKeys() {
     return Collections.unmodifiableSet(map.keySet());
   }
 
-
   /**
    * {@inheritDoc}
    *
-   * <p> This method should only be used for debugging purposes.
+   * <p>This method should only be used for debugging purposes.
    */
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
+  @Override
+  public String toString() {
+    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       render(sb);
     } catch (IOException e) {
-      throw new RuntimeException(e);  // impossible
+      throw new RuntimeException(e); // impossible
     }
     return sb.toString();
   }
 
-  @Override public void render(Appendable appendable) throws IOException {
+  @Override
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
     Iterator<Map.Entry<String, SoyData>> iterator = map.entrySet().iterator();
     if (iterator.hasNext()) {
@@ -143,102 +144,113 @@ public class SoyMapData extends CollectionData implements SoyDict {
   /**
    * {@inheritDoc}
    *
-   * <p> A map is always truthy.
+   * <p>A map is always truthy.
    */
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return true;
   }
 
-
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-  @Override public boolean equals(Object other) {
-    return this == other;  // fall back to object equality
+  @Override
+  public String coerceToString() {
+    return toString();
   }
 
+  @Override
+  public final boolean equals(Object other) {
+    return this == other; // fall back to object equality
+  }
+
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Superpackage-private methods.
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Puts data into this data object at the specified key.
+   * <p>Puts data into this data object at the specified key.
+   *
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
-  @Override public void putSingle(String key, SoyData value) {
+  @Override
+  public void putSingle(String key, SoyData value) {
     map.put(key, value);
   }
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Removes the data at the specified key.
+   * <p>Removes the data at the specified key.
+   *
    * @param key An individual key.
    */
-  @Override public void removeSingle(String key) {
+  @Override
+  public void removeSingle(String key) {
     map.remove(key);
   }
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Gets the data at the specified key.
+   * <p>Gets the data at the specified key.
+   *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
-  @Override public SoyData getSingle(String key) {
+  @Override
+  public SoyData getSingle(String key) {
     return map.get(key);
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // SoyDict.
 
-
-  @Override @Nonnull public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
+  @Override
+  @Nonnull
+  public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
     return asMap();
   }
 
-
-  @Override @Nonnull public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
+  @Override
+  @Nonnull
+  public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
     return asMap();
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // SoyRecord.
 
-
-  @Override public boolean hasField(String name) {
+  @Override
+  public boolean hasField(String name) {
     return getSingle(name) != null;
   }
 
-
-  @Override public SoyValue getField(String name) {
+  @Override
+  public SoyValue getField(String name) {
     return getSingle(name);
   }
 
-
-  @Override public SoyValueProvider getFieldProvider(String name) {
+  @Override
+  public SoyValueProvider getFieldProvider(String name) {
     return getSingle(name);
   }
-
 
   // -----------------------------------------------------------------------------------------------
-  // SoyMap.
+  // SoyLegacyObjectMap.
 
-
-  @Override public int getItemCnt() {
+  @Override
+  public int getItemCnt() {
     return getKeys().size();
   }
 
-
-  @Override @Nonnull public Iterable<StringData> getItemKeys() {
+  @Override
+  @Nonnull
+  public Iterable<StringData> getItemKeys() {
     Set<String> internalKeys = getKeys();
     List<StringData> keys = Lists.newArrayListWithCapacity(internalKeys.size());
     for (String internalKey : internalKeys) {
@@ -247,25 +259,71 @@ public class SoyMapData extends CollectionData implements SoyDict {
     return keys;
   }
 
-
-  @Override public boolean hasItem(SoyValue key) {
+  @Override
+  public boolean hasItem(SoyValue key) {
     return getSingle(getStringKey(key)) != null;
   }
 
-
-  @Override public SoyValue getItem(SoyValue key) {
+  @Override
+  public SoyValue getItem(SoyValue key) {
     return getSingle(getStringKey(key));
   }
 
-
-  @Override public SoyValueProvider getItemProvider(SoyValue key) {
+  @Override
+  public SoyValueProvider getItemProvider(SoyValue key) {
     return getSingle(getStringKey(key));
   }
 
+  // -----------------------------------------------------------------------------------------------
+  // SoyMap.
+
+  @Override
+  public int size() {
+    return getKeys().size();
+  }
+
+  @Nonnull
+  @Override
+  public Iterable<? extends SoyValue> keys() {
+    return Iterables.transform(
+        map.keySet(),
+        new Function<String, SoyValue>() {
+          @Override
+          public SoyValue apply(String key) {
+            return StringData.forValue(key);
+          }
+        });
+  }
+
+  @Override
+  public boolean containsKey(SoyValue key) {
+    return getSingle(getStringKey(key)) != null;
+  }
+
+  @Override
+  public SoyValue get(SoyValue key) {
+    return getSingle(getStringKey(key));
+  }
+
+  @Override
+  public SoyValueProvider getProvider(SoyValue key) {
+    return getSingle(getStringKey(key));
+  }
+
+  @Nonnull
+  @Override
+  public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+    ImmutableMap.Builder<SoyValue, SoyValueProvider> builder = ImmutableMap.builder();
+    for (Map.Entry<String, SoyData> entry : map.entrySet()) {
+      builder.put(StringData.forValue(entry.getKey()), entry.getValue());
+    }
+    return builder.build();
+  }
 
   /**
    * Gets the string key out of a SoyValue key, or throws SoyDataException if the key is not a
    * string.
+   *
    * @param key The SoyValue key.
    * @return The string key.
    */
@@ -277,5 +335,4 @@ public class SoyMapData extends CollectionData implements SoyDict {
           "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
     }
   }
-
 }

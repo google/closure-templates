@@ -16,138 +16,102 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
 import java.util.List;
 
 /**
  * Node representing a 'print' directive.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
-
-  /** The directive name (including vertical bar). */
-  private final String name;
-
-  /** The text of all the args. */
-  private final String argsText;
+  private final SoyPrintDirective printDirective;
 
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
 
-  private PrintDirectiveNode(
-      int id,
-      String name,
-      ImmutableList<ExprRootNode> args,
-      String argsText,
-      SourceLocation sourceLocation) {
-    super(id, sourceLocation);
-    this.name = name;
-    this.args = args;
-    this.argsText = argsText;
-  }
+  /**
+   * This means that the directive was inserted by the compiler, typically the autoescaper.
+   * Otherwise it means that a user wrote it.
+   */
+  private final boolean isSynthetic;
 
+  public PrintDirectiveNode(
+      int id,
+      SourceLocation location,
+      ImmutableList<ExprNode> args,
+      SoyPrintDirective printDirective,
+      boolean isSynthetic) {
+    super(id, location);
+    this.args = ExprRootNode.wrap(args);
+    this.printDirective = checkNotNull(printDirective);
+    this.isSynthetic = isSynthetic;
+  }
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.name = orig.name;
-    this.argsText = orig.argsText;
     List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
     for (ExprRootNode origArg : orig.args) {
       tempArgs.add(origArg.copy(copyState));
     }
     this.args = ImmutableList.copyOf(tempArgs);
+    this.printDirective = orig.printDirective;
+    this.isSynthetic = orig.isSynthetic;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.PRINT_DIRECTIVE_NODE;
   }
 
-
   /** Returns the directive name (including vertical bar). */
   public String getName() {
-    return name;
+    return printDirective.getName();
   }
 
+  /** Returns true if this node was inserted by the autoescaper. */
+  public boolean isSynthetic() {
+    return isSynthetic;
+  }
 
   /** The parsed args. */
   public List<ExprRootNode> getArgs() {
     return args;
   }
 
-
-  @Override public String toSourceString() {
-    return name + ((argsText.length() > 0) ? ":" + argsText : "");
+  @Override
+  public String toSourceString() {
+    return args.isEmpty() ? getName() : getName() + ":" + SoyTreeUtils.toSourceString(args);
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(args);
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    return args;
   }
 
-
-  @Override public PrintDirectiveNode copy(CopyState copyState) {
+  @Override
+  public PrintDirectiveNode copy(CopyState copyState) {
     return new PrintDirectiveNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link PrintDirectiveNode}.
-   */
-  public static final class Builder {
-    private final int id;
-    private final String name;
-    private final String argsText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param name The directive name in source code (including vertical bar).
-     * @param argsText The text of all the args, or empty string if none (usually empty string).
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String name, String argsText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.name = name;
-      this.argsText = argsText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link PrintDirectiveNode} from the state of this builder, reporting syntax
-     * errors to the given {@link ErrorReporter}.
-     */
-    public PrintDirectiveNode build(ErrorReporter errorReporter) {
-      ImmutableList<ExprRootNode> args = parseArgs(errorReporter);
-      return new PrintDirectiveNode(id, name, args, argsText, sourceLocation);
-    }
-
-    private ImmutableList<ExprRootNode> parseArgs(ErrorReporter errorReporter) {
-      if (this.argsText.isEmpty()) {
-        return ImmutableList.of();
-      }
-      ImmutableList.Builder<ExprRootNode> args = ImmutableList.builder();
-      for (ExprNode expr : new ExpressionParser(argsText, sourceLocation, errorReporter)
-          .parseExpressionList()) {
-        args.add(new ExprRootNode(expr));
-      }
-      return args.build();
-    }
+  /** Returns the print directive for this node. */
+  public SoyPrintDirective getPrintDirective() {
+    return printDirective;
   }
-
 }

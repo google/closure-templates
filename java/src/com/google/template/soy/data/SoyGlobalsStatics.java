@@ -22,22 +22,22 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a class annotated with this annotation contains constants
- * that should be exported as Soy Globals.
- * 
+ * Indicates that a class annotated with this annotation contains constants that should be exported
+ * as Soy Globals.
+ *
  * <p>There are several restrictions imposed on such a class with constants:
+ *
  * <ol>
- * <li>a class cannot be an interface or an annotation;
- * <li>inheritance of such classes is prohibited and, thus, classes must be
- * declared with the "final" declared class;
- * <li>constructors or methods are not allowed;
- * <li>only constant fields are allowed;
- * <li>only primitive and string types are allowed for constant values.
+ *   <li>a class cannot be an interface or an annotation;
+ *   <li>inheritance of such classes is prohibited and, thus, classes must be declared with the
+ *       "final" declared class;
+ *   <li>constructors or methods are not allowed;
+ *   <li>only constant fields are allowed;
+ *   <li>only primitive and string types are allowed for constant values.
  * </ol>
- * 
+ *
  * <p>The constants are exported in the namespace of the implementing class.
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SoyGlobalsStatics {
-}
+public @interface SoyGlobalsStatics {}

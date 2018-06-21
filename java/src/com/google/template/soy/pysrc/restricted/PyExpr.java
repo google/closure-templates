@@ -22,13 +22,13 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * Value class to represent a Python expression. Includes the text of the expression as well as the
  * precedence of the top-most operator.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p> Since the type information is rather generic it could potentially be shared with the JsExpr,
+ * <p>Since the type information is rather generic it could potentially be shared with the JsExpr,
  * but as JS doesn't currently have any uses, and Python types do differ in some aspects (such as
  * with numbers), it's kept separate.
  *
- * <p> NOTE: Some expressions could potentially return multiple types (such as a ternary if with a
+ * <p>NOTE: Some expressions could potentially return multiple types (such as a ternary if with a
  * String or number as potential results). If possible to avoid, the results will be improved, but
  * if not, this class can be used with no type assumed.
  *

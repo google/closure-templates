@@ -14,101 +14,51 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-
-import junit.framework.TestCase;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for V1JsExprTranslator.
+ * Unit tests for {@link V1JsExprTranslator}.
  *
  */
-public class V1JsExprTranslatorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class V1JsExprTranslatorTest {
 
+  // Let 'goo' simulate a local variable from a 'foreach' loop.
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.of("goo", id("gooData8"));
 
-  private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
-      new ArrayDeque<Map<String, JsExpr>>();
-  static {
-    Map<String, JsExpr> frame = Maps.newHashMap();
-    // Let 'goo' simulate a local variable from a 'foreach' loop.
-    frame.put("goo", new JsExpr("gooData8", Integer.MAX_VALUE));
-    frame.put("goo__isFirst", new JsExpr("gooIndex8 == 0", Operator.EQUAL.getPrecedence()));
-    frame.put("goo__isLast", new JsExpr("gooIndex8 == gooListLen8 - 1",
-                                        Operator.EQUAL.getPrecedence()));
-    frame.put("goo__index", new JsExpr("gooIndex8", Integer.MAX_VALUE));
-    LOCAL_VAR_TRANSLATIONS.push(frame);
+  @Test
+  public void testDataRef() {
+    runTestHelper("$boo", "opt_data.boo");
+    runTestHelper("$boo.goo", "opt_data.boo.goo");
+    runTestHelper("$goo", "gooData8");
+    runTestHelper("$goo.boo", "gooData8.boo");
+    // We used to have special support for turning .<Number> into bracket access, but such syntax is
+    // no longer supported as this test demonstrates
+    runTestHelper("$boo.0.1.foo.2", "opt_data.boo.0.1.foo.2");
+    runTestHelper("$boo[$foo][$goo+1]", "opt_data.boo[opt_data.foo][gooData8+1]");
   }
 
-
-  public void testDataRef() throws Exception {
-
-    runTestHelper("$boo",
-                  new JsExpr("opt_data.boo", Integer.MAX_VALUE));
-    runTestHelper("$boo.goo",
-                  new JsExpr("opt_data.boo.goo", Integer.MAX_VALUE));
-    runTestHelper("$goo",
-                  new JsExpr("gooData8", Integer.MAX_VALUE));
-    runTestHelper("$goo.boo",
-                  new JsExpr("gooData8.boo", Integer.MAX_VALUE));
-    runTestHelper("$boo.0.1.foo.2",
-                  new JsExpr("opt_data.boo[0][1].foo[2]", Integer.MAX_VALUE));
-    runTestHelper("$boo[$foo][$goo+1]",
-                  new JsExpr("opt_data.boo[opt_data.foo][gooData8+1]", Integer.MAX_VALUE),
-                  true /* lenient */);
+  private static void runTestHelper(String soyExpr, String expectedJsExpr) {
+    JsExpr actualJsExpr =
+        V1JsExprTranslator.translateToJsExpr(
+            soyExpr,
+            SourceLocation.UNKNOWN,
+            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
+            ErrorReporter.exploding());
+    assertThat(actualJsExpr.getText()).isEqualTo("(" + expectedJsExpr + ")");
+    assertThat(actualJsExpr.getPrecedence()).isEqualTo(Integer.MAX_VALUE);
   }
-
-
-  public void testOperators() throws Exception {
-
-    runTestHelper("not $boo or true and $goo",
-                  new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
-    runTestHelper("( (8-4) + (2-1) )",
-                  new JsExpr("( (8-4) + (2-1) )", Operator.PLUS.getPrecedence()));
-  }
-
-
-  public void testFunctions() throws Exception {
-
-    runTestHelper("isFirst($goo)",
-                  new JsExpr("(gooIndex8 == 0)", Operator.EQUAL.getPrecedence()));
-    runTestHelper("not isLast($goo)",
-                  new JsExpr("! (gooIndex8 == gooListLen8 - 1)", Operator.NOT.getPrecedence()),
-                  true /* lenient */);
-    runTestHelper("index($goo) + 1",
-                  new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence()));
-    runTestHelper("$boo.length",
-                  new JsExpr("opt_data.boo.length", Integer.MAX_VALUE));
-  }
-
-
-  public void runTestHelper(String soyExpr, JsExpr expectedJsExpr) throws Exception {
-    runTestHelper(soyExpr, expectedJsExpr, false);
-  }
-
-
-  public void runTestHelper(String soyExpr, JsExpr expectedJsExpr, boolean shouldBeLenient)
-      throws Exception {
-
-    JsExpr actualJsExpr = V1JsExprTranslator.translateToJsExpr(
-        soyExpr, SourceLocation.UNKNOWN, LOCAL_VAR_TRANSLATIONS, ExplodingErrorReporter.get());
-    assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
-    if (shouldBeLenient) {
-      assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();
-    } else {
-      assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
-    }
-  }
-
 }

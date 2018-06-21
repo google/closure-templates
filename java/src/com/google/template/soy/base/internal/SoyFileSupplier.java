@@ -21,45 +21,46 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-
 
 /**
  * Record for one input Soy file.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>TODO(lukes): This should either be a subtype of CharSource or hold a CharSource
  *
  */
 public interface SoyFileSupplier {
 
-
   /**
    * An opaque identifier that can be compared for equality with other versions from the same
    * resource.
-   * <p>
-   * Instances are not {@code Comparable} since a version is not necessarily monotonic ; e.g. a
+   *
+   * <p>Instances are not {@code Comparable} since a version is not necessarily monotonic ; e.g. a
    * cryptographically strong hash function produces a more reliable version identifier than a
    * time-stamp but not one that can be said to be newer or older than any other version.
    */
   interface Version {
 
     /**
-     * Compares to versions that are equivalent.  Meaningless if applied to versions from a
-     * different resource.
+     * Compares to versions that are equivalent. Meaningless if applied to versions from a different
+     * resource.
      */
-    @Override boolean equals(Object o);
-
+    @Override
+    boolean equals(Object o);
 
     /** A version for stable resources : resources that don't change over the life of a JVM. */
     Version STABLE_VERSION = new Version() {};
-
   }
 
+  /** View this supplier as a {@link CharSource}. */
+  CharSource asCharSource();
 
   /**
    * Returns a {@link Reader} for the Soy file content.
@@ -68,40 +69,28 @@ public interface SoyFileSupplier {
    */
   Reader open() throws IOException;
 
-
-  /**
-   * True if the underlying resource has changed since the given version.
-   */
+  /** True if the underlying resource has changed since the given version. */
   boolean hasChangedSince(Version version);
 
-
-  /**
-   * Returns the kind of this input Soy file.
-   */
+  /** Returns the kind of this input Soy file. */
   SoyFileKind getSoyFileKind();
 
-
-  /**
-   * Returns the path to the Soy file, used for as a unique map/set key and for messages.
-   */
+  /** Returns the path to the Soy file, used for as a unique map/set key and for messages. */
   String getFilePath();
 
-  /**
-   * Returns the version of the Soy file read.
-   */
+  /** Returns the version of the Soy file read. */
   Version getVersion();
 
   /**
    * Container for factory methods for {@link SoyFileSupplier}s.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   final class Factory {
 
-
     /**
-     * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content,
-     * as well as the desired file path for messages.
+     * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content, as
+     * well as the desired file path for messages.
      *
      * @param contentSource Source for the Soy file content.
      * @param soyFileKind The kind of this input Soy file.
@@ -112,7 +101,6 @@ public interface SoyFileSupplier {
       return new StableSoyFileSupplier(contentSource, soyFileKind, filePath);
     }
 
-
     /**
      * Creates a new {@code SoyFileSupplier} given a {@code File}.
      *
@@ -120,10 +108,8 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      */
     public static SoyFileSupplier create(File inputFile, SoyFileKind soyFileKind) {
-      return create(
-          Files.asCharSource(inputFile, UTF_8), soyFileKind, inputFile.getPath());
+      return create(Files.asCharSource(inputFile, UTF_8), soyFileKind, inputFile.getPath());
     }
-
 
     /**
      * Creates a new {@code SoyFileSupplier} given a resource {@code URL}, as well as the desired
@@ -138,20 +124,24 @@ public interface SoyFileSupplier {
       if (inputFileUrl.getProtocol().equals("file")) {
         // If the URL corresponds to a local file (such as a resource during local development),
         // open it up as a volatile file, so we can account for changes to the file.
-        return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
+        URI inputFileUri;
+        try {
+          inputFileUri = inputFileUrl.toURI();
+        } catch (URISyntaxException ex) {
+          throw new RuntimeException(ex);
+        }
+        return new VolatileSoyFileSupplier(new File(inputFileUri), soyFileKind);
       } else {
-        return create(
-            Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
+        return create(Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
       }
     }
-
 
     /**
      * Creates a new {@code SoyFileSupplier} given a resource {@code URL}.
      *
-     * <p> Important: This function assumes that the desired file path is returned by
-     * {@code inputFileUrl.toString()}. If this is not the case, please use
-     * {@link #create(java.net.URL, SoyFileKind, String)} instead.
+     * <p>Important: This function assumes that the desired file path is returned by {@code
+     * inputFileUrl.toString()}. If this is not the case, please use {@link #create(java.net.URL,
+     * SoyFileKind, String)} instead.
      *
      * @see #create(java.net.URL, SoyFileKind, String)
      * @param inputFileUrl The URL of the Soy file.
@@ -161,10 +151,9 @@ public interface SoyFileSupplier {
       return create(inputFileUrl, soyFileKind, inputFileUrl.toString());
     }
 
-
     /**
-     * Creates a new {@code SoyFileSupplier} given the file content provided as a string, as well
-     * as the desired file path for messages.
+     * Creates a new {@code SoyFileSupplier} given the file content provided as a string, as well as
+     * the desired file path for messages.
      *
      * @param content The Soy file content.
      * @param soyFileKind The kind of this input Soy file.
@@ -172,22 +161,11 @@ public interface SoyFileSupplier {
      */
     public static SoyFileSupplier create(
         CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      // TODO(cgdecker): Use CharSource.wrap once the Guava version is updated
-      final String contentString = content.toString();
-      CharSource source = new CharSource() {
-        @Override
-        public Reader openStream() {
-          return new StringReader(contentString);
-        }
-      };
-      return create(source, soyFileKind, filePath);
+      return create(CharSource.wrap(content), soyFileKind, filePath);
     }
-
 
     private Factory() {
       // Not instantiable.
     }
-
   }
-
 }

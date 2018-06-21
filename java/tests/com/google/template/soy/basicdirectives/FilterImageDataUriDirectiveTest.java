@@ -25,28 +25,29 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-
-/**
- * Unit tests for {@link FilterImageDataUriDirective}.
- */
+/** Unit tests for {@link FilterImageDataUriDirective}. */
+@RunWith(JUnit4.class)
 public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
-
+  @Test
   public void testApplyForTofu() {
     FilterImageDataUriDirective directive = new FilterImageDataUriDirective();
     // More comprehensive tests in SanitizersTest.
-    assertTofuOutput(sanitizedUri("data:image/png;base64,abc="),
-        "data:image/png;base64,abc=", directive);
+    assertTofuOutput(
+        sanitizedUri("data:image/png;base64,abc="), "data:image/png;base64,abc=", directive);
     assertTofuOutput(sanitizedUri("data:image/gif;base64,zSoyz"), "not really valid", directive);
   }
-
+  @Test
   public void testApplyForJsSrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey)");
   }
-
+  @Test
   public void testApplyForPySrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
     PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);

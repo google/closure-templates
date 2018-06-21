@@ -18,133 +18,90 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.api.Names.rewriteStackTrace;
+import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.restricted.MsgPartUtils;
-import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.internal.TofuModule.Tofu;
-
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-
-/**
- * Main entry point for rendering Soy templates on the server.
- */
+/** Main entry point for rendering Soy templates on the server. */
 public final class SoySauceImpl implements SoySauce {
-  public static final class Factory {
-    // TODO(lukes): switch all of soy to @AutoFactory when its opensource situation is cleaned up
-    private final GuiceSimpleScope apiCallScopeProvider;
-    private final Provider<SoyValueHelper> converterProvider;
-    private final Provider<Map<String, SoyJavaFunction>> functionsProvider;
-    private final Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider;
-
-    @Inject Factory(
-        @ApiCall GuiceSimpleScope apiCallScopeProvider, 
-        Provider<SoyValueHelper> converterProvider,
-        // TODO(lukes): we rely on the @Tofu bindings here for compatibility with servers using
-        // SoyTofuFunction/SoyTofuPrintDirective.  Those interfaces need to be deleted and the 
-        // adapters provided by these bindings removed
-        @Tofu Provider<Map<String, SoyJavaFunction>> functionsProvider, 
-        @Tofu Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider) {
-      this.apiCallScopeProvider = apiCallScopeProvider;
-      this.converterProvider = converterProvider;
-      this.functionsProvider = functionsProvider;
-      this.printDirectivesProvider = printDirectivesProvider;
-    }
-
-    public SoySauceImpl create(
-        CompiledTemplates templates, 
-        TemplateRegistry registry, 
-        SoyMsgBundle defaultMsgBundle, 
-        SetMultimap<String, String> templateToTransitiveUsedIjParams) {
-      return new SoySauceImpl(templates, registry, defaultMsgBundle,
-          templateToTransitiveUsedIjParams, apiCallScopeProvider, converterProvider.get(),
-          functionsProvider.get(), printDirectivesProvider.get());
-    }
-  }
-  
   private final CompiledTemplates templates;
-  private final SoyMsgBundle defaultMsgBundle;
   private final GuiceSimpleScope apiCallScope;
-  private final DelTemplateSelectorImpl.Factory factory;
-  private final SoyValueHelper converter;
-  private final ImmutableMap<String, SoyJavaFunction> functions;
+  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
-  private final ImmutableSetMultimap<String, String> templateToTransitiveUsedIjParams;
 
-  private SoySauceImpl(
+  public SoySauceImpl(
       CompiledTemplates templates,
-      TemplateRegistry registry,
-      SoyMsgBundle defaultMsgBundle,
-      SetMultimap<String, String> templateToTransitiveUsedIjParams,
       GuiceSimpleScope apiCallScope,
-      SoyValueHelper converter,
-      Map<String, SoyJavaFunction> functions,
-      Map<String, SoyJavaPrintDirective> printDirectives) {
+      ImmutableMap<String, ? extends SoyFunction> functions,
+      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
-    this.defaultMsgBundle = replaceLocale(defaultMsgBundle);
-    this.templateToTransitiveUsedIjParams = 
-        ImmutableSetMultimap.copyOf(templateToTransitiveUsedIjParams);  
     this.apiCallScope = checkNotNull(apiCallScope);
-    this.converter = checkNotNull(converter);
-    this.functions = ImmutableMap.copyOf(functions);
-    this.printDirectives = ImmutableMap.copyOf(printDirectives);
-    
-    this.factory = new DelTemplateSelectorImpl.Factory(registry, templates);
-  }
 
-  // Currently the defaultBundle is coming straight from extractMsgs which means the SoyMsgs are
-  // not associated with a locale, however a locale is needed for plurals support.  To compensate
-  // we just apply 'en' here.
-  // TODO(lukes): technically we don't know that the template author is writing in english (or even
-  // an LTR language).  Normally, this is provided as a flag to the msg extractor.  consider adding
-  // an explicit flag to the runtime, or allowing the user to pass an explicit default bundle (with
-  // an associated locale).  Note, Tofu avoids this problem by having 2 implementations of msg 
-  // rendering. 1 that uses the bundle and one that walks the AST directly.  To compensate for a
-  // lack of locale the AST implementation doesn't use complex plural rules.  Consider just changing
-  // the msg renderer for jbcsrc to deal with missing locale information 'gracefully'.
-  private SoyMsgBundle replaceLocale(SoyMsgBundle input) {
-    ImmutableList.Builder<SoyMsg> builder = ImmutableList.builder();
-    for (SoyMsg msg : input) {
-      builder.add(new SoyMsg(msg.getId(), "en", 
-          MsgPartUtils.hasPlrselPart(msg.getParts()), msg.getParts()));
+    ImmutableMap.Builder<String, JavaPluginRuntime> runtimeBuilder = ImmutableMap.builder();
+
+    for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
+      String fnName = entry.getKey();
+      // Store runtime adapters for all SoyJavaFunctions that *aren't* also SoyJbcSrcFunction.
+      // (We don't need to capture SoyJbcSrcFunction functions because the compiler will never
+      // delegate to them at runtime -- they are only needed at compile time.)
+      if (entry.getValue() instanceof SoyJavaFunction
+          && !(entry.getValue() instanceof SoyJbcSrcFunction)) {
+        SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
+        runtimeBuilder.put(fnName, new LegacyFunctionAdapter(fn));
+      }
     }
-    return new SoyMsgBundleImpl("en", builder.build());
+
+    // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
+    // Filter them out.
+    ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
+        ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
+      SoyPrintDirective printDirective = entry.getValue();
+      if (printDirective instanceof SoyJavaPrintDirective) {
+        soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
+      }
+    }
+    this.printDirectives = soyJavaPrintDirectives.build();
+    this.functionRuntimes = runtimeBuilder.build();
   }
 
-  @Override public ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateName) {
-    return templateToTransitiveUsedIjParams.get(templateName);  
+  @Override
+  public ImmutableSortedSet<String> getTransitiveIjParamsForTemplate(String templateName) {
+    return templates.getTransitiveIjParamsForTemplate(templateName);
   }
 
-  @Override public RendererImpl renderTemplate(String template) {
+  @Override
+  public RendererImpl renderTemplate(String template) {
     CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
     return new RendererImpl(template, factory, templates.getTemplateContentKind(template));
   }
@@ -153,103 +110,129 @@ public final class SoySauceImpl implements SoySauce {
     private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final Optional<ContentKind> contentKind;
-    private ImmutableSet<String> activeDelegatePackages = ImmutableSet.of();
+    private Predicate<String> activeDelegatePackages = Predicates.alwaysFalse();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
-    private final RenderContext.Builder contextBuilder = new RenderContext.Builder()
-        .withSoyFunctions(functions)
-        .withSoyPrintDirectives(printDirectives)
-        .withConverter(converter);
-    private SoyRecord data = SoyValueHelper.EMPTY_DICT;
-    // Unlike Tofu we default to empty, not null.
-    private SoyRecord ij = SoyValueHelper.EMPTY_DICT;
+    private SoyLogger logger = SoyLogger.NO_OP;
+    private final RenderContext.Builder contextBuilder =
+        new RenderContext.Builder()
+            .withCompiledTemplates(templates)
+            .withSoyPrintDirectives(printDirectives);
+
+    private SoyRecord data = SoyValueConverter.EMPTY_DICT;
+    private SoyRecord ij = SoyValueConverter.EMPTY_DICT;
     private ContentKind expectedContentKind = ContentKind.HTML;
     private boolean contentKindExplicitlySet;
 
-    RendererImpl(String templateName, 
-        CompiledTemplate.Factory templateFactory, 
+    RendererImpl(
+        String templateName,
+        CompiledTemplate.Factory templateFactory,
         Optional<ContentKind> contentKind) {
       this.templateName = templateName;
       this.templateFactory = checkNotNull(templateFactory);
       this.contentKind = contentKind;
     }
 
-    @Override public RendererImpl setIj(Map<String, ?> record) {
-      this.ij = (SoyRecord) converter.convert(checkNotNull(record));
+    @Override
+    public RendererImpl setIj(Map<String, ?> record) {
+      this.ij = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
       return this;
     }
 
-    @Override public RendererImpl setData(Map<String, ?> record) {
-      this.data = (SoyRecord) converter.convert(checkNotNull(record));
+    @Override
+    public RendererImpl setData(Map<String, ?> record) {
+      this.data = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
       return this;
     }
 
-    @Override public RendererImpl setActiveDelegatePackageNames(
-        Set<String> activeDelegatePackages) {
-      this.activeDelegatePackages = ImmutableSet.copyOf(activeDelegatePackages);
+    @Override
+    public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
+      this.activeDelegatePackages = checkNotNull(active);
       return this;
     }
 
-    @Override public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
+    @Override
+    public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       contextBuilder.withCssRenamingMap(cssRenamingMap);
       return this;
     }
 
-    @Override public RendererImpl setXidRenamingMap(SoyIdRenamingMap xidRenamingMap) {
+    @Override
+    public RendererImpl setXidRenamingMap(SoyIdRenamingMap xidRenamingMap) {
       contextBuilder.withXidRenamingMap(xidRenamingMap);
       return this;
     }
 
-    @Override public RendererImpl setMsgBundle(SoyMsgBundle msgs) {
+    @Override
+    public RendererImpl setMsgBundle(SoyMsgBundle msgs) {
       this.msgs = checkNotNull(msgs);
       return this;
     }
-    
-    @Override public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
-      checkNotNull(contentKind);
+
+    @Override
+    public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
+      contextBuilder.withDebugSoyTemplateInfo(debugSoyTemplateInfo);
+      return this;
+    }
+
+    @Override
+    public Renderer setSoyLogger(SoyLogger logger) {
+      this.logger = checkNotNull(logger);
+      this.contextBuilder.hasLogger(true);
+      return this;
+    }
+
+    @Override
+    public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
+      checkNotNull(expectedContentKind);
       this.contentKindExplicitlySet = true;
       this.expectedContentKind = expectedContentKind;
       return this;
     }
 
-    @Override public WriteContinuation render(AdvisingAppendable out) throws IOException {
+    @Override
+    public WriteContinuation render(AdvisingAppendable out) throws IOException {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      return startRender(out);
+      return startRender(OutputAppendable.create(out, logger));
     }
 
-    @Override public Continuation<String> render() {
+    @Override
+    public Continuation<String> render() {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      StringBuilder sb = new StringBuilder();
+      OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.stringContinuation(startRender(buf), buf);
+        return Continuations.stringContinuation(startRender(buf), sb, buf);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
 
-    @Override public Continuation<SanitizedContent> renderStrict() {
-      if (!contentKind.isPresent()) {
-        throw new IllegalStateException("Cannot render non strict templates to SanitizedContent");
-      }
+    @Override
+    public Continuation<SanitizedContent> renderStrict() {
       enforceContentKind();
-      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      StringBuilder sb = new StringBuilder();
+      OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.strictContinuation(startRender(buf), buf, expectedContentKind);
+        return Continuations.strictContinuation(startRender(buf), sb, buf, expectedContentKind);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
 
-    private <T> WriteContinuation startRender(AdvisingAppendable out) throws IOException {
-      RenderContext context = contextBuilder
-          .withMessageBundles(msgs, defaultMsgBundle)
-          .withTemplateSelector(factory.create(activeDelegatePackages))
-          .build();
-      BidiGlobalDir dir = BidiGlobalDir.forStaticLocale(msgs.getLocaleString());
-      Scoper scoper = new Scoper(apiCallScope, dir, msgs.getLocaleString());
+    private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
+      RenderContext context =
+          contextBuilder
+              .withFunctionRuntimes(functionRuntimes)
+              .withMessageBundle(msgs)
+              .withActiveDelPackageSelector(activeDelegatePackages)
+              .build();
+      Scoper scoper =
+          new Scoper(
+              apiCallScope, BidiGlobalDir.forStaticIsRtl(msgs.isRtl()), msgs.getLocaleString());
       CompiledTemplate template = templateFactory.create(data, ij);
       return doRender(template, scoper, out, context);
     }
@@ -261,29 +244,40 @@ public final class SoySauceImpl implements SoySauce {
         return;
       }
       if (!contentKind.isPresent()) {
-        throw new IllegalStateException("Cannot render a non strict template as '" 
-            + NodeContentKinds.toAttributeValue(expectedContentKind) + "'");
+        throw new IllegalStateException(
+            "Cannot render a non strict template '"
+                + templateName
+                + "' as '"
+                + Ascii.toLowerCase(expectedContentKind.name())
+                + "'");
       }
       if (expectedContentKind != contentKind.get()) {
-        throw new IllegalStateException("Expected template to be kind=\""
-            + NodeContentKinds.toAttributeValue(expectedContentKind)
-            + "\" but was kind=\"" + NodeContentKinds.toAttributeValue(contentKind.get())
-            + "\": " + templateName);
+        throw new IllegalStateException(
+            "Expected template '"
+                + templateName
+                + "' to be kind=\""
+                + Ascii.toLowerCase(expectedContentKind.name())
+                + "\" but was kind=\""
+                + Ascii.toLowerCase(contentKind.get().name())
+                + "\"");
       }
     }
   }
 
   private static WriteContinuation doRender(
-      CompiledTemplate template, Scoper scoper, AdvisingAppendable out, RenderContext context) 
-          throws IOException {
+      CompiledTemplate template,
+      Scoper scoper,
+      LoggingAdvisingAppendable out,
+      RenderContext context)
+      throws IOException {
     RenderResult result;
-    try (WithScope scope = scoper.enter()) {
+    try (GuiceSimpleScope.InScope scope = scoper.enter()) {
       result = template.render(out, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
-      Throwables.propagateIfInstanceOf(t, IOException.class);
-      throw Throwables.propagate(t);
-    }      
+      Throwables.throwIfInstanceOf(t, IOException.class);
+      throw t;
+    }
     if (result.isDone()) {
       return Continuations.done();
     }
@@ -294,12 +288,16 @@ public final class SoySauceImpl implements SoySauce {
     final RenderResult result;
     final Scoper scoper;
     final RenderContext context;
-    final AdvisingAppendable out;
+    final LoggingAdvisingAppendable out;
     final CompiledTemplate template;
     boolean hasContinueBeenCalled;
 
-    WriteContinuationImpl(RenderResult result, Scoper scoper, RenderContext context, 
-        AdvisingAppendable out, CompiledTemplate template) {
+    WriteContinuationImpl(
+        RenderResult result,
+        Scoper scoper,
+        RenderContext context,
+        LoggingAdvisingAppendable out,
+        CompiledTemplate template) {
       checkArgument(!result.isDone());
       this.result = checkNotNull(result);
       this.scoper = checkNotNull(scoper);
@@ -308,11 +306,13 @@ public final class SoySauceImpl implements SoySauce {
       this.template = checkNotNull(template);
     }
 
-    @Override public RenderResult result() {
+    @Override
+    public RenderResult result() {
       return result;
     }
 
-    @Override public WriteContinuation continueRender() throws IOException {
+    @Override
+    public WriteContinuation continueRender() throws IOException {
       if (hasContinueBeenCalled) {
         throw new IllegalStateException("continueRender() has already been called.");
       }
@@ -332,11 +332,12 @@ public final class SoySauceImpl implements SoySauce {
       this.localeString = localeString;
     }
 
-    WithScope enter() {
+    GuiceSimpleScope.InScope enter() {
       // TODO(lukes): this isn't right, re-entering the scope shouldn't retrigger injection of
-      // items, we need an explicit detach api.
-      WithScope withScope = scope.enter();
-      ApiCallScopeUtils.seedSharedParams(scope, dir, localeString);
+      // items, we need an explicit detach api.  This happens to be fine because these are the only
+      // 2 keys available in this scope
+      GuiceSimpleScope.InScope withScope = scope.enter();
+      ApiCallScopeUtils.seedSharedParams(withScope, dir, localeString);
       return withScope;
     }
   }

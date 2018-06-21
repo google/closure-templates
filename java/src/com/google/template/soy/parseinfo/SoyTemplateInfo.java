@@ -19,23 +19,20 @@ package com.google.template.soy.parseinfo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
-
+import com.google.errorprone.annotations.Immutable;
 
 /**
  * Parsed info about a template.
  *
  */
+@Immutable
 public class SoyTemplateInfo {
 
-
-  /**
-   * Enum for whether a param is required or optional for a specific template.
-   */
+  /** Enum for whether a param is required or optional for a specific template. */
   public static enum ParamRequisiteness {
     REQUIRED,
     OPTIONAL;
   }
-
 
   /** The full template name. */
   private final String name;
@@ -46,26 +43,31 @@ public class SoyTemplateInfo {
   /** Set of injected params used by this template (or a transitive callee). */
   private final ImmutableSortedSet<String> ijParamSet;
 
+  /** If the template is using strict auto escaping mode. */
+  private final String autoescapeMode;
+
   /**
    * Constructor for internal use only, for the general case.
    *
-   * <p> Important: Do not construct SoyTemplateInfo objects outside of Soy internal or
-   * Soy-generated code. User code that constructs SoyTemplateInfo objects will be broken by future
-   * Soy changes.
+   * <p>Important: Do not construct SoyTemplateInfo objects outside of Soy internal or Soy-generated
+   * code. User code that constructs SoyTemplateInfo objects will be broken by future Soy changes.
    *
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
    * @param ijParamSet Set of injected params used by this template (or a transitive callee).
+   * @param autoescapeMode The auto escape mode used by this template.
    */
-  public SoyTemplateInfo(
-      String name, ImmutableMap<String, ParamRequisiteness> paramMap,
-      ImmutableSortedSet<String> ijParamSet) {
+  protected SoyTemplateInfo(
+      String name,
+      ImmutableMap<String, ParamRequisiteness> paramMap,
+      ImmutableSortedSet<String> ijParamSet,
+      String autoescapeMode) {
     this.name = name;
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
     this.ijParamSet = ijParamSet;
+    this.autoescapeMode = autoescapeMode;
   }
-
 
   /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
   public String getName() {
@@ -82,10 +84,13 @@ public class SoyTemplateInfo {
     return paramMap;
   }
 
-  /**
-   * Returns the set of injected params used by this template (or a transitive callee).
-   */
+  /** Returns the set of injected params used by this template (or a transitive callee). */
   public ImmutableSortedSet<String> getUsedIjParams() {
     return ijParamSet;
+  }
+
+  /** Returns if the current template is using strict auto escaping mode. */
+  public String getAutoescapeMode() {
+    return autoescapeMode;
   }
 }

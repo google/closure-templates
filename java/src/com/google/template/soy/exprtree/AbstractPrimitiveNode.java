@@ -23,7 +23,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 /**
  * Abstract implementation of a PrimitiveNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 abstract class AbstractPrimitiveNode extends AbstractExprNode implements PrimitiveNode {
@@ -32,9 +32,9 @@ abstract class AbstractPrimitiveNode extends AbstractExprNode implements Primiti
     super(sourceLocation);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected AbstractPrimitiveNode(AbstractPrimitiveNode orig, CopyState copyState) {

@@ -16,69 +16,46 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import static org.junit.Assert.assertEquals;
 
-import junit.framework.TestCase;
+import com.google.common.base.Joiner;
+import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractSoyNodeVisitor.
  *
  */
-public final class AbstractSoyNodeVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractSoyNodeVisitorTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
-  public void testUsingIncompleteOutputVisitor() throws SoySyntaxException {
+  @Test
+  public void testUsingIncompleteOutputVisitor() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace boo}",
+                        "/** @param goo */",
+                        "{template .foo}",
+                        "  {$goo}",
+                        "  {2 + 2}",
+                        "{/template}",
+                        "{template .moo}",
+                        "  {'moo'}",
+                        "{/template}",
+                        ""))
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
 
-    SoyFileSetNode soyTree = new SoyFileSetNode(0, null);
-
-    SoyFileNode soyFile = new SoyFileNode(
-        0,
-        "",
-        SoyFileKind.SRC,
-        FAIL,
-        null /* delpackageCmdText */,
-        "boo" /* namespaceCmdText */,
-        null /* aliasCmdTexts */);
-    soyTree.addChild(soyFile);
-
-    SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");
-
-    TemplateNode template1 =
-        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
-            .setId(0)
-            .setCmdText(".foo")
-            .setSoyDoc("/** @param goo */")
-            .build();
-    soyFile.addChild(template1);
-    template1.addChild(
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$goo")
-            .build(FAIL));
-    template1.addChild(
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("2 + 2")
-            .build(FAIL));
-
-    TemplateNode template2 =
-        new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
-            .setId(0)
-            .setCmdText(".moo")
-            .setSoyDoc(null)
-            .build();
-    soyFile.addChild(template2);
-    template2.addChild(
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("'moo'")
-            .build(FAIL));
-
-    IncompleteOutputVisitor iov = new IncompleteOutputVisitor(FAIL);
+    IncompleteOutputVisitor iov = new IncompleteOutputVisitor();
     assertEquals("[Parent][SoyFile][Parent][Print][Print][Parent][Print]", iov.exec(soyTree));
   }
 
@@ -86,31 +63,30 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
 
     private StringBuilder outputSb;
 
-    private IncompleteOutputVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-    }
-
-    @Override public String exec(SoyNode node) {
+    @Override
+    public String exec(SoyNode node) {
       outputSb = new StringBuilder();
       visit(node);
       return outputSb.toString();
     }
 
-    @Override protected void visitSoyFileNode(SoyFileNode node) {
+    @Override
+    protected void visitSoyFileNode(SoyFileNode node) {
       outputSb.append("[SoyFile]");
       visitChildren(node);
     }
 
-    @Override protected void visitPrintNode(PrintNode node) {
+    @Override
+    protected void visitPrintNode(PrintNode node) {
       outputSb.append("[Print]");
     }
 
-    @Override protected void visitSoyNode(SoyNode node) {
+    @Override
+    protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         outputSb.append("[Parent]");
         visitChildren((ParentSoyNode<?>) node);
       }
     }
   }
-
 }

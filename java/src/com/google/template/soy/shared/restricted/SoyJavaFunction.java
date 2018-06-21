@@ -17,20 +17,17 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.template.soy.data.SoyValue;
-
 import java.util.List;
-
 
 /**
  * Interface for a Soy function implemented for Java runtime rendering. Functions implementing this
  * interface will be used during Tofu rendering, and may also be used during optimization passes if
  * the function is also marked with annotation {@code @SoyPureFunction}.
  *
- * <p> Important: This may only be used in implementing function plugins.
+ * <p>Important: This may only be used in implementing function plugins.
  *
  */
 public interface SoyJavaFunction extends SoyFunction {
-
 
   /**
    * Computes this function on the given arguments.
@@ -39,5 +36,4 @@ public interface SoyJavaFunction extends SoyFunction {
    * @return The computed result of this function.
    */
   public SoyValue computeForJava(List<SoyValue> args);
-
 }

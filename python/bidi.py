@@ -136,7 +136,10 @@ def dir_attr(global_dir, text, is_html=False):
     is_html = is_html or _is_content_html(text)
     content_dir = _estimate_direction(text, is_html)
 
-  return sanitize.SanitizedHtmlAttribute(formatter.attr(content_dir))
+  approval = sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Directionality attributes are by nature Sanitized Html Attributes.')
+  return sanitize.SanitizedHtmlAttribute(formatter.attr(content_dir),
+                                         approval=approval)
 
 
 def mark_after(global_dir, text, is_html=False):
@@ -262,12 +265,16 @@ def unicode_wrap(global_dir, text):
   # Unicode-wrapping UnsanitizedText gives UnsanitizedText.
   # Unicode-wrapping safe HTML or JS string data gives valid, safe HTML or JS
   # string data.
+  approval = sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Persisting existing sanitizations.')
   if sanitize.is_content_kind(text, sanitize.CONTENT_KIND.TEXT):
     return sanitize.UnsanitizedText(wrapped_text, wrapped_text_dir)
   if is_html:
-    return sanitize.SanitizedHtml(wrapped_text, wrapped_text_dir)
+    return sanitize.SanitizedHtml(wrapped_text, wrapped_text_dir,
+                                  approval=approval)
   if sanitize.is_content_kind(text, sanitize.CONTENT_KIND.JS_STR_CHARS):
-    return sanitize.SanitizedJsStrChars(wrapped_text, wrapped_text_dir)
+    return sanitize.SanitizedJsStrChars(wrapped_text, wrapped_text_dir,
+                                        approval=approval)
 
   # Unicode-wrapping does not conform to the syntax of the other types of
   # content. For lack of anything better to do, we we do not declare a content

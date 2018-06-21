@@ -16,58 +16,53 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.inject.Inject;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.SoyNode;
 
-
 /**
- * Visitor for determining whther the code generated from a given node's subtree can be made to
- * also initialize the current variable (if not already initialized).
+ * Visitor for determining whther the code generated from a given node's subtree can be made to also
+ * initialize the current variable (if not already initialized).
  *
- * <p> Precondition: MsgNode should not exist in the tree.
+ * <p>Precondition: MsgNode should not exist in the tree.
  *
  */
-class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
+public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
-
   /**
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
-   * @param errorReporter For reporting errors.
    */
-  @Inject
-  CanInitOutputVarVisitor(
-      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+  public CanInitOutputVarVisitor(IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected Boolean visitCallNode(CallNode node) {
+  @Override
+  protected Boolean visitCallNode(CallNode node) {
     // The call is a JS expression that returns its output as a string.
     return true;
   }
 
+  @Override
+  protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    // the msg is a variable that is a string (possibly with some escaping directives)
+    return true;
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected Boolean visitSoyNode(SoyNode node) {
+  @Override
+  protected Boolean visitSoyNode(SoyNode node) {
     // For the vast majority of nodes, the return value of this visitor should be the same as the
     // return value of IsComputableAsJsExprsVisitor.
     return isComputableAsJsExprsVisitor.exec(node);
   }
-
 }

@@ -17,45 +17,34 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.primitives.Booleans;
-
 import javax.annotation.concurrent.Immutable;
 
 /**
  * Boolean data.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 @Immutable
 public final class BooleanData extends PrimitiveData {
 
-
   /** Static instance of BooleanData with value 'true'. */
-  @SuppressWarnings("deprecation")
   public static final BooleanData TRUE = new BooleanData(true);
 
   /** Static instance of BooleanData with value 'false'. */
-  @SuppressWarnings("deprecation")
   public static final BooleanData FALSE = new BooleanData(false);
-
 
   /** The boolean value. */
   private final boolean value;
 
-
-  /**
-   * @param value The boolean value.
-   * @deprecated Use {@link BooleanData#TRUE}, {@link BooleanData#FALSE}, or
-   *     {@link BooleanData#forValue}.
-   */
-  @Deprecated
-  public BooleanData(boolean value) {
+  /** @param value The boolean value. */
+  private BooleanData(boolean value) {
     this.value = value;
   }
 
-
   /**
    * Gets a BooleanData instance for the given value.
+   *
    * @param value The desired value.
    * @return A BooleanData instance with the given value.
    */
@@ -63,35 +52,38 @@ public final class BooleanData extends PrimitiveData {
     return value ? TRUE : FALSE;
   }
 
-
   /** Returns the boolean value. */
   public boolean getValue() {
     return value;
   }
 
-
-  @Override public boolean booleanValue() {
+  @Override
+  public boolean booleanValue() {
     return value;
   }
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return Boolean.toString(value);
   }
 
-
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return value;
   }
 
-
-  @Override public boolean equals(Object other) {
-    return other != null && other.getClass() == BooleanData.class &&
-           ((BooleanData) other).getValue() == value;
+  @Override
+  public String coerceToString() {
+    return toString();
   }
 
-  @Override public int hashCode() {
+  @Override
+  public boolean equals(Object other) {
+    return this == other;
+  }
+
+  @Override
+  public int hashCode() {
     return Booleans.hashCode(value);
   }
 }

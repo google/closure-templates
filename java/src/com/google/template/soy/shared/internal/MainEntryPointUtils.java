@@ -16,26 +16,22 @@
 
 package com.google.template.soy.shared.internal;
 
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.soytree.SoyFileNode;
-
 import java.io.File;
-
 import javax.annotation.Nullable;
 
 /**
  * Private shared utils for main entry point classes (e.g. JsSrcMain) or classes with a main()
  * method.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class MainEntryPointUtils {
-
 
   private MainEntryPointUtils() {}
 
@@ -44,12 +40,12 @@ public class MainEntryPointUtils {
    *
    * @param locale The locale for the file path, or null if not applicable.
    * @param outputPathFormat The format string defining how to format output file paths.
-   * @param inputPathsPrefix The input path prefix, or empty string if none.
    * @param fileNodes A list of the SoyFileNodes being written.
    * @return A map of output file paths to their respective input indicies.
    */
   public static Multimap<String, Integer> mapOutputsToSrcs(
-      @Nullable String locale, String outputPathFormat, String inputPathsPrefix,
+      @Nullable String locale,
+      String outputPathFormat,
       ImmutableList<SoyFileNode> fileNodes) {
     Multimap<String, Integer> outputs = ArrayListMultimap.create();
 
@@ -61,8 +57,8 @@ public class MainEntryPointUtils {
     for (int i = 0; i < fileNodes.size(); ++i) {
       SoyFileNode inputFile = fileNodes.get(i);
       String inputFilePath = inputFile.getFilePath();
-      String outputFilePath = MainEntryPointUtils.buildFilePath(
-          outputPathFormat, locale, inputFilePath, inputPathsPrefix);
+      String outputFilePath =
+          MainEntryPointUtils.buildFilePath(outputPathFormat, locale, inputFilePath);
 
       BaseUtils.ensureDirsExistInPath(outputFilePath);
       outputs.put(outputFilePath, i);
@@ -78,12 +74,10 @@ public class MainEntryPointUtils {
    * @param inputFilePath Only applicable if you need to replace the placeholders {INPUT_DIRECTORY},
    *     {INPUT_FILE_NAME}, and {INPUT_FILE_NAME_NO_EXT} (otherwise pass null). This is the full
    *     path of the input file (including the input path prefix).
-   * @param inputPathPrefix The input path prefix, or empty string if none.
    * @return The output file path corresponding to the given input file path.
    */
   public static String buildFilePath(
-      String filePathFormat, @Nullable String locale, @Nullable String inputFilePath,
-      String inputPathPrefix) {
+      String filePathFormat, @Nullable String locale, @Nullable String inputFilePath) {
 
     String path = filePathFormat;
 
@@ -92,11 +86,7 @@ public class MainEntryPointUtils {
       path = path.replace("{LOCALE_LOWER_CASE}", locale.toLowerCase().replace('-', '_'));
     }
 
-    path = path.replace("{INPUT_PREFIX}", inputPathPrefix);
-
     if (inputFilePath != null) {
-      // Remove the prefix (if any) from the input file path.
-      inputFilePath = inputFilePath.substring(inputPathPrefix.length());
 
       // Compute directory and file name.
       int lastSlashIndex = inputFilePath.lastIndexOf(File.separatorChar);
@@ -116,7 +106,9 @@ public class MainEntryPointUtils {
       path = path.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
     }
 
+    // Remove redundant /'s if any placeholder representing a directory was empty.
+    path = path.replace("//", "/");
+
     return path;
   }
-
 }

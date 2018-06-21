@@ -16,26 +16,21 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
-import com.google.common.truth.FailureStrategy;
-import com.google.common.truth.Subject;
-import com.google.common.truth.SubjectFactory;
-import com.google.common.truth.Truth;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.FixedIdGenerator;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.soyparse.ParseException;
-import com.google.template.soy.soyparse.TemplateParser;
-import com.google.template.soy.soyparse.TokenMgrError;
+import static com.google.common.truth.Truth.assertThat;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.truth.FailureMetadata;
+import com.google.common.truth.Subject;
+import com.google.common.truth.Truth;
+import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
+import javax.annotation.Nullable;
 
 /**
  * Truth custom subject for testing templates.
@@ -45,98 +40,107 @@ import java.util.List;
 public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   private SourceLocation actualSourceLocation;
+  private SoyFileNode fileNode;
 
-  private static final SubjectFactory<TemplateSubject, String> FACTORY
-      = new SubjectFactory<TemplateSubject, String>() {
-    @Override
-    public TemplateSubject getSubject(FailureStrategy failureStrategy, String s) {
-      return new TemplateSubject(failureStrategy, s);
-    }
-  };
+  private static final Subject.Factory<TemplateSubject, String> FACTORY = TemplateSubject::new;
 
-  TemplateSubject(FailureStrategy failureStrategy, String s) {
-    super(failureStrategy, s);
+  TemplateSubject(FailureMetadata failureMetadata, String s) {
+    super(failureMetadata, s);
   }
 
   public static TemplateSubject assertThatTemplateContent(String input) {
     return Truth.assertAbout(FACTORY).that(input);
   }
 
-  public TemplateSubject causesError(SoyError error) {
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
-          .parseTemplateContent();
-    } finally {
-      Truth.assertThat(errorReporter.locationsForError.keySet()).contains(error);
-      actualSourceLocation = Iterables.getFirst(errorReporter.locationsForError.get(error), null);
-      return this;
+  public TemplateSubject causesError(SoyErrorKind error) {
+    ErrorReporter errorReporter = doParse();
+    SoyError report = getFirstReport(error, errorReporter);
+    if (report == null) {
+      failWithRawMessage(
+          "%s should have failed to parse with <%s>, instead had errors: %s",
+          actualAsString(), error, errorReporter.getErrors());
     }
+    actualSourceLocation = report.location();
+    return this;
   }
 
-  public void isWellFormed() {
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
-          .parseTemplateContent();
-    } catch (ParseException e) {
-      throw Throwables.propagate(e);
+  public TemplateSubject causesError(String message) {
+    ErrorReporter errorReporter = doParse();
+    SoyError report = getFirstReport(message, errorReporter);
+    if (report == null) {
+      failWithRawMessage(
+          "%s should have failed to parse with <%s>, instead had errors: %s",
+          actualAsString(), message, errorReporter.getErrors());
     }
-    Truth.assertThat(errorReporter.locationsForError).isEmpty();
-  }
-
-  public void isNotWellFormed() {
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
-          .parseTemplateContent();
-    } catch (ParseException | TokenMgrError e) {
-      return; // expected
-    }
-    Truth.assertThat(errorReporter.locationsForError).isNotEmpty();
+    actualSourceLocation = report.location();
+    return this;
   }
 
   public void at(int expectedLine, int expectedColumn) {
-    if (expectedLine != actualSourceLocation.getLineNumber()
+    expectedLine += 2; // Compensate for the extra lines of template wrapper
+    if (expectedLine != actualSourceLocation.getBeginLine()
         || expectedColumn != actualSourceLocation.getBeginColumn()) {
       failWithRawMessage(
-          String.format("expected error to point to %d:%d, but it actually points to %d:%d",
+          String.format(
+              "expected error to point to %d:%d, but it actually points to %d:%d",
               expectedLine,
               expectedColumn,
-              actualSourceLocation.getLineNumber(),
+              actualSourceLocation.getBeginLine(),
               actualSourceLocation.getBeginColumn()));
     }
   }
 
-  private static final class ErrorReporterImpl implements ErrorReporter {
-
-    private final List<SoyError> soyErrors = new ArrayList<>();
-    private final ListMultimap<SoyError, SourceLocation> locationsForError
-        = ArrayListMultimap.create();
-
-    @Override
-    public Checkpoint checkpoint() {
-      return new CheckpointImpl(soyErrors.size());
-    }
-
-    @Override
-    public boolean errorsSince(Checkpoint checkpoint) {
-      Preconditions.checkArgument(checkpoint instanceof CheckpointImpl);
-      return soyErrors.size() > ((CheckpointImpl) checkpoint).numErrors;
-    }
-
-    @Override
-    public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
-      soyErrors.add(error);
-      locationsForError.put(error, sourceLocation);
-    }
+  public TemplateNode getTemplateNode() {
+    isWellFormed();
+    Preconditions.checkNotNull(fileNode);
+    Preconditions.checkArgument(fileNode.numChildren() == 1);
+    return fileNode.getChild(0);
   }
 
-  private static final class CheckpointImpl implements Checkpoint {
-    private final int numErrors;
+  public void isWellFormed() {
+    ErrorReporter errorReporter = doParse();
+    assertThat(errorReporter.getErrors()).named("the template parsed successfully").isEmpty();
+  }
 
-    CheckpointImpl(int numErrors) {
-      this.numErrors = numErrors;
+  public void isNotWellFormed() {
+    ErrorReporter errorReporter = doParse();
+    Truth.assertThat(errorReporter.hasErrors()).isTrue();
+  }
+
+  private ErrorReporter doParse() {
+    SoyFileSupplier sourceFile =
+        SoyFileSupplier.Factory.create(
+            "{namespace test}\n" + "{template .foo}\n" + actual() + "\n" + "{/template}",
+            SoyFileKind.SRC,
+            "example.soy");
+    ErrorReporter errorReporter =
+        ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
+    SoyFileSetNode fileSet =
+        SoyFileSetParserBuilder.forSuppliers(sourceFile)
+            .errorReporter(errorReporter)
+            .parse()
+            .fileSet();
+    fileNode = fileSet.numChildren() == 1 ? fileSet.getChild(0) : null;
+    return errorReporter;
+  }
+
+  @Nullable
+  private static SoyError getFirstReport(SoyErrorKind errorKind, ErrorReporter reporter) {
+    for (SoyError error : reporter.getErrors()) {
+      if (error.errorKind().equals(errorKind)) {
+        return error;
+      }
     }
+    return null;
+  }
+
+  @Nullable
+  private static SoyError getFirstReport(String message, ErrorReporter reporter) {
+    for (SoyError error : reporter.getErrors()) {
+      if (error.message().equals(message)) {
+        return error;
+      }
+    }
+    return null;
   }
 }

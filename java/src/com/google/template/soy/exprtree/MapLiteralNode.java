@@ -16,66 +16,46 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import java.util.Map;
 
-import java.util.List;
-
-/**
- * A node representing a map literal (with keys and values as alternating children).
- *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- */
+/** A node representing a map literal (with keys and values as alternating children). */
 public final class MapLiteralNode extends AbstractParentExprNode {
 
-  /**
-   * @param alternatingKeysAndValues The keys and values (alternating) in this map.
-   */
-  public MapLiteralNode(List<ExprNode> alternatingKeysAndValues, SourceLocation sourceLocation) {
+  public MapLiteralNode(ImmutableMap<ExprNode, ExprNode> map, SourceLocation sourceLocation) {
     super(sourceLocation);
-    addChildren(alternatingKeysAndValues);
+    for (Map.Entry<ExprNode, ExprNode> entry : map.entrySet()) {
+      addChild(entry.getKey());
+      addChild(entry.getValue());
+    }
   }
 
-
-  /**
-   * Copy constructor.
-   * @param orig The node to copy.
-   */
+  /** Copy constructor. */
   private MapLiteralNode(MapLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MAP_LITERAL_NODE;
   }
 
-
-  @Override public String toSourceString() {
-
-    if (numChildren() == 0) {
-      return "[:]";
-    }
-
-    StringBuilder sourceSb = new StringBuilder();
-    sourceSb.append('[');
-
+  @Override
+  public String toSourceString() {
+    StringBuilder sb = new StringBuilder("map(");
     for (int i = 0, n = numChildren(); i < n; i += 2) {
       if (i != 0) {
-        sourceSb.append(", ");
+        sb.append(", ");
       }
-      sourceSb.append(getChild(i).toSourceString()).append(": ")
-              .append(getChild(i + 1).toSourceString());
+      sb.append(getChild(i).toSourceString()).append(": ").append(getChild(i + 1).toSourceString());
     }
-
-    sourceSb.append(']');
-    return sourceSb.toString();
+    return sb.append(')').toString();
   }
 
-
-  @Override public MapLiteralNode copy(CopyState copyState) {
+  @Override
+  public MapLiteralNode copy(CopyState copyState) {
     return new MapLiteralNode(this, copyState);
   }
-
 }

@@ -1,284 +1,238 @@
 // This file was automatically generated from features.soy.
 // Please don't edit this file by hand.
 
-/**
- * @fileoverview Templates in namespace soy.examples.features.
- * @public
- */
-
 if (typeof soy == 'undefined') { var soy = {}; }
 if (typeof soy.examples == 'undefined') { soy.examples = {}; }
 if (typeof soy.examples.features == 'undefined') { soy.examples.features = {}; }
 
 
-soy.examples.features.demoComments = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('blah blah<br>http://www.google.com<br>');
+soy.examples.features.demoComments = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('blah blah<br>http://www.google.com<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoComments.soyTemplateName = 'soy.examples.features.demoComments';
-}
 
 
-soy.examples.features.demoLineJoining = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('First second.<br><i>First</i>second.<br>Firstsecond.<br><i>First</i> second.<br>Firstsecond.<br>');
+soy.examples.features.demoLineJoining = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('First second.<br><i>First</i>second.<br>Firstsecond.<br><i>First</i> second.<br>Firstsecond.<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoLineJoining.soyTemplateName = 'soy.examples.features.demoLineJoining';
-}
 
 
-soy.examples.features.demoRawTextCommands = function(opt_data, opt_ignored) {
-  return soydata.markUnsanitizedText('<pre>Space       : AA BB<br>Empty string: AABB<br>New line    : AA\nBB<br>Carriage ret: AA\rBB<br>Tab         : AA\tBB<br>Left brace  : AA{BB<br>Right brace : AA}BB<br>Literal     : AA\tBB { CC\n  DD } EE {sp}{\\n}{rb} FF</pre>');
+soy.examples.features.demoRawTextCommands = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('<pre>Space       : AA BB<br>Empty string: AABB<br>New line    : AA\nBB<br>Carriage ret: AA\rBB<br>Tab         : AA\tBB<br>Left brace  : AA{BB<br>Right brace : AA}BB<br>Literal     : AA\tBB { CC\n  DD } EE {sp}{\\n}{rb} FF</pre>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoRawTextCommands.soyTemplateName = 'soy.examples.features.demoRawTextCommands';
-}
 
 
-soy.examples.features.demoPrint = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Boo!<br>Boo!<br>3<br>' + soy.$$escapeHtml(opt_data.boo) + '<br>' + soy.$$escapeHtml(1 + opt_data.two) + '<br>26, true.<br>');
+soy.examples.features.demoPrint = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('Boo!<br>Boo!<br>', soy.$$escapeHtml(1 + 2), '<br>', soy.$$escapeHtml(opt_data.boo), '<br>', soy.$$escapeHtml(1 + opt_data.two), '<br>', soy.$$escapeHtml(26), ', ', soy.$$escapeHtml(true), '.<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoPrint.soyTemplateName = 'soy.examples.features.demoPrint';
-}
 
 
-soy.examples.features.demoAutoescapeTrue = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(opt_data.italicHtml) + '<br>');
+soy.examples.features.demoPrintDirectives = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('insertWordBreaks:<br><div style="width:150px; border:1px solid #00CC00">', soy.$$escapeHtml(opt_data.longVarName), '<br>', soy.$$insertWordBreaks(soy.$$escapeHtml(opt_data.longVarName), 5), '<br></div>id:<br><span id="', opt_data.elementId, '" class="', opt_data.cssClass, '" style="border:1px solid #000000">Hello</span>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoAutoescapeTrue.soyTemplateName = 'soy.examples.features.demoAutoescapeTrue';
-}
 
 
-soy.examples.features.demoMsg = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Zhello ' + soy.$$escapeHtml(opt_data.name) + '!<br>Zclick <a href="' + soy.$$escapeHtmlAttribute(soy.$$filterNormalizeUri(opt_data.labsUrl)) + '">zhere</a> zto zaccess Zlabs.<br>Zarchive<br>Zarchive<br>');
+soy.examples.features.demoAutoescapeTrue = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append(soy.$$escapeHtml(opt_data.italicHtml), '<br>', opt_data.italicHtml, '<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoMsg.soyTemplateName = 'soy.examples.features.demoMsg';
-}
 
 
-soy.examples.features.demoIf = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(((Math.round(opt_data.pi * 100) / 100 == 3.14) ? soy.$$escapeHtml(opt_data.pi) + ' zis za zgood zapproximation zof zpi.' : (Math.round(opt_data.pi) == 3) ? soy.$$escapeHtml(opt_data.pi) + ' zis za zbad zapproximation zof zpi.' : soy.$$escapeHtml(opt_data.pi) + ' zis znowhere znear zthe zvalue zof zpi.') + '<br>');
+soy.examples.features.demoAutoescapeFalse = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append(opt_data.italicHtml, '<br>', soy.$$escapeHtml(opt_data.italicHtml), '<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoIf.soyTemplateName = 'soy.examples.features.demoIf';
-}
 
 
-soy.examples.features.demoSwitch = function(opt_data, opt_ignored) {
-  var $$temp;
-  var output = 'Dear ' + soy.$$escapeHtml(opt_data.name) + ', &nbsp;';
-  switch ((goog.isObject($$temp = opt_data.name)) ? $$temp.toString() : $$temp) {
+soy.examples.features.demoMsg = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('Zhello ', soy.$$escapeHtml(opt_data.name), '!<br>Zclick <a href="', soy.$$escapeHtml(opt_data.labsUrl), '">zhere</a> zto zaccess Zlabs.<br>Zarchive<br>Zarchive<br>');
+  if (!opt_sb) return output.toString();
+};
+
+
+soy.examples.features.demoIf = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append((Math.round(opt_data.pi * 100) / 100 == 3.14) ? soy.$$escapeHtml(opt_data.pi) + ' zis za zgood zapproximation zof zpi.' : (Math.round(opt_data.pi) == 3) ? soy.$$escapeHtml(opt_data.pi) + ' zis za zbad zapproximation zof zpi.' : soy.$$escapeHtml(opt_data.pi) + ' zis znowhere znear zthe zvalue zof zpi.', '<br>');
+  if (!opt_sb) return output.toString();
+};
+
+
+soy.examples.features.demoSwitch = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('Dear ', soy.$$escapeHtml(opt_data.name), ', &nbsp;');
+  switch (opt_data.name) {
     case 'Go':
-      output += 'You\'ve been bad this year.';
+      output.append('You\'ve been bad this year.');
       break;
     case 'Fay':
     case 'Ivy':
-      output += 'You\'ve been good this year.';
+      output.append('You\'ve been good this year.');
       break;
     default:
-      output += 'You don\'t really believe in me, do you?';
+      output.append('You don\'t really believe in me, do you?');
   }
-  output += '&nbsp; --Santa<br>';
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  output.append('&nbsp; --Santa<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoSwitch.soyTemplateName = 'soy.examples.features.demoSwitch';
-}
 
 
-soy.examples.features.demoForeach = function(opt_data, opt_ignored) {
-  var output = '';
-  var personList141 = opt_data.persons;
-  var personListLen141 = personList141.length;
-  if (personListLen141 > 0) {
-    for (var personIndex141 = 0; personIndex141 < personListLen141; personIndex141++) {
-      var personData141 = personList141[personIndex141];
-      output += ((personIndex141 == 0) ? 'First,' : (personIndex141 == personListLen141 - 1) ? 'Finally,' : 'Then') + ' ' + ((personData141.numWaffles == 1) ? soy.$$escapeHtml(personData141.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData141.name) + ' ate ' + soy.$$escapeHtml(personData141.numWaffles) + ' waffles.') + '<br>';
+soy.examples.features.demoForeach = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  var personList130 = opt_data.persons;
+  var personListLen130 = personList130.length;
+  if (personListLen130 > 0) {
+    for (var personIndex130 = 0; personIndex130 < personListLen130; personIndex130++) {
+      var personData130 = personList130[personIndex130];
+      output.append((personIndex130 == 0) ? 'First,' : (personIndex130 == personListLen130 - 1) ? 'Finally,' : 'Then', ' ', (personData130.numWaffles == 1) ? soy.$$escapeHtml(personData130.name) + ' ate 1 waffle.' : soy.$$escapeHtml(personData130.name) + ' ate ' + soy.$$escapeHtml(personData130.numWaffles) + ' waffles.', '<br>');
     }
   } else {
-    output += 'Nobody here ate any waffles.<br>';
+    output.append('Nobody here ate any waffles.<br>');
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoForeach.soyTemplateName = 'soy.examples.features.demoForeach';
-}
 
 
-soy.examples.features.demoFor = function(opt_data, opt_ignored) {
-  var output = '';
-  var iLimit145 = opt_data.numLines;
-  for (var i145 = 0; i145 < iLimit145; i145++) {
-    output += 'Line ' + soy.$$escapeHtml(i145 + 1) + ' of ' + soy.$$escapeHtml(opt_data.numLines) + '.<br>';
+soy.examples.features.demoFor = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  var iLimit153 = opt_data.numLines;
+  for (var i153 = 0; i153 < iLimit153; i153++) {
+    output.append('Line ', soy.$$escapeHtml(i153 + 1), ' of ', soy.$$escapeHtml(opt_data.numLines), '.<br>');
   }
-  for (var i151 = 2; i151 < 10; i151 += 2) {
-    output += soy.$$escapeHtml(i151) + '... ';
+  for (var i159 = 2; i159 < 10; i159 += 2) {
+    output.append(soy.$$escapeHtml(i159), '... ');
   }
-  output += 'Who do we appreciate?<br>';
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  output.append('Who do we appreciate?<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoFor.soyTemplateName = 'soy.examples.features.demoFor';
-}
 
 
-soy.examples.features.demoCallWithoutParam = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$escapeHtml(soy.examples.features.tripReport_(null)) + '<br>' + soy.$$escapeHtml(soy.examples.features.tripReport_(opt_data)) + '<br>' + soy.$$escapeHtml(soy.examples.features.tripReport_(opt_data.tripInfo)) + '<br>');
+soy.examples.features.demoCallWithoutParam = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  soy.examples.simple.helloWorld(null, output);
+  output.append('<br>');
+  soy.examples.features.tripReport_(null, output);
+  output.append('<br>');
+  soy.examples.features.tripReport_(opt_data, output);
+  output.append('<br>');
+  soy.examples.features.tripReport_(opt_data.tripInfo, output);
+  output.append('<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoCallWithoutParam.soyTemplateName = 'soy.examples.features.demoCallWithoutParam';
-}
 
 
-soy.examples.features.demoCallOtherFile = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.examples.simple.helloWorld(null) + '<br>');
-};
-if (goog.DEBUG) {
-  soy.examples.features.demoCallOtherFile.soyTemplateName = 'soy.examples.features.demoCallOtherFile';
-}
-
-
-soy.examples.features.demoCallWithParam = function(opt_data, opt_ignored) {
-  var output = '';
-  var destinationList175 = opt_data.destinations;
-  var destinationListLen175 = destinationList175.length;
-  for (var destinationIndex175 = 0; destinationIndex175 < destinationListLen175; destinationIndex175++) {
-    var destinationData175 = destinationList175[destinationIndex175];
-    output += soy.$$escapeHtml(soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData175}))) + '<br>' + ((destinationIndex175 % 2 == 0) ? soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData175})) + '<br>' : '');
+soy.examples.features.demoCallWithParam = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  var destinationList173 = opt_data.destinations;
+  var destinationListLen173 = destinationList173.length;
+  for (var destinationIndex173 = 0; destinationIndex173 < destinationListLen173; destinationIndex173++) {
+    var destinationData173 = destinationList173[destinationIndex173];
+    soy.examples.features.tripReport_(soy.$$augmentData(opt_data, {destination: destinationData173}), output);
+    output.append('<br>');
+    if (destinationIndex173 % 2 == 0) {
+      soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData173}, output);
+      output.append('<br>');
+    }
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoCallWithParam.soyTemplateName = 'soy.examples.features.demoCallWithParam';
-}
 
 
-soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_ignored) {
-  var $$temp;
-  var param179 = '';
-  switch ((goog.isObject($$temp = Math.floor(Math.random() * 3))) ? $$temp.toString() : $$temp) {
+soy.examples.features.demoCallWithParamBlock = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  var param187 = new soy.StringBuilder();
+  switch (Math.floor(Math.random() * 3)) {
     case 0:
-      param179 += 'Boston';
+      param187.append('Boston');
       break;
     case 1:
-      param179 += 'Singapore';
+      param187.append('Singapore');
       break;
     case 2:
-      param179 += 'Zurich';
+      param187.append('Zurich');
       break;
   }
-  var output = '' + soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.name, destination: soydata.$$markUnsanitizedTextForInternalBlocks(param179)}));
-  output += '<br>';
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  soy.examples.features.tripReport_({name: opt_data.name, destination: param187.toString()}, output);
+  output.append('<br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoCallWithParamBlock.soyTemplateName = 'soy.examples.features.demoCallWithParamBlock';
-}
 
 
-soy.examples.features.tripReport_ = function(opt_data, opt_ignored) {
-  opt_data = opt_data || {};
-  return soydata.markUnsanitizedText((! opt_data.name) ? 'Za ztrip zwas ztaken.' : (! opt_data.destination) ? '' + opt_data.name + ' ztook za ztrip.' : '' + opt_data.name + ' ztook za ztrip zto ' + ('' + opt_data.destination) + '.');
+soy.examples.features.tripReport_ = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append((! (opt_data != null && opt_data.name)) ? 'Za ztrip zwas ztaken.' : (! opt_data.destination) ? soy.$$escapeHtml(opt_data.name) + ' ztook za ztrip.' : soy.$$escapeHtml(opt_data.name) + ' ztook za ztrip zto ' + soy.$$escapeHtml(opt_data.destination) + '.');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.tripReport_.soyTemplateName = 'soy.examples.features.tripReport_';
-}
 
 
-soy.examples.features.demoParamWithKindAttribute = function(opt_data, opt_ignored) {
-  var output = '<div>';
-  var param216 = '';
-  var iList220 = opt_data.list;
-  var iListLen220 = iList220.length;
-  for (var iIndex220 = 0; iIndex220 < iListLen220; iIndex220++) {
-    var iData220 = iList220[iIndex220];
-    param216 += '<li>' + soy.$$escapeHtml(iData220) + '</li>';
+soy.examples.features.demoExpressions = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('First student\'s major: ', soy.$$escapeHtml(opt_data.students[0].major), '<br>Last student\'s year: ', soy.$$escapeHtml(opt_data.students[opt_data.students.length - 1].year), '<br>Random student\'s major: ', soy.$$escapeHtml(opt_data.students[Math.floor(Math.random() * opt_data.students.length)].major), '<br>');
+  var studentList219 = opt_data.students;
+  var studentListLen219 = studentList219.length;
+  for (var studentIndex219 = 0; studentIndex219 < studentListLen219; studentIndex219++) {
+    var studentData219 = studentList219[studentIndex219];
+    output.append(soy.$$escapeHtml(studentData219.name), ':', (studentIndex219 == 0) ? ' First.' : (studentIndex219 == studentListLen219 - 1) ? ' Last.' : (studentIndex219 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '', (studentIndex219 % 2 == 1) ? ' Even.' : '', ' ', soy.$$escapeHtml(studentData219.major), '.', (studentData219.major == 'Physics' || studentData219.major == 'Biology') ? ' Scientist.' : '', (opt_data.currentYear - studentData219.year < 10) ? ' Young.' : '', ' ', soy.$$escapeHtml(studentData219.year < 2000 ? Math.round((studentData219.year - 1905) / 10) * 10 + 's' : '00s'), '. ', (studentData219.year < 2000) ? soy.$$escapeHtml(Math.round((studentData219.year - 1905) / 10) * 10) : '00', 's.<br>');
   }
-  output += soy.examples.features.demoParamWithKindAttributeCallee_({message: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('<b>' + soy.$$escapeHtml(opt_data.message) + '</b>'), listItems: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param216)});
-  output += '</div>';
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoParamWithKindAttribute.soyTemplateName = 'soy.examples.features.demoParamWithKindAttribute';
-}
 
 
-soy.examples.features.demoParamWithKindAttributeCallee_ = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('<div>' + soy.$$escapeHtml(opt_data.message) + '</div><ol>' + soy.$$escapeHtml(opt_data.listItems) + '</ol>');
+soy.examples.features.demoDoubleBraces = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('Zthe zset zof ', soy.$$escapeHtml(opt_data.setName), ' zis {');
+  soy.examples.features.buildCommaSeparatedList_({items: opt_data.setMembers}, output);
+  output.append(', ...}.');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoParamWithKindAttributeCallee_.soyTemplateName = 'soy.examples.features.demoParamWithKindAttributeCallee_';
-}
 
 
-soy.examples.features.demoExpressions = function(opt_data, opt_ignored) {
-  var output = 'First student\'s major: ' + soy.$$escapeHtml(opt_data.students[0].major) + '<br>Last student\'s year: ' + soy.$$escapeHtml(opt_data.students[opt_data.students.length - 1].year) + '<br>Random student\'s major: ' + soy.$$escapeHtml(opt_data.students[Math.floor(Math.random() * opt_data.students.length)].major) + '<br>';
-  var studentList268 = opt_data.students;
-  var studentListLen268 = studentList268.length;
-  for (var studentIndex268 = 0; studentIndex268 < studentListLen268; studentIndex268++) {
-    var studentData268 = studentList268[studentIndex268];
-    output += soy.$$escapeHtml(studentData268.name) + ':' + ((studentIndex268 == 0) ? ' First.' : (studentIndex268 == studentListLen268 - 1) ? ' Last.' : (studentIndex268 == Math.ceil(opt_data.students.length / 2) - 1) ? ' Middle.' : '') + ((studentIndex268 % 2 == 1) ? ' Even.' : '') + ' ' + soy.$$escapeHtml(studentData268.major) + '.' + ((studentData268.major == 'Physics' || studentData268.major == 'Biology') ? ' Scientist.' : '') + ((opt_data.currentYear - studentData268.year < 10) ? ' Young.' : '') + ' ' + soy.$$escapeHtml(studentData268.year < 2000 ? Math.round((studentData268.year - 1905) / 10) * 10 + 's' : '00s') + '. ' + ((studentData268.year < 2000) ? soy.$$escapeHtml(Math.round((studentData268.year - 1905) / 10) * 10) : '00') + 's.<br>';
+soy.examples.features.buildCommaSeparatedList_ = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  var itemList260 = opt_data.items;
+  var itemListLen260 = itemList260.length;
+  for (var itemIndex260 = 0; itemIndex260 < itemListLen260; itemIndex260++) {
+    var itemData260 = itemList260[itemIndex260];
+    output.append((! (itemIndex260 == 0)) ? ', ' : '', soy.$$escapeHtml(itemData260));
   }
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoExpressions.soyTemplateName = 'soy.examples.features.demoExpressions';
-}
 
 
-soy.examples.features.demoDoubleBraces = function(opt_data, opt_ignored) {
-  return soydata.markUnsanitizedText('Zthe zset zof ' + ('' + opt_data.setName) + ' zis {' + soy.examples.features.buildCommaSeparatedList_({items: opt_data.setMembers}) + ', ...}.');
-};
-if (goog.DEBUG) {
-  soy.examples.features.demoDoubleBraces.soyTemplateName = 'soy.examples.features.demoDoubleBraces';
-}
-
-
-soy.examples.features.buildCommaSeparatedList_ = function(opt_data, opt_ignored) {
-  var output = '';
-  var itemList286 = opt_data.items;
-  var itemListLen286 = itemList286.length;
-  for (var itemIndex286 = 0; itemIndex286 < itemListLen286; itemIndex286++) {
-    var itemData286 = itemList286[itemIndex286];
-    output += ((! (itemIndex286 == 0)) ? ', ' : '') + ('' + itemData286);
+soy.examples.features.demoBidiSupport = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('<div id="title1" style="font-variant:small-caps" ', soy.$$escapeHtml(soy.$$bidiDirAttr(1, opt_data.title)), '>', soy.$$escapeHtml(opt_data.title), '</div><div id="title2" style="font-variant:small-caps">', soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)), '</div>zby ', soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)), ' (', soy.$$escapeHtml(opt_data.year), ')<div id="choose_a_keyword">Zyour zfavorite zkeyword: <select>');
+  var keywordList286 = opt_data.keywords;
+  var keywordListLen286 = keywordList286.length;
+  for (var keywordIndex286 = 0; keywordIndex286 < keywordListLen286; keywordIndex286++) {
+    var keywordData286 = keywordList286[keywordIndex286];
+    output.append('<option value="', soy.$$escapeHtml(keywordData286), '">', soy.$$bidiUnicodeWrap(1, soy.$$escapeHtml(keywordData286)), '</option>');
   }
-  return soydata.markUnsanitizedText(output);
+  output.append('</select></div><a href="#" style="float:right">Zhelp</a><br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.buildCommaSeparatedList_.soyTemplateName = 'soy.examples.features.buildCommaSeparatedList_';
-}
 
 
-soy.examples.features.demoBidiSupport = function(opt_data, opt_ignored) {
-  var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$filterHtmlAttributes(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>zby ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Zyour zfavorite zkeyword: <select>';
-  var keywordList318 = opt_data.keywords;
-  var keywordListLen318 = keywordList318.length;
-  for (var keywordIndex318 = 0; keywordIndex318 < keywordListLen318; keywordIndex318++) {
-    var keywordData318 = keywordList318[keywordIndex318];
-    output += '<option value="' + soy.$$escapeHtmlAttribute(keywordData318) + '">' + soy.$$escapeHtml(soy.$$bidiUnicodeWrap(1, keywordData318)) + '</option>';
-  }
-  output += '</select></div><a href="#" style="float:' + soy.$$escapeHtmlAttribute(soy.$$filterCssValue('right')) + '">Zhelp</a><br>';
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
+soy.examples.features.bidiGlobalDir = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append(soy.$$escapeHtml(1));
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.demoBidiSupport.soyTemplateName = 'soy.examples.features.demoBidiSupport';
-}
 
 
-soy.examples.features.bidiGlobalDir = function(opt_data, opt_ignored) {
-  return soydata.markUnsanitizedText('' + 1);
+soy.examples.features.exampleHeader = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('<hr><b>', soy.$$escapeHtml(opt_data.exampleNum), '. ', soy.$$escapeHtml(opt_data.exampleName), '</b><br>');
+  if (!opt_sb) return output.toString();
 };
-if (goog.DEBUG) {
-  soy.examples.features.bidiGlobalDir.soyTemplateName = 'soy.examples.features.bidiGlobalDir';
-}
-
-
-soy.examples.features.exampleHeader = function(opt_data, opt_ignored) {
-  return soydata.VERY_UNSAFE.ordainSanitizedHtml('<hr><b>' + soy.$$escapeHtml(opt_data.exampleNum) + '. ' + soy.$$escapeHtml(opt_data.exampleName) + '</b><br>');
-};
-if (goog.DEBUG) {
-  soy.examples.features.exampleHeader.soyTemplateName = 'soy.examples.features.exampleHeader';
-}

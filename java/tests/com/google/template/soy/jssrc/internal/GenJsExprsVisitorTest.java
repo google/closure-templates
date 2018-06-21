@@ -17,228 +17,257 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
+import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-
-import junit.framework.TestCase;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for GenJsExprsVisitor.
  *
  */
-public final class GenJsExprsVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class GenJsExprsVisitorTest {
 
-  private static final Injector INJECTOR =
-      Guice.createInjector(new ErrorReporterModule(), new JsSrcModule());
+  private static final Joiner JOINER = Joiner.on('\n');
 
-  private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
-      new ArrayDeque<Map<String, JsExpr>>();
   static {
-    Map<String, JsExpr> frame = Maps.newHashMap();
-    // Let 'goo' simulate a local variable from a 'foreach' loop.
-    frame.put("goo", new JsExpr("gooData8", Integer.MAX_VALUE));
-    frame.put("goo__isFirst", new JsExpr("gooIndex8 == 0", Operator.EQUAL.getPrecedence()));
-    frame.put("goo__isLast", new JsExpr("gooIndex8 == gooListLen8 - 1",
-                                        Operator.EQUAL.getPrecedence()));
-    frame.put("goo__index", new JsExpr("gooIndex8", Integer.MAX_VALUE));
-    LOCAL_VAR_TRANSLATIONS.push(frame);
+    Guice.createInjector(new SoyModule());
   }
 
+  // Let 'goo' simulate a local variable from a 'foreach' loop.
+  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, Expression>builder()
+          .put("goo", id("gooData8"))
+          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
+          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
+          .put("goo__index", id("gooIndex8"))
+          .build();
 
-  private SoyJsSrcOptions jsSrcOptions;
-
-
-  @Override protected void setUp() {
-    jsSrcOptions = new SoyJsSrcOptions();
-    JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
-  }
-
-
+  @Test
   public void testRawText() {
 
-    assertGeneratedJsExprs(
-        "I'm feeling lucky!",
-        ImmutableList.of(new JsExpr("'I\\'m feeling lucky!'", Integer.MAX_VALUE)));
+    assertGeneratedChunks("I'm feeling lucky!", "'I\\'m feeling lucky!';");
+    assertGeneratedChunks("{'<script></script>'}", "'<script><\\/script>';");
     // Ensure Unicode gets escaped, since there's no guarantee about the output encoding of the JS.
-    assertGeneratedJsExprs(
-        "More \u00BB",
-        ImmutableList.of(new JsExpr("'More \\u00BB'", Integer.MAX_VALUE)));
+    assertGeneratedChunks("More \u00BB", "'More \\u00BB';");
   }
 
-
-  public void testPrintGoogMsg() {
-
-    assertGeneratedJsExprs(
-        "{msg desc=\"\"}Blah{/msg}",
-        ImmutableList.of(new JsExpr("msg_s6", Integer.MAX_VALUE)),
-        1);
-  }
-
-
+  @Test
   public void testMsgHtmlTag() {
 
-    assertGeneratedJsExprs(
-        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+    assertGeneratedJsExprs(JOINER.join(
+        "{@param url : ?}",
+        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}"),
         ImmutableList.of(
             new JsExpr("'<a href=\"'", Integer.MAX_VALUE),
             new JsExpr("opt_data.url", Integer.MAX_VALUE),
             new JsExpr("'\">'", Integer.MAX_VALUE)),
-        0, 0, 0);
+        0,
+        0,
+        0,
+        0);
 
     assertGeneratedJsExprs(
-        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+        "{@param url : ?}\n" + "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         ImmutableList.of(new JsExpr("'</a>'", Integer.MAX_VALUE)),
-        0, 0, 2);
+        0,
+        0,
+        2);
   }
 
-
+  @Test
   public void testPrint() {
 
-    assertGeneratedJsExprs(
-        "{$boo.foo}",
-        ImmutableList.of(new JsExpr("opt_data.boo.foo", Integer.MAX_VALUE)));
+    assertGeneratedChunks(JOINER.join("{@param boo : ?}", "{$boo.foo}"), "opt_data.boo.foo;");
 
-    assertGeneratedJsExprs(
-        "{$goo.moo}",
-        ImmutableList.of(new JsExpr("gooData8.moo", Integer.MAX_VALUE)));
+    assertGeneratedChunks(JOINER.join("{@param goo : ?}", "{$goo.moo}"), "gooData8.moo;");
 
-    assertGeneratedJsExprs(
-        "{index($goo)+1}",
-        ImmutableList.of(new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence())));
+    assertGeneratedChunks(
+        JOINER.join("{@param goo : ?}", "{isNonnull($goo)+1}"), "(gooData8 != null) + 1;");
   }
 
+  @Test
+  public void testPrint_nonExpr() {
 
+    String soyNodeCode = JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c')[$boo]}");
+    String expectedGenCode =
+        JOINER.join(
+            "var $tmp = new Map();",
+            "$tmp.set(soy.$$checkNotNull(soy.map.$$maybeCoerceKeyToString('a')), 'b');",
+            "$tmp.set(soy.$$checkNotNull(soy.map.$$maybeCoerceKeyToString(opt_data.boo)), 'c');",
+            "$tmp.get(soy.map.$$maybeCoerceKeyToString(opt_data.boo));");
+    assertGeneratedChunks(soyNodeCode, expectedGenCode);
+  }
+
+  @Test
   public void testXid() {
 
-    assertGeneratedJsExprs(
-        "{xid selected-option}",
-        ImmutableList.of(new JsExpr("xid('selected-option')", Integer.MAX_VALUE)));
-    assertGeneratedJsExprs(
-        "{xid selected.option}",
-        ImmutableList.of(new JsExpr("xid('selected.option')", Integer.MAX_VALUE)));
+    assertGeneratedChunks("{xid('selected-option')}", "xid('selected-option');");
+    assertGeneratedChunks("{xid('selected.option')}", "xid('selected.option');");
   }
 
+  @Test
   public void testCss() {
+    assertGeneratedChunks("{css('selected-option')}", "goog.getCssName('selected-option');");
 
-    assertGeneratedJsExprs(
-        "{css selected-option}",
-        ImmutableList.of(new JsExpr("goog.getCssName('selected-option')", Integer.MAX_VALUE)));
-
-    assertGeneratedJsExprs(
-        "{css $foo, bar}",
-        ImmutableList.of(new JsExpr("goog.getCssName(opt_data.foo, 'bar')", Integer.MAX_VALUE)));
+    assertGeneratedChunks(
+        JOINER.join("{@param foo : ?}", "{css($foo, 'bar')}"),
+        "goog.getCssName(opt_data.foo, 'bar');");
   }
 
+  @Test
   public void testIf() {
 
-    String soyNodeCode =
-        "{if $boo}\n" +
-        "  Blah\n" +
-        "{elseif not isFirst($goo)}\n" +
-        "  Bleh\n" +
-        "{else}\n" +
-        "  Bluh\n" +
-        "{/if}\n";
+    String soyNodeCode = JOINER.join(
+        "{@param boo : ?}",
+        "{@param goo : ?}",
+        "{if $boo}",
+        "  Blah",
+        "{elseif not isNonnull($goo)}",
+        "  Bleh",
+        "{else}",
+        "  Bluh",
+        "{/if}");
     String expectedJsExprText =
-        "(opt_data.boo) ? 'Blah' : (! (gooIndex8 == 0)) ? 'Bleh' : 'Bluh'";
-    assertGeneratedJsExprs(
-        soyNodeCode,
-        ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
+        JOINER.join(
+            "var $tmp;",
+            "if (opt_data.boo) {",
+            "  $tmp = 'Blah';",
+            "} else if (!(gooData8 != null)) {",
+            "  $tmp = 'Bleh';",
+            "} else {",
+            "  $tmp = 'Bluh';",
+            "}");
+    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
-
-  public void testCall() {
-    assertGeneratedJsExprs(
-        "{call some.func data=\"all\" /}",
-        ImmutableList.of(new JsExpr("some.func(opt_data)", Integer.MAX_VALUE)));
-
-    assertGeneratedJsExprs(
-        "{call some.func data=\"$boo.foo\" /}",
-        ImmutableList.of(new JsExpr("some.func(opt_data.boo.foo)", Integer.MAX_VALUE)));
+  @Test
+  public void testIfNoElse() {
 
     String soyNodeCode =
-        "{call some.func}" +
-        "  {param goo: $moo /}" +
-        "{/call}";
-    assertGeneratedJsExprs(
-        soyNodeCode,
-        ImmutableList.of(new JsExpr("some.func({goo: opt_data.moo})", Integer.MAX_VALUE)));
+        JOINER.join(
+            "{@param boo : ?}",
+            "{@param goo : ?}",
+            "{if $boo}",
+            "  Blah",
+            "{elseif not isNonnull($goo)}",
+            "  Bleh",
+            "{/if}");
+    String expectedJsExprText =
+        JOINER.join(
+            "var $tmp;",
+            "if (opt_data.boo) {",
+            "  $tmp = 'Blah';",
+            "} else if (!(gooData8 != null)) {",
+            "  $tmp = 'Bleh';",
+            "} else {",
+            "  $tmp = '';",
+            "}");
+    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
+  }
+
+  @Test
+  public void testIfTernary() {
+
+    String soyNodeCode = JOINER.join(
+        "{@param boo : ?}",
+        "{if $boo}",
+        "  Blah",
+        "{else}",
+        "  Bleh",
+        "{/if}");
+    String expectedJsExprText = "opt_data.boo ? 'Blah' : 'Bleh';";
+    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
+  }
+
+  @Test
+  public void testCall() {
+    assertGeneratedChunks("{call some.func data=\"all\" /}", "some.func(opt_data, opt_ijData);");
+
+    String soyNodeCode = JOINER.join(
+        "{@param boo : ?}",
+        "{call some.func data=\"$boo.foo\" /}");
+    assertGeneratedChunks(soyNodeCode, "some.func(opt_data.boo.foo, opt_ijData);");
+
+    soyNodeCode = JOINER.join(
+        "{@param moo : ?}",
+        "{call some.func}",
+        "  {param goo: $moo /}",
+        "{/call}");
+    assertGeneratedChunks(soyNodeCode, "some.func({goo: opt_data.moo}, opt_ijData);");
 
     soyNodeCode =
-        "{call some.func data=\"$boo\"}" +
-        "  {param goo}Blah{/param}" +
-        "{/call}";
-    assertGeneratedJsExprs(
-        soyNodeCode,
-        ImmutableList.of(new JsExpr(
-            "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))", Integer.MAX_VALUE)));
+        JOINER.join(
+            "{@param boo : ?}",
+            "{call some.func data=\"$boo\"}",
+            "  {param goo}Blah{/param}",
+            "{/call}");
+    assertGeneratedChunks(
+        soyNodeCode, "some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), opt_ijData);");
   }
 
-
+  @Test
   public void testBlocks() {
 
-    String soyNodeCode =
-        "{if $boo}\n" +
-        "  Blah {$boo} bleh.\n" +
-        "{/if}\n";
-    String expectedJsExprText =
-        "(opt_data.boo) ? 'Blah ' + opt_data.boo + ' bleh.' : ''";
-    assertGeneratedJsExprs(
-        soyNodeCode,
-        ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
+    String soyNodeCode = JOINER.join(
+        "{@param boo : ?}",
+        "{if $boo}",
+        "  Blah {$boo} bleh.",
+        "{/if}");
+    String expectedJsExprText = "opt_data.boo ? 'Blah ' + opt_data.boo + ' bleh.' : '';";
+    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
 
     soyNodeCode =
-        "{call some.func}" +
-        "  {param goo}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +
-        "{/call}";
+        JOINER.join(
+            "{@param goo : ?}",
+            "{call some.func}",
+            "  {param goo}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
+            "{/call}");
     expectedJsExprText =
-        "some.func({goo: '{' + gooIndex8 + '} is ' + gooData8.moo})";
-    assertGeneratedJsExprs(
-        soyNodeCode,
-        ImmutableList.of(new JsExpr(expectedJsExprText, Integer.MAX_VALUE)));
+        "some.func({goo: '{' + (gooData8 != null) + '} is ' + gooData8.moo}, opt_ijData);";
+    assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
+  private static void assertGeneratedChunks(String soyNodeCode, String... expectedChunks) {
+    List<Expression> actualChunks = generateChunks(soyNodeCode, 0);
+    assertThat(actualChunks).hasSize(expectedChunks.length);
 
-  private static void assertGeneratedJsExprs(String soyNodeCode, List<JsExpr> expectedJsExprs) {
-    assertGeneratedJsExprs(soyNodeCode, expectedJsExprs, 0);
+    for (int i = 0; i < actualChunks.size(); i++) {
+      Expression actual = actualChunks.get(i);
+      String expected = expectedChunks[i];
+
+      assertThat(actual.getCode()).isEqualTo(expected);
+    }
   }
 
-
-  /**
-   * @param indicesToNode Series of indices for walking down to the node we want to test.
-   */
+  /** @param indicesToNode Series of indices for walking down to the node we want to test. */
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(boom)
-        .parse();
-    // Required by testPrintGoogMsg.
-    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
-    SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
+    List<Expression> actualChunks = generateChunks(soyCode, indicesToNode);
 
-    GenJsExprsVisitor gjev = INJECTOR.getInstance(GenJsExprsVisitorFactory.class)
-        .create(LOCAL_VAR_TRANSLATIONS);
-    List<JsExpr> actualJsExprs = gjev.exec(node);
+    List<JsExpr> actualJsExprs = new ArrayList<>();
+    for (Expression chunk : actualChunks) {
+      actualJsExprs.add(chunk.assertExpr()); // TODO(user): Fix tests to work with CodeChunks
+    }
 
     assertThat(actualJsExprs).hasSize(expectedJsExprs.size());
     for (int i = 0; i < expectedJsExprs.size(); i++) {
@@ -249,4 +278,22 @@ public final class GenJsExprsVisitorTest extends TestCase {
     }
   }
 
+  private static List<Expression> generateChunks(String soyCode, int... indicesToNode) {
+    ErrorReporter boom = ErrorReporter.exploding();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
+    SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
+
+    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+    GenJsExprsVisitor visitor =
+        JsSrcTestUtils.createGenJsExprsVisitorFactory()
+            .create(
+                TranslationContext.of(
+                    SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
+                    CodeChunk.Generator.create(nameGenerator),
+                    nameGenerator),
+                AliasUtils.IDENTITY_ALIASES,
+                boom);
+    return visitor.exec(node);
+  }
 }

@@ -16,196 +16,286 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.ComparisonFailure;
-import junit.framework.TestCase;
-
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import junit.framework.ComparisonFailure;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public final class ContextualAutoescaperTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class ContextualAutoescaperTest {
 
   /** Custom print directives used in tests below. */
-  private static final Map<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES = ImmutableMap.of(
-      "|customEscapeDirective", new SoyPrintDirective() {
-        @Override public String getName() {
-          return "|customEscapeDirective";
-        }
-        @Override public Set<Integer> getValidArgsSizes() {
-          return ImmutableSet.of(0);
-        }
-        @Override public boolean shouldCancelAutoescape() {
-          return true;
-        }
-      },
-      "|customOtherDirective", new SoyPrintDirective() {
-        @Override public String getName() {
-          return "|customOtherDirective";
-        }
-        @Override public Set<Integer> getValidArgsSizes() {
-          return ImmutableSet.of(0);
-        }
-        @Override public boolean shouldCancelAutoescape() {
-          return false;
-        }
-      },
-      "|noAutoescape", new SoyPrintDirective() {
-        @Override public String getName() {
-          return "|noAutoescape";
-        }
-        @Override public Set<Integer> getValidArgsSizes() {
-          return ImmutableSet.of(0);
-        }
-        @Override public boolean shouldCancelAutoescape() {
-          return true;
-        }
-      },
-      "|bidiSpanWrap", new FakeBidiSpanWrapDirective());
+  private static final ImmutableList<SoyPrintDirective> SOY_PRINT_DIRECTIVES =
+      ImmutableList.of(
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|customEscapeDirective";
+            }
 
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
 
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return true;
+            }
+          },
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|customOtherDirective";
+            }
+
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
+
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return false;
+            }
+          },
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|noAutoescape";
+            }
+
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
+
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return true;
+            }
+          },
+          new FakeBidiSpanWrapDirective());
+
+  @Test
   public void testStrictModeIsDefault() {
     assertRewriteFails(
-        "In file no-path:4:4, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"html\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main}\n",
-              "<b>{$foo|noAutoescape}</b>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo|noAutoescape}</b>\n",
             "{/template}"));
   }
 
+  @Test
   public void testTrivialTemplate() throws Exception {
+    assertContextualRewriting(
+        join("{namespace ns}\n\n", "{template .foo}\n", "Hello, World!\n", "{/template}"),
+        join("{namespace ns}\n\n", "{template .foo}\n", "Hello, World!\n", "{/template}"));
+  }
+
+  @Test
+  public void testUriCallTemplate() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo}\n",
-            "Hello, World!\n",
+            "{template .foo}\n",
+            "<a href={call .uri /} title={call .title /}></a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo}\n",
-            "Hello, World!\n",
+            "{template .foo}\n",
+            "<a href={call .uri /} title={call .title /}></a>\n",
             "{/template}"));
   }
 
+  @Test
+  public void testRecontextualizeCall() throws Exception {
+    // a template with a call to another template in attribute value context
+    String template =
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "<a href={call .uri data=\"all\" /}>\n",
+            "{/template}\n",
+            "{template .uri autoescape=\"deprecated-contextual\"}\n",
+            "  {@param foo: ?}\n",
+            "'{$foo}'\n",
+            "{/template}");
+
+    // This works in the old autoescaper but fails in the new one
+    // The reason is that the new escaper believes we are about to render an unquoted attribute
+    // containing a uri.  So when it sees the quotation marks it barfs because they aren't part
+    // of a known safe scheme
+    // The old autoescaper allowed this because it delayed deciding on the quoting for the attribute
+    // until later.
+    assertRewriteFails(
+        "Error while re-contextualizing template ns.uri "
+            + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
+            + "- In file no-path:8:2, template ns.uri__C113757: Soy can't prove this URI has a "
+            + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
+            + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
+            + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
+            + "instead of href=\"foo{$bar}\").",
+        template);
+  }
+
+  @Test
   public void testPrintInText() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
   }
 
+  @Test
   public void testPrivateTemplate() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "{template .privateFoo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "{template .privateFoo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
   }
 
+  @Test
   public void testPrintInTextAndLink() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "Hello,",
-              "<a href='worlds?world={$world |escapeUri}'>",
-                "{$world |escapeHtml}",
-              "</a>!\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "Hello,",
+            "<a href='worlds?world={$world |escapeUri}'>",
+            "{$world |escapeHtml}",
+            "</a>!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "Hello,\n",
-              "<a href='worlds?world={$world}'>\n",
-                "{$world}\n",
-              "</a>!\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "Hello,\n",
+            "<a href='worlds?world={$world}'>\n",
+            "{$world}\n",
+            "</a>!\n",
             "{/template}\n"));
   }
 
+  @Test
   public void testObscureUrlAttributes() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            //"<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
-              "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
-              "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
-              "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
-              "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
-              "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            // "<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
+            "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
+            "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
+            "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
+            "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+            "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+            "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
+            "<base href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<iframe src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></iframe>",
+            "<link rel='shortcut icon' href='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<link rel='stylesheet' href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<link rel='{$x |escapeHtmlAttribute}' "
+                + "href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
+            "<script src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            // TODO(user): Re-enable content since it is often (but often not) used to convey
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            // TODO(msamuel): Re-enable content since it is often (but often not) used to convey
             // URLs in place of <link rel> once we can figure out a good way to distinguish the
             // URL use-cases from others.
-            //"<meta http-equiv=refresh content='{$x}'>\n",
-              "<a xml:base='{$x}' href='/foo'>link</a>\n",
-              "<button formaction='{$x}'>do</button>\n",
-              "<command icon='{$x}'></command>\n",
-              "<object data='{$x}'></object>\n",
-              "<video poster='{$x}'></video>\n",
+            // "<meta http-equiv=refresh content='{$x}'>\n",
+            "<a xml:base='{$x}' href='/foo'>link</a>\n",
+            "<button formaction='{$x}'>do</button>\n",
+            "<command icon='{$x}'></command>\n",
+            "<object data='{$x}'></object>\n",
+            "<video poster='{$x}'></video>\n",
+            "<video src='{$x}'></video>\n",
+            "<source src='{$x}'>\n",
+            "<audio src='{$x}'></audio>\n",
+            "<base href='{$x}'>\n",
+            "<iframe src='{$x}'></iframe>",
+            "<link rel='shortcut icon' href='{$x}'>\n",
+            "<link rel='stylesheet' href='{$x}'>\n",
+            "<link rel='{$x}' href='{$x}'>\n",
+            "<script src='{$x}'></script>\n",
             "{/template}\n"));
   }
 
+  @Test
   public void testConditional() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,",
             "{if $x == 1}",
-              "{$y |escapeHtml}",
+            "{$y |escapeHtml}",
             "{elseif $x == 2}",
-              "<script>foo({$z |escapeJsValue})</script>",
+            "<script>foo({$z |escapeJsValue})</script>",
             "{else}",
-              "World!",
+            "World!",
             "{/if}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,\n",
             "{if $x == 1}\n",
             "  {$y}\n",
@@ -217,79 +307,180 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testConditionalEndsInDifferentContext() throws Exception {
     // Make sure that branches that ends in consistently different contexts transition to
     // that different context.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<a",
-              "{if $url}",
-                " href='{$url |filterNormalizeUri |escapeHtmlAttribute}'>",
-              "{elseif $name}",
-                " name='{$name |escapeHtmlAttribute}'>",
-              "{else}",
-                ">",
-              "{/if}",
-              " onclick='alert({$value |escapeHtml})'\n",  // Not escapeJsValue.
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param url: ?}\n",
+            "  {@param name: ?}\n",
+            "  {@param value: ?}\n",
+            "<a",
+            "{if $url}",
+            " href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
+            "{elseif $name}",
+            " name='{$name |escapeHtmlAttribute}'",
+            "{/if}></a>",
+            " onclick='alert({$value |escapeHtml})'\n", // Not escapeJsValue.
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<a",
-              // Each of these branches independently closes the tag.
-              "{if $url}",
-                " href='{$url}'>",
-              "{elseif $name}",
-                " name='{$name}'>",
-              "{else}",
-                ">",
-              "{/if}",
-              // So now make something that looks like a script attribute but which actually
-              // appears in a PCDATA.  If the context merge has properly happened is is escaped as
-              // PCDATA.
-              " onclick='alert({$value})'\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param url: ?}\n",
+            "  {@param name: ?}\n",
+            "  {@param value: ?}\n",
+            "<a",
+            // Each of these branches independently closes the tag.
+            "{if $url}",
+            " href='{$url}'",
+            "{elseif $name}",
+            " name='{$name}'",
+            "{/if}></a>",
+            // So now make something that looks like a script attribute but which actually
+            // appears in a PCDATA.  If the context merge has properly happened is escaped as
+            // PCDATA.
+            " onclick='alert({$value})'\n",
             "{/template}"));
-  }
 
-  public void testBrokenConditional() throws Exception {
-    assertRewriteFails(
-        "In file no-path:7:1, template bar: " +
-        "{if} command branch ends in a different context than preceding branches: " +
-        "{elseif $x == 2}<script>foo({$z})//</scrpit>",
+    assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-            "Hello,\n",
-            "{if $x == 1}\n",
-            "  {$y}\n",
-            "{elseif $x == 2}\n",
-            "  <script>foo({$z})//</scrpit>\n",  // Not closed so ends inside JS.
-            "{else}\n",
-            "  World!\n",
-            "{/if}\n",
+            "{template .bar}\n",
+            "  {@param p: ?}\n",
+            "<input{if $p} disabled{/if}>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .bar}\n",
+            "  {@param p: ?}\n",
+            "  {@param p2: ?}\n",
+            "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .bar}\n",
+            "  {@param p: ?}\n",
+            "  {@param p2: ?}\n",
+            "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .bar}\n",
+            "  {@param p: ?}\n",
+            "  {@param p2: ?}\n",
+            "<input {if $p}disabled{/if}{if $p2} checked{/if}>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<p{if $p} x=x{/if} x=y>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<p{if $p} onclick=foo(){/if} x=y>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<p {if $p}onclick=foo() {/if} x=y>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<p foo=bar{if $p} onclick=foo(){/if} x=y>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<p foo=bar {if $p}onclick=foo() {/if} x=y>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        "{namespace ns}\n\n"
+            + "{template .good4}\n"
+            + "  {@param x: ?}\n"
+            + "<input{if $x} onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}{/if}>\n"
+            + "{/template}",
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param x: ?}\n",
+            "\n" + "<input{if $x} onclick={$x}{/if}>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<input{if $p} disabled=\"true\"{/if}>",
+            "<input{if $p} onclick=\"foo()\"{/if}>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<input {if $p}disabled=\"true\"{/if}>",
+            "<input {if $p}onclick=\"foo()\"{/if}>\n",
             "{/template}"));
   }
 
+  @Test
+  public void testBranchesEndInDifferentQuotingContexts() {
+    // branches end in different contexts
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<input class={if $p}\"x\"{else}'y'{/if}>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testSwitch() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,",
             "{switch $x}",
-              "{case 1}",
-                "{$y |escapeHtml}",
-              "{case 2}",
-                "<script>foo({$z |escapeJsValue})</script>",
-              "{default}",
-                "World!",
+            "{case 1}",
+            "{$y |escapeHtml}",
+            "{case 2}",
+            "<script>foo({$z |escapeJsValue})</script>",
+            "{default}",
+            "World!",
             "{/switch}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,\n",
             "{switch $x}\n",
             "  {case 1}\n",
@@ -302,768 +493,1012 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
-  public void testBrokenSwitch() throws Exception {
-    assertRewriteFails(
-        "In file no-path:8:3, template bar: " +
-        "{switch} command case ends in a different context than preceding cases: " +
-        "{case 2}<script>foo({$z})//</scrpit>",
-        join(
-            "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-            "Hello,\n",
-            "{switch $x}\n",
-            "  {case 1}\n",
-            "    {$y}\n",
-            "  {case 2}\n",
-            // Not closed so ends inside JS
-            "    <script>foo({$z})//</scrpit>\n",
-            "  {default}\n",
-            "    World!\n",
-            "{/switch}\n",
-            "{/template}"));
-  }
-
+  @Test
   public void testPrintInsideScript() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "foo({$a |escapeJsValue}); ",
-                "bar(\"{$b |escapeJsString}\"); ",
-                "baz(\'{$c |escapeJsString}\'); ",
-                "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
-                   " : /{$f |escapeJsRegex}/);",
-              "</script>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param a: ?}\n",
+            "  {@param b: ?}\n",
+            "  {@param c: ?}\n",
+            "  {@param d: ?}\n",
+            "  {@param e: ?}\n",
+            "  {@param f: ?}\n",
+            "<script>",
+            "foo({$a |escapeJsValue}); ",
+            "bar(\"{$b |escapeJsString}\"); ",
+            "baz(\'{$c |escapeJsString}\'); ",
+            "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
+            " : /{$f |escapeJsRegex}/);",
+            "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>\n",
-                "foo({$a});\n",
-                "bar(\"{$b}\");\n",
-                "baz(\'{$c}\');\n",
-                "boo(/{$d}/.test(s) ? 1 / {$e} : /{$f}/);\n",
-              "</script>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param a: ?}\n",
+            "  {@param b: ?}\n",
+            "  {@param c: ?}\n",
+            "  {@param d: ?}\n",
+            "  {@param e: ?}\n",
+            "  {@param f: ?}\n",
+            "<script>\n",
+            "foo({$a});\n",
+            "bar(\"{$b}\");\n",
+            "baz(\'{$c}\');\n",
+            "boo(/{$d}/.test(s) ? 1 / {$e} : /{$f}/);\n",
+            "</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testPrintInsideJsCommentRejected() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:12, template foo: " +
-        "Soy doesn't support dynamic values in JS and CSS comments.",
+        "JS comments cannot contain dynamic values.",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>// {$x}</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            // NOTE: Lack of whitespace before "//" makes sure it's not interpreted as a Soy
+            // comment.
+            "<script>// {$x}</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testJsStringInsideQuotesRejected() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:22, template foo: " +
-        "Escaping modes [ESCAPE_JS_VALUE] not compatible with" +
-        " (Context JS_SQ_STRING) : {$world |escapeJsValue}",
+        "Escaping modes [|escapeJsValue] not compatible with (Context JS_SQ_STRING).",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>alert('Hello {$world |escapeJsValue}');</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "<script>alert('Hello {$world |escapeJsValue}');</script>\n",
             "{/template}"));
   }
 
+  @Test
+  public void testJsTemplateStrings() {
+    // these first three examples used to fail because the '/' in '</div' would be interpreted as a
+    // regex and then we would get an error for exiting the script or template in js regex.
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<script>",
+            // the ' " and / characters are important to make sure we detect the '}' first
+            "`{\\n}<div a=\"q\">${lb}foo{rb}\"'</div>{\\n}`;",
+            "</script>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<script>",
+            "`<div a=\"q\"></div>`;{\\n}",
+            "</script>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\"></div>`;{\\n}\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">${lb} {$ij.foo |escapeJsValue} {rb}</div>`\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">${lb} {$ij.foo} {rb}</div>`\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "Js template literals cannot contain dynamic values",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">{$ij.foo}</div>`\n",
+            "{/template}"));
+
+    // can't merge across different template depths
+    assertRewriteFails(
+        "{if} command branch ends in a different context "
+            + "than preceding branches: {else}</div>",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "{if $ij.b}`<div a=\"q\">{else}</div>{/if}`\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testLiteral() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "{lb}$a{rb}",
-              "</script>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "<script>",
+            "{lb}$a{rb}",
+            "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>\n",
-                "{literal}{$a}{/literal}\n",
-              "</script>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "<script>\n",
+            "{literal}{$a}{/literal}\n",
+            "</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testForLoop() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<style>",
-                "{for $i in range($n)}",
-                  ".foo{$i |filterCssValue}:before {lb}",
-                    "content: '{$i |escapeCssString}'",
-                  "{rb}",
-                "{/for}",
-              "</style>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param n: ?}\n",
+            "<style>",
+            "{for $i in range($n)}",
+            ".foo{$i |filterCssValue}:before {lb}",
+            "content: '{$i |escapeCssString}'",
+            "{rb}",
+            "{/for}",
+            "</style>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<style>\n",
-                "{for $i in range($n)}\n",
-                "  .foo{$i}:before {lb}\n",
-                "    content: '{$i}'\n",
-                "  {rb}\n",
-                "{/for}",
-              "</style>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param n: ?}\n",
+            "<style>\n",
+            "{for $i in range($n)}\n",
+            "  .foo{$i}:before {lb}\n",
+            "    content: '{$i}'\n",
+            "  {rb}\n",
+            "{/for}",
+            "</style>\n",
             "{/template}"));
   }
 
+  @Test
   public void testBrokenForLoop() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:5, template bar: " +
-        "{for} command changes context so it cannot be reentered : " +
-        "{for $i in range($n)}.foo{$i |filterCssValue}:before " +
-        "{lb}content: '{$i |escapeCssString}{rb}{/for}",
+        "{for} body does not end in the same context after repeated entries.",
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param n: ?}\n",
             "  <style>\n",
             "    {for $i in range($n)}\n",
             "      .foo{$i |filterCssValue}:before {lb}\n",
-            "        content: '{$i |escapeCssString}\n",  // Missing close quote.
+            "        content: '{$i |escapeCssString}\n", // Missing close quote.
             "      {rb}\n",
             "    {/for}\n",
             "  </style>\n",
             "{/template}"));
   }
 
+  @Test
   public void testForeachLoop() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template baz autoescape=\"deprecated-contextual\"}\n",
-              "<ol>",
-                "{foreach $x in $foo}",
-                  "<li>{$x |escapeHtml}</li>",
-                "{/foreach}",
-              "</ol>\n",
+            "{template .baz autoescape=\"deprecated-contextual\"}\n",
+            "  {@param foo: ?}\n",
+            "<ol>",
+            "{for $x in $foo}",
+            "<li>{$x |escapeHtml}</li>",
+            "{/for}",
+            "</ol>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template baz autoescape=\"deprecated-contextual\"}\n",
+            "{template .baz autoescape=\"deprecated-contextual\"}\n",
+            "  {@param foo: ?}\n",
             "  <ol>\n",
-            "    {foreach $x in $foo}\n",
+            "    {for $x in $foo}\n",
             "      <li>{$x}</li>\n",
-            "    {/foreach}\n",
+            "    {/for}\n",
             "  </ol>\n",
             "{/template}"));
   }
 
-  public void testBrokenForeachLoop() throws Exception {
-    assertRewriteFails(
-        "In file no-path:5:5, template baz: " +
-        "{foreach} body changes context : " +
-        "{foreach $x in $foo}<li class={$x}{/foreach}",
-        join(
-            "{namespace ns}\n\n",
-            "{template baz autoescape=\"deprecated-contextual\"}\n",
-            "  <ol>\n",
-            "    {foreach $x in $foo}\n",
-            "      <li class={$x}\n",
-            "    {/foreach}\n",
-            "  </ol>\n",
-            "{/template}"));
-  }
-
+  @Test
   public void testForeachLoopWithIfempty() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template baz autoescape=\"deprecated-contextual\"}\n",
-              "<ol>",
-                "{foreach $x in $foo}",
-                  "<li>{$x |escapeHtml}</li>",
-                "{ifempty}",
-                  "<li><i>Nothing</i></li>",
-                "{/foreach}",
-              "</ol>\n",
+            "{template .baz autoescape=\"deprecated-contextual\"}\n",
+            "  {@param foo: ?}\n",
+            "<ol>",
+            "{for $x in $foo}",
+            "<li>{$x |escapeHtml}</li>",
+            "{ifempty}",
+            "<li><i>Nothing</i></li>",
+            "{/for}",
+            "</ol>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template baz autoescape=\"deprecated-contextual\"}\n",
+            "{template .baz autoescape=\"deprecated-contextual\"}\n",
+            "  {@param foo: ?}\n",
             "  <ol>\n",
-            "    {foreach $x in $foo}\n",
+            "    {for $x in $foo}\n",
             "      <li>{$x}</li>\n",
             "    {ifempty}\n",
             "      <li><i>Nothing</i></li>\n",
-            "    {/foreach}\n",
+            "    {/for}\n",
             "  </ol>\n",
             "{/template}"));
   }
 
+  @Test
   public void testCall() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{call bar data=\"all\" /}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "{call .bar data=\"all\" /}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "Hello, {$world |escapeHtml}!\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            "  {call bar data=\"all\" /}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "  {call .bar data=\"all\" /}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "  Hello, {$world}!\n",
             "{/template}"));
   }
 
+  @Test
   public void testCallWithParams() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{call bar}{param x: $x + 1 /}{/call}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? x: ?}\n",
+            "{call .bar}{param world : $x + 1 /}{/call}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "Hello, {$world |escapeHtml}!\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? world: ?}\n",
+            "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            "  {call bar}{param x: $x + 1 /}{/call}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? x: ?}\n",
+            "{call .bar}{param world : $x + 1 /}{/call}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-            "  Hello, {$world}!\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? world: ?}\n",
+            "Hello, {$world}!\n",
             "{/template}"));
   }
 
+  @Test
   public void testSameTemplateCalledInDifferentContexts() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{call bar data=\"all\" /}",
-              "<script>",
-              "alert('{call bar__C14 data=\"all\" /}');",
-              "</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "{call .bar data=\"all\" /}",
+            "<script>",
+            "alert('{call ns.bar__C14 data=\"all\" /}');",
+            "</script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "Hello, {$world |escapeHtml}!\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "Hello, {$world |escapeHtml}!\n",
             "{/template}\n\n",
-            "{template bar__C14 autoescape=\"deprecated-contextual\"}\n",
-              "Hello, {$world |escapeJsString}!\n",
+            "{template .bar__C14 autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "Hello, {$world |escapeJsString}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            "  {call bar data=\"all\" /}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
+            "  {call .bar data=\"all\" /}\n",
             "  <script>\n",
-            "  alert('{call bar data=\"all\" /}');\n",
+            "  alert('{call .bar data=\"all\" /}');\n",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "  Hello, {$world}!\n",
             "{/template}"));
   }
 
+  @Test
   public void testRecursiveTemplateGuessWorks() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "x = [{call countDown__C2010 data=\"all\" /}]",
-              "</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "<script>",
+            "x = [{call ns.countDown__C4010 data=\"all\" /}]",
+            "</script>\n",
             "{/template}\n\n",
-            "{template countDown autoescape=\"deprecated-contextual\"}\n",
-              "{if $x gt 0}",
-                "{print --$x |escapeHtml},",
-                "{call countDown /}",
-              "{/if}\n",
+            "{template .countDown autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "{if $x > 0}",
+            "{print --$x |escapeHtml},",
+            "{call .countDown}{param x : $x - 1 /}{/call}",
+            "{/if}\n",
             "{/template}\n\n",
-            "{template countDown__C2010 autoescape=\"deprecated-contextual\"}\n",
-              "{if $x gt 0}",
-                "{print --$x |escapeJsValue},",
-                "{call countDown__C2010 /}",
-              "{/if}\n",
+            "{template .countDown__C4010 autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "{if $x > 0}",
+            "{print --$x |escapeJsValue},",
+            "{call ns.countDown__C4010}{param x : $x - 1 /}{/call}",
+            "{/if}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             "  <script>\n",
-            "    x = [{call countDown data=\"all\" /}]\n",
+            "    x = [{call .countDown data=\"all\" /}]\n",
             "  </script>\n",
             "{/template}\n\n",
-            "{template countDown autoescape=\"deprecated-contextual\"}\n",
-            "  {if $x gt 0}{print --$x},{call countDown /}{/if}\n",
+            "{template .countDown autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {if $x > 0}{print --$x},{call .countDown}{param x : $x - 1 /}{/call}{/if}\n",
             "{/template}"));
   }
 
+  @Test
   public void testTemplateWithUnknownJsSlash() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "{if $declare}var {/if}",
-                "x = {call bar__C2010 /}{\\n}",
-                "y = 2",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param declare: ?}\n",
+            "<script>",
+            "{if $declare}var {/if}",
+            "x = {call ns.bar__C4010 /}{\\n}",
+            "y = 2",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "42",
-              "{if $declare}",
-                " , ",
-              "{/if}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? declare: ?}\n",
+            "42",
+            "{if $declare}",
+            " , ",
+            "{/if}\n",
             "{/template}\n\n",
-            "{template bar__C2010 autoescape=\"deprecated-contextual\"}\n",
-              "42",
-              "{if $declare}",
-                " , ",
-              "{/if}\n",
+            "{template .bar__C4010 autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? declare: ?}\n",
+            "42",
+            "{if $declare}",
+            " , ",
+            "{/if}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param declare: ?}\n",
             "  <script>\n",
             "    {if $declare}var{sp}{/if}\n",
-            "    x = {call bar /}{\\n}\n",
+            "    x = {call .bar /}{\\n}\n",
             // At this point we don't know whether or not a slash would start
             // a RegExp or not, but we don't see a slash so it doesn't matter.
             "    y = 2",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? declare: ?}\n",
             // A slash following 42 would be a division operator.
             "  42\n",
             // But a slash following a comma would be a RegExp.
-            "  {if $declare} , {/if}\n",  //
+            "  {if $declare} , {/if}\n", //
             "{/template}"));
-
   }
 
+  @Test
   public void testTemplateUnknownJsSlashMatters() throws Exception {
     assertRewriteFails(
-        "In file no-path:7:1, template foo: " +
-        "Slash (/) cannot follow the preceding branches since it is unclear whether the slash " +
-        "is a RegExp literal or division operator." +
-        "  Please add parentheses in the branches leading to `/ 2  </script>`",
+        "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
+            + " is a RegExp literal or division operator."
+            + "  Please add parentheses in the branches leading to `/ 2  `",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? declare : ?}\n",
             "  <script>\n",
             "    {if $declare}var{sp}{/if}\n",
-            "    x = {call bar /}\n",
+            "    x = {call .bar /}\n",
             // At this point we don't know whether or not a slash would start
             // a RegExp or not, so this constitutes an error.
             "    / 2",
             "  </script>\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? declare : ?}\n",
             // A slash following 42 would be a division operator.
             "  42\n",
             // But a slash following a comma would be a RegExp.
-            "  {if $declare} , {/if}\n",  //
+            "  {if $declare} , {/if}\n", //
             "{/template}"));
   }
 
+  @Test
   public void testUrlContextJoining() throws Exception {
     // This is fine.  The ambiguity about
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"",
-                "{if c}",
-                  "/foo?bar=baz",
-                "{else}",
-                  "/boo",
-                "{/if}",
-              "\">\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param c: ?}\n",
+            "<a href=\"",
+            "{if $c}",
+            "/foo?bar=baz",
+            "{else}",
+            "/boo",
+            "{/if}",
+            "\">\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:49, template foo: Cannot determine which part of the URL this dynamic"
-        + " value is in. Most likely, a preceding conditional block began a ?query or #fragment,"
-        + " but only on one branch.",
+        "Cannot determine which part of the URL this dynamic"
+            + " value is in. Most likely, a preceding conditional block began a ?query or "
+            + "#fragment, but only on one branch.",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"",
-                "{if c}",
-                  "/foo?bar=baz&boo=",
-                "{else}",
-                  "/boo/",
-                "{/if}",
-                "{$x}",
-              "\">\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param c: ?}\n",
+            "<a href=\"",
+            "{if $c}",
+            "/foo?bar=baz&boo=",
+            "{else}",
+            "/boo/",
+            "{/if}",
+            "{$x}",
+            "\">\n",
             "{/template}"));
   }
 
+  @Test
   public void testUrlMaybeVariableSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:14, template foo: Soy can't prove this URI concatenation has a safe"
-        + " scheme at compile time. Either combine adjacent print statements (e.g. {$x + $y}"
-        + " instead of {$x}{$y}), or introduce disambiguating characters"
-        + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
+        "Soy can't prove this URI concatenation has a safe"
+            + " scheme at compile time. Either combine adjacent print statements (e.g. {$x + $y}"
+            + " instead of {$x}{$y}), or introduce disambiguating characters"
+            + " (e.g. {$x}/{$y}, {$x}?y={$y}, {$x}&y={$y}, {$x}#{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"{$x}{$y}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "<a href=\"{$x}{$y}\">Test</a>\n",
             "{/template}"));
   }
 
+  @Test
   public void testUrlMaybeVariableSchemeColon() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:14, template foo: Soy can't safely process a URI that might start with a"
-        + " variable scheme. For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y"
-        + " is attacker-controlled. Either use a hard-coded scheme, or introduce disambiguating"
-        + " characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or {$x}?foo=:{$y})",
+        "Soy can't safely process a URI that might start "
+            + "with a variable scheme. For example, {$x}:{$y} could have an XSS if $x is "
+            + "'javascript' and $y is attacker-controlled. Either use a hard-coded scheme, or "
+            + "introduce disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, "
+            + "or {$x}?foo=:{$y})",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"{$x}:foo()\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"{$x}:foo()\">Test</a>\n",
             "{/template}"));
   }
 
+  @Test
   public void testUrlMaybeSchemePrintStatement() throws Exception {
     assertRewriteFails(
-        "In file no-path:4:13, template foo:"
-        + " Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
-        + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
-        + " print statement to the start of the URI to enable runtime validation"
-        + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
+        ""
+            + "Soy can't prove this URI has a safe scheme at compile time. Either make sure one of"
+            + " ':', '/', '?', or '#' comes before the dynamic value (e.g. foo/{$bar}), or move the"
+            + " print statement to the start of the URI to enable runtime validation"
+            + " (e.g. href=\"{'foo' + $bar}\" instead of href=\"foo{$bar}\").",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"foo{$x}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"foo{$x}\">Test</a>\n",
             "{/template}"));
   }
 
+  @Test
   public void testUrlDangerousSchemeForbidden() throws Exception {
     String message =
-        "Dynamic values are not permitted in javascript: URIs; either hard-code the"
-        + " entire URI, or pass in a SanitizedContent or SafeUri object, or use an existing"
-        + " filter like |filterImageDataUri.";
+        "Soy can't properly escape for this URI scheme. For image sources, you can print full"
+            + " data and blob URIs directly (e.g. src=\"{$someDataUri}\")."
+            + " Otherwise, hardcode the full URI in the template or pass a complete"
+            + " SanitizedContent or SafeUri object.";
     assertRewriteFails(
-        "In file no-path:4:29, template foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<style>url('javas{nil}cript:{$x}')</style>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"javas{nil}cript:{$x}\"></a>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:24, template foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<style>url(\"javascript:{$x}\")</style>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<style>url('javas{nil}cript:{$x}')</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:30, template foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<style>url(\"javascript:alert({$x})\")</style>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<style>url(\"javascript:{$x}\")</style>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:4:23, template foo: " + message,
+        message,
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<style>url(javascript:{$x})</style>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<style>url(\"javascript:alert({$x})\")</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<style>url(javascript:{$x})</style>\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<style>url(data:{$x})</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"data:{$x}\"></a>\n",
+            "{/template}"));
+    assertRewriteFails(
+        message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"blob:{$x}\"></a>\n",
+            "{/template}"));
+    assertRewriteFails(
+        message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"filesystem:{$x}\"></a>\n",
             "{/template}"));
 
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"not-javascript:{$x |escapeHtmlAttribute}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"not-javascript:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"not-javascript:{$x}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"not-javascript:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"not?javascript:{$x |escapeUri}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"javascript-foo:{$x |escapeHtmlAttribute}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"not?javascript:{$x}\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"javascript-foo:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"javascript:hardcoded()\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"not?javascript:{$x |escapeUri}\">Test</a>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<a href=\"javascript:hardcoded()\">Test</a>\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<a href=\"not?javascript:{$x}\">Test</a>\n",
+            "{/template}"));
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<a href=\"javascript:hardcoded()\">Test</a>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<a href=\"javascript:hardcoded()\">Test</a>\n",
             "{/template}"));
   }
 
+  @Test
   public void testRecursiveTemplateGuessFails() throws Exception {
     assertRewriteFails(
-        "In file no-path:5:5, template foo: Error while re-contextualizing template quot in"
-        + " context (Context JS REGEX):"
-        + "\n- In file no-path:10:30, template quot__C2010: Error while re-contextualizing template"
-        + " quot in context (Context JS_DQ_STRING):"
-        + "\n- In file no-path:10:5, template quot__C13: {if} command without {else} changes"
-        + " context : {if Math.random() lt 0.5}{call quot data=\"all\" /}{/if}",
+        "Error while re-contextualizing template ns.quot in"
+            + " context (Context JS REGEX):"
+            + "\n- In file no-path:10:27, template ns.quot__C4010: Error while re-contextualizing"
+            + " template ns.quot in context (Context JS_DQ_STRING):"
+            + "\n- In file no-path:10:5, template ns.quot__C13: {if} command without {else} changes"
+            + " context.",
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  <script>\n",
-            "    {call quot data=\"all\" /}\n",
+            "    {call .quot data=\"all\" /}\n",
             "  </script>\n",
             "{/template}\n\n",
-            "{template quot autoescape=\"deprecated-contextual\"}\n",
-            "  \" {if Math.random() lt 0.5}{call quot data=\"all\" /}{/if}\n",
+            "{template .quot autoescape=\"deprecated-contextual\"}\n",
+            "  \" {if randomInt(10) < 5}{call .quot data=\"all\" /}{/if}\n",
             "{/template}"));
   }
 
+  @Test
   public void testUris() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              // We use filterNormalizeUri at the beginning,
-              "<a href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
-              " style='background:url({$bgimage |filterNormalizeUri |escapeHtmlAttribute})'>",
-              "Hi</a>",
-              "<a href='#{$anchor |escapeHtmlAttribute}'",
-              // escapeUri for substitutions into queries.
-              " style='background:url(&apos;/pic?q={$file |escapeUri}&apos;)'>",
-                "Hi",
-              "</a>",
-              "<style>",
-                "body {lb} background-image: url(\"{$bg |filterNormalizeUri}\"); {rb}",
-                // and normalizeUri without the filter in the path.
-                "table {lb} border-image: url(\"borders/{$brdr |normalizeUri}\"); {rb}",
-              "</style>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param url: ?}\n",
+            "  {@param bgimage: ?}\n",
+            "  {@param anchor: ?}\n",
+            "  {@param file: ?}\n",
+            "  {@param brdr: ?}\n",
+            // We use filterNormalizeUri at the beginning,
+            "<a href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
+            " style='background:url({$bgimage |filterNormalizeMediaUri |escapeHtmlAttribute})'>",
+            "Hi</a>",
+            "<a href='#{$anchor |escapeHtmlAttribute}'",
+            // escapeUri for substitutions into queries.
+            " style='background:url(&apos;/pic?q={$file |escapeUri}&apos;)'>",
+            "Hi",
+            "</a>",
+            "<style>",
+            "body {lb} background-image: url(\"{$bgimage |filterNormalizeMediaUri}\"); {rb}",
+            // and normalizeUri without the filter in the path.
+            "table {lb} border-image: url(\"borders/{$brdr |normalizeUri}\"); {rb}",
+            "</style>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "<a href='{$url}' style='background:url({$bgimage})'>Hi</a>\n",
-              "<a href='#{$anchor}'\n",
-              " style='background:url(&apos;/pic?q={$file}&apos;)'>Hi</a>\n",
-              "<style>\n",
-                "body {lb} background-image: url(\"{$bg}\"); {rb}\n",
-                "table {lb} border-image: url(\"borders/{$brdr}\"); {rb}\n",
-              "</style>\n",
+            "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param url: ?}\n",
+            "  {@param bgimage: ?}\n",
+            "  {@param anchor: ?}\n",
+            "  {@param file: ?}\n",
+            "  {@param brdr: ?}\n",
+            "<a href='{$url}' style='background:url({$bgimage})'>Hi</a>\n",
+            "<a href='#{$anchor}'\n",
+            " style='background:url(&apos;/pic?q={$file}&apos;)'>Hi</a>\n",
+            "<style>\n",
+            "body {lb} background-image: url(\"{$bgimage}\"); {rb}\n",
+            "table {lb} border-image: url(\"borders/{$brdr}\"); {rb}\n",
+            "</style>\n",
             "{/template}"));
   }
 
+  @Test
+  public void testTrustedResourceUri() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='{$start |filterTrustedResourceUri |escapeHtmlAttribute}",
+            "/{$path |escapeUri}?q={$query |escapeUri}#{$fragment |escapeUri}'></script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='{$start}/{$path}?q={$query}#{$fragment}'></script>",
+            "{/template}\n"));
+  }
+
+  @Test
+  public void testBlessStringAsTrustedResourceUrlForLegacy() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='",
+            "{$start |blessStringAsTrustedResourceUrlForLegacy |escapeHtmlAttribute}",
+            "/{$path |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "?q={$query |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "#{$fragment |blessStringAsTrustedResourceUrlForLegacy |escapeUri}'></script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='{$start |blessStringAsTrustedResourceUrlForLegacy}",
+            "/{$path |blessStringAsTrustedResourceUrlForLegacy}",
+            "?q={$query |blessStringAsTrustedResourceUrlForLegacy}",
+            "#{$fragment |blessStringAsTrustedResourceUrlForLegacy}'></script>",
+            "{/template}\n"));
+  }
+
+  @Test
+  public void testBlessStringAsTrustedResourceUrlForLegacy_inTrustedResourceBlock()
+      throws Exception {
+    // |blessStringAsTrustedResourceUrlForLegacy only does something when it is at the start of a
+    // uri.  In other positions it is meaningless.
+    // TODO(b/77160591): Consider reporting an error when this bless directive is used incorrectly.
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param p: ?}\n",
+            "{let $t1 kind=\"trusted_resource_uri\"}",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |normalizeUri}/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "{/let}",
+            "{let $t2 kind=\"trusted_resource_uri\"}",
+            "//foo.com/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy |escapeUri}",
+            "{/let}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param p: ?}\n",
+            "{let $t1 kind=\"trusted_resource_uri\"}",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}",
+            "{/let}",
+            "{let $t2 kind=\"trusted_resource_uri\"}",
+            "//foo.com/",
+            "{$p |blessStringAsTrustedResourceUrlForLegacy}",
+            "{/let}\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testTrustedResourceUrlKindBlocks() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
+            "<script src='{$src |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
+            "<script src='{$src}'></script>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testCss() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{css foo}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{css('foo') |escapeHtml}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{css('foo')}\n",
             "{/template}"));
   }
 
+  @Test
   public void testXid() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{xid foo}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{xid('foo') |escapeHtml}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{xid('foo')}\n",
             "{/template}"));
   }
 
+  @Test
   public void testAlreadyEscaped() throws Exception {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>a = \"{$FOO |escapeUri}\";</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param FOO: ?}\n",
+            "<script>a = \"{$FOO |escapeUri}\";</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testExplicitNoescapeNoop() throws Exception {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>a = \"{$FOO |noAutoescape}\";</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param FOO: ?}\n",
+            "<script>a = \"{$FOO |noAutoescape}\";</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testCustomDirectives() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |customEscapeDirective} - {$y |customOtherDirective |escapeHtml}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "{$x |customEscapeDirective} - {$y |customOtherDirective |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
             "  {$x |customEscapeDirective} - {$y |customOtherDirective}\n",
             "{/template}"));
   }
 
-  public void testNoInterferenceWithNonContextualTemplates() throws Exception {
-    // If a broken template calls a contextual template, object.
-    assertRewriteFails(
-        null,
-        join(
-            "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-            "  Hello {$world}\n",
-            "{/template}\n\n",
-            "{template bad autoescape=\"deprecated-noncontextual\"}\n",
-            "  {if $x}\n",
-            "    <!--\n",
-            "  {/if}\n",
-            "  {call foo/}\n",
-            "{/template}"));
-
-    // But if it doesn't, it's none of our business.
-    assertContextualRewritingNoop(
-        join(
-            "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "Hello {$world |escapeHtml}\n",
-            "{/template}\n\n",
-            "{template bad autoescape=\"deprecated-noncontextual\"}\n",
-              "{if $x}",
-                "<!--",
-              "{/if}\n",
-            // No call to foo in this version.
-            "{/template}"));
-  }
-
+  @Test
   public void testExternTemplates() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "var x = {call bar /},",  // Not defined in this compilation unit.
-                "y = {$y |escapeJsValue};",
-              "</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<script>",
+            "var x = {call .bar /},", // Not defined in this compilation unit.
+            "y = {$y |escapeJsValue};",
+            "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "var x = {call bar /},",  // Not defined in this compilation unit.
-                "y = {$y};",
-              "</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<script>",
+            "var x = {call .bar /},", // Not defined in this compilation unit.
+            "y = {$y};",
+            "</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testNonContextualCallers() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x |escapeHtml}\n",
+            "{template .foo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param? x: ?}\n",
+            "{$x |escapeHtml}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-noncontextual\"}\n",
-              "<b>{call foo /}</b> {$y |escapeHtml}\n",
+            "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x}\n",
+            "{template .foo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param? x: ?}\n",
+            "{$x}\n",
             "{/template}\n\n",
-            "{template bar autoescape=\"deprecated-noncontextual\"}\n",
-              "<b>{call foo /}</b> {$y}\n",
-            "{/template}"));
-
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x |escapeHtml}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-              "<b>{call .foo /}</b> {$y}\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-              "<b>{call .foo /}</b> {$y}\n",
+            "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y}\n",
             "{/template}"));
   }
 
+  @Test
   public void testUnquotedAttributes() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<button onclick=alert({$msg |escapeJsValue |escapeHtmlAttributeNospace})>",
-              "Launch</button>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param msg: ?}\n",
+            "<button onclick=alert({$msg |escapeJsValue |escapeHtmlAttributeNospace})>",
+            "Launch</button>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<button onclick=alert({$msg})>Launch</button>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param msg: ?}\n",
+            "<button onclick=alert({$msg})>Launch</button>\n",
             "{/template}"));
   }
 
+  @Test
   public void testMessagesWithEmbeddedTags() throws Exception {
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{msg desc=\"Say hello\"}Hello, <b>World</b>{/msg}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{msg desc=\"Say hello\"}Hello, <b>World</b>{/msg}\n",
             "{/template}"));
   }
 
+  @Test
   public void testNamespaces() throws Exception {
     // Test calls in namespaced files.
     assertContextualRewriting(
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main autoescape=\"deprecated-contextual\"}\n",
-              "<title>{call soy.examples.codelab.pagenum__C81 data=\"all\" /}</title>",
-              "",
-              "<script>",
-                "var pagenum = \"{call soy.examples.codelab.pagenum__C13 data=\"all\" /}\"; ",
-                "...",
-              "</script>\n",
+            "{template .main}\n",
+            "<title>{call .pagenum data=\"all\" /}</title>",
+            "",
+            "<script>",
+            "var pagenum = \"{call .pagenum data=\"all\" /}\"; ",
+            "...",
+            "</script>\n",
             "{/template}\n\n",
             "/**\n",
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$pageIndex |escapeHtml} of {$pageCount |escapeHtml}\n",
-            "{/template}\n\n",
-            "/**\n",
-            " * @param pageIndex 0-indexed index of the current page.\n",
-            " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
-            " */\n",
-            "{template .pagenum__C81 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$pageIndex |escapeHtmlRcdata} of {$pageCount |escapeHtmlRcdata}\n",
-            "{/template}\n\n",
-            "/**\n",
-            " * @param pageIndex 0-indexed index of the current page.\n",
-            " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
-            " */\n",
-            "{template .pagenum__C13 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$pageIndex |escapeJsString} of {$pageCount |escapeJsString}\n",
+            "{template .pagenum visibility=\"private\"}\n",
+            "{$pageIndex |escapeHtml} of {$pageCount |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace soy.examples.codelab}\n\n",
             "/** */\n",
-            "{template .main autoescape=\"deprecated-contextual\"}\n",
+            "{template .main}\n",
             "  <title>{call .pagenum data=\"all\" /}</title>\n",
             "  <script>\n",
             "    var pagenum = \"{call .pagenum data=\"all\" /}\";\n",
@@ -1074,470 +1509,463 @@ public final class ContextualAutoescaperTest extends TestCase {
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "{template .pagenum visibility=\"private\"}\n",
             "  {$pageIndex} of {$pageCount}\n",
             "{/template}"));
   }
 
+  @Test
   public void testConditionalAttributes() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if}>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param className: ?}\n",
+            "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<div{if $className} class=\"{$className}\"{/if}>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param className: ?}\n",
+            "<div{if $className} class=\"{$className}\"{/if}>\n",
             "{/template}"));
   }
 
+  @Test
   public void testExtraSpacesInTag() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param className: ?}\n",
+            "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<div {if $className} class=\"{$className}\"{/if} id=x>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param className: ?}\n",
+            "<div {if $className} class=\"{$className}\"{/if} id=x>\n",
             "{/template}"));
   }
 
+  @Test
   public void testOptionalAttributes() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template iconTemplate autoescape=\"deprecated-contextual\"}\n",
-              "<img class=\"{$iconClass |escapeHtmlAttribute}\"",
-              "{if $iconId}",
-                " id=\"{$iconId |escapeHtmlAttribute}\"",
-              "{/if}",
-              " src=",
-              "{if $iconPath}",
-                "\"{$iconPath |filterNormalizeUri |escapeHtmlAttribute}\"",
-              "{else}",
-                "\"images/cleardot.gif\"",
-              "{/if}",
-              "{if $title}",
-                " title=\"{$title |escapeHtmlAttribute}\"",
-              "{/if}",
-              " alt=\"",
-                "{if $alt || $alt == ''}",
-                  "{$alt |escapeHtmlAttribute}",
-                "{elseif $title}",
-                  "{$title |escapeHtmlAttribute}",
-                "{/if}\"",
-              ">\n",
+            "{template .icontemplate autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconId: ?}\n",
+            "  {@param iconClass: ?}\n",
+            "  {@param iconPath: ?}\n",
+            "  {@param title: ?}\n",
+            "  {@param alt: ?}\n",
+            "<img class=\"{$iconClass |escapeHtmlAttribute}\"",
+            "{if $iconId}",
+            " id=\"{$iconId |escapeHtmlAttribute}\"",
+            "{/if}",
+            " src=",
+            "{if $iconPath}",
+            "\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\"",
+            "{else}",
+            "\"images/cleardot.gif\"",
+            "{/if}",
+            "{if $title}",
+            " title=\"{$title |escapeHtmlAttribute}\"",
+            "{/if}",
+            " alt=\"",
+            "{if $alt or $alt == ''}",
+            "{$alt |escapeHtmlAttribute}",
+            "{elseif $title}",
+            "{$title |escapeHtmlAttribute}",
+            "{/if}\"",
+            ">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template iconTemplate autoescape=\"deprecated-contextual\"}\n",
-              "<img class=\"{$iconClass}\"",
-              "{if $iconId}",
-                " id=\"{$iconId}\"",
-              "{/if}",
-              // Double quotes inside if/else.
-              " src=",
-              "{if $iconPath}",
-                "\"{$iconPath}\"",
-              "{else}",
-                "\"images/cleardot.gif\"",
-              "{/if}",
-              "{if $title}",
-                " title=\"{$title}\"",
-              "{/if}",
-              " alt=\"",
-                "{if $alt || $alt == ''}",
-                  "{$alt}",
-                "{elseif $title}",
-                  "{$title}",
-                "{/if}\"",
-              ">\n",
+            "{template .icontemplate autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconId: ?}\n",
+            "  {@param iconClass: ?}\n",
+            "  {@param iconPath: ?}\n",
+            "  {@param title: ?}\n",
+            "  {@param alt: ?}\n",
+            "<img class=\"{$iconClass}\"",
+            "{if $iconId}",
+            " id=\"{$iconId}\"",
+            "{/if}",
+            // Double quotes inside if/else.
+            " src=",
+            "{if $iconPath}",
+            "\"{$iconPath}\"",
+            "{else}",
+            "\"images/cleardot.gif\"",
+            "{/if}",
+            "{if $title}",
+            " title=\"{$title}\"",
+            "{/if}",
+            " alt=\"",
+            "{if $alt or $alt == ''}",
+            "{$alt}",
+            "{elseif $title}",
+            "{$title}",
+            "{/if}\"",
+            ">\n",
             "{/template}"));
   }
 
+  @Test
+  public void testSvgImage() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .image autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconPath: ?}\n",
+            "<svg>",
+            "<image xlink:href=\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\">",
+            "</svg>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .image autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconPath: ?}\n",
+            "<svg>",
+            "<image xlink:href=\"{$iconPath}\">",
+            "</svg>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testDynamicAttrName() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz |filterHtmlAttributes}=\"boo\">\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz |filterHtmlAttributes}=\"boo\">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz}=\"boo\">\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz}=\"boo\">\n",
             "{/template}"));
   }
 
-  public void testDynamicAttritubes() throws Exception {
+  @Test
+  public void testDynamicAttributes() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz |filterHtmlAttributes}>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz |filterHtmlAttributes}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz}>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz}>\n",
             "{/template}"));
   }
 
+  @Test
+  public void testDynamicAttributeValue() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x=x{$baz |escapeHtmlAttributeNospace}x>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x=x{$baz}x>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x='x{$baz |escapeHtmlAttribute}x'>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x='x{$baz}x'>\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x=\"x{$baz |escapeHtmlAttribute}x\">\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param baz: ?}\n",
+            "<img x=\"x{$baz}x\">\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testDynamicElementName() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<h{$headerLevel |filterHtmlElementName}>Header" +
-              "</h{$headerLevel |filterHtmlElementName}>\n",
+            "{template .foo stricthtml=\"false\"}\n",
+            "  {@param x: ?}\n",
+            "<{$x |filterHtmlElementName}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<h{$headerLevel}>Header</h{$headerLevel}>\n",
+            "{template .foo stricthtml=\"false\"}\n",
+            "  {@param x: ?}\n",
+            "<{$x}>\n",
             "{/template}"));
   }
 
+  @Test
   public void testOptionalValuelessAttributes() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<input {if c}checked{/if}>",
-              "<input {if c}id={id |customEscapeDirective}{/if}>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "<input{if c} checked{/if}>",
+            "<input{if c} id={id |customEscapeDirective}{/if}>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "<input {if c}checked{/if}>",
+            "<input {if c}id={id |customEscapeDirective}{/if}>\n",
             "{/template}"));
   }
 
+  @Test
   public void testDirectivesOrderedProperly() throws Exception {
     // The |bidiSpanWrap directive takes HTML and produces HTML, so the |escapeHTML
     // should appear first.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |escapeHtml |bidiSpanWrap}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "{$x |escapeHtml |bidiSpanWrap}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |bidiSpanWrap}\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "{$x |bidiSpanWrap}\n",
             "{/template}"));
 
     // But if we have a |bidiSpanWrap directive in a non HTML context, then don't reorder.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>var html = {$x |bidiSpanWrap |escapeJsValue}</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "<script>var html = {$x |bidiSpanWrap |escapeJsValue}</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>var html = {$x |bidiSpanWrap}</script>\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "<script>var html = {$x |bidiSpanWrap}</script>\n",
             "{/template}"));
   }
 
+  @Test
   public void testDelegateTemplatesAreEscaped() throws Exception {
     assertContextualRewriting(
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |escapeHtml}\n",
+            "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "{$x |escapeHtml}\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x}\n",
+            "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "{$x}\n",
             "{/deltemplate}"));
   }
 
-  public void testDelegateTemplatesReturnTypesUnioned()
-      throws Exception {
-    assertRewriteFails(
-        "In file no-path-0:7:1, template main: " +
-        "Slash (/) cannot follow the preceding branches since it is unclear whether the slash " +
-        "is a RegExp literal or division operator.  " +
-        "Please add parentheses in the branches leading to " +
-        "`/foo/i.test(s) && alert(s);</script>`",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "{delcall foo}\n",
-                "{param x: '' /}\n",
-              "{/delcall}\n",
-              // The / here is intended to start a regex, but if the version
-              // from dp2 is used it won't be.
-              "/foo/i.test(s) && alert(s);\n",
-              "</script>\n",
-            "{/template}"),
-        join(
-            "{delpackage dp1}\n",
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>x = {$x};\n",  // semicolon terminated
-            "{/deltemplate}"),
-        join(
-            "{delpackage dp2}\n",
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>x = {$x}\n",  // not semicolon terminated
-            "{/deltemplate}"));
-  }
-
-  public void testDelegateTemplatesMustHaveCompatibleEndContexts()
-      throws Exception {
-    assertRewriteFails(
-        "In file no-path-0:4:1, template main: "
-        + "Error while re-contextualizing template foo in context (Context HTML_PCDATA):\n"
-        + "- In file no-path-1:5:1, template foo: "
-        + "Deltemplates diverge when used with deprecated-contextual autoescaping. "
-        + "Based on the call site, assuming these templates all start in (Context HTML_PCDATA), "
-        + "the different deltemplates end in incompatible contexts: "
-        + "(Context JS REGEX), (Context HTML_PCDATA)",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "{delcall foo}\n",
-                "{param x: '' /}\n",
-              "{/delcall}\n",
-              "</script>\n",
-            "{/template}"),
-        join(
-            "{delpackage dp1}\n",
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>x = {$x};\n",
-            "{/deltemplate}"),
-        join(
-            "{delpackage dp2}\n",
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "This does not open a script tag.\n",
-            "{/deltemplate}"));
-  }
-
+  @Test
   public void testTypedLetBlockIsContextuallyEscaped() {
     assertContextualRewriting(
         join(
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{namespace ns}\n\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '",
             // Note that the contents of the {let} block are escaped in HTML PCDATA context, even
             // though it appears in a JS string context in the template.
             "{let $l kind=\"html\"}",
-              "<div>{$y |escapeHtml}</div>",
+            "<div>{$y |escapeHtml}</div>",
             "{/let}",
             "{$y |escapeJsString}'</script>\n",
             "{/template}"),
         join(
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{namespace ns}\n\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '\n",
             "{let $l kind=\"html\"}\n",
-              "<div>{$y}</div>",
+            "<div>{$y}</div>",
             "{/let}",
             "{$y}'</script>\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testUntypedLetBlockIsContextuallyEscaped() {
-    // Test that the behavior for let blocks without kind attribute is unchanged (i.e., they are
-    // contextually escaped in the context the {let} command appears in).
+    // Test that the behavior for let blocks without kind attribute is inferred to be html.
     assertContextualRewriting(
         join(
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{namespace ns}\n\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '",
             "{let $l}",
-              "<div>{$y |escapeJsString}</div>",
+            "<div>{$y |escapeHtml}</div>",
             "{/let}",
             "{$y |escapeJsString}'</script>\n",
             "{/template}"),
         join(
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{namespace ns}\n\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '\n",
             "{let $l}\n",
-              "<div>{$y}</div>",
+            "<div>{$y}</div>",
             "{/let}",
             "{$y}'</script>\n",
             "{/template}"));
   }
 
-
-  public void testTypedLetBlockMustEndInStartContext() {
-    assertRewriteFails(
-        "In file no-path:2:1, template t: " +
-        "A strict block of kind=\"html\" cannot end in context (Context JS REGEX). " +
-        "Likely cause is an unclosed script block or attribute: " +
-        "{let $l kind=\"html\"}",
-        join(
-            "{template t autoescape=\"deprecated-contextual\"}\n",
-            "{let $l kind=\"html\"}\n",
-              "<script> var y ='{$y}';",
-            "{/let}\n",
-            "{/template}"));
-  }
-
-
+  @Test
   public void testTypedLetBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
-        "In file no-path:5:4, template t: " +
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
-        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
-        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
+            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
-              "<b>{$y |customEscapeDirective}</b>",
+            "<b>{$y |customEscapeDirective}</b>",
             "{/let}\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:4, template t: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"html\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
             // Strict templates never allow noAutoescape.
-            "{template t autoescape=\"strict\"}\n",
+            "{template .t}\n",
+            "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
-              "<b>{$y |noAutoescape}</b>",
+            "<b>{$y |noAutoescape}</b>",
             "{/let}\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:9, template t: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"js\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"js\" or SanitizedContent.",
         join(
-            // Throw in a red-herring namespace, just to check things.
-            "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
+            "{namespace ns}\n\n",
             // Strict templates never allow noAutoescape.
-            "{template t autoescape=\"strict\"}\n",
+            "{template .t}\n",
+            "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
-              "<script>{$y |noAutoescape}</script>",
+            "<script>{$y |noAutoescape}</script>",
             "{/let}\n",
             "{/template}"));
 
-
     assertRewriteFails(
-        "In file no-path:5:4, template t: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{call .other data=\"all\" /}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
             "{let $l kind=\"html\"}\n",
-              "<b>{call .other data=\"all\"/}</b>",
+            "<b>{call .other data=\"all\"/}</b>",
             "{/let}\n",
             "{/template}\n\n",
             "{template .other autoescape=\"deprecated-contextual\"}\n",
-              "Hello World\n",
+            "Hello World\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:5:4, template t: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{call .other data=\"all\" /}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
             "{let $l kind=\"html\"}\n",
-              "<b>{call .other data=\"all\"/}</b>",
+            "<b>{call .other data=\"all\"/}</b>",
             "{/let}\n",
             "{/template}\n\n",
             "{template .other autoescape=\"deprecated-contextual\"}\n",
-              "Hello World\n",
+            "Hello World\n",
             "{/template}"));
 
     // Non-autoescape-cancelling directives are allowed.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "{let $l kind=\"html\"}",
-              "<b>{$y |customOtherDirective |escapeHtml}</b>",
+            "<b>{$y |customOtherDirective |escapeHtml}</b>",
             "{/let}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template t autoescape=\"deprecated-contextual\"}\n",
+            "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "{let $l kind=\"html\"}\n",
-              "<b>{$y |customOtherDirective}</b>",
+            "<b>{$y |customOtherDirective}</b>",
             "{/let}\n",
             "{/template}"));
   }
 
-
-  public void testNonTypedParamMustEndInHtmlContextButWasAttribute() throws Exception {
-    assertRewriteFails(
-        "In file no-path:5:5, template caller: " +
-        "Blocks should start and end in HTML context: {param foo}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-            "  {call callee}\n",
-            "    {param foo}<a href='{/param}\n",
-            "  {/call}\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\"}\n",
-            "  <b>{$foo}</b>\n",
-            "{/template}\n"));
-  }
-
-
-  public void testNonTypedParamMustEndInHtmlContextButWasScript() throws Exception {
-    assertRewriteFails(
-        "In file no-path:5:5, template caller: " +
-        "Blocks should start and end in HTML context: {param foo}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-            "  {call callee}\n",
-            "    {param foo}<script>var x={/param}\n",
-            "  {/call}\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\"}\n",
-            "  <b>{$foo}</b>\n",
-            "{/template}\n"));
-  }
-
-
+  @Test
   public void testNonTypedParamGetsContextuallyAutoescaped() throws Exception {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "{call callee}",
-                "{param fooHtml}",
-                  "<a href=\"http://google.com/search?q={$query |escapeUri}\" ",
-                    "onclick=\"alert('{$query |escapeJsString |escapeHtmlAttribute}')\">",
-                    "Search for {$query |escapeHtml}",
-                  "</a>",
-                "{/param}",
-              "{/call}",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param query: ?}\n",
+            "{call .callee}",
+            "{param fooHtml}",
+            "<a href=\"http://google.com/search?q={$query |escapeUri}\" ",
+            "onclick=\"alert('{$query |escapeJsString |escapeHtmlAttribute}')\">",
+            "Search for {$query |escapeHtml}",
+            "</a>",
+            "{/param}",
+            "{/call}",
             "\n{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\"}\n",
-              "{$fooHTML |noAutoescape}",
+            "{template .callee autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? fooHtml: ?}\n",
+            "{$fooHtml |noAutoescape}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-            "  {call callee}\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param query: ?}\n",
+            "  {call .callee}\n",
             "    {param fooHtml}\n",
             "      <a href=\"http://google.com/search?q={$query}\"\n",
             "         onclick=\"alert('{$query}')\">\n",
@@ -1546,150 +1974,143 @@ public final class ContextualAutoescaperTest extends TestCase {
             "    {/param}\n",
             "  {/call}\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\"}\n",
-            "  {$fooHTML |noAutoescape}\n",
+            "{template .callee autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? fooHtml: ?}\n",
+            "  {$fooHtml |noAutoescape}\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testTypedParamBlockIsContextuallyEscaped() {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"html\"}",
-                  "<script> var y ='{$y |escapeJsString}';</script>",
-                "{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}",
+            "<script> var y ='{$y |escapeJsString}';</script>",
+            "{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
             "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}{param x kind=\"html\"}",
-                  "<script> var y ='{$y}';</script>",
-                "{/param}{/call}",
-              "</div>\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}{param x kind=\"html\"}",
+            "<script> var y ='{$y}';</script>",
+            "{/param}{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
-
-  public void testTypedParamBlockMustEndInStartContext() {
-    assertRewriteFails(
-        "In file no-path:4:19, template caller: " +
-        "A strict block of kind=\"html\" cannot end in context (Context JS REGEX). " +
-        "Likely cause is an unclosed script block or attribute: " +
-        "{param x kind=\"html\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}{param x kind=\"html\"}<script> var y ='{$y}';{/param}{/call}",
-              "</div>\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
-            "{/template}"));
-  }
-
-
+  @Test
   public void testTypedParamBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
-        "In file no-path:4:43, template caller: " +
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
-        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
-        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
+            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"strict\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // noAutoescape has a special error message.
     assertRewriteFails(
-        "In file no-path:4:43, template caller: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"html\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"strict\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "In file no-path:4:40, template caller: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{call subCallee data=\"all\" /}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"strict\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}{call subCallee data=\"all\"/}{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller}\n",
+            "  {@param x: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}{call .subCallee data=\"all\"/}{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}\n\n",
-            "{template subCallee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .subCallee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // Non-escape-cancelling directives are allowed.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"html\"}<b>{$y |customOtherDirective |escapeHtml}</b>{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customOtherDirective |escapeHtml}</b>{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\"}\n",
-              "<b>{$x |escapeHtml}</b>\n",
+            "{template .callee visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"strict\"}\n",
+            "{template .caller}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testTransitionalTypedParamBlock() {
     // In non-strict contextual templates, param blocks employ "transitional" strict autoescaping,
     // which permits noAutoescape. This helps teams migrate the callees to strict even if not all
@@ -1697,406 +2118,359 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x |escapeHtml}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // Other escape-cancelling directives are still not allowed.
     assertRewriteFails(
-        "In file no-path:4:43, template caller: " +
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
-        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
-        "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
+            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "In file no-path:4:40, template caller: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{call subCallee data=\"all\" /}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}",
-                  "{param x kind=\"html\"}{call subCallee data=\"all\"/}{/param}",
-                "{/call}",
-              "</div>\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "<div>",
+            "{call .callee}",
+            "{param x kind=\"html\"}{call .subCallee data=\"all\"/}{/param}",
+            "{/call}",
+            "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}\n\n",
-            "{template subCallee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .subCallee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
 
     // Non-escape-cancelling directives are allowed.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"html\"}<b>{$y |customOtherDirective |escapeHtml}</b>{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customOtherDirective |escapeHtml}</b>{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x |escapeHtml}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}<b>{$y |customOtherDirective}</b>{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testTypedTextParamBlock() {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "<div>",
-              "{call callee}",
-                "{param x kind=\"text\"}",
-                  "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
-                "{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"text\"}",
+            "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
+            "{/param}",
+            "{/call}",
             "</div>\n",
-          "{/template}\n",
-          "\n",
-          "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "<b>{$x |escapeHtml}</b>\n",
-          "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call callee}{param x kind=\"text\"}",
-                  "Hello {$x} <{$y}, \"{$z}\">",
-                "{/param}{/call}",
-              "</div>\n",
             "{/template}\n",
             "\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "<div>",
+            "{call .callee}{param x kind=\"text\"}",
+            "Hello {$x} <{$y}, \"{$z}\">",
+            "{/param}{/call}",
+            "</div>\n",
+            "{/template}\n",
+            "\n",
+            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testTypedTextLetBlock() {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{let $a kind=\"text\"}",
-                "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
-              "{/let}",
-              "{$a |escapeHtml}",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "{let $a kind=\"text\"}",
+            "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
+            "{/let}",
+            "{$a |escapeHtml}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"deprecated-contextual\"}\n",
-              "{let $a kind=\"text\"}",
-                "Hello {$x} <{$y}, \"{$z}\">",
-              "{/let}",
-              "{$a}",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "{let $a kind=\"text\"}",
+            "Hello {$x} <{$y}, \"{$z}\">",
+            "{/let}",
+            "{$a}",
             "\n{/template}"));
   }
 
-
+  @Test
   public void testStrictModeRejectsAutoescapeCancellingDirectives() {
     assertRewriteFails(
-        "In file no-path:4:4, template main: " +
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed in " +
-        "kind=\"text\" blocks. If you really want to over-escape, try using a let block: " +
-        "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
+        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
+            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
+            + "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<b>{$foo|customEscapeDirective}</b>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo|customEscapeDirective}</b>\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:4:4, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"html\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"html\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<b>{$foo|noAutoescape}</b>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo|noAutoescape}</b>\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:4:10, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"uri\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"uri\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<a href=\"{$foo|noAutoescape}\">Test</a>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<a href=\"{$foo|noAutoescape}\">Test</a>\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:4:6, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"attributes\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"attributes\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<div {$foo|noAutoescape}>Test</div>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<div {$foo|noAutoescape}>Test</div>\n",
             "{/template}"));
 
     assertRewriteFails(
-        "In file no-path:4:9, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with kind=\"js\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with kind=\"js\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<script>{$foo|noAutoescape}</script>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<script>{$foo|noAutoescape}</script>\n",
             "{/template}"));
 
     // NOTE: There's no recommended context for textarea, since it's really essentially text.
     assertRewriteFails(
-        "In file no-path:4:11, template main: " +
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} " +
-        "with appropriate kind=\"...\" or SanitizedContent.",
+        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
+            + "with appropriate kind=\"...\" or SanitizedContent.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<textarea>{$foo|noAutoescape}</textarea>\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<textarea>{$foo|noAutoescape}</textarea>\n",
             "{/template}"));
   }
 
-
+  @Test
   public void testStrictModeRejectsNonStrictCalls() {
     assertRewriteFails(
-        "In file no-path:4:4, template main: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{call bar data=\"all\" /}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\" kind=\"html\"}\n",
-              "<b>{call bar data=\"all\"/}\n",
-            "{/template}\n\n" +
-            "{template bar autoescape=\"deprecated-contextual\"}\n",
-              "Hello World\n",
+            "{template .main stricthtml=\"false\"}\n",
+            "<b>{call .bar data=\"all\"/}\n",
+            "{/template}\n\n" + "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "Hello World\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path-0:4:1, template main: " +
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the " +
-        "context is kind=\"text\", since there's no guarantee the callee is safe: " +
-        "{delcall foo}",
+        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "{delcall foo}\n",
-                "{param x: '' /}\n",
-              "{/delcall}\n",
+            "{template .main}\n",
+            "{delcall ns.foo}\n",
+            "{param x: '' /}\n",
+            "{/delcall}\n",
             "{/template}"),
         join(
             "{delpackage dp1}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "<b>{$x}</b>\n",
+            "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "<b>{$x}</b>\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp2}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"deprecated-contextual\"}\n",
-              "<i>{$x}</i>\n",
+            "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "<i>{$x}</i>\n",
             "{/deltemplate}"));
   }
 
-
+  @Test
   public void testContextualCannotCallStrictOfWrongContext() {
-    // Can't call a text template from a strict context.
+    // Can't call a text template ns.from a strict context.
     assertRewriteFails(
-        "In file no-path:4:1, template main: " +
-        "Cannot call strictly autoescaped template foo of kind=\"text\" from incompatible " +
-        "context (Context HTML_PCDATA). Strict templates generate extra code to safely call " +
-        "templates of other content kinds, but non-strict templates do not: " +
-        "{call foo}",
+        "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
+            + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
+            + "templates of other content kinds, but non-strict templates do not.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "{call foo}\n",
-                "{param x: '' /}\n",
-              "{/call}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
+            "{call .foo}\n",
+            "{param x: '' /}\n",
+            "{/call}\n",
             "{/template}\n\n",
-            "{template foo autoescape=\"strict\" kind=\"text\"}\n",
-              "<b>{$x}</b>\n",
+            "{template .foo kind=\"text\"}\n",
+            "{@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path-0:4:1, template main: " +
-        "Cannot call strictly autoescaped template foo of kind=\"text\" from incompatible " +
-        "context (Context HTML_PCDATA). Strict templates generate extra code to safely call " +
-        "templates of other content kinds, but non-strict templates do not: " +
-        "{delcall foo}",
+        "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
+            + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
+            + "templates of other content kinds, but non-strict templates do not.",
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "{delcall foo}\n",
-                "{param x: '' /}\n",
-              "{/delcall}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
+            "{delcall ns.foo}\n",
+            "{param x: '' /}\n",
+            "{/delcall}\n",
             "{/template}"),
         join(
             "{delpackage dp1}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"strict\" kind=\"text\"}\n",
-              "<b>{$x}</b>\n",
+            "{deltemplate ns.foo kind=\"text\"}\n",
+            "<b>{$x}</b>\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp2}\n",
             "{namespace ns}\n\n",
             "/** @param x */\n",
-            "{deltemplate foo autoescape=\"strict\" kind=\"text\"}\n",
-              "<i>{$x}</i>\n",
+            "{deltemplate ns.foo kind=\"text\"}\n",
+            "<i>{$x}</i>\n",
             "{/deltemplate}"));
   }
 
-
+  @Test
   public void testStrictModeAllowsNonAutoescapeCancellingDirectives() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(join(
-        "{template main autoescape=\"strict\"}\n",
-        "<b>{$foo |customOtherDirective}</b>\n",
-        "{/template}"))
-        .parse();
-    String rewrittenTemplate = rewrittenSource(soyTree);
-    assertThat(rewrittenTemplate.trim())
-        .isEqualTo(join("{template main autoescape=\"strict\"}\n",
-            "<b>{$foo |customOtherDirective |escapeHtml}</b>\n", "{/template}"));
-  }
-
-
-  public void testTextDirectiveBanned() {
-    assertRewriteFails(
-        "In file no-path:2:1, template main: " +
-        "Print directive |text is only for internal use by the Soy compiler.",
+    assertContextualRewriting(
         join(
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              "{$foo |text}\n",
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo |customOtherDirective}</b>\n",
             "{/template}"));
   }
 
-
-  public void testStrictModeDoesNotYetHaveDefaultParamKind() {
-    assertRewriteFails(
-        "In file no-path:4:1, template main: " +
-        "In strict templates, {let}...{/let} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {let $x: $y /} is NOT subject to this restriction). " +
-        "Cause: {let $x}",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "{let $x}No Kind{/let}\n",
-            "{/template}"));
-    assertRewriteFails(
-        "In file no-path:4:11, template main: " +
-        "In strict templates, {param}...{/param} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {param x: $y /} is NOT subject to this restriction). " +
-        "Cause: {param x}",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "{call foo}{param x}No Kind{/param}{/call}\n",
-            "{/template}"));
-    // Test with a non-strict template but in a strict block.
-    assertRewriteFails(
-        "In file no-path:4:21, template main: " +
-        "In strict templates, {let}...{/let} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {let $x: $y /} is NOT subject to this restriction). " +
-        "Cause: {let $x}",
-        join(
-            "{namespace ns}\n\n",
-            // Non-strict template.
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-              // Strict block in the non-strict template.
-              "{let $y kind=\"html\"}",
-                // Missing kind attribute in a let in a strict block.
-                "{let $x}No Kind{/let}",
-                "{$x}",
-              "{/let}",
-            "\n{/template}"));
-  }
-
-
+  @Test
   public void testStrictModeRequiresStartAndEndToBeCompatible() {
     assertRewriteFails(
-        "In file no-path:3:1, template main: " +
-        "A strict block of kind=\"html\" cannot end in context (Context JS_SQ_STRING). " +
-        "Likely cause is an unterminated string literal: " +
-        "{template main autoescape=\"strict\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\"}\n",
-              "<script>var x='\n",
-            "{/template}"));
+        "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
+            + "Likely cause is an unterminated string literal.",
+        join("{namespace ns}\n\n", "{template .main kind=\"js\"}\nvar x='\n{/template}\n"));
   }
 
-
+  @Test
   public void testStrictUriMustNotBeEmpty() {
     assertRewriteFails(
-        "In file no-path:3:1, template main: " +
-        "A strict block of kind=\"uri\" cannot end in context (Context URI START). " +
-        "Likely cause is an unterminated or empty URI: " +
-        "{template main autoescape=\"strict\" kind=\"uri\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"strict\" kind=\"uri\"}\n",
-            "{/template}"));
+        "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
+            + "Likely cause is an unterminated or empty URI.",
+        join("{namespace ns}\n\n", "{template .main kind=\"uri\"}\n", "{/template}"));
   }
 
-
+  @Test
   public void testContextualCanCallStrictModeUri() {
-    // This ensures that a contextual template can use a strict URI -- specifically testing that
+    // This ensures that a contextual template ns.can use a strict URI -- specifically testing that
     // the contextual call site matching doesn't do an exact match on context (which would be
     // sensitive to whether single quotes or double quotes are used) but uses the logic in
     // Context.isValidStartContextForContentKindLoose().
@@ -2104,142 +2478,88 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
-              "http://www.google.com/search?q={$x |escapeUri}",
+            "{template .bar kind=\"uri\"}\n",
+            "  {@param x: ?}\n",
+            "http://www.google.com/search?q={$x |escapeUri}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
-            "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
-              "http://www.google.com/search?q={$x}",
+            "{template .bar kind=\"uri\"}\n",
+            "  {@param x: ?}\n",
+            "http://www.google.com/search?q={$x}",
             "\n{/template}"));
   }
 
-
+  @Test
   public void testStrictAttributes() {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace} ",
-              "style='{$y |filterCssValue |escapeHtmlAttribute}' ",
-              "checked ",
-              "foo=\"bar\" ",
-              "title='{$z |escapeHtmlAttribute}'",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace} ",
+            "style='{$y |filterCssValue |escapeHtmlAttribute}' ",
+            "checked ",
+            "foo=\"bar\" ",
+            "title='{$z |escapeHtmlAttribute}'",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "onclick={$x} ",
-              "style='{$y}' ",
-              "checked ",
-              "foo=\"bar\" ",
-              "title='{$z}'",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "onclick={$x} ",
+            "style='{$y}' ",
+            "checked ",
+            "foo=\"bar\" ",
+            "title='{$z}'",
             "\n{/template}"));
   }
 
-
-  public void testStrictAttributesMustBeTerminated() {
-    // Basic "forgot to close attribute" issue.
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: " +
-        "A strict block of kind=\"attributes\" cannot end in context " +
-        "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT DOUBLE_QUOTE). " +
-        "Likely cause is an unterminated attribute value, or ending with an unquoted attribute: " +
-        "{template .foo autoescape=\"strict\" kind=\"attributes\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "foo=\"{$x}",
-            "\n{/template}"));
-  }
-
-
-  // Tests that non-contextual templates don't call strict templates with kind=text attribute.
-  public void testTypedTextStrictCallsNotAllowedInNonContextualTemplate() {
-    assertRewriteFails(
-        "In file no-path:4:6, template caller: " +
-        "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in " +
-        "non-contextually autoescaped templates: {call callee /}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-noncontextual\"}\n",
-              "<div>",
-                "{call callee/}",
-              "</div>\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"strict\" private=\"true\" kind=\"text\"}\n",
-              "title={$x}\n",
-            "{/template}"));
-  }
-
-
-  // Tests that noautoescape templates don't have let nodes with kind attribute.
-  public void testTypedLetBlockNotAllowedInNoAutoescapeTemplate() {
-    assertRewriteFails(
-        "In file no-path:2:1, template t: " +
-        "{let} node with 'kind' attribute is not permitted in non-autoescaped " +
-        "templates: {let $l kind=\"html\"}<b>{$y}</b>{/let}",
-        join(
-            "{template t autoescape=\"deprecated-noautoescape\"}\n",
-            "{let $l kind=\"html\"}",
-              "<b>{$y}</b>",
-            "{/let}\n",
-            "{/template}"));
-  }
-
-
-  // Tests that noautoescape templates don't have param nodes with kind attribute.
-  public void testTypedParamBlockNotAllowedInNoAutoescapeTemplate() {
-    assertRewriteFails(
-        "In file no-path:4:19, template caller: " +
-        "{param} node with 'kind' attribute is not permitted in non-autoescaped " +
-        "templates: {param x kind=\"html\"}<b>{$y}</b>;{/param}",
-        join(
-            "{namespace ns}\n\n",
-            "{template caller autoescape=\"deprecated-noautoescape\"}\n",
-              "<div>",
-                "{call callee}{param x kind=\"html\"}<b>{$y}</b>;{/param}{/call}",
-              "</div>\n",
-            "{/template}\n\n",
-            "{template callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
-            "{/template}"));
-  }
-
-
+  @Test
   public void testStrictAttributesMustNotEndInUnquotedAttributeValue() {
     // Ensure that any final attribute-value pair is quoted -- otherwise, if the use site of the
     // value forgets to add spaces, the next attribute will be swallowed.
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: " +
-        "A strict block of kind=\"attributes\" cannot end in context " +
-        "(Context JS SCRIPT SPACE_OR_TAG_END DIV_OP). " +
-        "Likely cause is an unterminated attribute value, or ending with an unquoted attribute: " +
-        "{template .foo autoescape=\"strict\" kind=\"attributes\"}",
+    // The html rewriting mode allows for this since there is no way to interpolate this template
+    // into another tag attribute that creates ambiguity.
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "onclick={$x}",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
+            "\n{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "onclick={$x}",
             "\n{/template}"));
 
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: " +
-        "A strict block of kind=\"attributes\" cannot end in context " +
-        "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT SPACE_OR_TAG_END). " +
-        "Likely cause is an unterminated attribute value, or ending with an unquoted attribute: " +
-        "{template .foo autoescape=\"strict\" kind=\"attributes\"}",
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "title={$x}",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "title={$x |escapeHtmlAttributeNospace}",
+            "\n{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "title={$x}",
             "\n{/template}"));
   }
 
+  @Test
   public void testStrictAttributesCanEndInValuelessAttribute() {
     // Allow ending in a valueless attribute like "checked". Unfortunately a sloppy user might end
     // up having this collide with another attribute name.
@@ -2247,17 +2567,17 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "foo=bar checked",
+            "{template .foo kind=\"attributes\"}\n",
+            "foo=bar checked",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "foo=bar checked",
+            "{template .foo kind=\"attributes\"}\n",
+            "foo=bar checked",
             "\n{/template}"));
   }
 
-
+  @Test
   public void testStrictModeJavascriptRegexHandling() {
     // NOTE: This ensures that the call site is treated as a dynamic value, such that it switches
     // from "before regexp" context to "before division" context. Note this isn't foolproof (such
@@ -2266,203 +2586,244 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<script>",
-                "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
-              "</script>",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<script>",
+            "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
+            "</script>",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template foo autoescape=\"strict\"}\n",
-              "<script>",
-                "{call .bar /}/{$x}+/{$x}/g",
-              "</script>",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "<script>",
+            "{call .bar /}/{$x}+/{$x}/g",
+            "</script>",
             "\n{/template}"));
   }
 
-
+  @Test
   public void testStrictModeEscapesCallSites() {
     String source =
-        "{namespace ns}\n\n" +
-        "{template .main autoescape=\"strict\"}\n" +
-          "{call .htmlTemplate /}" +
-          "<script>var x={call .htmlTemplate /};</script>\n" +
-          "<script>var x={call .jsTemplate /};</script>\n" +
-          "{call .externTemplate /}" +
-        "\n{/template}\n\n" +
-        "{template .htmlTemplate autoescape=\"strict\"}\n" +
-          "Hello World" +
-        "\n{/template}\n\n" +
-        "{template .jsTemplate autoescape=\"strict\" kind=\"js\"}\n" +
-          "foo()" +
-        "\n{/template}";
+        "{namespace ns}\n\n"
+            + "{template .main}\n"
+            + "{call .htmltemplate /}"
+            + "<script>var x={call .htmltemplate /};</script>\n"
+            + "<script>var x={call .jstemplate /};</script>\n"
+            + "{call .externtemplate /}"
+            + "\n{/template}\n\n"
+            + "{template .htmltemplate}\n"
+            + "Hello World"
+            + "\n{/template}\n\n"
+            + "{template .jstemplate kind=\"js\"}\n"
+            + "foo()"
+            + "\n{/template}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .errorReporter(boom)
-        .parse();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
-    TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
+    TemplateNode mainTemplate = rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
-    final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
-        mainTemplate, CallNode.class);
+    final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(4);
     assertWithMessage("HTML->HTML escaping should be pruned")
-        .that(callNodes.get(0).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(callNodes.get(0).getEscapingDirectives())
+        .isEmpty();
     assertWithMessage("JS -> HTML call should be escaped")
-        .that(callNodes.get(1).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeJsValue"));
-    assertWithMessage("JS -> JS pruned")
-        .that(callNodes.get(2).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
+        .containsExactly("|escapeJsValue");
+    assertWithMessage("JS -> JS pruned").that(callNodes.get(2).getEscapingDirectives()).isEmpty();
     assertWithMessage("HTML -> extern call should be escaped")
-        .that(callNodes.get(3).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeHtml"));
+        .that(getDirectiveNames(callNodes.get(3).getEscapingDirectives()))
+        .containsExactly("|escapeHtml");
   }
 
-
+  @Test
   public void testStrictModeOptimizesDelegates() {
     String source =
-        "{namespace ns}\n\n" +
-        "{template .main autoescape=\"strict\"}\n" +
-          "{delcall ns.delegateHtml /}" +
-          "{delcall ns.delegateText /}" +
-        "\n{/template}\n\n" +
-        "/** A delegate returning HTML. */\n" +
-        "{deltemplate ns.delegateHtml autoescape=\"strict\"}\n" +
-          "Hello World" +
-        "\n{/deltemplate}\n\n" +
-        "/** A delegate returning JS. */\n" +
-        "{deltemplate ns.delegateText autoescape=\"strict\" kind=\"text\"}\n" +
-          "Hello World" +
-        "\n{/deltemplate}";
+        "{namespace ns}\n\n"
+            + "{template .main}\n"
+            + "{delcall ns.delegateHtml /}"
+            + "{delcall ns.delegateText /}"
+            + "\n{/template}\n\n"
+            + "/** A delegate returning HTML. */\n"
+            + "{deltemplate ns.delegateHtml}\n"
+            + "Hello World"
+            + "\n{/deltemplate}\n\n"
+            + "/** A delegate returning JS. */\n"
+            + "{deltemplate ns.delegateText kind=\"text\"}\n"
+            + "Hello World"
+            + "\n{/deltemplate}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .errorReporter(boom)
-        .parse();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
-    TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
+    TemplateNode mainTemplate = rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
-    final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
-        mainTemplate, CallNode.class);
+    final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(2);
     assertWithMessage("We're compiling a complete set; we can optimize based on usages.")
-        .that(callNodes.get(0).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(callNodes.get(0).getEscapingDirectives())
+        .isEmpty();
     assertWithMessage("HTML -> TEXT requires escaping")
-        .that(callNodes.get(1).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeHtml"));
+        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
+        .containsExactly("|escapeHtml");
   }
 
-  private String getForbiddenMsgError(String path, String template, String context) {
-    return "In file " + path + ", template " + template + ": "
-        + "Messages are not supported in this context, because it would mean asking translators to "
-        + "write source code; if this is desired, try factoring the message into a {let} block: "
-        + "(Context " + context + ")";
+  private ImmutableList<String> getDirectiveNames(
+      ImmutableList<SoyPrintDirective> escapingDirectives) {
+    return escapingDirectives.stream().map(SoyPrintDirective::getName).collect(toImmutableList());
   }
 
+  private static String getForbiddenMsgError(String context) {
+    return "Messages are not supported in this context, because it would mean asking translators "
+        + "to write source code; if this is desired, try factoring the message into a {let} block: "
+        + "(Context "
+        + context
+        + ")";
+  }
+
+  @Test
   public void testMsgForbiddenUriStartContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template main}\n",
+            "{template .main}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        getForbiddenMsgError("URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "URI START"),
+        getForbiddenMsgError("URI START NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template main kind=\"uri\"}\n",
+            "{template .main kind=\"uri\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
 
+  @Test
   public void testMsgForbiddenJsContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template main}\n",
+            "{template .main}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:11", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <script>{msg desc=\"foo\"}message{/msg}</script>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "JS REGEX"),
+        getForbiddenMsgError("JS REGEX"),
         join(
             "{namespace ns}\n\n",
-            "{template main kind=\"js\"}\n",
+            "{template .main kind=\"js\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
 
+  @Test
   public void testMsgForbiddenHtmlContexts() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:8", "main", "HTML_TAG NORMAL"),
+        getForbiddenMsgError("HTML_TAG NORMAL"),
         join(
             "{namespace ns}\n\n",
-            "{template main}\n",
+            "{template .main}\n",
             "  <div {msg desc=\"foo\"}attributes{/msg}>Test</div>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:4", "main", "HTML_BEFORE_TAG_NAME"),
+        getForbiddenMsgError("HTML_TAG"),
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-            "  <{msg desc=\"foo\"}tagname{/msg}>\n",
-            "{/template}"));
-    assertRewriteFails(
-        getForbiddenMsgError("no-path:4:5", "main", "HTML_BEFORE_TAG_NAME"),
-        join(
-            "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
-            "  </{msg desc=\"foo\"}tagname{/msg}>\n",
-            "{/template}"));
-    assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "HTML_TAG"),
-        join(
-            "{namespace ns}\n\n",
-            "{template main kind=\"attributes\"}\n",
+            "{template .main kind=\"attributes\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
             "{/template}"));
   }
 
+  @Test
   public void testMsgForbiddenCssContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template main}\n",
+            "{template .main}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:10", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template main autoescape=\"deprecated-contextual\"}\n",
+            "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <style>{msg desc=\"foo\"}message{/msg}</style>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "CSS"),
+        getForbiddenMsgError("CSS"),
         join(
             "{namespace ns}\n\n",
-            "{template main kind=\"css\"}\n",
+            "{template .main kind=\"css\"}\n",
             "  {msg desc=\"foo\"}message{/msg}\n",
+            "{/template}"));
+  }
+
+  // Regression test for a bug where we would enter rcdata area but not exit it, so things after it
+  // would be stuck in rcdata context.  the issue is that the 'close tag' inside of rcdata would
+  // cause use to early exit the search for transition points
+  @Test
+  public void testExitSpecialRcDataArea() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<textarea>{$p |escapeHtmlRcdata}</div></textarea>",
+            "{$p |escapeHtml}", // this used to be |escapeHtmlRcData
+            "<textarea></textarea>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<textarea>{$p}</div></textarea>",
+            "{$p}",
+            // this is needed at the end to prevent the bug from causing an error
+            "<textarea></textarea>",
+            "{/template}"));
+  }
+
+  @Test
+  public void testUnescapeAttributeValues() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<div style='url(\"{$p |filterNormalizeUri |escapeHtmlAttribute}\");'></div>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<div style='url(\"{$p}\");'></div>\n",
+            "{/template}"));
+    // it works even if the internal quotation marks are escaped, since we unescape as part of
+    // ordaining
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<div style='url(&quot;{$p |filterNormalizeUri |escapeHtmlAttribute}&quot;);'></div>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<div style='url(&quot;{$p}&quot;);'></div>\n",
             "{/template}"));
   }
 
@@ -2473,21 +2834,27 @@ public final class ContextualAutoescaperTest extends TestCase {
     return Joiner.on("").join(lines);
   }
 
-  /**
-   * Returns the contextually rewritten source.
-   *
-   * The Soy tree may have multiple files, but only the source code for the first is returned.
-   */
-  private String rewrittenSource(SoyFileSetNode soyTree)
-      throws SoyAutoescapeException {
+  private void assertContextualRewriting(String expectedOutput, String... inputs) {
+    String source = rewrite(inputs).toSourceString();
+    // remove the nonce, it is just distracting
+    source = source.replace(NONCE, "");
+    assertThat(source.trim()).isEqualTo(expectedOutput);
+  }
 
-    FormattingErrorReporter reporter = new FormattingErrorReporter();
-    List<TemplateNode> tmpls
-        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, reporter)
-        .rewrite(soyTree);
+  public SoyFileNode rewrite(String... inputs) {
+    ErrorReporter reporter = ErrorReporter.createForTest();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(inputs)
+            .errorReporter(reporter)
+            .allowUnboundGlobals(true)
+            .addPrintDirectives(SOY_PRINT_DIRECTIVES)
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
 
-    if (!reporter.getErrorMessages().isEmpty()) {
-      String message = reporter.getErrorMessages().get(0);
+    if (!reporter.getErrors().isEmpty()) {
+      SoyError soyError = reporter.getErrors().get(0);
+      String message = soyError.message();
       if (message.startsWith(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX)) {
         // Grab the part after the prefix (and the "- " used for indentation).
         message = message.substring(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX.length() + 2);
@@ -2497,86 +2864,67 @@ public final class ContextualAutoescaperTest extends TestCase {
         // this with two things to check.
         // TODO(gboyer): Once 100% of the contextual autoescaper's errors are migrated to the error
         // reporter, we can stop throwing and simply add explicit checks in the cases.
-        throw SoyAutoescapeException.createWithoutMetaInfo(message);
+        throw new RewriteError(soyError, message);
       } else {
         throw new IllegalStateException("Unexpected error: " + message);
       }
     }
+    return soyTree.getChild(0);
+  }
 
-    StringBuilder src = new StringBuilder();
-    src.append(soyTree.getChild(0).toSourceString());
-    for (TemplateNode tn : tmpls) {
-      src.append('\n').append(tn.toSourceString());
+  private static final class RewriteError extends RuntimeException {
+    final SoyError error;
+    final String origMessage;
+
+    RewriteError(SoyError error, String message) {
+      super(error.toString());
+      this.error = error;
+      this.origMessage = message;
     }
-    return src.toString();
   }
 
-  private void assertContextualRewriting(String expectedOutput, String... inputs)
-      throws SoyAutoescapeException {
+  private static final String NONCE =
+      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs)
-        .errorReporter(boom)
-        .parse();
-
-    String source = rewrittenSource(soyTree);
-    assertThat(source.trim()).isEqualTo(expectedOutput);
-  }
-
-  private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {
+  private void assertContextualRewritingNoop(String expectedOutput) {
     assertContextualRewriting(expectedOutput, expectedOutput);
   }
 
   /**
-   * @param msg Message that should be reported to the template author.
-   *     Null means don't care.
+   * @param msg Message that should be reported to the template ns.author. Null means don't care.
    */
-  private void assertRewriteFails(
-      @Nullable String msg,
-      String... inputs) {
-    SoyFileSupplier[] soyFileSuppliers = new SoyFileSupplier[inputs.length];
-    for (int i = 0; i < inputs.length; ++i) {
-      soyFileSuppliers[i] = SoyFileSupplier.Factory.create(
-          inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i);
-    }
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
-        .declaredSyntaxVersion(SyntaxVersion.V1_0)
-        .doRunInitialParsingPasses(true)
-        .doRunCheckingPasses(true)
-        .parse();
-
+  private void assertRewriteFails(@Nullable String msg, String... inputs) {
     try {
-      rewrittenSource(soyTree);
-    } catch (SoyAutoescapeException ex) {
-      // Find the root cause; during contextualization, we re-wrap exceptions on the path to a
-      // template.
-      while (ex.getCause() instanceof SoyAutoescapeException) {
-        ex = (SoyAutoescapeException) ex.getCause();
+      rewrite(inputs);
+      fail();
+    } catch (RewriteError ex) {
+      if (msg != null && !msg.equals(ex.origMessage)) {
+        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, ex.origMessage);
+        comparisonFailure.initCause(ex);
+        throw comparisonFailure;
       }
-      if (msg != null && !msg.equals(ex.getMessage())) {
-        throw (ComparisonFailure) new ComparisonFailure("", msg, ex.getMessage()).initCause(ex);
-      }
-      return;
     }
-    fail("Expected failure but was " + soyTree.getChild(0).toSourceString());
   }
 
-
-  final static class FakeBidiSpanWrapDirective
+  static final class FakeBidiSpanWrapDirective
       implements SoyPrintDirective, SanitizedContentOperator {
     @Override
     public String getName() {
       return "|bidiSpanWrap";
     }
+
     @Override
     public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
     }
+
     @Override
     public boolean shouldCancelAutoescape() {
       return false;
     }
-    @Override @Nonnull
+
+    @Override
+    @Nonnull
     public SanitizedContent.ContentKind getContentKind() {
       return SanitizedContent.ContentKind.HTML;
     }

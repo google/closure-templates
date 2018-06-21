@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.UnknownType;
 
 /**
  * An injected parameter.
@@ -25,9 +25,7 @@ import com.google.template.soy.types.primitive.UnknownType;
  */
 public final class InjectedParam extends AbstractVarDefn {
 
-  /**
-   * @param name The variable name.
-   */
+  /** @param name The variable name. */
   public InjectedParam(String name) {
     this(name, UnknownType.getInstance());
   }
@@ -36,15 +34,23 @@ public final class InjectedParam extends AbstractVarDefn {
     super(name, type);
   }
 
-  @Override public Kind kind() {
+  @Override
+  public Kind kind() {
     return Kind.IJ_PARAM;
   }
 
-  @Override public int localVariableIndex() {
+  @Override
+  public int localVariableIndex() {
     return -1;
   }
 
-  @Override public void setLocalVariableIndex(int i) {
+  @Override
+  public void setLocalVariableIndex(int i) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean isInjected() {
+    return true;
   }
 }

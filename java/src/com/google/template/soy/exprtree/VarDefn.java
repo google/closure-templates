@@ -19,16 +19,14 @@ package com.google.template.soy.exprtree;
 import com.google.template.soy.types.SoyType;
 
 /**
- * Interface for the definition of a variable, i.e. a value that can be referred
- * to by name. Variables include params, injected params, and local vars. Note
- * that a definition does not always have a corresponding declaration in user
- * code. Some definitions are implicit, e.g. in the case of injected params.
+ * Interface for the definition of a variable, i.e. a value that can be referred to by name.
+ * Variables include params, injected params, and local vars. Note that a definition does not always
+ * have a corresponding declaration in user code. Some definitions are implicit, e.g. in the case of
+ * injected params.
  *
  */
 public interface VarDefn {
-  /**
-   * Enum used to distinguish subtypes.
-   */
+  /** Enum used to distinguish subtypes. */
   enum Kind {
     // Explicitly declared parameter.
     PARAM,
@@ -48,6 +46,9 @@ public interface VarDefn {
 
   /** Returns the data type of this variable. */
   SoyType type();
+
+  /** Returns true if this is an {@code $ij} variable or an {@code @inject} param. */
+  boolean isInjected();
 
   /**
    * Returns the index of this variable in the local variable table of the template or {@code -1}

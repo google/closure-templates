@@ -17,101 +17,98 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
-import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Visitor for generating Python expressions for parse tree nodes.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
+public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
+  private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =
+      SoyErrorKind.of("Unknown SoyPySrcPrintDirective ''{0}''.");
 
+  /** Injectable factory for creating an instance of this class. */
+  public static final class GenPyExprsVisitorFactory {
+    private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
+    // depend on a Supplier since there is a circular dependency between GenPyExprsVisitorFactory
+    // and GenPyCallExprVisitor
+    private final Supplier<GenPyCallExprVisitor> genPyCallExprVisitor;
 
-  /**
-   * Injectable factory for creating an instance of this class.
-   */
-  public static interface GenPyExprsVisitorFactory {
-    public GenPyExprsVisitor create(LocalVariableStack localVarExprs);
+    GenPyExprsVisitorFactory(
+        IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+        Supplier<GenPyCallExprVisitor> genPyCallExprVisitor) {
+      this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
+      this.genPyCallExprVisitor = genPyCallExprVisitor;
+    }
+
+    public GenPyExprsVisitor create(LocalVariableStack localVarExprs, ErrorReporter errorReporter) {
+      return new GenPyExprsVisitor(
+          isComputableAsPyExprVisitor,
+          this,
+          genPyCallExprVisitor.get(),
+          localVarExprs,
+          errorReporter);
+    }
   }
-
-
-  /** Map of all SoyPySrcPrintDirectives (name to directive). */
-  Map<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap;
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
-  private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
-
   private final GenPyCallExprVisitor genPyCallExprVisitor;
-
-  private final MsgFuncGeneratorFactory msgFuncGeneratorFactory;
 
   private final LocalVariableStack localVarExprs;
 
   /** List to collect the results. */
   private List<PyExpr> pyExprs;
 
+  private final ErrorReporter errorReporter;
 
-  /**
-   * @param soyPySrcDirectivesMap Map of all SoyPySrcPrintDirectives (name to directive).
-   */
-  @AssistedInject
   GenPyExprsVisitor(
-      ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      MsgFuncGeneratorFactory msgFuncGeneratorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
-      ErrorReporter errorReporter,
-      @Assisted LocalVariableStack localVarExprs) {
-    super(errorReporter);
-    this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
+      LocalVariableStack localVarExprs,
+      ErrorReporter errorReporter) {
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
-    this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
-    this.msgFuncGeneratorFactory = msgFuncGeneratorFactory;
     this.localVarExprs = localVarExprs;
+    this.errorReporter = errorReporter;
   }
 
-
-  @Override public List<PyExpr> exec(SoyNode node) {
+  @Override
+  public List<PyExpr> exec(SoyNode node) {
     Preconditions.checkArgument(isComputableAsPyExprVisitor.exec(node));
     pyExprs = new ArrayList<>();
     visit(node);
@@ -129,24 +126,26 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     return pyExprs;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
   /**
    * Example:
+   *
    * <pre>
    *   I'm feeling lucky!
    * </pre>
+   *
    * generates
+   *
    * <pre>
    *   'I\'m feeling lucky!'
    * </pre>
    */
-  @Override protected void visitRawTextNode(RawTextNode node) {
+  @Override
+  protected void visitRawTextNode(RawTextNode node) {
     // Escape special characters in the text before writing as a string.
-    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false);
+    String exprText = BaseUtils.escapeToSoyString(node.getRawText(), false, QuoteStyle.SINGLE);
     pyExprs.add(new PyStringExpr(exprText));
   }
 
@@ -157,42 +156,41 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
    * <p>TODO(dcphillips): Add support for local variables once LetNode are supported.
    *
    * <p>Example:
+   *
    * <pre>
    *   {$boo |changeNewlineToBr}
    *   {$goo + 5}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
-   *   sanitize.change_newline_to_br(opt_data.get('boo'))
-   *   opt_data.get('goo') + 5
+   *   sanitize.change_newline_to_br(data.get('boo'))
+   *   data.get('goo') + 5
    * </pre>
    */
-  @Override protected void visitPrintNode(PrintNode node) {
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+  @Override
+  protected void visitPrintNode(PrintNode node) {
+    TranslateToPyExprVisitor translator =
+        new TranslateToPyExprVisitor(localVarExprs, errorReporter);
 
-    PyExpr pyExpr = translator.exec(node.getExprUnion().getExpr());
+    PyExpr pyExpr = translator.exec(node.getExpr());
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
 
       // Get directive.
-      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveNode.getName());
-      if (directive == null) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Failed to find SoyPySrcPrintDirective with name '" + directiveNode.getName() + "'"
-                + " (tag " + node.toSourceString() + ")",
-            directiveNode);
+      SoyPrintDirective directive = directiveNode.getPrintDirective();
+      if (!(directive instanceof SoyPySrcPrintDirective)) {
+        errorReporter.report(
+            directiveNode.getSourceLocation(),
+            UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE,
+            directiveNode.getName());
+        continue;
       }
 
       // Get directive args.
       List<ExprRootNode> args = directiveNode.getArgs();
-      if (!directive.getValidArgsSizes().contains(args.size())) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Print directive '" + directiveNode.getName() + "' used with the wrong number of"
-                + " arguments (tag " + node.toSourceString() + ").",
-            directiveNode);
-      }
-
       // Translate directive args.
       List<PyExpr> argsPyExprs = new ArrayList<>(args.size());
       for (ExprRootNode arg : args) {
@@ -200,20 +198,20 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       }
 
       // Apply directive.
-      pyExpr = directive.applyForPySrc(pyExpr, argsPyExprs);
+      pyExpr = ((SoyPySrcPrintDirective) directive).applyForPySrc(pyExpr, argsPyExprs);
     }
 
     pyExprs.add(pyExpr);
   }
 
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    PyExpr msg = msgFuncGeneratorFactory.create(node.getMsg(), localVarExprs).getPyExpr();
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    PyExpr msg = generateMsgFunc(node.getMsg());
 
     // MsgFallbackGroupNode could only have one child or two children. See MsgFallbackGroupNode.
     if (node.hasFallbackMsg()) {
       StringBuilder pyExprTextSb = new StringBuilder();
-      PyExpr fallbackMsg = msgFuncGeneratorFactory.create(
-          node.getFallbackMsg(), localVarExprs).getPyExpr();
+      PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg());
 
       // Build Python ternary expression: a if cond else c
       pyExprTextSb.append(msg.getText()).append(" if ");
@@ -222,47 +220,50 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       // is. So availability of both messages must be tested.
       long firstId = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
       long secondId = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
-      pyExprTextSb.append(PyExprUtils.TRANSLATOR_NAME + ".is_msg_available(" + firstId + ")")
+      pyExprTextSb
+          .append(PyExprUtils.TRANSLATOR_NAME)
+          .append(".is_msg_available(")
+          .append(firstId)
+          .append(")")
           .append(" or not ")
-          .append(PyExprUtils.TRANSLATOR_NAME + ".is_msg_available(" + secondId + ")");
+          .append(PyExprUtils.TRANSLATOR_NAME)
+          .append(".is_msg_available(")
+          .append(secondId)
+          .append(")");
 
       pyExprTextSb.append(" else ").append(fallbackMsg.getText());
-      msg = new PyStringExpr(pyExprTextSb.toString(),
-          PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+      msg =
+          new PyStringExpr(
+              pyExprTextSb.toString(), PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
     }
 
     // Escaping directives apply to messages, especially in attribute context.
-    for (String directiveName : node.getEscapingDirectiveNames()) {
-      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(
-          directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
-      msg = directive.applyForPySrc(msg, ImmutableList.<PyExpr>of());
+    for (SoyPrintDirective directive : node.getEscapingDirectives()) {
+      Preconditions.checkState(
+          directive instanceof SoyPySrcPrintDirective,
+          "Contextual autoescaping produced a bogus directive: %s",
+          directive.getName());
+      msg = ((SoyPySrcPrintDirective) directive).applyForPySrc(msg, ImmutableList.<PyExpr>of());
     }
     pyExprs.add(msg);
   }
 
-  @Override protected void visitCssNode(CssNode node) {
-    StringBuilder sb = new StringBuilder("runtime.get_css_name(");
-
-    ExprRootNode componentNameExpr = node.getComponentNameExpr();
-    if (componentNameExpr != null) {
-      TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
-      PyExpr basePyExpr = translator.exec(componentNameExpr);
-      sb.append(basePyExpr.getText()).append(", ");
-    }
-
-    sb.append("'").append(node.getSelectorText()).append("')");
-    pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));
+  private PyStringExpr generateMsgFunc(MsgNode msg) {
+    return new MsgFuncGenerator(genPyExprsVisitorFactory, msg, localVarExprs, errorReporter)
+        .getPyExpr();
   }
 
   /**
    * If all the children are computable as expressions, the IfNode can be written as a ternary
    * conditional expression.
    */
-  @Override protected void visitIfNode(IfNode node) {
+  @Override
+  protected void visitIfNode(IfNode node) {
     // Create another instance of this visitor for generating Python expressions from children.
-    GenPyExprsVisitor genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs);
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarExprs);
+    GenPyExprsVisitor genPyExprsVisitor =
+        genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
+    TranslateToPyExprVisitor translator =
+        new TranslateToPyExprVisitor(localVarExprs, errorReporter);
 
     StringBuilder pyExprTextSb = new StringBuilder();
 
@@ -276,12 +277,13 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
         // <conditional> ? <true> : <false> to
         // <true> if <conditional> else <false>
         PyExpr condBlock = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(icn)).toPyString();
-        condBlock = PyExprUtils.maybeProtect(condBlock,
-            PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+        condBlock =
+            PyExprUtils.maybeProtect(
+                condBlock, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
         pyExprTextSb.append(condBlock.getText());
 
         // Append the conditional and if/else syntax.
-        PyExpr condPyExpr = translator.exec(icn.getExprUnion().getExpr());
+        PyExpr condPyExpr = translator.exec(icn.getExpr());
         pyExprTextSb.append(" if ").append(condPyExpr.getText()).append(" else ");
 
       } else if (child instanceof IfElseNode) {
@@ -301,23 +303,28 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
     // By their nature, inline'd conditionals can only contain output strings, so they can be
     // treated as a string type with a conditional precedence.
-    pyExprs.add(new PyStringExpr(pyExprTextSb.toString(),
-        PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+    pyExprs.add(
+        new PyStringExpr(
+            pyExprTextSb.toString(), PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 
-  @Override protected void visitIfCondNode(IfCondNode node) {
+  @Override
+  protected void visitIfCondNode(IfCondNode node) {
     visitChildren(node);
   }
 
-  @Override protected void visitIfElseNode(IfElseNode node) {
+  @Override
+  protected void visitIfElseNode(IfElseNode node) {
     visitChildren(node);
   }
 
-  @Override protected void visitCallNode(CallNode node) {
-    pyExprs.add(genPyCallExprVisitor.exec(node, localVarExprs));
+  @Override
+  protected void visitCallNode(CallNode node) {
+    pyExprs.add(genPyCallExprVisitor.exec(node, localVarExprs, errorReporter));
   }
 
-  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+  @Override
+  protected void visitCallParamContentNode(CallParamContentNode node) {
     visitChildren(node);
   }
 }

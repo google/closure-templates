@@ -24,45 +24,48 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-
-import junit.framework.TestCase;
-
 import java.util.Set;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RandomIntFunction.
  *
  */
-public class RandomIntFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class RandomIntFunctionTest {
 
+  @Test
   public void testComputeForJava() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
 
     SoyValue arg = IntegerData.ONE;
-    assertEquals(IntegerData.ZERO,
-                 randomIntFunction.computeForJava(ImmutableList.of(arg)));
+    assertThat(randomIntFunction.computeForJava(ImmutableList.of(arg))).isEqualTo(IntegerData.ZERO);
 
     arg = IntegerData.forValue(3);
     Set<Integer> seenResults = Sets.newHashSetWithExpectedSize(3);
     for (int i = 0; i < 100; i++) {
       int result = randomIntFunction.computeForJava(ImmutableList.of(arg)).integerValue();
-      assertTrue(0 <= result && result <= 2);
+      assertThat(result).isAtLeast(0);
+      assertThat(result).isAtMost(2);
       seenResults.add(result);
       if (seenResults.size() == 3) {
         break;
       }
     }
-    assertEquals(3, seenResults.size());
+    assertThat(seenResults).hasSize(3);
   }
 
+  @Test
   public void testComputeForJsSrc() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     JsExpr argExpr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE),
-                 randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)));
+    assertThat(randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)))
+        .isEqualTo(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE));
   }
 
+  @Test
   public void testComputeForPySrc() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     PyExpr argExpr = new PyExpr("upper", Integer.MAX_VALUE);

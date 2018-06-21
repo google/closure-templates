@@ -16,16 +16,24 @@
 
 package com.google.template.soy.internal.i18n;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyBidiUtils.
  *
  */
-public class SoyBidiUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyBidiUtilsTest {
 
-
+  @Test
   public void testGetBidiGlobalDir() {
     assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir(null));
     assertEquals(BidiGlobalDir.LTR, SoyBidiUtils.getBidiGlobalDir("en"));
@@ -51,16 +59,7 @@ public class SoyBidiUtilsTest extends TestCase {
     assertEquals(BidiGlobalDir.RTL, SoyBidiUtils.getBidiGlobalDir("az-Arab-IR"));
   }
 
-
-  public void testGetBidiFormatter() {
-    assertEquals(1, SoyBidiUtils.getBidiFormatter(1).getContextDir().ord);
-    assertEquals(-1, SoyBidiUtils.getBidiFormatter(-1).getContextDir().ord);
-    assertTrue(SoyBidiUtils.getBidiFormatter(1) == SoyBidiUtils.getBidiFormatter(100));
-    assertTrue(SoyBidiUtils.getBidiFormatter(-1) == SoyBidiUtils.getBidiFormatter(-5));
-    assertTrue(SoyBidiUtils.getBidiFormatter(-1) != SoyBidiUtils.getBidiFormatter(1));
-  }
-
-
+  @Test
   public void testDecodeBidiGlobalDirFromJsOptions() {
     assertNull(SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, false));
 
@@ -68,17 +67,18 @@ public class SoyBidiUtilsTest extends TestCase {
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getStaticValue(), 1);
+    assertEquals(1, bidiGlobalDir.getStaticValue());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(-1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getStaticValue(), -1);
+    assertEquals(-1, bidiGlobalDir.getStaticValue());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, true);
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "soy.$$IS_LOCALE_RTL?-1:1");
+    assertEquals("soy.$$IS_LOCALE_RTL?-1:1", bidiGlobalDir.getCodeSnippet());
   }
 
+  @Test
   public void testDecodeBidiGlobalDirFromPyOptions() {
     assertNull(SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(null));
     assertNull(SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(""));
@@ -87,13 +87,14 @@ public class SoyBidiUtilsTest extends TestCase {
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("mod.is_rtl");
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+    assertEquals("-1 if external_bidi.is_rtl() else 1", bidiGlobalDir.getCodeSnippet());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("package.mod.is_rtl");
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+    assertEquals("-1 if external_bidi.is_rtl() else 1", bidiGlobalDir.getCodeSnippet());
   }
 
+  @Test
   public void testInvalidDecodeBidiGlobalDirFromPyOptions() {
     try {
       SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("is_rtl");

@@ -17,9 +17,9 @@
 package com.google.template.soy.base;
 
 /**
- * Enumeration which represents which Soy backend we're currently using.
- * This is used for non-backend components that need to modify their output
- * in ways that are specific to a given backend.
+ * Enumeration which represents which Soy backend we're currently using. This is used for
+ * non-backend components that need to modify their output in ways that are specific to a given
+ * backend.
  */
 public enum SoyBackendKind {
   TOFU,

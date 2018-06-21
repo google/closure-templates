@@ -17,14 +17,10 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.internal.SharedModule.Shared;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-
-import java.util.Map;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,34 +28,24 @@ import javax.inject.Singleton;
 /**
  * Default implementation of EvalVisitorFactory.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 @Singleton
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
-  /** Instance of SoyValueHelper to use. */
-  private final SoyValueHelper valueHelper;
-
-  /** Map of all SoyJavaFunctions (name to function). */
-  private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
-
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
   @Inject
-  public EvalVisitorFactoryImpl(
-      SoyValueHelper valueHelper,
-      @Shared Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      ErrorReporter errorReporter) {
-    this.valueHelper = valueHelper;
-    this.soyJavaFunctionsMap = soyJavaFunctionsMap;
-    this.errorReporter = errorReporter;
+  public EvalVisitorFactoryImpl() {}
+
+  @Override
+  public EvalVisitor create(
+      Environment env,
+      @Nullable SoyRecord ijData,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyMsgBundle msgBundle,
+      boolean debugSoyTemplateInfo) {
+    return new EvalVisitor(
+        env, ijData, cssRenamingMap, xidRenamingMap, msgBundle, debugSoyTemplateInfo);
   }
-
-
-  @Override public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
-    return new EvalVisitor(valueHelper, soyJavaFunctionsMap, ijData, env, errorReporter);
-  }
-
 }

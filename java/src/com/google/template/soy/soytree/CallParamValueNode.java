@@ -16,130 +16,67 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
-import java.util.List;
 
 /**
  * Node representing a 'param' with a value expression.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 
-  private static final SoyError SELF_ENDING_TAG_WITHOUT_VALUE
-      = SoyError.of("A ''param'' tag should be self-ending (with a trailing ''/'') if and only if "
-          + "it also contains a value (invalid tag is '{'param {0} /'}').");
-  private static final SoyError SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE
-      = SoyError.of("The ''kind'' attribute is not allowed on self-ending ''param'' tags "
-          + "(invalid tag is '{'param {0} /'}').");
-
-  /** The param key. */
-  private final String key;
-
   /** The parsed expression for the param value. */
-  private final ExprUnion valueExprUnion;
+  private final ExprRootNode valueExpr;
 
-  private CallParamValueNode(
-      int id,
-      SourceLocation sourceLocation,
-      String key,
-      ExprUnion valueExprUnion,
-      String commandText) {
-    super(id, sourceLocation, commandText);
-    this.key = Preconditions.checkNotNull(key);
-    this.valueExprUnion = Preconditions.checkNotNull(valueExprUnion);
+  public CallParamValueNode(int id, SourceLocation location, Identifier key, ExprNode valueExpr) {
+    super(id, location, key);
+    this.valueExpr = new ExprRootNode(valueExpr);
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private CallParamValueNode(CallParamValueNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.key = orig.key;
-    this.valueExprUnion = (orig.valueExprUnion != null)
-        ? orig.valueExprUnion.copy(copyState)
-        : null;
+    this.valueExpr = orig.valueExpr.copy(copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_PARAM_VALUE_NODE;
   }
 
-
-  @Override public String getKey() {
-    return key;
-  }
-
-
-  /** Returns the expression text for the param value. */
-  public String getValueExprText() {
-    return valueExprUnion.getExprText();
-  }
-
-
   /** Returns the parsed expression for the param value. */
-  public ExprUnion getValueExprUnion() {
-    return valueExprUnion;
+  public ExprRootNode getExpr() {
+    return valueExpr;
   }
 
-
-  @Override public String getTagString() {
-    return buildTagStringHelper(true);
+  @Override
+  public String getCommandText() {
+    return getKey().identifier() + " : " + valueExpr.toSourceString();
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(valueExprUnion);
+  @Override
+  public String getTagString() {
+    return getTagString(true); // self-ending
   }
 
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(valueExpr);
+  }
 
-  @Override public CallParamValueNode copy(CopyState copyState) {
+  @Override
+  public CallParamValueNode copy(CopyState copyState) {
     return new CallParamValueNode(this, copyState);
-  }
-
-  public static final class Builder extends CallParamNode.Builder {
-
-    private static CallParamValueNode error() {
-      return new Builder(-1, "error: error", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to build
-    }
-
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      super(id, commandText, sourceLocation);
-    }
-
-    public CallParamValueNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
-
-      if (parseResult.valueExprUnion == null) {
-        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, commandText);
-      }
-
-      if (parseResult.contentKind != null) {
-        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, commandText);
-      }
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      CallParamValueNode node = new CallParamValueNode(
-          id, sourceLocation, parseResult.key, parseResult.valueExprUnion, commandText);
-      return node;
-    }
   }
 }

@@ -18,24 +18,25 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /**
  * Represents one message or a pair of message and fallback message.
  *
  * <p>Only one {@code fallbackmsg} is allowed by the parser.
- * {@link com.google.template.soy.soyparse.TemplateParserTest.java#testRecognizeCommands}
- * TODO(user): fix the grammar.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> All children are {@code MsgNode}s. And conversely, all {@code MsgNode}s must be children of
- * {@code MsgFallbackGroupNode}s through parsing and middleend passes (backends may have their own
+ * <p>All children are {@code MsgNode}s. And conversely, all {@code MsgNode}s must be children of
+ * {@code MsgFallbackGroupNode}s through parsing and middle-end passes. (Backends may have their own
  * special structure for messages).
  *
  */
@@ -44,10 +45,12 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
 
   /**
    * Escaping directives names (including the vertical bar) to apply to the return value. With
-   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if
-   * the template's return value is the correct SanitizedContent object.
+   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if the
+   * template's return value is the correct SanitizedContent object.
    */
-  private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
+  private ImmutableList<SoyPrintDirective> escapingDirectiveNames = ImmutableList.of();
+
+  @Nullable private HtmlContext htmlContext;
 
   /**
    * @param id The id for this node.
@@ -57,23 +60,38 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     super(id, sourceLocation);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgFallbackGroupNode(MsgFallbackGroupNode orig, CopyState copyState) {
     super(orig, copyState);
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
+    this.htmlContext = orig.htmlContext;
   }
 
+  /**
+   * Gets the HTML context (typically tag, attribute value, HTML PCDATA, or plain text) which this
+   * node appears in. This affects how the node is escaped (for traditional backends) or how it's
+   * passed to incremental DOM APIs.
+   */
+  public HtmlContext getHtmlContext() {
+    return Preconditions.checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
 
-  @Override public Kind getKind() {
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
+  }
+
+  @Override
+  public Kind getKind() {
     return Kind.MSG_FALLBACK_GROUP_NODE;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     // Note: The first MsgNode takes care of generating the 'msg' tag.
     appendSourceStringForChildren(sb);
@@ -81,9 +99,10 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     return sb.toString();
   }
 
-
-  @Override public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  @SuppressWarnings("unchecked")
+  @Override
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   public boolean hasFallbackMsg() {
@@ -99,14 +118,13 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
     return getChild(1);
   }
 
-  @Override public MsgFallbackGroupNode copy(CopyState copyState) {
+  @Override
+  public MsgFallbackGroupNode copy(CopyState copyState) {
     return new MsgFallbackGroupNode(this, copyState);
   }
 
-  /**
-   * Sets the inferred escaping directives from the contextual engine.
-   */
-  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
+  /** Sets the inferred escaping directives from the contextual engine. */
+  public void setEscapingDirectives(ImmutableList<SoyPrintDirective> escapingDirectiveNames) {
     this.escapingDirectiveNames = escapingDirectiveNames;
   }
 
@@ -115,7 +133,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    *
    * <p>It is an error to call this before the contextual rewriter has been run.
    */
-  public ImmutableList<String> getEscapingDirectiveNames() {
+  public ImmutableList<SoyPrintDirective> getEscapingDirectives() {
     return escapingDirectiveNames;
   }
 }

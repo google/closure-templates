@@ -26,44 +26,49 @@ import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-
-import junit.framework.TestCase;
-
 import java.util.Random;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMsgIdComputer.
  *
  */
-public class SoyMsgIdComputerTest extends TestCase {
-
+@RunWith(JUnit4.class)
+public class SoyMsgIdComputerTest {
 
   private static final Random RANDOM_GEN = new Random();
-
 
   private static final ImmutableList<SoyMsgPart> HELLO_WORLD_MSG_PARTS =
       ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Hello world!"));
 
-  private static final ImmutableList<SoyMsgPart> HELLO_NAME_MSG_PARTS = ImmutableList.of(
-      SoyMsgRawTextPart.of("Hello "), new SoyMsgPlaceholderPart("NAME"),
-      SoyMsgRawTextPart.of("!"));
+  private static final ImmutableList<SoyMsgPart> HELLO_NAME_MSG_PARTS =
+      ImmutableList.of(
+          SoyMsgRawTextPart.of("Hello "),
+          new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
+          SoyMsgRawTextPart.of("!"));
 
   private static final ImmutableList<SoyMsgPart> PLURAL_MSG_PARTS =
       ImmutableList.<SoyMsgPart>of(
-          new SoyMsgPluralPart("NUM_0", 0, ImmutableList.of(
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec(1),
-                  ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec("few"),
-                  ImmutableList.<SoyMsgPart>of(
-                      new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec("other"),
-                  ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
+          new SoyMsgPluralPart(
+              "NUM_0",
+              0,
+              ImmutableList.of(
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(1),
+                      ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.FEW),
+                      ImmutableList.<SoyMsgPart>of(
+                          new SoyMsgPlaceholderPart("NUM_1", /* placeholderExample= */ null),
+                          SoyMsgRawTextPart.of(" times"))),
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.OTHER),
+                      ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
 
-
+  @Test
   public void testFingerprint() {
 
     Set<Long> seenFps = Sets.newHashSetWithExpectedSize(100);
@@ -77,7 +82,7 @@ public class SoyMsgIdComputerTest extends TestCase {
     }
   }
 
-
+  @Test
   public void testBuildMsgContentStrForMsgIdComputation() {
     assertThat(SoyMsgIdComputer.buildMsgContentStrForMsgIdComputation(HELLO_WORLD_MSG_PARTS, false))
         .isEqualTo("Hello world!");
@@ -95,7 +100,7 @@ public class SoyMsgIdComputerTest extends TestCase {
         .isEqualTo("{NUM_0,plural,=1{Once}few{{NUM_1} times}other{Lots}}");
   }
 
-
+  @Test
   public void testKnownMsgIds() {
 
     // Important: Do not change these hard-coded values. Changes to the algorithm will break
@@ -123,12 +128,13 @@ public class SoyMsgIdComputerTest extends TestCase {
     assertThat(SoyMsgIdComputer.computeMsgId(archiveMsgParts, "verb", null))
         .isEqualTo(4826315192146469447L);
 
-    ImmutableList<SoyMsgPart> unicodeMsgParts = ImmutableList.of(
-        new SoyMsgPlaceholderPart("\u2222\uEEEE"), SoyMsgRawTextPart.of("\u9EC4\u607A"));
+    ImmutableList<SoyMsgPart> unicodeMsgParts =
+        ImmutableList.of(
+            new SoyMsgPlaceholderPart("\u2222\uEEEE", /* placeholderExample= */ null),
+            SoyMsgRawTextPart.of("\u9EC4\u607A"));
     assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, null))
         .isEqualTo(7971596007260280311L);
     assertThat(SoyMsgIdComputer.computeMsgId(unicodeMsgParts, null, "application/javascript"))
         .isEqualTo(5109146044343713753L);
   }
-
 }

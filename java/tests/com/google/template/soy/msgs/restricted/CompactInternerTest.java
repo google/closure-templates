@@ -16,38 +16,43 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import junit.framework.TestCase;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests the compact interner.
  *
  */
-public class CompactInternerTest extends TestCase {
+@RunWith(JUnit4.class)
+public class CompactInternerTest {
 
   public static final String LOCALE = "xx";
 
-
   private CompactInterner interner;
 
-
-  @Override public void setUp() throws Exception {
-    super.setUp();
+  @Before
+  public void setUp() throws Exception {
     interner = new CompactInterner();
   }
 
-
+  @Test
   public void testSimple() {
     String firstHello = new String("hello");
     String firstGoodbye = new String("goodbye");
     interner.intern(firstHello);
     interner.intern(firstGoodbye);
-    assertSame(firstHello, interner.intern(firstHello));
-    assertSame(firstHello, interner.intern(new String("hello")));
-    assertSame(firstGoodbye, interner.intern(firstGoodbye));
-    assertSame(firstGoodbye, interner.intern(new String("goodbye")));
+    assertThat(interner.intern(firstHello)).isSameAs(firstHello);
+    assertThat(interner.intern("hello")).isSameAs(firstHello);
+    assertThat(interner.intern(firstGoodbye)).isSameAs(firstGoodbye);
+    assertThat(interner.intern("goodbye")).isSameAs(firstGoodbye);
   }
 
-
+  @Test
   public void testThousandsOfItems() {
     // A deterministic test with enough iterations to catch dumb errors.
     int iterations = 100000;
@@ -56,19 +61,20 @@ public class CompactInternerTest extends TestCase {
 
     // Place the items in the interner the first time.
     for (int i = 0; i < iterations; i++) {
-      longs[i] = new Long(i);
-      assertSame(longs[i], interner.intern(longs[i]));
+      longs[i] = (long) i;
+      assertThat(interner.intern(longs[i])).isSameAs(longs[i]);
       strings[i] = "String Number " + i;
-      assertSame(strings[i], interner.intern(strings[i]));
+      assertThat(interner.intern(strings[i])).isSameAs(strings[i]);
     }
 
     // Second time, make sure we get the same objects.
     for (int i = 0; i < iterations; i++) {
-      assertSame(longs[i], interner.intern(new Long(i)));
-      assertSame(strings[i], interner.intern("String Number " + i));
+      assertThat(interner.intern(Long.valueOf(i))).isSameAs(longs[i]);
+      assertThat(interner.intern("String Number " + i)).isSameAs(strings[i]);
     }
   }
 
+  @Test
   public void testPerformance() {
     // Do some testing. The number of iterations has no effect on these metrics.
     int iterations = 100000;
@@ -78,7 +84,7 @@ public class CompactInternerTest extends TestCase {
     // Prime the table first.
     int i = 0;
     for (; i < iterations / 10; i++) {
-      interner.intern(new Integer(i));
+      interner.intern(Integer.valueOf(i));
     }
 
     // Now, expand the table to the full size. During this time, we record the maximum cost and
@@ -86,18 +92,24 @@ public class CompactInternerTest extends TestCase {
     // dramatically right before and after a rehash, and this way we're guaranteed to see the worst
     // cases.
     for (; i < iterations; i++) {
-      interner.intern(new Integer(i));
+      interner.intern(Integer.valueOf(i));
       maxCost = Math.max(maxCost, interner.getAverageCollisions());
       maxOverhead = Math.max(maxOverhead, interner.getOverhead());
     }
 
-    assertTrue(
-        "Cost was " + maxCost + " but should have been under "
-            + CompactInterner.getAverageCollisionsBound(),
-        maxCost <= CompactInterner.getAverageCollisionsBound());
-    assertTrue(
-        "Overhead was " + maxOverhead + " but should have been under "
-            + CompactInterner.getWorstCaseOverhead(),
-        maxOverhead < CompactInterner.getWorstCaseOverhead());
+    assertWithMessage(
+            "Cost was "
+                + maxCost
+                + " but should have been under "
+                + CompactInterner.getAverageCollisionsBound())
+        .that(maxCost)
+        .isAtMost(CompactInterner.getAverageCollisionsBound());
+    assertWithMessage(
+            "Overhead was "
+                + maxOverhead
+                + " but should have been under "
+                + CompactInterner.getWorstCaseOverhead())
+        .that(maxOverhead)
+        .isLessThan(CompactInterner.getWorstCaseOverhead());
   }
 }

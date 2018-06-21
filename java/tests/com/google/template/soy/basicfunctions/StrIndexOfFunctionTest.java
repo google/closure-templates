@@ -28,62 +28,73 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link com.google.template.soy.basicfunctions.StrIndexOfFunction}.
  *
  */
-public class StrIndexOfFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class StrIndexOfFunctionTest {
 
+  @Test
   public void testComputeForJava_containsString() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("bar");
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(3));
   }
 
+  @Test
   public void testComputeForJava_containsSanitizedContent() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(3));
   }
 
+  @Test
   public void testComputeForJava_doesNotContainString() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = StringData.forValue("foobarfoo");
     SoyValue arg1 = StringData.forValue("baz");
-    assertEquals(IntegerData.forValue(-1), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(-1));
   }
 
+  @Test
   public void testComputeForJava_doesNotContainSanitizedContent() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
-    assertEquals(IntegerData.forValue(-1), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(IntegerData.forValue(-1));
   }
 
+  @Test
   public void testComputeForJsSrc_lowPrecedenceArg() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE),
-        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(
+            new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE));
   }
 
+  @Test
   public void testComputeForJsSrc_maxPrecedenceArgs() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE),
-        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
+    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
+        .isEqualTo(new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE));
   }
 
+  @Test
   public void testComputeForPySrc_stringInput() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
@@ -92,6 +103,7 @@ public class StrIndexOfFunctionTest extends TestCase {
         .isEqualTo(new PyExpr("('foobar').find('bar')", Integer.MAX_VALUE));
   }
 
+  @Test
   public void testComputeForPySrc_nonStringInput() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     PyExpr base = new PyExpr("foobar", Integer.MAX_VALUE);

@@ -17,31 +17,27 @@
 package com.google.template.soy.jssrc.restricted;
 
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-
 import java.util.List;
-
 
 /**
  * Interface for a Soy print directive implemented for the JS Source backend.
  *
- * <p> Important: This may only be used in implementing print directive plugins.
+ * <p>Important: This may only be used in implementing print directive plugins.
  *
  */
 public interface SoyJsSrcPrintDirective extends SoyPrintDirective {
 
-
   /**
    * Applies this directive on the given string value.
    *
-   * <p> Important note when implementing this method: The string value may not yet have been
-   * coerced to a string. You may need to explicitly coerce it to a string using the JS function
-   * {@code String()}.
+   * <p>Important note when implementing this method: The string value may not yet have been coerced
+   * to a string. You may need to explicitly coerce it to a string using the JS function {@code
+   * String()}.
    *
-   * @param value The value to apply the directive on.  This value may not yet have been
-   *     coerced to a string.
+   * @param value The value to apply the directive on. This value may not yet have been coerced to a
+   *     string.
    * @param args The directive's arguments, if any (usually none).
    * @return The resulting value.
    */
   public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args);
-
 }

@@ -21,71 +21,29 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.google.inject.BindingAnnotation;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
+import javax.inject.Qualifier;
 
 /**
  * Binding annotations related to the ApiCallScope.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 public class ApiCallScopeBindingAnnotations {
 
   private ApiCallScopeBindingAnnotations() {}
 
-
-  /**
-   * Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope.
-   */
-  @BindingAnnotation
+  /** Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope. */
+  @Qualifier
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
   public @interface ApiCall {}
 
-
-  /**
-   * Annotation for the isIsingIjData parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface IsUsingIjData {}
-
-
-  /**
-   * Annotation for the localeString parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
+  /** Annotation for the localeString parameter in the ApiCallScope. */
+  @Qualifier
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
   public @interface LocaleString {}
-
-
-  /**
-   * Annotation for the runtimePath parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyRuntimePath {}
-
-  /**
-   * Annotation for the bidiIsRtlFn parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyBidiIsRtlFn {}
-
-  /**
-   * Annotation for the translationClass parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyTranslationClass {}
 }

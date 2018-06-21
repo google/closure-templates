@@ -16,106 +16,110 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.testing.EqualsTester;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-
-import junit.framework.TestCase;
-
 import java.util.List;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyListData.
  *
  */
-public class SoyListDataTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyListDataTest {
 
-
+  @Test
   public void testPutRemoveGetSingleKey() {
 
     SoyListData sld = new SoyListData();
 
     sld.put("0", StringData.forValue("moomoo"));
-    assertEquals("moomoo", ((StringData) sld.get("0")).getValue());
+    assertThat(((StringData) sld.get("0")).getValue()).isEqualTo("moomoo");
 
     sld.put("0", (SoyData) null);
-    assertEquals(1, sld.length());
-    assertTrue(sld.get("0") instanceof NullData);
+    assertThat(sld.length()).isEqualTo(1);
+    assertThat(sld.get("0")).isInstanceOf(NullData.class);
 
     sld.remove("0");
-    assertEquals(0, sld.length());
-    assertEquals(null, sld.get("0"));
+    assertThat(sld.length()).isEqualTo(0);
+    assertThat(sld.get("0")).isNull();
 
     sld.add(IntegerData.forValue(17));
-    assertEquals(17, ((IntegerData) sld.get(0)).getValue());
+    assertThat(((IntegerData) sld.get(0)).getValue()).isEqualTo(17);
 
     sld.set(0, BooleanData.FALSE);
-    assertEquals(false, ((BooleanData) sld.get(0)).getValue());
+    assertThat(((BooleanData) sld.get(0)).getValue()).isFalse();
 
     sld.set(1, (SoyData) null);
-    assertTrue(sld.get(1) instanceof NullData);
+    assertThat(sld.get(1)).isInstanceOf(NullData.class);
 
     sld.add(true);
-    assertEquals(true, sld.getBoolean(2));
+    assertThat(sld.getBoolean(2)).isTrue();
     sld.add(8);
-    assertEquals(8, sld.getInteger(3));
+    assertThat(sld.getInteger(3)).isEqualTo(8);
     sld.add(3.14);
-    assertEquals(3.14, sld.getFloat(4));
+    assertThat(sld.getFloat(4)).isEqualTo(3.14);
     sld.add("woohoo");
-    assertEquals("woohoo", sld.getString(5));
+    assertThat(sld.getString(5)).isEqualTo("woohoo");
 
     sld.set(6, true);
-    assertEquals(true, sld.getBoolean(6));
+    assertThat(sld.getBoolean(6)).isTrue();
     sld.set(6, -8);
-    assertEquals(-8, sld.getInteger(6));
+    assertThat(sld.getInteger(6)).isEqualTo(-8);
     sld.set(7, -3.14);
-    assertEquals(-3.14, sld.getFloat(7));
+    assertThat(sld.getFloat(7)).isEqualTo(-3.14);
     sld.set(7, "boohoo");
-    assertEquals("boohoo", sld.getString(7));
+    assertThat(sld.getString(7)).isEqualTo("boohoo");
 
-    assertEquals(8, sld.length());
+    assertThat(sld.length()).isEqualTo(8);
     sld.remove(2);
     sld.remove(4);
-    assertEquals(6, sld.length());
-    assertEquals(false, sld.getBoolean(0));
-    assertEquals(8, sld.getInteger(2));
-    assertEquals(-8, sld.getInteger(4));
+    assertThat(sld.length()).isEqualTo(6);
+    assertThat(sld.getBoolean(0)).isFalse();
+    assertThat(sld.getInteger(2)).isEqualTo(8);
+    assertThat(sld.getInteger(4)).isEqualTo(-8);
 
     SoyListData sld2 = new SoyListData();
     sld.add(sld2);
-    assertEquals(sld2, sld.getListData(6));
+    assertThat(sld.getListData(6)).isEqualTo(sld2);
 
     SoyMapData smd = new SoyMapData();
     sld.set(7, smd);
-    assertEquals(smd, sld.getMapData(7));
+    assertThat(sld.getMapData(7)).isEqualTo(smd);
   }
 
-
+  @Test
   public void testPutRemoveGetMultiKey() {
 
     SoyListData sld = new SoyListData();
 
     sld.put("0.0", false);
-    assertEquals(false, sld.getBoolean("0.0"));
-    assertEquals(false, sld.getListData("0").getBoolean("0"));
+    assertThat(sld.getBoolean("0.0")).isFalse();
+    assertThat(sld.getListData("0").getBoolean("0")).isFalse();
 
     sld.put("0.1.0", 26);
-    assertEquals(26, sld.getInteger("0.1.0"));
-    assertEquals(26, sld.getListData("0").getInteger("1.0"));
-    assertEquals(26, sld.getListData("0.1").getInteger("0"));
-    assertEquals(26, sld.getListData("0").getListData("1").getInteger("0"));
+    assertThat(sld.getInteger("0.1.0")).isEqualTo(26);
+    assertThat(sld.getListData("0").getInteger("1.0")).isEqualTo(26);
+    assertThat(sld.getListData("0.1").getInteger("0")).isEqualTo(26);
+    assertThat(sld.getListData("0").getListData("1").getInteger("0")).isEqualTo(26);
 
     sld.put("0.2.boo", "foo");
     sld.put("0.2.goo", 1.618);
-    assertEquals("foo", sld.getString("0.2.boo"));
-    assertEquals(1.618, sld.getMapData("0.2").getFloat("goo"));
+    assertThat(sld.getString("0.2.boo")).isEqualTo("foo");
+    assertThat(sld.getMapData("0.2").getFloat("goo")).isEqualTo(1.618);
   }
 
-
+  @Test
   public void testConstruction() {
 
     List<Object> existingList = Lists.<Object>newArrayList(8, null, ImmutableList.of("blah", true));
@@ -123,26 +127,26 @@ public class SoyListDataTest extends TestCase {
     sld.put("2.2", 2.71828);
     sld.add("bleh");
 
-    assertEquals(8, sld.getInteger(0));
-    assertTrue(sld.get(1) instanceof NullData);
-    assertEquals("blah", sld.getString("2.0"));
-    assertEquals(true, sld.getBoolean("2.1"));
-    assertEquals(2.71828, sld.getFloat("2.2"));
-    assertEquals("bleh", sld.getString(3));
+    assertThat(sld.getInteger(0)).isEqualTo(8);
+    assertThat(sld.get(1)).isInstanceOf(NullData.class);
+    assertThat(sld.getString("2.0")).isEqualTo("blah");
+    assertThat(sld.getBoolean("2.1")).isTrue();
+    assertThat(sld.getFloat("2.2")).isEqualTo(2.71828);
+    assertThat(sld.getString(3)).isEqualTo("bleh");
 
     sld = new SoyListData(8, null, new SoyListData("blah", true));
     sld.put("2.2", 2.71828);
     sld.add("bleh");
 
-    assertEquals(8, sld.getInteger(0));
-    assertTrue(sld.get(1) instanceof NullData);
-    assertEquals("blah", sld.getString("2.0"));
-    assertEquals(true, sld.getBoolean("2.1"));
-    assertEquals(2.71828, sld.getFloat("2.2"));
-    assertEquals("bleh", sld.getString(3));
+    assertThat(sld.getInteger(0)).isEqualTo(8);
+    assertThat(sld.get(1)).isInstanceOf(NullData.class);
+    assertThat(sld.getString("2.0")).isEqualTo("blah");
+    assertThat(sld.getBoolean("2.1")).isTrue();
+    assertThat(sld.getFloat("2.2")).isEqualTo(2.71828);
+    assertThat(sld.getString(3)).isEqualTo("bleh");
   }
 
-
+  @Test
   public void testErrorDuringConstruction() {
 
     List<Object> existingList =
@@ -152,7 +156,7 @@ public class SoyListDataTest extends TestCase {
       new SoyListData(existingList);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path '[2][0]':"));
+      assertThat(sde.getMessage().contains("At data path '[2][0]':")).isTrue();
     }
 
     existingList.set(2, ImmutableList.of(ImmutableList.of(0, new Object()), "blah", true));
@@ -161,11 +165,11 @@ public class SoyListDataTest extends TestCase {
       new SoyListData(existingList);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path '[2][0][1]':"));
+      assertThat(sde.getMessage().contains("At data path '[2][0][1]':")).isTrue();
     }
   }
 
-
+  @Test
   public void testCoercion() {
 
     SoyListData sld0 = new SoyListData();
@@ -174,35 +178,34 @@ public class SoyListDataTest extends TestCase {
     SoyListData sld2 = new SoyListData(8, null, new SoyListData("blah", true), "bleh");
     sld2.put("2.2", 2.71828);
 
-    assertEquals("[]", sld0.coerceToString());
-    assertEquals("[boo]", sld1.coerceToString());
-    assertEquals("[8, null, [blah, true, 2.71828], bleh]", sld2.coerceToString());
+    assertThat(sld0.coerceToString()).isEqualTo("[]");
+    assertThat(sld1.coerceToString()).isEqualTo("[boo]");
+    assertThat(sld2.coerceToString()).isEqualTo("[8, null, [blah, true, 2.71828], bleh]");
 
-    assertEquals(true, sld0.coerceToBoolean());
-    assertEquals(true, sld1.coerceToBoolean());
-    assertEquals(true, sld2.coerceToBoolean());
+    assertThat(sld0.coerceToBoolean()).isTrue();
+    assertThat(sld1.coerceToBoolean()).isTrue();
+    assertThat(sld2.coerceToBoolean()).isTrue();
   }
 
-
+  @Test
   public void testIsEqualto() {
 
     SoyListData sld0 = new SoyListData();
     SoyListData sld1 = new SoyListData("boo");
 
-    assertTrue(sld0.equals(sld0));
-    assertTrue(sld1.equals(sld1));
-    assertFalse(sld0.equals(sld1));
-    assertFalse(sld0.equals(new SoyListData()));
+    new EqualsTester().addEqualityGroup(sld0).addEqualityGroup(sld1).testEquals();
+    assertThat(sld0.equals(new SoyListData())).isFalse();
   }
 
+  @Test
   public void testLongHandling() {
     // long value will loose precision if converted to double.
     long l = 987654321987654321L;
     SoyListData sld = new SoyListData();
     sld.add(l);
-    assertEquals(l, sld.getLong(0));
+    assertThat(sld.getLong(0)).isEqualTo(l);
 
     sld = new SoyListData(l);
-    assertEquals(l, sld.getLong(0));
+    assertThat(sld.getLong(0)).isEqualTo(l);
   }
 }

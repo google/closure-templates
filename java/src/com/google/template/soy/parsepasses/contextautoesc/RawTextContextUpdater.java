@@ -16,37 +16,65 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
+import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDelimiter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
+import com.google.template.soy.parsepasses.contextautoesc.Context.UriType;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.RawTextNode;
-
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * Propagates {@link Context}s across raw text chunks using a state-machine parser for HTML/CSS/JS.
  *
- * <p>
- * Given some raw HTML text {@code "<b>Hello, World!</b>"} and the
- * {@link Context#HTML_PCDATA HTML_PCDATA} starting context, this class will decompose the rawText
- * into a number of tokens and compute follow on contexts for each.
+ * <p>Given some raw JS text {@code var x = "foo";} and the {@link Context#JS JS} starting context,
+ * this class will decompose the rawText into a number of tokens and compute follow on contexts for
+ * each.
+ *
  * <table>
- * <tr><td>{@code <}</td><td>{@link Context.State#HTML_TAG_NAME}</td></tr>
- * <tr><td>{@code b}</td><td>{@link Context.State#HTML_TAG}</td></tr>
- * <tr><td>{@code >}</td><td>{@link Context.State#HTML_PCDATA}</td></tr>
- * <tr><td>{@code Hello, World!}</td><td>{@link Context.State#HTML_PCDATA}</td></tr>
- * <tr><td>{@code </}</td><td>{@link Context.State#HTML_TAG_NAME}</td></tr>
- * <tr><td>{@code b}</td><td>{@link Context.State#HTML_TAG}</td></tr>
- * <tr><td>{@code >}</td><td>{@link Context.State#HTML_PCDATA}</td></tr>
+ * <tr><td>{@code var x = "}</td><td>{@link HtmlContext#JS}</td></tr>
+ * <tr><td>{@code foo}</td><td>{@link HtmlContext#JS_DQ_STRING}</td></tr>
+ * <tr><td>{@code ";}</td><td>{@link HtmlContext#JS}</td></tr>
  * </table>
+ *
+ * <h2>A note on regular expressions.
+ *
+ * <p>This class uses a number of regular expressions to detect context transition boundaries and it
+ * uses the Java builtin regex engine. This is a backtracking regex engine and so has the
+ * possibility of failing with stack overflow errors on large inputs. This is normally triggered by
+ * the following:
+ *
+ * <ul>
+ *   <li>A regex containing a repeated alternation e.g. {@code (A|B)+}
+ *   <li>A large input string, that matches with many repetitions.
+ * </ul>
+ *
+ * <p>To cope with this you can do a few things
+ *
+ * <ul>
+ *   <li>Move repetition inside the alternation where possible e.g. {@code (A+|B+)+}
+ *   <li>Make the repetition quantifiers possesive e.g. {@code (A|B)++}. This causes the engine to
+ *       'commit' to a choice and thus avoid recursion.
+ * </ul>
+ *
+ * <p>The other option would be to switch to a different regex engine less prone to these issues
+ * like RE2. However, there are some downsides
+ *
+ * <ul>
+ *   <li>The java implementations are not as performant or require the use of native libraries.
+ *   <li>It would add a new open source dependency.
+ * </ul>
+ *
+ * <p>So, for the time being we should just be careful.
  *
  */
 final class RawTextContextUpdater {
@@ -54,417 +82,247 @@ final class RawTextContextUpdater {
   /**
    * @param rawTextNode A chunk of HTML/CSS/JS.
    * @param context The context before rawText.
-   * @return The input text node with context transitions marked.
+   * @return the next context transition.
    */
-  public static SlicedRawTextNode processRawText(RawTextNode rawTextNode, Context context)
-      throws SoyAutoescapeException {
-    SlicedRawTextNode slicedRawTextNode = new SlicedRawTextNode(rawTextNode, context);
+  public static Context processRawText(RawTextNode rawTextNode, Context context) {
     String rawText = rawTextNode.getRawText();
+    // If we are in an attribute value, then decode the text.
+    if (context.delimType != AttributeEndDelimiter.NONE) {
+      // this text is part of an attribute value,  so we should unescape it.
+      // NOTE: our caller guarantees (by way of the html parser) that this text cannot exceed the
+      // bounds of the attribute, so we can just unescape the whole thing.
+      rawText = UnescapeUtils.unescapeHtml(rawText);
+    }
     int offset = 0;
     int length = rawText.length();
+    RawTextContextUpdater cu = new RawTextContextUpdater(context);
     while (offset < length) {
-      String unprocessedRawText = rawText.substring(offset);
-      int startOffset = offset;
-      int endOffset;
-      Context startContext = context;
-      Context endContext;
-
-      // If we are in an attribute value, then decode the remaining text
-      // (except for the delimiter) up to the next occurrence of delimiter.
-
-      // The end of the section to decode.  Either before a delimiter or > symbol that closes an
-      // attribute, at the end of the rawText, or -1 if no decoding needs to happen.
-      int attrValueEnd = findEndOfAttributeValue(unprocessedRawText, context.delimType);
-      if (attrValueEnd == -1) {
-        // Outside an attribute value.  No need to decode.
-        RawTextContextUpdater cu = new RawTextContextUpdater();
-        cu.processNextToken(unprocessedRawText, context);
-        endOffset = offset + cu.numCharsConsumed;
-        endContext = cu.next;
-
-      } else {
-        // Inside an attribute value.  Find the end and decode up to it.
-
-        // All of the languages we deal with (HTML, CSS, and JS) use quotes as delimiters.
-        // When one language is embedded in the other, we need to decode delimiters before trying
-        // to parse the content in the embedded language.
-        //
-        // For example, in
-        //       <a onclick="alert(&quot;Hello {$world}&quot;)">
-        // the decoded value of the event handler is
-        //       alert("Hello {$world}")
-        // so to determine the appropriate escaping convention we decode the attribute value
-        // before delegating to processNextToken.
-        //
-        // We could take the cross-product of two languages to avoid decoding but that leads to
-        // either an explosion in the number of states, or the amount of lookahead required.
-        int unprocessedRawTextLen = unprocessedRawText.length();
-
-        // The end of the attribute value relative to offset.
-        // At attrValueEnd, or attrValueend + 1 if a delimiter
-        // needs to be consumed.
-        int attrEnd = attrValueEnd < unprocessedRawTextLen ?
-            attrValueEnd + context.delimType.text.length() : -1;
-
-        // Decode so that the JavaScript rules work on attribute values like
-        //     <a onclick='alert(&quot;{$msg}!&quot;)'>
-        // If we've already processed the tokens "<a", " onclick='" to get into the
-        // single quoted JS attribute context, then we do three things:
-        //   (1) This class will decode "&quot;" to "\"" and work below to go from State.JS to
-        //       State.JS_DQ_STRING.
-        //   (2) Then the caller checks {$msg} and realizes that $msg is part of a JS string.
-        //   (3) Then, the above will identify the "'" as the end, and so we reach here with:
-        //       r a w T e x t = " ! & q u o t ; ) ' > "
-        //                                         ^ ^
-        //                              attrValueEnd attrEnd
-
-        // We use this example more in the comments below.
-
-        String attrValueTail = UnescapeUtils.unescapeHtml(
-            unprocessedRawText.substring(0, attrValueEnd));
-        // attrValueTail is "!\")" in the example above.
-
-        // Recurse on the decoded value.
-        RawTextContextUpdater cu = new RawTextContextUpdater();
-        Context attrContext = startContext;
-        while (attrValueTail.length() != 0) {
-          cu.processNextToken(attrValueTail, attrContext);
-          attrValueTail = attrValueTail.substring(cu.numCharsConsumed);
-          attrContext = cu.next;
-        }
-
-        // TODO: Maybe check that context is legal to leave an attribute in.  Throw if the attribute
-        // ends inside a quoted string.
-
-        if (attrEnd != -1) {
-          endOffset = offset + attrEnd;
-          // rawText.charAt(endOffset) is now ">" in the example above.
-
-          // When an attribute ends, we're back in the tag.
-          endContext = context.toBuilder()
-              .withState(Context.State.HTML_TAG)
-              .withoutAttrContext()
-              .build();
-        } else {
-          // Whole tail is part of an unterminated attribute.
-          if (attrValueEnd != unprocessedRawTextLen) {
-            throw new IllegalStateException();
-          }
-          endOffset = length;
-          endContext = attrContext;
-        }
-      }
-
-      slicedRawTextNode.addSlice(startOffset, endOffset, startContext);
-      context = endContext;
-      offset = endOffset;
+      offset += cu.processNextToken(rawTextNode, offset, rawText.substring(offset));
     }
-    slicedRawTextNode.setEndContext(context);
-    return slicedRawTextNode;
+    return cu.context;
+  }
+
+  private Context context;
+
+  private RawTextContextUpdater(Context context) {
+    this.context = checkNotNull(context);
   }
 
   /**
-   * @return The end of the attribute value of -1 if delim indicates we are not in an attribute.
-   *     {@code rawText.length()} if we are in an attribute but the end does not appear in rawText.
-   */
-  private static int findEndOfAttributeValue(String rawText, Context.AttributeEndDelimiter delim) {
-    int rawTextLen = rawText.length();
-    switch (delim) {
-      case DOUBLE_QUOTE:
-      case SINGLE_QUOTE:
-        int quote = rawText.indexOf(delim.text.charAt(0));
-        return quote >= 0 ? quote : rawTextLen;
-
-      case SPACE_OR_TAG_END:
-        for (int i = 0; i < rawTextLen; ++i) {
-          char ch = rawText.charAt(i);
-          if (ch == '>' || Character.isWhitespace(ch)) {
-            return i;
-          }
-        }
-        return rawTextLen;
-
-      case NONE:
-        return -1;
-    }
-    throw new AssertionError("Unrecognized delimiter " + delim);
-  }
-
-
-  /** The amount of rawText consumed. */
-  private int numCharsConsumed;
-
-  /** The context to which we transition. */
-  private Context next;
-
-  private RawTextContextUpdater() {
-    // NOP
-  }
-
-  /**
-   * Consume a portion of text and compute the next context.
-   * Output is stored in member variables.
+   * Consume a portion of text and compute the next context. Output is stored in member variables.
+   *
+   * @param node The node currently being processed
+   * @param offset The offset into the node where text starts
    * @param text Non empty.
+   * @return the number of characters consumed
    */
-  private void processNextToken(String text, Context context) throws SoyAutoescapeException {
-    // Find the transition whose pattern matches earliest in the raw text.
+  private int processNextToken(RawTextNode node, int offset, String text) {
+    // Find the transition whose pattern matches earliest in the raw text (and is applicable)
+    int numCharsConsumed;
+    Context next;
     int earliestStart = Integer.MAX_VALUE;
     int earliestEnd = -1;
     Transition earliestTransition = null;
     Matcher earliestMatcher = null;
-    for (Transition transition : TRANSITIONS.get(context.state)) {
-      Matcher matcher = transition.pattern.matcher(text);
-      if (matcher.find()) {
-        int start = matcher.start();
-        if (start < earliestStart) {
-          int end = matcher.end();
-          if (transition.isApplicableTo(context, matcher)) {
-            earliestStart = start;
-            earliestEnd = end;
-            earliestTransition = transition;
-            earliestMatcher = matcher;
+    List<Transition> ts = TRANSITIONS.get(context.state);
+    if (ts == null) {
+      throw new NullPointerException(
+          "no transitions for state: "
+              + context.state
+              + " @"
+              + node.substringLocation(offset, offset + 1));
+    }
+    for (Transition transition : ts) {
+      if (transition.pattern != null) {
+        Matcher matcher = transition.pattern.matcher(text);
+        // For each transition:
+        // look for matches, if the match is later than the current earliest match, give up
+        // otherwise if the match is applicable, store it.
+        // NOTE: matcher.find() returns matches in sequential order.
+        try {
+          while (matcher.find() && matcher.start() < earliestStart) {
+            int start = matcher.start();
+            int end = matcher.end();
+            if (transition.isApplicableTo(context, matcher)) {
+              earliestStart = start;
+              earliestEnd = end;
+              earliestTransition = transition;
+              earliestMatcher = matcher;
+              break;
+            }
           }
+        } catch (StackOverflowError soe) {
+          // catch and annotate with the pattern.
+          throw new RuntimeException(
+              String.format(
+                  "StackOverflow while trying to match: '%s' in context %s starting @ %s",
+                  transition.pattern, context, node.substringLocation(offset, offset + 1)),
+              soe);
+        }
+      } else if (transition.literal != null) {
+        int start = 0;
+        int index;
+        String needle = transition.literal;
+        while ((index = text.indexOf(needle, start)) != -1 && index < earliestStart) {
+          if (transition.isApplicableTo(context, null)) {
+            earliestStart = index;
+            earliestEnd = index + needle.length();
+            earliestTransition = transition;
+            earliestMatcher = null;
+            break;
+          }
+        }
+      } else {
+        if (text.length() < earliestStart && transition.isApplicableTo(context, null)) {
+          earliestStart = text.length();
+          earliestEnd = text.length();
+          earliestTransition = transition;
+          earliestMatcher = null;
         }
       }
     }
 
     if (earliestTransition != null) {
-      this.next = earliestTransition.computeNextContext(context, earliestMatcher);
-      this.numCharsConsumed = earliestEnd;
+      int transitionOffset = offset;
+      // the earliest start might be at the end for null transitions.
+      if (earliestStart < text.length()) {
+        transitionOffset += earliestStart;
+      }
+      next =
+          earliestTransition.computeNextContext(node, transitionOffset, context, earliestMatcher);
+      numCharsConsumed = earliestEnd;
     } else {
-      throw SoyAutoescapeException.createWithoutMetaInfo(
-          "Error determining next state when encountering \"" + text + "\" in " + context);
+      throw SoyAutoescapeException.createWithNode(
+          "Error determining next state when encountering \"" + text + "\" in " + context,
+          // calculate a raw text node that points at the beginning of the string that couldn't
+          // bet matched.
+          node.substring(Integer.MAX_VALUE /* bogus id */, offset));
     }
-    if (numCharsConsumed == 0 && this.next.state == context.state) {
+    if (numCharsConsumed == 0 && next.state == context.state) {
       throw new IllegalStateException("Infinite loop at `" + text + "` / " + context);
     }
+    this.context = next;
+    return numCharsConsumed;
   }
-
 
   /**
    * Encapsulates a grammar production and the context after that production is seen in a chunk of
    * HTML/CSS/JS input.
    */
   private abstract static class Transition {
-    /** Matches a token. */
-    final Pattern pattern;
+    // If both fields are null, then this is a special 'self transition' that matches the end of
+    // input.  This is used to create a base case in matching multiple transitions.
+
+    /** Matches a pattern. */
+    @Nullable final Pattern pattern;
+
+    /** For matching a literal string. */
+    @Nullable final String literal;
 
     Transition(Pattern pattern) {
       this.pattern = pattern;
+      this.literal = null;
     }
 
-    Transition(String regex) {
-      this(Pattern.compile(regex, Pattern.DOTALL));
+    Transition(String literal) {
+      this.pattern = null;
+      this.literal = literal;
+    }
+
+    Transition() {
+      this.pattern = null;
+      this.literal = null;
     }
 
     /**
      * True iff this transition can produce a context after the text in rawText[0:matcher.end()].
-     * This should not destructively modify the matcher.
-     * Specifically, it should not call {@code find()} again.
+     * This should not destructively modify the matcher. Specifically, it should not call {@code
+     * find()} again.
+     *
      * @param prior The context before the start of the token in matcher.
-     * @param matcher The token matched by {@code this.pattern}.
+     * @param matcher The token matched by {@code this.pattern} or {@code null} if this transition
+     *     uses a {@code literal}
      */
-    boolean isApplicableTo(Context prior, Matcher matcher) {
+    boolean isApplicableTo(Context prior, @Nullable Matcher matcher) {
       return true;
     }
 
     /**
      * Computes the context that this production transitions to after rawText[0:matcher.end()].
+     *
+     * @param originalNode The original raw text node
+     * @param offset The current offset into the node, useful for calculating better locations for
+     *     error messages
      * @param prior The context prior to the token in matcher.
-     * @param matcher The token matched by {@code this.pattern}.
+     * @param matcher The token matched by {@code this.pattern} or {@code null} if this transition
+     *     uses a {@code literal}
      * @return The context after the given token.
      */
-    abstract Context computeNextContext(Context prior, Matcher matcher)
-        throws SoyAutoescapeException;
+    Context computeNextContext(
+        RawTextNode originalNode, int offset, Context prior, @Nullable Matcher matcher) {
+      return computeNextContext(prior, matcher);
+    }
+
+    /**
+     * Computes the context that this production transitions to after rawText[0:matcher.end()].
+     *
+     * @param prior The context prior to the token in matcher.
+     * @param matcher The token matched by {@code this.pattern} or {@code null} if this transition
+     *     uses a {@code literal}
+     * @return The context after the given token.
+     */
+    Context computeNextContext(Context prior, @Nullable Matcher matcher) {
+      throw new AbstractMethodError();
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("pattern", pattern)
+          .add("literal", literal)
+          .omitNullValues()
+          .toString();
+    }
   }
 
-
-  /** A transition to a given context. */
-  private static Transition makeTransitionTo(String regex, final ContentKind kind) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder().withStartKind(kind).build();
+  /** A transition to the given state. */
+  private static Transition makeTransitionToStateLiteral(String literal, final HtmlContext state) {
+    return new Transition(literal) {
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
+        return prior.transitionToState(state);
       }
     };
   }
 
-
-  /**
-   * A pattern to match the beginning of a tag with the given name.
-   * @param allowClose true to match a close tag and leave any {@code "/"} indicating
-   *    that the tag starts with {@code </} in group 1.
-   * @return Given {@code "script"}, a pattern that matches the prefix {@code "<script"}
-   *    of {@code "<script>"} but does not match any prefix of {@code "<scriptsareawesome>"}.
-   */
-  private static String regexForSpecialTagNamed(String tagName, boolean allowClose) {
-    return (
-        "(?i)" // Tag names are case-insensitive
-        + "<"  // Starts tag
-        + (allowClose ? "(/?)" : "")
-        + tagName
-        + "(?="  // Lookahead to make sure we're not matching just a prefix of the tag name.
-        + "[\\s>/]|\\z"  // Tag names are terminated by a space, or tag end marker, or end of input.
-        + ")");
-    // The "/" in the lookahead is correct.
-    // <script/>alert(1)</script> and <script/style>alert(2)</script> both alert in Chrome.  Whee!
-  }
-
-  /**
-   * A transition from the start of a tag with the given name to a context in the body of an open
-   * tag for the given element.
-   */
-  private static Transition makeTransitionToTagNamed(String tagName, final Context.ElementType el) {
-    String regex = regexForSpecialTagNamed(tagName, false);
-    return makeTransitionToTag(regex, el);
-  }
-
-  /** A transition to a context in the body of an open tag for the given element. */
-  private static Transition makeTransitionToTag(String regex, final Context.ElementType el) {
+  private static Transition makeTransitionToState(Pattern regex, final HtmlContext state) {
     return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
-            .withState(Context.State.HTML_TAG)
-            .withElType(el)
-            .withoutAttrContext()
-            .build();
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
+        return prior.transitionToState(state);
       }
     };
   }
 
-  /** A transition on a template tag that updates the template nest depth. */
-  private static Transition makeTemplateTagTransition() {
-    String regex = regexForSpecialTagNamed("template", true);
+  /** A transition to an state. */
+  private static Transition makeTransitionToError(Pattern regex, final String message) {
     return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        boolean isEndTag = "/".equals(matcher.group(1));
-        if (isEndTag && prior.templateNestDepth == 0) {
-          throw SoyAutoescapeException.createWithoutMetaInfo(
-              "Saw an html5 </template> without encountering <template>.");
-        }
-        Context.Builder builder = prior.toBuilder()
-            .withTemplateNestDepth(prior.templateNestDepth + (isEndTag ? -1 : 1))
-            .withoutAttrContext();
-        if (isEndTag) {
-          builder
-              .withState(Context.State.HTML_TAG)
-              .withElType(Context.ElementType.NORMAL);
-        } else {
-          builder
-              .withState(Context.State.HTML_PCDATA)
-              .withElType(Context.ElementType.NONE);
-        }
-        return builder.build();
+      @Override
+      Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
+        throw SoyAutoescapeException.createWithNode(
+            message, node.substring(Integer.MAX_VALUE, offset));
       }
     };
   }
 
-  /** A transition back to a context in the body of an open tag. */
-  private static Transition makeTransitionBackToTag(String regex) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
-            .withState(Context.State.HTML_TAG)
-            .withoutAttrContext()
-            .build();
-      }
-    };
-  }
-
-  /**
-   * A transition to a context in the name of an attribute whose type is determined from its name.
-   * @param regex A regular expression whose group 1 is a prefix of an attribute name.
-   */
-  private static Transition makeTransitionToAttrName(String regex) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        String attrName = matcher.group(1).toLowerCase(Locale.ENGLISH);
-        // Get the local name so we can treat xlink:href and svg:style as per HTML.
-        int colon = attrName.lastIndexOf(':');
-        String localName = attrName.substring(colon + 1);
-
-        Context.AttributeType attr;
-        if (localName.startsWith("on")) {
-          attr = Context.AttributeType.SCRIPT;
-        } else if ("style".equals(localName)) {
-          attr = Context.AttributeType.STYLE;
-        } else if (URI_ATTR_NAMES.contains(localName)
-                   || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
-                   || "xmlns".equals(attrName) || attrName.startsWith("xmlns:")) {
-          attr = Context.AttributeType.URI;
-        } else {
-          attr = Context.AttributeType.PLAIN_TEXT;
-        }
-        return prior.toBuilder()
-            .withState(Context.State.HTML_ATTRIBUTE_NAME)
-            .withoutAttrContext()
-            .withAttrType(attr)
-            .build();
-      }
-    };
-  }
-
-  /** A transition to a context in the name of an attribute of the given type. */
-  private static Transition makeTransitionToAttrValue(
-      String regex, final Context.AttributeEndDelimiter delim) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return Context.computeContextAfterAttributeDelimiter(
-            prior.elType, prior.attrType, delim, prior.templateNestDepth);
-      }
-    };
-  }
-
-  /**
-   * Lower case names of attributes whose value is a URI.
-   * This does not identify attributes like {@code <meta content>} which is conditionally a URI
-   * depending on the value of other attributes.
-   * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
-   */
-  private static final Set<String> URI_ATTR_NAMES = ImmutableSet.of(
-      "action", "archive", "base", "background", "cite", "classid", "codebase",
-      // TODO: content is only a URL sometimes depending on other parameters and existing templates
-      // use content with non-URL values.  Fix those templates or otherwise flag interpolations into
-      // content.
-      // "content",
-      "data", "dsync", "formaction", "href", "icon", "longdesc", "manifest", "poster", "src",
-      "usemap",
-      // Custom attributes that are reliably URLs in existing code.
-      "entity");
-
-  /** Matches lower-case attribute local names that start or end with "url" or "uri". */
-  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION = Pattern.compile(
-      "\\bur[il]|ur[il]s?$");
-
-  /**
-   * A transition to the given state.
-   */
-  private static Transition makeTransitionToState(String regex, final Context.State state) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.derive(state).derive(UriPart.NONE);
-      }
-    };
-  }
-
-  /**
-   * A transition to an error state.
-   */
-  private static Transition makeTransitionToError(String regex, final String message) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        throw SoyAutoescapeException.createWithoutMetaInfo(message);
-      }
-    };
-  }
-
-  /**
-   * A transition to the given JS string start state.
-   */
-  private static Transition makeTransitionToJsString(
-      String regex, final Context.State state) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
+  /** A transition to the given JS string start state. */
+  private static Transition makeTransitionToJsStringLiteral(
+      String literal, final HtmlContext state) {
+    return new Transition(literal) {
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
+        return prior
+            .toBuilder()
             .withState(state)
             .withSlashType(Context.JsFollowingSlash.NONE)
             .withUriPart(UriPart.NONE)
@@ -473,22 +331,29 @@ final class RawTextContextUpdater {
     };
   }
 
-  /**
-   * A transition that consumes some content without changing state.
-   */
-  private static Transition makeTransitionToSelf(String regex) {
+  /** A transition that consumes some content without changing state. */
+  private static Transition makeTransitionToSelf(Pattern regex) {
     return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
         return prior;
       }
     };
   }
 
   /** Consumes the entire content without change if nothing else matched. */
-  private static final Transition TRANSITION_TO_SELF = makeTransitionToSelf("\\z");
+  private static final Transition TRANSITION_TO_SELF =
+      new Transition() {
+        @Override
+        Context computeNextContext(Context prior, Matcher matcher) {
+          return prior;
+        }
+      };
+
   // Matching at the end is lowest possible precedence.
 
-  private static UriPart getNextUriPart(UriPart uriPart, char matchChar) {
+  private static UriPart getNextUriPart(
+      RawTextNode node, int offset, UriPart uriPart, char matchChar) {
     // This switch statement is designed to process a URI in order via a sequence of fall throughs.
     switch (uriPart) {
       case MAYBE_SCHEME:
@@ -505,18 +370,19 @@ final class RawTextContextUpdater {
             // see a colon. While this could be relatively safe if it's a {$host}:{$port} pair,
             // at compile-time, we can't be sure that "$host" isn't something like "javascript"
             // and "$port" isn't "deleteMyAccount()".
-            throw SoyAutoescapeException.createWithoutMetaInfo(
+            throw SoyAutoescapeException.createWithNode(
                 "Soy can't safely process a URI that might start with a variable scheme. "
-                + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
-                + "attacker-controlled. Either use a hard-coded scheme, or introduce "
-                + "disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
-                + "{$x}?foo=:{$y})");
+                    + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
+                    + "attacker-controlled. Either use a hard-coded scheme, or introduce "
+                    + "disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
+                    + "{$x}?foo=:{$y})",
+                node.substring(/* newId= */ Integer.MAX_VALUE, offset));
           } else {
-            // At the start of the URL, and we just saw some hard-coded characters and a colon, like
-            // http:. This is safe (assuming it's a good scheme), and now we're on our way to the
-            // authority.
-            // TODO(gboyer): Transition to a stricter state if we end up seeing a dangerous scheme
-            // like javascript:, and only allow hard-coded paths.
+            // At the start of the URL, and we just saw some hard-coded characters and a colon,
+            // like http:. This is safe (assuming it's a good scheme), and now we're on our way to
+            // the authority. Note if javascript: was seen, we would have scanned it already and
+            // entered a separate state (unless the developer is malicious and tries to obscure it
+            // via a conditional).
             return UriPart.AUTHORITY_OR_PATH;
           }
         }
@@ -546,6 +412,7 @@ final class RawTextContextUpdater {
         }
         // fall through
       case AUTHORITY_OR_PATH:
+        // fall through
       case UNKNOWN_PRE_FRAGMENT:
         if (matchChar == '?') {
           // Upon a ? we can be pretty sure we're in the query. While it's possible for something
@@ -567,9 +434,14 @@ final class RawTextContextUpdater {
       case DANGEROUS_SCHEME:
         // Dangerous schemes remain dangerous.
         return UriPart.DANGEROUS_SCHEME;
-      default:
-        throw new AssertionError("Unanticipated URI part: " + uriPart);
+      case TRUSTED_RESOURCE_URI_END:
+        throw new AssertionError("impossible");
+      case NONE:
+        // generally impossible
+      case START:
+        // fall-through.  this should have been handled by our callers
     }
+    throw new AssertionError("Unanticipated URI part: " + uriPart);
   }
 
   /**
@@ -578,93 +450,165 @@ final class RawTextContextUpdater {
    * <p>This happens on the first important URI character, or upon seeing the end of the raw text
    * segment and not seeing anything else.
    */
-  private static final Transition URI_PART_TRANSITION = new Transition(
-      "([:./&?=#])|\\z") {
-    @Override boolean isApplicableTo(Context prior, Matcher matcher) {
-      return true;
-    }
-
-    @Override Context computeNextContext(Context prior, Matcher matcher) {
-      UriPart uriPart = prior.uriPart;
-      if (uriPart == UriPart.START) {
-        uriPart = UriPart.MAYBE_SCHEME;
-      }
-      String match = matcher.group(1);
-      if (match != null) {
-        uriPart = getNextUriPart(uriPart, match.charAt(0));
-      }
-      return prior.derive(uriPart);
-    }
-  };
-
-  /**
-   * Transition to detect dangerous URI schemes.
-   */
-  private static final Transition URI_START_TRANSITION =
-      new Transition("(?i)^(javascript:)") {
-    @Override boolean isApplicableTo(Context prior, Matcher matcher) {
-      return prior.uriPart == UriPart.START;
-    }
-
-    @Override Context computeNextContext(Context prior, Matcher matcher) {
-      // TODO(gboyer): Perhaps we can make exceptions for image URIs, etc.
-      // TODO(gboyer): Ban other unsafe schemes, like filesystem:, blob:, and maybe file:.
-      return prior.derive(UriPart.DANGEROUS_SCHEME);
-    }
-  };
-
-  /**
-   * Matches the end of a special tag like {@code script}.
-   */
-  private static Transition makeEndTagTransition(String tagName) {
-    return new Transition("(?i)</" + tagName + "\\b") {
-      @Override boolean isApplicableTo(Context prior, Matcher matcher) {
-        return prior.attrType == Context.AttributeType.NONE;
-      }
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
-            .withState(Context.State.HTML_TAG)
-            .withElType(Context.ElementType.NORMAL)
-            .withoutAttrContext()
-            .build();
-      }
-    };
-    // TODO: This transitions to an HTML_TAG state which can accept attributes.
-    // So we allow nonsensical constructs like </br foo="bar">.
-    // Add another HTML_END_TAG state that just accepts space and >.
-  }
-
-  /**
-   * Matches the beginning of a CSS URI with the delimiter, if any, in group 1.
-   */
-  private static Transition makeCssUriTransition(String regex) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        String delim = matcher.group(1);
-        Context.State state;
-        if ("\"".equals(delim)) {
-          state = Context.State.CSS_DQ_URI;
-        } else if ("'".equals(delim)) {
-          state = Context.State.CSS_SQ_URI;
-        } else {
-          state = Context.State.CSS_URI;
+  private static final Transition URI_PART_TRANSITION =
+      new Transition(Pattern.compile("([:./&?=#])|\\z")) {
+        @Override
+        boolean isApplicableTo(Context prior, Matcher matcher) {
+          return prior.uriType != UriType.TRUSTED_RESOURCE;
         }
-        return prior.toBuilder()
+
+        @Override
+        Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
+          UriPart uriPart = prior.uriPart;
+          if (uriPart == UriPart.START) {
+            uriPart = UriPart.MAYBE_SCHEME;
+          }
+          String match = matcher.group(1);
+          if (match != null) {
+            checkState(match.length() == 1);
+            uriPart = getNextUriPart(node, offset, uriPart, match.charAt(0));
+          }
+          return prior.derive(uriPart);
+        }
+      };
+
+  /** Transition to detect dangerous URI schemes. */
+  private static final Transition URI_START_TRANSITION =
+      new Transition(Pattern.compile("(?i)^(javascript|data|blob|filesystem):")) {
+        @Override
+        boolean isApplicableTo(Context prior, Matcher matcher) {
+          return prior.uriPart == UriPart.START && prior.uriType != UriType.TRUSTED_RESOURCE;
+        }
+
+        @Override
+        Context computeNextContext(Context prior, Matcher matcher) {
+          // TODO(gboyer): Ban all but whitelisted schemes.
+          return prior.derive(UriPart.DANGEROUS_SCHEME);
+        }
+      };
+
+  /**
+   * Transition between different parts of a trusted resource uri http-like URL.
+   *
+   * <p>We don't use the normal URI derivation algorithm because for trusted_resource_uris we have
+   * stricter rules.
+   *
+   * <ul>
+   *   <li>If a scheme is present, it must be {@code https}
+   *   <li>We don't allow partial scheme or hosts
+   *   <li>from URI START we must end up in AUTHORITY_OR_PATH, though in our case it really just
+   *       means PATH
+   * </ul>
+   */
+  private static final Transition TRUSTED_RESOURCE_URI_PART_TRANSITION =
+      new Transition(Pattern.compile(".+")) {
+        final Pattern baseUrlPattern =
+            Pattern.compile(
+                "^(?:https:)?//[0-9a-z.:\\[\\]-]+/|^/[^/\\\\]", Pattern.CASE_INSENSITIVE);
+
+        @Override
+        boolean isApplicableTo(Context prior, Matcher matcher) {
+          return prior.uriType == UriType.TRUSTED_RESOURCE;
+        }
+
+        @Override
+        Context computeNextContext(RawTextNode node, int offset, Context context, Matcher matcher) {
+          String match = matcher.group();
+          switch (context.uriPart) {
+            case START:
+              // Most of the work is here.  We expect the match to be one of the following forms:
+              // - https://foo/  NOTYPO
+              // - //foo/
+              // - /<pathStart>
+              // This emulates the behavior of goog.html.TrustedResourceUrl.format
+              // NOTE: In all cases we require that the fixed portion of the URL ends in path
+              // context.
+              // This is important to make sure that neither scheme nor host are potentially
+              // attacker controlled.
+              // Additionally, we will escapeUri all dynamic parts of the URL after this point
+              // which allows some things like query parameters to be set using untrusted
+              // content.
+              if (!baseUrlPattern.matcher(match).find()) {
+                // If the prefix is not allowed then we switch to UriPart.END meaning that we don't
+                // allow anything after this node (the whole URI must be fixed).
+                context = context.derive(UriPart.TRUSTED_RESOURCE_URI_END);
+                break;
+              } else {
+                context = context.derive(UriPart.AUTHORITY_OR_PATH);
+              }
+              // and fall-through
+            case AUTHORITY_OR_PATH:
+              int queryIndex = match.indexOf('?');
+              if (queryIndex == -1) {
+                // this might occur if a dynamic node ended with some query parameters
+                queryIndex = match.indexOf('&');
+              }
+              if (queryIndex != -1) {
+                context = context.derive(UriPart.QUERY);
+              }
+              // fall-through
+            case QUERY:
+              if (match.indexOf('#') == -1) {
+                // still in the query
+                return context;
+              }
+              context = context.derive(UriPart.FRAGMENT);
+              break;
+            case FRAGMENT:
+              // fragment is the end
+              return context;
+            case TRUSTED_RESOURCE_URI_END:
+              return context;
+            case DANGEROUS_SCHEME:
+            case MAYBE_SCHEME:
+            case MAYBE_VARIABLE_SCHEME:
+            case UNKNOWN:
+            case UNKNOWN_PRE_FRAGMENT:
+              throw SoyAutoescapeException.createWithNode(
+                  "Cannot safely process this TrustedResourceUri at compile time. "
+                      + "TrustedResourceUris must have a statically identifiable scheme and host. "
+                      + "Either use a hard-coded scheme, or move the calculation of this URL "
+                      + "outside of the template and use an ordaining API.",
+                  node.substring(/* newId= */ Integer.MAX_VALUE, offset));
+            case NONE:
+              throw new AssertionError("impossible");
+          }
+          return context;
+        }
+      };
+
+  /** Matches the beginning of a CSS URI with the delimiter, if any, in group 1. */
+  private static Transition makeCssUriTransition(Pattern regex, final UriType uriType) {
+    return new Transition(regex) {
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
+        String delim = matcher.group(1);
+        HtmlContext state;
+        if ("\"".equals(delim)) {
+          state = HtmlContext.CSS_DQ_URI;
+        } else if ("'".equals(delim)) {
+          state = HtmlContext.CSS_SQ_URI;
+        } else {
+          state = HtmlContext.CSS_URI;
+        }
+        return prior
+            .toBuilder()
             .withState(state)
+            .withUriType(uriType)
             .withUriPart(UriPart.START)
             .build();
       }
     };
   }
 
-  /**
-   * Matches a portion of JavaScript that can precede a division operator.
-   */
-  private static Transition makeDivPreceder(String regex) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
-            .withState(Context.State.JS)
+  /** Matches a portion of JavaScript that can precede a division operator. */
+  private static Transition makeDivPreceder(String literal) {
+    return new Transition(literal) {
+      @Override
+      Context computeNextContext(Context prior, Matcher matcher) {
+        return prior
+            .toBuilder()
+            .withState(HtmlContext.JS)
             .withSlashType(Context.JsFollowingSlash.DIV_OP)
             .build();
       }
@@ -676,247 +620,289 @@ final class RawTextContextUpdater {
 
   /**
    * For each state, a group of rules for consuming raw text and how that affects the document
-   * context.
-   * The rules each have an associated pattern, and the rule whose pattern matches earliest in the
-   * text wins.
+   * context. The rules each have an associated pattern, and the rule whose pattern matches earliest
+   * in the text wins.
    */
-  private static final Map<Context.State, List<Transition>> TRANSITIONS =
-      ImmutableMap.<Context.State, List<Transition>>builder()
-      .put(Context.State.HTML_PCDATA, ImmutableList.of(
-          makeTransitionToState("<!--", Context.State.HTML_COMMENT),
-          makeTransitionToTagNamed("script", Context.ElementType.SCRIPT),
-          makeTransitionToTagNamed("style", Context.ElementType.STYLE),
-          makeTransitionToTagNamed("textarea", Context.ElementType.TEXTAREA),
-          makeTransitionToTagNamed("title", Context.ElementType.TITLE),
-          makeTransitionToTagNamed("xmp", Context.ElementType.XMP),
-          makeTemplateTagTransition(),
-          makeTransitionToState("</?", Context.State.HTML_BEFORE_TAG_NAME),
-          makeTransitionToSelf("[^<]+")))
-      .put(Context.State.HTML_BEFORE_TAG_NAME, ImmutableList.of(
-          makeTransitionToState("^[a-zA-Z]+", Context.State.HTML_TAG_NAME),
-          makeTransitionTo("^(?=[^a-zA-Z])", ContentKind.HTML)))
-      .put(Context.State.HTML_TAG_NAME, ImmutableList.of(
-          makeTransitionToSelf("^[a-zA-Z0-9:-]*(?:[a-zA-Z0-9]|\\z)"),
-          makeTransitionToTag("^(?=[/\\s>])", Context.ElementType.NORMAL)))
-      .put(Context.State.HTML_TAG, ImmutableList.of(
-          // Allows {@code data-foo} and other dashed attribute names, but intentionally disallows
-          // "--" as an attribute name so that a tag ending after a value-less attribute named "--"
-          // cannot be confused with an HTML comment end ("-->").
-          makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:\\-]*[a-z0-9?])?)"),
-          new Transition("^\\s*/?>") {
-            @Override
-            Context computeNextContext(Context prior, Matcher matcher) {
-              Context.Builder builder = prior.toBuilder();
-              builder.withoutAttrContext();
-              switch (prior.elType) {
-                case SCRIPT:
-                  builder.withState(Context.State.JS)
-                      .withSlashType(Context.JsFollowingSlash.REGEX)
-                      .withElType(Context.ElementType.NONE);
-                  break;
-                case STYLE:
-                  builder.withState(Context.State.CSS)
-                      .withElType(Context.ElementType.NONE);
-                  break;
-                case NORMAL:
-                  builder.withState(Context.State.HTML_PCDATA)
-                      .withElType(Context.ElementType.NONE);
-                  break;
-                case LISTING: case TEXTAREA: case TITLE: case XMP:
-                  builder.withState(Context.State.HTML_RCDATA);
-                  break;
-                case NONE:
-                  throw new IllegalStateException();
-                default:
-                  throw new AssertionError("Unrecognized state " + prior.elType);
-              }
-              return builder.build();
-            }
-          },
-          makeTransitionToSelf("^\\s+\\z")))
-      .put(Context.State.HTML_ATTRIBUTE_NAME, ImmutableList.of(
-          makeTransitionToState("^\\s*=", Context.State.HTML_BEFORE_ATTRIBUTE_VALUE),
-          // For a value-less attribute, make an epsilon transition back to the tag body context to
-          // look for a tag end or another attribute name.
-          makeTransitionBackToTag("^")))
-      .put(Context.State.HTML_BEFORE_ATTRIBUTE_VALUE, ImmutableList.of(
-          makeTransitionToAttrValue("^\\s*\"", Context.AttributeEndDelimiter.DOUBLE_QUOTE),
-          makeTransitionToAttrValue("^\\s*\'", Context.AttributeEndDelimiter.SINGLE_QUOTE),
-          makeTransitionToAttrValue(
-              "^(?=[^\"\'\\s>])",  // Matches any unquoted value part.
-              Context.AttributeEndDelimiter.SPACE_OR_TAG_END),
-          // Epsilon transition back if there is an empty value followed by an obvious attribute
-          // name or a tag end.
-          // The first branch handles the blank value in:
-          //    <input value=>
-          // and the second handles the blank value in:
-          //    <input value= name=foo>
-          makeTransitionBackToTag("^(?=>|\\s+[\\w-]+\\s*=)"),
-          makeTransitionToSelf("^\\s+")))
-      .put(Context.State.HTML_COMMENT, ImmutableList.of(
-          makeTransitionTo("-->", ContentKind.HTML),
-          TRANSITION_TO_SELF))
-      .put(Context.State.HTML_NORMAL_ATTR_VALUE, ImmutableList.of(
-          TRANSITION_TO_SELF))
-      // The CSS transitions below are based on http://www.w3.org/TR/css3-syntax/#lexical
-      .put(Context.State.CSS, ImmutableList.of(
-          makeTransitionToState("/\\*", Context.State.CSS_COMMENT),
-          // TODO: Do we need to support non-standard but widely supported C++ style comments?
-          makeTransitionToState("\"", Context.State.CSS_DQ_STRING),
-          makeTransitionToState("'", Context.State.CSS_SQ_STRING),
-          makeCssUriTransition("(?i)\\burl\\s*\\(\\s*([\'\"]?)"),
-          makeEndTagTransition("style"),
-          TRANSITION_TO_SELF))
-      .put(Context.State.CSS_COMMENT, ImmutableList.of(
-          makeTransitionToState("\\*/", Context.State.CSS),
-          makeEndTagTransition("style"),
-          TRANSITION_TO_SELF))
-      .put(Context.State.CSS_DQ_STRING, ImmutableList.of(
-          makeTransitionToState("\"", Context.State.CSS),
-          makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
-          makeEndTagTransition("style"),  // TODO: Make this an error transition?
-          TRANSITION_TO_SELF))
-      .put(Context.State.CSS_SQ_STRING, ImmutableList.of(
-          makeTransitionToState("'", Context.State.CSS),
-          makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
-          makeEndTagTransition("style"),  // TODO: Make this an error transition?
-          TRANSITION_TO_SELF))
-      .put(Context.State.CSS_URI, ImmutableList.of(
-          makeTransitionToState("[\\)\\s]", Context.State.CSS),
-          URI_PART_TRANSITION,
-          URI_START_TRANSITION,
-          makeTransitionToError("[\"']", "Quotes not permitted in CSS URIs."),
-          makeEndTagTransition("style")))
-      .put(Context.State.CSS_SQ_URI, ImmutableList.of(
-          makeTransitionToState("'", Context.State.CSS),
-          URI_PART_TRANSITION,
-          URI_START_TRANSITION,
-          makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"),  // Line continuation or escape.
-          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
-          makeEndTagTransition("style")))
-      .put(Context.State.CSS_DQ_URI, ImmutableList.of(
-          makeTransitionToState("\"", Context.State.CSS),
-          URI_PART_TRANSITION,
-          URI_START_TRANSITION,
-          makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"),  // Line continuation or escape.
-          makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
-          makeEndTagTransition("style")))
-      .put(Context.State.JS, ImmutableList.of(
-          makeTransitionToState("/\\*", Context.State.JS_BLOCK_COMMENT),
-          makeTransitionToState("//", Context.State.JS_LINE_COMMENT),
-          makeTransitionToJsString("\"", Context.State.JS_DQ_STRING),
-          makeTransitionToJsString("'", Context.State.JS_SQ_STRING),
-          new Transition("/") {
-            @Override
-            Context computeNextContext(Context prior, Matcher matcher)
-                throws SoyAutoescapeException {
-              switch (prior.slashType) {
-                case DIV_OP:
-                  return prior.toBuilder()
-                      .withState(Context.State.JS)
-                      .withSlashType(Context.JsFollowingSlash.REGEX)
-                      .build();
-                case REGEX:
-                  return prior.toBuilder()
-                      .withState(Context.State.JS_REGEX)
-                      .withSlashType(Context.JsFollowingSlash.NONE)
-                      .build();
-                default:
-                  StringBuffer rest = new StringBuffer();
-                  matcher.appendTail(rest);
-                  throw SoyAutoescapeException.createWithoutMetaInfo(
-                      "Slash (/) cannot follow the preceding branches since it is unclear " +
-                          "whether the slash is a RegExp literal or division operator.  " +
-                          "Please add parentheses in the branches leading to `" + rest + "`");
-              }
-            }
-          },
-          // Shuffle words, punctuation (besides /), and numbers off to an analyzer which does a
-          // quick and dirty check to update JsUtil.isRegexPreceder.
-          new Transition("(?i)(?:[^</\"'\\s\\\\]|<(?!/script))+") {
-            @Override
-            Context computeNextContext(Context prior, Matcher matcher) {
-              return prior.derive(
-                  JsUtil.isRegexPreceder(matcher.group()) ?
-                  Context.JsFollowingSlash.REGEX : Context.JsFollowingSlash.DIV_OP);
-            }
-          },
-          makeTransitionToSelf("\\s+"),  // Space
-          makeEndTagTransition("script")))
-      .put(Context.State.JS_BLOCK_COMMENT, ImmutableList.of(
-          makeTransitionToState("\\*/", Context.State.JS),
-          makeEndTagTransition("script"),
-          TRANSITION_TO_SELF))
-      // Line continuations are not allowed in line comments.
-      .put(Context.State.JS_LINE_COMMENT, ImmutableList.of(
-          makeTransitionToState("[" + JS_LINEBREAKS + "]", Context.State.JS),
-          makeEndTagTransition("script"),
-          TRANSITION_TO_SELF))
-      .put(Context.State.JS_DQ_STRING, ImmutableList.of(
-          makeDivPreceder("\""),
-          makeEndTagTransition("script"),
-          makeTransitionToSelf(
-              "(?i)^(?:" +                          // Case-insensitively, from start of string
-                "[^\"\\\\" + JS_LINEBREAKS + "<]+" + // match any chars except newlines, quotes, \s;
-                "|\\\\(?:" +                        // or backslash followed by a
-                  "\\r\\n?" +                       // line continuation
-                  "|[^\\r<]" +                      // or an escape
-                  "|<(?!/script)" +                 // or less-than that doesn't close the script.
-                ")" +
-                "|<(?!/script)" +
-              ")+")))
-      .put(Context.State.JS_SQ_STRING, ImmutableList.of(
-          makeDivPreceder("'"),
-          makeEndTagTransition("script"),
-          makeTransitionToSelf(
-              "(?i)^(?:" +                          // Case-insensitively, from start of string
-                "[^'\\\\" + JS_LINEBREAKS + "<]+" + // match any chars except newlines, quotes, \s;
-                "|\\\\(?:" +                        // or a backslash followed by a
-                  "\\r\\n?" +                       // line continuation
-                  "|[^\\r<]" +                      // or an escape;
-                  "|<(?!/script)" +                 // or less-than that doesn't close the script.
-                ")" +
-                "|<(?!/script)" +
-              ")+")))
-      .put(Context.State.JS_REGEX, ImmutableList.of(
-          makeDivPreceder("/"),
-          makeEndTagTransition("script"),
-          makeTransitionToSelf(
-              "(?i)^(?:" +
-                // We have to handle [...] style character sets specially since in /[/]/, the
-                // second solidus doesn't end the regular expression.
-                "[^\\[\\\\/<" + JS_LINEBREAKS + "]" +      // A non-charset, non-escape token;
-                "|\\\\[^" + JS_LINEBREAKS + "]" +          // an escape;
-                "|\\\\?<(?!/script)" +
-                "|\\[" +                                   // or a character set containing
-                  "(?:[^\\]\\\\<" + JS_LINEBREAKS + "]" +  // a normal character,
-                  "|\\\\(?:[^" + JS_LINEBREAKS + "]))*" +  // or an escape;
-                  "|\\\\?<(?!/script)" +                   // or an angle bracket possibly escaped.
-                "\\]" +
-              ")+")))
-      .put(Context.State.URI, ImmutableList.of(URI_PART_TRANSITION, URI_START_TRANSITION))
-      .put(Context.State.HTML_RCDATA, ImmutableList.of(
-          new Transition("</(\\w+)\\b") {
-            @Override
-            boolean isApplicableTo(Context prior, Matcher matcher) {
-              String tagName = matcher.group(1).toUpperCase(Locale.ENGLISH);
-              return prior.elType.name().equals(tagName);
-            }
-            @Override
-            Context computeNextContext(Context prior, Matcher matcher) {
-              return prior.toBuilder()
-                  .withState(Context.State.HTML_TAG)
-                  .withElType(Context.ElementType.NORMAL)
-                  .withoutAttrContext()
-                  .build();
-            }
-          },
-          TRANSITION_TO_SELF))
-      // Text context has no edges except to itself.
-      .put(Context.State.TEXT, ImmutableList.of(TRANSITION_TO_SELF))
-      .build();
+  private static final ImmutableMap<HtmlContext, List<Transition>> TRANSITIONS =
+      ImmutableMap.<HtmlContext, List<Transition>>builder()
+          // All edges in or out of pcdata, comment or attr value are triggered by nodes and thus
+          // handled by the InferenceEngine.
+          .put(HtmlContext.HTML_PCDATA, ImmutableList.of(TRANSITION_TO_SELF))
+          .put(HtmlContext.HTML_COMMENT, ImmutableList.of(TRANSITION_TO_SELF))
+          .put(HtmlContext.HTML_NORMAL_ATTR_VALUE, ImmutableList.of(TRANSITION_TO_SELF))
+          // The CSS transitions below are based on http://www.w3.org/TR/css3-syntax/#lexical
+          .put(
+              HtmlContext.CSS,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("/*", HtmlContext.CSS_COMMENT),
+                  // TODO: Do we need to support non-standard but widely supported C++ style
+                  // comments?
+                  makeTransitionToStateLiteral("\"", HtmlContext.CSS_DQ_STRING),
+                  makeTransitionToStateLiteral("'", HtmlContext.CSS_SQ_STRING),
+                  // Although we don't contextually parse CSS, certain property names are only used
+                  // in conjunction with images.  This pretty basic regexp does a decent job on CSS
+                  // that is not attempting to be malicious (for example, doesn't handle comments).
+                  // Note that this can be fooled with {if 1}foo-{/if}background, but it's not worth
+                  // really worrying about.
+                  makeCssUriTransition(
+                      Pattern.compile(
+                          "(?i)(?:[^a-z0-9-]|^)\\s*"
+                              + "(?:background|background-image|border-image|content"
+                              + "|cursor|list-style|list-style-image)"
+                              + "\\s*:\\s*url\\s*\\(\\s*(['\"]?)"),
+                      UriType.MEDIA),
+                  // TODO(gboyer): We should treat @import, @font-face src, etc as trusted
+                  // resources, once trusted URLs are implemented.
+                  makeCssUriTransition(
+                      Pattern.compile("(?i)\\burl\\s*\\(\\s*(['\"]?)"), UriType.NORMAL),
+                  TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.CSS_COMMENT,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("*/", HtmlContext.CSS), TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.CSS_DQ_STRING,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("\"", HtmlContext.CSS),
+                  makeTransitionToSelf(
+                      Pattern.compile("\\\\(?:\r\n?|[\n\f\"])")), // Line continuation or escape.
+                  makeTransitionToError(
+                      Pattern.compile("[\n\r\f]"), "Newlines not permitted in string literals."),
+                  TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.CSS_SQ_STRING,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("'", HtmlContext.CSS),
+                  makeTransitionToSelf(
+                      Pattern.compile("\\\\(?:\r\n?|[\n\f'])")), // Line continuation or escape.
+                  makeTransitionToError(
+                      Pattern.compile("[\n\r\f]"), "Newlines not permitted in string literals."),
+                  TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.CSS_URI,
+              ImmutableList.of(
+                  makeTransitionToState(Pattern.compile("[\\)\\s]"), HtmlContext.CSS),
+                  URI_PART_TRANSITION,
+                  URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
+                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  makeTransitionToError(
+                      Pattern.compile("[\"']"), "Quotes not permitted in CSS URIs.")))
+          .put(
+              HtmlContext.CSS_SQ_URI,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("'", HtmlContext.CSS),
+                  URI_PART_TRANSITION,
+                  URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
+                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  makeTransitionToSelf(
+                      Pattern.compile("\\\\(?:\r\n?|[\n\f'])")), // Line continuation or escape.
+                  makeTransitionToError(
+                      Pattern.compile("[\n\r\f]"), "Newlines not permitted in string literal.")))
+          .put(
+              HtmlContext.CSS_DQ_URI,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("\"", HtmlContext.CSS),
+                  URI_PART_TRANSITION,
+                  URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
+                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  makeTransitionToSelf(
+                      Pattern.compile("\\\\(?:\r\n?|[\n\f\"])")), // Line continuation or escape.
+                  makeTransitionToError(
+                      Pattern.compile("[\n\r\f]"), "Newlines not permitted in string literal.")))
+          .put(
+              HtmlContext.JS,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("/*", HtmlContext.JS_BLOCK_COMMENT),
+                  makeTransitionToStateLiteral("//", HtmlContext.JS_LINE_COMMENT),
+                  makeTransitionToJsStringLiteral("\"", HtmlContext.JS_DQ_STRING),
+                  makeTransitionToJsStringLiteral("'", HtmlContext.JS_SQ_STRING),
+                  new Transition("`") {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior
+                          .toBuilder()
+                          .withState(HtmlContext.JS_TEMPLATE_LITERAL)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth + 1)
+                          .build();
+                    }
+                  },
+                  new Transition("}") {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      // if we are in a template, then this puts us back into the template string
+                      // e.g.  `foo${bar}`
+                      if (prior.jsTemplateLiteralNestDepth > 0) {
+                        return prior.toBuilder().withState(HtmlContext.JS_TEMPLATE_LITERAL).build();
+                      }
+                      // stay in js, this must be part of some control flow character
+                      return prior;
+                    }
+                  },
+                  new Transition("/") {
+                    @Override
+                    Context computeNextContext(
+                        RawTextNode node, int offset, Context prior, Matcher matcher) {
+                      switch (prior.slashType) {
+                        case DIV_OP:
+                          return prior
+                              .toBuilder()
+                              .withState(HtmlContext.JS)
+                              .withSlashType(Context.JsFollowingSlash.REGEX)
+                              .build();
+                        case REGEX:
+                          return prior
+                              .toBuilder()
+                              .withState(HtmlContext.JS_REGEX)
+                              .withSlashType(Context.JsFollowingSlash.NONE)
+                              .build();
+                        default:
+                          RawTextNode suffixNode =
+                              node.substring(/* new node id= */ Integer.MAX_VALUE, offset);
+                          throw SoyAutoescapeException.createWithNode(
+                              "Slash (/) cannot follow the preceding branches since it is unclear "
+                                  + "whether the slash is a RegExp literal or division operator.  "
+                                  + "Please add parentheses in the branches leading to `"
+                                  + suffixNode.getRawText()
+                                  + "`",
+                              suffixNode);
+                      }
+                    }
+                  },
+                  /**
+                   * Shuffle words, punctuation (besides /), and numbers off to an analyzer which
+                   * does a quick and dirty check to update JsUtil.isRegexPreceder.
+                   *
+                   * <p>NOTE: every character that is matched by a transition above should be in the
+                   * negative character set in this regex. Otherwise this transition will swallow
+                   * the special characters
+                   */
+                  new Transition(Pattern.compile("[^/\"'}`\\s\\\\]+")) {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior.derive(
+                          JsUtil.isRegexPreceder(matcher.group())
+                              ? Context.JsFollowingSlash.REGEX
+                              : Context.JsFollowingSlash.DIV_OP);
+                    }
+                  },
+                  // Space
+                  makeTransitionToSelf(Pattern.compile("\\s+"))))
+          .put(
+              HtmlContext.JS_BLOCK_COMMENT,
+              ImmutableList.of(
+                  makeTransitionToStateLiteral("*/", HtmlContext.JS), TRANSITION_TO_SELF))
+          // Line continuations are not allowed in line comments.
+          .put(
+              HtmlContext.JS_LINE_COMMENT,
+              ImmutableList.of(
+                  makeTransitionToState(Pattern.compile("[" + JS_LINEBREAKS + "]"), HtmlContext.JS),
+                  TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.JS_DQ_STRING,
+              ImmutableList.of(
+                  makeDivPreceder("\""),
+                  makeTransitionToSelf(
+                      Pattern.compile(
+                          "(?i)^(?:"
+                              + // Case-insensitively, from start of string
+                              "[^\"\\\\"
+                              + JS_LINEBREAKS
+                              + "]++"
+                              + // match any chars except newlines, quotes, \s;
+                              "|\\\\(?:"
+                              + // or backslash followed by a
+                              "\\r\\n?"
+                              + // line continuation
+                              "|[^\\r]"
+                              + // or an escape
+                              ")"
+                              + ")++"))))
+          .put(
+              HtmlContext.JS_SQ_STRING,
+              ImmutableList.of(
+                  makeDivPreceder("'"),
+                  makeTransitionToSelf(
+                      Pattern.compile(
+                          "(?i)^(?:"
+                              + // Case-insensitively, from start of string
+                              "[^'\\\\"
+                              + JS_LINEBREAKS
+                              + "]++"
+                              + // match any chars except newlines, quotes, \s;
+                              "|\\\\(?:"
+                              + // or a backslash followed by a
+                              "\\r\\n?"
+                              + // line continuation
+                              "|[^\\r]"
+                              + // or an escape;
+                              ")"
+                              + ")++"))))
+          .put(
+              HtmlContext.JS_TEMPLATE_LITERAL,
+              ImmutableList.of(
+                  new Transition("`") {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior
+                          .toBuilder()
+                          .withState(HtmlContext.JS)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth - 1)
+                          .withSlashType(Context.JsFollowingSlash.REGEX)
+                          .build();
+                    }
+                  },
+                  // ignore slash escaped '$' and ` chars
+                  makeTransitionToSelf(Pattern.compile("\\\\[$`]")),
+                  // ${ puts us into js context
+                  makeTransitionToStateLiteral("${", HtmlContext.JS),
+                  TRANSITION_TO_SELF))
+          .put(
+              HtmlContext.JS_REGEX,
+              ImmutableList.of(
+                  makeDivPreceder("/"),
+                  makeTransitionToSelf(
+                      Pattern.compile(
+                          "(?i)^(?:"
+                              +
+                              /**
+                               * We have to handle [...] style character sets specially since in
+                               * /[/]/, the second solidus doesn't end the regular expression.
+                               */
+                              "[^\\[\\\\/"
+                              + JS_LINEBREAKS
+                              + "]++"
+                              + // A non-charset, non-escape token;
+                              "|\\\\[^"
+                              + JS_LINEBREAKS
+                              + "]"
+                              // an escape;
+                              + "|\\["
+                              + // or a character set containing
+                              "(?:[^\\]\\\\"
+                              + JS_LINEBREAKS
+                              + "]"
+                              + // a normal character,
+                              "|\\\\(?:[^"
+                              + JS_LINEBREAKS
+                              + "]))*+"
+                              + // or an escape;
+                              "\\]"
+                              + ")+"))))
+          .put(
+              HtmlContext.URI,
+              ImmutableList.of(
+                  URI_PART_TRANSITION, URI_START_TRANSITION, TRUSTED_RESOURCE_URI_PART_TRANSITION))
+          // All edges out of rcdata are triggered by tags which are handled in the InferenceEngine
+          .put(HtmlContext.HTML_RCDATA, ImmutableList.of(TRANSITION_TO_SELF))
+          // Text context has no edges except to itself.
+          .put(HtmlContext.TEXT, ImmutableList.of(TRANSITION_TO_SELF))
+          .build();
 
   // TODO: If we need to deal with untrusted templates, then we need to make sure that tokens like
   // <!--, </script>, etc. are never split with empty strings.
