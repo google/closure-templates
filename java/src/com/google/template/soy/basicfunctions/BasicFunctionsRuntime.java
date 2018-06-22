@@ -69,6 +69,11 @@ public final class BasicFunctionsRuntime {
     return flattened.build();
   }
 
+  /** Checks if list contains a value. */
+  public static boolean listContains(SoyList list, SoyValue value) {
+    return list.asJavaList().contains(value);
+  }
+
   /**
    * Returns the largest (closest to positive infinity) integer value that is less than or equal to
    * the argument.

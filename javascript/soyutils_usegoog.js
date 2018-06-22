@@ -1665,6 +1665,20 @@ soy.$$isLowSurrogate_ = function(cc) {
 };
 
 
+/**
+ * Checks if the list contains the given element.
+ * @param {!IArrayLike<?>} list
+ * @param {*} val
+ * @return {boolean}
+ * @template T
+ */
+soy.$$listContains = function(list, val) {
+  return goog.array.findIndex(list, function(el) {
+    return soy.$$equals(val, el);
+  }) >= 0;
+};
+
+
 // -----------------------------------------------------------------------------
 // Bidi directives/functions.
 
