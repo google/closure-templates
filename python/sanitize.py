@@ -28,6 +28,7 @@ from __future__ import unicode_literals
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 import functools
+import HTMLParser
 import re
 
 from . import generated_sanitize
@@ -110,6 +111,70 @@ def clean_html(value, safe_tags=None):
       'Escaped html is by nature sanitized.')
   return SanitizedHtml(_strip_html_tags(value, safe_tags),
                        get_content_dir(value), approval=approval)
+
+# LINT.IfChange(htmlToText)
+_TAG_RE = re.compile(
+    r'<(?:!--.*?--|(?:!|(/?[a-z][\w:-]*))(?:[^>\'"]|"[^"]*"|\'[^\']*\')*)>|\Z',
+    re.IGNORECASE)
+_REMOVING_TAGS_RE = re.compile(r'(script|style|textarea|title)$', re.IGNORECASE)
+_WS_PRESERVING_TAGS_RE = re.compile(r'pre$', re.IGNORECASE)
+_NEWLINE_TAGS_RE = re.compile(r'br$', re.IGNORECASE)
+_BLOCK_TAGS_RE = re.compile(
+    r'/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$',
+    re.IGNORECASE)
+_TAB_TAGS_RE = re.compile(r'(td|th)$', re.IGNORECASE)
+_WHITESPACE_RE = re.compile(r'\s+')
+_TRAILING_NON_WHITESPACE_RE = re.compile(r'\S\Z')
+_TRAILING_NON_NEWLINE_RE = re.compile(r'[^\n]\Z')
+_LEADING_SPACE_RE = re.compile(r'^ ')
+
+
+def html_to_text(html):
+  """Converts HTML to plain text.
+
+  Args:
+    html: HTML.
+
+  Returns:
+    Plain text.
+  """
+  text = ''
+  start = 0
+  removing_until = ''
+  ws_preserving_until = ''
+  html_parser = HTMLParser.HTMLParser()
+  for match in _TAG_RE.finditer(html):
+    offset = match.start()
+    tag = match.group(1)
+    if not removing_until:
+      chunk = html[start:offset]
+      chunk = html_parser.unescape(chunk)
+      if not ws_preserving_until:
+        chunk = _WHITESPACE_RE.sub(' ', chunk)
+        if not _TRAILING_NON_WHITESPACE_RE.search(text):
+          chunk = _LEADING_SPACE_RE.sub('', chunk)
+      text += chunk
+      if tag:
+        if _REMOVING_TAGS_RE.match(tag):
+          removing_until = '/' + tag.lower()
+        elif _NEWLINE_TAGS_RE.match(tag):
+          text += '\n'
+        elif _BLOCK_TAGS_RE.match(tag):
+          if _TRAILING_NON_NEWLINE_RE.search(text):
+            text += '\n'
+          if _WS_PRESERVING_TAGS_RE.match(tag):
+            ws_preserving_until = '/' + tag.lower()
+          elif tag.lower() == ws_preserving_until:
+            ws_preserving_until = ''
+        elif _TAB_TAGS_RE.match(tag):
+          text += '\t'
+    elif removing_until.lower() == tag:
+      removing_until = ''
+    start = match.end()
+  return text
+  # LINT.ThenChange(
+  #     ../../../../../javascript/template/soy/soyutils_usegoog.js:htmlToText,
+  #     ../../java/com/google/template/soy/basicfunctions/HtmlToText.java)
 
 
 def escape_css_string(value):

@@ -34,6 +34,7 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(CeilingFunction.class);
     soyFunctionsSetBinder.addBinding().to(ConcatListsFunction.class);
     soyFunctionsSetBinder.addBinding().to(FloorFunction.class);
+    soyFunctionsSetBinder.addBinding().to(HtmlToTextFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNonnullFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNullFunction.class);
     soyFunctionsSetBinder.addBinding().to(KeysFunction.class);

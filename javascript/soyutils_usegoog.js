@@ -938,6 +938,76 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
 };
 
 
+// LINT.IfChange(htmlToText)
+/**
+ * Converts HTML to plain text by removing tags, normalizing spaces and
+ * converting entities.
+ * @param {string} html
+ * @return {string}
+ */
+soy.$$htmlToText = function(html) {
+  var text = '';
+  var start = 0;
+  // Tag name to stop removing contents, e.g. '/script'.
+  var removingUntil = '';
+  // Tag name to stop preserving whitespace, e.g. '/pre'.
+  var wsPreservingUntil = '';
+  var tagRe =
+      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
+  for (var match; match = tagRe.exec(html);) {
+    var tag = match[1];
+    var offset = match.index;
+    if (!removingUntil) {
+      var chunk = html.substring(start, offset);
+      chunk = goog.string.unescapeEntities(chunk);
+      if (!wsPreservingUntil) {
+        // We are not inside <pre>, normalize spaces.
+        chunk = chunk.replace(/\s+/g, ' ');
+        if (!/\S$/.test(text)) {
+          // Strip leading space unless after non-whitespace.
+          chunk = chunk.replace(/^ /, '');
+        }
+      }
+      text += chunk;
+      if (/^(script|style|textarea|title)$/i.test(tag)) {
+        removingUntil = '/' + tag.toLowerCase();
+      } else if (/^br$/i.test(tag)) {
+        // <br> adds newline even after newline.
+        text += '\n';
+      } else if (soy.BLOCK_TAGS_RE_.test(tag)) {
+        if (/[^\n]$/.test(text)) {
+          // Block tags don't add more consecutive newlines.
+          text += '\n';
+        }
+        if (/^pre$/i.test(tag)) {
+          wsPreservingUntil = '/' + tag.toLowerCase();
+        } else if (tag.toLowerCase() == wsPreservingUntil) {
+          wsPreservingUntil = '';
+        }
+      } else if (/^(td|th)$/i.test(tag)) {
+        // We add \t even after newline to support more leading <td>.
+        text += '\t';
+      }
+    } else if (removingUntil == tag.toLowerCase()) {
+      removingUntil = '';
+    }
+    if (!match[0]) {
+      break;
+    }
+    start = offset + match[0].length;
+  }
+  return text;
+};
+
+
+/** @private @const */
+soy.BLOCK_TAGS_RE_ =
+    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
+// LINT.ThenChange(
+//     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
+//     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
+
+
 /**
  * Escapes HTML, except preserves entities.
  *
