@@ -58,6 +58,11 @@ public final class BytecodeCompiler {
               + "Compiler Stack:\n{2}",
           StyleAllowance.NO_PUNCTUATION);
 
+  private static final SoyErrorKind INVALID_PLUGIN_FAILURE =
+      SoyErrorKind.of(
+          "Invalid plugin implementation detected while compiling template: ''{0}''\n" + "{1}",
+          StyleAllowance.NO_PUNCTUATION);
+
   private static final SoyErrorKind UNEXPECTED_ERROR =
       SoyErrorKind.of(
           "Unexpected error while compiling template: ''{0}''\n{1}", StyleAllowance.NO_PUNCTUATION);
@@ -242,7 +247,8 @@ public final class BytecodeCompiler {
             name,
             e.printSoyStack(),
             Throwables.getStackTraceAsString(e));
-
+      } catch (PluginCodegenException e) {
+        errorReporter.report(e.getOriginalLocation(), INVALID_PLUGIN_FAILURE, name, e.getMessage());
       } catch (Throwable t) {
         errorReporter.report(
             classInfo.node().getSourceLocation(),

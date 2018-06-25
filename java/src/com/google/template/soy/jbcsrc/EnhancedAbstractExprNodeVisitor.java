@@ -37,6 +37,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   protected T visit(ExprNode node) {
     try {
       return super.visit(node);
+    } catch (PluginCodegenException e) {
+      throw e;
     } catch (UnexpectedCompilerFailureException e) {
       e.addLocation(node);
       throw e;

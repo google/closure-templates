@@ -922,7 +922,7 @@ final class ExpressionCompiler {
       }
 
       if (fn instanceof SoyJavaSourceFunction) {
-        throw new IllegalStateException("TODO(b/19252021): Implement this.");
+        return new JbcSrcValueFactory(node, parameters).computeForJavaSource(args);
       }
 
       // Functions that are not a SoyJbcSrcFunction nor a SoyJavaSourceFunction
