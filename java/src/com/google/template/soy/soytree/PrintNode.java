@@ -128,7 +128,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    */
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
-        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");
   }
 
   public void setHtmlContext(HtmlContext value) {

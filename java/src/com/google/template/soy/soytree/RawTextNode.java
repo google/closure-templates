@@ -103,7 +103,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    */
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
-        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");
   }
 
   @Override

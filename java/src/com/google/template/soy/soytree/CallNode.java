@@ -146,7 +146,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * passed to incremental DOM APIs.
    */
   public HtmlContext getHtmlContext() {
-    return checkNotNull(htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+    return checkNotNull(htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");
   }
 
   public void setHtmlContext(HtmlContext value) {
