@@ -552,6 +552,24 @@ soy.$$parseFloat = function(str) {
 
 
 /**
+ * Coerce the given value into a bool.
+ *
+ * For objects of type `SanitizedContent`, the contents are used to determine
+ * the boolean value; this is because the outer `SanitizedContent` object
+ * instance is always truthy (unless it's null).
+ * 
+ * @param {*} arg The argument to coerce.
+ * @return {boolean}
+ */
+soy.$$coerceToBoolean = function(arg) {
+  if (arg instanceof goog.soy.data.SanitizedContent) {
+    return !!arg.getContent();
+  }
+  return !!arg;
+};
+
+
+/**
  * Gets a consistent unique id for the given delegate template name. Two calls
  * to this function will return the same id if and only if the input names are
  * the same.

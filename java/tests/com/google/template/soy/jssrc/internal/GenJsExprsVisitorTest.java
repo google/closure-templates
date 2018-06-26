@@ -233,7 +233,7 @@ public final class GenJsExprsVisitorTest {
         "{if $boo}",
         "  Blah {$boo} bleh.",
         "{/if}");
-    String expectedJsExprText = "opt_data.boo ? 'Blah ' + opt_data.boo + ' bleh.' : '';";
+    String expectedJsExprText = "opt_data.boo ? 'Blah ' " + "+ opt_data.boo + ' bleh.' : '';";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
 
     soyNodeCode =
