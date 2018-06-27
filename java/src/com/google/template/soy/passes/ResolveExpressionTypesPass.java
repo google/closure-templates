@@ -69,6 +69,7 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.ResolvedSignature;
@@ -1309,6 +1310,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           node.setType(UnknownType.getInstance());
         }
 
+      } else if (fn instanceof LoggingFunction) {
+        // LoggingFunctions always return string.
+        node.setType(StringType.getInstance());
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.
