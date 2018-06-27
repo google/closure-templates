@@ -239,7 +239,7 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         "{let $html kind=\"html\"}{velog Foo}<div data-depth={depth()}></div>{/velog}{/let}"
-            + "<script>{$html}</script>");
+            + "<script>{'' + $html}</script>");
     // nothing is logged because no elements were rendered
     assertThat(testLogger.builder.toString()).isEmpty();
     // everything is escaped, and the placeholder is used instead of a 'real value'
