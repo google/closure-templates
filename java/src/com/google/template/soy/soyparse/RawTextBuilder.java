@@ -140,6 +140,9 @@ final class RawTextBuilder {
         return "{";
       case SoyFileParserConstants.CMD_FULL_RB:
         return "}";
+      case SoyFileParserConstants.CMD_FULL_NBSP:
+        // https://en.wikipedia.org/wiki/Non-breaking_space
+        return "\u00A0";
       default:
         throw new IllegalArgumentException(
             "unexpected token: " + SoyFileParserConstants.tokenImage[token.kind]);
