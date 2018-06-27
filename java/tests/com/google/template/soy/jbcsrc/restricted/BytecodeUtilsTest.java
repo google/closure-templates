@@ -22,7 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalAnd;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalOr;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;

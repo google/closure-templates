@@ -56,11 +56,9 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester;
-import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.ExpressionSubject;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.PluginResolver.Mode;
@@ -153,11 +151,6 @@ public class ExpressionCompilerTest {
             }
 
             @Override
-            public JavaPluginContext getJavaPluginContext() {
-              return getRenderContext();
-            }
-
-            @Override
             public Expression getParamsRecord() {
               throw new UnsupportedOperationException();
             }
@@ -215,7 +208,7 @@ public class ExpressionCompilerTest {
     // comparing their string representations.
     SoyExpression compile =
         compileExpression("record(a: 1, b: 1.0, c: 'asdf', d: false)").coerceToString();
-    ExpressionTester.assertThatExpression(compile)
+    ExpressionSubject.assertThatExpression(compile)
         .evaluatesTo(
             DictImpl.forProviderMap(
                     ImmutableMap.<String, SoyValue>of(
@@ -640,7 +633,7 @@ public class ExpressionCompilerTest {
 
   private ExpressionSubject assertExpression(String soyExpr) {
     SoyExpression compile = compileExpression(soyExpr);
-    return ExpressionTester.assertThatExpression(compile);
+    return ExpressionSubject.assertThatExpression(compile);
   }
 
   private SoyExpression compileExpression(String soyExpr) {

@@ -19,7 +19,7 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.restricted.BooleanData.FALSE;
 import static com.google.template.soy.data.restricted.BooleanData.TRUE;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;

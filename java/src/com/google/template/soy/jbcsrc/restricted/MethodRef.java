@@ -26,6 +26,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
 import com.google.protobuf.Message;
+import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -216,6 +217,14 @@ public abstract class MethodRef {
 
   public static final MethodRef ORDAIN_AS_SAFE =
       create(UnsafeSanitizedContentOrdainer.class, "ordainAsSafe", String.class, ContentKind.class);
+
+  public static final MethodRef ORDAIN_AS_SAFE_DIR =
+      create(
+          UnsafeSanitizedContentOrdainer.class,
+          "ordainAsSafe",
+          String.class,
+          ContentKind.class,
+          Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
       create(ParamStore.class, "setField", String.class, SoyValueProvider.class);

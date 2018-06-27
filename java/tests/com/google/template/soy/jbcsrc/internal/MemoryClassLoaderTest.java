@@ -24,8 +24,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.testing.GcFinalization;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
-import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester;
-import com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.BooleanInvoker;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
+import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.BooleanInvoker;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class MemoryClassLoaderTest {
   // disapear
   @Test
   public void testCollectable() {
-    BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
+    BooleanInvoker invoker = ExpressionEvaluator.createInvoker(BooleanInvoker.class, FALSE);
     assertThat(invoker.invoke()).isFalse(); // sanity, the invoker works
     MemoryClassLoader loader = (MemoryClassLoader) invoker.getClass().getClassLoader();
     WeakReference<MemoryClassLoader> loaderRef = new WeakReference<MemoryClassLoader>(loader);
@@ -54,7 +54,7 @@ public class MemoryClassLoaderTest {
 
   @Test
   public void testAsResource() throws IOException {
-    BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
+    BooleanInvoker invoker = ExpressionEvaluator.createInvoker(BooleanInvoker.class, FALSE);
     byte[] classBytes =
         ByteStreams.toByteArray(
             invoker
@@ -70,8 +70,8 @@ public class MemoryClassLoaderTest {
   public void testDelegation() throws Exception {
     // We want to make sure that for generated types, our classloader doesn't delegate to its parent
     // loader
-    ClassData parentClass = ExpressionTester.createClass(BooleanInvoker.class, FALSE);
-    ClassData childClass = ExpressionTester.createClass(BooleanInvoker.class, TRUE);
+    ClassData parentClass = ExpressionEvaluator.createClass(BooleanInvoker.class, FALSE);
+    ClassData childClass = ExpressionEvaluator.createClass(BooleanInvoker.class, TRUE);
     // sanity check,  they have the same fully qualified class name
     assertThat(parentClass.type()).isEqualTo(childClass.type());
     TypeInfo type = childClass.type();

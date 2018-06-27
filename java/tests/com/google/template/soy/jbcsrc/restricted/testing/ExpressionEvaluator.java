@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,7 @@ package com.google.template.soy.jbcsrc.restricted.testing;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.truth.FailureMetadata;
-import com.google.common.truth.Subject;
-import com.google.common.truth.Truth;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
@@ -44,15 +39,9 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-/**
- * Test-Only utility for testing Expression instances.
- *
- * <p>Since {@link Expression expressions} are fully encapsulated we can represent them as simple
- * nullary interface methods. For each expression we will compile an appropriately typed
- * implementation of an invoker interface.
- */
-public final class ExpressionTester {
-  private interface Invoker {
+/** Test-only utility for evaluating an arbitrary expression. */
+public final class ExpressionEvaluator {
+  interface Invoker {
     void voidInvoke();
   }
   // These need to be public so that our memory classloader can access them across protection
@@ -85,180 +74,26 @@ public final class ExpressionTester {
     Object invoke();
   }
 
-  /** Returns a truth subject that can be used to assert on an {@link Expression}. */
-  public static ExpressionSubject assertThatExpression(Expression resp) {
-    return Truth.assertAbout(FACTORY).that(resp);
+  public static Object evaluate(Expression expr) throws ReflectiveOperationException {
+    ExpressionEvaluator evaluator = new ExpressionEvaluator();
+    evaluator.compile(expr);
+    return evaluator.invoker.getClass().getMethod("invoke").invoke(evaluator.invoker);
   }
 
-  public static final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
-    private ClassData compiledClass;
-    private Invoker invoker;
+  private ClassData compiledClass;
+  Invoker invoker;
 
-    private ExpressionSubject(FailureMetadata failureMetadata, Expression subject) {
-      super(failureMetadata, subject);
-    }
-
-    public ExpressionSubject evaluatesTo(int expected) {
-      compile();
-      if (((IntInvoker) invoker).invoke() != expected) {
-        fail("evaluatesTo", expected);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesTo(boolean expected) {
-      compile();
-      boolean actual;
+  void compile(Expression expr) {
+    if (invoker == null) {
       try {
-        actual = ((BooleanInvoker) invoker).invoke();
+        Class<? extends Invoker> invokerClass = invokerForType(expr.resultType());
+        compiledClass = createClass(invokerClass, expr);
+        invoker = load(invokerClass, compiledClass);
       } catch (Throwable t) {
-        failWithBadResults("evalutes to", expected, "fails with", t);
-        return this;
-      }
-      if (actual != expected) {
-        failWithBadResults("evaluates to", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesTo(double expected) {
-      compile();
-      double actual;
-      try {
-        actual = ((DoubleInvoker) invoker).invoke();
-      } catch (Throwable t) {
-        failWithBadResults("evalutes to", expected, "fails with", t);
-        return this;
-      }
-      if (actual != expected) {
-        failWithBadResults("evaluates to", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesTo(long expected) {
-      compile();
-      long actual;
-      try {
-        actual = ((LongInvoker) invoker).invoke();
-      } catch (Throwable t) {
-        failWithBadResults("evalutes to", expected, "fails with", t);
-        return this;
-      }
-      if (actual != expected) {
-        failWithBadResults("evaluates to", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesTo(char expected) {
-      compile();
-      char actual;
-      try {
-        actual = ((CharInvoker) invoker).invoke();
-      } catch (Throwable t) {
-        failWithBadResults("evalutes to", expected, "fails with", t);
-        return this;
-      }
-      if (actual != expected) {
-        failWithBadResults("evaluates to", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesTo(Object expected) {
-      compile();
-      Object actual;
-      try {
-        actual = ((ObjectInvoker) invoker).invoke();
-      } catch (Throwable t) {
-        failWithBadResults("evaluates to", expected, "fails with", t);
-        return this;
-      }
-      if (!Objects.equal(actual, expected)) {
-        failWithBadResults("evaluates to", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    /**
-     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
-     * coupled tests.
-     */
-    public ExpressionSubject hasCode(String... instructions) {
-      compile();
-      String formatted = Joiner.on('\n').join(instructions);
-      if (!formatted.equals(actual().trace().trim())) {
-        fail("hasCode", formatted);
-      }
-      return this;
-    }
-
-    /**
-     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
-     * coupled tests.
-     */
-    public ExpressionSubject doesNotContainCode(String... instructions) {
-      compile();
-      String formatted = Joiner.on('\n').join(instructions);
-      String actual = actual().trace().trim();
-      if (actual.contains(formatted)) {
-        failWithBadResults("doesNotContainCode", formatted, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
-      compile();
-      Object actual;
-      try {
-        actual = ((ObjectInvoker) invoker).invoke();
-      } catch (Throwable t) {
-        failWithBadResults("evalutes to instance of", expected, "fails with", t);
-        return this;
-      }
-      if (!expected.isInstance(actual)) {
-        failWithBadResults("evaluates to instance of", expected, "evaluates to", actual);
-      }
-      return this;
-    }
-
-    public ExpressionSubject throwsException(Class<? extends Throwable> clazz) {
-      return throwsException(clazz, null);
-    }
-
-    public ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
-      compile();
-      try {
-        invoker.voidInvoke();
-      } catch (Throwable t) {
-        if (!clazz.isInstance(t)) {
-          failWithBadResults("throws an exception of type", clazz, "fails with", t);
-        }
-        if (message != null && !t.getMessage().equals(message)) {
-          failWithBadResults("throws an exception with message", message, "fails with", t);
-        }
-        return this;
-      }
-      fail("throws an exception");
-      return this; // dead code, but the compiler can't prove it
-    }
-
-    private void compile() {
-      if (invoker == null) {
-        try {
-          Class<? extends Invoker> invokerClass = invokerForType(actual().resultType());
-          this.compiledClass = createClass(invokerClass, actual());
-          this.invoker = load(invokerClass, compiledClass);
-        } catch (Throwable t) {
-          throw new RuntimeException("Compilation of" + actualAsString() + " failed", t);
-        }
+        throw new RuntimeException("Compilation of" + expr + " failed", t);
       }
     }
   }
-
-  private static final Subject.Factory<ExpressionSubject, Expression> FACTORY =
-      ExpressionSubject::new;
 
   public static <T> T createInvoker(Class<T> clazz, Expression expr) {
     Class<? extends Invoker> expected = invokerForType(expr.resultType());
@@ -342,7 +177,7 @@ public final class ExpressionTester {
     StringWriter sw = new StringWriter();
     CheckClassAdapter.verify(
         new ClassReader(clazz.data()),
-        ExpressionTester.class.getClassLoader(),
+        ExpressionEvaluator.class.getClassLoader(),
         false,
         new PrintWriter(sw));
     String result = sw.toString();

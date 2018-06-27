@@ -22,7 +22,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forList;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSanitizedString;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionTester.assertThatExpression;
+import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;

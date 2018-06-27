@@ -28,6 +28,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValue.ValueSoyType;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -40,12 +41,22 @@ import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
 final class JbcSrcValueFactory extends JavaValueFactory {
-  private final FunctionNode fnNode;
-  private final TemplateParameterLookup parameters;
 
-  JbcSrcValueFactory(FunctionNode fnNode, TemplateParameterLookup parameters) {
+  /** Interface that looks up an expression for a given plugin name. */
+  interface PluginInstanceLookup {
+    /** Returns the runtime this function uses. */
+    Expression getFunctionRuntime(String pluginName);
+  }
+
+  private final FunctionNode fnNode;
+  private final JavaPluginContext context;
+  private final PluginInstanceLookup pluginInstanceLookup;
+
+  JbcSrcValueFactory(
+      FunctionNode fnNode, JavaPluginContext context, PluginInstanceLookup pluginInstanceLookup) {
     this.fnNode = fnNode;
-    this.parameters = parameters;
+    this.context = context;
+    this.pluginInstanceLookup = pluginInstanceLookup;
   }
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
@@ -61,8 +72,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
                   }
                 }));
     SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
-    JavaValue result =
-        javaSrcFn.applyForJavaSource(this, javaArgs, parameters.getJavaPluginContext());
+    JavaValue result = javaSrcFn.applyForJavaSource(this, javaArgs, context);
     return toSoyExpression((JbcSrcJavaValue) result);
   }
 
@@ -84,8 +94,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // to be correct when calling the method, otherwise the JVM won't be able to dispatch
     // the method because the type will just be 'JavaPluginRuntime'.
     Expression runtime =
-        parameters
-            .getRenderContext()
+        pluginInstanceLookup
             .getFunctionRuntime(fnNode.getFunctionName())
             .checkedCast(method.getDeclaringClass());
     // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
