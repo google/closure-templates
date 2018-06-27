@@ -36,9 +36,9 @@ public final class NullSafeAccumulatorTest {
   public void testNullSafeChain() {
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum).generates("a;");
-    assertThat(accum.dotAccess(FieldAccess.id("b"), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
         .generates("a == null ? null : a.b;");
-    assertThat(accum.bracketAccess(Expression.id("c"), true /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("c"), /* nullSafe= */ true))
         .generates(
             "var $tmp$$1;\n"
                 + "if (a == null) {\n"
@@ -47,7 +47,7 @@ public final class NullSafeAccumulatorTest {
                 + "  var $tmp = a.b;\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp[c];\n"
                 + "}");
-    assertThat(accum.dotAccess(FieldAccess.id("d"), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
             "var $tmp$$3;\n"
                 + "if (a == null) {\n"
@@ -63,7 +63,7 @@ public final class NullSafeAccumulatorTest {
                 + "  }\n"
                 + "  $tmp$$3 = $tmp$$2;\n"
                 + "}");
-    assertThat(accum.bracketAccess(Expression.id("e"), true /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("e"), /* nullSafe= */ true))
         .generates(
             "var $tmp$$5;\n"
                 + "if (a == null) {\n"
@@ -93,12 +93,11 @@ public final class NullSafeAccumulatorTest {
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum)
         .generates("a;");
-    assertThat(accum.bracketAccess(Expression.id("b"), false /* nullSafe */)).generates("a[b];");
-    assertThat(accum.dotAccess(FieldAccess.id("c"), false /* nullSafe */))
-        .generates("a[b].c;");
-    assertThat(accum.bracketAccess(Expression.id("d"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("b"), /* nullSafe= */ false)).generates("a[b];");
+    assertThat(accum.dotAccess(FieldAccess.id("c"), /* nullSafe= */ false)).generates("a[b].c;");
+    assertThat(accum.bracketAccess(Expression.id("d"), /* nullSafe= */ false))
         .generates("a[b].c[d];");
-    assertThat(accum.dotAccess(FieldAccess.id("e"), false /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.id("e"), /* nullSafe= */ false))
         .generates("a[b].c[d].e;");
   }
 
@@ -106,11 +105,11 @@ public final class NullSafeAccumulatorTest {
   public void testMixedChains() {
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(accum).generates("a;");
-    assertThat(accum.dotAccess(FieldAccess.id("b"), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.id("b"), /* nullSafe= */ true))
         .generates("a == null ? null : a.b;");
-    assertThat(accum.bracketAccess(Expression.id("c"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("c"), /* nullSafe= */ false))
         .generates("a == null ? null : a.b[c];");
-    assertThat(accum.dotAccess(FieldAccess.id("d"), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
             "var $tmp$$1;\n"
                 + "if (a == null) {\n"
@@ -119,7 +118,7 @@ public final class NullSafeAccumulatorTest {
                 + "  var $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
                 + "}");
-    assertThat(accum.bracketAccess(Expression.id("e"), false /* nullSafe */))
+    assertThat(accum.bracketAccess(Expression.id("e"), /* nullSafe= */ false))
         .generates(
             "var $tmp$$1;\n"
                 + "if (a == null) {\n"
@@ -133,9 +132,9 @@ public final class NullSafeAccumulatorTest {
   @Test
   public void testCallPreservesChain() {
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
-    assertThat(accum.dotAccess(FieldAccess.call("b", Expression.id("c")), false /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.call("b", Expression.id("c")), /* nullSafe= */ false))
         .generates("a.b(c);");
-    assertThat(accum.dotAccess(FieldAccess.call("d", Expression.id("e")), true /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.call("d", Expression.id("e")), /* nullSafe= */ true))
         .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
   }
 
@@ -143,7 +142,7 @@ public final class NullSafeAccumulatorTest {
   public void testMap() {
     FieldDescriptor desc = Foo.getDescriptor().findFieldByName("map_field");
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
-    assertThat(accum.dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */))
+    assertThat(accum.dotAccess(FieldAccess.protoCall("mapFieldMap", desc), /* nullSafe= */ false))
         .generates("a.getMapFieldMap();");
   }
 
@@ -153,8 +152,8 @@ public final class NullSafeAccumulatorTest {
     NullSafeAccumulator accum = new NullSafeAccumulator(Expression.id("a"));
     assertThat(
             accum
-                .dotAccess(FieldAccess.protoCall("mapFieldMap", desc), false /* nullSafe */)
-                .mapGetAccess(Expression.id("key"), false /* nullSafe */))
+                .dotAccess(FieldAccess.protoCall("mapFieldMap", desc), /* nullSafe= */ false)
+                .mapGetAccess(Expression.id("key"), /* nullSafe= */ false))
         .generates("a.getMapFieldMap().get(key);");
   }
 

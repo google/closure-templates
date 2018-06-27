@@ -42,7 +42,7 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   private SoyType type;
 
   protected AbstractParentExprNode(SourceLocation sourceLocation) {
-    this(null /* type */, sourceLocation);
+    this(/* type= */ null, sourceLocation);
   }
 
   protected AbstractParentExprNode(SoyType type, SourceLocation sourceLocation) {

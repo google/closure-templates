@@ -104,7 +104,7 @@ public final class BidiDirectivesRuntime {
     // treated as HTML, the input had better be safe HTML/HTML-escaped (even if it isn't HTML
     // SanitizedData), or we have an XSS opportunity and a much bigger problem than bidi garbling.
     String wrappedValue =
-        bidiFormatter.spanWrap(valueDir, value.coerceToString(), true /* isHtml */);
+        bidiFormatter.spanWrap(valueDir, value.coerceToString(), /* isHtml= */ true);
 
     // Like other directives implementing SanitizedContentOperator, BidiSpanWrapDirective is called
     // after the escaping (if any) has already been done, and thus there is no need for it to
@@ -193,7 +193,7 @@ public final class BidiDirectivesRuntime {
         case SPAN:
           wrappingText =
               formatter.spanWrappingText(
-                  getSanitizedContentDirectionality(), buffer.toString(), true /* isHtml */);
+                  getSanitizedContentDirectionality(), buffer.toString(), /* isHtml= */ true);
           break;
         case UNICODE:
           wrappingText =

@@ -32,12 +32,12 @@ final class FormattingContext implements AutoCloseable {
   private final StringBuilder buf;
   private final int initialSize;
 
-  private Scope curScope = new Scope(null /* parent */, false /* emitClosingBrace */);
+  private Scope curScope = new Scope(/* parent= */ null, /* emitClosingBrace= */ false);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
 
   FormattingContext() {
-    this(0 /* startingIndent */);
+    this(/* startingIndent= */ 0);
   }
 
   /** @param startingIndent The number of columns to consider the "baseline" indentation level. */
@@ -100,7 +100,7 @@ final class FormattingContext implements AutoCloseable {
     buf.append('{');
     curIndent = curIndent + "  ";
     endLine();
-    curScope = new Scope(curScope, true /* emitClosingBrace */);
+    curScope = new Scope(curScope, /* emitClosingBrace= */ true);
     return this;
   }
 
@@ -112,7 +112,7 @@ final class FormattingContext implements AutoCloseable {
     maybeIndent();
     curIndent = curIndent + "  ";
     endLine();
-    curScope = new Scope(curScope, false /* emitClosingBrace */);
+    curScope = new Scope(curScope, /* emitClosingBrace= */ false);
     return this;
   }
 

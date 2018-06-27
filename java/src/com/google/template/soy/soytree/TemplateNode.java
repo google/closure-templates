@@ -515,17 +515,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     if (partialTemplateName == null) {
       // V1 soy templates.
       return new StackTraceElement(
-          /* declaringClass */ "(UnknownSoyNamespace)",
-          /* methodName */ templateName,
+          /* declaringClass= */ "(UnknownSoyNamespace)",
+          /* methodName= */ templateName,
           srcLocation.getFileName(),
           srcLocation.getBeginLine());
     } else {
       // V2 soy templates.
       return new StackTraceElement(
-          /* declaringClass */ soyFileHeaderInfo.namespace,
+          /* declaringClass= */ soyFileHeaderInfo.namespace,
           // The partial template name begins with a '.' that causes the stack trace element to
           // print "namespace..templateName" otherwise.
-          /* methodName */ partialTemplateName.substring(1),
+          /* methodName= */ partialTemplateName.substring(1),
           srcLocation.getFileName(),
           srcLocation.getBeginLine());
     }

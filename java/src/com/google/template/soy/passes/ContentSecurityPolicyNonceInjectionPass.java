@@ -203,7 +203,7 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
     return new VarRefNode(
         CSP_NONCE_VARIABLE_NAME,
         insertionLocation,
-        true /*injected*/,
+        /* isDollarSignIjParameter= */ true,
         null /* var defn, will be assigned by resolvenamespass */);
   }
 }

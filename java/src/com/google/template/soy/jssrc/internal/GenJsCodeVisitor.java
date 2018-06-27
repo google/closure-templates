@@ -785,7 +785,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (assistantForMsgs == null) {
       assistantForMsgs =
           new GenJsCodeVisitorAssistantForMsgs(
-              this /* master */,
+              /* master= */ this,
               jsSrcOptions,
               genCallCodeUtils,
               isComputableAsJsExprsVisitor,

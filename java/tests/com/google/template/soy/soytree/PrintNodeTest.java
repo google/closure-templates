@@ -77,10 +77,10 @@ public final class PrintNodeTest {
   public void testToSourceString() {
     VarRefNode boo = new VarRefNode("boo", X, false, null);
 
-    PrintNode pn = new PrintNode(0, X, true /* isImplicit */, boo, ImmutableList.of(), FAIL);
+    PrintNode pn = new PrintNode(0, X, /* isImplicit= */ true, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{$boo}");
 
-    pn = new PrintNode(0, X, false /* isImplicit */, boo, ImmutableList.of(), FAIL);
+    pn = new PrintNode(0, X, /* isImplicit= */ false, boo, ImmutableList.of(), FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{print $boo}");
   }
 }

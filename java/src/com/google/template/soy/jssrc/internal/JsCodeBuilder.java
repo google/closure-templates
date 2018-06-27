@@ -246,7 +246,7 @@ public class JsCodeBuilder {
    */
   public JsCodeBuilder setOutputVarInited() {
     outputVars.pop();
-    outputVars.push(new OutputVar(currOutputVar, true /* isInitialized */));
+    outputVars.push(new OutputVar(currOutputVar, /* initialized= */ true));
     currOutputVarIsInited = true;
     return this;
   }

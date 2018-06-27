@@ -81,7 +81,7 @@ public final class MapToLegacyObjectMapFunctionTest {
   public void computeForJbcSrc() {
     assertThatExpression(
             MAP_TO_LEGACY_OBJECT_MAP.computeForJbcSrc(
-                null /* context */,
+                /* context= */ null,
                 ImmutableList.of(
                     SoyExpression.forSoyValue(
                         UnknownType.getInstance(),

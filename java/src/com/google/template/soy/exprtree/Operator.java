@@ -244,7 +244,7 @@ public enum Operator {
    */
   private Operator(
       ImmutableList<SyntaxElement> syntax, int precedence, Associativity associativity) {
-    this(syntax, precedence, associativity, null /* description */);
+    this(syntax, precedence, associativity, /* description= */ null);
   }
 
   /**

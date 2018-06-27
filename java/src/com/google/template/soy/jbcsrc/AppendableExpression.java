@@ -86,7 +86,7 @@ final class AppendableExpression extends Expression {
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(
-        delegate, false /* hasSideEffects*/, true /* supportsSoftLimiting */);
+        delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ true);
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
@@ -94,15 +94,15 @@ final class AppendableExpression extends Expression {
     return new AppendableExpression(
         BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE,
         delegate,
-        false /* hasSideEffects*/,
-        false /* supportsSoftLimiting */);
+        /* hasSideEffects= */ false,
+        /* supportsSoftLimiting= */ false);
   }
 
   static AppendableExpression logger() {
     return new AppendableExpression(
         MethodRef.RUNTIME_LOGGER.invoke(),
-        false /* hasSideEffects*/,
-        false /* supportsSoftLimiting */);
+        /* hasSideEffects= */ false,
+        /* supportsSoftLimiting= */ false);
   }
 
   private final Expression delegate;

@@ -320,13 +320,13 @@ public class BidiUtils {
         if (dirType == UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT) {
           // Strongly LTR. Convert numeric word to LTR, and a neutral word either to LTR or, if
           // the character just scanned and the characters following it are a URL, to a URL.
-          processStrong(false /* isRtl */);
+          processStrong(/* isRtl= */ false);
         } else {
           switch (dirType) {
             case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT:
             case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
               // Strongly RTL. Convert neutral or numeric word to RTL.
-              processStrong(true /* isRtl */);
+              processStrong(/* isRtl= */ true);
               break;
 
             case UCharacter.DIRECTIONALITY_EUROPEAN_NUMBER:
@@ -397,7 +397,7 @@ public class BidiUtils {
             case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
               // LRO overrides the directionality of the characters inside it, so treat them as
               // strongly LTR.
-              processStrong(false /* isRtl */);
+              processStrong(/* isRtl= */ false);
               // Fall through to LRE processing.
             case UCharacter.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
               // Start LTR embedded area.
@@ -409,7 +409,7 @@ public class BidiUtils {
             case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
               // RLO overrides the directionality of the characters inside it, so treat them as
               // a strongly RTL word.
-              processStrong(true /* isRtl */);
+              processStrong(/* isRtl= */ true);
               // Fall through to RLE processing.
             case UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
               // Start RTL embedded area.
