@@ -18,8 +18,8 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 
@@ -29,9 +29,8 @@ public final class InternalPlugins {
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableMap<String, SoySourceFunction> internalFunctionMap() {
-    // TODO(b/19252021): Include the actual functions when they're converted.
-    // (Something like Iterables.concat(BasicFunctions.functions(), BidiFunctions.functions()))
-    return fromFunctions(ImmutableList.of());
+    // TODO(b/19252021): Include more functions...
+    return fromFunctions(BasicFunctions.functions());
   }
 
   public static ImmutableMap<String, SoySourceFunction> fromFunctions(

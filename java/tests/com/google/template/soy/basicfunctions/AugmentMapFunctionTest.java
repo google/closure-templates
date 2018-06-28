@@ -20,36 +20,34 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for KeysFunction.
+ * Unit tests for {@link AugmentMapFunction}.
  *
  */
 @RunWith(JUnit4.class)
 public class AugmentMapFunctionTest {
-
   @Test
-  public void testComputeForJava() {
+  public void testApplyForJavaSource() throws Exception {
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
-    SoyLegacyObjectMap origMap =
+    SoyDict origMap =
         SoyValueConverterUtility.newDict(
             "aaa", "blah", "bbb", "bleh", "ccc", SoyValueConverterUtility.newDict("xxx", 2));
-    SoyLegacyObjectMap additionalMap =
+    SoyDict additionalMap =
         SoyValueConverterUtility.newDict(
             "aaa", "bluh", "ccc", SoyValueConverterUtility.newDict("yyy", 5));
     SoyDict augmentedDict =
         (SoyDict)
-            augmentMapFunction.computeForJava(ImmutableList.<SoyValue>of(origMap, additionalMap));
-
+            new SoyJavaSourceFunctionTester(augmentMapFunction)
+                .callFunction(origMap, additionalMap);
     assertThat(augmentedDict.getField("aaa").stringValue()).isEqualTo("bluh");
     assertThat(augmentedDict.getItem(StringData.forValue("bbb")).stringValue()).isEqualTo("bleh");
     assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue())

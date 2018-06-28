@@ -16,11 +16,8 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDict;
-import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -28,12 +25,15 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -42,9 +42,8 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Soy function that creates a new map equivalent to augmenting an existing map with additional
@@ -52,50 +51,19 @@ import javax.inject.Singleton;
  *
  */
 @SoyFunctionSignature(
-  name = "augmentMap",
-  value =
-      // TODO(b/70946095): should be map<?, ?>, but due to the map migration we are leaving it as
-      // unknown for now.
-      @Signature(
-        returnType = "?",
-        parameterTypes = {"?", "?"}
-      )
-)
-@Singleton
+    name = "augmentMap",
+    value =
+        // TODO(b/70946095): should be map<?, ?>, but due to the map migration we are leaving it as
+        // unknown for now.
+        @Signature(
+            returnType = "?",
+            parameterTypes = {"?", "?"}))
 @SoyPureFunction
 public final class AugmentMapFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-
-  @Inject
-  AugmentMapFunction() {}
-
-  @SuppressWarnings("ConstantConditions") // IntelliJ
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg0 = args.get(0);
-    SoyValue arg1 = args.get(1);
-
-    Preconditions.checkArgument(
-        arg0 instanceof SoyLegacyObjectMap,
-        "First argument to augmentMap() function is not SoyLegacyObjectMap.");
-    Preconditions.checkArgument(
-        arg1 instanceof SoyLegacyObjectMap,
-        "Second argument to augmentMap() function is not SoyLegacyObjectMap.");
-
-    // TODO: Support map with nonstring key.
-    Preconditions.checkArgument(
-        arg0 instanceof SoyDict,
-        "First argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't"
-            + " support maps that are not dicts (it is a todo).");
-    Preconditions.checkArgument(
-        arg1 instanceof SoyDict,
-        "Second argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't"
-            + " support maps that are not dicts (it is a todo).");
-    return BasicFunctionsRuntime.augmentMap((SoyDict) arg0, (SoyDict) arg1);
-  }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -107,10 +75,22 @@ public final class AugmentMapFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef AUGMENT_MAP_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "augmentMap", SoyDict.class, SoyDict.class)
-            .asNonNullable();
+  private static final class MethodRefs {
+    static final Method AUGMENT_MAP_FN =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "augmentMap", SoyDict.class, SoyDict.class);
+
+    static final MethodRef AUGMENT_MAP_FN_REF = MethodRef.create(AUGMENT_MAP_FN).asNonNullable();
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    JavaValue arg0 = args.get(0);
+    JavaValue arg1 = args.get(1);
+
+    // TODO(sameb): Update ResolveExpressionTypesPass to set the node type, so it's set correctly.
+    return factory.callStaticMethod(MethodRefs.AUGMENT_MAP_FN, arg0, arg1);
   }
 
   @Override
@@ -124,7 +104,7 @@ public final class AugmentMapFunction extends TypedSoyFunction
         LegacyObjectMapType.of(
             StringType.getInstance(),
             UnionType.of(getMapValueType(arg0.soyType()), getMapValueType(arg1.soyType())));
-    return SoyExpression.forSoyValue(mapType, JbcSrcMethods.AUGMENT_MAP_FN.invoke(first, second));
+    return SoyExpression.forSoyValue(mapType, MethodRefs.AUGMENT_MAP_FN_REF.invoke(first, second));
   }
 
   private SoyType getMapValueType(SoyType type) {
