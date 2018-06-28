@@ -18,8 +18,6 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -40,8 +38,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,20 +54,7 @@ import java.util.logging.Logger;
  *
  */
 public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyObjectMap, SoyRecord {
-  // The minimum amount of time between logging for map/record access to a particular proto.
-  private static final long LOGGING_FREQUENCY_MILLIS = TimeUnit.SECONDS.toMillis(10);
   private static final Logger logger = Logger.getLogger(SoyProtoValue.class.getName());
-
-  private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForRecordAccess =
-      new ConcurrentHashMap<>();
-  private static final ConcurrentHashMap<String, Long> protoNameToLastLogTimeForMapAccess =
-      new ConcurrentHashMap<>();
-
-  @VisibleForTesting
-  static void clearLoggingData() {
-    protoNameToLastLogTimeForRecordAccess.clear();
-    protoNameToLastLogTimeForMapAccess.clear();
-  }
 
   private static final class ProtoClass {
     final ImmutableMap<String, FieldWithInterpreter> fields;
@@ -356,46 +339,36 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   }
 
   private void asMap() {
-    asDeprecatedType("map", protoNameToLastLogTimeForMapAccess);
+    asDeprecatedType("map");
   }
 
   private void asRecord() {
-    asDeprecatedType("record", protoNameToLastLogTimeForRecordAccess);
+    asDeprecatedType("record");
   }
 
-  private void asDeprecatedType(String type, ConcurrentHashMap<String, Long> lastAccessMap) {
+  private void asDeprecatedType(String type) {
     Object locationKey = getAndClearLocationKey();
     String fullName = clazz().fullName;
-    Long lastTime = lastAccessMap.get(fullName);
-    long nowMillis = System.currentTimeMillis();
-    if (lastTime == null || lastTime < nowMillis - LOGGING_FREQUENCY_MILLIS) {
-      Long replaced = lastAccessMap.put(fullName, nowMillis);
-      // we raced and stomped on a value, but that is fine, it just means that we might delay
-      // logging for this key
-      if (!Objects.equal(replaced, lastTime)) {
-        return;
-      }
-      if (logger.isLoggable(Level.WARNING)) {
-        if (locationKey == null) {
-          // if there is no locationKey (i.e. this is jbcsrc), then we will use a stack trace
-          Exception e = new Exception("bad proto access");
-          Names.rewriteStackTrace(e);
-          logger.log(
-              Level.WARNING,
-              String.format(
-                  "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
-                  ,
-                  fullName, type),
-              e);
-        } else {
-          // if there is a locationKey (i.e. this is tofu), then we will use the location key
-          logger.log(
-              Level.WARNING,
-              String.format(
-                  "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
-                      + "\n\t%s",
-                  fullName, type, locationKey));
-        }
+    if (logger.isLoggable(Level.WARNING)) {
+      if (locationKey == null) {
+        // if there is no locationKey (i.e. this is jbcsrc), then we will use a stack trace
+        Exception e = new Exception("bad proto access");
+        Names.rewriteStackTrace(e);
+        logger.log(
+            Level.WARNING,
+            String.format(
+                "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+                ,
+                fullName, type),
+            e);
+      } else {
+        // if there is a locationKey (i.e. this is tofu), then we will use the location key
+        logger.log(
+            Level.WARNING,
+            String.format(
+                "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+                    + "\n\t%s",
+                fullName, type, locationKey));
       }
     }
   }
