@@ -156,7 +156,7 @@ public final class TemplateParserTest {
   public void testRecognizeRawText() throws Exception {
     // prevent parsing as tags by setting content kind to text
     assertValidTemplate(SanitizedContentKind.TEXT, "blah>blah<blah<blah>blah>blah>blah>blah<blah");
-    assertValidTemplate("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}");
+    assertValidTemplate("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}{nbsp}");
     assertValidTemplate("blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" + "}}}}}}}}}{ { {{/literal}blah");
 
     assertValidTemplate("{literal}{literal}{/literal}");
@@ -837,7 +837,7 @@ public final class TemplateParserTest {
     String templateBody =
         "  {sp} aaa bbb  \n"
             + "  ccc {lb}{rb} ddd {\\n}\n"
-            + "  eee <br>\n"
+            + "  eee {nbsp}<br>\n"
             + "  fff\n"
             + "  {literal}ggg\n"
             + "hhh }{  {/literal}  \n"
@@ -848,10 +848,11 @@ public final class TemplateParserTest {
     assertEquals(1, nodes.size());
     RawTextNode rtn = (RawTextNode) nodes.get(0);
     assertEquals(
-        "  aaa bbb ccc {} ddd \neee <br>fffggg\nhhh }{  \u2222\uEEEE\u9EC4\u607A",
+        "  aaa bbb ccc {} ddd \neee \u00A0<br>fffggg\nhhh }{  \u2222\uEEEE\u9EC4\u607A",
         rtn.getRawText());
     assertEquals(
-        "  aaa bbb ccc {lb}{rb} ddd {\\n}eee <br>fffggg{\\n}hhh {rb}{lb}  \u2222\uEEEE\u9EC4\u607A",
+        "  aaa bbb ccc {lb}{rb} ddd {\\n}eee {nbsp}<br>"
+            + "fffggg{\\n}hhh {rb}{lb}  \u2222\uEEEE\u9EC4\u607A",
         rtn.toSourceString());
   }
 

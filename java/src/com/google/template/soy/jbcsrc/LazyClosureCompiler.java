@@ -60,6 +60,12 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -615,6 +621,30 @@ final class LazyClosureCompiler {
         @Override
         public Expression getULocale() {
           return getDelegate().getULocale();
+        }
+      };
+    }
+
+    @Override
+    public JavaPluginContext getJavaPluginContext() {
+      return new JavaPluginContext() {
+        RenderContextExpression delegate;
+
+        RenderContextExpression getDelegate() {
+          if (delegate == null) {
+            delegate = getRenderContext();
+          }
+          return delegate;
+        }
+
+        @Override
+        public JavaValue getBidiDir() {
+          return JbcSrcJavaValue.of(getDelegate().getBidiGlobalDir());
+        }
+
+        @Override
+        public JavaValue getLocaleString() {
+          return JbcSrcJavaValue.of(getDelegate().getULocale());
         }
       };
     }

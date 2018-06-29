@@ -16,10 +16,12 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -44,6 +46,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -155,6 +158,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private CountingFlushableAppendable flushable;
 
+  /** The runtimes for functions. */
+  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
+
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param outputBuf The Appendable to append the output to.
@@ -168,6 +174,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    *     source.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
+   * @param functionRuntimes The instances used for evaluating functions that call instance methods.
    */
   public RenderVisitor(
       EvalVisitorFactory evalVisitorFactory,
@@ -179,8 +186,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
-    Preconditions.checkNotNull(data);
+      boolean debugSoyTemplateInfo,
+      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+    checkNotNull(data);
 
     this.evalVisitorFactory = evalVisitorFactory;
     this.templateRegistry = templateRegistry;
@@ -191,6 +199,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
+    this.functionRuntimes = checkNotNull(functionRuntimes);
 
     this.evalVisitor = null; // lazily initialized
     this.assistantForMsgs = null; // lazily initialized
@@ -240,7 +249,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         msgBundle,
         xidRenamingMap,
         cssRenamingMap,
-        debugSoyTemplateInfo);
+        debugSoyTemplateInfo,
+        functionRuntimes);
   }
 
   /**
@@ -742,7 +752,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (evalVisitor == null) {
       evalVisitor =
           evalVisitorFactory.create(
-              env, ijData, cssRenamingMap, xidRenamingMap, msgBundle, debugSoyTemplateInfo);
+              env,
+              ijData,
+              cssRenamingMap,
+              xidRenamingMap,
+              msgBundle,
+              debugSoyTemplateInfo,
+              functionRuntimes);
     }
 
     try {

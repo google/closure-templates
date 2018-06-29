@@ -34,12 +34,14 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(CeilingFunction.class);
     soyFunctionsSetBinder.addBinding().to(ConcatListsFunction.class);
     soyFunctionsSetBinder.addBinding().to(FloorFunction.class);
+    soyFunctionsSetBinder.addBinding().to(HtmlToTextFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNonnullFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNullFunction.class);
     soyFunctionsSetBinder.addBinding().to(KeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(MapKeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(LegacyObjectMapToMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(LengthFunction.class);
+    soyFunctionsSetBinder.addBinding().to(ListContainsSoyFunction.class);
     soyFunctionsSetBinder.addBinding().to(MapToLegacyObjectMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(MaxFunction.class);
     soyFunctionsSetBinder.addBinding().to(MinFunction.class);
@@ -52,5 +54,7 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(StrIndexOfFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrLenFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrSubFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrToLowerCaseFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrToUpperCaseFunction.class);
   }
 }

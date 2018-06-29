@@ -24765,6 +24765,24 @@ soy.$$parseFloat = function(str) {
 
 
 /**
+ * Coerce the given value into a bool.
+ *
+ * For objects of type `SanitizedContent`, the contents are used to determine
+ * the boolean value; this is because the outer `SanitizedContent` object
+ * instance is always truthy (unless it's null).
+ * 
+ * @param {*} arg The argument to coerce.
+ * @return {boolean}
+ */
+soy.$$coerceToBoolean = function(arg) {
+  if (arg instanceof goog.soy.data.SanitizedContent) {
+    return !!arg.getContent();
+  }
+  return !!arg;
+};
+
+
+/**
  * Gets a consistent unique id for the given delegate template name. Two calls
  * to this function will return the same id if and only if the input names are
  * the same.
@@ -25149,6 +25167,76 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
       soy.$$stripHtmlTags(value, tagWhitelist), soydata.getContentDir(value));
 };
+
+
+// LINT.IfChange(htmlToText)
+/**
+ * Converts HTML to plain text by removing tags, normalizing spaces and
+ * converting entities.
+ * @param {string} html
+ * @return {string}
+ */
+soy.$$htmlToText = function(html) {
+  var text = '';
+  var start = 0;
+  // Tag name to stop removing contents, e.g. '/script'.
+  var removingUntil = '';
+  // Tag name to stop preserving whitespace, e.g. '/pre'.
+  var wsPreservingUntil = '';
+  var tagRe =
+      /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi;
+  for (var match; match = tagRe.exec(html);) {
+    var tag = match[1];
+    var offset = match.index;
+    if (!removingUntil) {
+      var chunk = html.substring(start, offset);
+      chunk = goog.string.unescapeEntities(chunk);
+      if (!wsPreservingUntil) {
+        // We are not inside <pre>, normalize spaces.
+        chunk = chunk.replace(/\s+/g, ' ');
+        if (!/\S$/.test(text)) {
+          // Strip leading space unless after non-whitespace.
+          chunk = chunk.replace(/^ /, '');
+        }
+      }
+      text += chunk;
+      if (/^(script|style|textarea|title)$/i.test(tag)) {
+        removingUntil = '/' + tag.toLowerCase();
+      } else if (/^br$/i.test(tag)) {
+        // <br> adds newline even after newline.
+        text += '\n';
+      } else if (soy.BLOCK_TAGS_RE_.test(tag)) {
+        if (/[^\n]$/.test(text)) {
+          // Block tags don't add more consecutive newlines.
+          text += '\n';
+        }
+        if (/^pre$/i.test(tag)) {
+          wsPreservingUntil = '/' + tag.toLowerCase();
+        } else if (tag.toLowerCase() == wsPreservingUntil) {
+          wsPreservingUntil = '';
+        }
+      } else if (/^(td|th)$/i.test(tag)) {
+        // We add \t even after newline to support more leading <td>.
+        text += '\t';
+      }
+    } else if (removingUntil == tag.toLowerCase()) {
+      removingUntil = '';
+    }
+    if (!match[0]) {
+      break;
+    }
+    start = offset + match[0].length;
+  }
+  return text;
+};
+
+
+/** @private @const */
+soy.BLOCK_TAGS_RE_ =
+    /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/i;
+// LINT.ThenChange(
+//     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
+//     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
 
 
 /**
@@ -25875,6 +25963,20 @@ soy.$$isHighSurrogate_ = function(cc) {
  */
 soy.$$isLowSurrogate_ = function(cc) {
   return 0xDC00 <= cc && cc <= 0xDFFF;
+};
+
+
+/**
+ * Checks if the list contains the given element.
+ * @param {!IArrayLike<?>} list
+ * @param {*} val
+ * @return {boolean}
+ * @template T
+ */
+soy.$$listContains = function(list, val) {
+  return goog.array.findIndex(list, function(el) {
+    return soy.$$equals(val, el);
+  }) >= 0;
 };
 
 

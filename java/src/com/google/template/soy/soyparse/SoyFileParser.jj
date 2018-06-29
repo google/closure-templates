@@ -257,9 +257,9 @@ import javax.annotation.Nullable;
  * 2. Raw text:
  *    + Raw text is fixed text that will be part of the template output. There are 3 types.
  *    + Any text outside of Soy tags is raw text.
- *    + There are 7 special character commands that produce raw text strings:
+ *    + There are 8 special character commands that produce raw text strings:
  *      {sp} = space   {nil} = empty string   {\n} = newline (line feed)   {\r} = carriage return
- *      {\t} = tab   {lb} = left brace   {rb} = right brace
+ *      {\t} = tab   {lb} = left brace   {rb} = right brace   {nbsp} = non-breaking space
  *    + A section of raw text (may contain braces) can be enclosed within a 'literal' block:
  *      {literal}...{/literal}
  *
@@ -947,6 +947,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_TAB                 : "{\\t}"          >
 | < CMD_FULL_LB                  : "{lb}"           >
 | < CMD_FULL_RB                  : "{rb}"           >
+| < CMD_FULL_NBSP                : "{nbsp}"         >
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
 
@@ -1704,6 +1705,7 @@ private RawTextNode RawText() :
       | token = <CMD_FULL_TAB>
       | token = <CMD_FULL_LB>
       | token = <CMD_FULL_RB>
+      | token = <CMD_FULL_NBSP>
       )
       { builder.addTextualCommand(token); }
     )

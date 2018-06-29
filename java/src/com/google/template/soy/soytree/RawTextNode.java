@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 public final class RawTextNode extends AbstractSoyNode implements StandaloneNode {
 
   /** The special chars we need to re-escape for toSourceString(). */
-  private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}]");
+  private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}\u00A0]");
 
   /** Map from special char to be re-escaped to its special char tag (for toSourceString()). */
   private static final ImmutableMap<String, String> SPECIAL_CHAR_TO_TAG =
@@ -53,6 +53,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
           .put("\t", "{\\t}")
           .put("{", "{lb}")
           .put("}", "{rb}")
+          .put("\u00A0", "{nbsp}")
           .build();
 
   /** The raw text string (after processing of special chars and literal blocks). */
@@ -103,7 +104,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    */
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
-        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");
   }
 
   @Override

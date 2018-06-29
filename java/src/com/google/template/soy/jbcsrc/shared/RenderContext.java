@@ -114,7 +114,8 @@ public final class RenderContext {
   public JavaPluginRuntime getFunctionRuntime(String name) {
     JavaPluginRuntime runtime = functionRuntimes.get(name);
     if (runtime == null) {
-      // TODO(sameb): Throw a more meaningful exception once users can register their own runtimes.
+      // TODO(b/19252021): Throw a more meaningful exception once users can register their own
+      // runtimes.
       // This is the path they'll hit if the user calls JavaValueFactory.callRuntimeMethod without
       // having supplied a runtime for that function.
       throw new IllegalStateException(

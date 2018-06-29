@@ -26,12 +26,15 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
 
 /** An expression for a {@link RenderContext} object. */
-final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
+final class RenderContextExpression extends Expression
+    implements JbcSrcPluginContext, JavaPluginContext {
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
@@ -93,6 +96,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   @Override
+  public JavaValue getBidiDir() {
+    return JbcSrcJavaValue.of(getBidiGlobalDir());
+  }
+
+  @Override
   public Expression getDebugSoyTemplateInfo() {
     return delegate.invoke(GET_DEBUG_SOY_TEMPLATE_INFO);
   }
@@ -127,6 +135,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   public Expression getULocale() {
     return delegate.invoke(GET_LOCALE);
+  }
+
+  @Override
+  public JavaValue getLocaleString() {
+    return JbcSrcJavaValue.of(getULocale());
   }
 
   Expression getSoyMsgParts(long id, Expression defaultParts) {

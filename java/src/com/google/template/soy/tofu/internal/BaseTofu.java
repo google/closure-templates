@@ -29,6 +29,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
+import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -128,6 +129,7 @@ public final class BaseTofu implements SoyTofu {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
+   * @param functionRuntimes The instances used for evaluating functions that call instance methods.
    * @return The template that was rendered.
    */
   private TemplateNode renderMain(
@@ -139,7 +141,8 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      boolean debugSoyTemplateInfo,
+      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Predicates.alwaysFalse();
@@ -160,7 +163,8 @@ public final class BaseTofu implements SoyTofu {
           msgBundle,
           idRenamingMap,
           cssRenamingMap,
-          debugSoyTemplateInfo);
+          debugSoyTemplateInfo,
+          functionRuntimes);
     }
   }
 
@@ -188,7 +192,8 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      boolean debugSoyTemplateInfo,
+      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
 
     TemplateNode template = templateRegistry.getBasicTemplate(templateName);
     if (template == null) {
@@ -216,7 +221,8 @@ public final class BaseTofu implements SoyTofu {
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
-              debugSoyTemplateInfo);
+              debugSoyTemplateInfo,
+              functionRuntimes);
       rv.exec(template);
 
     } catch (RenderException re) {
@@ -230,6 +236,7 @@ public final class BaseTofu implements SoyTofu {
   // Renderer implementation.
 
   /** Simple implementation of the Renderer interface. */
+  @SuppressWarnings("deprecation")
   private static class RendererImpl implements Renderer {
 
     private final BaseTofu baseTofu;
@@ -243,6 +250,7 @@ public final class BaseTofu implements SoyTofu {
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
     private boolean debugSoyTemplateInfo;
+    private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes = ImmutableMap.of();
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
@@ -337,7 +345,8 @@ public final class BaseTofu implements SoyTofu {
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
-              debugSoyTemplateInfo);
+              debugSoyTemplateInfo,
+              functionRuntimes);
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -363,7 +372,8 @@ public final class BaseTofu implements SoyTofu {
               msgBundle,
               idRenamingMap,
               cssRenamingMap,
-              debugSoyTemplateInfo);
+              debugSoyTemplateInfo,
+              functionRuntimes);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.

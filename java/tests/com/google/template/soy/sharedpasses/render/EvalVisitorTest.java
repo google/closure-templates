@@ -168,7 +168,8 @@ public class EvalVisitorTest {
                 cssRenamingMap,
                 xidRenamingMap,
                 null,
-                /* debugSoyTemplateInfo= */ false);
+                /* debugSoyTemplateInfo= */ false,
+                /* functionRuntimes= */ ImmutableMap.of());
     return evalVisitor.exec(expr);
   }
 

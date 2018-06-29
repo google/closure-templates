@@ -141,12 +141,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   /**
-   * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
-   * this node emits in. This affects how the node is escaped (for traditional backends) or how it's
-   * passed to incremental DOM APIs.
+   * Gets the HTML source context immediately prior to the node (typically tag, attribute value,
+   * HTML PCDATA, or plain text) which this node emits in. This affects how the node is escaped (for
+   * traditional backends) or how it's passed to incremental DOM APIs.
    */
   public HtmlContext getHtmlContext() {
-    return checkNotNull(htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
+    return checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
   }
 
   public void setHtmlContext(HtmlContext value) {

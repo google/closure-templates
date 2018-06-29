@@ -32,6 +32,8 @@ import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +69,11 @@ public final class BasicFunctionsRuntime {
       flattened.addAll(soyList.asJavaList());
     }
     return flattened.build();
+  }
+
+  /** Checks if list contains a value. */
+  public static boolean listContains(SoyList list, SoyValue value) {
+    return list.asJavaList().contains(value);
   }
 
   /**
@@ -194,5 +201,13 @@ public final class BasicFunctionsRuntime {
       }
     }
     return list;
+  }
+
+  public static String strToLowerCase(String str, ULocale uLocale) {
+    return str.isEmpty() ? str : UCharacter.toLowerCase(uLocale, str);
+  }
+
+  public static String strToUpperCase(String str, ULocale uLocale) {
+    return str.isEmpty() ? str : UCharacter.toUpperCase(uLocale, str);
   }
 }

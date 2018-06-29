@@ -232,6 +232,7 @@ final class ParseErrors {
       case SoyFileParserConstants.CMD_FULL_TAB:
       case SoyFileParserConstants.CMD_FULL_LB:
       case SoyFileParserConstants.CMD_FULL_RB:
+      case SoyFileParserConstants.CMD_FULL_NBSP:
       case SoyFileParserConstants.TOKEN_NOT_WS:
         return "text";
       case SoyFileParserConstants.TOKEN_WS:

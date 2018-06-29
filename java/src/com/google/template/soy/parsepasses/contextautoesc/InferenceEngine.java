@@ -320,6 +320,8 @@ final class InferenceEngine {
     protected void visitCallNode(CallNode callNode) {
       checkUriEnd();
 
+      callNode.setHtmlContext(context.state);
+
       String calleeName;
       if (callNode instanceof CallBasicNode) {
         calleeName = ((CallBasicNode) callNode).getCalleeName();
@@ -438,6 +440,7 @@ final class InferenceEngine {
      */
     @Override
     protected void visitPrintNode(PrintNode printNode) {
+      printNode.setHtmlContext(context.state);
       // It is an error to use autoescape-canceling print directives in strict mode unless in a
       // block of kind text.
       if (autoescapeMode == AutoescapeMode.STRICT && context.state != HtmlContext.TEXT) {

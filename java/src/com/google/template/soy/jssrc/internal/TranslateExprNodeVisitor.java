@@ -442,8 +442,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitOrOpNode(OrOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 2);
-    return visit(node.getChild(0)).or(visit(node.getChild(1)), codeGenerator);
+    ExprNode lhOperand = node.getChild(0);
+    ExprNode rhOperand = node.getChild(1);
+    Expression lhChunk = Truthiness.maybeCoerce(lhOperand.getType(), visit(lhOperand));
+    Expression rhChunk = Truthiness.maybeCoerce(rhOperand.getType(), visit(rhOperand));
+    return lhChunk.or(rhChunk, codeGenerator);
   }
 
   @Override

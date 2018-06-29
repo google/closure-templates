@@ -286,7 +286,8 @@ public class RenderVisitorTest {
             msgBundle,
             xidRenamingMap,
             cssRenamingMap,
-            false);
+            false,
+            /* functionRuntimes= */ ImmutableMap.of());
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -334,7 +335,8 @@ public class RenderVisitorTest {
             null,
             xidRenamingMap,
             cssRenamingMap,
-            false);
+            false,
+            /* functionRuntimes= */ ImmutableMap.of());
     TemplateNode templateNode = templateRegistry.getBasicTemplate(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -1047,7 +1049,8 @@ public class RenderVisitorTest {
             null,
             xidRenamingMap,
             cssRenamingMap,
-            false);
+            false,
+            /* functionRuntimes= */ ImmutableMap.of());
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =

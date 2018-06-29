@@ -228,6 +228,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visit(SoyNode node) {
     try {
       return super.visit(node).withSourceLocation(node.getSourceLocation());
+    } catch (PluginCodegenException e) {
+      throw e; // Rethrow as-is: the exception came from a buggy plugin, not the compiler
     } catch (UnexpectedCompilerFailureException e) {
       e.addLocation(node);
       throw e;
