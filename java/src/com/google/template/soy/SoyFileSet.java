@@ -752,7 +752,10 @@ public final class SoyFileSet {
    * @param origTransMsgBundle The message bundle to prune.
    * @return The pruned message bundle.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated instead of using this method to prune, consider comparing the originally extracted
+   *     messages file with your translations in order to prune.
    */
+  @Deprecated
   public SoyMsgBundle pruneTranslatedMsgs(SoyMsgBundle origTransMsgBundle) {
     resetErrorReporter();
     // ------ Extract msgs from all the templates reachable from public templates. ------
