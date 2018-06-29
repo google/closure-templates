@@ -17,7 +17,7 @@
 package com.google.template.soy.pysrc.internal;
 
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.pysrc.internalutils.NodeContentKinds;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 
 /** Simple utilities for constructing {@link PyExprs}. */
