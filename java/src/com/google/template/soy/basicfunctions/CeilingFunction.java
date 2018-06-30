@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -25,43 +24,34 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
  * Soy function that takes the ceiling of a number.
  *
  */
-@Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-  name = "ceiling",
-  value = {
-    @Signature(
-      parameterTypes = {"number"},
-      returnType = "int"
-    )
-  }
-)
+    name = "ceiling",
+    value = {
+      @Signature(
+          parameterTypes = {"number"},
+          returnType = "int")
+    })
 public final class CeilingFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  CeilingFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    return IntegerData.forValue(BasicFunctionsRuntime.ceil(args.get(0)));
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -76,11 +66,20 @@ public final class CeilingFunction extends TypedSoyFunction
 
     return new PyExpr("int(math.ceil(" + arg.getText() + "))", Integer.MAX_VALUE);
   }
+
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef CEIL_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "ceil", SoyValue.class).asCheap();
-    static final MethodRef MATH_CEIL = MethodRef.create(Math.class, "ceil", double.class).asCheap();
+  private static final class Methods {
+    static final Method CEIL_FN =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "ceil", SoyValue.class);
+    static final MethodRef CEIL_FN_REF = MethodRef.create(CEIL_FN).asCheap();
+    static final MethodRef MATH_CEIL_REF =
+        MethodRef.create(Math.class, "ceil", double.class).asCheap();
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.CEIL_FN, args.get(0));
   }
 
   @Override
@@ -92,9 +91,9 @@ public final class CeilingFunction extends TypedSoyFunction
       case Type.DOUBLE:
         return SoyExpression.forInt(
             BytecodeUtils.numericConversion(
-                JbcSrcMethods.MATH_CEIL.invoke(argument), Type.LONG_TYPE));
+                Methods.MATH_CEIL_REF.invoke(argument), Type.LONG_TYPE));
       default:
-        return SoyExpression.forInt(JbcSrcMethods.CEIL_FN.invoke(argument.box()));
+        return SoyExpression.forInt(Methods.CEIL_FN_REF.invoke(argument.box()));
     }
   }
 }

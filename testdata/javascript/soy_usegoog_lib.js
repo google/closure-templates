@@ -9330,6 +9330,13 @@ goog.labs.userAgent.platform.isChromecast = function() {
 };
 
 /**
+ * @return {boolean} Whether the platform is KaiOS.
+ */
+goog.labs.userAgent.platform.isKaiOS = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
+};
+
+/**
  * The version of the platform. We only determine the version for Windows,
  * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
  * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
@@ -9808,6 +9815,12 @@ goog.define('goog.userAgent.ASSUME_IPOD', false);
 
 
 /**
+ * @define {boolean} Whether the user agent is running on KaiOS.
+ */
+goog.define('goog.userAgent.ASSUME_KAIOS', false);
+
+
+/**
  * @type {boolean}
  * @private
  */
@@ -9927,6 +9940,14 @@ goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
     (goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
      goog.userAgent.ASSUME_IPOD) :
     goog.labs.userAgent.platform.isIos();
+
+/**
+ * Whether the user agent is running on KaiOS.
+ */
+goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_KAIOS :
+    goog.labs.userAgent.platform.isKaiOS();
+
 
 /**
  * @return {string} The string that describes the version number of the user
