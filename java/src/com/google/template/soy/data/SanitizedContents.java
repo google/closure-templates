@@ -196,6 +196,16 @@ public final class SanitizedContents {
     return fromConstant(constant, ContentKind.HTML, null);
   }
 
+  /**
+   * Wraps an assumed-safe CSS constant.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that URLs that are
+   * controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantCss(@CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.CSS, Dir.LTR);
+  }
+
   /** Wraps an assumed-safe constant string. */
   @SuppressWarnings("ReferenceEquality") // need to use a reference check to ensure it is a constant
   private static SanitizedContent fromConstant(
