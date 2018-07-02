@@ -25,6 +25,7 @@ public class BasicFunctions {
   private BasicFunctions() {}
 
   public static ImmutableSet<SoySourceFunction> functions() {
-    return ImmutableSet.of(new AugmentMapFunction(), new CeilingFunction());
+    return ImmutableSet.of(
+        new AugmentMapFunction(), new CeilingFunction(), new ConcatListsFunction());
   }
 }

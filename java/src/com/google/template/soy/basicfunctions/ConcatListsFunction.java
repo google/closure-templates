@@ -19,68 +19,84 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Soy function that concatenates two or more lists together.
  *
- * <p>NOTE: this function has special support in the type checker for calculating the return type
- *
  */
-@Singleton
+@SoyFunctionSignature(
+    name = "concatLists",
+    value = {
+      // Note: These signatures exist solely to inform the # of parameters we allow.
+      // The return type is overridden in ResolveExpressionTypePass.
+      // ConcatLists would be varadic if soy allowed varadic functions. Instead we're giving the
+      // function a high enough upper limit that it's close enough to being varadic in practice.
+      @Signature(
+          parameterTypes = {"list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {"list<?>", "list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {"list<?>", "list<?>", "list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {"list<?>", "list<?>", "list<?>", "list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {"list<?>", "list<?>", "list<?>", "list<?>", "list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {"list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>"},
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {
+            "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>"
+          },
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {
+            "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>"
+          },
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {
+            "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>",
+            "list<?>"
+          },
+          returnType = "list<?>"),
+      @Signature(
+          parameterTypes = {
+            "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>", "list<?>",
+            "list<?>", "list<?>"
+          },
+          returnType = "list<?>")
+    })
 @SoyPureFunction
-public final class ConcatListsFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  // ConcatLists would be varadic if soy allowed varadic functions. Instead we're giving the
-  // function a high enough upper limit that it's close enough to being varadic in practice.
-  private static final int ARGUMENT_SIZE_LIMIT = 10;
-
-  @Inject
-  ConcatListsFunction() {}
-
-  @Override
-  public String getName() {
-    return "concatLists";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    ImmutableSet.Builder<Integer> argSizes = ImmutableSet.builder();
-    for (int i = 2; i <= ARGUMENT_SIZE_LIMIT; i++) {
-      argSizes.add(i);
-    }
-    return argSizes.build();
-  }
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    ImmutableList.Builder<SoyList> asSoyLists = ImmutableList.builder();
-    for (SoyValue soyList : args) {
-      asSoyLists.add((SoyList) soyList);
-    }
-    return ListImpl.forProviderList(BasicFunctionsRuntime.concatLists(asSoyLists.build()));
-  }
+public final class ConcatListsFunction extends TypedSoyFunction
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -103,9 +119,16 @@ public final class ConcatListsFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef CONCAT_LISTS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "concatLists", List.class);
+  private static final class Methods {
+    static final Method CONCAT_LISTS_FN =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "concatLists", List.class);
+    static final MethodRef CONCAT_LISTS_FN_REF = MethodRef.create(CONCAT_LISTS_FN);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.CONCAT_LISTS_FN, factory.listOf(args));
   }
 
   @Override
@@ -120,6 +143,6 @@ public final class ConcatListsFunction
 
     return SoyExpression.forList(
         ListType.of(UnionType.of(elementTypes.build())),
-        JbcSrcMethods.CONCAT_LISTS_FN.invoke(SoyExpression.asBoxedList(args)));
+        Methods.CONCAT_LISTS_FN_REF.invoke(SoyExpression.asBoxedList(args)));
   }
 }

@@ -30,7 +30,6 @@ public final class BasicFunctionsModule extends AbstractModule {
   public void configure() {
     Multibinder<SoyFunction> soyFunctionsSetBinder =
         Multibinder.newSetBinder(binder(), SoyFunction.class);
-    soyFunctionsSetBinder.addBinding().to(ConcatListsFunction.class);
     soyFunctionsSetBinder.addBinding().to(FloorFunction.class);
     soyFunctionsSetBinder.addBinding().to(HtmlToTextFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNonnullFunction.class);
