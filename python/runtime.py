@@ -468,6 +468,12 @@ def parse_float(s):
     return None
   return None if math.isnan(f) else f
 
+
+def sqrt(num):
+  """Returns the square root of the given number."""
+  return math.sqrt(num)
+
+
 def unsupported(str):
   raise Exception("unsupported feature: " + str)
 
