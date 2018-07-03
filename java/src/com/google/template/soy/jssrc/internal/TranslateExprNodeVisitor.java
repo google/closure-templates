@@ -437,13 +437,24 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitAndOpNode(AndOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 2);
-    return visit(node.getChild(0)).and(visit(node.getChild(1)), codeGenerator);
+    ExprNode lhOperand = node.getChild(0);
+    ExprNode rhOperand = node.getChild(1);
+    // Explicit coercion is necessary for 2 reasons:
+    // 1. Some soy values don't have proper js truthy semantics (SanitizedContent types) so we need
+    //    an explicit coercion where we expect a boolean value.
+    // 2. The soy 'and' operator is a boolean operator whereas the JS && operator has more complex
+    //    semantics, so explicit coercions are necessary to ensure we get a boolean value.
+    Expression lhChunk = Truthiness.maybeCoerce(lhOperand.getType(), visit(lhOperand));
+    Expression rhChunk = Truthiness.maybeCoerce(rhOperand.getType(), visit(rhOperand));
+    return lhChunk.and(rhChunk, codeGenerator);
   }
 
   @Override
   protected Expression visitOrOpNode(OrOpNode node) {
+    Preconditions.checkArgument(node.numChildren() == 2);
     ExprNode lhOperand = node.getChild(0);
     ExprNode rhOperand = node.getChild(1);
+    // See comments in visitAndOpNode for why explicit coercions are required.
     Expression lhChunk = Truthiness.maybeCoerce(lhOperand.getType(), visit(lhOperand));
     Expression rhChunk = Truthiness.maybeCoerce(rhOperand.getType(), visit(rhOperand));
     return lhChunk.or(rhChunk, codeGenerator);
