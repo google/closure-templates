@@ -20,15 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.types.UnknownType;
@@ -44,17 +43,15 @@ import org.junit.runners.JUnit4;
 public class IsNonnullFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(isNonnullFunction);
 
-    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(UndefinedData.INSTANCE)))
-        .isEqualTo(BooleanData.FALSE);
-    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(NullData.INSTANCE)))
-        .isEqualTo(BooleanData.FALSE);
-    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(IntegerData.forValue(0))))
-        .isEqualTo(BooleanData.TRUE);
-    assertThat(isNonnullFunction.computeForJava(ImmutableList.of(StringData.forValue(""))))
-        .isEqualTo(BooleanData.TRUE);
+    assertThat(tester.callFunction(UndefinedData.INSTANCE)).isEqualTo(false);
+    assertThat(tester.callFunction(NullData.INSTANCE)).isEqualTo(false);
+    assertThat(tester.callFunction(0)).isEqualTo(true);
+    assertThat(tester.callFunction(IntegerData.forValue(0))).isEqualTo(true);
+    assertThat(tester.callFunction("")).isEqualTo(true);
   }
 
   @Test

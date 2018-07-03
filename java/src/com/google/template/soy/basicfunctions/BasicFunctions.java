@@ -30,6 +30,8 @@ public class BasicFunctions {
         new CeilingFunction(),
         new ConcatListsFunction(),
         new FloorFunction(),
+        new IsNonnullFunction(),
+        new IsNullFunction(),
         new LengthFunction(),
         new ListContainsSoyFunction(),
         new MaxFunction(),

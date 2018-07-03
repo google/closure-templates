@@ -20,6 +20,15 @@ import com.google.template.soy.plugin.restricted.SoySourceValue;
 
 /** A value that resolves to a SoyValue or supported native type at runtime. */
 public interface JavaValue extends SoySourceValue {
+
+  /**
+   * Returns a JavaValue that evaluates to 'true' if this JavaValue is not null (false otherwise).
+   */
+  JavaValue isNonNull();
+
+  /** Returns a JavaValue that evaluates to 'true' if this JavaValue is null (false otherwise). */
+  JavaValue isNull();
+
   /**
    * Returns the type of this value in the Soy type system. This allows plugin authors to optimize
    * their generated code. For example, a 'ceil' plugin could do something like:

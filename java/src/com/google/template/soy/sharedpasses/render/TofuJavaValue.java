@@ -43,6 +43,18 @@ final class TofuJavaValue implements JavaValue {
   }
 
   @Override
+  public TofuJavaValue isNonNull() {
+    return forSoyValue(
+        BooleanData.forValue(!(soyValue instanceof UndefinedData || soyValue instanceof NullData)));
+  }
+
+  @Override
+  public TofuJavaValue isNull() {
+    return forSoyValue(
+        BooleanData.forValue(soyValue instanceof UndefinedData || soyValue instanceof NullData));
+  }
+
+  @Override
   public ValueSoyType soyType() {
     // Tofu works in SoyValues, so we interpret the runtime type as the type of the SoyValue
     // and rely on the TofuValueFactory to cast appropriately before calling methods.

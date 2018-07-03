@@ -949,4 +949,54 @@ public final class BytecodeUtils {
     }
     return Integer.MAX_VALUE; // any large value
   }
+
+  /**
+   * Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to a
+   * non-null value.
+   */
+  public static SoyExpression isNonNull(final Expression expr) {
+    if (BytecodeUtils.isPrimitive(expr.resultType())) {
+      return SoyExpression.TRUE;
+    }
+    return SoyExpression.forBool(
+        new Expression(Type.BOOLEAN_TYPE, expr.features()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            expr.gen(adapter);
+            Label isNull = new Label();
+            adapter.ifNull(isNull);
+            // non-null
+            adapter.pushBoolean(true);
+            Label end = new Label();
+            adapter.goTo(end);
+            adapter.mark(isNull);
+            adapter.pushBoolean(false);
+            adapter.mark(end);
+          }
+        });
+  }
+
+  /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
+  public static SoyExpression isNull(final Expression expr) {
+    if (BytecodeUtils.isPrimitive(expr.resultType())) {
+      return SoyExpression.FALSE;
+    }
+    // This is what javac generates for 'someObject == null'
+    return SoyExpression.forBool(
+        new Expression(Type.BOOLEAN_TYPE, expr.features()) {
+          @Override
+          protected void doGen(CodeBuilder adapter) {
+            expr.gen(adapter);
+            Label isNull = new Label();
+            adapter.ifNull(isNull);
+            // non-null
+            adapter.pushBoolean(false);
+            Label end = new Label();
+            adapter.goTo(end);
+            adapter.mark(isNull);
+            adapter.pushBoolean(true);
+            adapter.mark(end);
+          }
+        });
+  }
 }

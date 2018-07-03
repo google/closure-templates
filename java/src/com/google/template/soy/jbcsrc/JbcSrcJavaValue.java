@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -68,6 +69,16 @@ final class JbcSrcJavaValue implements JavaValue {
   @Nullable
   Method methodInfo() {
     return method;
+  }
+
+  @Override
+  public JbcSrcJavaValue isNonNull() {
+    return of(BytecodeUtils.isNonNull(expr));
+  }
+
+  @Override
+  public JbcSrcJavaValue isNull() {
+    return of(BytecodeUtils.isNull(expr));
   }
 
   @Override

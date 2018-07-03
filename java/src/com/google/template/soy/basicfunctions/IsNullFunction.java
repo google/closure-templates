@@ -17,57 +17,38 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
-import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 
 /** Soy function that checks whether its argument is null. */
 @SoyFunctionSignature(
-  name = "isNull",
-  value =
-      @Signature(
-        // TODO(b/70946095): should return bool
-        returnType = "?",
-        parameterTypes = {"any"}
-      )
-)
-@Singleton
+    name = "isNull",
+    value =
+        @Signature(
+            // TODO(b/70946095): should return bool
+            returnType = "?",
+            parameterTypes = {"any"}))
 @SoyPureFunction
 final class IsNullFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  IsNullFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-    return BooleanData.forValue(arg instanceof UndefinedData || arg instanceof NullData);
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -83,27 +64,13 @@ final class IsNullFunction extends TypedSoyFunction
   }
 
   @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return args.get(0).isNull();
+  }
+
+  @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    final SoyExpression arg = args.get(0);
-    if (BytecodeUtils.isPrimitive(arg.resultType())) {
-      return SoyExpression.FALSE;
-    }
-    // This is what javac generates for 'someObject == null'
-    return SoyExpression.forBool(
-        new Expression(Type.BOOLEAN_TYPE, arg.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            arg.gen(adapter);
-            Label isNull = new Label();
-            adapter.ifNull(isNull);
-            // non-null
-            adapter.pushBoolean(false);
-            Label end = new Label();
-            adapter.goTo(end);
-            adapter.mark(isNull);
-            adapter.pushBoolean(true);
-            adapter.mark(end);
-          }
-        });
+    return BytecodeUtils.isNull(args.get(0));
   }
 }
