@@ -19,9 +19,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ListImpl;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -30,18 +27,20 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
@@ -55,41 +54,53 @@ import org.objectweb.asm.Type;
  *   <li>The third argument is the 'step', which defaults to 1.
  * </ul>
  */
-@Singleton
 @SoyFunctionSignature(
-  name = "range",
-  value = {
-    @Signature(
-      parameterTypes = {"number"},
-      returnType = "list<int>"
-    ),
-    @Signature(
-      parameterTypes = {"number", "number"},
-      returnType = "list<int>"
-    ),
-    @Signature(
-      parameterTypes = {"number", "number", "number"},
-      returnType = "list<int>"
-    )
-  }
-)
+    name = "range",
+    value = {
+      @Signature(
+          parameterTypes = {"number"},
+          returnType = "list<int>"),
+      @Signature(
+          parameterTypes = {"number", "number"},
+          returnType = "list<int>"),
+      @Signature(
+          parameterTypes = {"number", "number", "number"},
+          returnType = "list<int>")
+    })
 public final class RangeFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-  @Inject
-  RangeFunction() {}
 
-  private static final class JbcSrcMethods {
-    static final MethodRef RANGE_1 =
-        MethodRef.create(BasicFunctionsRuntime.class, "range", int.class).asNonNullable();
-    static final MethodRef RANGE_2 =
-        MethodRef.create(BasicFunctionsRuntime.class, "range", int.class, int.class)
-            .asNonNullable();
-    static final MethodRef RANGE_3 =
-        MethodRef.create(BasicFunctionsRuntime.class, "range", int.class, int.class, int.class)
-            .asNonNullable();
+  private static final class Methods {
+    static final Method RANGE_1 =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "range", int.class);
+    static final MethodRef RANGE_1_REF = MethodRef.create(RANGE_1).asNonNullable();
+
+    static final Method RANGE_2 =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "range", int.class, int.class);
+    static final MethodRef RANGE_2_REF = MethodRef.create(RANGE_2).asNonNullable();
+
+    static final Method RANGE_3 =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "range", int.class, int.class, int.class);
+    static final MethodRef RANGE_3_REF = MethodRef.create(RANGE_3).asNonNullable();
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    switch (args.size()) {
+      case 1:
+        return factory.callStaticMethod(Methods.RANGE_1, args.get(0));
+      case 2:
+        return factory.callStaticMethod(Methods.RANGE_2, args.get(0), args.get(1));
+      case 3:
+        return factory.callStaticMethod(Methods.RANGE_3, args.get(0), args.get(1), args.get(2));
+      default:
+        throw new AssertionError();
+    }
   }
 
   @Override
@@ -97,15 +108,14 @@ public final class RangeFunction extends TypedSoyFunction
     ListType intList = ListType.of(IntType.getInstance());
     switch (args.size()) {
       case 1:
-        return SoyExpression.forList(intList, JbcSrcMethods.RANGE_1.invoke(asInt(args.get(0))));
+        return SoyExpression.forList(intList, Methods.RANGE_1_REF.invoke(asInt(args.get(0))));
       case 2:
         return SoyExpression.forList(
-            intList, JbcSrcMethods.RANGE_2.invoke(asInt(args.get(0)), asInt(args.get(1))));
+            intList, Methods.RANGE_2_REF.invoke(asInt(args.get(0)), asInt(args.get(1))));
       case 3:
         return SoyExpression.forList(
             intList,
-            JbcSrcMethods.RANGE_3.invoke(
-                asInt(args.get(0)), asInt(args.get(1)), asInt(args.get(2))));
+            Methods.RANGE_3_REF.invoke(asInt(args.get(0)), asInt(args.get(1)), asInt(args.get(2))));
       default:
         throw new AssertionError();
     }
@@ -140,27 +150,6 @@ public final class RangeFunction extends TypedSoyFunction
                         }))
             + ")",
         Integer.MAX_VALUE);
-  }
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    List<IntegerData> list;
-    switch (args.size()) {
-      case 1:
-        list = BasicFunctionsRuntime.range(args.get(0).integerValue());
-        break;
-      case 2:
-        list = BasicFunctionsRuntime.range(args.get(0).integerValue(), args.get(1).integerValue());
-        break;
-      case 3:
-        list =
-            BasicFunctionsRuntime.range(
-                args.get(0).integerValue(), args.get(1).integerValue(), args.get(2).integerValue());
-        break;
-      default:
-        throw new AssertionError();
-    }
-    return ListImpl.forProviderList(list);
   }
 
   @Override

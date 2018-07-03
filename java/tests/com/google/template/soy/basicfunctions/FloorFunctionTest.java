@@ -20,13 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.types.UnknownType;
 import org.junit.Test;
@@ -41,16 +40,18 @@ import org.junit.runners.JUnit4;
 public class FloorFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     FloorFunction floorFunction = new FloorFunction();
 
-    SoyValue float0 = FloatData.forValue(7.5);
-    assertThat(floorFunction.computeForJava(ImmutableList.of(float0)))
-        .isEqualTo(IntegerData.forValue(7));
+    SoyJavaSourceFunctionTester factory = new SoyJavaSourceFunctionTester(floorFunction);
+    Object result = factory.callFunction(1L);
+    assertThat(result).isEqualTo(1L);
 
-    SoyValue integer = IntegerData.forValue(14);
-    assertThat(floorFunction.computeForJava(ImmutableList.of(integer)))
-        .isEqualTo(IntegerData.forValue(14));
+    result = factory.callFunction(2.5D);
+    assertThat(result).isEqualTo(2L);
+
+    result = factory.callFunction(FloatData.forValue(2.5D));
+    assertThat(result).isEqualTo(2L);
   }
 
   @Test

@@ -16,42 +16,35 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.inject.Singleton;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
 
 /** Computes the sqrt of a Number expression. */
 @SoyFunctionSignature(
-  name = "sqrt",
-  value = @Signature(returnType = "number", parameterTypes = {"number"})
-)
-@Singleton
+    name = "sqrt",
+    value =
+        @Signature(
+            returnType = "number",
+            parameterTypes = {"number"}))
 @SoyPureFunction
 public class SqrtFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-  @Inject
-  SqrtFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-    return FloatData.forValue(Math.sqrt(arg.numberValue()));
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -65,12 +58,19 @@ public class SqrtFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef MATH_SQRT = MethodRef.create(Math.class, "sqrt", double.class);
+  private static final class Methods {
+    static final Method MATH_SQRT = JavaValueFactory.createMethod(Math.class, "sqrt", double.class);
+    static final MethodRef MATH_SQRT_REF = MethodRef.create(MATH_SQRT);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.MATH_SQRT, args.get(0));
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forFloat(JbcSrcMethods.MATH_SQRT.invoke(args.get(0).coerceToDouble()));
+    return SoyExpression.forFloat(Methods.MATH_SQRT_REF.invoke(args.get(0).coerceToDouble()));
   }
 }

@@ -26,6 +26,19 @@ public class BasicFunctions {
 
   public static ImmutableSet<SoySourceFunction> functions() {
     return ImmutableSet.of(
-        new AugmentMapFunction(), new CeilingFunction(), new ConcatListsFunction());
+        new AugmentMapFunction(),
+        new CeilingFunction(),
+        new ConcatListsFunction(),
+        new FloorFunction(),
+        new LengthFunction(),
+        new ListContainsSoyFunction(),
+        new MaxFunction(),
+        new MinFunction(),
+        new ParseFloatFunction(),
+        new ParseIntFunction(),
+        new RangeFunction(),
+        new RandomIntFunction(),
+        new RoundFunction(),
+        new SqrtFunction());
   }
 }

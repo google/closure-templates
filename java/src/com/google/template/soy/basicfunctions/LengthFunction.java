@@ -17,8 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -27,55 +25,33 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
  * Soy function that gets the length of a list.
  *
  */
-@Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-  name = "length",
-  value =
-      @Signature(
-        parameterTypes = {"list<any>"},
-        returnType = "int"
-      )
-)
+    name = "length",
+    value =
+        @Signature(
+            parameterTypes = {"list<any>"},
+            returnType = "int"))
 public final class LengthFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  LengthFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-
-    if (arg == null) {
-      throw new IllegalArgumentException("Argument to length() function is null.");
-    }
-
-    if (!(arg instanceof SoyList)) {
-      throw new IllegalArgumentException(
-          "Argument to length() function is not a SoyList "
-              + "(found type "
-              + arg.getClass().getName()
-              + ").");
-    }
-    return IntegerData.forValue(((SoyList) arg).length());
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -96,9 +72,18 @@ public final class LengthFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef LIST_SIZE = MethodRef.create(List.class, "size");
-    static final MethodRef SOYLIST_LENGTH = MethodRef.create(SoyList.class, "length");
+  private static final class Methods {
+    static final MethodRef LIST_SIZE_REF = MethodRef.create(List.class, "size");
+    static final MethodRef SOYLIST_LENGTH_REF = MethodRef.create(SoyList.class, "length");
+
+    static final Method DELEGATE_SOYLIST_LENGTH =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "length", SoyList.class);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.DELEGATE_SOYLIST_LENGTH, args.get(0));
   }
 
   @Override
@@ -107,9 +92,9 @@ public final class LengthFunction extends TypedSoyFunction
     Expression lengthExpressionAsInt;
     if (soyExpression.isBoxed()) {
       lengthExpressionAsInt =
-          soyExpression.checkedCast(SoyList.class).invoke(JbcSrcMethods.SOYLIST_LENGTH);
+          soyExpression.checkedCast(SoyList.class).invoke(Methods.SOYLIST_LENGTH_REF);
     } else {
-      lengthExpressionAsInt = soyExpression.checkedCast(List.class).invoke(JbcSrcMethods.LIST_SIZE);
+      lengthExpressionAsInt = soyExpression.checkedCast(List.class).invoke(Methods.LIST_SIZE_REF);
     }
     return SoyExpression.forInt(
         BytecodeUtils.numericConversion(lengthExpressionAsInt, Type.LONG_TYPE));

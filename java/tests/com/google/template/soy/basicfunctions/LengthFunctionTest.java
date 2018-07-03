@@ -21,8 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,11 +36,11 @@ import org.junit.runners.JUnit4;
 public class LengthFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     LengthFunction lengthFunction = new LengthFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(lengthFunction);
     SoyValue list = SoyValueConverterUtility.newList(1, 3, 5, 7);
-    assertThat(lengthFunction.computeForJava(ImmutableList.of(list)))
-        .isEqualTo(IntegerData.forValue(4));
+    assertThat(tester.callFunction(list)).isEqualTo(4);
   }
 
   @Test

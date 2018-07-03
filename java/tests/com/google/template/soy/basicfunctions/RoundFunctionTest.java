@@ -19,11 +19,11 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,24 +37,16 @@ import org.junit.runners.JUnit4;
 public class RoundFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     RoundFunction roundFunction = new RoundFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(roundFunction);
 
-    SoyValue float0 = FloatData.forValue(9753.141592653590);
-    assertThat(roundFunction.computeForJava(ImmutableList.of(float0)))
-        .isEqualTo(IntegerData.forValue(9753));
-
-    SoyValue numDigitsAfterPt = IntegerData.ZERO;
-    assertThat(roundFunction.computeForJava(ImmutableList.of(float0, numDigitsAfterPt)))
-        .isEqualTo(IntegerData.forValue(9753));
-
-    numDigitsAfterPt = IntegerData.forValue(4);
-    assertThat(roundFunction.computeForJava(ImmutableList.of(float0, numDigitsAfterPt)))
-        .isEqualTo(FloatData.forValue(9753.1416));
-
-    numDigitsAfterPt = IntegerData.forValue(-2);
-    assertThat(roundFunction.computeForJava(ImmutableList.of(float0, numDigitsAfterPt)))
-        .isEqualTo(IntegerData.forValue(9800));
+    double input = 9753.141592653590;
+    assertThat(tester.callFunction(1)).isEqualTo(1);
+    assertThat(tester.callFunction(input)).isEqualTo(9753);
+    assertThat(tester.callFunction(input, 0)).isEqualTo(IntegerData.forValue(9753));
+    assertThat(tester.callFunction(input, 4)).isEqualTo(FloatData.forValue(9753.1416));
+    assertThat(tester.callFunction(input, -2)).isEqualTo(IntegerData.forValue(9800));
   }
 
   @Test

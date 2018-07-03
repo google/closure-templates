@@ -25,46 +25,34 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Soy function that takes the max of two numbers.
  *
  */
 @SoyFunctionSignature(
-  name = "max",
-  value =
-      // TODO(b/70946095): these should all be number, or maybe something more specific
-      @Signature(
-        returnType = "?",
-        parameterTypes = {"?", "?"}
-      )
-)
-@Singleton
+    name = "max",
+    value =
+        // TODO(b/70946095): these should all be number, or maybe something more specific
+        @Signature(
+            returnType = "?",
+            parameterTypes = {"?", "?"}))
 @SoyPureFunction
 public final class MaxFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  MaxFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg0 = args.get(0);
-    SoyValue arg1 = args.get(1);
-
-    return BasicFunctionsRuntime.max(arg0, arg1);
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -85,14 +73,23 @@ public final class MaxFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    private static final MethodRef MAX_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "max", SoyValue.class, SoyValue.class)
-            .asNonNullable();
-    private static final MethodRef MATH_MAX_DOUBLE =
+  private static final class Methods {
+    private static final Method MAX_FN =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "max", SoyValue.class, SoyValue.class);
+    private static final MethodRef MAX_FN_REF = MethodRef.create(MAX_FN).asNonNullable();
+
+    private static final MethodRef MATH_MAX_DOUBLE_REF =
         MethodRef.create(Math.class, "max", double.class, double.class).asCheap();
-    private static final MethodRef MATH_MAX_LONG =
+
+    private static final MethodRef MATH_MAX_LONG_REF =
         MethodRef.create(Math.class, "max", long.class, long.class).asCheap();
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.MAX_FN, args.get(0), args.get(1));
   }
 
   @Override
@@ -101,14 +98,14 @@ public final class MaxFunction extends TypedSoyFunction
     SoyExpression right = args.get(1);
     if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
       return SoyExpression.forInt(
-          JbcSrcMethods.MATH_MAX_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
+          Methods.MATH_MAX_LONG_REF.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
     } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
       return SoyExpression.forFloat(
-          JbcSrcMethods.MATH_MAX_DOUBLE.invoke(
+          Methods.MATH_MAX_DOUBLE_REF.invoke(
               left.unboxAs(double.class), right.unboxAs(double.class)));
     } else {
       return SoyExpression.forSoyValue(
-          NUMBER_TYPE, JbcSrcMethods.MAX_FN.invoke(left.box(), right.box()));
+          NUMBER_TYPE, Methods.MAX_FN_REF.invoke(left.box(), right.box()));
     }
   }
 }

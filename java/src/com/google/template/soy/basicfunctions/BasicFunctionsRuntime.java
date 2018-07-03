@@ -210,4 +210,10 @@ public final class BasicFunctionsRuntime {
   public static String strToUpperCase(String str, ULocale uLocale) {
     return str.isEmpty() ? str : UCharacter.toUpperCase(uLocale, str);
   }
+
+  // Note: This takes a SoyList (not a List), because for some reason we get compilation errors
+  // (when commenting out the jbcsrc variant) that inputs aren't a list:
+  public static int length(SoyList list) {
+    return list.length();
+  }
 }

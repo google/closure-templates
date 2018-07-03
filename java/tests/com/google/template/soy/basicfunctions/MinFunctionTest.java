@@ -19,10 +19,10 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,18 +36,26 @@ import org.junit.runners.JUnit4;
 public class MinFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     MinFunction minFunction = new MinFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(minFunction);
 
-    SoyValue float0 = FloatData.forValue(7.5);
-    SoyValue float1 = FloatData.forValue(7.777);
-    assertThat(minFunction.computeForJava(ImmutableList.of(float0, float1)))
+    /// Test same LHS & RHS type.
+    assertThat(tester.callFunction(7.5, 7.777)).isEqualTo(FloatData.forValue(7.5));
+    assertThat(tester.callFunction(-7, -8)).isEqualTo(IntegerData.forValue(-8));
+    assertThat(tester.callFunction(FloatData.forValue(7.5), 7.777))
         .isEqualTo(FloatData.forValue(7.5));
-
-    SoyValue integer0 = IntegerData.forValue(-7);
-    SoyValue integer1 = IntegerData.forValue(-8);
-    assertThat(minFunction.computeForJava(ImmutableList.of(integer0, integer1)))
+    assertThat(tester.callFunction(IntegerData.forValue(-7), -8))
         .isEqualTo(IntegerData.forValue(-8));
+
+    // Test mixed LHS & RHS type.
+    assertThat(tester.callFunction(7, 7.777)).isEqualTo(IntegerData.forValue(7));
+    assertThat(tester.callFunction(7.777, 8)).isEqualTo(FloatData.forValue(7.777));
+    assertThat(tester.callFunction(IntegerData.forValue(7), 7.777))
+        .isEqualTo(IntegerData.forValue(7));
+    assertThat(tester.callFunction(FloatData.forValue(7.5), 8)).isEqualTo(FloatData.forValue(7.5));
+    assertThat(tester.callFunction(FloatData.forValue(7.5), IntegerData.forValue(8)))
+        .isEqualTo(FloatData.forValue(7.5));
   }
 
   @Test

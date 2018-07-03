@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -25,43 +24,34 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
  * Soy function that takes the floor of a number.
  *
  */
-@Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
-  name = "floor",
-  value = {
-    @Signature(
-      parameterTypes = {"number"},
-      returnType = "int"
-    )
-  }
-)
+    name = "floor",
+    value = {
+      @Signature(
+          parameterTypes = {"number"},
+          returnType = "int")
+    })
 public final class FloorFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  FloorFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    return IntegerData.forValue(BasicFunctionsRuntime.floor(args.get(0)));
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -78,11 +68,18 @@ public final class FloorFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef FLOOR_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "floor", SoyValue.class).asNonNullable();
-    static final MethodRef MATH_FLOOR =
+  private static final class Methods {
+    static final Method FLOOR_FN =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "floor", SoyValue.class);
+    static final MethodRef FLOOR_FN_REF = MethodRef.create(FLOOR_FN).asNonNullable();
+    static final MethodRef MATH_FLOOR_REF =
         MethodRef.create(Math.class, "floor", double.class).asCheap();
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.FLOOR_FN, args.get(0));
   }
 
   @Override
@@ -94,9 +91,9 @@ public final class FloorFunction extends TypedSoyFunction
       case Type.DOUBLE:
         return SoyExpression.forInt(
             BytecodeUtils.numericConversion(
-                JbcSrcMethods.MATH_FLOOR.invoke(argument), Type.LONG_TYPE));
+                Methods.MATH_FLOOR_REF.invoke(argument), Type.LONG_TYPE));
       default:
-        return SoyExpression.forInt(JbcSrcMethods.FLOOR_FN.invoke(argument.box()));
+        return SoyExpression.forInt(Methods.FLOOR_FN_REF.invoke(argument.box()));
     }
   }
 }

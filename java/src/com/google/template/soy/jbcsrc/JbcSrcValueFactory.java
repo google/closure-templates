@@ -195,6 +195,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           // TODO(sameb): This could overflow -- ideally we should generate bounds checks like
           // IntegerData.integerValue() has.
           return BytecodeUtils.numericConversion(actualParam.unboxAs(long.class), Type.INT_TYPE);
+        } else if (expectedParamType == double.class) {
+          // long can be represented as a double, e.g IntegerData.floatValue works fine.
+          return actualParam.coerceToDouble();
         }
         break;
       case LIST:

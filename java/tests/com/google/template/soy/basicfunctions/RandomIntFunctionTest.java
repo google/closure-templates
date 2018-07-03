@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import java.util.Set;
 import org.junit.Test;
@@ -37,16 +38,17 @@ import org.junit.runners.JUnit4;
 public class RandomIntFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(randomIntFunction);
 
     SoyValue arg = IntegerData.ONE;
-    assertThat(randomIntFunction.computeForJava(ImmutableList.of(arg))).isEqualTo(IntegerData.ZERO);
+    assertThat(tester.callFunction(arg)).isEqualTo(0);
 
     arg = IntegerData.forValue(3);
     Set<Integer> seenResults = Sets.newHashSetWithExpectedSize(3);
     for (int i = 0; i < 100; i++) {
-      int result = randomIntFunction.computeForJava(ImmutableList.of(arg)).integerValue();
+      int result = ((Long) tester.callFunction(arg)).intValue();
       assertThat(result).isAtLeast(0);
       assertThat(result).isAtMost(2);
       seenResults.add(result);
