@@ -41,7 +41,7 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(StrIndexOfFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrLenFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrSubFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrToLowerCaseFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrToUpperCaseFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrToAsciiLowerCaseFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrToAsciiUpperCaseFunction.class);
   }
 }

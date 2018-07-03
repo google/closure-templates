@@ -1767,6 +1767,30 @@ soy.$$listContains = function(list, val) {
 };
 
 
+/**
+ * Converts the ASCII characters in the given string to lower case.
+ * @param {string} s
+ * @return {string}
+ */
+soy.$$strToAsciiLowerCase = function(s) {
+  return goog.array.map(s, function(c) {
+    return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
+  }).join('');
+};
+
+
+/**
+ * Converts the ASCII characters in the given string to upper case.
+ * @param {string} s
+ * @return {string}
+ */
+soy.$$strToAsciiUpperCase = function(s) {
+  return goog.array.map(s, function(c) {
+    return 'a' <= c && c <= 'z' ? c.toUpperCase() : c;
+  }).join('');
+};
+
+
 // -----------------------------------------------------------------------------
 // Bidi directives/functions.
 

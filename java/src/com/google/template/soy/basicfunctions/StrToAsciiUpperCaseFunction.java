@@ -16,7 +16,8 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.inject.Provider;
+import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -25,69 +26,62 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.ibm.icu.util.ULocale;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /** A function that changes strings to lower case. */
 @SoyFunctionSignature(
-    name = "strToLowerCase",
+    name = "strToAsciiUpperCase",
     value = @Signature(parameterTypes = {"string"}, returnType = "string")
 )
 @Singleton
-public final class StrToLowerCaseFunction extends TypedSoyFunction
+public final class StrToAsciiUpperCaseFunction extends TypedSoyFunction
     implements SoyJavaFunction,
-        SoyJsSrcFunction,
+        SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction  {
-  private final Provider<String> localeStringProvider;
 
-  @Inject
-  StrToLowerCaseFunction(@LocaleString Provider<String> localeStringProvider) {
-    this.localeStringProvider = localeStringProvider;
-  }
+  @Inject StrToAsciiUpperCaseFunction() {}
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    String stringValue = args.get(0).toString();
-    ULocale uLocale = new ULocale(localeStringProvider.get());
-    return StringData.forValue(BasicFunctionsRuntime.strToLowerCase(stringValue, uLocale));
+    return StringData.forValue(Ascii.toUpperCase(args.get(0).toString()));
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     String arg = JsExprUtils.toString(args.get(0)).getText();
-    return new JsExpr("(" + arg + ").toLocaleLowerCase()", Integer.MAX_VALUE);
+    return new JsExpr("soy.$$strToAsciiUpperCase(" + arg + ")", Integer.MAX_VALUE);
   }
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
     String arg = args.get(0).toPyString().getText();
-    // TODO(b/68013322): Update this to use PyIcu's UnicodeString.toLower once we have access to the
-    // current locale.
-    return new PyExpr("(" + arg + ").lower()", Integer.MAX_VALUE);
+    return new PyExpr("runtime.str_to_ascii_upper_case(" + arg + ")", Integer.MAX_VALUE);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class JbcSrcMethods {
-    static final MethodRef STR_TO_LOWER_CASE_FN = MethodRef.create(
-        BasicFunctionsRuntime.class, "strToLowerCase", String.class, ULocale.class);
+    static final MethodRef ASCII_TO_UPPER_CASE_FN =
+        MethodRef.create(Ascii.class, "toUpperCase", String.class);
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forString(
-        JbcSrcMethods.STR_TO_LOWER_CASE_FN.invoke(
-            args.get(0).unboxAs(String.class),
-            context.getULocale()));
+        JbcSrcMethods.ASCII_TO_UPPER_CASE_FN.invoke(args.get(0).unboxAs(String.class)));
   }
 }
