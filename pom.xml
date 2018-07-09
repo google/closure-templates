@@ -162,7 +162,7 @@
     <dependency>
       <groupId>com.google.common.html.types</groupId>
       <artifactId>types</artifactId>
-      <version>1.0.4</version>
+      <version>1.0.6</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.errorprone</groupId>
