@@ -32,6 +32,7 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.List;
 import javax.inject.Inject;
@@ -40,14 +41,17 @@ import javax.inject.Singleton;
 /** A function that changes strings to lower case. */
 @SoyFunctionSignature(
     name = "strToAsciiUpperCase",
-    value = @Signature(parameterTypes = {"string"}, returnType = "string")
-)
+    value =
+        @Signature(
+            parameterTypes = {"string"},
+            returnType = "string"))
 @Singleton
+@SoyPureFunction
 public final class StrToAsciiUpperCaseFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
-        SoyJbcSrcFunction  {
+        SoyJbcSrcFunction {
 
   @Inject StrToAsciiUpperCaseFunction() {}
 

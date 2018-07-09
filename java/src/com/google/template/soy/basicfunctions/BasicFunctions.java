@@ -33,7 +33,7 @@ public class BasicFunctions {
         new IsNonnullFunction(),
         new IsNullFunction(),
         new LengthFunction(),
-        new ListContainsSoyFunction(),
+        new ListContainsFunction(),
         new MaxFunction(),
         new MinFunction(),
         new ParseFloatFunction(),

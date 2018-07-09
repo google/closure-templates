@@ -35,9 +35,11 @@ import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
+import javax.inject.Singleton;
 
 /**
  * Soy function for checking if an item is contained in a list.
@@ -55,7 +57,9 @@ import java.util.List;
         @Signature(
             parameterTypes = {"list<any>", "any"},
             returnType = "bool"))
-public class ListContainsSoyFunction extends TypedSoyFunction
+@Singleton
+@SoyPureFunction
+public class ListContainsFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
