@@ -24,10 +24,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
@@ -58,14 +56,10 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
-import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
-import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor;
-import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -79,11 +73,9 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -585,9 +577,6 @@ public final class SoyFileSet {
   private final ValidatedConformanceConfig conformanceConfig;
   private final ValidatedLoggingConfig loggingConfig;
 
-  /** For private use by pruneTranslatedMsgs(). */
-  private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
-
   private final ImmutableMap<String, SoyFunction> soyFunctionMap;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, SoySourceFunction> soySourceFunctionMap;
@@ -738,87 +727,6 @@ public final class SoyFileSet {
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
     throwIfErrorsPresent();
     return bundle;
-  }
-
-  /**
-   * Prunes messages from a given message bundle, keeping only messages used in this Soy file set.
-   *
-   * <p>Important: Do not use directly. This is subject to change and your code will break.
-   *
-   * <p>Note: This method memoizes intermediate results to improve efficiency in the case that it is
-   * called multiple times (which is a common case). Thus, this method will not work correctly if
-   * the underlying Soy files are modified between calls to this method.
-   *
-   * @param origTransMsgBundle The message bundle to prune.
-   * @return The pruned message bundle.
-   * @throws SoyCompilationException If compilation fails.
-   * @deprecated instead of using this method to prune, consider comparing the originally extracted
-   *     messages file with your translations in order to prune.
-   */
-  @Deprecated
-  public SoyMsgBundle pruneTranslatedMsgs(SoyMsgBundle origTransMsgBundle) {
-    resetErrorReporter();
-    // ------ Extract msgs from all the templates reachable from public templates. ------
-    // Note: In the future, instead of using all public templates as the root set, we can allow the
-    // user to provide a root set.
-    // TODO(b/32091399): Message Extraction doesn't have a way to configure the version and it needs
-    // to support all soy files so we assume the worst and configure v1.0.  This can go away when
-    // jssrc no longer supports v1.0
-    generalOptions.setDeclaredSyntaxVersionName("1.0");
-    if (memoizedExtractedMsgIdsForPruning == null) {
-      ParseResult result =
-          parse(
-              passManagerBuilder().allowUnknownGlobals().disableAllTypeChecking(),
-              // override the type registry so that the parser doesn't report errors when it
-              // can't resolve strict types
-              SoyTypeRegistry.DEFAULT_UNKNOWN,
-              new PluginResolver(
-                  PluginResolver.Mode.ALLOW_UNDEFINED,
-                  printDirectives,
-                  soyFunctionMap,
-                  soySourceFunctionMap,
-                  errorReporter));
-
-      throwIfErrorsPresent();
-      SoyFileSetNode soyTree = result.fileSet();
-      TemplateRegistry registry = result.registry();
-
-      List<TemplateNode> allPublicTemplates = Lists.newArrayList();
-      for (SoyFileNode soyFile : soyTree.getChildren()) {
-        for (TemplateNode template : soyFile.getChildren()) {
-          if (template.getVisibility() == Visibility.PUBLIC) {
-            allPublicTemplates.add(template);
-          }
-        }
-      }
-      Map<TemplateNode, TransitiveDepTemplatesInfo> depsInfoMap =
-          new FindTransitiveDepTemplatesVisitor(registry)
-              .execOnMultipleTemplates(allPublicTemplates);
-      TransitiveDepTemplatesInfo mergedDepsInfo =
-          TransitiveDepTemplatesInfo.merge(depsInfoMap.values());
-
-      SoyMsgBundle extractedMsgBundle =
-          new ExtractMsgsVisitor().execOnMultipleNodes(mergedDepsInfo.depTemplateSet);
-
-      ImmutableSet.Builder<Long> extractedMsgIdsBuilder = ImmutableSet.builder();
-      for (SoyMsg extractedMsg : extractedMsgBundle) {
-        extractedMsgIdsBuilder.add(extractedMsg.getId());
-      }
-      throwIfErrorsPresent();
-      memoizedExtractedMsgIdsForPruning = extractedMsgIdsBuilder.build();
-    }
-
-    // ------ Prune. ------
-
-    ImmutableList.Builder<SoyMsg> prunedTransMsgsBuilder = ImmutableList.builder();
-    for (SoyMsg transMsg : origTransMsgBundle) {
-      if (memoizedExtractedMsgIdsForPruning.contains(transMsg.getId())) {
-        prunedTransMsgsBuilder.add(transMsg);
-      }
-    }
-    throwIfErrorsPresent();
-    return new SoyMsgBundleImpl(
-        origTransMsgBundle.getLocaleString(), prunedTransMsgsBuilder.build());
   }
 
   /**

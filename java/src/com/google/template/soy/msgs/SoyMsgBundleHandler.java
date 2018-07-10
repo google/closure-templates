@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
@@ -176,32 +175,5 @@ public class SoyMsgBundleHandler {
 
     CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options, errorReporter);
     output.asCharSink(UTF_8).write(cs);
-  }
-
-  /**
-   * Generates an translated messages file (source messages to be translated) from a given message
-   * bundle, and writes it to file.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param msgBundle The message bundle to write to file.
-   * @param options The options for generating the output translated messages file (depending on the
-   *     message plugin being used, none or some of the options may be applicable).
-   * @param outputFile The output file to write to.
-   * @throws IOException If there's an error while accessing the file.
-   * @throws SoyMsgException If there's an error while processing the messages.
-   */
-  public void writeToTranslatedMsgsFile(
-      SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile) throws IOException {
-
-    if (!(msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
-      throw new SoyMsgException(
-          "writeToTranslatedMsgsFile() only works if using a SoyBidirectionalMsgPlugin.");
-    }
-    SoyBidirectionalMsgPlugin msgPluginCast = (SoyBidirectionalMsgPlugin) msgPlugin;
-
-    CharSequence cs = msgPluginCast.generateTranslatedMsgsFile(msgBundle, options);
-    BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.asCharSink(outputFile, UTF_8).write(cs);
   }
 }
