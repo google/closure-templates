@@ -1028,7 +1028,7 @@ public final class ContextualAutoescaperTest {
         "Soy can't properly escape for this URI scheme. For image sources, you can print full"
             + " data and blob URIs directly (e.g. src=\"{$someDataUri}\")."
             + " Otherwise, hardcode the full URI in the template or pass a complete"
-            + " SanitizedContent or SafeUri object.";
+            + " SanitizedContent or SafeUrl object.";
     assertRewriteFails(
         message,
         join(
