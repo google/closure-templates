@@ -34,7 +34,6 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Singleton;
 
 /** Computes the sqrt of a Number expression. */
 @SoyFunctionSignature(
@@ -43,7 +42,6 @@ import javax.inject.Singleton;
         @Signature(
             returnType = "number",
             parameterTypes = {"number"}))
-@Singleton
 @SoyPureFunction
 public class SqrtFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {

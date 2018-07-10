@@ -39,7 +39,6 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Singleton;
 
 /**
  * Soy function for checking if an item is contained in a list.
@@ -57,7 +56,6 @@ import javax.inject.Singleton;
         @Signature(
             parameterTypes = {"list<any>", "any"},
             returnType = "bool"))
-@Singleton
 @SoyPureFunction
 public class ListContainsFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction,
