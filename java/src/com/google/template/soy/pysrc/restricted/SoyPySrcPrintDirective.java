@@ -24,7 +24,9 @@ import java.util.List;
  *
  * <p>Important: This may only be used in implementing print directive plugins.
  *
+ * @deprecated Use Soy functions instead
  */
+@Deprecated
 public interface SoyPySrcPrintDirective extends SoyPrintDirective {
 
   /**
