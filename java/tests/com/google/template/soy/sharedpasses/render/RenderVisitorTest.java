@@ -694,8 +694,8 @@ public class RenderVisitorTest {
     String templateBody =
         "{@param foo: ?}\n"
             + "  {let $alpha: $foo.goo2[1] /}\n"
-            + "  {let $beta}Boo!{/let}\n"
-            + "  {let $gamma}\n"
+            + "  {let $beta kind=\"text\"}Boo!{/let}\n"
+            + "  {let $gamma kind=\"text\"}\n"
             + "    {for $i in range($alpha)}\n"
             + "      {$i}{$beta}\n"
             + "    {/for}\n"
@@ -884,7 +884,7 @@ public class RenderVisitorTest {
         "{namespace ns}\n"
             + "\n"
             + "/** @param boo @param foo @param goo */\n"
-            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .callerTemplate}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -894,10 +894,10 @@ public class RenderVisitorTest {
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
             + "  {call .calleeTemplate data=\"$foo\"}\n"
-            + "    {param boo}moo{/param}\n"
+            + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
             + "  {call .calleeTemplate}\n"
-            + "    {param boo}zoo{/param}\n"
+            + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
@@ -906,7 +906,7 @@ public class RenderVisitorTest {
             + " * @param boo\n"
             + " * @param goo\n"
             + " */\n"
-            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .calleeTemplate}\n"
             + "  {$boo}\n"
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
@@ -985,7 +985,7 @@ public class RenderVisitorTest {
         "{namespace ns}\n"
             + "\n"
             + "/** @param boo @param foo @param goo */\n"
-            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .callerTemplate}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -995,10 +995,10 @@ public class RenderVisitorTest {
             + "    {param boo: 'moo' /}\n"
             + "  {/call}\n"
             + "  {call .calleeTemplate data=\"$foo\"}\n"
-            + "    {param boo}moo{/param}\n"
+            + "    {param boo kind=\"text\"}moo{/param}\n"
             + "  {/call}\n"
             + "  {call .calleeTemplate}\n"
-            + "    {param boo}zoo{/param}\n"
+            + "    {param boo kind=\"text\"}zoo{/param}\n"
             + "    {param goo: $foo.goo /}\n"
             + "  {/call}\n"
             + "{/template}\n"
@@ -1007,7 +1007,7 @@ public class RenderVisitorTest {
             + " * @param boo\n"
             + " * @param goo\n"
             + " */\n"
-            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .calleeTemplate}\n"
             + "  {$boo}{$ij.future}\n"
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
@@ -1468,7 +1468,7 @@ public class RenderVisitorTest {
   public void testRenderLogStmtOrdering() throws Exception {
     String templateBody =
         ""
-            + "{let $gamma}\n"
+            + "{let $gamma kind=\"text\"}\n"
             + "  {log}let-block{/log}\n"
             + "  let-block\n"
             + "{/let}\n"
@@ -1492,9 +1492,9 @@ public class RenderVisitorTest {
         "{namespace ns}\n"
             + "\n"
             + "/** */\n"
-            + "{template .callerTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .callerTemplate}\n"
             + "  {call .calleeTemplate}\n"
-            + "    {param foo}\n"
+            + "    {param foo kind=\"text\"}\n"
             + "      param{log}param{/log}\n"
             + "    {/param}\n"
             + "  {/call}\n"
@@ -1503,12 +1503,12 @@ public class RenderVisitorTest {
             + "/**\n"
             + " * @param foo\n"
             + " */\n"
-            + "{template .calleeTemplate autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .calleeTemplate}\n"
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
             + "{/template}\n";
-    // Send stdout to my own buffer.
 
+    // Send stdout to my own buffer.
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     System.setOut(new PrintStream(buffer));
     assertThat(

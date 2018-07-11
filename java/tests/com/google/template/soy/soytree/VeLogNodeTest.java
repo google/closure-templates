@@ -25,7 +25,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,7 +98,7 @@ public final class VeLogNodeTest {
   private VeLogNode parseVeLog(String veLog, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
-            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, veLog)
+            SoyFileSetParserBuilder.forTemplateContents(true, veLog)
                 .typeRegistry(
                     new SoyTypeRegistry.Builder()
                         .addDescriptors(

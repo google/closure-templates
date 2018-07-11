@@ -112,14 +112,16 @@ public final class IsComputableAsJsExprsVisitorTest {
             "{/call}"),
         true);
 
-    runTestHelper("{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}", true);
+    runTestHelper(
+        "{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        true);
 
     runTestHelper(
         join(
             "{@param boo: ?}",
             "{@param moose: ?}",
             "{call .foo data=\"$boo\"}",
-            "  {param goo}",
+            "  {param goo kind=\"text\"}",
             "  {for $moo in $moose}",
             "    {$moo}",
             "{/for}",

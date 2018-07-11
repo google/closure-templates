@@ -35,6 +35,7 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import java.util.regex.Pattern;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -67,18 +68,25 @@ public final class GenCallCodeUtilsTest {
             getCallExprTextHelper(
                 "{@param boo : ?}",
                 "{call some.func data=\"$boo\"}",
-                "  {param goo}Blah{/param}",
+                "  {param goo kind=\"text\"}Blah{/param}",
                 "{/call}"))
-        .isEqualTo("some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), opt_ijData);");
+        .isEqualTo(
+            "some.func(soy.$$assignDefaults("
+                + "{goo: soydata.$$markUnsanitizedTextForInternalBlocks('Blah')}, opt_data.boo), "
+                + "opt_ijData);");
 
     String callExprText =
         getCallExprTextHelper(
             "{call some.func}\n"
-                + "  {param goo}\n"
+                + "  {param goo kind=\"text\"}\n"
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
                 + "{/call}\n");
-    assertThat(callExprText).matches("some[.]func[(][{]goo: param[0-9]+[}], opt_ijData[)];");
+    assertThat(callExprText)
+        .matches(
+            Pattern.quote("some.func({goo: soydata.$$markUnsanitizedTextForInternalBlocks(param")
+                + "[0-9]+"
+                + Pattern.quote(")}, opt_ijData);"));
   }
 
   @Test

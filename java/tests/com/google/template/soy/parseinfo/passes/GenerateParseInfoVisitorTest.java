@@ -31,7 +31,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -200,7 +199,6 @@ public final class GenerateParseInfoVisitorTest {
     SoyFileSetNode tree =
         SoyFileSetParserBuilder.forFileContents(
                 SharedTestUtils.buildTestSoyFileContent(
-                    AutoEscapingType.STRICT,
                     /* strictHtml= */ true,
                     /* soyDocParamNames= */ null,
                     Joiner.on('\n').join(templateLines)))

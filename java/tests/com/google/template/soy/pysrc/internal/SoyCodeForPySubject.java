@@ -31,7 +31,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -186,10 +185,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private String compileBody() {
     SoyNode node =
         SharedTestUtils.getNode(
-            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, actual())
-                .parse()
-                .fileSet(),
-            0);
+            SoyFileSetParserBuilder.forTemplateContents(actual()).parse().fileSet(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     try (GuiceSimpleScope.InScope inScope = enterScope()) {

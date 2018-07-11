@@ -90,36 +90,19 @@ public final class SharedTestUtils {
    */
   public static String buildTestSoyFileContent(
       @Nullable List<String> soyDocParamNames, String soyCode) {
-    return buildTestSoyFileContent(
-        AutoEscapingType.DEPRECATED_NONCONTEXTUAL, soyDocParamNames, soyCode);
+    return buildTestSoyFileContent(false, soyDocParamNames, soyCode);
   }
 
   /**
    * Builds a test Soy file's content from the given Soy code, which will be the body of the only
    * template in the test Soy file.
    *
-   * @param autoEscaping The form of autescaping to use for this namespace.
-   * @param soyDocParamNames Param names to declare in SoyDoc of the single template.
-   * @param soyCode The code to parse as the full body of a template.
-   * @return The test Soy file's content.
-   */
-  public static String buildTestSoyFileContent(
-      AutoEscapingType autoEscaping, @Nullable List<String> soyDocParamNames, String soyCode) {
-    return buildTestSoyFileContent(autoEscaping, false, soyDocParamNames, soyCode);
-  }
-
-  /**
-   * Builds a test Soy file's content from the given Soy code, which will be the body of the only
-   * template in the test Soy file.
-   *
-   * @param autoEscaping The form of autescaping to use for this namespace.
    * @param strictHtml Whether to use strict html mode in this namespace.
    * @param soyDocParamNames Param names to declare in SoyDoc of the single template.
    * @param soyCode The code to parse as the full body of a template.
    * @return The test Soy file's content.
    */
   public static String buildTestSoyFileContent(
-      AutoEscapingType autoEscaping,
       boolean strictHtml,
       @Nullable List<String> soyDocParamNames,
       String soyCode) {
@@ -137,10 +120,6 @@ public final class SharedTestUtils {
         .append(" */\n")
         .append("{template " + templateName)
         .append(strictHtml ? "" : " stricthtml=\"false\"")
-        .append(
-            autoEscaping != AutoEscapingType.STRICT
-                ? " autoescape=\"" + autoEscaping.getKey() + "\""
-                : "")
         .append("}\n")
         .append(soyCode)
         .append("\n")

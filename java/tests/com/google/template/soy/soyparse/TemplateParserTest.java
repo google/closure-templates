@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -1903,9 +1902,7 @@ public final class TemplateParserTest {
    * @return The decl infos and parse tree nodes created.
    */
   private static TemplateNode parseTemplateContent(String input, ErrorReporter errorReporter) {
-    String soyFile =
-        SharedTestUtils.buildTestSoyFileContent(
-            AutoEscapingType.STRICT, ImmutableList.<String>of(), input);
+    String soyFile = SharedTestUtils.buildTestSoyFileContent(ImmutableList.<String>of(), input);
 
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(soyFile)

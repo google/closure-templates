@@ -31,7 +31,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
-import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -98,29 +97,20 @@ public final class SoyFileSetParserBuilder {
    * contents of a Soy template.
    */
   public static SoyFileSetParserBuilder forTemplateContents(String... templateContents) {
-    return forTemplateContents(AutoEscapingType.DEPRECATED_NONCONTEXTUAL, templateContents);
+    return forTemplateContents(/* strictHtml= */ false, templateContents);
   }
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
-   * contents of a Soy template, and using the given {@link AutoEscapingType}.
+   * contents of a Soy template, and using the given strictHtml mode.
    */
   public static SoyFileSetParserBuilder forTemplateContents(
-      AutoEscapingType autoEscapingType, String... templateContents) {
-    return forTemplateContents(autoEscapingType, /* strictHtml= */ false, templateContents);
-  }
-
-  /**
-   * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
-   * contents of a Soy template, and using the given {@link AutoEscapingType} and strictHtml mode.
-   */
-  public static SoyFileSetParserBuilder forTemplateContents(
-      AutoEscapingType autoEscapingType, boolean strictHtml, String... templateContents) {
+      boolean strictHtml, String... templateContents) {
     String[] fileContents = new String[templateContents.length];
     for (int i = 0; i < fileContents.length; ++i) {
       fileContents[i] =
           SharedTestUtils.buildTestSoyFileContent(
-              autoEscapingType, strictHtml, /* soyDocParamNames= */ null, templateContents[i]);
+              strictHtml, /* soyDocParamNames= */ null, templateContents[i]);
     }
     return new SoyFileSetParserBuilder(fileContents);
   }

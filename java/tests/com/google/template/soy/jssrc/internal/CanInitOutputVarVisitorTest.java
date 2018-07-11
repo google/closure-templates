@@ -91,7 +91,9 @@ public class CanInitOutputVarVisitorTest {
             + "{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
         true);
 
-    runTestHelper("{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}", true);
+    runTestHelper(
+        "{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        true);
   }
 
   @Test
@@ -102,7 +104,7 @@ public class CanInitOutputVarVisitorTest {
                 "{@param boo : ?}",
                 "{@param moose : ?}",
                 "{call .foo data=\"$boo\"}",
-                "  {param goo}{for $moo in $moose}{$moo}{/for}{/param}",
+                "  {param goo kind=\"text\"}{for $moo in $moose}{$moo}{/for}{/param}",
                 "{/call}"),
         false);
     runTestHelper("{msg desc=\"\"}hello{/msg}", false);

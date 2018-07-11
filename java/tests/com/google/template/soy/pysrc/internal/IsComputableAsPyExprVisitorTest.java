@@ -63,12 +63,14 @@ public class IsComputableAsPyExprVisitorTest {
     runTestHelper(
         "{@param boo:?}\n{@param moo:?}\n{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
         true);
-    runTestHelper("{@param boo:?}\n{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}", true);
+    runTestHelper(
+        "{@param boo:?}\n{call .foo data=\"$boo\"}{param goo kind=\"text\"}Blah{/param}{/call}",
+        true);
     runTestHelper(
         "{@param boo:?}\n"
             + "{@param moose:?}\n"
             + "{call .foo data=\"$boo\"}"
-            + "  {param goo}"
+            + "  {param goo kind=\"text\"}"
             + "    {for $moo in $moose}"
             + "      {$moo}"
             + "    {/for}"
