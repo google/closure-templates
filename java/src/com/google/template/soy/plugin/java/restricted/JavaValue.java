@@ -65,6 +65,18 @@ public interface JavaValue extends SoySourceValue {
     STRING,
     /** Corresponds to the Soy type {@code list}. */
     LIST,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.HTML}. */
+    HTML,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.ATTRIBUTES}. */
+    ATTRIBUTES,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.JS}. */
+    JS,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.CSS}. */
+    CSS,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.URI}. */
+    URI,
+    /** Corresponds to a SanitizedContent of {@code ContentKind.TRUSTED_RESOURCE_URI}. */
+    TRUSTED_RESOURCE_URI,
 
     /** Corresponds to everything else. */
     OTHER,

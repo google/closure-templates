@@ -201,6 +201,26 @@ public final class BasicFunctionsRuntime {
     return list;
   }
 
+  public static boolean strContains(String left, SoyValue right) {
+    return left.contains(right.coerceToString());
+  }
+
+  public static int strIndexOf(String left, String right) {
+    return left.indexOf(right);
+  }
+
+  public static int strLen(String str) {
+    return str.length();
+  }
+
+  public static String strSub(String str, int start) {
+    return str.substring(start);
+  }
+
+  public static String strSub(String str, int start, int end) {
+    return str.substring(start, end);
+  }
+
   // Note: This takes a SoyList (not a List), because for some reason we get compilation errors
   // (when commenting out the jbcsrc variant) that inputs aren't a list:
   public static int length(SoyList list) {

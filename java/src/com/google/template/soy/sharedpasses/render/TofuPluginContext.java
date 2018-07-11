@@ -35,8 +35,7 @@ final class TofuPluginContext implements JavaPluginContext {
   }
 
   @Override
-  public JavaValue getLocaleString() {
-    // TODO(b/19252021): Adapt the msg locale string to a JavaValue
-    throw new UnsupportedOperationException();
+  public TofuJavaValue getULocale() {
+    return TofuJavaValue.forULocale(msgBundle.getLocale());
   }
 }

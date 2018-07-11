@@ -16,11 +16,8 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -29,17 +26,19 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A function that determines if a given string contains another given string.
@@ -50,38 +49,16 @@ import javax.inject.Singleton;
  *
  */
 @SoyFunctionSignature(
-  name = "strContains",
-  value = {
-    @Signature(
-      // TODO(b/62134073): should be string, string and return a bool
-      returnType = "?",
-      parameterTypes = {"?", "?"}
-    ),
-  }
-)
-@Singleton
+    name = "strContains",
+    value = {
+      @Signature(
+          // TODO(b/62134073): should be string, string and return a bool
+          returnType = "?",
+          parameterTypes = {"?", "?"}),
+    })
 @SoyPureFunction
 final class StrContainsFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  StrContainsFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg0 = args.get(0);
-    SoyValue arg1 = args.get(1);
-
-    Preconditions.checkArgument(
-        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
-        "First argument to strContains() function is not StringData or SanitizedContent: %s",
-        arg0);
-
-    String strArg0 = arg0.coerceToString();
-    String strArg1 = arg1.coerceToString();
-
-    return BooleanData.forValue(strArg0.contains(strArg1));
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -105,9 +82,18 @@ final class StrContainsFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef STRING_CONTAINS =
+  private static final class Methods {
+    static final MethodRef STRING_CONTAINS_REF =
         MethodRef.create(String.class, "contains", CharSequence.class);
+    static final Method STR_CONTAINS =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "strContains", String.class, SoyValue.class);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.STR_CONTAINS, args.get(0), args.get(1));
   }
 
   @Override
@@ -115,6 +101,6 @@ final class StrContainsFunction extends TypedSoyFunction
     SoyExpression left = args.get(0);
     SoyExpression right = args.get(1);
     return SoyExpression.forBool(
-        left.unboxAs(String.class).invoke(JbcSrcMethods.STRING_CONTAINS, right.coerceToString()));
+        left.unboxAs(String.class).invoke(Methods.STRING_CONTAINS_REF, right.coerceToString()));
   }
 }

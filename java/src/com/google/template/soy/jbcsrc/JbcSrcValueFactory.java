@@ -170,6 +170,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return actualParam.box().checkedCast(expectedParamType);
     }
 
+    // TODO(sameb): Deal with a lot more types.
+
     // Otherwise we want an unboxed param, so inspect a little more closely...
     switch (valueForKind(actualParam.soyType().getKind())) {
       case NULL:
@@ -208,6 +210,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         }
         break;
       case STRING:
+      case ATTRIBUTES:
+      case CSS:
+      case HTML:
+      case JS:
+      case TRUSTED_RESOURCE_URI:
+      case URI:
+        // TODO(sameb): For the SanitizedContent types, we may want to support params like
+        // SafeHtml, SafeCss, etc.. which'd require boxing to SanitizedContent & then calling
+        // toXXX.
         if (expectedParamType == String.class) {
           return actualParam.unboxAs(String.class);
         }
@@ -288,22 +299,28 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         return ValueSoyType.NULL;
       case STRING:
         return ValueSoyType.STRING;
-
-      case ANY:
-      case ATTRIBUTES:
-      case CSS:
-      case ERROR:
       case HTML:
+        return ValueSoyType.HTML;
+      case ATTRIBUTES:
+        return ValueSoyType.ATTRIBUTES;
       case JS:
+        return ValueSoyType.JS;
+      case CSS:
+        return ValueSoyType.CSS;
+      case URI:
+        return ValueSoyType.URI;
+      case TRUSTED_RESOURCE_URI:
+        return ValueSoyType.TRUSTED_RESOURCE_URI;
+
+      case ERROR:
       case LEGACY_OBJECT_MAP:
       case MAP:
       case PROTO:
       case PROTO_ENUM:
+      case ANY:
       case RECORD:
-      case TRUSTED_RESOURCE_URI:
       case UNION:
       case UNKNOWN:
-      case URI:
         return ValueSoyType.OTHER;
     }
     throw new AssertionError("above switch is exhaustive");

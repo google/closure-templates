@@ -30,16 +30,9 @@ public final class BasicFunctionsModule extends AbstractModule {
   public void configure() {
     Multibinder<SoyFunction> soyFunctionsSetBinder =
         Multibinder.newSetBinder(binder(), SoyFunction.class);
-    soyFunctionsSetBinder.addBinding().to(HtmlToTextFunction.class);
     soyFunctionsSetBinder.addBinding().to(KeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(MapKeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(LegacyObjectMapToMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(MapToLegacyObjectMapFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrContainsFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrIndexOfFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrLenFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrSubFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrToAsciiLowerCaseFunction.class);
-    soyFunctionsSetBinder.addBinding().to(StrToAsciiUpperCaseFunction.class);
   }
 }

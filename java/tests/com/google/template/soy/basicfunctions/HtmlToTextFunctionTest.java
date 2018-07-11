@@ -23,10 +23,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,11 +38,11 @@ public final class HtmlToTextFunctionTest {
   private static final String TEXT = "a\nb";
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     HtmlToTextFunction htmlToTextFunction = new HtmlToTextFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(htmlToTextFunction);
     SoyValue html = SanitizedContents.constantHtml(HTML);
-    assertThat(htmlToTextFunction.computeForJava(ImmutableList.of(html)))
-        .isEqualTo(StringData.forValue(TEXT));
+    assertThat(tester.callFunction(html)).isEqualTo(TEXT);
   }
 
   @Test

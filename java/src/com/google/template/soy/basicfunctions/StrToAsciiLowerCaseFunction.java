@@ -18,8 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -27,16 +25,18 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /** A function that changes strings to lower case. */
 @SoyFunctionSignature(
@@ -45,19 +45,12 @@ import javax.inject.Singleton;
         @Signature(
             parameterTypes = {"string"},
             returnType = "string"))
-@Singleton
 @SoyPureFunction
 public final class StrToAsciiLowerCaseFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-  @Inject StrToAsciiLowerCaseFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    return StringData.forValue(Ascii.toLowerCase(args.get(0).toString()));
-  }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
@@ -77,14 +70,21 @@ public final class StrToAsciiLowerCaseFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef ASCII_TO_LOWER_CASE_FN =
-        MethodRef.create(Ascii.class, "toLowerCase", String.class);
+  private static final class Methods {
+    static final Method ASCII_TO_LOWER_CASE_FN =
+        JavaValueFactory.createMethod(Ascii.class, "toLowerCase", String.class);
+    static final MethodRef ASCII_TO_LOWER_CASE_FN_REF = MethodRef.create(ASCII_TO_LOWER_CASE_FN);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.ASCII_TO_LOWER_CASE_FN, args.get(0));
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forString(
-        JbcSrcMethods.ASCII_TO_LOWER_CASE_FN.invoke(args.get(0).unboxAs(String.class)));
+        Methods.ASCII_TO_LOWER_CASE_FN_REF.invoke(args.get(0).unboxAs(String.class)));
   }
 }

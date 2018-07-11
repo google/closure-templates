@@ -28,6 +28,7 @@ import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.ibm.icu.util.ULocale;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -55,8 +56,13 @@ class TofuValueFactory extends JavaValueFactory {
                 return TofuJavaValue.forSoyValue(soyArg);
               }
             });
-    JavaValue result = fn.applyForJavaSource(this, javaArgs, context);
-    return ((TofuJavaValue) result).soyValue();
+    TofuJavaValue result = (TofuJavaValue) fn.applyForJavaSource(this, javaArgs, context);
+    if (!result.hasSoyValue()) {
+      throw RenderException.create(
+          "applyForJavaSource must return either an 'args' parameter or the result of "
+              + "JavaValueFactory method.");
+    }
+    return result.soyValue();
   }
 
   @Override
@@ -89,7 +95,13 @@ class TofuValueFactory extends JavaValueFactory {
             new Function<JavaValue, SoyValue>() {
               @Override
               public SoyValue apply(JavaValue soyArg) {
-                return ((TofuJavaValue) soyArg).soyValue();
+                TofuJavaValue tjv = (TofuJavaValue) soyArg;
+                if (!tjv.hasSoyValue()) {
+                  throw RenderException.create(
+                      "listOf may only be called with the 'arg' parameters to "
+                          + "JavaValueFactory methods");
+                }
+                return tjv.soyValue();
               }
             });
     return TofuJavaValue.forSoyValue(SoyValueConverter.INSTANCE.convert(values).resolve());
@@ -124,37 +136,45 @@ class TofuValueFactory extends JavaValueFactory {
     }
     Object[] params = new Object[tofuValues.length];
     for (int i = 0; i < tofuValues.length; i++) {
-      SoyValue value = ((TofuJavaValue) tofuValues[i]).soyValue();
+      TofuJavaValue tofuVal = (TofuJavaValue) tofuValues[i];
       Class<?> type = Primitives.unwrap(paramTypes[i]);
-      // TODO(b/19252021): Deal with null values
-      if (type.isInstance(value)) {
-        params[i] = value;
-      } else if (type == boolean.class) {
-        params[i] = value.booleanValue();
-      } else if (type == int.class) {
-        params[i] = value.integerValue();
-      } else if (type == long.class) {
-        params[i] = value.longValue();
-      } else if (type == double.class) {
-        params[i] = value.numberValue();
-      } else if (type == String.class) {
-        params[i] = value.stringValue();
-      } else if (type == List.class) {
-        params[i] = ((SoyList) value).asJavaList();
+      if (type == ULocale.class) {
+        params[i] = tofuVal.locale();
       } else {
-        // TODO(b/19252021): Map, Iterable, Future, SafeHtml, etc..?
-        throw new UnsupportedOperationException(
-            "cannot call method "
-                + method.getDeclaringClass().getName()
-                + "."
-                + method.getName()
-                + " because parameter["
-                + i
-                + "] expects a "
-                + type
-                + ", but actual value is a `"
-                + value
-                + "`");
+        if (!tofuVal.hasSoyValue()) {
+          throw RenderException.create("Invalid parameter: " + tofuVal);
+        }
+        SoyValue value = tofuVal.soyValue();
+        // TODO(b/19252021): Deal with null values
+        if (type.isInstance(value)) {
+          params[i] = value;
+        } else if (type == boolean.class) {
+          params[i] = value.booleanValue();
+        } else if (type == int.class) {
+          params[i] = value.integerValue();
+        } else if (type == long.class) {
+          params[i] = value.longValue();
+        } else if (type == double.class) {
+          params[i] = value.numberValue();
+        } else if (type == String.class) {
+          params[i] = value.stringValue();
+        } else if (type == List.class) {
+          params[i] = ((SoyList) value).asJavaList();
+        } else {
+          // TODO(b/19252021): Map, Iterable, Future, SafeHtml, etc..?
+          throw new UnsupportedOperationException(
+              "cannot call method "
+                  + method.getDeclaringClass().getName()
+                  + "."
+                  + method.getName()
+                  + " because parameter["
+                  + i
+                  + "] expects a "
+                  + type
+                  + ", but actual value is a `"
+                  + value
+                  + "`");
+        }
       }
     }
     return params;

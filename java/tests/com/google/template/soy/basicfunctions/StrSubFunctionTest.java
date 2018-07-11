@@ -21,11 +21,9 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
@@ -40,41 +38,29 @@ import org.junit.runners.JUnit4;
 public class StrSubFunctionTest {
 
   @Test
-  public void testComputeForJava_noEndIndex() {
-    StrSubFunction strSub = new StrSubFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = IntegerData.forValue(2);
-    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(StringData.forValue("obarfoo"));
+  public void testComputeForJavaSource_noEndIndex() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
+    assertThat(tester.callFunction("foobarfoo", 2)).isEqualTo("obarfoo");
   }
 
   @Test
-  public void testComputeForJava_noEndIndex_SanitizedContent() {
-    StrSubFunction strSub = new StrSubFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = IntegerData.forValue(2);
-    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(StringData.forValue("obarfoo"));
+  public void testComputeForJavaSource_noEndIndex_SanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
+    assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT), 2))
+        .isEqualTo("obarfoo");
   }
 
   @Test
-  public void testComputeForJava_endIndex() {
-    StrSubFunction strSub = new StrSubFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = IntegerData.forValue(2);
-    SoyValue arg2 = IntegerData.forValue(7);
-    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)))
-        .isEqualTo(StringData.forValue("obarf"));
+  public void testComputeForJavaSource_endIndex() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
+    assertThat(tester.callFunction("foobarfoo", 2, 7)).isEqualTo("obarf");
   }
 
   @Test
-  public void testComputeForJava_endIndex_SanitizedContent() {
-    StrSubFunction strSub = new StrSubFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = IntegerData.forValue(2);
-    SoyValue arg2 = IntegerData.forValue(7);
-    assertThat(strSub.computeForJava(ImmutableList.of(arg0, arg1, arg2)))
-        .isEqualTo(StringData.forValue("obarf"));
+  public void testComputeForJavaSource_endIndex_SanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
+    assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT), 2, 7))
+        .isEqualTo("obarf");
   }
 
   @Test

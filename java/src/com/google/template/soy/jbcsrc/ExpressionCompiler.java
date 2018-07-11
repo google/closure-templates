@@ -247,8 +247,8 @@ final class ExpressionCompiler {
                 })));
   }
 
-  private static final class CompilerVisitor extends EnhancedAbstractExprNodeVisitor<SoyExpression>
-      implements JbcSrcValueFactory.PluginInstanceLookup {
+  private static final class CompilerVisitor
+      extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     final Supplier<? extends ExpressionDetacher> detacher;
     final TemplateParameterLookup parameters;
     final TemplateVariableManager varManager;
@@ -922,7 +922,15 @@ final class ExpressionCompiler {
       }
 
       if (fn instanceof SoyJavaSourceFunction) {
-        return new JbcSrcValueFactory(node, parameters.getRenderContext(), this)
+        return new JbcSrcValueFactory(
+                node,
+                parameters.getJavaPluginContext(),
+                new JbcSrcValueFactory.PluginInstanceLookup() {
+                  @Override
+                  public Expression getFunctionRuntime(String pluginName) {
+                    return parameters.getRenderContext().getFunctionRuntime(pluginName);
+                  }
+                })
             .computeForJavaSource(args);
       }
 
@@ -940,11 +948,6 @@ final class ExpressionCompiler {
           MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
               .invoke(legacyFunctionRuntimeExpr, list)
               .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
-    }
-
-    @Override
-    public Expression getFunctionRuntime(String fnName) {
-      return parameters.getRenderContext().getFunctionRuntime(fnName);
     }
 
     // Proto initialization calls

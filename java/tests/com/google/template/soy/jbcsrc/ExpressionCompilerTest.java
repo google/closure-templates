@@ -59,6 +59,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.PluginResolver.Mode;
@@ -148,6 +149,11 @@ public class ExpressionCompilerTest {
             @Override
             public JbcSrcPluginContext getPluginContext() {
               return getRenderContext();
+            }
+
+            @Override
+            public JavaPluginContext getJavaPluginContext() {
+              return getRenderContext().asJavaPluginContext();
             }
 
             @Override

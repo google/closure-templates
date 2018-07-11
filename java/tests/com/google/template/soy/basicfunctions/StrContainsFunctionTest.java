@@ -21,11 +21,9 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -41,39 +39,33 @@ import org.junit.runners.JUnit4;
 public class StrContainsFunctionTest {
 
   @Test
-  public void testComputeForJava_containsString() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = StringData.forValue("bar");
-    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(BooleanData.TRUE);
+  public void testComputeForJavaSource_containsString() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
+    assertThat(tester.callFunction("foobarfoo", "bar")).isEqualTo(true);
   }
 
   @Test
-  public void testComputeForJava_containsSanitizedContent() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
-    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(BooleanData.TRUE);
+  public void testComputeForJavaSource_containsSanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
+    assertThat(
+            tester.callFunction(
+                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("bar", ContentKind.TEXT)))
+        .isEqualTo(true);
   }
 
   @Test
-  public void testComputeForJava_doesNotContainString() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = StringData.forValue("baz");
-    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(BooleanData.FALSE);
+  public void testComputeForJavaSource_doesNotContainString() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
+    assertThat(tester.callFunction("foobarfoo", "baz")).isEqualTo(false);
   }
 
   @Test
-  public void testComputeForJava_doesNotContainSanitizedContent() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
-    assertThat(strContains.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(BooleanData.FALSE);
+  public void testComputeForJavaSource_doesNotContainSanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
+    assertThat(
+            tester.callFunction(
+                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("baz", ContentKind.TEXT)))
+        .isEqualTo(false);
   }
 
   @Test

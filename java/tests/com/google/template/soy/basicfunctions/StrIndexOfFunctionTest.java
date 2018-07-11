@@ -21,11 +21,9 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
@@ -40,39 +38,33 @@ import org.junit.runners.JUnit4;
 public class StrIndexOfFunctionTest {
 
   @Test
-  public void testComputeForJava_containsString() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = StringData.forValue("bar");
-    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(IntegerData.forValue(3));
+  public void testComputeForJavaSource_containsString() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
+    assertThat(tester.callFunction("foobarfoo", "bar")).isEqualTo(3);
   }
 
   @Test
-  public void testComputeForJava_containsSanitizedContent() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
-    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(IntegerData.forValue(3));
+  public void testComputeForJavaSource_containsSanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
+    assertThat(
+            tester.callFunction(
+                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("bar", ContentKind.TEXT)))
+        .isEqualTo(3);
   }
 
   @Test
-  public void testComputeForJava_doesNotContainString() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    SoyValue arg1 = StringData.forValue("baz");
-    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(IntegerData.forValue(-1));
+  public void testComputeForJavaSource_doesNotContainString() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
+    assertThat(tester.callFunction("foobarfoo", "baz")).isEqualTo(-1);
   }
 
   @Test
-  public void testComputeForJava_doesNotContainSanitizedContent() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    SoyValue arg1 = ordainAsSafe("baz", ContentKind.TEXT);
-    assertThat(strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(IntegerData.forValue(-1));
+  public void testComputeForJavaSource_doesNotContainSanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrIndexOfFunction());
+    assertThat(
+            tester.callFunction(
+                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("baz", ContentKind.TEXT)))
+        .isEqualTo(-1);
   }
 
   @Test

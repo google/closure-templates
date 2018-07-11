@@ -231,7 +231,7 @@ public class SoyJavaSourceFunctionTester {
 
   private class InternalContext implements JavaPluginContext {
     @Override
-    public JavaValue getLocaleString() {
+    public JavaValue getULocale() {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 

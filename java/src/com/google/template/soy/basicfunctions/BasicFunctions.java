@@ -30,6 +30,7 @@ public class BasicFunctions {
         new CeilingFunction(),
         new ConcatListsFunction(),
         new FloorFunction(),
+        new HtmlToTextFunction(),
         new IsNonnullFunction(),
         new IsNullFunction(),
         new LengthFunction(),
@@ -41,6 +42,12 @@ public class BasicFunctions {
         new RangeFunction(),
         new RandomIntFunction(),
         new RoundFunction(),
-        new SqrtFunction());
+        new SqrtFunction(),
+        new StrContainsFunction(),
+        new StrIndexOfFunction(),
+        new StrLenFunction(),
+        new StrSubFunction(),
+        new StrToAsciiLowerCaseFunction(),
+        new StrToAsciiUpperCaseFunction());
   }
 }

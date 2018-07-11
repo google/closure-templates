@@ -18,8 +18,8 @@ package com.google.template.soy.plugin.java.restricted;
 
 /** The context for {@link SoyJavaSourceFunction}s and {@link SoyJavaSourcePrintDirective}s. */
 public interface JavaPluginContext {
-  /** A value that resolves the locale string at runtime. */
-  JavaValue getLocaleString();
+  /** A value that resolves to the current ULocale at runtime. */
+  JavaValue getULocale();
 
   /**
    * A value that resolves to the BidiGlobalDir at runtime. Only useful for internal Soy functions

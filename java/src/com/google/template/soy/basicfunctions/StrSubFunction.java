@@ -16,11 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -29,17 +24,19 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
@@ -56,60 +53,20 @@ import org.objectweb.asm.Type;
  *
  */
 @SoyFunctionSignature(
-  name = "strSub",
-  value = {
-    @Signature(
-      returnType = "string",
-      // TODO(b/62134073): should be string, int
-      parameterTypes = {"?", "?"}
-    ),
-    @Signature(
-      returnType = "string",
-      // TODO(b/62134073): should be string, int, int
-      parameterTypes = {"?", "?", "?"}
-    ),
-  }
-)
-@Singleton
+    name = "strSub",
+    value = {
+      @Signature(
+          returnType = "string",
+          // TODO(b/62134073): should be string, int
+          parameterTypes = {"?", "?"}),
+      @Signature(
+          returnType = "string",
+          // TODO(b/62134073): should be string, int, int
+          parameterTypes = {"?", "?", "?"}),
+    })
 @SoyPureFunction
 final class StrSubFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  StrSubFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg0 = args.get(0);
-    SoyValue arg1 = args.get(1);
-    SoyValue arg2 = args.size() == 3 ? args.get(2) : null;
-
-    Preconditions.checkArgument(
-        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
-        "First argument to strSub() function is not StringData or SanitizedContent: %s",
-        arg0);
-
-    Preconditions.checkArgument(
-        arg1 instanceof IntegerData,
-        "Second argument to strSub() function is not IntegerData: %s",
-        arg1);
-
-    if (arg2 != null) {
-      Preconditions.checkArgument(
-          arg2 instanceof IntegerData,
-          "Third argument to strSub() function is not IntegerData: %s",
-          arg2);
-    }
-
-    String strArg0 = arg0.coerceToString();
-    int intArg1 = arg1.integerValue();
-
-    if (arg2 != null) {
-      return StringData.forValue(strArg0.substring(intArg1, arg2.integerValue()));
-    } else {
-      return StringData.forValue(strArg0.substring(intArg1));
-    }
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -140,11 +97,28 @@ final class StrSubFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef STRING_SUBSTR_START =
+  private static final class Methods {
+    static final MethodRef STRING_SUBSTR_START_REF =
         MethodRef.create(String.class, "substring", int.class).asNonNullable();
     static final MethodRef STRING_SUBSTR_START_END =
         MethodRef.create(String.class, "substring", int.class, int.class);
+
+    static final Method STR_SUB_START =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "strSub", String.class, int.class);
+    static final Method STR_SUB_START_END =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "strSub", String.class, int.class, int.class);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    if (args.size() == 2) {
+      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1));
+    }
+    return factory.callStaticMethod(
+        Methods.STR_SUB_START_END, args.get(0), args.get(1), args.get(2));
   }
 
   @Override
@@ -160,7 +134,7 @@ final class StrSubFunction extends TypedSoyFunction
     return SoyExpression.forString(
         str.unboxAs(String.class)
             .invoke(
-                JbcSrcMethods.STRING_SUBSTR_START,
+                Methods.STRING_SUBSTR_START_REF,
                 BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 
@@ -170,7 +144,7 @@ final class StrSubFunction extends TypedSoyFunction
     return SoyExpression.forString(
         str.unboxAs(String.class)
             .invoke(
-                JbcSrcMethods.STRING_SUBSTR_START_END,
+                Methods.STRING_SUBSTR_START_END,
                 BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
                 BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
   }

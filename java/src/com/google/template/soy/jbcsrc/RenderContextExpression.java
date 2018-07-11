@@ -33,8 +33,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.List;
 
 /** An expression for a {@link RenderContext} object. */
-final class RenderContextExpression extends Expression
-    implements JbcSrcPluginContext, JavaPluginContext {
+final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
@@ -96,11 +95,6 @@ final class RenderContextExpression extends Expression
   }
 
   @Override
-  public JavaValue getBidiDir() {
-    return JbcSrcJavaValue.of(getBidiGlobalDir());
-  }
-
-  @Override
   public Expression getDebugSoyTemplateInfo() {
     return delegate.invoke(GET_DEBUG_SOY_TEMPLATE_INFO);
   }
@@ -135,11 +129,6 @@ final class RenderContextExpression extends Expression
   @Override
   public Expression getULocale() {
     return delegate.invoke(GET_LOCALE);
-  }
-
-  @Override
-  public JavaValue getLocaleString() {
-    return JbcSrcJavaValue.of(getULocale());
   }
 
   Expression getSoyMsgParts(long id, Expression defaultParts) {
@@ -180,5 +169,20 @@ final class RenderContextExpression extends Expression
 
   public Expression hasLogger() {
     return delegate.invoke(HAS_LOGGER);
+  }
+
+  /** Returns this {@link RenderContextExpression} as a {@link JavaPluginContext}. */
+  public JavaPluginContext asJavaPluginContext() {
+    return new JavaPluginContext() {
+      @Override
+      public JavaValue getULocale() {
+        return JbcSrcJavaValue.of(RenderContextExpression.this.getULocale());
+      }
+
+      @Override
+      public JavaValue getBidiDir() {
+        return JbcSrcJavaValue.of(RenderContextExpression.this.getBidiGlobalDir());
+      }
+    };
   }
 }

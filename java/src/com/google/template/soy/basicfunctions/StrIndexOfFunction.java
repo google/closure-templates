@@ -16,10 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -28,16 +24,18 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
@@ -52,43 +50,16 @@ import org.objectweb.asm.Type;
  *
  */
 @SoyFunctionSignature(
-  name = "strIndexOf",
-  value = {
-    @Signature(
-      returnType = "int",
-      // TODO(b/62134073): should be string, string
-      parameterTypes = {"?", "?"}
-    ),
-  }
-)
-@Singleton
+    name = "strIndexOf",
+    value = {
+      @Signature(
+          returnType = "int",
+          // TODO(b/62134073): should be string, string
+          parameterTypes = {"?", "?"}),
+    })
 @SoyPureFunction
 final class StrIndexOfFunction extends TypedSoyFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
-
-  @Inject
-  StrIndexOfFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg0 = args.get(0);
-    SoyValue arg1 = args.get(1);
-
-    Preconditions.checkArgument(
-        arg0 instanceof SoyString,
-        "First argument to strIndexOf() function is not StringData or SanitizedContent: %s",
-        arg0);
-
-    Preconditions.checkArgument(
-        arg1 instanceof SoyString,
-        "Second argument to strIndexOf() function is not StringData or SanitizedContent: %s",
-        arg1);
-
-    String strArg0 = arg0.coerceToString();
-    String strArg1 = arg1.coerceToString();
-
-    return IntegerData.forValue(strArg0.indexOf(strArg1));
-  }
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -109,9 +80,18 @@ final class StrIndexOfFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef STRING_INDEX_OF =
+  private static final class Methods {
+    static final MethodRef STRING_INDEX_OF_REF =
         MethodRef.create(String.class, "indexOf", String.class);
+    static final Method INDEX_OF =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "strIndexOf", String.class, String.class);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.INDEX_OF, args.get(0), args.get(1));
   }
 
   @Override
@@ -121,7 +101,7 @@ final class StrIndexOfFunction extends TypedSoyFunction
     return SoyExpression.forInt(
         BytecodeUtils.numericConversion(
             left.unboxAs(String.class)
-                .invoke(JbcSrcMethods.STRING_INDEX_OF, right.unboxAs(String.class)),
+                .invoke(Methods.STRING_INDEX_OF_REF, right.unboxAs(String.class)),
             Type.LONG_TYPE));
   }
 }

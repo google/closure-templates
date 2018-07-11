@@ -21,11 +21,9 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
@@ -40,17 +38,15 @@ import org.junit.runners.JUnit4;
 public class StrLenFunctionTest {
 
   @Test
-  public void testComputeForJava_containsString() {
-    StrLenFunction strLen = new StrLenFunction();
-    SoyValue arg0 = StringData.forValue("foobarfoo");
-    assertThat(strLen.computeForJava(ImmutableList.of(arg0))).isEqualTo(IntegerData.forValue(9));
+  public void testComputeForJavaSource_containsString() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrLenFunction());
+    assertThat(tester.callFunction("foobarfoo")).isEqualTo(9);
   }
 
   @Test
-  public void testComputeForJava_containsSanitizedContent() {
-    StrLenFunction strLen = new StrLenFunction();
-    SoyValue arg0 = ordainAsSafe("foobarfoo", ContentKind.TEXT);
-    assertThat(strLen.computeForJava(ImmutableList.of(arg0))).isEqualTo(IntegerData.forValue(9));
+  public void testComputeForJavaSource_containsSanitizedContent() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrLenFunction());
+    assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT))).isEqualTo(9);
   }
 
   @Test

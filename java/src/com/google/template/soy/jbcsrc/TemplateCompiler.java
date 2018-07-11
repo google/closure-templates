@@ -55,6 +55,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -372,6 +373,11 @@ final class TemplateCompiler {
     @Override
     public JbcSrcPluginContext getPluginContext() {
       return renderContext;
+    }
+
+    @Override
+    public JavaPluginContext getJavaPluginContext() {
+      return renderContext.asJavaPluginContext();
     }
 
     @Override
