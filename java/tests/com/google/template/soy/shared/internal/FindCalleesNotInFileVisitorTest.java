@@ -42,34 +42,30 @@ public final class FindCalleesNotInFileVisitorTest {
             + "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template 1. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call .moo data=\"all\" /}\n"
-            + "  {call boo.woo.hoo data=\"all\" /}\n"
-            + // not defined in this file
-            "{/template}\n"
+            + "  {call boo.woo.hoo data=\"all\" /}\n" // not defined in this file
+            + "{/template}\n"
             + "\n"
             + "/** Test template 2. */\n"
-            + "{template .moo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .moo}\n"
             + "  {for $i in range(8)}\n"
             + "    {call boo.foo.goo data=\"all\" /}\n"
-            + "    {call .too data=\"all\" /}\n"
-            + // not defined in this file
-            "    {call .goo}"
-            + "      {param a}{call .moo /}{/param}"
-            + "      {param b}{call .zoo /}{/param}"
-            + // not defined in this file
-            "    {/call}"
+            + "    {call .too data=\"all\" /}\n" // not defined in this file
+            + "    {call .goo}"
+            + "      {param a kind=\"text\"}{call .moo /}{/param}"
+            + "      {param b kind=\"text\"}{call .zoo /}{/param}" // not defined in this file
+            + "    {/call}"
             + "  {/for}\n"
             + "{/template}\n"
             + "\n"
             + "/** Test template 3. */\n"
-            + "{deltemplate booHoo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{deltemplate booHoo}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call .moo data=\"all\" /}\n"
-            + "  {call boo.hoo.roo data=\"all\" /}\n"
-            + // not defined in this file
-            "{/deltemplate}\n";
+            + "  {call boo.hoo.roo data=\"all\" /}\n" // not defined in this file
+            + "{/deltemplate}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =

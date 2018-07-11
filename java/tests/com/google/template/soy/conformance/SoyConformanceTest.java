@@ -84,7 +84,7 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .foo autoescape=\"deprecated-contextual\"}\n"
             + "{print 'blah' |noAutoescape}\n"
             + "{/template}");
   }

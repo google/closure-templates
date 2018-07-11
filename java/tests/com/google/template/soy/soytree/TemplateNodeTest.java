@@ -198,7 +198,7 @@ public class TemplateNodeTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n"
-            + "{template .boo autoescape=\"deprecated-noncontextual\" kind=\"text\"}{/template}",
+            + "{template .boo autoescape=\"deprecated-contextual\" kind=\"text\"}{/template}",
         errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("kind=\"...\" attribute is only valid with autoescape=\"strict\".");

@@ -7,7 +7,7 @@
 /**
  * Print information about cow and moose.
  */
-{template .mooseTemplate autoescape="deprecated-noncontextual"}
+{template .mooseTemplate}
   {@param cow: ?}  /** Don't have one. */
   {@param moose: ?}  /** The moose to print info about. */
 
@@ -23,7 +23,7 @@
     {/if}
   {/for}
   {msg desc="Tells what a moose says."}
-    Moose <i>also</i> says {$moose[0]}.  // oops, "forgot" the noAutoescape directive
+    Moose <i>also</i> says {$moose[0]}.
   {/msg}{\n}
 
   {if $cow > length($moose)}
@@ -44,7 +44,7 @@
 {/template}
 
 
-{template .mooHelper_ visibility="private" autoescape="deprecated-noncontextual"}
+{template .mooHelper_ visibility="private"}
   {@param moo: ?}  /** One moo. */
   {msg desc="Tells what a cow says."}
     Cow says {$moo phex="MOOOooooOOOO"}.

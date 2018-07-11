@@ -64,7 +64,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
+            "{template .foo}", // 1
             "{@param world : ?}",
             "  Hello", // 3
             "  {lb}", // 4
@@ -73,7 +73,7 @@ public final class SourceLocationTest {
             "", // 7
             "  {call .bar /}", // 8
             "{/template}", // 9
-            "{template .bar autoescape=\"deprecated-noncontextual\"}", // 10
+            "{template .bar}", // 10
             "  Gooodbye", // 11
             "{/template}" // 12
             ));
@@ -100,7 +100,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
+            "{template .foo}", // 1
             "{@param i : int}", // 2
             "  Hello,", // 3
             "  {switch $i}", // 4
@@ -136,7 +136,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
+            "{template .foo}", // 1
             "  Hello", // 2
             "  {for $planet in ['mercury', 'mars', 'venus']}", // 3
             "    ,", // 4
@@ -168,7 +168,7 @@ public final class SourceLocationTest {
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo autoescape=\"deprecated-noncontextual\"}", // 1
+            "{template .foo}", // 1
             "{@param skyIsBlue : bool}",
             "{@param isReallyReallyHot : bool}",
             "  Hello,", // 4
@@ -193,9 +193,7 @@ public final class SourceLocationTest {
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
-                "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
-                SoyFileKind.SRC,
-                "broken.soy"))
+                "{template t}\nHello, World!\n", SoyFileKind.SRC, "broken.soy"))
         .errorReporter(reporter)
         .parse();
     assertThat(reporter.getErrors()).isNotEmpty();

@@ -103,18 +103,15 @@ public final class CheckTemplateParamsPassTest {
             + "\n"
             + "/**\n"
             + " * @param? goo @param too @param woo @param? zoo\n"
-            + " * @param gee\n"
-            + // no 'mee' is okay because user may not want to list it (chrisn)
-            " * @param maa\n"
-            + // no 'gaa' is okay because it may be optional in 'baa.faa'
-            " * @param transParam \n"
-            + // okay (not required) because it's used in transitive callee
-            " */\n"
-            + "{template .foo autoescape=\"deprecated-noncontextual\"}\n"
+            + " * @param gee\n" // no 'mee' is okay because user may not want to list it (chrisn)
+            + " * @param maa\n" // no 'gaa' is okay because it may be optional in 'baa.faa'
+            + " * @param transParam\n" // okay (not required) because it's used in transitive callee
+            + " */\n"
+            + "{template .foo}\n"
             + "  {call .fee data=\"$goo.moo\" /}\n"
             + "  {call .fee data=\"$too\"}\n"
             + "    {param gee : $woo.hoo /}\n"
-            + "    {param mee}\n"
+            + "    {param mee kind=\"text\"}\n"
             + "      {$zoo}\n"
             + "    {/param}\n"
             + "  {/call}\n"
@@ -124,17 +121,17 @@ public final class CheckTemplateParamsPassTest {
             + "{/template}\n"
             + "\n"
             + "/** @param gee @param mee */\n"
-            + "{template .fee autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .fee}\n"
             + "  {$gee}{$mee}\n"
             + "{/template}\n"
             + "\n"
             + "/** */\n"
-            + "{template .transitive1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .transitive1}\n"
             + "  {call .transitive2 data=\"all\" /}\n"
             + "{/template}\n"
             + "\n"
             + "/** @param transParam */\n"
-            + "{template .transitive2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .transitive2}\n"
             + "  {$transParam}\n"
             + "{/template}\n";
 
