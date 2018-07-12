@@ -1081,6 +1081,39 @@ public final class EscapingConventions {
   }
 
   /**
+   * Accepts only sms URIs but does not verify complete correctness. The regular expression will
+   * allow spaces in the phone number this is not part of the RFC but supported by browsers.
+   *
+   * <p>The RFC for the sms: https://tools.ietf.org/html/rfc5724
+   *
+   * <p>The RFC for URIs: https://tools.ietf.org/html/rfc3986
+   */
+  public static final class FilterSmsUri extends CrossLanguageStringXform {
+    /** Implements the {@code |filterSmsUri} directive. */
+    public static final FilterSmsUri INSTANCE = new FilterSmsUri();
+
+    private FilterSmsUri() {
+      super(
+          Pattern.compile("^sms:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
+          null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.<Escape>of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      // NOTE: about:invalid is registered in http://www.w3.org/TR/css3-values/#about-invalid :
+      // "The about:invalid URI references a non-existent document with a generic error condition.
+      // It can be used when a URI is necessary, but the default value shouldn't be resolveable as
+      // any type of document."
+      return "about:invalid#" + INNOCUOUS_OUTPUT;
+    }
+  }
+
+  /**
    * Accepts only tel URIs but does not verify complete correctness.
    *
    * <p>The RFC for the tel: URI https://tools.ietf.org/html/rfc3966
@@ -1230,6 +1263,7 @@ public final class EscapingConventions {
         FilterNormalizeMediaUri.INSTANCE,
         FilterImageDataUri.INSTANCE,
         FilterSipUri.INSTANCE,
+        FilterSmsUri.INSTANCE,
         FilterTelUri.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
         FilterHtmlElementName.INSTANCE);

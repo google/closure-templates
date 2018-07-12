@@ -214,6 +214,8 @@ _FILTER_FOR_FILTER_IMAGE_DATA_URI = re.compile(r"""^data:image/(?:bmp|gif|jpe?g|
 
 _FILTER_FOR_FILTER_SIP_URI = re.compile(r"""^sip:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
 
+_FILTER_FOR_FILTER_SMS_URI = re.compile(r"""^sms:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
+
 _FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
@@ -305,6 +307,14 @@ def filter_image_data_uri_helper(value):
 def filter_sip_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_SIP_URI.search(value):
+    return 'about:invalid#zSoyz'
+
+  return value
+
+
+def filter_sms_uri_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_SMS_URI.search(value):
     return 'about:invalid#zSoyz'
 
   return value

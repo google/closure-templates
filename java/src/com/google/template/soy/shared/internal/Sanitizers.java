@@ -643,6 +643,24 @@ public final class Sanitizers {
         SanitizedContent.ContentKind.URI);
   }
 
+  /** Makes sure that the given input is a sms URI. */
+  public static SanitizedContent filterSmsUri(SoyValue value) {
+    value = normalizeNull(value);
+    return filterSmsUri(value.coerceToString());
+  }
+
+  /** Makes sure that the given input is a sms URI. */
+  public static SanitizedContent filterSmsUri(String value) {
+    if (EscapingConventions.FilterSmsUri.INSTANCE.getValueFilter().matcher(value).find()) {
+      // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
+    }
+    logger.log(Level.WARNING, "|filterSmsUri received bad value ''{0}''", value);
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        EscapingConventions.FilterSmsUri.INSTANCE.getInnocuousOutput(),
+        SanitizedContent.ContentKind.URI);
+  }
+
   /** Makes sure that the given input is a tel URI. */
   public static SanitizedContent filterTelUri(SoyValue value) {
     value = normalizeNull(value);

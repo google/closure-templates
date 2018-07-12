@@ -289,6 +289,13 @@ def filter_image_data_uri(value):
       generated_sanitize.filter_image_data_uri_helper(value), approval=approval)
 
 
+def sms_to_uri(value):
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Filtered URIs are by nature sanitized.')
+  return SanitizedUri(
+      generated_sanitize.filter_sms_uri_helper(value), approval=approval)
+
+
 def filter_sip_uri(value):
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Filtered URIs are by nature sanitized.')

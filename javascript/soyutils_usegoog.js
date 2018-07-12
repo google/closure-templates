@@ -1557,6 +1557,18 @@ soy.$$filterSipUri = function(value) {
       soy.esc.$$filterSipUriHelper(value));
 };
 
+/**
+ * Function that converts sms uri string to a sanitized uri
+ *
+ * @param {string} value sms uri
+ * @return {!goog.soy.data.SanitizedUri} An sanitized version of the sms uri.
+ */
+soy.$$strSmsUriToUri = function(value) {
+  // NOTE: Even if it's a SanitizedUri, we will still filter it.
+  return soydata.VERY_UNSAFE.ordainSanitizedUri(
+      soy.esc.$$filterSmsUriHelper(value));
+};
+
 
 /**
  * Allows only tel URIs.
@@ -2356,6 +2368,12 @@ soy.esc.$$FILTER_FOR_FILTER_SIP_URI_ = /^sip:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,
  * A pattern that vets values produced by the named directives.
  * @private {!RegExp}
  */
+soy.esc.$$FILTER_FOR_FILTER_SMS_URI_ = /^sms:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
+
+/**
+ * A pattern that vets values produced by the named directives.
+ * @private {!RegExp}
+ */
 soy.esc.$$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,]+$/i;
 
 /**
@@ -2523,6 +2541,20 @@ soy.esc.$$filterSipUriHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_SIP_URI_.test(str)) {
     goog.asserts.fail('Bad value `%s` for |filterSipUri', [str]);
+    return 'about:invalid#zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterSmsUri
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+soy.esc.$$filterSmsUriHelper = function(value) {
+  var str = String(value);
+  if (!soy.esc.$$FILTER_FOR_FILTER_SMS_URI_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterSmsUri', [str]);
     return 'about:invalid#zSoyz';
   }
   return str;

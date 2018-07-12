@@ -34,5 +34,6 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(MapKeysFunction.class);
     soyFunctionsSetBinder.addBinding().to(LegacyObjectMapToMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(MapToLegacyObjectMapFunction.class);
+    soyFunctionsSetBinder.addBinding().to(StrSmsUriToUriFunction.class);
   }
 }
