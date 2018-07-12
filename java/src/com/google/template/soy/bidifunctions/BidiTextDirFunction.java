@@ -18,7 +18,6 @@ package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -26,15 +25,17 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.objectweb.asm.Type;
 
 /**
@@ -43,45 +44,46 @@ import org.objectweb.asm.Type;
  *
  */
 @SoyFunctionSignature(
-  name = "bidiTextDir",
-  value = {
-    // TODO(b/70946095): should take a string
-    @Signature(returnType = "int", parameterTypes = "?"),
-    // TODO(b/70946095): should take a string and a bool
-    @Signature(
-      returnType = "int",
-      parameterTypes = {"?", "?"}
-    )
-  }
-)
-@Singleton
+    name = "bidiTextDir",
+    value = {
+      // TODO(b/70946095): should take a string
+      @Signature(returnType = "int", parameterTypes = "?"),
+      // TODO(b/70946095): should take a string and a bool
+      @Signature(
+          returnType = "int",
+          parameterTypes = {"?", "?"})
+    })
 final class BidiTextDirFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
 
-  @Inject
-  BidiTextDirFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue value = args.get(0);
-    return IntegerData.forValue(
-        BidiFunctionsRuntime.bidiTextDir(value, args.size() == 2 && args.get(1).booleanValue()));
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class Methods {
+    static final Method BIDI_TEXT_DIR_NO_HTML =
+        JavaValueFactory.createMethod(BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class);
+    static final Method BIDI_TEXT_DIR_MAYBE_HTML =
+        JavaValueFactory.createMethod(
+            BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class, boolean.class);
+    static final MethodRef BIDI_TEXT_DIR_MAYBE_HTML_REF =
+        MethodRef.create(BIDI_TEXT_DIR_MAYBE_HTML);
   }
 
-  // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef BIDI_TEXT_DIR =
-        MethodRef.create(BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class, boolean.class);
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    if (args.size() == 1) {
+      return factory.callStaticMethod(Methods.BIDI_TEXT_DIR_NO_HTML, args.get(0));
+    }
+    return factory.callStaticMethod(Methods.BIDI_TEXT_DIR_MAYBE_HTML, args.get(0), args.get(1));
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forInt(
         BytecodeUtils.numericConversion(
-            JbcSrcMethods.BIDI_TEXT_DIR.invoke(
+            Methods.BIDI_TEXT_DIR_MAYBE_HTML_REF.invoke(
                 args.get(0).box(),
                 args.size() > 1
                     ? args.get(1).unboxAs(boolean.class)

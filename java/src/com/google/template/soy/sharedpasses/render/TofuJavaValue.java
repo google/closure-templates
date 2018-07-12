@@ -23,6 +23,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.ibm.icu.util.ULocale;
 import javax.annotation.Nullable;
@@ -30,19 +31,25 @@ import javax.annotation.Nullable;
 /** Wraps a {@link SoyValue} into a {@link JavaValue}. */
 final class TofuJavaValue implements JavaValue {
   static TofuJavaValue forSoyValue(SoyValue soyValue) {
-    return new TofuJavaValue(soyValue, null);
+    return new TofuJavaValue(checkNotNull(soyValue), null, null);
   }
 
   static TofuJavaValue forULocale(ULocale locale) {
-    return new TofuJavaValue(null, checkNotNull(locale));
+    return new TofuJavaValue(null, checkNotNull(locale), null);
+  }
+
+  static JavaValue forBidiDir(BidiGlobalDir bidiGlobalDir) {
+    return new TofuJavaValue(null, null, checkNotNull(bidiGlobalDir));
   }
 
   @Nullable private final SoyValue soyValue;
   @Nullable private final ULocale locale;
+  @Nullable private final BidiGlobalDir bidiGlobalDir;
 
-  private TofuJavaValue(SoyValue soyValue, ULocale locale) {
+  private TofuJavaValue(SoyValue soyValue, ULocale locale, BidiGlobalDir bidiGlobalDir) {
     this.soyValue = soyValue;
     this.locale = locale;
+    this.bidiGlobalDir = bidiGlobalDir;
   }
 
   boolean hasSoyValue() {
@@ -54,6 +61,11 @@ final class TofuJavaValue implements JavaValue {
     return soyValue;
   }
 
+  BidiGlobalDir bidiGlobalDir() {
+    checkState(bidiGlobalDir != null);
+    return bidiGlobalDir;
+  }
+
   ULocale locale() {
     checkState(locale != null);
     return locale;
@@ -61,12 +73,20 @@ final class TofuJavaValue implements JavaValue {
 
   @Override
   public TofuJavaValue isNonNull() {
+    if (soyValue == null) {
+      throw RenderException.create(
+          "isNonNull is only supported on the 'args' parameters of JavaValueFactory methods");
+    }
     return forSoyValue(
         BooleanData.forValue(!(soyValue instanceof UndefinedData || soyValue instanceof NullData)));
   }
 
   @Override
   public TofuJavaValue isNull() {
+    if (soyValue == null) {
+      throw RenderException.create(
+          "isNull is only supported on the 'args' parameters of JavaValueFactory methods");
+    }
     return forSoyValue(
         BooleanData.forValue(soyValue instanceof UndefinedData || soyValue instanceof NullData));
   }
@@ -78,6 +98,12 @@ final class TofuJavaValue implements JavaValue {
 
   @Override
   public String toString() {
-    return "TofuJavaValue[soyValue=" + soyValue + ", locale=" + locale + "]";
+    if (soyValue != null) {
+      return "TofuJavaValue[soyValue=" + soyValue + "]";
+    } else if (locale != null) {
+      return "TofuJavaValue[locale=" + locale + "]";
+    } else {
+      return "TofuJavaValue[bidiGlobalDir=" + bidiGlobalDir + "]";
+    }
   }
 }

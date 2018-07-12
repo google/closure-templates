@@ -21,6 +21,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.html.HtmlEscapers;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import javax.annotation.Nullable;
 
 public class BidiFormatter {
@@ -41,6 +44,12 @@ public class BidiFormatter {
 
   private static final BidiFormatter DEFAULT_LTR_INSTANCE = new BidiFormatter(Dir.LTR);
   private static final BidiFormatter DEFAULT_RTL_INSTANCE = new BidiFormatter(Dir.RTL);
+  private static final SanitizedContent LTR_DIR =
+      SanitizedContents.constantAttributes("dir=\"ltr\"");
+  private static final SanitizedContent RTL_DIR =
+      SanitizedContents.constantAttributes("dir=\"rtl\"");
+  private static final SanitizedContent NEUTRAL_DIR =
+      SanitizedContents.emptyString(ContentKind.ATTRIBUTES);
 
   private final Dir contextDir;
 
@@ -74,12 +83,19 @@ public class BidiFormatter {
    * @return "dir=\"rtl\"" for RTL text in non-RTL context; "dir=\"ltr\"" for LTR text in non-LTR
    *     context; else, the empty string.
    */
-  public String knownDirAttr(Dir dir) {
+  public SanitizedContent knownDirAttrSanitized(Dir dir) {
     Preconditions.checkNotNull(dir);
     if (dir != contextDir) {
-      return dir == Dir.LTR ? "dir=\"ltr\"" : dir == Dir.RTL ? "dir=\"rtl\"" : "";
+      switch (dir) {
+        case LTR:
+          return LTR_DIR;
+        case RTL:
+          return RTL_DIR;
+        case NEUTRAL:
+          // fall out.
+      }
     }
-    return "";
+    return NEUTRAL_DIR;
   }
 
   /**

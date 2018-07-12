@@ -27,6 +27,15 @@ import com.google.template.soy.internal.i18n.BidiUtils;
 public final class BidiFunctionsRuntime {
 
   public static String bidiDirAttr(BidiGlobalDir dir, SoyValue value, boolean isHtml) {
+    return bidiDirAttrSanitized(dir, value, isHtml).stringValue();
+  }
+
+  public static SanitizedContent bidiDirAttrSanitized(BidiGlobalDir dir, SoyValue value) {
+    return bidiDirAttrSanitized(dir, value, /* isHtml= */ false);
+  }
+
+  public static SanitizedContent bidiDirAttrSanitized(
+      BidiGlobalDir dir, SoyValue value, boolean isHtml) {
     Dir valueDir = null;
     boolean isHtmlForValueDirEstimation = false;
     if (value instanceof SanitizedContent) {
@@ -43,7 +52,7 @@ public final class BidiFunctionsRuntime {
     }
 
     BidiFormatter bidiFormatter = BidiFormatter.getInstance(dir.toDir());
-    return bidiFormatter.knownDirAttr(valueDir);
+    return bidiFormatter.knownDirAttrSanitized(valueDir);
   }
 
   public static String bidiEndEdge(BidiGlobalDir bidiGlobalDir) {
@@ -52,6 +61,10 @@ public final class BidiFunctionsRuntime {
 
   public static String bidiStartEdge(BidiGlobalDir bidiGlobalDir) {
     return bidiGlobalDir.getStaticValue() < 0 ? "right" : "left";
+  }
+
+  public static String bidiMarkAfter(BidiGlobalDir bidiGlobalDir, SoyValue value) {
+    return bidiMarkAfter(bidiGlobalDir, value, /* isHtml= */ false);
   }
 
   public static String bidiMarkAfter(BidiGlobalDir bidiGlobalDir, SoyValue value, boolean isHtml) {
@@ -72,6 +85,10 @@ public final class BidiFunctionsRuntime {
     return (bidiGlobalDir.getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/;
   }
 
+  public static int bidiTextDir(SoyValue value) {
+    return bidiTextDir(value, /* isHtml= */ false);
+  }
+
   public static int bidiTextDir(SoyValue value, boolean isHtml) {
     Dir valueDir = null;
     boolean isHtmlForValueDirEstimation = false;
@@ -87,5 +104,9 @@ public final class BidiFunctionsRuntime {
       valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
     }
     return valueDir.ord;
+  }
+
+  public static int bidiGlobalDir(BidiGlobalDir dir) {
+    return dir.getStaticValue();
   }
 }

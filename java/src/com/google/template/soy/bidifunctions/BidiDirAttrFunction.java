@@ -16,11 +16,10 @@
 
 package com.google.template.soy.bidifunctions;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -29,16 +28,17 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 
 /**
  * Soy function that maybe inserts an HTML attribute for bidi directionality ('dir=ltr' or
@@ -49,45 +49,45 @@ import javax.inject.Singleton;
  *
  */
 @SoyFunctionSignature(
-  name = "bidiDirAttr",
-  value = {
-    // TODO(b/70946095): should take a string
-    @Signature(returnType = "attributes", parameterTypes = "?"),
-    @Signature(
-      returnType = "attributes",
-      // TODO(b/70946095): should take a string and a bool
-      parameterTypes = {"?", "?"}
-    )
-  }
-)
-@Singleton
+    name = "bidiDirAttr",
+    value = {
+      // TODO(b/70946095): should take a string
+      @Signature(returnType = "attributes", parameterTypes = "?"),
+      @Signature(
+          returnType = "attributes",
+          // TODO(b/70946095): should take a string and a bool
+          parameterTypes = {"?", "?"})
+    })
 final class BidiDirAttrFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
 
-  /** Provider for the current bidi global directionality. */
-  private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
+  /** Supplier for the current bidi global directionality. */
+  private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
 
-  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
-  @Inject
-  BidiDirAttrFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
+  /** @param bidiGlobalDirProvider Supplier for the current bidi global directionality. */
+  BidiDirAttrFunction(Supplier<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue value = args.get(0);
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        BidiFunctionsRuntime.bidiDirAttr(
-            bidiGlobalDirProvider.get(), value, (args.size() == 2 && args.get(1).booleanValue())),
-        ContentKind.ATTRIBUTES);
-  }
-
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef DIR_ATTR =
+  private static final class Methods {
+    static final Method DIR_ATTR_SANITIZED_NO_HTML =
+        JavaValueFactory.createMethod(
+            BidiFunctionsRuntime.class,
+            "bidiDirAttrSanitized",
+            BidiGlobalDir.class,
+            SoyValue.class);
+    static final Method DIR_ATTR_SANITIZED_MAYBE_HTML =
+        JavaValueFactory.createMethod(
+            BidiFunctionsRuntime.class,
+            "bidiDirAttrSanitized",
+            BidiGlobalDir.class,
+            SoyValue.class,
+            boolean.class);
+    static final MethodRef DIR_ATTR_REF =
         MethodRef.create(
                 BidiFunctionsRuntime.class,
                 "bidiDirAttr",
@@ -98,9 +98,20 @@ final class BidiDirAttrFunction extends TypedSoyFunction
   }
 
   @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    if (args.size() == 1) {
+      return factory.callStaticMethod(
+          Methods.DIR_ATTR_SANITIZED_NO_HTML, context.getBidiDir(), args.get(0));
+    }
+    return factory.callStaticMethod(
+        Methods.DIR_ATTR_SANITIZED_MAYBE_HTML, context.getBidiDir(), args.get(0), args.get(1));
+  }
+
+  @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forSanitizedString(
-        JbcSrcMethods.DIR_ATTR.invoke(
+        Methods.DIR_ATTR_REF.invoke(
             context.getBidiGlobalDir(),
             args.get(0).box(),
             args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(false)),

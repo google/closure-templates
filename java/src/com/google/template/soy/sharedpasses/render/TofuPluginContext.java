@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -30,8 +31,8 @@ final class TofuPluginContext implements JavaPluginContext {
 
   @Override
   public JavaValue getBidiDir() {
-    // TODO(b/19252021): Adapt the msg rtl's BidiDir to a JavaValue
-    throw new UnsupportedOperationException();
+    return TofuJavaValue.forBidiDir(
+        BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl()));
   }
 
   @Override

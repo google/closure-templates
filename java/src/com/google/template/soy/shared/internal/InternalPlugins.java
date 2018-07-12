@@ -18,8 +18,12 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.basicfunctions.BasicFunctions;
+import com.google.template.soy.bidifunctions.BidiFunctions;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 
@@ -29,9 +33,17 @@ public final class InternalPlugins {
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableMap<String, SoySourceFunction> internalFunctionMap(
-      SoyScopedData soyScopedData) {
-    // TODO(b/19252021): Include Bidi functions (which will use the scoped data) & BuiltInFunctions
-    return fromFunctions(BasicFunctions.functions());
+      final SoyScopedData soyScopedData) {
+    Supplier<BidiGlobalDir> bidiProvider =
+        new Supplier<BidiGlobalDir>() {
+          @Override
+          public BidiGlobalDir get() {
+            return soyScopedData.getBidiGlobalDir();
+          }
+        };
+    // TODO(b/19252021): Include BuiltInFunctions
+    return fromFunctions(
+        Iterables.concat(BasicFunctions.functions(), BidiFunctions.functions(bidiProvider)));
   }
 
   public static ImmutableMap<String, SoySourceFunction> fromFunctions(

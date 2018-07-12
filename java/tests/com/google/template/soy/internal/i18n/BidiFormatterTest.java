@@ -60,12 +60,12 @@ public class BidiFormatterTest {
 
   @Test
   public void testKnownDirAttr() {
-    assertEquals("", LTR_FMT.knownDirAttr(LTR));
-    assertEquals("dir=\"ltr\"", RTL_FMT.knownDirAttr(LTR));
-    assertEquals("dir=\"rtl\"", LTR_FMT.knownDirAttr(RTL));
-    assertEquals("", RTL_FMT.knownDirAttr(RTL));
-    assertEquals("", LTR_FMT.knownDirAttr(NEUTRAL));
-    assertEquals("", RTL_FMT.knownDirAttr(NEUTRAL));
+    assertEquals("", LTR_FMT.knownDirAttrSanitized(LTR).stringValue());
+    assertEquals("dir=\"ltr\"", RTL_FMT.knownDirAttrSanitized(LTR).stringValue());
+    assertEquals("dir=\"rtl\"", LTR_FMT.knownDirAttrSanitized(RTL).stringValue());
+    assertEquals("", RTL_FMT.knownDirAttrSanitized(RTL).stringValue());
+    assertEquals("", LTR_FMT.knownDirAttrSanitized(NEUTRAL).stringValue());
+    assertEquals("", RTL_FMT.knownDirAttrSanitized(NEUTRAL).stringValue());
   }
 
   @Test

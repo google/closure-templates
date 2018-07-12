@@ -24,6 +24,7 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -138,7 +139,9 @@ class TofuValueFactory extends JavaValueFactory {
     for (int i = 0; i < tofuValues.length; i++) {
       TofuJavaValue tofuVal = (TofuJavaValue) tofuValues[i];
       Class<?> type = Primitives.unwrap(paramTypes[i]);
-      if (type == ULocale.class) {
+      if (type == BidiGlobalDir.class) {
+        params[i] = tofuVal.bidiGlobalDir();
+      } else if (type == ULocale.class) {
         params[i] = tofuVal.locale();
       } else {
         if (!tofuVal.hasSoyValue()) {

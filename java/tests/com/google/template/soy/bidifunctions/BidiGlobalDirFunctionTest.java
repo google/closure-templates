@@ -18,13 +18,12 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.util.Providers;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
@@ -39,30 +38,37 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class BidiGlobalDirFunctionTest {
 
-  private static final BidiGlobalDirFunction BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR =
-      new BidiGlobalDirFunction(Providers.of(BidiGlobalDir.LTR));
-
-  private static final BidiGlobalDirFunction BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL =
-      new BidiGlobalDirFunction(Providers.of(BidiGlobalDir.RTL));
-
   @Test
   public void testComputeForJava() {
-    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.<SoyValue>of()))
-        .isEqualTo(IntegerData.ONE);
-    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.<SoyValue>of()))
-        .isEqualTo(IntegerData.MINUS_ONE);
+    // the java source version doesn't use the provider
+    BidiGlobalDirFunction fn =
+        new BidiGlobalDirFunction(
+            () -> {
+              throw new UnsupportedOperationException();
+            });
+
+    SoyJavaSourceFunctionTester tester =
+        new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.LTR).build();
+    assertThat(tester.callFunction()).isEqualTo(1);
+
+    tester =
+        new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.RTL).build();
+    assertThat(tester.callFunction()).isEqualTo(-1);
   }
 
   @Test
   public void testComputeForJsSrc() {
-    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.<JsExpr>of()))
+    BidiGlobalDirFunction ltr = new BidiGlobalDirFunction(Suppliers.ofInstance(BidiGlobalDir.LTR));
+    BidiGlobalDirFunction rtl = new BidiGlobalDirFunction(Suppliers.ofInstance(BidiGlobalDir.RTL));
+
+    assertThat(ltr.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("1", Integer.MAX_VALUE));
-    assertThat(BIDI_GLOBAL_DIR_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(ImmutableList.<JsExpr>of()))
+    assertThat(rtl.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("-1", Integer.MAX_VALUE));
 
     BidiGlobalDirFunction codeSnippet =
         new BidiGlobalDirFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
     assertThat(codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
         .isEqualTo(new JsExpr("IS_RTL?-1:1", Operator.CONDITIONAL.getPrecedence()));
   }
@@ -71,7 +77,7 @@ public class BidiGlobalDirFunctionTest {
   public void testComputeForPySrc() {
     BidiGlobalDirFunction codeSnippet =
         new BidiGlobalDirFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
 
     assertThat(codeSnippet.computeForPySrc(ImmutableList.<PyExpr>of()))
         .isEqualTo(

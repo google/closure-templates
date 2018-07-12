@@ -197,6 +197,16 @@ public final class SanitizedContents {
   }
 
   /**
+   * Wraps an assumed-safe constant string that specifies an attribute.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that attributes that are
+   * controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantAttributes(@CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.ATTRIBUTES, Dir.LTR);
+  }
+
+  /**
    * Wraps an assumed-safe CSS constant.
    *
    * <p>This only accepts compile-time constants, based on the assumption that URLs that are

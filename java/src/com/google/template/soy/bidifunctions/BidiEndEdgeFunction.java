@@ -16,9 +16,8 @@
 
 package com.google.template.soy.bidifunctions;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -27,17 +26,18 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 
 /**
  * Soy function that gets the name of the end edge ('left' or 'right') for the current global bidi
@@ -45,38 +45,37 @@ import javax.inject.Singleton;
  *
  */
 @SoyFunctionSignature(name = "bidiEndEdge", value = @Signature(returnType = "string"))
-@Singleton
 final class BidiEndEdgeFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
 
-  /** Provider for the current bidi global directionality. */
-  private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
+  /** Supplier for the current bidi global directionality. */
+  private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
 
-  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
-  @Inject
-  BidiEndEdgeFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
+  /** @param bidiGlobalDirProvider Supplier for the current bidi global directionality. */
+  BidiEndEdgeFunction(Supplier<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    return StringData.forValue(BidiFunctionsRuntime.bidiEndEdge(bidiGlobalDirProvider.get()));
+  // lazy singleton pattern, allows other backends to avoid the work.
+  private static final class Methods {
+    static final Method END_EDGE =
+        JavaValueFactory.createMethod(
+            BidiFunctionsRuntime.class, "bidiEndEdge", BidiGlobalDir.class);
+    static final MethodRef END_EDGE_REF = MethodRef.create(END_EDGE).asCheap().asNonNullable();
   }
 
-  // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef END_EDGE =
-        MethodRef.create(BidiFunctionsRuntime.class, "bidiEndEdge", BidiGlobalDir.class)
-            .asCheap()
-            .asNonNullable();
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.END_EDGE, context.getBidiDir());
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forString(JbcSrcMethods.END_EDGE.invoke(context.getBidiGlobalDir()));
+    return SoyExpression.forString(Methods.END_EDGE_REF.invoke(context.getBidiGlobalDir()));
   }
 
   @Override

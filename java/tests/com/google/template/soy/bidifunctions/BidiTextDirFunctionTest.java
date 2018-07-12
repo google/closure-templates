@@ -21,10 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
@@ -41,29 +40,17 @@ public class BidiTextDirFunctionTest {
   @Test
   public void testComputeForJava() {
     BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(bidiTextDirFunction);
 
-    SoyValue text = StringData.EMPTY_STRING;
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.ZERO);
-    text = StringData.forValue("a");
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.ONE);
-    text = StringData.forValue("\u05E0");
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.MINUS_ONE);
+    assertThat(tester.callFunction(StringData.EMPTY_STRING)).isEqualTo(0);
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(1);
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(-1);
 
-    text = SanitizedContents.unsanitizedText("a");
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.ONE);
-    text = SanitizedContents.unsanitizedText("a", Dir.LTR);
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.ONE);
-    text = SanitizedContents.unsanitizedText("a", Dir.RTL);
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.MINUS_ONE);
-    text = SanitizedContents.unsanitizedText("a", Dir.NEUTRAL);
-    assertThat(bidiTextDirFunction.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(IntegerData.ZERO);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo(1);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.LTR))).isEqualTo(1);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL))).isEqualTo(-1);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
+        .isEqualTo(0);
   }
 
   @Test

@@ -18,16 +18,16 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.util.Providers;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
@@ -42,106 +42,60 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class BidiDirAttrFunctionTest {
 
-  private static final BidiDirAttrFunction BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR =
-      new BidiDirAttrFunction(Providers.of(BidiGlobalDir.LTR));
-
-  private static final BidiDirAttrFunction BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL =
-      new BidiDirAttrFunction(Providers.of(BidiGlobalDir.RTL));
-
   @Test
-  public void testComputeForJava() {
-    SoyValue text = StringData.EMPTY_STRING;
+  public void testComputeForJavaSource() {
+    SanitizedContent empty = SanitizedContents.emptyString(ContentKind.ATTRIBUTES);
+    SanitizedContent ltr = SanitizedContents.constantAttributes("dir=\"ltr\"");
+    SanitizedContent rtl = SanitizedContents.constantAttributes("dir=\"rtl\"");
 
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = StringData.forValue("a");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = StringData.forValue("\u05E0");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES));
+    // the java source version doesn't use the provider
+    BidiDirAttrFunction fn =
+        new BidiDirAttrFunction(
+            () -> {
+              throw new UnsupportedOperationException();
+            });
+    SoyJavaSourceFunctionTester tester =
+        new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.LTR).build();
+    assertThat(tester.callFunction(StringData.EMPTY_STRING)).isEqualTo(empty);
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(empty);
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(rtl);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0"))).isEqualTo(rtl);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.RTL)))
+        .isEqualTo(rtl);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.LTR)))
+        .isEqualTo(empty);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL)))
+        .isEqualTo(empty);
 
-    text = SanitizedContents.unsanitizedText("\u05E0");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("\u05E0", Dir.RTL);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"rtl\"", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("\u05E0", Dir.LTR);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-
-    text = StringData.EMPTY_STRING;
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = StringData.forValue("\u05E0");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = StringData.forValue("a");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES));
-
-    text = SanitizedContents.unsanitizedText("a");
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("a", Dir.LTR);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "dir=\"ltr\"", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("a", Dir.RTL);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
-    text = SanitizedContents.unsanitizedText("a", Dir.NEUTRAL);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJava(ImmutableList.of(text)))
-        .isEqualTo(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "", SanitizedContent.ContentKind.ATTRIBUTES));
+    tester =
+        new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.RTL).build();
+    assertThat(tester.callFunction(StringData.EMPTY_STRING)).isEqualTo(empty);
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(empty);
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(ltr);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo(ltr);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.LTR))).isEqualTo(ltr);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL)))
+        .isEqualTo(empty);
+    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
+        .isEqualTo(empty);
   }
 
   @Test
   public void testComputeForJsSrc() {
     BidiDirAttrFunction codeSnippet =
         new BidiDirAttrFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
+    BidiDirAttrFunction ltr = new BidiDirAttrFunction(Suppliers.ofInstance(BidiGlobalDir.LTR));
+    BidiDirAttrFunction rtl = new BidiDirAttrFunction(Suppliers.ofInstance(BidiGlobalDir.RTL));
 
     JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
-    assertThat(BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_LTR.computeForJsSrc(ImmutableList.of(textExpr)))
+    assertThat(ltr.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiDirAttr(1, TEXT_JS_CODE)", Integer.MAX_VALUE));
     assertThat(codeSnippet.computeForJsSrc(ImmutableList.of(textExpr)))
         .isEqualTo(new JsExpr("soy.$$bidiDirAttr(IS_RTL?-1:1, TEXT_JS_CODE)", Integer.MAX_VALUE));
 
     JsExpr isHtmlExpr = new JsExpr("IS_HTML_JS_CODE", Integer.MAX_VALUE);
-    assertThat(
-            BIDI_DIR_ATTR_FUNCTION_FOR_STATIC_RTL.computeForJsSrc(
-                ImmutableList.of(textExpr, isHtmlExpr)))
+    assertThat(rtl.computeForJsSrc(ImmutableList.of(textExpr, isHtmlExpr)))
         .isEqualTo(
             new JsExpr("soy.$$bidiDirAttr(-1, TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
     assertThat(codeSnippet.computeForJsSrc(ImmutableList.of(textExpr, isHtmlExpr)))
@@ -155,7 +109,7 @@ public class BidiDirAttrFunctionTest {
   public void testComputeForPySrc() {
     BidiDirAttrFunction codeSnippet =
         new BidiDirAttrFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
 
     PyExpr textExpr = new PyStringExpr("'data'", Integer.MAX_VALUE);
     assertThat(codeSnippet.computeForPySrc(ImmutableList.of(textExpr)).getText())

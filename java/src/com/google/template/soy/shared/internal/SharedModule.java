@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
-import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
 import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -48,15 +48,18 @@ public final class SharedModule extends AbstractModule {
     // Install the core directives.
     install(new CoreDirectivesModule());
 
-    // Install default directive & function modules.
+    // Install default directive modules.
     install(new BasicDirectivesModule());
     install(new BidiDirectivesModule());
-    install(new BidiFunctionsModule());
     install(new I18nDirectivesModule());
 
     // Make the API call scope instance injectable.
     bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class).toInstance(new GuiceSimpleScope());
     bind(SoyScopedData.class).to(Key.get(GuiceSimpleScope.class, ApiCall.class));
+
+    // Create an empty multibinder so we can inject it even if users don't provide their own
+    // functions.
+    Multibinder.newSetBinder(binder(), SoyFunction.class);
   }
 
   @Provides
