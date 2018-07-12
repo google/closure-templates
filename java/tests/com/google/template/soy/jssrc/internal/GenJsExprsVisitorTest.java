@@ -23,9 +23,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.number;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -48,10 +46,6 @@ import org.junit.runners.JUnit4;
 public final class GenJsExprsVisitorTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
-
-  static {
-    Guice.createInjector(new SoyModule());
-  }
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =

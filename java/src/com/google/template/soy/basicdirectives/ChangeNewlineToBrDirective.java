@@ -26,7 +26,6 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -39,14 +38,11 @@ import com.google.template.soy.types.UnionType;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A directive that replaces newlines (\n, \r, or \r\n) with HTML line breaks (&lt;br&gt;).
  *
  */
-@Singleton
 @SoyPurePrintDirective
 final class ChangeNewlineToBrDirective
     implements SanitizedContentOperator,
@@ -54,9 +50,6 @@ final class ChangeNewlineToBrDirective
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
-
-  @Inject
-  public ChangeNewlineToBrDirective() {}
 
   @Override
   public String getName() {

@@ -28,13 +28,13 @@ import javax.annotation.Nullable;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class GuiceSimpleScope implements SoyScopedData {
+public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Enterable {
   /**
    * An autoclosable object that can be used to seed and exit scopes.
    *
-   * <p>Obtain an instance with {@link GuiceSimpleScope#enter}.
+   * <p>Obtain an instance with {@link SoySimpleScope#enter}.
    */
-  public final class InScope implements AutoCloseable {
+  private static final class InScope implements SoyScopedData.InScope {
     private boolean isClosed;
     private final Thread openThread = Thread.currentThread();
     private final ArrayDeque<Data> deque;
@@ -64,13 +64,13 @@ public final class GuiceSimpleScope implements SoyScopedData {
   /** The ThreadLocal holding all the values in scope. */
   private static final ThreadLocal<ArrayDeque<Data>> scopedValuesTl = new ThreadLocal<>();
 
-  /** Enters an occurrence of this scope. */
+  @Override
   @CheckReturnValue
   public InScope enter(@Nullable SoyMsgBundle msgBundle) {
     return enter(msgBundle, null);
   }
 
-  /** Enters an occurrence of this scope. */
+  @Override
   @CheckReturnValue
   public InScope enter(@Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
     return enter(
@@ -80,7 +80,7 @@ public final class GuiceSimpleScope implements SoyScopedData {
         msgBundle != null ? msgBundle.getLocaleString() : null);
   }
 
-  /** Enters an occurrence of this scope. */
+  @Override
   @CheckReturnValue
   public InScope enter(BidiGlobalDir bidiGlobalDir, @Nullable String locale) {
     ArrayDeque<Data> stack = scopedValuesTl.get();
@@ -90,6 +90,11 @@ public final class GuiceSimpleScope implements SoyScopedData {
     }
     stack.push(Data.create(locale, bidiGlobalDir));
     return new InScope(stack);
+  }
+
+  @Override
+  public Enterable enterable() {
+    return this;
   }
 
   private Data getScopedData() {
@@ -119,7 +124,7 @@ public final class GuiceSimpleScope implements SoyScopedData {
     abstract BidiGlobalDir bidiGlobalDir();
 
     static Data create(@Nullable String locale, BidiGlobalDir bidiGlobalDir) {
-      return new AutoValue_GuiceSimpleScope_Data(locale, bidiGlobalDir);
+      return new AutoValue_SoySimpleScope_Data(locale, bidiGlobalDir);
     }
   }
 }

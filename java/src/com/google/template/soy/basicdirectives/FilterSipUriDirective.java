@@ -32,8 +32,6 @@ import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.types.SanitizedType;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Implements the |filterSipUri directive, which only accepts sip URIs.
@@ -41,7 +39,6 @@ import javax.inject.Singleton;
  * <p>Note that this directive is not autoescape cancelling, and can thus be used in strict
  * templates. The directive returns its result as an object of type SanitizedContent of kind URI.
  */
-@Singleton
 @SoyPurePrintDirective
 final class FilterSipUriDirective
     implements SoyJavaPrintDirective,
@@ -51,22 +48,23 @@ final class FilterSipUriDirective
 
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
-  @Inject
-  public FilterSipUriDirective() {}
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|filterSipUri";
   }
 
-  @Override public final Set<Integer> getValidArgsSizes() {
+  @Override
+  public final Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterSipUri(value);
   }
 
@@ -82,7 +80,8 @@ final class FilterSipUriDirective
         SanitizedType.UriType.getInstance(), JbcSrcMethods.FILTER_SIP_URI.invoke(value.box()));
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$filterSipUri(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 
@@ -91,7 +90,8 @@ final class FilterSipUriDirective
     return ImmutableSet.of("soy");
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr("sanitize.filter_sip_uri(" + value.getText() + ")", Integer.MAX_VALUE);
   }
 }

@@ -21,15 +21,38 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.basicdirectives.BasicDirectives;
 import com.google.template.soy.basicfunctions.BasicFunctions;
+import com.google.template.soy.bididirectives.BidiDirectives;
 import com.google.template.soy.bidifunctions.BidiFunctions;
+import com.google.template.soy.coredirectives.CoreDirectives;
+import com.google.template.soy.i18ndirectives.I18nDirectives;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 /** Lists all functions & directives shipped with Soy. */
 public final class InternalPlugins {
   private InternalPlugins() {}
+
+  public static ImmutableMap<String, SoyFunction> internalLegacyFunctionMap() {
+    ImmutableMap.Builder<String, SoyFunction> builder = ImmutableMap.builder();
+    for (String builtinFunctionName : BuiltinFunction.names()) {
+      builder.put(builtinFunctionName, BuiltinFunction.forFunctionName(builtinFunctionName));
+    }
+    return builder.build();
+  }
+
+  public static ImmutableMap<String, SoyFunction> fromLegacyFunctions(
+      Iterable<? extends SoyFunction> functions) {
+    ImmutableMap.Builder<String, SoyFunction> builder = ImmutableMap.builder();
+    for (SoyFunction function : functions) {
+      builder.put(function.getName(), function);
+    }
+    return builder.build();
+  }
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableMap<String, SoySourceFunction> internalFunctionMap(
@@ -53,6 +76,39 @@ public final class InternalPlugins {
       SoyFunctionSignature sig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
       checkState(sig != null, "Missing @SoyFunctionSignature on %s", fn.getClass());
       builder.put(sig.name(), fn);
+    }
+    return builder.build();
+  }
+
+  public static ImmutableMap<String, SoyPrintDirective> internalDirectiveMap(
+      final SoyScopedData soyScopedData) {
+    Supplier<BidiGlobalDir> bidiProvider =
+        new Supplier<BidiGlobalDir>() {
+          @Override
+          public BidiGlobalDir get() {
+            return soyScopedData.getBidiGlobalDir();
+          }
+        };
+    Supplier<String> localeProvider =
+        new Supplier<String>() {
+          @Override
+          public String get() {
+            return soyScopedData.getLocale();
+          }
+        };
+    return fromDirectives(
+        Iterables.concat(
+            CoreDirectives.directives(),
+            BasicDirectives.directives(),
+            BidiDirectives.directives(bidiProvider),
+            I18nDirectives.directives(localeProvider)));
+  }
+
+  public static ImmutableMap<String, SoyPrintDirective> fromDirectives(
+      Iterable<? extends SoyPrintDirective> directives) {
+    ImmutableMap.Builder<String, SoyPrintDirective> builder = ImmutableMap.builder();
+    for (SoyPrintDirective directive : directives) {
+      builder.put(directive.getName(), directive);
     }
     return builder.build();
   }

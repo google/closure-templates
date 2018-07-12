@@ -34,8 +34,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Internal-only directive indicating content is to be treated as plain text.
@@ -44,16 +42,12 @@ import javax.inject.Singleton;
  * escaping, though in the future, it may force autoescaping to re-escape the value.
  *
  */
-@Singleton
 @SoyPurePrintDirective
 final class TextDirective
     implements SoyJavaPrintDirective,
         SoyJsSrcPrintDirective,
         SoyPySrcPrintDirective,
         SoyJbcSrcPrintDirective.Streamable {
-
-  @Inject
-  public TextDirective() {}
 
   @Override
   public String getName() {
@@ -110,5 +104,4 @@ final class TextDirective
   public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return value.toPyString();
   }
-
 }

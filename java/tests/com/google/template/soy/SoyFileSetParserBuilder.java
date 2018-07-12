@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -35,8 +34,8 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
@@ -46,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests.
@@ -60,9 +58,9 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
-  @Inject private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
-  @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
-  @Inject private SoyScopedData scopedData;
+  private final SoyScopedData scopedData;
+  private ImmutableMap<String, SoyFunction> soyFunctionMap;
+  private ImmutableMap<String, SoyPrintDirective> soyPrintDirectiveMap;
   private ImmutableMap<String, SoySourceFunction> sourceFunctionMap;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
@@ -127,8 +125,9 @@ public final class SoyFileSetParserBuilder {
       builder.put(supplier.getFilePath(), supplier);
     }
     this.soyFileSuppliers = builder.build();
-    // inject our @Inject fields to get the default set of functions and print directives
-    Guice.createInjector(new SharedModule()).injectMembers(this);
+    this.scopedData = new SoySimpleScope();
+    this.soyFunctionMap = InternalPlugins.internalLegacyFunctionMap();
+    this.soyPrintDirectiveMap = InternalPlugins.internalDirectiveMap(scopedData);
     this.sourceFunctionMap = InternalPlugins.internalFunctionMap(scopedData);
   }
 

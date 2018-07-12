@@ -35,12 +35,6 @@ public class ApiCallScopeBindingAnnotations {
 
   private ApiCallScopeBindingAnnotations() {}
 
-  /** Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope. */
-  @Qualifier
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface ApiCall {}
-
   /** Annotation for the localeString parameter in the ApiCallScope. */
   @Qualifier
   @Target({FIELD, PARAMETER, METHOD})

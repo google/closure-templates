@@ -18,15 +18,8 @@ package com.google.template.soy.shared.internal;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.bididirectives.BidiDirectivesModule;
-import com.google.template.soy.coredirectives.CoreDirectivesModule;
-import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -34,43 +27,29 @@ import java.util.Set;
 import javax.inject.Singleton;
 
 /**
- * Guice module for shared classes.
- *
- * <p>Contains all the bindings shared between the runtime and compiler
+ * Guice module for users that want to contribute plugins to Soy via Guice.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SharedModule extends AbstractModule {
 
+  public SharedModule() {}
+
   @Override
   protected void configure() {
-    // Install the core directives.
-    install(new CoreDirectivesModule());
-
-    // Install default directive modules.
-    install(new BasicDirectivesModule());
-    install(new BidiDirectivesModule());
-    install(new I18nDirectivesModule());
-
-    // Make the API call scope instance injectable.
-    bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class).toInstance(new GuiceSimpleScope());
-    bind(SoyScopedData.class).to(Key.get(GuiceSimpleScope.class, ApiCall.class));
-
-    // Create an empty multibinder so we can inject it even if users don't provide their own
-    // functions.
+    // Create empty multibinders so we can inject user-supplied ones.
     Multibinder.newSetBinder(binder(), SoyFunction.class);
+    Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
+
+    bind(SoyScopedData.class).toInstance(new SoySimpleScope());
   }
 
+  // Unused by Soy, but provided because user plugins currently inject this.
   @Provides
   @LocaleString
   String provideLocaleString(SoyScopedData data) {
     return data.getLocale();
-  }
-
-  @Provides
-  BidiGlobalDir provideBidiGlobalDir(SoyScopedData data) {
-    return data.getBidiGlobalDir();
   }
 
   /**
@@ -85,9 +64,6 @@ public final class SharedModule extends AbstractModule {
     ImmutableMap.Builder<String, SoyFunction> mapBuilder = ImmutableMap.builder();
     for (SoyFunction function : soyFunctionsSet) {
       mapBuilder.put(function.getName(), function);
-    }
-    for (String builtinFunctionName : BuiltinFunction.names()) {
-      mapBuilder.put(builtinFunctionName, BuiltinFunction.forFunctionName(builtinFunctionName));
     }
     return mapBuilder.build();
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Google Inc.
+ * Copyright 2012 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.bididirectives;
+package com.google.template.soy.i18ndirectives;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-/**
- * Guice module for bidi Soy print directives.
- *
- */
-public class BidiDirectivesModule extends AbstractModule {
+/** Lists all i18n directives. */
+public final class I18nDirectives {
+  private I18nDirectives() {}
 
-  @Override
-  public void configure() {
-
-    Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
-        Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-    soyDirectivesSetBinder.addBinding().to(BidiSpanWrapDirective.class);
-    soyDirectivesSetBinder.addBinding().to(BidiUnicodeWrapDirective.class);
+  public static ImmutableSet<SoyPrintDirective> directives(Supplier<String> localeProvider) {
+    return ImmutableSet.of(new FormatNumDirective(localeProvider));
   }
 }

@@ -23,10 +23,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSet;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -49,8 +46,7 @@ public class SoySauceTest {
 
   @Before
   public void setUp() throws Exception {
-    Injector injector = Guice.createInjector(new SoyModule());
-    SoyFileSet.Builder builder = injector.getInstance(SoyFileSet.Builder.class);
+    SoyFileSet.Builder builder = SoyFileSet.builder();
     builder.add(SoySauceTest.class.getResource("strict.soy"));
     builder.add(SoySauceTest.class.getResource("non_strict.soy"));
     sauce = builder.build().compileTemplates();

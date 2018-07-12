@@ -32,8 +32,8 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
+import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -53,12 +53,12 @@ import javax.annotation.Nullable;
 public class JsSrcMain {
 
   /** The scope object that manages the API call scope. */
-  private final GuiceSimpleScope apiCallScope;
+  private final SoyScopedData.Enterable apiCallScope;
 
   private final SoyTypeRegistry typeRegistry;
 
   /** @param apiCallScope The scope object that manages the API call scope. */
-  public JsSrcMain(GuiceSimpleScope apiCallScope, SoyTypeRegistry typeRegistry) {
+  public JsSrcMain(SoyScopedData.Enterable apiCallScope, SoyTypeRegistry typeRegistry) {
     this.apiCallScope = apiCallScope;
     this.typeRegistry = typeRegistry;
   }
@@ -89,7 +89,7 @@ public class JsSrcMain {
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
             jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
-    try (GuiceSimpleScope.InScope inScope = apiCallScope.enter(msgBundle, bidiGlobalDir)) {
+    try (SoyScopedData.InScope inScope = apiCallScope.enter(msgBundle, bidiGlobalDir)) {
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
         Preconditions.checkState(

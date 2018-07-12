@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Google Inc.
+ * Copyright 2009 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.i18ndirectives;
+package com.google.template.soy.coredirectives;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-/**
- * Guice module for i18n directives.
- *
- */
-public class I18nDirectivesModule extends AbstractModule {
+/** Lists all core directives */
+public final class CoreDirectives {
+  private CoreDirectives() {}
 
-  @Override
-  public void configure() {
-    Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
-        Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-
-    soyDirectivesSetBinder.addBinding().to(FormatNumDirective.class);
+  public static ImmutableSet<SoyPrintDirective> directives() {
+    return ImmutableSet.of(new NoAutoescapeDirective(), new EscapeHtmlDirective());
   }
 }

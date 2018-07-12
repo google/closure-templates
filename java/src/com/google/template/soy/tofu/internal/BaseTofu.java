@@ -32,8 +32,7 @@ import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.InScope;
+import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
@@ -53,19 +52,16 @@ import javax.annotation.Nullable;
  */
 public final class BaseTofu implements SoyTofu {
 
-
   /** The scope object that manages the API call scope. */
-  private final GuiceSimpleScope apiCallScope;
+  private final SoyScopedData.Enterable apiCallScope;
 
   private final TemplateRegistry templateRegistry;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
-  /**
-   * @param apiCallScope The scope object that manages the API call scope.
-   */
+  /** @param apiCallScope The scope object that manages the API call scope. */
   public BaseTofu(
-      GuiceSimpleScope apiCallScope,
+      SoyScopedData.Enterable apiCallScope,
       TemplateRegistry templates,
       ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
     this.apiCallScope = apiCallScope;
@@ -147,7 +143,7 @@ public final class BaseTofu implements SoyTofu {
       activeDelPackageNames = Predicates.alwaysFalse();
     }
 
-    try (InScope inScope = apiCallScope.enter(msgBundle)) {
+    try (SoyScopedData.InScope inScope = apiCallScope.enter(msgBundle)) {
       // Do the rendering.
       return renderMainHelper(
           templateRegistry,

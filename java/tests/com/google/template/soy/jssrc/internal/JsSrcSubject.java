@@ -28,11 +28,8 @@ import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
@@ -184,11 +181,10 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   /** Asserts on the contents of a generated soy file. */
   static final class ForFile extends JsSrcSubject<ForFile> {
-    private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
     private String file;
     private SoyFileNode fileNode;
     private final GenJsCodeVisitor visitor =
-        JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class));
+        JsSrcMain.createVisitor(jsSrcOptions, new SoyTypeRegistry());
 
     private ForFile(FailureMetadata failureMetadata, String expr) {
       super(failureMetadata, expr);

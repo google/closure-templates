@@ -23,17 +23,10 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.List;
@@ -57,21 +50,17 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private boolean isFile;
 
-  private final Injector injector;
-
   /**
    * A Subject for testing sections of Soy code. The provided data can either be an entire Soy file,
    * or just the body of a template. If just a body is provided, it is wrapped with a simple
    * template before compiling.
    *
-   * @param failureStrategy The environment provided FailureStrategy.
    * @param code The input Soy code to be compiled and tested.
    * @param isFile Whether the provided code represents a full file.
    */
   SoyCodeForPySubject(FailureMetadata failureMetadata, String code, boolean isFile) {
     super(failureMetadata, code);
     this.isFile = isFile;
-    this.injector = Guice.createInjector(new SoyModule());
   }
 
   public SoyCodeForPySubject withEnvironmentModule(String environmentModulePath) {
@@ -162,22 +151,12 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
-  private GuiceSimpleScope.InScope enterScope() {
-    GuiceSimpleScope apiCallScope1 =
-        injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
-
-    GuiceSimpleScope.InScope scope = apiCallScope1.enter(/* msgBundle= */ null, BidiGlobalDir.LTR);
-    return scope;
-  }
-
   private String compileFile() {
     SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
-    try (GuiceSimpleScope.InScope inScope = enterScope()) {
-      List<String> fileContents =
-          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of())
-              .gen(node, ErrorReporter.exploding());
-      return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
-    }
+    List<String> fileContents =
+        PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of())
+            .gen(node, ErrorReporter.exploding());
+    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
   private String compileBody() {
@@ -186,22 +165,20 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
             SoyFileSetParserBuilder.forTemplateContents(actual()).parse().fileSet(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
-    try (GuiceSimpleScope.InScope inScope = enterScope()) {
-      GenPyCodeVisitor genPyCodeVisitor =
-          PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of());
-      genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
-      genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
-      genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
-      genPyCodeVisitor.localVarExprs = new LocalVariableStack();
-      genPyCodeVisitor.localVarExprs.pushFrame();
-      genPyCodeVisitor.genPyExprsVisitor =
-          genPyCodeVisitor.genPyExprsVisitorFactory.create(
-              genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
+    GenPyCodeVisitor genPyCodeVisitor =
+        PySrcMain.createVisitor(defaultOptions(), ImmutableMap.<String, String>of());
+    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+    genPyCodeVisitor.localVarExprs = new LocalVariableStack();
+    genPyCodeVisitor.localVarExprs.pushFrame();
+    genPyCodeVisitor.genPyExprsVisitor =
+        genPyCodeVisitor.genPyExprsVisitorFactory.create(
+            genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
 
-      genPyCodeVisitor.visitForTesting(node, ErrorReporter.exploding());
+    genPyCodeVisitor.visitForTesting(node, ErrorReporter.exploding());
 
-      return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
-    }
+    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
   private SoyPySrcOptions defaultOptions() {

@@ -18,49 +18,41 @@ package com.google.template.soy.shared.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
-import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import java.util.Set;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public final class SharedModuleTest {
+public final class InternalPluginsTest {
+
+  private SoyScopedData data;
 
   // pysrc has intentionally not implemented a few directives.
   private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
       ImmutableSet.of(NoAutoescapeDirective.NAME);
 
-  // These functions have special handling in the ResolveExpressionTypesPass and so don't
-  // implement TypedSoyFunction
-  private static final ImmutableSet<String> FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING =
-      ImmutableSet.of("concatLists", "mapKeys", "legacyObjectMapToMap", "mapToLegacyObjectMap");
-
-  private Injector injector;
-
   @Before
   public void setUp() {
-    injector = Guice.createInjector(new SharedModule());
+    data = new NoOpScopedData();
   }
 
   @Test
   public void testBuiltinPluginsSupportAllBackends() throws Exception {
-    for (SoyPrintDirective directive : injector.getInstance(new Key<Set<SoyPrintDirective>>() {})) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
@@ -72,12 +64,12 @@ public final class SharedModuleTest {
 
   @Test
   public void testFunctionsSupportAllBackends() {
-    for (SoyFunction function : injector.getInstance(new Key<Set<SoyFunction>>() {})) {
-      if (!FUNCTIONS_WITH_SPECIAL_TYPE_HANDLING.contains(function.getName())) {
-        assertThat(function).isInstanceOf(TypedSoyFunction.class);
-      }
+    for (Map.Entry<String, SoySourceFunction> entry :
+        InternalPlugins.internalFunctionMap(data).entrySet()) {
+      Object function = entry.getValue();
+      assertThat(function).isInstanceOf(TypedSoyFunction.class);
       assertThat(function).isInstanceOf(SoyJsSrcFunction.class);
-      assertThat(function).isInstanceOf(SoyJavaFunction.class);
+      assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJbcSrcFunction.class);
       assertThat(function).isInstanceOf(SoyPySrcFunction.class);
     }
@@ -90,7 +82,7 @@ public final class SharedModuleTest {
   public void testStreamingPrintDirectives() throws Exception {
     ImmutableSet.Builder<String> streamingPrintDirectives = ImmutableSet.builder();
     ImmutableSet.Builder<String> nonStreamingPrintDirectives = ImmutableSet.builder();
-    for (SoyPrintDirective directive : injector.getInstance(new Key<Set<SoyPrintDirective>>() {})) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
       if (directive instanceof SoyJbcSrcPrintDirective.Streamable) {
         streamingPrintDirectives.add(directive.getName());
       } else {

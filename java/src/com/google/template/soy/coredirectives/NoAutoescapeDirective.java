@@ -32,14 +32,11 @@ import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A directive that turns off autoescape for this 'print' tag (if it's on for the template).
  *
  */
-@Singleton
 @SoyPurePrintDirective
 public class NoAutoescapeDirective
     implements SoyJavaPrintDirective,
@@ -47,9 +44,6 @@ public class NoAutoescapeDirective
         SoyJbcSrcPrintDirective.Streamable {
 
   public static final String NAME = "|noAutoescape";
-
-  @Inject
-  public NoAutoescapeDirective() {}
 
   @Override
   public String getName() {
@@ -102,5 +96,4 @@ public class NoAutoescapeDirective
   public ImmutableSet<String> getRequiredJsLibNames() {
     return ImmutableSet.of("soy");
   }
-
 }

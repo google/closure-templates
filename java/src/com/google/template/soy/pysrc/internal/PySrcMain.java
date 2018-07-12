@@ -30,8 +30,8 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
+import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import java.io.File;
@@ -51,9 +51,9 @@ import java.util.Properties;
 public final class PySrcMain {
 
   /** The scope object that manages the API call scope. */
-  private final GuiceSimpleScope apiCallScope;
+  private final SoyScopedData.Enterable apiCallScope;
 
-  public PySrcMain(GuiceSimpleScope apiCallScope) {
+  public PySrcMain(SoyScopedData.Enterable apiCallScope) {
     this.apiCallScope = apiCallScope;
   }
 
@@ -76,8 +76,7 @@ public final class PySrcMain {
 
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
-    try (GuiceSimpleScope.InScope inScope =
-        apiCallScope.enter(/* msgBundle= */ null, bidiGlobalDir)) {
+    try (SoyScopedData.InScope inScope = apiCallScope.enter(/* msgBundle= */ null, bidiGlobalDir)) {
       return createVisitor(pySrcOptions, currentManifest).gen(soyTree, errorReporter);
     }
   }

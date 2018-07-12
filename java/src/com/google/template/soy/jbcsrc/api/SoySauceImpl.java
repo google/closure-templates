@@ -43,7 +43,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -54,13 +54,13 @@ import java.util.Map;
 /** Main entry point for rendering Soy templates on the server. */
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
-  private final GuiceSimpleScope apiCallScope;
+  private final SoyScopedData.Enterable apiCallScope;
   private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
       CompiledTemplates templates,
-      GuiceSimpleScope apiCallScope,
+      SoyScopedData.Enterable apiCallScope,
       ImmutableMap<String, ? extends SoyFunction> functions,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
@@ -270,7 +270,7 @@ public final class SoySauceImpl implements SoySauce {
       RenderContext context)
       throws IOException {
     RenderResult result;
-    try (GuiceSimpleScope.InScope scope = scoper.enter()) {
+    try (SoyScopedData.InScope scope = scoper.enter()) {
       result = template.render(out, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
@@ -321,17 +321,17 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   private static final class Scoper {
-    final GuiceSimpleScope scope;
+    final SoyScopedData.Enterable scope;
     final BidiGlobalDir dir;
     final String localeString;
 
-    Scoper(GuiceSimpleScope scope, BidiGlobalDir dir, String localeString) {
+    Scoper(SoyScopedData.Enterable scope, BidiGlobalDir dir, String localeString) {
       this.scope = scope;
       this.dir = dir;
       this.localeString = localeString;
     }
 
-    GuiceSimpleScope.InScope enter() {
+    SoyScopedData.InScope enter() {
       return scope.enter(dir, localeString);
     }
   }

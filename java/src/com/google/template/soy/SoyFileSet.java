@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
-import com.google.inject.Guice;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -67,10 +66,10 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.shared.internal.SoyScopedData;
+import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
@@ -103,29 +102,29 @@ public final class SoyFileSet {
   /**
    * Creates a builder with the standard set of Soy directives, functions, and types.
    *
-   * <p>If you need additional directives, functions, or types, create the Builder instance using
-   * Guice. If your project doesn't otherwise use Guice, you can just use Guice.createInjector with
-   * only the modules you need, similar to the implementation of this method.
+   * <p>If you need additional directives, functions, or types, create the Builder instance and then
+   * call {@link Builder#addSourceFunction(SoySourceFunction)}.
    */
   public static Builder builder() {
-    return Guice.createInjector(new SoyModule()).getInstance(Builder.class);
+    return new Builder(
+        new CoreDependencies(new SoySimpleScope(), ImmutableMap.of(), ImmutableMap.of()));
   }
 
   // Implementation detail of SoyFileSet.Builder.
   // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
-    private final GuiceSimpleScope apiCallScope;
-    private final ImmutableMap<String, SoyFunction> soyFunctionMap;
-    private final ImmutableMap<String, SoyPrintDirective> printDirectives;
+    private final SoyScopedData scopedData;
+    private final ImmutableMap<String, SoyFunction> pluginFunctions;
+    private final ImmutableMap<String, SoyPrintDirective> pluginDirectives;
 
     @Inject
     CoreDependencies(
-        @ApiCall GuiceSimpleScope apiCallScope,
-        ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
-      this.apiCallScope = apiCallScope;
-      this.soyFunctionMap = ImmutableMap.copyOf(soyFunctionMap);
-      this.printDirectives = ImmutableMap.copyOf(printDirectives);
+        SoyScopedData scopedData,
+        ImmutableMap<String, ? extends SoyFunction> pluginFunctions,
+        ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives) {
+      this.scopedData = scopedData;
+      this.pluginFunctions = ImmutableMap.copyOf(pluginFunctions);
+      this.pluginDirectives = ImmutableMap.copyOf(pluginDirectives);
     }
   }
 
@@ -156,6 +155,9 @@ public final class SoyFileSet {
 
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
 
+    private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
+        ImmutableSet.builder();
     private final ImmutableSet.Builder<SoySourceFunction> extraSourceFunctions =
         ImmutableSet.builder();
 
@@ -200,12 +202,20 @@ public final class SoyFileSet {
      */
     public SoyFileSet build() {
       return new SoyFileSet(
-          coreDependencies.apiCallScope,
+          coreDependencies.scopedData,
           typeRegistryBuilder.build(),
-          coreDependencies.soyFunctionMap,
-          coreDependencies.printDirectives,
+          ImmutableMap.<String, SoyFunction>builder()
+              .putAll(InternalPlugins.internalLegacyFunctionMap())
+              .putAll(coreDependencies.pluginFunctions)
+              .putAll(InternalPlugins.fromLegacyFunctions(extraSoyFunctions.build()))
+              .build(),
+          ImmutableMap.<String, SoyPrintDirective>builder()
+              .putAll(InternalPlugins.internalDirectiveMap(coreDependencies.scopedData))
+              .putAll(coreDependencies.pluginDirectives)
+              .putAll(InternalPlugins.fromDirectives(extraSoyPrintDirectives.build()))
+              .build(),
           ImmutableMap.<String, SoySourceFunction>builder()
-              .putAll(InternalPlugins.internalFunctionMap(coreDependencies.apiCallScope))
+              .putAll(InternalPlugins.internalFunctionMap(coreDependencies.scopedData))
               .putAll(InternalPlugins.fromFunctions(extraSourceFunctions.build()))
               .build(),
           filesBuilder.build(),
@@ -225,6 +235,30 @@ public final class SoyFileSet {
     /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
       extraSourceFunctions.addAll(function);
+      return this;
+    }
+
+    /** Adds one {@link SoyFunction} to the functions used by this SoyFileSet. */
+    public Builder addSoyFunction(SoyFunction function) {
+      extraSoyFunctions.add(function);
+      return this;
+    }
+
+    /** Adds many {@link SoyFunction}s to the functions used by this SoyFileSet. */
+    public Builder addSoyFunctions(Iterable<? extends SoyFunction> function) {
+      extraSoyFunctions.addAll(function);
+      return this;
+    }
+
+    /** Adds one {@link SoyPrintDirective} to the functions used by this SoyFileSet. */
+    public Builder addSoyPrintDirective(SoyPrintDirective function) {
+      extraSoyPrintDirectives.add(function);
+      return this;
+    }
+
+    /** Adds many {@link SoyPrintDirective}s to the functions used by this SoyFileSet. */
+    public Builder addSoyPrintDirectives(Iterable<? extends SoyPrintDirective> function) {
+      extraSoyPrintDirectives.addAll(function);
       return this;
     }
 
@@ -583,7 +617,7 @@ public final class SoyFileSet {
     }
   }
 
-  private final GuiceSimpleScope apiCallScopeProvider;
+  private final SoyScopedData scopedData;
 
   private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
@@ -606,7 +640,7 @@ public final class SoyFileSet {
   @Nullable private final Appendable warningSink;
 
   SoyFileSet(
-      GuiceSimpleScope apiCallScopeProvider,
+      SoyScopedData apiCallScopeProvider,
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, SoyFunction> soyFunctionMap,
       ImmutableMap<String, SoyPrintDirective> printDirectives,
@@ -617,7 +651,7 @@ public final class SoyFileSet {
       ValidatedConformanceConfig conformanceConfig,
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
-    this.apiCallScopeProvider = apiCallScopeProvider;
+    this.scopedData = apiCallScopeProvider;
 
     Preconditions.checkArgument(
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
@@ -768,7 +802,7 @@ public final class SoyFileSet {
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
     return new BaseTofu(
-        apiCallScopeProvider,
+        scopedData.enterable(),
         primitives.registry,
         getTransitiveIjs(primitives.soyTree, primitives.registry));
   }
@@ -826,7 +860,8 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
 
-    return new SoySauceImpl(templates.get(), apiCallScopeProvider, soyFunctionMap, printDirectives);
+    return new SoySauceImpl(
+        templates.get(), scopedData.enterable(), soyFunctionMap, printDirectives);
   }
 
   /**
@@ -914,7 +949,7 @@ public final class SoyFileSet {
     TemplateRegistry registry = result.registry();
     SoyFileSetNode fileSet = result.fileSet();
     List<String> generatedSrcs =
-        new JsSrcMain(apiCallScopeProvider, typeRegistry)
+        new JsSrcMain(scopedData.enterable(), typeRegistry)
             .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
     throwIfErrorsPresent();
     reportWarnings();
@@ -948,15 +983,8 @@ public final class SoyFileSet {
     TemplateRegistry registry = result.registry();
     if (locales.isEmpty()) {
       // Not generating localized JS.
-      new JsSrcMain(apiCallScopeProvider, typeRegistry)
-          .genJsFiles(
-              soyTree,
-              registry,
-              jsSrcOptions,
-              null,
-              null,
-              outputPathFormat,
-              errorReporter);
+      new JsSrcMain(scopedData.enterable(), typeRegistry)
+          .genJsFiles(soyTree, registry, jsSrcOptions, null, null, outputPathFormat, errorReporter);
 
     } else {
       checkArgument(
@@ -982,7 +1010,7 @@ public final class SoyFileSet {
           }
         }
 
-        new JsSrcMain(apiCallScopeProvider, typeRegistry)
+        new JsSrcMain(scopedData.enterable(), typeRegistry)
             .genJsFiles(
                 soyTreeClone,
                 registry,
@@ -1046,7 +1074,7 @@ public final class SoyFileSet {
     requireStrictAutoescaping();
     ParseResult result = parse();
     throwIfErrorsPresent();
-    new PySrcMain(apiCallScopeProvider)
+    new PySrcMain(scopedData.enterable())
         .genPyFiles(result.fileSet(), pySrcOptions, outputPathFormat, errorReporter);
 
     throwIfErrorsPresent();

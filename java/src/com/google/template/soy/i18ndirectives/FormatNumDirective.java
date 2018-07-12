@@ -17,6 +17,7 @@
 package com.google.template.soy.i18ndirectives;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
@@ -34,13 +35,10 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Provider;
 import org.objectweb.asm.Type;
 
 /**
@@ -96,7 +94,7 @@ class FormatNumDirective
   private static final String DEFAULT_FORMAT = "decimal";
 
   /**
-   * Provide the current Locale string.
+   * Supplier for the current Locale string.
    *
    * <p>Note that this Locale value is only used in the Java environment. Closure does not provide a
    * clear mechanism to override the NumberFormat defined when the NumberFormat module loads. This
@@ -106,10 +104,9 @@ class FormatNumDirective
    * indicate which Locale Soy should use. Similarly, the Python backend relies on implementation
    * specific runtime locale support.
    */
-  private final Provider<String> localeStringProvider;
+  private final Supplier<String> localeStringProvider;
 
-  @Inject
-  FormatNumDirective(@LocaleString Provider<String> localeStringProvider) {
+  FormatNumDirective(Supplier<String> localeStringProvider) {
     this.localeStringProvider = localeStringProvider;
   }
 

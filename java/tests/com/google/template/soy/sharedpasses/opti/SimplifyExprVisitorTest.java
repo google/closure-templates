@@ -20,15 +20,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
-import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -162,17 +158,13 @@ public final class SimplifyExprVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
-  private static final ImmutableMap<String, ? extends SoyFunction> SOY_FUNCTIONS =
-      INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
-
   private static final class SimplifySubject extends Subject<SimplifySubject, String> {
     private SimplifySubject(FailureMetadata failureMetadata, String s) {
       super(failureMetadata, s);
     }
 
     private void simplifiesTo(String expected) {
+      SoyScopedData data = new SoySimpleScope();
       ExprRootNode exprRoot =
           new ExprRootNode(
               SoyFileParser.parseExpression(
@@ -180,9 +172,8 @@ public final class SimplifyExprVisitorTest {
                   new PluginResolver(
                       Mode.REQUIRE_DEFINITIONS,
                       ImmutableMap.of(),
-                      ImmutableMap.copyOf(SOY_FUNCTIONS),
-                      InternalPlugins.internalFunctionMap(
-                          INJECTOR.getInstance(SoyScopedData.class)),
+                      InternalPlugins.internalLegacyFunctionMap(),
+                      InternalPlugins.internalFunctionMap(data),
                       ErrorReporter.exploding()),
                   ErrorReporter.exploding()));
       new SimplifyExprVisitor().exec(exprRoot);

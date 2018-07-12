@@ -46,8 +46,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Implements the |cleanHtml directive, which removes all but a small, safe subset of HTML from its
@@ -59,7 +57,6 @@ import javax.inject.Singleton;
  * <p>Note that this directive is not autoescape canceling, and can thus be used in strict
  * templates. The directive returns its result as an object of type SanitizedContent of kind HTML.
  */
-@Singleton
 @SoyPurePrintDirective
 final class CleanHtmlDirective
     implements SoyJavaPrintDirective,
@@ -75,9 +72,6 @@ final class CleanHtmlDirective
   private static final Set<Integer> VALID_ARGS_SIZES =
       ContiguousSet.create(
           Range.closed(0, OptionalSafeTag.values().length), DiscreteDomain.integers());
-
-  @Inject
-  public CleanHtmlDirective() {}
 
   @Override
   public String getName() {

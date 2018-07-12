@@ -36,10 +36,7 @@ import static com.google.template.soy.examples.FeaturesSoyInfo.DEMO_SWITCH;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSet;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoAutoescapeTrueSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoBidiSupportSoyTemplateInfo;
@@ -55,6 +52,7 @@ import com.google.template.soy.examples.FeaturesSoyInfo.DemoPrintSoyTemplateInfo
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.tofu.SoyTofu;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -114,9 +112,7 @@ public class FeaturesUsage {
       System.exit(1);
     }
 
-    Injector injector = Guice.createInjector(new SoyModule());
-
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+    SoyFileSet.Builder sfsBuilder = SoyFileSet.builder();
     SoyFileSet sfs =
         sfsBuilder
             .add(Resources.getResource("simple.soy"))
@@ -128,7 +124,7 @@ public class FeaturesUsage {
     SoyMsgBundle msgBundle;
     if (locale.length() > 0) {
       // Use translations from an XLIFF file.
-      SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
+      SoyMsgBundleHandler msgBundleHandler = new SoyMsgBundleHandler(new XliffMsgPlugin());
       URL xliffResource = Resources.getResource(XLIFF_RESOURCE_PREFIX + locale + ".xlf");
       msgBundle = msgBundleHandler.createFromResource(xliffResource);
       if (msgBundle.getLocaleString() == null) {

@@ -33,8 +33,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Implements the |blessStringAsTrustedResourceUrlForLegacy directive, which accepts resource URIs
@@ -43,7 +41,6 @@ import javax.inject.Singleton;
  * <p>Note that this directive is not autoescape cancelling, and can thus be used in strict
  * templates. The directive returns its result as an object of type SoyValue.
  */
-@Singleton
 @SoyPurePrintDirective
 public final class BlessStringAsTrustedResourceUrlForLegacyDirective
     implements SoyJavaPrintDirective,
@@ -53,9 +50,6 @@ public final class BlessStringAsTrustedResourceUrlForLegacyDirective
 
   public static final String NAME = "|blessStringAsTrustedResourceUrlForLegacy";
   private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
-
-  @Inject
-  public BlessStringAsTrustedResourceUrlForLegacyDirective() {}
 
   @Override
   public String getName() {

@@ -18,10 +18,8 @@ package com.google.template.soy.shared;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.inject.util.Providers;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import javax.inject.Provider;
 
 /**
  * Shared utilities for unit tests.
@@ -44,12 +42,4 @@ public class SharedRestrictedTestUtils {
 
   public static final Supplier<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER =
       Suppliers.ofInstance(BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET);
-
-  // TODO(sameb): provider version necessary for bidi directive tests.  to be deleted
-  // after those are migrated to manually instantiated instead of through Guice.
-  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER =
-      Providers.of(BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET);
-
-  public static final Provider<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER =
-      Providers.of(BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET);
 }

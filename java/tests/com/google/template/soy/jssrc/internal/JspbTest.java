@@ -22,11 +22,8 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyE
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.testing.Example;
@@ -227,13 +224,11 @@ public final class JspbTest {
    */
   @Test
   public void testHeaderParamFieldImport() {
-    Injector injector = Guice.createInjector(new SoyModule());
-
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
 
     GenJsCodeVisitor genJsCodeVisitor =
-        JsSrcMain.createVisitor(jsSrcOptions, injector.getInstance(SoyTypeRegistry.class));
+        JsSrcMain.createVisitor(jsSrcOptions, new SoyTypeRegistry());
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
     String testFileContent =

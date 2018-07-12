@@ -17,6 +17,8 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.msgs.SoyMsgBundle;
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -30,4 +32,27 @@ public interface SoyScopedData {
   String getLocale();
 
   BidiGlobalDir getBidiGlobalDir();
+
+  Enterable enterable();
+
+  /** Allows entering a portion of code from which SoyScopedData can be retrieved. */
+  public interface Enterable {
+    /** Enters an occurrence of this scope. */
+    @CheckReturnValue
+    InScope enter(@Nullable SoyMsgBundle msgBundle);
+
+    /** Enters an occurrence of this scope. */
+    @CheckReturnValue
+    InScope enter(@Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir);
+
+    /** Enters an occurrence of this scope. */
+    @CheckReturnValue
+    InScope enter(BidiGlobalDir bidiGlobalDir, @Nullable String locale);
+  }
+
+  /** A subtype of {@link AutoCloseable} that can be closed without an IOException. */
+  public interface InScope extends AutoCloseable {
+    @Override
+    void close();
+  }
 }

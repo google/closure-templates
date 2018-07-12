@@ -36,14 +36,11 @@ import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.types.SanitizedType;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A directive that HTML-escapes the output.
  *
  */
-@Singleton
 @SoyPurePrintDirective
 public class EscapeHtmlDirective
     implements SoyJavaPrintDirective,
@@ -53,9 +50,6 @@ public class EscapeHtmlDirective
         ShortCircuitable {
 
   public static final String NAME = "|escapeHtml";
-
-  @Inject
-  public EscapeHtmlDirective() {}
 
   @Override
   public String getName() {

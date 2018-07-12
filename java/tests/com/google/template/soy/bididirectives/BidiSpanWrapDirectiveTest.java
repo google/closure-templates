@@ -18,8 +18,8 @@ package com.google.template.soy.bididirectives;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.util.Providers;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -40,10 +40,10 @@ import org.junit.runners.JUnit4;
 public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR =
-      new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.LTR));
+      new BidiSpanWrapDirective(Suppliers.ofInstance(BidiGlobalDir.LTR));
 
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL =
-      new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.RTL));
+      new BidiSpanWrapDirective(Suppliers.ofInstance(BidiGlobalDir.RTL));
 
   @Test
   public void testApplyForTofu() {
@@ -116,7 +116,7 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
 
     BidiSpanWrapDirective codeSnippet =
         new BidiSpanWrapDirective(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
     assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("soy.$$bidiSpanWrap(IS_RTL?-1:1, opt_data.myKey)");
   }
@@ -125,7 +125,7 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
   public void testApplyForPySrc() {
     BidiSpanWrapDirective codeSnippet =
         new BidiSpanWrapDirective(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
 
     PyExpr data = new PyStringExpr("'data'");
     assertThat(codeSnippet.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())

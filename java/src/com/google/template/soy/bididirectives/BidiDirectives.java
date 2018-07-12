@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.coredirectives;
+package com.google.template.soy.bididirectives;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-/**
- * Guice module for basic Soy print directives.
- *
- */
-public class CoreDirectivesModule extends AbstractModule {
+/** Lists all bidi directives. */
+public final class BidiDirectives {
+  private BidiDirectives() {}
 
-  @Override
-  public void configure() {
-
-    Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
-        Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-    soyDirectivesSetBinder.addBinding().to(NoAutoescapeDirective.class);
-    soyDirectivesSetBinder.addBinding().to(EscapeHtmlDirective.class);
+  public static ImmutableSet<SoyPrintDirective> directives(Supplier<BidiGlobalDir> bidiProvider) {
+    return ImmutableSet.of(
+        new BidiSpanWrapDirective(bidiProvider), new BidiUnicodeWrapDirective(bidiProvider));
   }
 }

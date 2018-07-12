@@ -23,11 +23,8 @@ import static com.google.template.soy.jssrc.dsl.Expression.number;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -54,7 +51,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class GenJsCodeVisitorTest {
   private static final Joiner JOINER = Joiner.on('\n');
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
@@ -96,8 +92,7 @@ public final class GenJsCodeVisitorTest {
   @Before
   public void setUp() {
     jsSrcOptions = new SoyJsSrcOptions();
-    genJsCodeVisitor =
-        JsSrcMain.createVisitor(jsSrcOptions, INJECTOR.getInstance(SoyTypeRegistry.class));
+    genJsCodeVisitor = JsSrcMain.createVisitor(jsSrcOptions, new SoyTypeRegistry());
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
   }
 

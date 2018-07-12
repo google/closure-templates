@@ -24,16 +24,11 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.util.concurrent.Futures;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import org.junit.Before;
@@ -44,8 +39,6 @@ import org.junit.runners.JUnit4;
 /** Unit tests for exception behavior of Tofu. */
 @RunWith(JUnit4.class)
 public final class TofuExceptionsTest {
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
   private static final String SOY_FILE =
       Joiner.on('\n')
           .join(
@@ -80,7 +73,7 @@ public final class TofuExceptionsTest {
   public void setUp() throws Exception {
     tofu =
         new BaseTofu(
-            INJECTOR.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class)),
+            new NoOpScopedData(),
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
             ImmutableMap.<String, ImmutableSortedSet<String>>of());
   }
