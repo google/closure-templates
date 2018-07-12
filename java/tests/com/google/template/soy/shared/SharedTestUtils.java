@@ -18,19 +18,12 @@ package com.google.template.soy.shared;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.shared.internal.ApiCallScopeUtils;
-import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -54,31 +47,6 @@ import javax.annotation.Nullable;
 public final class SharedTestUtils {
 
   private SharedTestUtils() {}
-
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values common to all backends. Does not seed backend-specific API call parameters.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @param bidiGlobalDir The bidi global directionality. If null, it is derived from the msgBundle
-   *     locale, if any, otherwise ltr.
-   * @return The ApiCallScope object (for use by the caller of this method to seed additional API
-   *     call parameters, such as backend-specific parameters).
-   */
-  public static GuiceSimpleScope.InScope simulateNewApiCall(
-      Injector injector, @Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
-
-    GuiceSimpleScope apiCallScope =
-        injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
-
-    GuiceSimpleScope.InScope inscope = apiCallScope.enter();
-
-    ApiCallScopeUtils.seedSharedParams(inscope, msgBundle, bidiGlobalDir);
-
-    return inscope;
-  }
 
   /**
    * Builds a test Soy file's content from the given Soy code, which will be the body of the only

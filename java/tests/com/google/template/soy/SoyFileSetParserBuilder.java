@@ -36,6 +36,7 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
@@ -61,6 +62,7 @@ public final class SoyFileSetParserBuilder {
   private boolean allowUnboundGlobals;
   @Inject private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
+  @Inject private SoyScopedData scopedData;
   private ImmutableMap<String, SoySourceFunction> sourceFunctionMap;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
@@ -127,7 +129,7 @@ public final class SoyFileSetParserBuilder {
     this.soyFileSuppliers = builder.build();
     // inject our @Inject fields to get the default set of functions and print directives
     Guice.createInjector(new SharedModule()).injectMembers(this);
-    this.sourceFunctionMap = InternalPlugins.internalFunctionMap();
+    this.sourceFunctionMap = InternalPlugins.internalFunctionMap(scopedData);
   }
 
   /** Sets the parser's declared syntax version. Returns this object, for chaining. */

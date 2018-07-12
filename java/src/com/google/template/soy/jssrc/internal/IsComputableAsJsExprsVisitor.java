@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -51,12 +50,6 @@ import java.util.Map;
  * generated code for computing the node's output must include one or more full JS statements.
  *
  * <p>Precondition: MsgNode should not exist in the tree.
- *
- * <p>Important: This class is in {@link ApiCallScope} because it memoizes results that are reusable
- * for the same parse tree. If we change the parse tree between uses of the scoped instance, then
- * the results may not be correct. (In that case, we would need to take this class out of {@code
- * ApiCallScope} and rewrite the code somehow to still take advantage of the memoized results to the
- * extent that they remain correct.)
  *
  * <p>TODO(user): This should no longer be necessary after CodeChunk migration. Rip it all out.
  *

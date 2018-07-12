@@ -18,6 +18,7 @@ package com.google.template.soy.shared.internal;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
@@ -47,26 +48,26 @@ public final class SharedModule extends AbstractModule {
     // Install the core directives.
     install(new CoreDirectivesModule());
 
-    // Install default directive and function modules.
+    // Install default directive & function modules.
     install(new BasicDirectivesModule());
     install(new BidiDirectivesModule());
     install(new BidiFunctionsModule());
     install(new I18nDirectivesModule());
 
-    // Create the API call scope.
-    GuiceSimpleScope apiCallScope = new GuiceSimpleScope();
-    bindScope(ApiCallScope.class, apiCallScope);
     // Make the API call scope instance injectable.
-    bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class).toInstance(apiCallScope);
+    bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class).toInstance(new GuiceSimpleScope());
+    bind(SoyScopedData.class).to(Key.get(GuiceSimpleScope.class, ApiCall.class));
+  }
 
-    // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
-    bind(String.class)
-        .annotatedWith(LocaleString.class)
-        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-        .in(ApiCallScope.class);
-    bind(BidiGlobalDir.class)
-        .toProvider(GuiceSimpleScope.<BidiGlobalDir>getUnscopedProvider())
-        .in(ApiCallScope.class);
+  @Provides
+  @LocaleString
+  String provideLocaleString(SoyScopedData data) {
+    return data.getLocale();
+  }
+
+  @Provides
+  BidiGlobalDir provideBidiGlobalDir(SoyScopedData data) {
+    return data.getBidiGlobalDir();
   }
 
   /**

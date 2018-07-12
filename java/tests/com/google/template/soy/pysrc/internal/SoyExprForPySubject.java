@@ -26,14 +26,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -58,12 +54,9 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
 
   private final LocalVariableStack localVarExprs;
 
-  private final Injector injector;
-
   private SoyExprForPySubject(FailureMetadata failureMetadata, String expr) {
     super(failureMetadata, expr);
     localVarExprs = new LocalVariableStack();
-    injector = Guice.createInjector(new SoyModule());
   }
 
   /**
@@ -115,7 +108,6 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
         SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
-    SharedTestUtils.simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider

@@ -32,7 +32,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -167,8 +166,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     GuiceSimpleScope apiCallScope1 =
         injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
 
-    GuiceSimpleScope.InScope scope = apiCallScope1.enter();
-    ApiCallScopeUtils.seedSharedParams(scope, null, BidiGlobalDir.LTR);
+    GuiceSimpleScope.InScope scope = apiCallScope1.enter(/* msgBundle= */ null, BidiGlobalDir.LTR);
     return scope;
   }
 

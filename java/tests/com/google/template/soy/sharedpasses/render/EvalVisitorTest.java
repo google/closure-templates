@@ -22,10 +22,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -40,8 +37,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -60,10 +55,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class EvalVisitorTest {
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
-  protected static final SoyValueConverter CONVERTER =
-      INJECTOR.getInstance(SoyValueConverter.class);
+  protected static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
   private static final SoyRecord TEST_IJ_DATA =
       SoyValueConverterUtility.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
@@ -96,7 +88,6 @@ public class EvalVisitorTest {
   @Before
   public void setUp() {
     testData = createTestData();
-    SharedTestUtils.simulateNewApiCall(INJECTOR, null, BidiGlobalDir.LTR);
   }
 
   protected SoyRecord createTestData() {

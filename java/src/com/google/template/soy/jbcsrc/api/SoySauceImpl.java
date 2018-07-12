@@ -43,7 +43,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -333,12 +332,7 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     GuiceSimpleScope.InScope enter() {
-      // TODO(lukes): this isn't right, re-entering the scope shouldn't retrigger injection of
-      // items, we need an explicit detach api.  This happens to be fine because these are the only
-      // 2 keys available in this scope
-      GuiceSimpleScope.InScope withScope = scope.enter();
-      ApiCallScopeUtils.seedSharedParams(withScope, dir, localeString);
-      return withScope;
+      return scope.enter(dir, localeString);
     }
   }
 }

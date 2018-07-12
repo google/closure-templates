@@ -28,11 +28,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -43,7 +40,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -70,7 +66,6 @@ import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -81,8 +76,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class RenderVisitorTest {
-
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   private static final SoyRecord TEST_DATA;
 
@@ -150,11 +143,6 @@ public class RenderVisitorTest {
 
   private SoyIdRenamingMap xidRenamingMap = null;
   private SoyCssRenamingMap cssRenamingMap = null;
-
-  @Before
-  public void setUp() {
-    SharedTestUtils.simulateNewApiCall(INJECTOR, null, BidiGlobalDir.LTR);
-  }
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.

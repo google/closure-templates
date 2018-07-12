@@ -200,7 +200,7 @@ public final class SoyFileSet {
           typeRegistryBuilder.build(),
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
-          InternalPlugins.internalFunctionMap(),
+          InternalPlugins.internalFunctionMap(coreDependencies.apiCallScope),
           filesBuilder.build(),
           getGeneralOptions(),
           cache,

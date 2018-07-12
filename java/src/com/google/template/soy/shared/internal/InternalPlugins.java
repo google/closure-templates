@@ -28,8 +28,9 @@ public final class InternalPlugins {
   private InternalPlugins() {}
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
-  public static ImmutableMap<String, SoySourceFunction> internalFunctionMap() {
-    // TODO(b/19252021): Include more functions...
+  public static ImmutableMap<String, SoySourceFunction> internalFunctionMap(
+      SoyScopedData soyScopedData) {
+    // TODO(b/19252021): Include Bidi functions (which will use the scoped data) & BuiltInFunctions
     return fromFunctions(BasicFunctions.functions());
   }
 
