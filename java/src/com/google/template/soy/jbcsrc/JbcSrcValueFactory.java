@@ -73,24 +73,35 @@ final class JbcSrcValueFactory extends JavaValueFactory {
                   }
                 }));
     SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
+
     JavaValue result = javaSrcFn.applyForJavaSource(this, javaArgs, context);
+    if (result == null) {
+      throw PluginCodegenException.nullReturn(fnNode);
+    }
     return toSoyExpression((JbcSrcJavaValue) result);
   }
 
   @Override
   public JbcSrcJavaValue callStaticMethod(Method method, JavaValue... params) {
+    if (method == null) {
+      throw PluginCodegenException.nullMethod(fnNode, "callStaticMethod");
+    }
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
     // This lets us more easily support users who want to compose multiple callXMethod calls, e.g:
     //   callXMethod(METHOD1, callXMethod(METHOD2, arg1), callXMethod(METHOD3, arg2));
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
     return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(MethodRef.create(method).invoke(adaptParams(method, params))),
+        tryToWrapInSoyExpression(
+            MethodRef.create(method).invoke(adaptParams(method, params, "callStaticMethod"))),
         method);
   }
 
   @Override
   public JbcSrcJavaValue callRuntimeMethod(Method method, JavaValue... params) {
+    if (method == null) {
+      throw PluginCodegenException.nullMethod(fnNode, "callRuntimeMethod");
+    }
     // We need to cast to the method's declaring class in order for the owner type
     // to be correct when calling the method, otherwise the JVM won't be able to dispatch
     // the method because the type will just be 'JavaPluginRuntime'.
@@ -101,7 +112,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
     return JbcSrcJavaValue.of(
         tryToWrapInSoyExpression(
-            runtime.invoke(MethodRef.create(method), adaptParams(method, params))),
+            runtime.invoke(
+                MethodRef.create(method), adaptParams(method, params, "callRuntimeMethod"))),
         method);
   }
 
@@ -119,7 +131,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs));
   }
 
-  private Expression[] adaptParams(Method method, JavaValue[] userParams) {
+  private Expression[] adaptParams(Method method, JavaValue[] userParams, String callerMethodName) {
+    if (userParams == null) {
+      throw PluginCodegenException.nullParamArray(fnNode, method, callerMethodName);
+    }
+
     Class<?>[] methodParams = method.getParameterTypes();
     if (methodParams.length != userParams.length) {
       throw PluginCodegenException.invalidParameterLength(fnNode, method, userParams);
@@ -128,6 +144,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Expression[] params = new Expression[userParams.length];
     for (int i = 0; i < userParams.length; i++) {
       Class<?> methodParam = methodParams[i];
+      if (userParams[i] == null) {
+        throw PluginCodegenException.nullParam(fnNode, method, i + 1, methodParam);
+      }
       Expression expr = ((JbcSrcJavaValue) userParams[i]).expr();
       // TODO(sameb): This could probably do with a whole lot more checking and user-friendly
       // exceptions.  Things to check for:

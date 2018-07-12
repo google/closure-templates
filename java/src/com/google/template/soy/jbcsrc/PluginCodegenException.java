@@ -107,6 +107,49 @@ class PluginCodegenException extends RuntimeException {
             "'" + actualClass.getName() + "'"));
   }
 
+  static PluginCodegenException nullReturn(FunctionNode fnNode) {
+    return new PluginCodegenException(
+        fnNode,
+        errorMsg(
+            fnNode,
+            fnNode.getSoyFunction().getClass().getSimpleName()
+                + ".applyForJavaSource returned null."));
+  }
+
+  static PluginCodegenException nullMethod(FunctionNode fnNode, String methodName) {
+    return new PluginCodegenException(
+        fnNode, errorMsg(fnNode, "Passed a null method to JavaValueFactory." + methodName + "."));
+  }
+
+  static PluginCodegenException nullParamArray(
+      FunctionNode fnNode, Method method, String methodName) {
+    return new PluginCodegenException(
+        fnNode,
+        errorMsg(
+            fnNode,
+            "Passed a null JavaValue[] to JavaValueFactory."
+                + methodName
+                + " while trying to call method: "
+                + simpleMethodName(method)
+                + "."));
+  }
+
+  static PluginCodegenException nullParam(
+      FunctionNode fnNode, Method method, int paramIdx, Class<?> expectedType) {
+    return new PluginCodegenException(
+        fnNode,
+        errorMsg(
+            fnNode,
+            "Passed null to the "
+                + paramIdx
+                + getOrdinalSuffix(paramIdx)
+                + " parameter of "
+                + simpleMethodName(method)
+                + ".",
+            "'" + expectedType + "'",
+            "null"));
+  }
+
   /** Formats a plugin codegen exception with an expected & actual value. */
   private static String errorMsg(FunctionNode fnNode, String msg, Object expected, Object actual) {
     return errorMsg(

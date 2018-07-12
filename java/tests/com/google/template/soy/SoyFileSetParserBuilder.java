@@ -157,15 +157,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  /** Warning: This SoySourceFunctions are not yet working completely. Do not use this method. */
-  @Deprecated
   public SoyFileSetParserBuilder addSoySourceFunction(SoySourceFunction function) {
-    return addSoySourceFunction(ImmutableList.of(function));
+    return addSoySourceFunctions(ImmutableList.of(function));
   }
 
-  /** Warning: This SoySourceFunctions are not yet working completely. Do not use this method. */
-  @Deprecated
-  public SoyFileSetParserBuilder addSoySourceFunction(
+  public SoyFileSetParserBuilder addSoySourceFunctions(
       Iterable<? extends SoySourceFunction> sourceFunctions) {
     Map<String, SoySourceFunction> functions = new LinkedHashMap<>();
     functions.putAll(sourceFunctionMap);

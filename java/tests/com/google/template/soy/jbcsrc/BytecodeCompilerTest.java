@@ -57,7 +57,13 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -594,6 +600,29 @@ public class BytecodeCompilerTest {
           }
         };
     assertThatTemplateBody("{plusOne(1)}").withLegacySoyFunction(plusOneFunction).rendersAs("2");
+  }
+
+  @SoyFunctionSignature(
+      name = "plusOne",
+      value = @Signature(parameterTypes = "int", returnType = "int"))
+  private static class PlusOneSourceFunction implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return factory.callStaticMethod(
+          JavaValueFactory.createMethod(BytecodeCompilerTest.class, "plusOne", int.class),
+          args.get(0));
+    }
+  }
+
+  public static int plusOne(int val) {
+    return val + 1;
+  }
+
+  @Test
+  public void testCallCustomSourceFunction() {
+    SoyJavaSourceFunction plusOneFunction = new PlusOneSourceFunction();
+    assertThatTemplateBody("{plusOne(1)}").withSoySourceFunction(plusOneFunction).rendersAs("2");
   }
 
   @Test

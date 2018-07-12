@@ -37,6 +37,12 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -230,7 +236,7 @@ public class LazyClosureCompilerTest {
     assertThat(let.getDeclaringClass()).isEqualTo(template.getClass());
   }
 
-  private static final class IdentityFunction implements SoyJavaFunction {
+  private static final class IdentityJavaFunction implements SoyJavaFunction {
     @Override
     public String getName() {
       return "ident";
@@ -252,10 +258,29 @@ public class LazyClosureCompilerTest {
     // There used to be a bug where we wouldn't properly box the expression into a SoyValueProvider
     // when it dynamically resolved to null.
     assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
-        .withLegacySoyFunction(new IdentityFunction())
+        .withLegacySoyFunction(new IdentityJavaFunction())
         .rendersAs("null");
     assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
-        .withLegacySoyFunction(new IdentityFunction())
+        .withLegacySoyFunction(new IdentityJavaFunction())
+        .rendersAs("1");
+  }
+
+  @SoyFunctionSignature(name = "ident", value = @Signature(parameterTypes = "?", returnType = "?"))
+  private static final class IdentityJavaSourceFunction implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return args.get(0);
+    }
+  }
+
+  @Test
+  public void testConstantPluginSourceFunction() {
+    assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
+        .withSoySourceFunction(new IdentityJavaSourceFunction())
+        .rendersAs("null");
+    assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
+        .withSoySourceFunction(new IdentityJavaSourceFunction())
         .rendersAs("1");
   }
 

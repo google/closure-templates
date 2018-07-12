@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
@@ -25,13 +26,16 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.truth.FailureMetadata;
+import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.CopyState;
@@ -40,6 +44,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.internal.ClassData;
@@ -50,6 +55,7 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -69,6 +75,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.CheckReturnValue;
 import javax.inject.Provider;
 
 /** Utilities for testing compiled soy templates. */
@@ -166,6 +173,7 @@ public final class TemplateTester {
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
+    private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
     private final RenderContext.Builder defaultContextBuilder = DEFAULT_CONTEXT_BUILDER.get();
 
     private Iterable<ClassData> classData;
@@ -189,6 +197,13 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.soyFunctions.add(checkNotNull(soyFunction));
+      return this;
+    }
+
+    CompiledTemplateSubject withSoySourceFunction(SoySourceFunction soySourceFunction) {
+      classData = null;
+      factory = null;
+      this.soySourceFunctions.add(checkNotNull(soySourceFunction));
       return this;
     }
 
@@ -249,6 +264,24 @@ public final class TemplateTester {
       return this; // may be dead
     }
 
+    @CheckReturnValue
+    public IterableSubject failsToCompileWithErrorsThat() {
+      SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
+      for (SoyFunction function : soyFunctions) {
+        builder.addSoyFunction(function);
+      }
+      builder.addSoySourceFunctions(soySourceFunctions);
+      ParseResult parseResult =
+          builder
+              .typeRegistry(typeRegistry)
+              .options(generalOptions)
+              .errorReporter(ErrorReporter.exploding())
+              .parse();
+      ErrorReporter errors = ErrorReporter.createForTest();
+      BytecodeCompiler.compile(parseResult.registry(), /* developmentMode= */ false, errors);
+      return assertThat(Lists.transform(errors.getErrors(), SoyError::message));
+    }
+
     private SoyRecord asRecord(Map<String, ?> params) {
       return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
     }
@@ -302,6 +335,7 @@ public final class TemplateTester {
         for (SoyFunction function : soyFunctions) {
           builder.addSoyFunction(function);
         }
+        builder.addSoySourceFunctions(soySourceFunctions);
         SoyFileSetNode fileSet =
             builder
                 .typeRegistry(typeRegistry)

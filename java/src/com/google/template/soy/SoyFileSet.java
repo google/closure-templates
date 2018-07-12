@@ -24,6 +24,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
@@ -155,6 +156,9 @@ public final class SoyFileSet {
 
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
 
+    private final ImmutableSet.Builder<SoySourceFunction> extraSourceFunctions =
+        ImmutableSet.builder();
+
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
       this.filesBuilder = ImmutableMap.builder();
@@ -200,13 +204,28 @@ public final class SoyFileSet {
           typeRegistryBuilder.build(),
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
-          InternalPlugins.internalFunctionMap(coreDependencies.apiCallScope),
+          ImmutableMap.<String, SoySourceFunction>builder()
+              .putAll(InternalPlugins.internalFunctionMap(coreDependencies.apiCallScope))
+              .putAll(InternalPlugins.fromFunctions(extraSourceFunctions.build()))
+              .build(),
           filesBuilder.build(),
           getGeneralOptions(),
           cache,
           conformanceConfig,
           loggingConfig,
           warningSink);
+    }
+
+    /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
+    public Builder addSourceFunction(SoySourceFunction function) {
+      extraSourceFunctions.add(function);
+      return this;
+    }
+
+    /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
+    public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
+      extraSourceFunctions.addAll(function);
+      return this;
     }
 
     /**
