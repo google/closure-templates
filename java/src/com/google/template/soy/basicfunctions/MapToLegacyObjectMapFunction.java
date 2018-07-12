@@ -19,23 +19,27 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Set;
-import javax.inject.Inject;
 
 /**
  * Converts values of type {@code map} to values of type {@code legacy_object_map}.
@@ -47,27 +51,16 @@ import javax.inject.Inject;
  * legacy_object_map}. To allow template-level migrations of {@code legacy_object_map} parameters to
  * {@code map}, we need plugins to convert between the two maps, so that converting one template
  * doesn't require converting its transitive callees.
- *
- * <p>NOTE: this function has special support in the type checker for calculating the return type
  */
-public final class MapToLegacyObjectMapFunction
-    implements SoyJavaFunction,
+@SoyFunctionSignature(
+    name = "mapToLegacyObjectMap",
+    // Note: The return type is overridden in ResolveTypeExpressionsPass
+    value = @Signature(parameterTypes = "?", returnType = "?"))
+public final class MapToLegacyObjectMapFunction extends TypedSoyFunction
+    implements SoyJavaSourceFunction,
         SoyJbcSrcFunction,
         SoyPySrcFunction,
         SoyLibraryAssistedJsSrcFunction {
-
-  @Inject
-  MapToLegacyObjectMapFunction() {}
-
-  @Override
-  public String getName() {
-    return "mapToLegacyObjectMap";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
@@ -75,9 +68,18 @@ public final class MapToLegacyObjectMapFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef MAP_TO_LEGACY_OBJECT_MAP =
-        MethodRef.create(BasicFunctionsRuntime.class, "mapToLegacyObjectMap", SoyMap.class);
+  private static final class Methods {
+    static final Method MAP_TO_LEGACY_OBJECT_MAP =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "mapToLegacyObjectMap", SoyMap.class);
+    static final MethodRef MAP_TO_LEGACY_OBJECT_MAP_REF =
+        MethodRef.create(MAP_TO_LEGACY_OBJECT_MAP);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.MAP_TO_LEGACY_OBJECT_MAP, args.get(0));
   }
 
   @Override
@@ -99,8 +101,7 @@ public final class MapToLegacyObjectMapFunction
     }
     return SoyExpression.forLegacyObjectMap(
         newType,
-        JbcSrcMethods.MAP_TO_LEGACY_OBJECT_MAP.invoke(
-            soyExpression.box().checkedCast(SoyMap.class)));
+        Methods.MAP_TO_LEGACY_OBJECT_MAP_REF.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 
   @Override
@@ -114,11 +115,5 @@ public final class MapToLegacyObjectMapFunction
     String map = Iterables.getOnlyElement(args).getText();
     return new PyExpr(
         String.format("runtime.map_to_legacy_object_map(%s)", map), Integer.MAX_VALUE);
-  }
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyMap map = (SoyMap) Iterables.getOnlyElement(args);
-    return BasicFunctionsRuntime.mapToLegacyObjectMap(map);
   }
 }

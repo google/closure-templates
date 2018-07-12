@@ -17,28 +17,28 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.SanitizedType.UriType;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /** Soy function that converts an sms URI string to a sanitized URI. */
-@Singleton
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "strSmsUriToUri",
@@ -47,18 +47,10 @@ import javax.inject.Singleton;
             parameterTypes = {"string"},
             returnType = "uri"))
 final class StrSmsUriToUriFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-
-  @Inject
-  StrSmsUriToUriFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    return Sanitizers.filterSmsUri(args.get(0).coerceToString());
-  }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -78,14 +70,21 @@ final class StrSmsUriToUriFunction extends TypedSoyFunction
   }
 
   // Lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef SMS_TO_URI =
-        MethodRef.create(Sanitizers.class, "filterSmsUri", String.class);
+  private static final class Methods {
+    static final Method SMS_TO_URI =
+        JavaValueFactory.createMethod(Sanitizers.class, "filterSmsUri", String.class);
+    static final MethodRef SMS_TO_URI_REF = MethodRef.create(SMS_TO_URI);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.SMS_TO_URI, args.get(0));
   }
 
   @Override
   public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
-        UriType.getInstance(), JbcSrcMethods.SMS_TO_URI.invoke(args.get(0).coerceToString()));
+        UriType.getInstance(), Methods.SMS_TO_URI_REF.invoke(args.get(0).coerceToString()));
   }
 }

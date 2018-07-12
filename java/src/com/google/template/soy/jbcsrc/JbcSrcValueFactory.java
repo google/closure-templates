@@ -35,6 +35,7 @@ import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 import org.objectweb.asm.Type;
@@ -237,8 +238,6 @@ final class JbcSrcValueFactory extends JavaValueFactory {
    */
   private Expression tryToWrapInSoyExpression(Expression expr) {
     Class<?> type = BytecodeUtils.classFromAsmType(expr.resultType());
-    // TODO(sameb): We could theoretically deal with wrapper types too, we probably
-    // just need to generate bytecode to unbox them & then wrap in the SoyExpression.
     if (type == boolean.class) {
       return SoyExpression.forBool(expr);
     } else if (type == int.class) {
@@ -265,8 +264,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       soyExpr = (SoyExpression) expr;
     } else {
       Class<?> type = BytecodeUtils.classFromAsmType(expr.resultType());
-      if (List.class.isAssignableFrom(type) || FluentIterable.class.isAssignableFrom(type)) {
-        soyExpr = SoyExpression.forList((ListType) expectedType, expr);
+      if (List.class.isAssignableFrom(type)) {
+        if (expectedType instanceof ListType) {
+          soyExpr = SoyExpression.forList((ListType) expectedType, expr);
+        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN) {
+          soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
+        } else {
+          throw PluginCodegenException.invalidReturnType(
+              fnNode, type, pluginReturnValue.methodInfo());
+        }
       } else if (SoyValue.class.isAssignableFrom(type)) {
         soyExpr =
             SoyExpression.forSoyValue(

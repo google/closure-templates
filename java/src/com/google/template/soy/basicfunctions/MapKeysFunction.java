@@ -18,26 +18,28 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
+import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Soy function that gets the keys in a map.
@@ -48,40 +50,17 @@ import javax.inject.Singleton;
  * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in keys($myMap)} ...
  * {/for}}
  *
- * <p>NOTE: this function has special support in the type checker for calculating the return type
- *
  */
-@Singleton
+@SoyFunctionSignature(
+    name = "mapKeys",
+    // Note: the return type is overridden in ResolveTypeExpressionsPass
+    value = @Signature(parameterTypes = "map<?, ?>", returnType = "list<?>"))
 @SoyPureFunction
-public final class MapKeysFunction
-    implements SoyJavaFunction,
+public final class MapKeysFunction extends TypedSoyFunction
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-
-  @Inject
-  MapKeysFunction() {}
-
-  @Override
-  public String getName() {
-    return "mapKeys";
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
-  }
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-
-    if (!(arg instanceof SoyMap)) {
-      throw new IllegalArgumentException("Argument to mapKeys() function is not a SoyMap.");
-    }
-
-    return ListImpl.forProviderList(BasicFunctionsRuntime.mapKeys((SoyMap) arg));
-  }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -103,9 +82,16 @@ public final class MapKeysFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef MAP_KEYS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "mapKeys", SoyMap.class);
+  private static final class Methods {
+    static final Method MAP_KEYS_FN =
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "mapKeys", SoyMap.class);
+    static final MethodRef MAP_KEYS_FN_REF = MethodRef.create(MAP_KEYS_FN);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    return factory.callStaticMethod(Methods.MAP_KEYS_FN, args.get(0));
   }
 
   @Override
@@ -115,6 +101,6 @@ public final class MapKeysFunction
     SoyType keyType = ((MapType) argType).getKeyType();
     return SoyExpression.forList(
         keyType == null ? ListType.EMPTY_LIST : ListType.of(keyType),
-        JbcSrcMethods.MAP_KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
+        Methods.MAP_KEYS_FN_REF.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 }

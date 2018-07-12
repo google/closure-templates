@@ -20,11 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -33,10 +30,11 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.types.UnknownType;
-import java.util.Set;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,23 +47,16 @@ import org.junit.runners.JUnit4;
 public class KeysFunctionTest {
 
   @Test
-  public void testComputeForJava() {
+  public void testComputeForJavaSource() {
     KeysFunction keysFunction = new KeysFunction();
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(keysFunction);
 
     SoyValue map =
         SoyValueConverterUtility.newDict(
             "boo", "bar", "foo", 2, "goo", SoyValueConverterUtility.newDict("moo", 4));
-    SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
-
-    assertThat(result).isInstanceOf(SoyList.class);
-    SoyList resultAsList = (SoyList) result;
-    assertThat(resultAsList.length()).isEqualTo(3);
-
-    Set<String> resultItems = Sets.newHashSet();
-    for (SoyValueProvider itemProvider : resultAsList.asJavaList()) {
-      resultItems.add(itemProvider.resolve().stringValue());
-    }
-    assertThat(resultItems).containsExactly("boo", "foo", "goo");
+    @SuppressWarnings("unchecked")
+    List<SoyValue> result = (List<SoyValue>) tester.callFunction(map);
+    assertThat(result).containsExactly("boo", "foo", "goo");
   }
 
   @Test

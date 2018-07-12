@@ -32,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.types.UnknownType;
 import org.junit.Test;
@@ -47,7 +48,8 @@ public final class LegacyObjectMapToMapFunctionTest {
   private static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
   @Test
-  public void computeForJava() {
+  public void computeForJavaSource() {
+    SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(LEGACY_OBJECT_MAP_TO_MAP);
     SoyLegacyObjectMap legacyObjectMap =
         SoyValueConverterUtility.newDict("x", "y", "z", SoyValueConverterUtility.newDict("xx", 2));
     SoyMapImpl map =
@@ -55,8 +57,7 @@ public final class LegacyObjectMapToMapFunctionTest {
             ImmutableMap.of(
                 StringData.forValue("x"), CONVERTER.convert("y"),
                 StringData.forValue("z"), SoyValueConverterUtility.newDict("xx", 2)));
-    SoyMapImpl convertedMap =
-        (SoyMapImpl) LEGACY_OBJECT_MAP_TO_MAP.computeForJava(ImmutableList.of(legacyObjectMap));
+    SoyMapImpl convertedMap = (SoyMapImpl) tester.callFunction(legacyObjectMap);
     assertThat(map.get(StringData.forValue("x")))
         .isEqualTo(convertedMap.get(StringData.forValue("x")));
   }

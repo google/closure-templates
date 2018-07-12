@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
@@ -51,7 +50,6 @@ public final class SharedModule extends AbstractModule {
     // Install default directive and function modules.
     install(new BasicDirectivesModule());
     install(new BidiDirectivesModule());
-    install(new BasicFunctionsModule());
     install(new BidiFunctionsModule());
     install(new I18nDirectivesModule());
 

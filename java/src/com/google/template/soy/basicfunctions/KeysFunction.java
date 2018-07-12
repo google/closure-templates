@@ -18,20 +18,21 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyLegacyObjectMap;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.types.IntType;
@@ -40,9 +41,8 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.UnknownType;
+import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Soy function that gets the keys in a map. This method is only used for legacy_object_map. For new
@@ -59,32 +59,16 @@ import javax.inject.Singleton;
  *
  */
 @SoyFunctionSignature(
-  name = "keys",
-  // TODO(b/70946095): should take a map, or maybe we should add special support in the type
-  // checker in order to infer the returned list type
-  value = @Signature(returnType = "?", parameterTypes = "?")
-)
-@Singleton
+    name = "keys",
+    // TODO(b/70946095): should take a map, or maybe we should add special support in the type
+    // checker in order to infer the returned list type
+    value = @Signature(returnType = "?", parameterTypes = "?"))
 @SoyPureFunction
 public final class KeysFunction extends TypedSoyFunction
-    implements SoyJavaFunction,
+    implements SoyJavaSourceFunction,
         SoyLibraryAssistedJsSrcFunction,
         SoyPySrcFunction,
         SoyJbcSrcFunction {
-
-  @Inject
-  KeysFunction() {}
-
-  @Override
-  public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-
-    if (!(arg instanceof SoyLegacyObjectMap)) {
-      throw new IllegalArgumentException("Argument to keys() function is not SoyLegacyObjectMap.");
-    }
-
-    return ListImpl.forProviderList(BasicFunctionsRuntime.keys((SoyLegacyObjectMap) arg));
-  }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -106,9 +90,18 @@ public final class KeysFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class JbcSrcMethods {
-    static final MethodRef KEYS_FN =
-        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
+  private static final class Methods {
+    static final Method KEYS_FN =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
+    static final MethodRef KEYS_FN_REF = MethodRef.create(KEYS_FN);
+  }
+
+  @Override
+  public JavaValue applyForJavaSource(
+      JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    // TODO(sameb): Set correct node type in ResolveExpressionTypesPass
+    return factory.callStaticMethod(Methods.KEYS_FN, args.get(0));
   }
 
   @Override
@@ -129,6 +122,6 @@ public final class KeysFunction extends TypedSoyFunction
     }
     return SoyExpression.forList(
         listType,
-        JbcSrcMethods.KEYS_FN.invoke(soyExpression.box().checkedCast(SoyLegacyObjectMap.class)));
+        Methods.KEYS_FN_REF.invoke(soyExpression.box().checkedCast(SoyLegacyObjectMap.class)));
   }
 }
