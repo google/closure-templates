@@ -16,5 +16,5 @@
 
 package com.google.template.soy.plugin.restricted;
 
-/** A soy function that generates it source code. */
+/** A soy function that generates its source code. */
 public interface SoySourceFunction {}

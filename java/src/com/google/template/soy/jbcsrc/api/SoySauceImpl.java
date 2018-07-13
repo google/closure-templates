@@ -24,6 +24,8 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -40,7 +42,6 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SoyScopedData;
@@ -55,7 +56,7 @@ import java.util.Map;
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
   private final SoyScopedData.Enterable apiCallScope;
-  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
+  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
@@ -66,7 +67,7 @@ public final class SoySauceImpl implements SoySauce {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
 
-    ImmutableMap.Builder<String, JavaPluginRuntime> runtimeBuilder = ImmutableMap.builder();
+    ImmutableMap.Builder<String, Supplier<Object>> pluginInstancesBuilder = ImmutableMap.builder();
 
     for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
       String fnName = entry.getKey();
@@ -76,7 +77,7 @@ public final class SoySauceImpl implements SoySauce {
       if (entry.getValue() instanceof SoyJavaFunction
           && !(entry.getValue() instanceof SoyJbcSrcFunction)) {
         SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
-        runtimeBuilder.put(fnName, new LegacyFunctionAdapter(fn));
+        pluginInstancesBuilder.put(fnName, Suppliers.ofInstance(new LegacyFunctionAdapter(fn)));
       }
     }
 
@@ -91,7 +92,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
     this.printDirectives = soyJavaPrintDirectives.build();
-    this.functionRuntimes = runtimeBuilder.build();
+    this.pluginInstances = pluginInstancesBuilder.build();
   }
 
   @Override
@@ -225,7 +226,7 @@ public final class SoySauceImpl implements SoySauce {
     private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
       RenderContext context =
           contextBuilder
-              .withFunctionRuntimes(functionRuntimes)
+              .withPluginInstances(pluginInstances)
               .withMessageBundle(msgs)
               .withActiveDelPackageSelector(activeDelegatePackages)
               .build();

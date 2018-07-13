@@ -16,10 +16,10 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -47,7 +47,7 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
     return new EvalVisitor(
         env,
         ijData,
@@ -55,6 +55,6 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
         xidRenamingMap,
         msgBundle,
         debugSoyTemplateInfo,
-        functionRuntimes);
+        pluginInstances);
   }
 }

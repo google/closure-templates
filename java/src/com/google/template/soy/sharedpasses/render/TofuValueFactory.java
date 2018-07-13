@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Function;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
@@ -25,7 +26,6 @@ import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -39,11 +39,11 @@ import java.util.List;
 // TODO(b/19252021): Add unit tests after things shape up.
 class TofuValueFactory extends JavaValueFactory {
   private final String fnName;
-  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
+  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
 
-  TofuValueFactory(String fnName, ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+  TofuValueFactory(String fnName, ImmutableMap<String, Supplier<Object>> pluginInstances) {
     this.fnName = fnName;
-    this.functionRuntimes = functionRuntimes;
+    this.pluginInstances = pluginInstances;
   }
 
   SoyValue computeForJava(
@@ -76,13 +76,14 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public TofuJavaValue callRuntimeMethod(Method method, JavaValue... params) {
-    JavaPluginRuntime runtime = functionRuntimes.get(fnName);
-    if (runtime == null) {
-      throw RenderException.create("No JavaPluginRuntime registered for function '" + fnName + "'");
+  public TofuJavaValue callInstanceMethod(Method method, JavaValue... params) {
+    Supplier<Object> instanceSupplier = pluginInstances.get(fnName);
+    if (instanceSupplier == null) {
+      throw RenderException.create("No plugin instance registered for function '" + fnName + "'");
     }
     try {
-      return wrapInTofuValue(method, method.invoke(runtime, adaptParams(method, params)));
+      return wrapInTofuValue(
+          method, method.invoke(instanceSupplier.get(), adaptParams(method, params)));
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
       throw RenderException.create("Unexpected exception", e);
     }

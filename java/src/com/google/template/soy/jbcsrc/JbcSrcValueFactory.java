@@ -46,7 +46,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   /** Interface that looks up an expression for a given plugin name. */
   interface PluginInstanceLookup {
     /** Returns the runtime this function uses. */
-    Expression getFunctionRuntime(String pluginName);
+    Expression getPluginInstance(String pluginName);
   }
 
   private final FunctionNode fnNode;
@@ -98,22 +98,22 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   @Override
-  public JbcSrcJavaValue callRuntimeMethod(Method method, JavaValue... params) {
+  public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
     if (method == null) {
-      throw PluginCodegenException.nullMethod(fnNode, "callRuntimeMethod");
+      throw PluginCodegenException.nullMethod(fnNode, "callInstanceMethod");
     }
     // We need to cast to the method's declaring class in order for the owner type
     // to be correct when calling the method, otherwise the JVM won't be able to dispatch
-    // the method because the type will just be 'JavaPluginRuntime'.
+    // the method because the type will just be 'Object'.
     Expression runtime =
         pluginInstanceLookup
-            .getFunctionRuntime(fnNode.getFunctionName())
+            .getPluginInstance(fnNode.getFunctionName())
             .checkedCast(method.getDeclaringClass());
     // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
     return JbcSrcJavaValue.of(
         tryToWrapInSoyExpression(
             runtime.invoke(
-                MethodRef.create(method), adaptParams(method, params, "callRuntimeMethod"))),
+                MethodRef.create(method), adaptParams(method, params, "callInstanceMethod"))),
         method);
   }
 

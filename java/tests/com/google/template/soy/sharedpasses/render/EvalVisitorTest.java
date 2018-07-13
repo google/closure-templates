@@ -160,7 +160,7 @@ public class EvalVisitorTest {
                 xidRenamingMap,
                 null,
                 /* debugSoyTemplateInfo= */ false,
-                /* functionRuntimes= */ ImmutableMap.of());
+                /* pluginInstances= */ ImmutableMap.of());
     return evalVisitor.exec(expr);
   }
 

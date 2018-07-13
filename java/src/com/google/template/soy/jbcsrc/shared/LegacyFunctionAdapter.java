@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.lang.reflect.Method;
@@ -27,7 +26,7 @@ import java.util.List;
  * An adapter that SoySauceImpl installs for SoyJavaFunctions, which ExpressionCompiler delegates to
  * for running the java code.
  */
-public final class LegacyFunctionAdapter implements JavaPluginRuntime {
+public final class LegacyFunctionAdapter {
   public static final Method METHOD =
       JavaValueFactory.createMethod(LegacyFunctionAdapter.class, "computeForJava", List.class);
 

@@ -51,7 +51,7 @@ final class PreevalVisitor extends EvalVisitor {
         /* xidRenamingMap= */ null,
         /* msgBundle= */ null,
         /* debugSoyTemplateInfo= */ false,
-        /* functionRuntimes= */ ImmutableMap.of());
+        /* pluginInstances= */ ImmutableMap.of());
   }
 
   // -----------------------------------------------------------------------------------------------

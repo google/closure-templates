@@ -16,7 +16,7 @@
 
 package com.google.template.soy.plugin.java.restricted;
 
-/** The context for {@link SoyJavaSourceFunction}s and {@link SoyJavaSourcePrintDirective}s. */
+/** The context for a {@link SoyJavaSourceFunction}. */
 public interface JavaPluginContext {
   /** A value that resolves to the current ULocale at runtime. */
   JavaValue getULocale();

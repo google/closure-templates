@@ -24,6 +24,8 @@ import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -49,7 +51,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -319,12 +320,13 @@ public final class TemplateTester {
         // them out.
         fileSet = fileSet.copy(new CopyState());
 
-        Map<String, JavaPluginRuntime> functionRuntimes = new LinkedHashMap<>();
+        Map<String, Supplier<Object>> pluginInstances = new LinkedHashMap<>();
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
           if (fnNode.getSoyFunction() instanceof SoyJavaFunction) {
-            functionRuntimes.put(
+            pluginInstances.put(
                 fnNode.getFunctionName(),
-                new LegacyFunctionAdapter((SoyJavaFunction) fnNode.getSoyFunction()));
+                Suppliers.ofInstance(
+                    new LegacyFunctionAdapter((SoyJavaFunction) fnNode.getSoyFunction())));
           }
         }
 
@@ -344,7 +346,7 @@ public final class TemplateTester {
         factory = compiledTemplates.getTemplateFactory(templateName);
         defaultContext =
             defaultContextBuilder
-                .withFunctionRuntimes(functionRuntimes)
+                .withPluginInstances(pluginInstances)
                 .withCompiledTemplates(compiledTemplates)
                 .withMessageBundle(SoyMsgBundle.EMPTY)
                 .build();

@@ -20,6 +20,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -29,7 +30,6 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SoyScopedData;
@@ -124,7 +124,7 @@ public final class BaseTofu implements SoyTofu {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
-   * @param functionRuntimes The instances used for evaluating functions that call instance methods.
+   * @param pluginInstances The instances used for evaluating functions that call instance methods.
    * @return The template that was rendered.
    */
   private TemplateNode renderMain(
@@ -137,7 +137,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Predicates.alwaysFalse();
@@ -156,7 +156,7 @@ public final class BaseTofu implements SoyTofu {
           idRenamingMap,
           cssRenamingMap,
           debugSoyTemplateInfo,
-          functionRuntimes);
+          pluginInstances);
     }
   }
 
@@ -185,7 +185,7 @@ public final class BaseTofu implements SoyTofu {
       @Nullable SoyIdRenamingMap idRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
     TemplateNode template = templateRegistry.getBasicTemplate(templateName);
     if (template == null) {
@@ -214,7 +214,7 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              functionRuntimes);
+              pluginInstances);
       rv.exec(template);
 
     } catch (RenderException re) {
@@ -242,7 +242,7 @@ public final class BaseTofu implements SoyTofu {
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
     private boolean debugSoyTemplateInfo;
-    private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes = ImmutableMap.of();
+    private final ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
@@ -338,7 +338,7 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              functionRuntimes);
+              pluginInstances);
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -365,7 +365,7 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              functionRuntimes);
+              pluginInstances);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.

@@ -66,7 +66,7 @@ final class PrerenderVisitor extends RenderVisitor {
         /* xidRenamingMap= */ null,
         /* cssRenamingMap= */ null,
         /* debugSoyTemplateInfo= */ false,
-        /* functionRuntimes= */ ImmutableMap.of());
+        /* pluginInstances= */ ImmutableMap.of());
   }
 
   @Override

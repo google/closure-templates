@@ -275,7 +275,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* functionRuntimes= */ ImmutableMap.of());
+            /* pluginInstances= */ ImmutableMap.of());
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -324,7 +324,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* functionRuntimes= */ ImmutableMap.of());
+            /* pluginInstances= */ ImmutableMap.of());
     TemplateNode templateNode = templateRegistry.getBasicTemplate(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
@@ -1038,7 +1038,7 @@ public class RenderVisitorTest {
             xidRenamingMap,
             cssRenamingMap,
             false,
-            /* functionRuntimes= */ ImmutableMap.of());
+            /* pluginInstances= */ ImmutableMap.of());
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =

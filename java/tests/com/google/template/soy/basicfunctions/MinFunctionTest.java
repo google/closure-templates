@@ -40,7 +40,7 @@ public class MinFunctionTest {
     MinFunction minFunction = new MinFunction();
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(minFunction);
 
-    /// Test same LHS & RHS type.
+    // Test same LHS & RHS type.
     assertThat(tester.callFunction(7.5, 7.777)).isEqualTo(FloatData.forValue(7.5));
     assertThat(tester.callFunction(-7, -8)).isEqualTo(IntegerData.forValue(-8));
     assertThat(tester.callFunction(FloatData.forValue(7.5), 7.777))

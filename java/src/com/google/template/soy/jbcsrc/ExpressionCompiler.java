@@ -927,8 +927,8 @@ final class ExpressionCompiler {
                 parameters.getJavaPluginContext(),
                 new JbcSrcValueFactory.PluginInstanceLookup() {
                   @Override
-                  public Expression getFunctionRuntime(String pluginName) {
-                    return parameters.getRenderContext().getFunctionRuntime(pluginName);
+                  public Expression getPluginInstance(String pluginName) {
+                    return parameters.getRenderContext().getPluginInstance(pluginName);
                   }
                 })
             .computeForJavaSource(args);
@@ -939,7 +939,7 @@ final class ExpressionCompiler {
       Expression legacyFunctionRuntimeExpr =
           parameters
               .getRenderContext()
-              .getFunctionRuntime(node.getFunctionName())
+              .getPluginInstance(node.getFunctionName())
               .checkedCast(LegacyFunctionAdapter.class);
       Expression list = SoyExpression.asBoxedList(args);
       // Most soy functions don't have return types, but if they do we should enforce it

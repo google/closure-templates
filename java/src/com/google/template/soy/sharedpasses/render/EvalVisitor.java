@@ -26,6 +26,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.negative;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -87,7 +88,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -128,7 +129,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      * @param ijData The current injected data.
      * @param cssRenamingMap The CSS renaming map, or null if not applicable.
      * @param xidRenamingMap The XID renaming map, or null if not applicable.
-     * @param functionRuntimes The instances used for evaluating functions that call instance
+     * @param pluginInstances The instances used for evaluating functions that call instance
      *     methods.
      * @return The newly created EvalVisitor instance.
      */
@@ -139,7 +140,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
         boolean debugSoyTemplateInfo,
-        ImmutableMap<String, JavaPluginRuntime> functionRuntimes);
+        ImmutableMap<String, Supplier<Object>> pluginInstances);
   }
 
   /** The current environment. */
@@ -163,10 +164,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final TofuPluginContext context;
 
   /**
-   * The runtimes for functions that implement {@link SoyJavaSourceFunction} and require runtimes.
-   * (Source functions that use callStaticMethod don't need runtimes.)
+   * The instances for functions that implement {@link SoyJavaSourceFunction} and call {@link
+   * JavaValueFactory#callInstanceMethod}.
    */
-  private final ImmutableMap<String, JavaPluginRuntime> functionRuntimes;
+  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
 
   /**
    * @param ijData The current injected data.
@@ -180,7 +181,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
     this.env = checkNotNull(env);
     this.ijData = ijData;
     this.msgBundle = msgBundle;
@@ -188,7 +189,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.debugSoyTemplateInfo = debugSoyTemplateInfo;
     this.context = new TofuPluginContext(msgBundle);
-    this.functionRuntimes = checkNotNull(functionRuntimes);
+    this.pluginInstances = checkNotNull(pluginInstances);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -735,7 +736,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     */
 
     try {
-      return new TofuValueFactory(fnNode.getFunctionName(), functionRuntimes)
+      return new TofuValueFactory(fnNode.getFunctionName(), pluginInstances)
           .computeForJava(fn, args, context);
     } catch (Exception e) {
       throw RenderException.create(

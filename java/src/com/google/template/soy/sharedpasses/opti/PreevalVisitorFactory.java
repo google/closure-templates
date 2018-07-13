@@ -17,10 +17,10 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.plugin.java.restricted.JavaPluginRuntime;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -43,7 +43,7 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
-      ImmutableMap<String, JavaPluginRuntime> functionRuntimes) {
+      ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
