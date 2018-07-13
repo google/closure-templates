@@ -144,9 +144,9 @@ public final class GenJsExprsVisitorTest {
     String expectedJsExprText =
         JOINER.join(
             "var $tmp;",
-            "if (opt_data.boo) {",
+            "if (soy.$$coerceToBoolean(opt_data.boo)) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!soy.$$coerceToBoolean((gooData8 != null))) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -169,9 +169,9 @@ public final class GenJsExprsVisitorTest {
     String expectedJsExprText =
         JOINER.join(
             "var $tmp;",
-            "if (opt_data.boo) {",
+            "if (soy.$$coerceToBoolean(opt_data.boo)) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!soy.$$coerceToBoolean((gooData8 != null))) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = '';",
@@ -189,7 +189,7 @@ public final class GenJsExprsVisitorTest {
         "{else}",
         "  Bleh",
         "{/if}");
-    String expectedJsExprText = "opt_data.boo ? 'Blah' : 'Bleh';";
+    String expectedJsExprText = "soy.$$coerceToBoolean(opt_data.boo) ? 'Blah' : 'Bleh';";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
@@ -229,7 +229,8 @@ public final class GenJsExprsVisitorTest {
         "{if $boo}",
         "  Blah {$boo} bleh.",
         "{/if}");
-    String expectedJsExprText = "opt_data.boo ? 'Blah ' " + "+ opt_data.boo + ' bleh.' : '';";
+    String expectedJsExprText =
+        "soy.$$coerceToBoolean(opt_data.boo) ? 'Blah ' " + "+ opt_data.boo + ' bleh.' : '';";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
 
     soyNodeCode =

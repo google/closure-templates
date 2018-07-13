@@ -933,9 +933,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode condNode = (IfCondNode) child;
-
+        ExprRootNode expr = condNode.getExpr();
         // Convert predicate.
-        Expression predicate = translateExpr(condNode.getExpr());
+        Expression predicate =
+            Truthiness.maybeCoerce(expr.getRoot().getType(), translateExpr(condNode.getExpr()));
         // Convert body.
         Statement consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
