@@ -213,6 +213,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind SELF_CLOSING_CLOSE_TAG =
       SoyErrorKind.of("Close tags should not be self closing.");
 
+  private static final SoyErrorKind SMART_QUOTE_ERROR =
+      SoyErrorKind.of(
+          "Unexpected smart quote character ''”'',  Did you mean ''\"''?  If this is intentional,"
+              + " replace with the HTML entity ''&ldquo;'' or ''&rdquo;''.");
+
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
       SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
 
@@ -479,7 +484,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     static final CharMatcher UNQUOTED_ATTRIBUTE_VALUE_DELIMITER =
         CharMatcher.whitespace().or(CharMatcher.is('>')).precomputed();
 
+    static final CharMatcher SMART_QUOTE = CharMatcher.anyOf("“”").precomputed();
     static final CharMatcher NOT_DOUBLE_QUOTE = CharMatcher.isNot('"').precomputed();
+    static final CharMatcher NOT_DOUBLE_QUOTE_NOR_SMART_QUOTE =
+        SMART_QUOTE.negate().and(NOT_DOUBLE_QUOTE).precomputed();
     static final CharMatcher NOT_SINGLE_QUOTE = CharMatcher.isNot('\'').precomputed();
     static final CharMatcher NOT_LT = CharMatcher.isNot('<').precomputed();
     static final CharMatcher NOT_RSQUARE_BRACE = CharMatcher.isNot(']').precomputed();
@@ -986,6 +994,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
         advance();
         consume();
       } else {
+        if (SMART_QUOTE.matches((char) c)) {
+          errorReporter.report(currentLocation(), SMART_QUOTE_ERROR);
+        }
         context.setState(State.UNQUOTED_ATTRIBUTE_VALUE, currentPoint());
       }
     }
@@ -1023,12 +1034,17 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * <p>These are easy we just look for the end quote.
      */
     void handleQuotedAttributeValue(boolean doubleQuoted) {
-      boolean hasQuote = advanceWhileMatches(doubleQuoted ? NOT_DOUBLE_QUOTE : NOT_SINGLE_QUOTE);
+      boolean hasQuote =
+          advanceWhileMatches(doubleQuoted ? NOT_DOUBLE_QUOTE_NOR_SMART_QUOTE : NOT_SINGLE_QUOTE);
       RawTextNode data = consumeAsRawText();
       if (data != null) {
         context.addAttributeValuePart(data);
       }
       if (hasQuote) {
+        if (doubleQuoted && SMART_QUOTE.matches((char) currentChar())) {
+          errorReporter.report(currentLocation(), SMART_QUOTE_ERROR);
+        }
+
         if (context.hasQuotedAttributeValueParts()) {
           context.createQuotedAttributeValue(currentRawTextNode, doubleQuoted, currentPoint());
         } else {
