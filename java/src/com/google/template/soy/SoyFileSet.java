@@ -250,13 +250,13 @@ public final class SoyFileSet {
       return this;
     }
 
-    /** Adds one {@link SoyPrintDirective} to the functions used by this SoyFileSet. */
+    /** Adds one {@link SoyPrintDirective} to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirective(SoyPrintDirective function) {
       extraSoyPrintDirectives.add(function);
       return this;
     }
 
-    /** Adds many {@link SoyPrintDirective}s to the functions used by this SoyFileSet. */
+    /** Adds many {@link SoyPrintDirective}s to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirectives(Iterable<? extends SoyPrintDirective> function) {
       extraSoyPrintDirectives.addAll(function);
       return this;
