@@ -271,10 +271,9 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     for (SoyNode child : node.getChildren()) {
 
       if (child instanceof IfCondNode) {
-
         IfCondNode ifCond = (IfCondNode) child;
-        ExprRootNode expr = ifCond.getExpr();
-        ifs.add(Truthiness.maybeCoerce(expr.getRoot().getType(), translateExpr(expr)));
+
+        ifs.add(translateExpr(ifCond.getExpr()));
         thens.add(CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(ifCond)));
       } else if (child instanceof IfElseNode) {
         trailingElse = CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(child));

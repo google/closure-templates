@@ -74,7 +74,6 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -101,7 +100,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -472,15 +470,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitOperatorNode(OperatorNode node) {
     return operation(node.getOperator(), visitChildren(node));
-  }
-
-  @Override
-  protected Expression visitNotOpNode(NotOpNode node) {
-    Preconditions.checkArgument(node.numChildren() == 1);
-    ExprNode operand = node.getChild(0);
-    return operation(
-        node.getOperator(),
-        Arrays.asList(Truthiness.maybeCoerce(operand.getType(), visit(operand))));
   }
 
   private Expression visitEqualNodeHelper(OperatorNode node) {

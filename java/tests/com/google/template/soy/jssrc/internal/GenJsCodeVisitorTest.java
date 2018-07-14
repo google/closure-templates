@@ -566,7 +566,7 @@ public final class GenJsCodeVisitorTest {
 
     String expectedJsCode =
         ""
-            + "if (soy.$$coerceToBoolean(opt_data.boo)) {\n"
+            + "if (opt_data.boo) {\n"
             + "  var alpha__soy8 = opt_data.boo.foo;\n"
             + "  var beta__soy11 = 'Boo!';\n"
             + "  var beta__wrapped11 = "
@@ -608,7 +608,7 @@ public final class GenJsCodeVisitorTest {
 
     soyNodeCode =
         JOINER.join("{@param boo : ?}", "{if $boo}", "  Blah", "{else}", "  Bluh", "{/if}");
-    expectedJsCode = "output += soy.$$coerceToBoolean(opt_data.boo) ? 'Blah' : 'Bluh';\n";
+    expectedJsCode = "output += opt_data.boo ? 'Blah' : 'Bluh';\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     soyNodeCode =
@@ -625,9 +625,9 @@ public final class GenJsCodeVisitorTest {
     expectedJsCode =
         JOINER.join(
             "var $tmp;",
-            "if (soy.$$coerceToBoolean(opt_data.boo)) {",
+            "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!soy.$$coerceToBoolean((('' + gooData8).indexOf('goo') != -1))) {",
+            "} else if (!(('' + gooData8).indexOf('goo') != -1)) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -657,7 +657,7 @@ public final class GenJsCodeVisitorTest {
             + "    var i9Data = 0 + i9Index * 1;\n"
             + "    output += i9Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!soy.$$coerceToBoolean((('' + gooData8).indexOf('goo') != -1))) {\n"
+            + "} else if (!(('' + gooData8).indexOf('goo') != -1)) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"

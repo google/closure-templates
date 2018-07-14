@@ -24791,18 +24791,15 @@ soy.$$parseFloat = function(str) {
  * For objects of type `SanitizedContent`, the contents are used to determine
  * the boolean value; this is because the outer `SanitizedContent` object
  * instance is always truthy (unless it's null).
- *
- * This is one statement to trigger inlining.
- *
- * @param {?} arg The argument to coerce.
+ * 
+ * @param {*} arg The argument to coerce.
  * @return {boolean}
  */
 soy.$$coerceToBoolean = function(arg) {
-  return (arg instanceof goog.soy.data.SanitizedContent ||
-          // for Incremental DOM
-          goog.isFunction(arg)) ?
-      String(arg).length > 0 :
-      !!arg;
+  if (arg instanceof goog.soy.data.SanitizedContent) {
+    return !!arg.getContent();
+  }
+  return !!arg;
 };
 
 
