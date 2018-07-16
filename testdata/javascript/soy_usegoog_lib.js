@@ -12843,9 +12843,9 @@ goog.format.IS_IE8_OR_ABOVE_ =
 
 /**
  * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
- * <wbr></wbr>, Opera needs the &shy; entity, though this will give a visible
- * hyphen at breaks.  IE8 uses a zero width space.
- * Other browsers just use <wbr>.
+ * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
+ * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
+ * use &lt;wbr&gt;.
  * @type {string}
  */
 goog.format.WORD_BREAK_HTML =
@@ -24974,8 +24974,8 @@ soy.$$equals = function(obj1, obj2) {
   // the same to be considered structurally equal. Beware, as this is a
   // very expensive function.
   if (goog.isFunction(valueOne) && goog.isFunction(valueTwo)) {
-    if ((/** @type {?} */ (valueOne)).type !==
-        (/** @type {?} */ (valueTwo)).type) {
+    if ((/** @type {?} */ (valueOne)).contentKind !==
+        (/** @type {?} */ (valueTwo)).contentKind) {
       return false;
     } else {
       return valueOne.toString() === valueTwo.toString();

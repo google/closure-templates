@@ -516,8 +516,8 @@ soy.$$equals = function(obj1, obj2) {
   // the same to be considered structurally equal. Beware, as this is a
   // very expensive function.
   if (goog.isFunction(valueOne) && goog.isFunction(valueTwo)) {
-    if ((/** @type {?} */ (valueOne)).type !==
-        (/** @type {?} */ (valueTwo)).type) {
+    if ((/** @type {?} */ (valueOne)).contentKind !==
+        (/** @type {?} */ (valueTwo)).contentKind) {
       return false;
     } else {
       return valueOne.toString() === valueTwo.toString();
