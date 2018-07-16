@@ -65,7 +65,7 @@ public abstract class SoyFileSetParser {
   @Nullable
   abstract SoyAstCache cache();
   /** Files to parse. Each must have a unique file name. */
-  abstract ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers();
+  public abstract ImmutableMap<String, SoyFileSupplier> soyFileSuppliers();
 
   abstract PassManager passManager();
 
@@ -84,7 +84,7 @@ public abstract class SoyFileSetParser {
     public abstract Builder setCache(SoyAstCache cache);
 
     public abstract Builder setSoyFileSuppliers(
-        ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers);
+        ImmutableMap<String, SoyFileSupplier> soyFileSuppliers);
 
     public abstract Builder setPassManager(PassManager passManager);
 

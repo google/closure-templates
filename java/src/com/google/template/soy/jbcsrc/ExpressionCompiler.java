@@ -35,6 +35,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -119,12 +120,12 @@ final class ExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
     private BasicExpressionCompiler(
-        TemplateParameterLookup parameters, TemplateVariableManager varManager) {
+        TemplateParameterLookup parameters,
+        TemplateVariableManager varManager,
+        ErrorReporter reporter) {
       this.compilerVisitor =
           new CompilerVisitor(
-              parameters,
-              varManager,
-              Suppliers.ofInstance(BasicDetacher.INSTANCE));
+              parameters, varManager, Suppliers.ofInstance(BasicDetacher.INSTANCE), reporter);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -155,8 +156,9 @@ final class ExpressionCompiler {
   static ExpressionCompiler create(
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
-      TemplateVariableManager varManager) {
-    return new ExpressionCompiler(detacherFactory, parameters, varManager);
+      TemplateVariableManager varManager,
+      ErrorReporter reporter) {
+    return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter);
   }
 
   /**
@@ -166,21 +168,26 @@ final class ExpressionCompiler {
    * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
   static BasicExpressionCompiler createBasicCompiler(
-      TemplateParameterLookup parameters, TemplateVariableManager varManager) {
-    return new BasicExpressionCompiler(parameters, varManager);
+      TemplateParameterLookup parameters,
+      TemplateVariableManager varManager,
+      ErrorReporter reporter) {
+    return new BasicExpressionCompiler(parameters, varManager, reporter);
   }
 
   private final TemplateParameterLookup parameters;
   private final TemplateVariableManager varManager;
   private final ExpressionDetacher.Factory detacherFactory;
+  private final ErrorReporter reporter;
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
-      TemplateVariableManager varManager) {
+      TemplateVariableManager varManager,
+      ErrorReporter reporter) {
     this.detacherFactory = detacherFactory;
     this.parameters = parameters;
     this.varManager = varManager;
+    this.reporter = reporter;
   }
 
   /**
@@ -223,7 +230,8 @@ final class ExpressionCompiler {
             throw new AssertionError();
           }
         };
-    return Optional.of(new CompilerVisitor(parameters, varManager, throwingSupplier).exec(node));
+    return Optional.of(
+        new CompilerVisitor(parameters, varManager, throwingSupplier, reporter).exec(node));
   }
 
   /**
@@ -244,7 +252,8 @@ final class ExpressionCompiler {
                   public ExpressionDetacher get() {
                     return detacherFactory.createExpressionDetacher(reattachPoint);
                   }
-                })));
+                }),
+            reporter));
   }
 
   private static final class CompilerVisitor
@@ -252,14 +261,17 @@ final class ExpressionCompiler {
     final Supplier<? extends ExpressionDetacher> detacher;
     final TemplateParameterLookup parameters;
     final TemplateVariableManager varManager;
+    final ErrorReporter reporter;
 
     CompilerVisitor(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
-        Supplier<? extends ExpressionDetacher> detacher) {
+        Supplier<? extends ExpressionDetacher> detacher,
+        ErrorReporter reporter) {
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
+      this.reporter = reporter;
     }
 
     @Override
@@ -930,7 +942,8 @@ final class ExpressionCompiler {
                   public Expression getPluginInstance(String pluginName) {
                     return parameters.getRenderContext().getPluginInstance(pluginName);
                   }
-                })
+                },
+                reporter)
             .computeForJavaSource(args);
       }
 

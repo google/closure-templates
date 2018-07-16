@@ -162,4 +162,14 @@ final class IntegrationTestSourceFunctions {
       return factory.callStaticMethod(null);
     }
   }
+
+  @SoyFunctionSignature(name = "multipleProblems", value = @Signature(returnType = "?"))
+  static final class MultipleProblems implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return factory.callStaticMethod(
+          IntegrationTestRuntime.RETURN_ITERABLE_AND_ACCEPT_INT, context.getBidiDir());
+    }
+  }
 }

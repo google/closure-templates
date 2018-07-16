@@ -19,10 +19,7 @@ package com.google.template.soy.plugin.java.restricted;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * A factory for instructing soy how to implement a {@link SoyJavaSourceFunction} or {@link
- * SoyJavaSourcePrintDirective} at runtime.
- */
+/** A factory for instructing soy how to implement a {@link SoyJavaSourceFunction}. */
 public abstract class JavaValueFactory {
 
   /** Instructs Soy to call the given static {@code method} with the given params at runtime. */

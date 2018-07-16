@@ -17,17 +17,20 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValue.ValueSoyType;
@@ -52,15 +55,21 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private final FunctionNode fnNode;
   private final JavaPluginContext context;
   private final PluginInstanceLookup pluginInstanceLookup;
+  private final JbcSrcValueErrorReporter reporter;
 
   JbcSrcValueFactory(
-      FunctionNode fnNode, JavaPluginContext context, PluginInstanceLookup pluginInstanceLookup) {
+      FunctionNode fnNode,
+      JavaPluginContext context,
+      PluginInstanceLookup pluginInstanceLookup,
+      ErrorReporter reporter) {
     this.fnNode = fnNode;
     this.context = context;
     this.pluginInstanceLookup = pluginInstanceLookup;
+    this.reporter = new JbcSrcValueErrorReporter(reporter, fnNode);
   }
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
+    ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     // Transform and copy to an ImmutableList to avoid exposing a mutable list to user code.
     List<JavaValue> javaArgs =
         ImmutableList.copyOf(
@@ -76,32 +85,44 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     JavaValue result = javaSrcFn.applyForJavaSource(this, javaArgs, context);
     if (result == null) {
-      throw PluginCodegenException.nullReturn(fnNode);
+      reporter.nullReturn();
+      result = JbcSrcJavaValue.ERROR_VALUE;
     }
-    return toSoyExpression((JbcSrcJavaValue) result);
+
+    Optional<SoyExpression> soyExpr = toSoyExpression((JbcSrcJavaValue) result);
+    if (reporter.errorsSince(checkpoint)) {
+      return SoyExpression.NULL_BOXED;
+    }
+
+    return soyExpr.get(); // We expect a value to exist in the optional if there were no errors.
   }
 
   @Override
   public JbcSrcJavaValue callStaticMethod(Method method, JavaValue... params) {
     if (method == null) {
-      throw PluginCodegenException.nullMethod(fnNode, "callStaticMethod");
+      reporter.nullMethod("callStaticMethod");
+      return JbcSrcJavaValue.ERROR_VALUE;
     }
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
     // This lets us more easily support users who want to compose multiple callXMethod calls, e.g:
     //   callXMethod(METHOD1, callXMethod(METHOD2, arg1), callXMethod(METHOD3, arg2));
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
+    Optional<Expression[]> adapted = adaptParams(method, params, "callStaticMethod");
+    if (!adapted.isPresent()) {
+      return JbcSrcJavaValue.ERROR_VALUE;
+    }
     return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(
-            MethodRef.create(method).invoke(adaptParams(method, params, "callStaticMethod"))),
-        method);
+        tryToWrapInSoyExpression(MethodRef.create(method).invoke(adapted.get())), method);
   }
 
   @Override
   public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
     if (method == null) {
-      throw PluginCodegenException.nullMethod(fnNode, "callInstanceMethod");
+      reporter.nullMethod("callInstanceMethod");
+      return JbcSrcJavaValue.ERROR_VALUE;
     }
+
     // We need to cast to the method's declaring class in order for the owner type
     // to be correct when calling the method, otherwise the JVM won't be able to dispatch
     // the method because the type will just be 'Object'.
@@ -110,11 +131,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             .getPluginInstance(fnNode.getFunctionName())
             .checkedCast(method.getDeclaringClass());
     // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
+    Optional<Expression[]> adapted = adaptParams(method, params, "callInstanceMethod");
+    if (!adapted.isPresent()) {
+      return JbcSrcJavaValue.ERROR_VALUE;
+    }
     return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(
-            runtime.invoke(
-                MethodRef.create(method), adaptParams(method, params, "callInstanceMethod"))),
-        method);
+        tryToWrapInSoyExpression(runtime.invoke(MethodRef.create(method), adapted.get())), method);
   }
 
   @Override
@@ -131,21 +153,26 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs));
   }
 
-  private Expression[] adaptParams(Method method, JavaValue[] userParams, String callerMethodName) {
+  private Optional<Expression[]> adaptParams(
+      Method method, JavaValue[] userParams, String callerMethodName) {
     if (userParams == null) {
-      throw PluginCodegenException.nullParamArray(fnNode, method, callerMethodName);
+      reporter.nullParamArray(method, callerMethodName);
+      return Optional.absent();
     }
 
     Class<?>[] methodParams = method.getParameterTypes();
     if (methodParams.length != userParams.length) {
-      throw PluginCodegenException.invalidParameterLength(fnNode, method, userParams);
+      reporter.invalidParameterLength(method, userParams);
+      return Optional.absent();
     }
 
     Expression[] params = new Expression[userParams.length];
     for (int i = 0; i < userParams.length; i++) {
       Class<?> methodParam = methodParams[i];
       if (userParams[i] == null) {
-        throw PluginCodegenException.nullParam(fnNode, method, i + 1, methodParam);
+        reporter.nullParam(method, i + 1, methodParam);
+        params[i] = stubExpression(methodParam);
+        continue;
       }
       Expression expr = ((JbcSrcJavaValue) userParams[i]).expr();
       // TODO(sameb): This could probably do with a whole lot more checking and user-friendly
@@ -168,13 +195,13 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       } else {
         if (!BytecodeUtils.isDefinitelyAssignableFrom(
             Type.getType(methodParam), expr.resultType())) {
-          throw PluginCodegenException.invalidParameterType(
-              fnNode, method, i + 1, methodParam, expr);
+          reporter.invalidParameterType(method, i + 1, methodParam, expr);
+          expr = stubExpression(methodParam);
         }
         params[i] = expr;
       }
     }
-    return params;
+    return Optional.of(params);
   }
 
   private Expression adaptParameter(
@@ -189,8 +216,6 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       // but the actual type of a boxed dict is SoyRecord, not SoyDict.... so oh well.)
       return actualParam.box().checkedCast(expectedParamType);
     }
-
-    // TODO(sameb): Deal with a lot more types.
 
     // Otherwise we want an unboxed param, so inspect a little more closely...
     switch (valueForKind(actualParam.soyType().getKind())) {
@@ -247,8 +272,21 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         // TODO(sameb): Figure this out.  Fail for now.
     }
 
-    throw PluginCodegenException.invalidParameterType(
-        fnNode, method, paramIdx + 1, expectedParamType, actualParam);
+    reporter.invalidParameterType(method, paramIdx + 1, expectedParamType, actualParam);
+    return stubExpression(expectedParamType);
+  }
+
+  /**
+   * Returns an expression stub (that points to a non-existing method) whose return type is the
+   * given class. Useful for scenarios where we're reporting an error and just need an Expression of
+   * the appropriate type to be able to continue.
+   */
+  private Expression stubExpression(Class<?> clazz) {
+    return MethodRef.createStaticMethod(
+            TypeInfo.create(
+                "if.you.see.this.please.report.a.bug.because.an.error.message.was.swallowed"),
+            new org.objectweb.asm.commons.Method("oops", Type.getType(clazz), new Type[0]))
+        .invoke();
   }
 
   /**
@@ -272,7 +310,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return expr;
   }
 
-  private SoyExpression toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
+  private Optional<SoyExpression> toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
+    // Don't bother doing anything if this is a stub value, we already recorded errors.
+    if (pluginReturnValue == JbcSrcJavaValue.ERROR_VALUE) {
+      return Optional.absent();
+    }
+
     SoyType expectedType = fnNode.getType();
     Expression expr = pluginReturnValue.expr();
     SoyExpression soyExpr = null;
@@ -289,8 +332,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN) {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
         } else {
-          throw PluginCodegenException.invalidReturnType(
-              fnNode, type, pluginReturnValue.methodInfo());
+          reporter.invalidReturnType(type, pluginReturnValue.methodInfo());
+          return Optional.absent();
         }
       } else if (SoyValue.class.isAssignableFrom(type)) {
         soyExpr =
@@ -299,17 +342,17 @@ final class JbcSrcValueFactory extends JavaValueFactory {
                 expr.checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
       } else {
         // TODO(sameb): Support more types, like map, proto, etc..
-        throw PluginCodegenException.invalidReturnType(
-            fnNode, type, pluginReturnValue.methodInfo());
+        reporter.invalidReturnType(type, pluginReturnValue.methodInfo());
+        return Optional.absent();
       }
     }
     if (!expectedType.isAssignableFrom(soyExpr.soyType())) {
-      throw PluginCodegenException.incompatibleReturnType(
-          fnNode, soyExpr.soyType(), pluginReturnValue.methodInfo());
+      reporter.incompatibleReturnType(soyExpr.soyType(), pluginReturnValue.methodInfo());
+      return Optional.absent();
     }
-    return soyExpr;
+    return Optional.of(soyExpr);
   }
-
+  
   static ValueSoyType valueForKind(SoyType.Kind kind) {
     switch (kind) {
       case BOOL:

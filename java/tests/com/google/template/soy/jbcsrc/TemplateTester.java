@@ -33,6 +33,7 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.CopyState;
@@ -243,14 +244,16 @@ public final class TemplateTester {
         builder.addSoyFunction(function);
       }
       builder.addSoySourceFunctions(soySourceFunctions);
-      ParseResult parseResult =
+      SoyFileSetParser parser =
           builder
               .typeRegistry(typeRegistry)
               .options(generalOptions)
               .errorReporter(ErrorReporter.exploding())
-              .parse();
+              .build();
+      ParseResult parseResult = parser.parse();
       ErrorReporter errors = ErrorReporter.createForTest();
-      BytecodeCompiler.compile(parseResult.registry(), /* developmentMode= */ false, errors);
+      BytecodeCompiler.compile(
+          parseResult.registry(), /* developmentMode= */ false, errors, parser.soyFileSuppliers());
       return assertThat(Lists.transform(errors.getErrors(), SoyError::message));
     }
 
@@ -337,7 +340,9 @@ public final class TemplateTester {
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         classData =
             new TemplateCompiler(
-                    compilerRegistry, compilerRegistry.getTemplateInfoByTemplateName(templateName))
+                    compilerRegistry,
+                    compilerRegistry.getTemplateInfoByTemplateName(templateName),
+                    ErrorReporter.exploding())
                 .compile();
         checkClasses(classData);
         CompiledTemplates compiledTemplates =
@@ -426,10 +431,9 @@ public final class TemplateTester {
 
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
+    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
     return BytecodeCompiler.compile(
-            SoyFileSetParserBuilder.forFileContents(file).parse().registry(),
-            false,
-            ErrorReporter.exploding())
+            parser.parse().registry(), false, ErrorReporter.exploding(), parser.soyFileSuppliers())
         .get();
   }
 }

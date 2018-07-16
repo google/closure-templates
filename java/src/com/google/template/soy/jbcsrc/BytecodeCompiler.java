@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,11 +57,6 @@ public final class BytecodeCompiler {
           "Unexpected error while compiling template: ''{0}''\n"
               + "Soy Stack:\n{1}\n"
               + "Compiler Stack:\n{2}",
-          StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind INVALID_PLUGIN_FAILURE =
-      SoyErrorKind.of(
-          "Invalid plugin implementation detected while compiling template: ''{0}''\n" + "{1}",
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_ERROR =
@@ -78,7 +74,10 @@ public final class BytecodeCompiler {
    *     have been reported to the error reporter.
    */
   public static Optional<CompiledTemplates> compile(
-      final TemplateRegistry registry, boolean developmentMode, ErrorReporter reporter) {
+      final TemplateRegistry registry,
+      boolean developmentMode,
+      ErrorReporter reporter,
+      Map<String, SoyFileSupplier> filePathsToSuppliers) {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     if (reporter.errorsSince(checkpoint)) {
@@ -89,7 +88,10 @@ public final class BytecodeCompiler {
       CompiledTemplates templates =
           new CompiledTemplates(
               compilerRegistry.getDelegateTemplateNames(),
-              new CompilingClassLoader(compilerRegistry));
+              new CompilingClassLoader(compilerRegistry, filePathsToSuppliers));
+      if (reporter.errorsSince(checkpoint)) {
+        return Optional.absent();
+      }
       // TODO(lukes): consider spawning a thread to load all the generated classes in the background
       return Optional.of(templates);
     }
@@ -232,7 +234,8 @@ public final class BytecodeCompiler {
         continue; // only generate classes for sources
       }
       try {
-        TemplateCompiler templateCompiler = new TemplateCompiler(registry, classInfo);
+        TemplateCompiler templateCompiler =
+            new TemplateCompiler(registry, classInfo, errorReporter);
         for (ClassData clazz : templateCompiler.compile()) {
           if (Flags.DEBUG) {
             clazz.checkClass();
@@ -247,8 +250,6 @@ public final class BytecodeCompiler {
             name,
             e.printSoyStack(),
             Throwables.getStackTraceAsString(e));
-      } catch (PluginCodegenException e) {
-        errorReporter.report(e.getOriginalLocation(), INVALID_PLUGIN_FAILURE, name, e.getMessage());
       } catch (Throwable t) {
         errorReporter.report(
             classInfo.node().getSourceLocation(),

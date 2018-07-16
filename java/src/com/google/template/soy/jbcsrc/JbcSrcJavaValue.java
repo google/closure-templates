@@ -20,20 +20,36 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.SoyType;
 import java.lang.reflect.Method;
 import javax.annotation.Nullable;
+import org.objectweb.asm.Type;
 
 /**
  * Adapts an Expression to a JavaValue. By having an adapter instead of letting Expression
  * implementing JavaValue, we avoid mixing the concerns of JavaValue w/ Expression. JavaValue
  * special-cases SoyExpression a lot, although needs to also work with Expression in a few places.
  * In addition, it can optionally capture the Method that the Expression is calling (for use with
- * adapting the Expression to a SoyExpression, and with user-friendly error messages).
+ * user-friendly error messages).
  */
 final class JbcSrcJavaValue implements JavaValue {
+
+  /**
+   * A stub value that exists for error scenarios. This intentionally points to a method that
+   * doesn't exist, so that if ever it leaks out, then compilation will fail.
+   */
+  static final JbcSrcJavaValue ERROR_VALUE =
+      new JbcSrcJavaValue(
+          MethodRef.createStaticMethod(
+                  TypeInfo.create(
+                      "if.you.see.this.please.report.a.bug.because.an.error.message.was.swallowed"),
+                  new org.objectweb.asm.commons.Method("oops", Type.BOOLEAN_TYPE, new Type[0]))
+              .invoke(),
+          null);
 
   /** Constructs a JbcSrcJavaValue based on the Expression. */
   static JbcSrcJavaValue of(Expression expr) {

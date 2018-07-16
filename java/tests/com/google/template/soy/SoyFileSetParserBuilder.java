@@ -256,6 +256,10 @@ public final class SoyFileSetParserBuilder {
    * {@link #errorReporter}.
    */
   public ParseResult parse() {
+    return build().parse();
+  }
+
+  public SoyFileSetParser build() {
     PassManager.Builder passManager =
         new PassManager.Builder()
             .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
@@ -284,7 +288,6 @@ public final class SoyFileSetParserBuilder {
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
         .setGeneralOptions(options)
-        .build()
-        .parse();
+        .build();
   }
 }

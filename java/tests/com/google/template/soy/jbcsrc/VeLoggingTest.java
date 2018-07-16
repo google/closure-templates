@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -254,7 +255,7 @@ public final class VeLoggingTest {
   private void renderTemplate(
       Map<String, ?> params, OutputAppendable output, String... templateBodyLines)
       throws IOException {
-    SoyFileSetNode soyTree =
+    SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n"
                     + "{template .foo}\n"
@@ -268,11 +269,13 @@ public final class VeLoggingTest {
             .setLoggingConfig(config)
             .addSoyFunction(new DepthFunction())
             .runAutoescaper(true)
-            .parse()
-            .fileSet();
+            .build();
+    SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
+        BytecodeCompiler.compile(
+                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            .get();
     RenderContext ctx =
         TemplateTester.getDefaultContext(templates).toBuilder().hasLogger(true).build();
     RenderResult result =

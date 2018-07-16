@@ -24,6 +24,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -272,14 +273,14 @@ public final class ProtoSupportTest {
             "    {$str}",
             "  {/if}",
             "{/template}");
+    SoyFileSetParser parser =
+        SoyFileSetParserBuilder.forFileContents(file).typeRegistry(types).build();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                SoyFileSetParserBuilder.forFileContents(file)
-                    .typeRegistry(types)
-                    .parse()
-                    .registry(),
+                parser.parse().registry(),
                 false,
-                ErrorReporter.exploding())
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers())
             .get();
     render(
         templates,

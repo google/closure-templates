@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Function;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -38,7 +39,8 @@ public final class JbcSrcJavaValues {
       JavaPluginContext context,
       Function<String, Expression> pluginInstanceFn,
       List<SoyExpression> args) {
-    return new JbcSrcValueFactory(fnNode, context, pluginInstanceFn::apply)
+    return new JbcSrcValueFactory(
+            fnNode, context, pluginInstanceFn::apply, ErrorReporter.exploding())
         .computeForJavaSource(args);
   }
 

@@ -16,6 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyCompilationException;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import java.util.Collections;
@@ -35,9 +40,12 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       Collections.synchronizedMap(new HashMap<String, ClassData>());
 
   private final CompiledTemplateRegistry registry;
+  private final Map<String, SoyFileSupplier> filePathsToSuppliers;
 
-  CompilingClassLoader(CompiledTemplateRegistry registry) {
+  CompilingClassLoader(
+      CompiledTemplateRegistry registry, Map<String, SoyFileSupplier> filePathsToSuppliers) {
     this.registry = registry;
+    this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
   @Override
@@ -61,13 +69,19 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       return null;
     }
     ClassData clazzToLoad = null;
-    for (ClassData clazz : new TemplateCompiler(registry, meta).compile()) {
+    ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
+    for (ClassData clazz : new TemplateCompiler(registry, meta, reporter).compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {
         clazzToLoad = clazz;
       } else {
         classesByName.put(className, clazz);
       }
+    }
+    if (reporter.hasErrors()) {
+      // if we are reporting errors we should report warnings at the same time.
+      Iterable<SoyError> errors = Iterables.concat(reporter.getErrors(), reporter.getWarnings());
+      throw new SoyCompilationException(errors);
     }
     return clazzToLoad;
   }

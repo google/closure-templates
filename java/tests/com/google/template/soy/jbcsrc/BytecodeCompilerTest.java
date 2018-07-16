@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -141,14 +142,16 @@ public class BytecodeCompilerTest {
                 "  {$boo}",
                 "{/template}",
                 "");
-    SoyFileSetNode soyTree =
+    SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
-            .parse()
-            .fileSet();
+            .build();
+    SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
+        BytecodeCompiler.compile(
+                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            .get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = Predicates.alwaysFalse();
 
@@ -186,14 +189,16 @@ public class BytecodeCompilerTest {
                 "{template .htmlNoTag}",
                 "  foo",
                 "{/template}");
-    SoyFileSetNode soyTree =
+    SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .addHtmlAttributesForDebugging(true)
-            .parse()
-            .fileSet();
+            .build();
+    SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
+        BytecodeCompiler.compile(
+                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            .get();
 
     // HTML templates
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.html");
@@ -923,15 +928,17 @@ public class BytecodeCompilerTest {
                 "  {delcall myApp.myDelegate/}",
                 "{/template}",
                 "");
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse().fileSet();
+    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContent1).build();
+    SoyFileSetNode soyTree = parser.parse().fileSet();
     // apply an escaping directive to the callsite, just like the autoescaper would
     CallDelegateNode cdn =
         SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
     cdn.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
+        BytecodeCompiler.compile(
+                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            .get();
     CompiledTemplate.Factory caller = templates.getTemplateFactory("ns.callerTemplate");
     try {
       renderWithContext(caller, getDefaultContext(templates));
@@ -1095,11 +1102,13 @@ public class BytecodeCompilerTest {
   }
 
   private CompiledTemplates compileFiles(String... soyFileContents) {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
+    SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContents).build();
+    SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
+        BytecodeCompiler.compile(
+                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            .get();
     return templates;
   }
 }

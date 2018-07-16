@@ -42,6 +42,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -172,18 +173,21 @@ final class LazyClosureCompiler {
   private final TemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   private final TemplateVariableManager parentVariables;
+  private final ErrorReporter reporter;
 
   LazyClosureCompiler(
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       TemplateParameterLookup parentVariableLookup,
       TemplateVariableManager parentVariables,
-      ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler) {
+      ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
+      ErrorReporter reporter) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
     this.parentVariables = parentVariables;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
+    this.reporter = reporter;
   }
 
   Expression compileLazyExpression(
@@ -317,7 +321,7 @@ final class LazyClosureCompiler {
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
-          ExpressionCompiler.createBasicCompiler(lookup, variableSet).compile(exprNode);
+          ExpressionCompiler.createBasicCompiler(lookup, variableSet, reporter).compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
       final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
@@ -374,7 +378,8 @@ final class LazyClosureCompiler {
               thisVar,
               AppendableExpression.forLocal(appendableVar),
               variableSet,
-              lookup);
+              lookup,
+              reporter);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();

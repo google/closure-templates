@@ -36,6 +36,10 @@ public final class IntegrationTestRuntime {
   static final Method ACCEPTS_INT =
       JavaValueFactory.createMethod(IntegrationTestRuntime.class, "acceptsInt", int.class);
 
+  static final Method RETURN_ITERABLE_AND_ACCEPT_INT =
+      JavaValueFactory.createMethod(
+          IntegrationTestRuntime.class, "returnIterableAndAcceptInt", int.class);
+
   public static final SoyValue method(SoyValue unused) {
     throw new IllegalStateException("shouldn't call this.");
   }
@@ -48,7 +52,11 @@ public final class IntegrationTestRuntime {
     throw new IllegalStateException("shouldn't call this.");
   }
 
-  public static Iterable<?> acceptsInt(int x) {
+  public static int acceptsInt(int x) {
+    throw new IllegalStateException("shouldn't call this.");
+  }
+
+  public static final Iterable<?> returnIterableAndAcceptInt(int x) {
     throw new IllegalStateException("shouldn't call this.");
   }
 }

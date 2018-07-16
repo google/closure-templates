@@ -167,7 +167,8 @@ public class ExpressionCompilerTest {
             }
           },
           new TemplateVariableManager(
-              JbcSrcNameGenerators.forFieldNames(), null, null, getRenderMethod()));
+              JbcSrcNameGenerators.forFieldNames(), null, null, getRenderMethod()),
+          ErrorReporter.exploding());
 
   private static Method getRenderMethod() {
     try {

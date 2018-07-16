@@ -856,7 +856,8 @@ public final class SoyFileSet {
             primitives.registry,
             // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
             cache != null,
-            errorReporter);
+            errorReporter,
+            soyFileSuppliers);
 
     throwIfErrorsPresent();
 

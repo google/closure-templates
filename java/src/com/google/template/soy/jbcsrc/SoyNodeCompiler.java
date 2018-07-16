@@ -42,6 +42,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -136,10 +137,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression thisVar,
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
-      TemplateParameterLookup parameterLookup) {
+      TemplateParameterLookup parameterLookup,
+      ErrorReporter reporter) {
     DetachState detachState = new DetachState(variables, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(detachState, parameterLookup, variables);
+        ExpressionCompiler.create(detachState, parameterLookup, variables, reporter);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
@@ -152,7 +154,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         expressionCompiler,
         soyValueProviderCompiler,
         new LazyClosureCompiler(
-            registry, innerClasses, parameterLookup, variables, soyValueProviderCompiler));
+            registry,
+            innerClasses,
+            parameterLookup,
+            variables,
+            soyValueProviderCompiler,
+            reporter));
   }
 
   private final Expression thisVar;
@@ -228,8 +235,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visit(SoyNode node) {
     try {
       return super.visit(node).withSourceLocation(node.getSourceLocation());
-    } catch (PluginCodegenException e) {
-      throw e; // Rethrow as-is: the exception came from a buggy plugin, not the compiler
     } catch (UnexpectedCompilerFailureException e) {
       e.addLocation(node);
       throw e;

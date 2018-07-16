@@ -172,7 +172,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /**
    * @param ijData The current injected data.
    * @param env The current environment.
-   * @param functionRuntimes The instances used for evaluating functions that call instance methods.
+   * @param pluginInstances The instances used for evaluating functions that call instance methods.
    */
   protected EvalVisitor(
       Environment env,
