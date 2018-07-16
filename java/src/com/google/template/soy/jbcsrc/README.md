@@ -44,7 +44,7 @@ directly from the parse tree. The Soy language is simple and all the basic
 language constructs map directly into Java constructs. For example, this
 template:
 
-~~~
+~~~soy
 {template .foo}
   {@param p : string}
   {@param p2 : string}
@@ -55,7 +55,7 @@ template:
 
 could be implemented by a Java function like:
 
-~~~
+~~~java
   void render(Appendable output, SoyRecord params) {
     params.getField("p").render(output);
     params.getField("p2").render(output);
@@ -86,7 +86,7 @@ There are two kinds of asynchrony we will wish to handle:
 Given these constraints, the above direct approach will not work. So instead we
 could generate something like this:
 
-~~~
+~~~java
 class Foo {
   int state = 0;
   StringData p;
@@ -167,7 +167,7 @@ bytecode directly. This comes with a number of pros and cons.
 To demonstrate the control flow issues mentioned above, consider the following
 example:
 
-~~~
+~~~soy
 {template .foo}
   {@param p1 : [f: bool, v: list<string>]}
   {if $p1.f}
@@ -184,7 +184,7 @@ To allow the renderer to suspend rendering after print statements or to
 implement detaching when handling `$s` we would need to implement something like
 this:
 
-~~~
+~~~java
 int index;
 int state;
 
@@ -237,7 +237,7 @@ that, we have decided not to generate Java sources and instead to generate
 bytecode directly. For example, if Java had a `goto` keyword we could rewrite
 the above as:
 
-~~~
+~~~java
 int index;
 int state = 0;
 public void render(SoyRecord params, Appendable output) throws IOException {
@@ -400,7 +400,7 @@ Soy tracks a fair bit of type information in order to flag issues at parse time
 as well as to generate type casts in the JS implementation. However, the Java
 runtime hasn’t been able to take advantage of any benefits from specialization
 due these types. For example, the expression `$a + $b` has somewhat complex
-semantics since Soy has essentially the javascript rules for the `+` operator.
+semantics since Soy has essentially the JavaScript rules for the `+` operator.
 So in order to execute the operator we need to know if either of the parameters
 is a string or a number and then decide to concat or sum. The current Tofu
 implementation is
@@ -448,7 +448,7 @@ There are two kinds of data access:
 For example, a VarRef `$foo` referring to a template param may be implemented
 as:
 
-~~~
+~~~java
 SoyValue fooValue = fooField;
 if (fooValue == null) {
   // first access
@@ -482,7 +482,7 @@ Soy commands and discuss exactly how they would be implemented.
 
 Trivial compilation. Simply translates to:
 
-~~~
+~~~java
 case N:
 output.append(RAW_TEXT);
 state = N + 1;
@@ -508,7 +508,7 @@ Issues:
 
 The general form of a print command is
 
-~~~
+~~~soy
 {print <expr>|<directive1>|<directive2>...}
 ~~~
 
@@ -518,7 +518,7 @@ To evaluate this statement we will first use the expression compiler to generate
 code that produces a SoyValue object, then we will invoke code that looks like
 this:
 
-~~~
+~~~java
 case N:
 expr = …;
 expr = context.getPrintDirective("directive1").apply(expr);
@@ -546,7 +546,7 @@ to be on the hot path, but if we thought it was important we could optimize this
 (via the same technique, or possibly by using integer keys and array lookups
 instead of hash lookups, which may be simpler/smaller/faster).
 
-### LET\_VALUE\_NODE,LET\_CONTENT\_NODE
+### LET\_VALUE\_NODE, LET\_CONTENT\_NODE
 
 `{let ..}` statements are more complex than you might think! Due to our desire
 for laziness we cannot simply evaluate and stash in a field. Instead we generate
@@ -556,7 +556,7 @@ a class for each `{let}` command. For let value nodes, we will generate a
 `ns.owner` declares this let variable `{let $foo : $a + 1 /}`, will generate the
 following code:
 
-~~~
+~~~java
 private static final class let$foo_1 extends DetachableSoyValueProvider {
   private final ns$$owner owner;
   private int state;
@@ -610,7 +610,7 @@ Note: this analysis is based on the assumption that switch case statements may
 be arbitrary expressions. The AST and current implementation imply that they
 are.
 
-TODO(lukes): change soy semantics to ensure that switch case expressions are
+TODO(lukes): change Soy semantics to ensure that switch case expressions are
 constants, then the implementation could resolve to something like a Java
 `switch()` statement, which would be preferable.
 
@@ -642,7 +642,7 @@ log statements are generally only used for debugging.
 No op implementation. We can generate a label with a line number here, but that
 is about it.
 
-### CALL\_PARAM\_VALUE\_NODE,CALL\_PARAM\_CONTENT\_NODE
+### CALL\_PARAM\_VALUE\_NODE, CALL\_PARAM\_CONTENT\_NODE
 
 See the section on [`{let}` commands](#let_value_node_let_content_node),
 `{param}` commands will use an identical strategy for defining the values. Each
@@ -653,7 +653,7 @@ N.B. None of the `{param}` values or the SoyRecord holding them for a call will
 be stored as fields, see the section on [template
 calling](#call_basic_nodecall_delegate_node) for a detailed example.
 
-### CALL\_BASIC\_NODE,CALL\_DELEGATE\_NODE
+### CALL\_BASIC\_NODE, CALL\_DELEGATE\_NODE
 
 There are several styles of calls. For now I will demonstrate a normal call with
 no data param. e.g.
@@ -662,7 +662,7 @@ no data param. e.g.
 
 This will generate code that looks like:
 
-~~~
+~~~java
 private ns$$foo fooTemplate;
   case N:
     SoyRecord record = new ParamStore();
@@ -691,7 +691,7 @@ Optimizations and future work:
     allocations and map operations by just generating a specialized constructor
     in the callee.
 
-### MSG\_NODE,MSG\_FALLBACK\_GROUP\_NODE
+### MSG\_NODE, MSG\_FALLBACK\_GROUP\_NODE
 
 Soy has direct support for translations. In `jssrc`, this is mostly delegated to
 `goog.getMessage`, but in SoySauce we don't have such a good option, instead we
@@ -715,7 +715,7 @@ Future Optimizations:
     avoid boxing the plurals variable and having to pass the gender parameter in
     the placeholder map.
 
-## Compiling soy types
+## Compiling Soy types
 
 The Soy type system mostly follows the JS type system (as understood by the JS
 compiler). Notably, it doesn’t really fit into the Java type system. The current
@@ -732,7 +732,7 @@ operator. This will cause a variety of problems for the compiler:
     static `SoyValue` type.
 *   Soy has both `null` values and a `null` type.
 *   The Soy type system is pluggable (notably for protos).
-*   The soy type system is not completely accurate (e.g. nullability is not
+*   The Soy type system is not completely accurate (e.g. nullability is not
     trustable).
 
 Due to these issues we take a conservative approach to how we make use of the
@@ -741,14 +741,14 @@ type system. The key principles we will use are:
 *   If the user declared it, we should enforce it (with `checkcast` operations).
     This way type errors will get caught early and often.
 *   Nullability information from the type system cannot be relied on. For
-    example, if `map` contains integer values, then `$map['key]'` will be
+    example, if `map` contains integer values, then `$map['key']` will be
     assigned the type `int` by the type system, but `int|null` is probably more
     accurate since we don't know whether or not the key exists. So in general we
     need to be careful when dealing with possibly null expressions. To deal with
     this we have our own concept of nullability (`Expression.isNullable()`).
-*   Type information from the compiler is best effort only. The soy type system
+*   Type information from the compiler is best effort only. The Soy type system
     was designed mostly for adding some compile time checks and generating
-    accessors in the jssrc backend. Using it to generate code for soy
+    accessors in the jssrc backend. Using it to generate code for Soy
     expressions is quite difficult. (This is really just a generalization of the
     above point.)
 
@@ -767,7 +767,7 @@ perform basic logic. The most obvious ones are:
     libraries that are shared between jbcsrc and tofu.
 
 There is a long tail of additional libraries that are needed that are scattered
-across soy packages. In the long run we should seek to consolidate this kind of
+across Soy packages. In the long run we should seek to consolidate this kind of
 runtime support into a smaller set of packages and then eventually release a
 separate maven artifact to encapsulate them. In this way servers can avoid
 depending on the compiler at runtime.
@@ -810,12 +810,12 @@ incompatibilities here:
         list<string>}` Tofu will assert that the value is actually a list.
         SoySauce will do that, but it will also assert that `$foos[0]` is a
         string by checking it on access (this is the same strategy that java
-        uses for generics)..
+        uses for generics).
 
     *   Tofu fails to type check params which are statically typed to `?`, this
         is a known bug.
         SoySauce does not have this bug so user templates relying on it will
-        have to be fixed..
+        have to be fixed.
 
 *   SoySauce is stricter about dereferencing `null` objects. For example, given
     the expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing
@@ -824,12 +824,12 @@ incompatibilities here:
     instead it only causes an error if you perform certain operations with the
     result of the expression (calling `isNonnull` and simple comparisons the
     only thing you can do). An appropriate fix would be to rewrite it as
-    `isNonnull($foo.bar?.baz)`..
+    `isNonnull($foo.bar?.baz)`.
 
 *   SoySauce interprets 'required' template parameters slightly differently than
     Tofu. Imagine this template:
 
-    ```
+    ```soy
     {template .foo}
       {@param p : string}
       {$p}
@@ -845,6 +845,6 @@ incompatibilities here:
 
     In SoySauce you always get `null`. We chose this option because it is more
     internally consistent (soy->soy and java->soy calls are treated
-    equivalently) and it is more consistent with the behavior of the Javascript
+    equivalently) and it is more consistent with the behavior of the JavaScript
     Soy backend.
 
