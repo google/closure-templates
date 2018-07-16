@@ -813,9 +813,9 @@ public final class SoyFileSet {
    *
    * <p>This is useful for implementing 'edit refresh' workflows. Most production usecases should
    * use the command line interface to 'ahead of time' compile templates to jar files and then use
-   * {@code PrecompiledSoyModule} to get access to a {@link SoySauce} object without invoking the
-   * compiler. This will allow applications to avoid invoking the soy compiler at runtime which can
-   * be relatively slow.
+   * {@code PrecompiledSoyModule} or {@code SoySauceBuilder} to get access to a {@link SoySauce}
+   * object without invoking the compiler. This will allow applications to avoid invoking the soy
+   * compiler at runtime which can be relatively slow.
    *
    * @return A set of compiled templates
    * @throws SoyCompilationException If compilation fails.

@@ -23,8 +23,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -55,18 +53,12 @@ public final class PrecompiledSoyModule extends AbstractModule {
       @Deltemplates Optional<ImmutableSet<String>> allDeltemplates,
       ImmutableMap<String, ? extends SoyFunction> pluginFunctions,
       ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives) {
-    return new SoySauceImpl(
-        new CompiledTemplates(allDeltemplates.or(ImmutableSet.<String>of())),
-        scopedData.enterable(),
-        // We only need user functions, no internal ones are needed at runtime
-        // (because they all implement jbcsrc to generate the right bytecode)
-        pluginFunctions,
-        // ... but we do need internal directives, because those are looked up at runtime still
-        // in order to handle escaping logging function invocations.
-        ImmutableMap.<String, SoyPrintDirective>builder()
-            .putAll(InternalPlugins.internalDirectiveMap(scopedData))
-            .putAll(pluginDirectives)
-            .build());
+    return new SoySauceBuilder()
+        .withDelTemplates(allDeltemplates.or(ImmutableSet.<String>of()))
+        .withScope(scopedData)
+        .withFunctions(pluginFunctions)
+        .withDirectives(pluginDirectives)
+        .build();
   }
 
   @Override
