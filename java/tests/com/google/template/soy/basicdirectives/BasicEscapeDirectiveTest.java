@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** @author Mike Samuel */
 @RunWith(JUnit4.class)
 public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
