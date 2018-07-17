@@ -41,6 +41,7 @@ public final class MsgHtmlTagNodeTest {
     assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<b>").genSamenessKey());
     assertThat(mhtn.genSamenessKey()).isNotEqualTo(parseMsgHtmlTagNode("</b>").genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<b>");
+    assertThat(mhtn.getUserSuppliedPhExample()).isEqualTo("<b>");
   }
 
   @Test
@@ -49,6 +50,7 @@ public final class MsgHtmlTagNodeTest {
     assertThat(mhtn.genBasePhName()).isEqualTo("BREAK");
     assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<br/>");
+    assertThat(mhtn.getUserSuppliedPhExample()).isEqualTo("<br>");
   }
 
   @Test
@@ -56,6 +58,7 @@ public final class MsgHtmlTagNodeTest {
     MsgHtmlTagNode mhtn =
         parseMsgHtmlTagNode("<div class=\"{$cssClass}\">", "{@param cssClass: string}");
     assertThat(mhtn.genBasePhName()).isEqualTo("START_DIV");
+    assertThat(mhtn.getUserSuppliedPhExample()).isEqualTo("<div>");
     // not equal to an identical tag due to the print node
     assertThat(mhtn.genSamenessKey())
         .isNotEqualTo(

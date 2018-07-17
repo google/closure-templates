@@ -3,7 +3,7 @@
   <file original="SoyMsgBundle" datatype="x-soy-msg-bundle" xml:space="preserve" source-language="en">
     <body>
       <trans-unit id="2764913337766789440" datatype="html">
-        <source>Moose <x id="START_ITALIC"/>also<x id="END_ITALIC"/> says <x id="XXX"/>.</source>
+        <source>Moose <x id="START_ITALIC" example="&lt;i&gt;"/>also<x id="END_ITALIC" example="&lt;/i&gt;"/> says <x id="XXX"/>.</source>
         <note priority="1" from="description">Tells what a moose says.</note>
       </trans-unit>
       <trans-unit id="948230478248061386" datatype="html">
