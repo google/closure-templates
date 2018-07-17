@@ -279,11 +279,10 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return userSuppliedPlaceholderName;
   }
 
+  @Nullable
   @Override
   public String getUserSuppliedPhExample() {
-    return userSuppliedPlaceholderExample != null
-        ? userSuppliedPlaceholderExample
-        : "<" + lcTagName + ">";
+    return userSuppliedPlaceholderExample;
   }
 
   private static final CharMatcher INVALID_PLACEHOLDER_CHARS =
