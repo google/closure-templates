@@ -44,7 +44,7 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
           "No CSS package defined for package-relative class name ''{0}''. "
               + "CSS package prefixes are set via the ''cssbase'' attribute on the template, a "
               + "''cssbase'' attribute on the namespace, or the first ''requirecss'' package on "
-              + "the namesapce.{1}.");
+              + "the namespace.{1}.");
 
   private final ErrorReporter errorReporter;
 
