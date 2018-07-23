@@ -17,7 +17,9 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
@@ -225,10 +227,11 @@ public final class TemplateTester {
       compile();
       try {
         factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
-        failWithRawMessage(
-            String.format(
-                "Expected %s to fail to render with a %s, but it rendered '%s'",
-                actual(), expected, ""));
+        failWithoutActual(
+            simpleFact(
+                String.format(
+                    "Expected %s to fail to render with a %s, but it rendered '%s'",
+                    actual(), expected, "")));
       } catch (Throwable t) {
         if (!expected.isInstance(t)) {
           failWithBadResults("failsToRenderWith", expected, "failed with", t);
@@ -381,7 +384,7 @@ public final class TemplateTester {
       }
 
       void doFail(String format, Object... args) {
-        failWithRawMessage(format, args);
+        failWithoutActual(simpleFact(lenientFormat(format, args)));
       }
     }
   }

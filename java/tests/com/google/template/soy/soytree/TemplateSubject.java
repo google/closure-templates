@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Strings.lenientFormat;
+import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Preconditions;
@@ -56,9 +58,11 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     ErrorReporter errorReporter = doParse();
     SoyError report = getFirstReport(error, errorReporter);
     if (report == null) {
-      failWithRawMessage(
-          "%s should have failed to parse with <%s>, instead had errors: %s",
-          actualAsString(), error, errorReporter.getErrors());
+      failWithoutActual(
+          simpleFact(
+              lenientFormat(
+                  "%s should have failed to parse with <%s>, instead had errors: %s",
+                  actualAsString(), error, errorReporter.getErrors())));
     }
     actualSourceLocation = report.location();
     return this;
@@ -68,9 +72,11 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     ErrorReporter errorReporter = doParse();
     SoyError report = getFirstReport(message, errorReporter);
     if (report == null) {
-      failWithRawMessage(
-          "%s should have failed to parse with <%s>, instead had errors: %s",
-          actualAsString(), message, errorReporter.getErrors());
+      failWithoutActual(
+          simpleFact(
+              lenientFormat(
+                  "%s should have failed to parse with <%s>, instead had errors: %s",
+                  actualAsString(), message, errorReporter.getErrors())));
     }
     actualSourceLocation = report.location();
     return this;
@@ -80,13 +86,14 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     expectedLine += 2; // Compensate for the extra lines of template wrapper
     if (expectedLine != actualSourceLocation.getBeginLine()
         || expectedColumn != actualSourceLocation.getBeginColumn()) {
-      failWithRawMessage(
-          String.format(
-              "expected error to point to %d:%d, but it actually points to %d:%d",
-              expectedLine,
-              expectedColumn,
-              actualSourceLocation.getBeginLine(),
-              actualSourceLocation.getBeginColumn()));
+      failWithoutActual(
+          simpleFact(
+              String.format(
+                  "expected error to point to %d:%d, but it actually points to %d:%d",
+                  expectedLine,
+                  expectedColumn,
+                  actualSourceLocation.getBeginLine(),
+                  actualSourceLocation.getBeginColumn())));
     }
   }
 

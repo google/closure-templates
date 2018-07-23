@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.base.Strings.lenientFormat;
+import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
@@ -708,10 +710,16 @@ public class SoyTypesTest {
       }
       // make sure that assignability is compatible with equality.
       if (!leftType.isAssignableFrom(rightType)) {
-        failWithRawMessage("types are equal, but %s is not assignable from %s", actual(), other);
+        failWithoutActual(
+            simpleFact(
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s", actual(), other)));
       }
       if (!rightType.isAssignableFrom(leftType)) {
-        failWithRawMessage("types are equal, but %s is not assignable from %s", other, actual());
+        failWithoutActual(
+            simpleFact(
+                lenientFormat(
+                    "types are equal, but %s is not assignable from %s", other, actual())));
       }
     }
 
@@ -729,8 +737,10 @@ public class SoyTypesTest {
       }
       // make sure that assignability is compatible with equality.
       if (leftType.isAssignableFrom(rightType) && rightType.isAssignableFrom(leftType)) {
-        failWithRawMessage(
-            "types are not equal, but %s and %s are mutally assignable", actual(), other);
+        failWithoutActual(
+            simpleFact(
+                lenientFormat(
+                    "types are not equal, but %s and %s are mutally assignable", actual(), other)));
       }
     }
 
