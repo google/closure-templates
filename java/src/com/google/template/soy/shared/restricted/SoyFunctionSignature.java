@@ -25,7 +25,8 @@ import java.lang.annotation.Target;
  * Annotation that contains a list of {@code Signature}. Soy functions/plugins can use this
  * annotation to get additional type check for the arguments and return types.
  *
- * <p>TODO(b/71386491): Add some examples for external usages.
+ * <p>See {@link com.google.template.soy.basicfunctions.FloatFunction} and other functions in that
+ * package for example usages.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

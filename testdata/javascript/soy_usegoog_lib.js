@@ -7843,21 +7843,6 @@ goog.string.editDistance = function(a, b) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
- * should not be used outside of goog.labs.userAgent.*.
- *
- * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- * @visibility {//javascript/closure/dom:__subpackages__}
- * @visibility {//javascript/closure/style:__pkg__}
- * @visibility {//javascript/closure/testing:__pkg__}
- * @visibility {//javascript/closure/useragent:__subpackages__}
- * @visibility {//testing/puppet/modules:__pkg__}
- * @visibility {:util_legacy_users}
- *
- * @author nnaze@google.com (Nathan Naze)
- */
 
 goog.provide('goog.labs.userAgent.util');
 
@@ -15644,6 +15629,36 @@ goog.html.SafeUrl.fromTelUrl = function(telUrl) {
   }
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
       telUrl);
+};
+
+
+/**
+ * Matches a sip/sips URL. We only allow urls that consist of an email address.
+ * The characters '?' and '#' are not allowed in the local part of the email
+ * address.
+ * @const
+ * @private
+ */
+goog.html.SIP_URL_PATTERN_ = new RegExp(
+    '^sip[s]?:[+a-z0-9_.!$%&\'*\\/=^`{|}~-]+@([a-z0-9-]+\\.)+[a-z0-9]{2,63}$',
+    'i');
+
+
+/**
+ * Creates a SafeUrl wrapping a sip: URL. We only allow urls that consist of an
+ * email address. The characters '?' and '#' are not allowed in the local part
+ * of the email address.
+ *
+ * @param {string} sipUrl A sip URL.
+ * @return {!goog.html.SafeUrl} A matching safe URL, or {@link INNOCUOUS_STRING}
+ *     wrapped as a SafeUrl if it does not pass.
+ */
+goog.html.SafeUrl.fromSipUrl = function(sipUrl) {
+  if (!goog.html.SIP_URL_PATTERN_.test(decodeURIComponent(sipUrl))) {
+    sipUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
+  }
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
+      sipUrl);
 };
 
 
