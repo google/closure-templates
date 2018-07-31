@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -53,7 +55,10 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -119,14 +124,17 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private final JavaPluginContext context;
   private final PluginInstanceLookup pluginInstanceLookup;
   private final JbcSrcValueErrorReporter reporter;
+  private final SoyTypeRegistry registry;
 
   JbcSrcValueFactory(
       FunctionNode fnNode,
       final JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      SoyTypeRegistry registry) {
     this.fnNode = fnNode;
     this.pluginInstanceLookup = pluginInstanceLookup;
+    this.registry = registry;
     this.reporter = new JbcSrcValueErrorReporter(errorReporter, fnNode);
     this.context =
         new JavaPluginContext() {
@@ -307,6 +315,18 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expectedParamType == double.class) {
       return actualParam.coerceToDouble();
     }
+    // For protos, we need to unbox as Message & then cast.
+    if (Message.class.isAssignableFrom(expectedParamType) && expectedParamType != Message.class) {
+      return actualParam.unboxAs(Message.class).checkedCast(expectedParamType);
+    }
+    // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
+    // This is because Soy internally stores enums as ints. We know this is safe because we
+    // already validated that the enum type matches the signature.
+    if (expectedParamType.isEnum()
+        && ProtocolMessageEnum.class.isAssignableFrom(expectedParamType)) {
+      return MethodRef.create(expectedParamType, "forNumber", int.class)
+          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAs(long.class), Type.INT_TYPE));
+    }
 
     return actualParam.unboxAs(expectedParamType);
   }
@@ -350,9 +370,13 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       case NULL:
         return NULL_TYPES.contains(clazz);
       case PROTO:
-        return PROTO_TYPES.contains(clazz);
+        return PROTO_TYPES.contains(clazz)
+            || matchesProtoDescriptor(Message.class, clazz, ((SoyProtoType) type).getDescriptor());
       case PROTO_ENUM:
-        return PROTO_ENUM_TYPES.contains(clazz);
+        return PROTO_ENUM_TYPES.contains(clazz)
+            || (clazz.isEnum()
+                && matchesProtoDescriptor(
+                    ProtocolMessageEnum.class, clazz, ((SoyProtoEnumType) type).getDescriptor()));
       case UNION:
         // If this is a union, make sure the type is valid for every member.
         // If the type isn't valid for any member, then there's no guarantee this will work
@@ -368,6 +392,25 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     }
 
     throw new AssertionError("above switch is exhaustive");
+  }
+
+  private boolean matchesProtoDescriptor(
+      Class<?> expectedSupertype, Class<?> actualParamClass, GenericDescriptor expectedDescriptor) {
+    if (!expectedSupertype.isAssignableFrom(actualParamClass)) {
+      return false;
+    }
+    return nameFromDescriptor(actualParamClass).or("").equals(expectedDescriptor.getFullName());
+  }
+
+  private static Optional<String> nameFromDescriptor(Class<?> protoType) {
+    GenericDescriptor actualDescriptor;
+    try {
+      actualDescriptor =
+          (GenericDescriptor) protoType.getDeclaredMethod("getDescriptor").invoke(null);
+    } catch (ReflectiveOperationException roe) {
+      return Optional.absent();
+    }
+    return Optional.of(actualDescriptor.getFullName());
   }
 
   /**
@@ -432,9 +475,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expr instanceof SoyExpression) {
       soyExpr = (SoyExpression) expr;
     } else {
-      // All expressions are guaranteed to be on the classpath because they're
-      // from an Expression wrapped around a Method.
-      Class<?> type = BytecodeUtils.classFromAsmType(expr.resultType());
+      Class<?> type;
+      // Preferentially try to get the type from the method of Expr, since classFromAsmType
+      // uses BytecodeUtils' classloader, which may not include the return value's type.
+      Method method = pluginReturnValue.methodInfo();
+      if (method != null) {
+        type = method.getReturnType();
+      } else {
+        type = BytecodeUtils.classFromAsmType(expr.resultType());
+      }
       if (List.class.isAssignableFrom(type)) {
         if (expectedType instanceof ListType) {
           soyExpr = SoyExpression.forList((ListType) expectedType, expr);
@@ -442,24 +491,92 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             || expectedType.getKind() == SoyType.Kind.ANY) {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
         } else {
-          reporter.invalidReturnType(type, pluginReturnValue.methodInfo());
+          reporter.invalidReturnType(type, method);
           return Optional.absent();
         }
       } else if (SoyValue.class.isAssignableFrom(type)) {
+        // TODO(sameb): This could validate that the boxed soy type is valid for the return type
+        // at compile time too.
         soyExpr =
             SoyExpression.forSoyValue(
                 expectedType,
                 expr.checkedCast(SoyRuntimeType.getBoxedType(expectedType).runtimeType()));
+      } else if (Message.class.isAssignableFrom(type)) {
+        Optional<SoyType> returnType = soyTypeForProtoOrEnum(type, method);
+        if (!returnType.isPresent()) {
+          return Optional.absent(); // error already reported
+        }
+        soyExpr =
+            SoyExpression.forProto(SoyRuntimeType.getUnboxedType(returnType.get()).get(), expr);
+      } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
+        Optional<SoyType> returnType = soyTypeForProtoOrEnum(type, method);
+        if (!returnType.isPresent()) {
+          return Optional.absent(); // error already reported
+        }
+        // jbcsrc stores proto enums as a SoyValue whose type is a SoyProtoEnumType,
+        // and whose expression is a boxed soy int (e.g, IntegerData).
+        // We need to get the # out of the enum, cast to a long, box & then wrap.
+        // TODO(lukes): SoyExpression should have a way to track type information with an unboxed
+        // int that is actually a proto enum.  Like we do with SanitizedContents
+        soyExpr =
+            SoyExpression.forSoyValue(
+                returnType.get(),
+                SoyExpression.forInt(
+                        BytecodeUtils.numericConversion(
+                            MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE))
+                    .box());
       } else {
-        // TODO(sameb): Support more types, like map, proto, etc..
-        reporter.invalidReturnType(type, pluginReturnValue.methodInfo());
+        reporter.invalidReturnType(type, method);
         return Optional.absent();
       }
     }
-    if (!expectedType.isAssignableFrom(soyExpr.soyType())) {
+
+    // We special-case proto enums when the return expression is an INT, to allow someone to return
+    // an 'int' representing the enum.
+    boolean isPossibleProtoEnum =
+        soyExpr.soyType().getKind() == SoyType.Kind.INT
+            && isOrContains(expectedType, SoyType.Kind.PROTO_ENUM);
+    if (!isPossibleProtoEnum && !expectedType.isAssignableFrom(soyExpr.soyType())) {
       reporter.incompatibleReturnType(soyExpr.soyType(), pluginReturnValue.methodInfo());
       return Optional.absent();
     }
     return Optional.of(soyExpr);
+  }
+
+  /**
+   * Attempts to discover the SoyType for a proto or proto enum, reporting an error if unable to.
+   */
+  private Optional<SoyType> soyTypeForProtoOrEnum(Class<?> type, Method method) {
+    // Message isn't supported because we can't get a descriptor from it.
+    if (type == Message.class) {
+      reporter.invalidReturnType(Message.class, method);
+      return Optional.absent();
+    }
+    Optional<String> fullName = nameFromDescriptor(type);
+    if (!fullName.isPresent()) {
+      reporter.incompatibleReturnType(type, method);
+      return Optional.absent();
+    }
+    SoyType returnType = registry.getType(fullName.get());
+    if (returnType == null) {
+      reporter.incompatibleReturnType(type, method);
+      return Optional.absent();
+    }
+    return Optional.of(returnType);
+  }
+
+  /** Returns true if the type is the given kind or contains the given kind. */
+  private boolean isOrContains(SoyType type, SoyType.Kind kind) {
+    if (type.getKind() == kind) {
+      return true;
+    }
+    if (type.getKind() == SoyType.Kind.UNION) {
+      for (SoyType member : ((UnionType) type).getMembers()) {
+        if (member.getKind() == kind) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

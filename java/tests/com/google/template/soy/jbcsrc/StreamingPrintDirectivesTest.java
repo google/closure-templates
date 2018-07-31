@@ -334,7 +334,11 @@ public final class StreamingPrintDirectivesTest {
             .runAutoescaper(true)
             .build();
     return BytecodeCompiler.compile(
-            parser.parse().registry(), false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            parser.parse().registry(),
+            false,
+            ErrorReporter.exploding(),
+            parser.soyFileSuppliers(),
+            parser.typeRegistry())
         .get();
   }
 

@@ -255,17 +255,17 @@ public final class VeLoggingTest {
   private void renderTemplate(
       Map<String, ?> params, OutputAppendable output, String... templateBodyLines)
       throws IOException {
+    SoyTypeRegistry typeRegistry =
+        new SoyTypeRegistry.Builder()
+            .addDescriptors(ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
+            .build();
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n"
                     + "{template .foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
                     + "\n{/template}")
-            .typeRegistry(
-                new SoyTypeRegistry.Builder()
-                    .addDescriptors(
-                        ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
-                    .build())
+            .typeRegistry(typeRegistry)
             .setLoggingConfig(config)
             .addSoyFunction(new DepthFunction())
             .runAutoescaper(true)
@@ -274,7 +274,11 @@ public final class VeLoggingTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+                templateRegistry,
+                false,
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers(),
+                typeRegistry)
             .get();
     RenderContext ctx =
         TemplateTester.getDefaultContext(templates).toBuilder().hasLogger(true).build();

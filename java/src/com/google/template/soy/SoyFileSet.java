@@ -841,7 +841,7 @@ public final class SoyFileSet {
     resetErrorReporter();
     disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
-    BytecodeCompiler.compileToJar(primitives.registry, errorReporter, jarTarget);
+    BytecodeCompiler.compileToJar(primitives.registry, errorReporter, typeRegistry, jarTarget);
     if (srcJarTarget.isPresent()) {
       BytecodeCompiler.writeSrcJar(primitives.registry, soyFileSuppliers, srcJarTarget.get());
     }
@@ -857,7 +857,8 @@ public final class SoyFileSet {
             // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
             cache != null,
             errorReporter,
-            soyFileSuppliers);
+            soyFileSuppliers,
+            typeRegistry);
 
     throwIfErrorsPresent();
 

@@ -71,7 +71,7 @@ public abstract class SoyFileSetParser {
 
   abstract ErrorReporter errorReporter();
 
-  abstract SoyTypeRegistry typeRegistry();
+  public abstract SoyTypeRegistry typeRegistry();
 
   abstract PluginResolver pluginResolver();
 

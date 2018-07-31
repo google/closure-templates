@@ -68,6 +68,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -94,12 +95,14 @@ final class TemplateCompiler {
   private final CompiledTemplateMetadata template;
   private final InnerClasses innerClasses;
   private final ErrorReporter reporter;
+  private final SoyTypeRegistry soyTypeRegistry;
   private SoyClassWriter writer;
 
   TemplateCompiler(
       CompiledTemplateRegistry registry,
       CompiledTemplateMetadata template,
-      ErrorReporter reporter) {
+      ErrorReporter reporter,
+      SoyTypeRegistry soyTypeRegistry) {
     this.registry = registry;
     this.template = template;
     TypeInfo ownerType = template.typeInfo();
@@ -118,6 +121,7 @@ final class TemplateCompiler {
     }
     this.paramFields = builder.build();
     this.reporter = reporter;
+    this.soyTypeRegistry = soyTypeRegistry;
   }
 
   /**
@@ -268,7 +272,8 @@ final class TemplateCompiler {
                 AppendableExpression.forLocal(appendableVar),
                 variableSet,
                 variables,
-                reporter)
+                reporter,
+                soyTypeRegistry)
             .compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {

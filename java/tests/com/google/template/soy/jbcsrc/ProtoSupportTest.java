@@ -46,8 +46,6 @@ import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -280,7 +278,8 @@ public final class ProtoSupportTest {
                 parser.parse().registry(),
                 false,
                 ErrorReporter.exploding(),
-                parser.soyFileSuppliers())
+                parser.soyFileSuppliers(),
+                types)
             .get();
     render(
         templates,
@@ -443,10 +442,6 @@ public final class ProtoSupportTest {
 
   @Test
   public void testProtoInitRepeatedFieldListWithNullElement() {
-    List<Object> listWithNullElement = new ArrayList<>();
-    listWithNullElement.add(1);
-    listWithNullElement.add(null);
-    listWithNullElement.add(3);
     assertThatTemplateBody(
             "{@param l: ?}",
             "{let $p: example.ExampleExtendable(repeatedLongWithInt52JsTypeList: $l) /}",

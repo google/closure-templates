@@ -150,7 +150,11 @@ public class BytecodeCompilerTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+                templateRegistry,
+                false,
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers(),
+                parser.typeRegistry())
             .get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = Predicates.alwaysFalse();
@@ -197,7 +201,11 @@ public class BytecodeCompilerTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+                templateRegistry,
+                false,
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers(),
+                parser.typeRegistry())
             .get();
 
     // HTML templates
@@ -937,7 +945,11 @@ public class BytecodeCompilerTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+                templateRegistry,
+                false,
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers(),
+                parser.typeRegistry())
             .get();
     CompiledTemplate.Factory caller = templates.getTemplateFactory("ns.callerTemplate");
     try {
@@ -1135,7 +1147,11 @@ public class BytecodeCompilerTest {
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry, false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+                templateRegistry,
+                false,
+                ErrorReporter.exploding(),
+                parser.soyFileSuppliers(),
+                parser.typeRegistry())
             .get();
     return templates;
   }

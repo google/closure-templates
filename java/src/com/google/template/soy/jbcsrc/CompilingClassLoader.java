@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -23,6 +24,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,11 +42,15 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       Collections.synchronizedMap(new HashMap<String, ClassData>());
 
   private final CompiledTemplateRegistry registry;
-  private final Map<String, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
-      CompiledTemplateRegistry registry, Map<String, SoyFileSupplier> filePathsToSuppliers) {
+      CompiledTemplateRegistry registry,
+      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
+      SoyTypeRegistry typeRegistry) {
     this.registry = registry;
+    this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 
@@ -70,7 +76,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     }
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
-    for (ClassData clazz : new TemplateCompiler(registry, meta, reporter).compile()) {
+    for (ClassData clazz : new TemplateCompiler(registry, meta, reporter, typeRegistry).compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {
         clazzToLoad = clazz;

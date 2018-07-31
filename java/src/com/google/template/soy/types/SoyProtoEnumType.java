@@ -65,6 +65,10 @@ public final class SoyProtoEnumType extends SoyType {
     return null;
   }
 
+  public EnumDescriptor getDescriptor() {
+    return descriptor;
+  }
+
   public String getDescriptorExpression() {
     return getNameForBackend(SoyBackendKind.TOFU);
   }

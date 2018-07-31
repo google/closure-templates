@@ -283,7 +283,8 @@ public final class TemplateTester {
               parseResult.registry(),
               /* developmentMode= */ false,
               errors,
-              parser.soyFileSuppliers());
+              parser.soyFileSuppliers(),
+              typeRegistry);
       if (template.isPresent()) {
         failWithoutActual(
             simpleFact(
@@ -378,7 +379,8 @@ public final class TemplateTester {
             new TemplateCompiler(
                     compilerRegistry,
                     compilerRegistry.getTemplateInfoByTemplateName(templateName),
-                    ErrorReporter.exploding())
+                    ErrorReporter.exploding(),
+                    typeRegistry)
                 .compile();
         checkClasses(classData);
         CompiledTemplates compiledTemplates =
@@ -469,7 +471,11 @@ public final class TemplateTester {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
     return BytecodeCompiler.compile(
-            parser.parse().registry(), false, ErrorReporter.exploding(), parser.soyFileSuppliers())
+            parser.parse().registry(),
+            false,
+            ErrorReporter.exploding(),
+            parser.soyFileSuppliers(),
+            parser.typeRegistry())
         .get();
   }
 }

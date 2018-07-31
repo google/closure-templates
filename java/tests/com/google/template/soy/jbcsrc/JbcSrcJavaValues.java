@@ -22,6 +22,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 
 /**
@@ -39,7 +40,11 @@ public final class JbcSrcJavaValues {
       Function<String, Expression> pluginInstanceFn,
       List<SoyExpression> args) {
     return new JbcSrcValueFactory(
-            fnNode, context, pluginInstanceFn::apply, ErrorReporter.exploding())
+            fnNode,
+            context,
+            pluginInstanceFn::apply,
+            ErrorReporter.exploding(),
+            new SoyTypeRegistry())
         .computeForJavaSource(args);
   }
 }

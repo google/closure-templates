@@ -21,8 +21,11 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
+import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -164,6 +167,15 @@ class TofuValueFactory extends JavaValueFactory {
           params[i] = value.stringValue();
         } else if (type == List.class) {
           params[i] = ((SoyList) value).asJavaList();
+        } else if (Message.class.isAssignableFrom(type)) {
+          params[i] = type.cast(((SoyProtoValue) value).getProto());
+        } else if (type.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(type)) {
+          try {
+            params[i] =
+                type.getDeclaredMethod("forNumber", int.class).invoke(null, value.integerValue());
+          } catch (ReflectiveOperationException roe) {
+            throw RenderException.create("Invalid parameter: " + tofuVal, roe);
+          }
         } else {
           // TODO(b/19252021): Map, Iterable, Future, SafeHtml, etc..?
           throw new UnsupportedOperationException(

@@ -91,6 +91,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.List;
@@ -122,10 +123,15 @@ final class ExpressionCompiler {
     private BasicExpressionCompiler(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
-        ErrorReporter reporter) {
+        ErrorReporter reporter,
+        SoyTypeRegistry registry) {
       this.compilerVisitor =
           new CompilerVisitor(
-              parameters, varManager, Suppliers.ofInstance(BasicDetacher.INSTANCE), reporter);
+              parameters,
+              varManager,
+              Suppliers.ofInstance(BasicDetacher.INSTANCE),
+              reporter,
+              registry);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -157,8 +163,9 @@ final class ExpressionCompiler {
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
-      ErrorReporter reporter) {
-    return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter);
+      ErrorReporter reporter,
+      SoyTypeRegistry registry) {
+    return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter, registry);
   }
 
   /**
@@ -170,24 +177,28 @@ final class ExpressionCompiler {
   static BasicExpressionCompiler createBasicCompiler(
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
-      ErrorReporter reporter) {
-    return new BasicExpressionCompiler(parameters, varManager, reporter);
+      ErrorReporter reporter,
+      SoyTypeRegistry registry) {
+    return new BasicExpressionCompiler(parameters, varManager, reporter, registry);
   }
 
   private final TemplateParameterLookup parameters;
   private final TemplateVariableManager varManager;
   private final ExpressionDetacher.Factory detacherFactory;
   private final ErrorReporter reporter;
+  private final SoyTypeRegistry registry;
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
-      ErrorReporter reporter) {
+      ErrorReporter reporter,
+      SoyTypeRegistry registry) {
     this.detacherFactory = detacherFactory;
     this.parameters = parameters;
     this.varManager = varManager;
     this.reporter = reporter;
+    this.registry = registry;
   }
 
   /**
@@ -231,7 +242,8 @@ final class ExpressionCompiler {
           }
         };
     return Optional.of(
-        new CompilerVisitor(parameters, varManager, throwingSupplier, reporter).exec(node));
+        new CompilerVisitor(parameters, varManager, throwingSupplier, reporter, registry)
+            .exec(node));
   }
 
   /**
@@ -253,7 +265,8 @@ final class ExpressionCompiler {
                     return detacherFactory.createExpressionDetacher(reattachPoint);
                   }
                 }),
-            reporter));
+            reporter,
+            registry));
   }
 
   private static final class CompilerVisitor
@@ -262,16 +275,19 @@ final class ExpressionCompiler {
     final TemplateParameterLookup parameters;
     final TemplateVariableManager varManager;
     final ErrorReporter reporter;
+    final SoyTypeRegistry registry;
 
     CompilerVisitor(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
         Supplier<? extends ExpressionDetacher> detacher,
-        ErrorReporter reporter) {
+        ErrorReporter reporter,
+        SoyTypeRegistry registry) {
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
       this.reporter = reporter;
+      this.registry = registry;
     }
 
     @Override
@@ -943,7 +959,8 @@ final class ExpressionCompiler {
                     return parameters.getRenderContext().getPluginInstance(pluginName);
                   }
                 },
-                reporter)
+                reporter,
+                registry)
             .computeForJavaSource(args);
       }
 

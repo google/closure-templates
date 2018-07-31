@@ -38,11 +38,11 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,7 +77,8 @@ public final class BytecodeCompiler {
       final TemplateRegistry registry,
       boolean developmentMode,
       ErrorReporter reporter,
-      Map<String, SoyFileSupplier> filePathsToSuppliers) {
+      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
+      SoyTypeRegistry typeRegistry) {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     if (reporter.errorsSince(checkpoint)) {
@@ -88,7 +89,7 @@ public final class BytecodeCompiler {
       CompiledTemplates templates =
           new CompiledTemplates(
               compilerRegistry.getDelegateTemplateNames(),
-              new CompilingClassLoader(compilerRegistry, filePathsToSuppliers));
+              new CompilingClassLoader(compilerRegistry, filePathsToSuppliers, typeRegistry));
       if (reporter.errorsSince(checkpoint)) {
         return Optional.absent();
       }
@@ -102,6 +103,7 @@ public final class BytecodeCompiler {
         compileTemplates(
             compilerRegistry,
             reporter,
+            typeRegistry,
             new CompilerListener<List<ClassData>>() {
               final List<ClassData> compiledClasses = new ArrayList<>();
               int numBytes = 0;
@@ -160,7 +162,11 @@ public final class BytecodeCompiler {
    * @param reporter The error reporter
    * @param sink The output sink to write the JAR to.
    */
-  public static void compileToJar(TemplateRegistry registry, ErrorReporter reporter, ByteSink sink)
+  public static void compileToJar(
+      TemplateRegistry registry,
+      ErrorReporter reporter,
+      SoyTypeRegistry typeRegistry,
+      ByteSink sink)
       throws IOException {
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     if (reporter.errorsSince(checkpoint)) {
@@ -174,6 +180,7 @@ public final class BytecodeCompiler {
       compileTemplates(
           compilerRegistry,
           reporter,
+          typeRegistry,
           new CompilerListener<Void>() {
             @Override
             void onCompile(ClassData clazz) throws IOException {
@@ -227,6 +234,7 @@ public final class BytecodeCompiler {
   private static <T> T compileTemplates(
       CompiledTemplateRegistry registry,
       ErrorReporter errorReporter,
+      SoyTypeRegistry typeRegistry,
       CompilerListener<T> listener) {
     for (String name : registry.getTemplateNames()) {
       CompiledTemplateMetadata classInfo = registry.getTemplateInfoByTemplateName(name);
@@ -235,7 +243,7 @@ public final class BytecodeCompiler {
       }
       try {
         TemplateCompiler templateCompiler =
-            new TemplateCompiler(registry, classInfo, errorReporter);
+            new TemplateCompiler(registry, classInfo, errorReporter, typeRegistry);
         for (ClassData clazz : templateCompiler.compile()) {
           if (Flags.DEBUG) {
             clazz.checkClass();

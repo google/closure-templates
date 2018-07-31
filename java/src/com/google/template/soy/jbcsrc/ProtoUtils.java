@@ -134,9 +134,6 @@ final class ProtoUtils {
           .asNonNullable()
           .asCheap();
 
-  private static final MethodRef PROTO_ENUM_GET_NUMBER =
-      MethodRef.create(ProtocolMessageEnum.class, "getNumber").asCheap();
-
   // We use the full name as the key instead of the descriptor, since descriptors use identity
   // semantics for equality and we may load the descriptors for these protos from multiple sources
   // depending on our configuration.
@@ -353,7 +350,7 @@ final class ProtoUtils {
           }
           // otherwise it is proto2 and we need to extract the number.
           return SoyExpression.forInt(
-              numericConversion(field.invoke(PROTO_ENUM_GET_NUMBER), Type.LONG_TYPE));
+              numericConversion(field.invoke(MethodRef.PROTOCOL_ENUM_GET_NUMBER), Type.LONG_TYPE));
         case INT:
           // Since soy 'int's are java longs, we can actually fully represent an unsigned 32bit
           // integer.
@@ -449,7 +446,9 @@ final class ProtoUtils {
         case ENUM:
           return SoyExpression.forInt(
               numericConversion(
-                  field.checkedCast(ProtocolMessageEnum.class).invoke(PROTO_ENUM_GET_NUMBER),
+                  field
+                      .checkedCast(ProtocolMessageEnum.class)
+                      .invoke(MethodRef.PROTOCOL_ENUM_GET_NUMBER),
                   Type.LONG_TYPE));
         case INT:
           if (isUnsigned(descriptor)) {

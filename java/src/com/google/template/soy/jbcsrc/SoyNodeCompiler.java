@@ -103,6 +103,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
@@ -138,10 +139,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
-      ErrorReporter reporter) {
+      ErrorReporter reporter,
+      SoyTypeRegistry typeRegistry) {
     DetachState detachState = new DetachState(variables, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(detachState, parameterLookup, variables, reporter);
+        ExpressionCompiler.create(detachState, parameterLookup, variables, reporter, typeRegistry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
@@ -159,7 +161,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             parameterLookup,
             variables,
             soyValueProviderCompiler,
-            reporter));
+            reporter,
+            typeRegistry));
   }
 
   private final Expression thisVar;

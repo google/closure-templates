@@ -146,6 +146,21 @@ final class JbcSrcValueErrorReporter {
     }
   }
 
+  void incompatibleReturnType(Class<?> actualJavaType, @Nullable Method method) {
+    if (method == null) {
+      report(
+          INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
+          "soy type of '" + fnNode.getType() + "'",
+          "java type of '" + actualJavaType.getName() + "'");
+    } else {
+      report(
+          INCOMPATIBLE_RETURN_TYPE_WITH_METHOD,
+          "soy type of '" + fnNode.getType() + "'",
+          "java type of '" + actualJavaType.getName() + "'",
+          simpleMethodName(method));
+    }
+  }
+
   void invalidParameterLength(Method method, JavaValue[] actualParams) {
     String expected =
         method.getParameterTypes().length == 1

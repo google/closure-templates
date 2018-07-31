@@ -73,6 +73,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
@@ -162,7 +163,8 @@ public class ExpressionCompilerTest {
           },
           new TemplateVariableManager(
               JbcSrcNameGenerators.forFieldNames(), null, null, getRenderMethod()),
-          ErrorReporter.exploding());
+          ErrorReporter.exploding(),
+          new SoyTypeRegistry());
 
   private static Method getRenderMethod() {
     try {
