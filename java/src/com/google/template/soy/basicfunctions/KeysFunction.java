@@ -17,12 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -36,12 +31,6 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.LegacyObjectMapType;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -66,10 +55,7 @@ import java.util.List;
     value = @Signature(returnType = "?", parameterTypes = "?"))
 @SoyPureFunction
 public final class KeysFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -94,35 +80,11 @@ public final class KeysFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method KEYS_FN =
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "keys", SoyValue.class);
-    static final MethodRef KEYS_FN_REF =
-        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    // TODO(sameb): Set correct node type in ResolveExpressionTypesPass
     return factory.callStaticMethod(Methods.KEYS_FN, args.get(0));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression soyExpression = args.get(0);
-    SoyType argType = soyExpression.soyType();
-    // TODO(lukes): this logic should live in ResolveExpressionTypesPass
-    ListType listType;
-    if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
-      listType = ListType.EMPTY_LIST;
-    } else if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
-      listType =
-          ListType.of(((LegacyObjectMapType) argType).getKeyType()); // pretty much just string
-    } else if (argType.getKind() == Kind.LIST) {
-      listType = ListType.of(IntType.getInstance());
-    } else {
-      listType = ListType.of(UnknownType.getInstance());
-    }
-    return SoyExpression.forList(
-        listType,
-        Methods.KEYS_FN_REF.invoke(soyExpression.box().checkedCast(SoyLegacyObjectMap.class)));
   }
 }

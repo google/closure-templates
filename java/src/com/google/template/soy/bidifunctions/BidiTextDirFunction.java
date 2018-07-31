@@ -18,11 +18,6 @@ package com.google.template.soy.bidifunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -36,7 +31,6 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.objectweb.asm.Type;
 
 /**
  * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or 0 for
@@ -54,10 +48,7 @@ import org.objectweb.asm.Type;
           parameterTypes = {"?", "?"})
     })
 final class BidiTextDirFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
@@ -66,8 +57,6 @@ final class BidiTextDirFunction extends TypedSoyFunction
     static final Method BIDI_TEXT_DIR_MAYBE_HTML =
         JavaValueFactory.createMethod(
             BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class, boolean.class);
-    static final MethodRef BIDI_TEXT_DIR_MAYBE_HTML_REF =
-        MethodRef.create(BIDI_TEXT_DIR_MAYBE_HTML);
   }
 
   @Override
@@ -78,18 +67,6 @@ final class BidiTextDirFunction extends TypedSoyFunction
     }
     return factory.callStaticMethod(
         Methods.BIDI_TEXT_DIR_MAYBE_HTML, args.get(0), args.get(1).asSoyBoolean());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forInt(
-        BytecodeUtils.numericConversion(
-            Methods.BIDI_TEXT_DIR_MAYBE_HTML_REF.invoke(
-                args.get(0).box(),
-                args.size() > 1
-                    ? args.get(1).unboxAs(boolean.class)
-                    : BytecodeUtils.constant(false)),
-            Type.LONG_TYPE));
   }
 
   @Override

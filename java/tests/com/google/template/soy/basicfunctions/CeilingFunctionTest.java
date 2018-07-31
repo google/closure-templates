@@ -17,17 +17,12 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.types.UnknownType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,30 +47,6 @@ public class CeilingFunctionTest {
 
     result = factory.callFunction(FloatData.forValue(2.5D));
     assertThat(result).isEqualTo(3L);
-  }
-
-  @Test
-  public void testComputeForJbcSrc() {
-    CeilingFunction ceilingFunction = new CeilingFunction();
-    assertThatExpression(
-            ceilingFunction.computeForJbcSrc(
-                /*context=*/ null,
-                ImmutableList.of(SoyExpression.forInt(BytecodeUtils.constant(1L)))))
-        .evaluatesTo(1L);
-
-    assertThatExpression(
-            ceilingFunction.computeForJbcSrc(
-                /*context=*/ null,
-                ImmutableList.of(SoyExpression.forFloat(BytecodeUtils.constant(2.5D)))))
-        .evaluatesTo(3L);
-    assertThatExpression(
-            ceilingFunction.computeForJbcSrc(
-                /*context=*/ null,
-                ImmutableList.of(
-                    SoyExpression.forSoyValue(
-                        UnknownType.getInstance(),
-                        MethodRef.FLOAT_DATA_FOR_VALUE.invoke(BytecodeUtils.constant(2.5D))))))
-        .evaluatesTo(3L);
   }
 
   @Test

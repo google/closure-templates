@@ -37,14 +37,15 @@ import org.objectweb.asm.Type;
 /**
  * Soy special function for automatic coercion of an int into a float.
  *
- * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists mostly
- * to enable adding return types to commonly used functions without breaking type-checking for
- * existing templates. It is not meant to be used directly in Soy templates.
+ * <p>This function is explicitly not registered with {@link BasicFunctions}. It exists mostly to
+ * enable adding return types to commonly used functions without breaking type-checking for existing
+ * templates. It is not meant to be used directly in Soy templates.
+ *
+ * <p>TODO(lukes): Implement as a SoyJavaSourceFunction.
  */
 @SoyFunctionSignature(
-  name = FloatFunction.NAME,
-  value = @Signature(returnType = "float", parameterTypes = "int")
-)
+    name = FloatFunction.NAME,
+    value = @Signature(returnType = "float", parameterTypes = "int"))
 @SoyPureFunction
 public final class FloatFunction extends TypedSoyFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {

@@ -18,11 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -36,9 +31,6 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.UnionType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -96,7 +88,7 @@ import java.util.List;
     })
 @SoyPureFunction
 public final class ConcatListsFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -122,27 +114,11 @@ public final class ConcatListsFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method CONCAT_LISTS_FN =
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "concatLists", List.class);
-    static final MethodRef CONCAT_LISTS_FN_REF = MethodRef.create(CONCAT_LISTS_FN);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.CONCAT_LISTS_FN, factory.listOf(args));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    ImmutableSet.Builder<SoyType> elementTypes = ImmutableSet.builder();
-    for (SoyExpression soyExpression : args) {
-      SoyType elementType = ((ListType) soyExpression.soyType()).getElementType();
-      if (elementType != null) { // Empty lists have no element type
-        elementTypes.add(elementType);
-      }
-    }
-
-    return SoyExpression.forList(
-        ListType.of(UnionType.of(elementTypes.build())),
-        Methods.CONCAT_LISTS_FN_REF.invoke(SoyExpression.asBoxedList(args)));
   }
 }

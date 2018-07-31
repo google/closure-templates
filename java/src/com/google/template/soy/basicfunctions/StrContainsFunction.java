@@ -18,10 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -57,7 +53,7 @@ import java.util.List;
     })
 @SoyPureFunction
 final class StrContainsFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -82,8 +78,6 @@ final class StrContainsFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final MethodRef STRING_CONTAINS_REF =
-        MethodRef.create(String.class, "contains", CharSequence.class);
     static final Method STR_CONTAINS =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "strContains", String.class, String.class);
@@ -94,13 +88,5 @@ final class StrContainsFunction extends TypedSoyFunction
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(
         Methods.STR_CONTAINS, args.get(0).asSoyString(), args.get(1).coerceToSoyString());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression left = args.get(0);
-    SoyExpression right = args.get(1);
-    return SoyExpression.forBool(
-        left.unboxAs(String.class).invoke(Methods.STRING_CONTAINS_REF, right.coerceToString()));
   }
 }

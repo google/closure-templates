@@ -25,7 +25,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
+import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
@@ -105,6 +107,7 @@ import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
@@ -836,6 +839,25 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       node.setType(matchedSignature.returnType());
     }
 
+    private void visitKeysFunction(FunctionNode node) {
+      ListType listType;
+      SoyType argType = node.getChild(0).getType();
+      if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
+        listType = ListType.EMPTY_LIST;
+      } else {
+        SoyType listArg;
+        if (argType.getKind() == Kind.LEGACY_OBJECT_MAP) {
+          listArg = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
+        } else if (argType.getKind() == Kind.LIST) {
+          listArg = IntType.getInstance();
+        } else {
+          listArg = UnknownType.getInstance();
+        }
+        listType = typeRegistry.getOrCreateListType(listArg);
+      }
+      node.setType(listType);
+    }
+
     private void visitMapKeysFunction(FunctionNode node) {
       SoyType argType = node.getChild(0).getType();
       if (argType.equals(MapType.EMPTY_MAP)) {
@@ -879,6 +901,18 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
                 // Converting a map to a legacy object map coerces all the keys to strings
                 StringType.getInstance(), actualArgType.getValueType()));
       }
+    }
+
+    private void visitAugmentMapFunction(FunctionNode node) {
+      // We don't bother unioning the value types of the child nodes, because if the values
+      // were maps/records themselves, then access becomes funky.  For example, if:
+      //     RHS was legacy_object_map(a: record(b: 1, c:2))
+      // and LHS was legacy_object_map(a: record(c: 3, d:4))
+      // ... no one can access result[a].b or result[a].d, because (since it was unioned), the
+      // compile would want b & d to exist on both sides of the union.
+      node.setType(
+          typeRegistry.getOrCreateLegacyObjectMapType(
+              StringType.getInstance(), UnknownType.getInstance()));
     }
 
     @Override
@@ -1268,7 +1302,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
      */
     private void visitInternalSoyFunction(Object fn, FunctionNode node) {
       // Here we have special handling for a variety of 'generic' function.
-      if (fn instanceof LegacyObjectMapToMapFunction) {
+      if (fn instanceof AugmentMapFunction) {
+        visitAugmentMapFunction(node);
+      } else if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
         if (checkArgType(node.getChild(0), LegacyObjectMapType.ANY_MAP, node)) {
@@ -1285,6 +1321,8 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           node.setType(UnknownType.getInstance());
         }
+      } else if (fn instanceof KeysFunction) {
+        visitKeysFunction(node);
       } else if (fn instanceof MapKeysFunction) {
         // We disallow unknown for this function in order to ensure that maps remain strongly typed
         if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {

@@ -20,10 +20,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -45,10 +41,7 @@ import java.util.List;
  */
 @SoyFunctionSignature(name = "bidiMark", value = @Signature(returnType = "string"))
 final class BidiMarkFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -62,18 +55,12 @@ final class BidiMarkFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method BIDI_MARK =
         JavaValueFactory.createMethod(BidiFunctionsRuntime.class, "bidiMark", BidiGlobalDir.class);
-    static final MethodRef BIDI_MARK_REF = MethodRef.create(BIDI_MARK).asNonNullable();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.BIDI_MARK, context.getBidiDir());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forString(Methods.BIDI_MARK_REF.invoke(context.getBidiGlobalDir()));
   }
 
   @Override

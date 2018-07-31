@@ -44,12 +44,9 @@ public final class BasicFunctionsRuntime {
    * Combine the two maps -- for the JavaSource variant while the function signature is still ?
    * instead of map.
    */
-  public static SoyDict augmentMap(SoyValue first, SoyValue second) {
-    return augmentMap((SoyDict) first, (SoyDict) second);
-  }
-
-  /** Combine the two maps. */
-  public static SoyDict augmentMap(SoyDict first, SoyDict second) {
+  public static SoyDict augmentMap(SoyValue sv1, SoyValue sv2) {
+    SoyDict first = (SoyDict) sv1;
+    SoyDict second = (SoyDict) sv2;
     Map<String, SoyValueProvider> map =
         Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
     map.putAll(first.asJavaStringMap());
@@ -99,12 +96,8 @@ public final class BasicFunctionsRuntime {
    * Returns a list of all the keys in the given map. For the JavaSource variant, while the function
    * signature is ? instead of legacy_object_map.
    */
-  public static List<SoyValue> keys(SoyValue map) {
-    return keys((SoyLegacyObjectMap) map);
-  }
-
-  /** Returns a list of all the keys in the given map. */
-  public static List<SoyValue> keys(SoyLegacyObjectMap map) {
+  public static List<SoyValue> keys(SoyValue sv) {
+    SoyLegacyObjectMap map = (SoyLegacyObjectMap) sv;
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
     Iterables.addAll(list, map.getItemKeys());
     return list;

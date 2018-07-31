@@ -18,14 +18,8 @@ package com.google.template.soy.bidifunctions;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -59,10 +53,7 @@ import java.util.List;
           parameterTypes = {"?", "?"})
     })
 final class BidiDirAttrFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -87,14 +78,6 @@ final class BidiDirAttrFunction extends TypedSoyFunction
             BidiGlobalDir.class,
             SoyValue.class,
             boolean.class);
-    static final MethodRef DIR_ATTR_REF =
-        MethodRef.create(
-                BidiFunctionsRuntime.class,
-                "bidiDirAttr",
-                BidiGlobalDir.class,
-                SoyValue.class,
-                boolean.class)
-            .asNonNullable();
   }
 
   @Override
@@ -109,16 +92,6 @@ final class BidiDirAttrFunction extends TypedSoyFunction
         context.getBidiDir(),
         args.get(0),
         args.get(1).asSoyBoolean());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forSanitizedString(
-        Methods.DIR_ATTR_REF.invoke(
-            context.getBidiGlobalDir(),
-            args.get(0).box(),
-            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(false)),
-        SanitizedContentKind.ATTRIBUTES);
   }
 
   @Override

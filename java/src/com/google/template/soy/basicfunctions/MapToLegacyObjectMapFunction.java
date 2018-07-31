@@ -19,10 +19,6 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -34,10 +30,6 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.LegacyObjectMapType;
-import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -57,10 +49,7 @@ import java.util.List;
     // Note: The return type is overridden in ResolveTypeExpressionsPass
     value = @Signature(parameterTypes = "map<any, any>", returnType = "?"))
 public final class MapToLegacyObjectMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyJbcSrcFunction,
-        SoyPySrcFunction,
-        SoyLibraryAssistedJsSrcFunction {
+    implements SoyJavaSourceFunction, SoyPySrcFunction, SoyLibraryAssistedJsSrcFunction {
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
@@ -72,36 +61,12 @@ public final class MapToLegacyObjectMapFunction extends TypedSoyFunction
     static final Method MAP_TO_LEGACY_OBJECT_MAP =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "mapToLegacyObjectMap", SoyMap.class);
-    static final MethodRef MAP_TO_LEGACY_OBJECT_MAP_REF =
-        MethodRef.create(MAP_TO_LEGACY_OBJECT_MAP);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.MAP_TO_LEGACY_OBJECT_MAP, args.get(0));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression soyExpression = Iterables.getOnlyElement(args);
-    SoyType originalType = soyExpression.soyRuntimeType().soyType();
-    LegacyObjectMapType newType;
-    if (originalType.equals(MapType.EMPTY_MAP)) {
-      newType = LegacyObjectMapType.EMPTY_MAP;
-    } else if (originalType instanceof MapType) {
-      newType =
-          LegacyObjectMapType.of(
-              ((MapType) originalType).getKeyType(), ((MapType) originalType).getValueType());
-    } else if (originalType instanceof UnknownType) {
-      newType = LegacyObjectMapType.of(UnknownType.getInstance(), UnknownType.getInstance());
-    } else {
-      throw new IllegalArgumentException(
-          "mapToLegacyObjectMap() expects input to be MAP, get " + originalType.getKind());
-    }
-    return SoyExpression.forLegacyObjectMap(
-        newType,
-        Methods.MAP_TO_LEGACY_OBJECT_MAP_REF.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 
   @Override

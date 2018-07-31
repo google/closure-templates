@@ -17,10 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -34,7 +30,6 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.SanitizedType.UriType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -47,10 +42,7 @@ import java.util.List;
             parameterTypes = {"string"},
             returnType = "uri"))
 final class StrSmsUriToUriFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -73,18 +65,11 @@ final class StrSmsUriToUriFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method SMS_TO_URI =
         JavaValueFactory.createMethod(Sanitizers.class, "filterSmsUri", String.class);
-    static final MethodRef SMS_TO_URI_REF = MethodRef.create(SMS_TO_URI);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.SMS_TO_URI, args.get(0));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forSoyValue(
-        UriType.getInstance(), Methods.SMS_TO_URI_REF.invoke(args.get(0).coerceToString()));
   }
 }

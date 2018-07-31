@@ -35,14 +35,16 @@ import java.util.List;
 /**
  * Soy special function for internal usages.
  *
- * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists for
+ * <p>This function is explicitly not registered with {@link BasicFunctions}. It exists for
  * inspecting the Soy template information from the rendered page, and should not be used in any
  * templates.
+ *
+ * <p>TODO(lukes): reimplement this as a BuiltinFunction, it requires hooking into some private
+ * runtime implementation details of jbcsrc
  */
 @SoyFunctionSignature(
-  name = DebugSoyTemplateInfoFunction.NAME,
-  value = @Signature(returnType = "bool")
-)
+    name = DebugSoyTemplateInfoFunction.NAME,
+    value = @Signature(returnType = "bool"))
 public final class DebugSoyTemplateInfoFunction extends TypedSoyFunction
     implements SoyJavaFunction,
         SoyLibraryAssistedJsSrcFunction,

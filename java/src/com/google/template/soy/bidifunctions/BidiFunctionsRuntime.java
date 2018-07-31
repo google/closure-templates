@@ -26,10 +26,6 @@ import com.google.template.soy.internal.i18n.BidiUtils;
 /** Contains static functions that implement the java versions of the bidifunctions. */
 public final class BidiFunctionsRuntime {
 
-  public static String bidiDirAttr(BidiGlobalDir dir, SoyValue value, boolean isHtml) {
-    return bidiDirAttrSanitized(dir, value, isHtml).stringValue();
-  }
-
   public static SanitizedContent bidiDirAttrSanitized(BidiGlobalDir dir, SoyValue value) {
     return bidiDirAttrSanitized(dir, value, /* isHtml= */ false);
   }

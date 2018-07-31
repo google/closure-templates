@@ -17,14 +17,10 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -43,16 +39,6 @@ public final class HtmlToTextFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(htmlToTextFunction);
     SoyValue html = SanitizedContents.constantHtml(HTML);
     assertThat(tester.callFunction(html)).isEqualTo(TEXT);
-  }
-
-  @Test
-  public void testComputeForJbcSrc() {
-    HtmlToTextFunction htmlToTextFunction = new HtmlToTextFunction();
-    SoyExpression html =
-        SoyExpression.forSanitizedString(BytecodeUtils.constant(HTML), SanitizedContentKind.HTML);
-    assertThatExpression(
-            htmlToTextFunction.computeForJbcSrc(/* context= */ null, ImmutableList.of(html)))
-        .evaluatesTo(TEXT);
   }
 
   @Test

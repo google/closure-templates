@@ -17,26 +17,18 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
-import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
-import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.types.UnknownType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -77,24 +69,5 @@ public final class MapToLegacyObjectMapFunctionTest {
     PyExpr map = new PyExpr("map", Integer.MAX_VALUE);
     PyExpr legacyObjectMap = MAP_TO_LEGACY_OBJECT_MAP.computeForPySrc(ImmutableList.of(map));
     assertThat(legacyObjectMap.getText()).isEqualTo("runtime.map_to_legacy_object_map(map)");
-  }
-
-  @Test
-  public void computeForJbcSrc() {
-    assertThatExpression(
-            MAP_TO_LEGACY_OBJECT_MAP.computeForJbcSrc(
-                /* context= */ null,
-                ImmutableList.of(
-                    SoyExpression.forSoyValue(
-                        UnknownType.getInstance(),
-                        MethodRef.MAP_IMPL_FOR_PROVIDER_MAP.invoke(
-                            BytecodeUtils.newLinkedHashMap(
-                                ImmutableList.of(
-                                    SoyExpression.forString(constant("a")).box(),
-                                    SoyExpression.forInt(constant(101L)).box()),
-                                ImmutableList.of(
-                                    FieldRef.NULL_PROVIDER.accessor(),
-                                    FieldRef.NULL_PROVIDER.accessor())))))))
-        .evaluatesToInstanceOf(DictImpl.class);
   }
 }

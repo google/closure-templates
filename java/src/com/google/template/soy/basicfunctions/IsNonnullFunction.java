@@ -18,10 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -51,7 +47,7 @@ import java.util.List;
             parameterTypes = {"any"}))
 @SoyPureFunction
 class IsNonnullFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -73,10 +69,5 @@ class IsNonnullFunction extends TypedSoyFunction
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return args.get(0).isNonNull();
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return BytecodeUtils.isNonNull(args.get(0));
   }
 }

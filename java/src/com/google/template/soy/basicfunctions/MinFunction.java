@@ -16,13 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
-
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -52,7 +46,7 @@ import java.util.List;
             parameterTypes = {"?", "?"}))
 @SoyPureFunction
 public final class MinFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -74,38 +68,14 @@ public final class MinFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final MethodRef MATH_MIN_DOUBLE_REF =
-        MethodRef.create(Math.class, "min", double.class, double.class).asCheap();
-
-    static final MethodRef MATH_MIN_LONG_REF =
-        MethodRef.create(Math.class, "min", long.class, long.class).asCheap();
-
     static final Method MIN_FN =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "min", SoyValue.class, SoyValue.class);
-    static final MethodRef MIN_FN_REF = MethodRef.create(MIN_FN).asNonNullable();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.MIN_FN, args.get(0), args.get(1));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression left = args.get(0);
-    SoyExpression right = args.get(1);
-    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-      return SoyExpression.forInt(
-          Methods.MATH_MIN_LONG_REF.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
-    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
-      return SoyExpression.forFloat(
-          Methods.MATH_MIN_DOUBLE_REF.invoke(
-              left.unboxAs(double.class), right.unboxAs(double.class)));
-    } else {
-      return SoyExpression.forSoyValue(
-          NUMBER_TYPE, Methods.MIN_FN_REF.invoke(left.box(), right.box()));
-    }
   }
 }

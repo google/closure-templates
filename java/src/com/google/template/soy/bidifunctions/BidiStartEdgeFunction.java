@@ -20,10 +20,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -46,10 +42,7 @@ import java.util.List;
  */
 @SoyFunctionSignature(name = "bidiStartEdge", value = @Signature(returnType = "string"))
 final class BidiStartEdgeFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -64,18 +57,12 @@ final class BidiStartEdgeFunction extends TypedSoyFunction
     static final Method START_EDGE =
         JavaValueFactory.createMethod(
             BidiFunctionsRuntime.class, "bidiStartEdge", BidiGlobalDir.class);
-    static final MethodRef START_EDGE_REF = MethodRef.create(START_EDGE).asCheap().asNonNullable();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.START_EDGE, context.getBidiDir());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forString(Methods.START_EDGE_REF.invoke(context.getBidiGlobalDir()));
   }
 
   @Override

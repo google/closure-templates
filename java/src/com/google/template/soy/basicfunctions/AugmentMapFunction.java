@@ -17,13 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -34,15 +28,10 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.LegacyObjectMapType;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnionType;
-import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -60,11 +49,11 @@ import java.util.List;
             returnType = "?",
             parameterTypes = {"?", "?"}))
 @SoyPureFunction
+@SoyDeprecated(
+    "This function will be deleted along with legacy_object_maps."
+        + " If you need AugmentMap-like functionality, please implement it as a custom Soy plugin.")
 public final class AugmentMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -76,42 +65,16 @@ public final class AugmentMapFunction extends TypedSoyFunction
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
-  private static final class MethodRefs {
+  private static final class Methods {
     static final Method AUGMENT_MAP_FN =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "augmentMap", SoyValue.class, SoyValue.class);
-
-    static final MethodRef AUGMENT_MAP_FN_REF =
-        MethodRef.create(BasicFunctionsRuntime.class, "augmentMap", SoyDict.class, SoyDict.class)
-            .asNonNullable();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    // TODO(sameb): Update ResolveExpressionTypesPass to set the node type, so it's set correctly.
-    return factory.callStaticMethod(MethodRefs.AUGMENT_MAP_FN, args.get(0), args.get(1));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression arg0 = args.get(0);
-    SoyExpression arg1 = args.get(1);
-    Expression first = arg0.checkedCast(SoyDict.class);
-    Expression second = arg1.checkedCast(SoyDict.class);
-    // TODO(lukes): this logic should move into the ResolveExpressionTypesPass
-    LegacyObjectMapType mapType =
-        LegacyObjectMapType.of(
-            StringType.getInstance(),
-            UnionType.of(getMapValueType(arg0.soyType()), getMapValueType(arg1.soyType())));
-    return SoyExpression.forSoyValue(mapType, MethodRefs.AUGMENT_MAP_FN_REF.invoke(first, second));
-  }
-
-  private SoyType getMapValueType(SoyType type) {
-    if (type.getKind() == Kind.LEGACY_OBJECT_MAP) {
-      return ((LegacyObjectMapType) type).getValueType();
-    }
-    return UnknownType.getInstance();
+    return factory.callStaticMethod(Methods.AUGMENT_MAP_FN, args.get(0), args.get(1));
   }
 
   @Override

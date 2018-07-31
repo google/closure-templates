@@ -70,8 +70,9 @@ public final class InternalPluginsTest {
       assertThat(function).isInstanceOf(TypedSoyFunction.class);
       assertThat(function).isInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyJbcSrcFunction.class);
       assertThat(function).isInstanceOf(SoyPySrcFunction.class);
+      // Internal functions should no longer implement SoyJbcSrcFunction
+      assertThat(function).isNotInstanceOf(SoyJbcSrcFunction.class);
     }
   }
 

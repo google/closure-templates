@@ -17,11 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -36,7 +31,6 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.objectweb.asm.Type;
 
 /**
  * Soy function that takes the ceiling of a number.
@@ -51,7 +45,7 @@ import org.objectweb.asm.Type;
           returnType = "int")
     })
 public final class CeilingFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -71,29 +65,11 @@ public final class CeilingFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method CEIL_FN =
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "ceil", SoyValue.class);
-    static final MethodRef CEIL_FN_REF = MethodRef.create(CEIL_FN).asCheap();
-    static final MethodRef MATH_CEIL_REF =
-        MethodRef.create(Math.class, "ceil", double.class).asCheap();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.CEIL_FN, args.get(0));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression argument = args.get(0);
-    switch (argument.resultType().getSort()) {
-      case Type.LONG:
-        return argument;
-      case Type.DOUBLE:
-        return SoyExpression.forInt(
-            BytecodeUtils.numericConversion(
-                Methods.MATH_CEIL_REF.invoke(argument), Type.LONG_TYPE));
-      default:
-        return SoyExpression.forInt(Methods.CEIL_FN_REF.invoke(argument.box()));
-    }
   }
 }

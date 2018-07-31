@@ -16,13 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
-import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
-
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -52,7 +46,7 @@ import java.util.List;
             parameterTypes = {"?", "?"}))
 @SoyPureFunction
 public final class MaxFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -77,35 +71,11 @@ public final class MaxFunction extends TypedSoyFunction
     private static final Method MAX_FN =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "max", SoyValue.class, SoyValue.class);
-    private static final MethodRef MAX_FN_REF = MethodRef.create(MAX_FN).asNonNullable();
-
-    private static final MethodRef MATH_MAX_DOUBLE_REF =
-        MethodRef.create(Math.class, "max", double.class, double.class).asCheap();
-
-    private static final MethodRef MATH_MAX_LONG_REF =
-        MethodRef.create(Math.class, "max", long.class, long.class).asCheap();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.MAX_FN, args.get(0), args.get(1));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression left = args.get(0);
-    SoyExpression right = args.get(1);
-    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-      return SoyExpression.forInt(
-          Methods.MATH_MAX_LONG_REF.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
-    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
-      return SoyExpression.forFloat(
-          Methods.MATH_MAX_DOUBLE_REF.invoke(
-              left.unboxAs(double.class), right.unboxAs(double.class)));
-    } else {
-      return SoyExpression.forSoyValue(
-          NUMBER_TYPE, Methods.MAX_FN_REF.invoke(left.box(), right.box()));
-    }
   }
 }

@@ -20,11 +20,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -57,10 +52,7 @@ import java.util.List;
           parameterTypes = {"?", "?"}),
     })
 final class BidiMarkAfterFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -82,8 +74,6 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
             BidiGlobalDir.class,
             SoyValue.class,
             boolean.class);
-    static final MethodRef MARK_AFTER_MAYBE_HTML_REF =
-        MethodRef.create(MARK_AFTER_MAYBE_HTML).asNonNullable();
   }
 
   @Override
@@ -98,15 +88,6 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
         context.getBidiDir(),
         args.get(0),
         args.get(1).asSoyBoolean());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    return SoyExpression.forString(
-        Methods.MARK_AFTER_MAYBE_HTML_REF.invoke(
-            context.getBidiGlobalDir(),
-            args.get(0).box(),
-            args.size() > 1 ? args.get(1).unboxAs(boolean.class) : BytecodeUtils.constant(false)));
   }
 
   @Override

@@ -16,11 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -37,7 +32,6 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.objectweb.asm.Type;
 
 /**
  * A function that returns a substring of a given string.
@@ -66,7 +60,7 @@ import org.objectweb.asm.Type;
     })
 @SoyPureFunction
 final class StrSubFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -98,11 +92,6 @@ final class StrSubFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final MethodRef STRING_SUBSTR_START_REF =
-        MethodRef.create(String.class, "substring", int.class).asNonNullable();
-    static final MethodRef STRING_SUBSTR_START_END =
-        MethodRef.create(String.class, "substring", int.class, int.class);
-
     static final Method STR_SUB_START =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "strSub", String.class, int.class);
@@ -123,33 +112,5 @@ final class StrSubFunction extends TypedSoyFunction
         args.get(0).asSoyString(),
         args.get(1).asSoyInt(),
         args.get(2).asSoyInt());
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    if (args.size() == 2) {
-      return invokeStrSubFunction(args.get(0), args.get(1));
-    }
-    return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
-  }
-
-  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
-  private SoyExpression invokeStrSubFunction(SoyExpression str, SoyExpression startIndex) {
-    return SoyExpression.forString(
-        str.unboxAs(String.class)
-            .invoke(
-                Methods.STRING_SUBSTR_START_REF,
-                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
-  }
-
-  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
-  private SoyExpression invokeStrSubFunction(
-      SoyExpression str, SoyExpression startIndex, SoyExpression endIndex) {
-    return SoyExpression.forString(
-        str.unboxAs(String.class)
-            .invoke(
-                Methods.STRING_SUBSTR_START_END,
-                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
-                BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 }

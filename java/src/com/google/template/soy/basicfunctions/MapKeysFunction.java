@@ -18,10 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -35,9 +31,6 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.SoyType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -57,10 +50,7 @@ import java.util.List;
     value = @Signature(parameterTypes = "map<?, any>", returnType = "list<?>"))
 @SoyPureFunction
 public final class MapKeysFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyLibraryAssistedJsSrcFunction,
-        SoyPySrcFunction,
-        SoyJbcSrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
@@ -85,22 +75,11 @@ public final class MapKeysFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method MAP_KEYS_FN =
         JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "mapKeys", SoyMap.class);
-    static final MethodRef MAP_KEYS_FN_REF = MethodRef.create(MAP_KEYS_FN);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.MAP_KEYS_FN, args.get(0));
-  }
-
-  @Override
-  public SoyExpression computeForJbcSrc(JbcSrcPluginContext context, List<SoyExpression> args) {
-    SoyExpression soyExpression = args.get(0);
-    SoyType argType = soyExpression.soyType();
-    SoyType keyType = ((MapType) argType).getKeyType();
-    return SoyExpression.forList(
-        keyType == null ? ListType.EMPTY_LIST : ListType.of(keyType),
-        Methods.MAP_KEYS_FN_REF.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 }
