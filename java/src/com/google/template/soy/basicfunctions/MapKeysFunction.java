@@ -54,7 +54,7 @@ import java.util.List;
 @SoyFunctionSignature(
     name = "mapKeys",
     // Note: the return type is overridden in ResolveTypeExpressionsPass
-    value = @Signature(parameterTypes = "map<?, ?>", returnType = "list<?>"))
+    value = @Signature(parameterTypes = "map<?, any>", returnType = "list<?>"))
 @SoyPureFunction
 public final class MapKeysFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction,

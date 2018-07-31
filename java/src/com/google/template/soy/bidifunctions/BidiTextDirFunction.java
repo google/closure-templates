@@ -76,7 +76,8 @@ final class BidiTextDirFunction extends TypedSoyFunction
     if (args.size() == 1) {
       return factory.callStaticMethod(Methods.BIDI_TEXT_DIR_NO_HTML, args.get(0));
     }
-    return factory.callStaticMethod(Methods.BIDI_TEXT_DIR_MAYBE_HTML, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.BIDI_TEXT_DIR_MAYBE_HTML, args.get(0), args.get(1).asSoyBoolean());
   }
 
   @Override

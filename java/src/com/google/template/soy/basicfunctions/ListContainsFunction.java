@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
@@ -77,10 +76,6 @@ public class ListContainsFunction extends TypedSoyFunction
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
-    ImmutableList.Builder<String> expTexts = ImmutableList.builder();
-    for (PyExpr expr : args) {
-      expTexts.add(expr.getText());
-    }
     return new PyListExpr(
         "any(runtime.type_safe_eq(el, "
             + args.get(1).getText()

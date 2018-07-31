@@ -111,6 +111,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -786,9 +787,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
       Object knownFunction = node.getSoyFunction();
-      if (visitInternalSoyFunction(knownFunction, node)) {
-        // Type successfully set!
-      } else if (knownFunction.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+      if (knownFunction.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
         checkState(
             knownFunction instanceof TypedSoyFunction || knownFunction instanceof SoySourceFunction,
             "Classes annotated with @SoyFunctionSignature must either extend "
@@ -800,7 +799,15 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       } else if (knownFunction instanceof BuiltinFunction) {
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
       }
+      // Always attempt to visit for internal soy functions, even if we already had a signature.
+      visitInternalSoyFunction(knownFunction, node);
       tryApplySubstitution(node);
+
+      // If we didn't set the allowed types for params above, then set them to unknown types.
+      if (node.getAllowedParamTypes() == null) {
+        node.setAllowedParamTypes(
+            Collections.nCopies(node.numChildren(), UnknownType.getInstance()));
+      }
     }
 
     /**
@@ -825,6 +832,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       for (int i = 0; i < node.numChildren(); ++i) {
         checkArgType(node.getChild(i), matchedSignature.parameterTypes().get(i), node);
       }
+      node.setAllowedParamTypes(matchedSignature.parameterTypes());
       node.setType(matchedSignature.returnType());
     }
 
@@ -1257,11 +1265,8 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     /**
      * Private helper that checks types of the arguments and tries to set the return type for some
      * basic functions provided by Soy.
-     *
-     * <p>Returns true if this was a special internal Soy function whose return type we can
-     * statically calculate.
      */
-    private boolean visitInternalSoyFunction(Object fn, FunctionNode node) {
+    private void visitInternalSoyFunction(Object fn, FunctionNode node) {
       // Here we have special handling for a variety of 'generic' function.
       if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
@@ -1271,7 +1276,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           node.setType(UnknownType.getInstance());
         }
-        return true;
       } else if (fn instanceof MapToLegacyObjectMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
@@ -1281,7 +1285,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           node.setType(UnknownType.getInstance());
         }
-        return true;
       } else if (fn instanceof MapKeysFunction) {
         // We disallow unknown for this function in order to ensure that maps remain strongly typed
         if (checkArgType(node.getChild(0), MapType.ANY_MAP, node, UnknownPolicy.DISALLOWED)) {
@@ -1289,7 +1292,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           node.setType(UnknownType.getInstance());
         }
-        return true;
       } else if (fn instanceof ConcatListsFunction) {
         boolean allTypesValid = true;
         ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
@@ -1315,19 +1317,16 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           node.setType(UnknownType.getInstance());
         }
-        return true;
       } else if (fn instanceof LoggingFunction) {
         // LoggingFunctions always return string.
         node.setType(StringType.getInstance());
-        return true;
-      } else {
+      } else if (node.getType() == null) {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.
         // TODO(b/70946095): at the very least we could hard code types for standard functions for
         // example, everything in the BasicFunctionsModule.
         // TODO(b/70946095): Maybe we should set to ErrorType if checkArgType failed.
         node.setType(UnknownType.getInstance());
-        return false;
       }
     }
 

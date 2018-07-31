@@ -105,7 +105,10 @@ final class BidiDirAttrFunction extends TypedSoyFunction
           Methods.DIR_ATTR_SANITIZED_NO_HTML, context.getBidiDir(), args.get(0));
     }
     return factory.callStaticMethod(
-        Methods.DIR_ATTR_SANITIZED_MAYBE_HTML, context.getBidiDir(), args.get(0), args.get(1));
+        Methods.DIR_ATTR_SANITIZED_MAYBE_HTML,
+        context.getBidiDir(),
+        args.get(0),
+        args.get(1).asSoyBoolean());
   }
 
   @Override

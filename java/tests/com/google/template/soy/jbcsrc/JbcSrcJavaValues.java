@@ -20,9 +20,8 @@ import com.google.common.base.Function;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
 import java.util.List;
 
 /**
@@ -36,15 +35,11 @@ public final class JbcSrcJavaValues {
 
   public static SoyExpression computeForJavaSource(
       FunctionNode fnNode,
-      JavaPluginContext context,
+      JbcSrcPluginContext context,
       Function<String, Expression> pluginInstanceFn,
       List<SoyExpression> args) {
     return new JbcSrcValueFactory(
             fnNode, context, pluginInstanceFn::apply, ErrorReporter.exploding())
         .computeForJavaSource(args);
-  }
-
-  public static JavaValue newValue(Expression expr) {
-    return JbcSrcJavaValue.of(expr);
   }
 }

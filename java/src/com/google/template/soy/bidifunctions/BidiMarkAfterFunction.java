@@ -94,7 +94,10 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
           Methods.MARK_AFTER_NO_HTML, context.getBidiDir(), args.get(0));
     }
     return factory.callStaticMethod(
-        Methods.MARK_AFTER_MAYBE_HTML, context.getBidiDir(), args.get(0), args.get(1));
+        Methods.MARK_AFTER_MAYBE_HTML,
+        context.getBidiDir(),
+        args.get(0),
+        args.get(1).asSoyBoolean());
   }
 
   @Override

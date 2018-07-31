@@ -172,4 +172,64 @@ final class IntegrationTestSourceFunctions {
           IntegrationTestRuntime.RETURN_ITERABLE_AND_ACCEPT_INT, context.getBidiDir());
     }
   }
+
+  @SoyFunctionSignature(name = "nonSoyExprAsSoy", value = @Signature(returnType = "?"))
+  static final class NonSoyExprAsSoy implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return context.getBidiDir().asSoyBoolean();
+    }
+  }
+
+  @SoyFunctionSignature(
+      name = "floatAsInt",
+      value = @Signature(parameterTypes = "float", returnType = "?"))
+  static final class FloatAsInt implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return args.get(0).asSoyInt();
+    }
+  }
+
+  @SoyFunctionSignature(
+      name = "stringAsFloat",
+      value = @Signature(parameterTypes = "string", returnType = "?"))
+  static final class StringAsFloat implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return args.get(0).asSoyFloat();
+    }
+  }
+
+  @SoyFunctionSignature(
+      name = "mapAsBool",
+      value = @Signature(parameterTypes = "map<?, ?>", returnType = "?"))
+  static final class MapAsBool implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return args.get(0).asSoyBoolean();
+    }
+  }
+
+  @SoyFunctionSignature(name = "nonSoyExprCoerceBool", value = @Signature(returnType = "?"))
+  static final class NonSoyExprCoerceBool implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return context.getBidiDir().coerceToSoyBoolean();
+    }
+  }
+
+  @SoyFunctionSignature(name = "nonSoyExprCoerceString", value = @Signature(returnType = "?"))
+  static final class NonSoyExprCoerceString implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return context.getBidiDir().coerceToSoyString();
+    }
+  }
 }

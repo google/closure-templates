@@ -20,10 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Fact.simpleFact;
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
+import com.google.common.truth.ThrowableSubject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -241,6 +242,28 @@ public final class TemplateTester {
     }
 
     @CheckReturnValue
+    ThrowableSubject failsToRenderWithExceptionThat() {
+      return failsToRenderWithExceptionThat(ImmutableMap.of());
+    }
+
+    @CheckReturnValue
+    ThrowableSubject failsToRenderWithExceptionThat(Map<String, ?> params) {
+      BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
+      compile();
+      try {
+        factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
+        failWithoutActual(
+            simpleFact(
+                String.format(
+                    "Expected %s to fail to render, but it rendered '%s'.",
+                    actual(), builder.toString())));
+      } catch (Throwable t) {
+        return check().that(t);
+      }
+      throw new AssertionError("unreachable");
+    }
+
+    @CheckReturnValue
     public IterableSubject failsToCompileWithErrorsThat() {
       SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
       for (SoyFunction function : soyFunctions) {
@@ -255,9 +278,19 @@ public final class TemplateTester {
               .build();
       ParseResult parseResult = parser.parse();
       ErrorReporter errors = ErrorReporter.createForTest();
-      BytecodeCompiler.compile(
-          parseResult.registry(), /* developmentMode= */ false, errors, parser.soyFileSuppliers());
-      return assertThat(Lists.transform(errors.getErrors(), SoyError::message));
+      Optional<CompiledTemplates> template =
+          BytecodeCompiler.compile(
+              parseResult.registry(),
+              /* developmentMode= */ false,
+              errors,
+              parser.soyFileSuppliers());
+      if (template.isPresent()) {
+        failWithoutActual(
+            simpleFact(
+                String.format(
+                    "Expected %s to fail to compile, but it compiled successfully.", actual())));
+      }
+      return check().that(Lists.transform(errors.getErrors(), SoyError::message));
     }
 
     private SoyRecord asRecord(Map<String, ?> params) {
@@ -277,7 +310,7 @@ public final class TemplateTester {
       try (SystemOutRestorer restorer = logOutput.enter()) {
         result = template.render(builder, context);
       } catch (Throwable e) {
-        // TODO(lukes): the fact that we are catching an exception means we have structured 
+        // TODO(lukes): the fact that we are catching an exception means we have structured
         // this subject poorly.  The subject should be responsible for asserting, not actually
         // invoking the functionality under test.
         failWithCauseAndMessage(e, "Unexpected failure for %s", actualAsString());

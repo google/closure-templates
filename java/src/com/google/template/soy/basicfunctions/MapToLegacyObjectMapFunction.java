@@ -55,7 +55,7 @@ import java.util.List;
 @SoyFunctionSignature(
     name = "mapToLegacyObjectMap",
     // Note: The return type is overridden in ResolveTypeExpressionsPass
-    value = @Signature(parameterTypes = "?", returnType = "?"))
+    value = @Signature(parameterTypes = "map<any, any>", returnType = "?"))
 public final class MapToLegacyObjectMapFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction,
         SoyJbcSrcFunction,

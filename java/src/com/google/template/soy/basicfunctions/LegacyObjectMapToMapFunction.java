@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMaps;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -74,9 +75,9 @@ public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method LEGACY_OBJECT_MAP_TO_MAP =
         JavaValueFactory.createMethod(
-            SoyMaps.class, "legacyObjectMapToMap", SoyLegacyObjectMap.class);
+            BasicFunctionsRuntime.class, "legacyObjectMapToMap", SoyValue.class);
     static final MethodRef LEGACY_OBJECT_MAP_TO_MAP_REF =
-        MethodRef.create(LEGACY_OBJECT_MAP_TO_MAP);
+        MethodRef.create(SoyMaps.class, "legacyObjectMapToMap", SoyLegacyObjectMap.class);
   }
 
   @Override

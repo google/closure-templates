@@ -77,7 +77,7 @@ public final class LengthFunction extends TypedSoyFunction
     static final MethodRef SOYLIST_LENGTH_REF = MethodRef.create(SoyList.class, "length");
 
     static final Method DELEGATE_SOYLIST_LENGTH =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "length", SoyList.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "length", List.class);
   }
 
   @Override

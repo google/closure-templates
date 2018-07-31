@@ -71,6 +71,12 @@ public final class PluginResolver {
           "Plugin named ''{0}'' has two different implementations registered: "
               + "''{1}'' and ''{2}''.");
 
+  private static final SoyErrorKind MISSING_FUNCTION_SIGNATURE =
+      SoyErrorKind.of(
+          "Plugin class ''{0}'' has no @SoyFunctionSignature annotation. "
+              + "Classes implementing SoySourceFunction must be annotated with "
+              + "@SoyFunctionSignature.");
+
   private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
 
   /** Configures the behavior of the resolver when a lookup fails. */
@@ -113,24 +119,38 @@ public final class PluginResolver {
     // Merge the SoyFunctions & SoySourceFunctions.  While merging, confirm that we only have
     // one implementation for each plugin. They can overlap, but impl must be the same. This
     // indicates a partially migrated plugin.
+    // Also confirm that each SoySourceFunction has a @SoyFunctionSignature, which is required.
     ImmutableMap.Builder<String, Object> mergedFunctions = ImmutableMap.builder();
     for (Map.Entry<String, SoyFunction> entry : functions.entrySet()) {
       SoySourceFunction source = sourceFunctions.get(entry.getKey());
-      if (source != null && source != entry.getValue()) {
-        reporter.report(
-            SourceLocation.UNKNOWN,
-            DIFFERENT_IMPLS_REGISTERED,
-            entry.getKey(),
-            entry.getValue(),
-            source);
+      if (source != null) {
+        if (source != entry.getValue()) {
+          reporter.report(
+              SourceLocation.UNKNOWN,
+              DIFFERENT_IMPLS_REGISTERED,
+              entry.getKey(),
+              entry.getValue(),
+              source);
+        }
       } else {
-        // We only insert valid functions into the merged map to avoid IllegalArugmentExceptions
+        // We only insert non-duplicates into the merged map to avoid IllegalArugmentExceptions
         // building the map.
         mergedFunctions.put(entry.getKey(), entry.getValue());
       }
     }
     mergedFunctions.putAll(sourceFunctions);
     this.functions = mergedFunctions.build();
+
+    // Go back over our merged functions and validate all the SoySourceFunction implementations.
+    // We explicitly look *after* merging because SoySourceFunctions might be registered
+    // as SoyFunctions if they also implemented other backends like SoyJsFunction.
+    for (Object function : functions.values()) {
+      if (function instanceof SoySourceFunction
+          && !function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        reporter.report(
+            SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
+      }
+    }
   }
 
   /**

@@ -30,55 +30,150 @@ public interface JavaValue extends SoySourceValue {
   JavaValue isNull();
 
   /**
-   * Returns the type of this value in the Soy type system. This allows plugin authors to optimize
-   * their generated code. For example, a 'ceil' plugin could do something like:
+   * Asserts that this JavaValue is a boolean. This method is only useful if your signature is
+   * overly broad (e.g, 'any' or '?'). Updating the {@code SoyFunctionSignature} is a better option
+   * than using this method, but if updating the signature is too difficult then this method will
+   * allow templates using this function to fail at template render time if they pass something
+   * other than a boolean. If Soy knows at compile time that this JavaValue is incompatible with a
+   * boolean, then compilation will fail.
    *
-   * <pre>
-   * switch (arg.soyType()) {
-   *   case INT:
-   *     // No calls necessary, the type is already ceil'd.
-   *     return arg;
-   *   case FLOAT:
-   *     // Call a ceil method that expects a 'double' and returns a 'long'.
-   *     return factory.callStaticMethod(CEIL_FN, arg);
-   *   default:
-   *     throw new AssertionError("ceil only allows number types, which are int|float");
+   * <p>For example, a function with a parameter type of {@code ?} could use {@code asSoyBoolean()}
+   * to pass the parameter to a method accepting a 'boolean'.
+   *
+   * <pre>{@code
+   * @SoyFunctionSignature(name = "fn", value = @Signature(parameterTypes="?", returnType="?")))
+   * MyFn implements SoyJavaSourceFunction {
+   *   private static final Method DO_FN = JavaValueFactory.createMethod(
+   *       MyFn.class, "doFn", boolean.class);
+   *
+   *   public static String doFn(boolean param) { return param ? "Yes" : "No"; }
+   *
+   *   @Override
+   *   public JavaValue applyForJavaSource(
+   *       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+   *     return factory.callStaticMethod(DO_FN, args.get(0).asSoyBoolean());
+   *   }
    * }
-   * </pre>
+   * }</pre>
+   *
+   * However, if the parameterType was {@code string}, then the above code would fail to compile
+   * because string is incompatible with boolean. (Note that this is different than {@link
+   * #coerceToSoyBoolean}, which effectively calls {@link
+   * com.google.template.soy.data.SoyValue#coereceToBoolean} and will work with any parameter type
+   * and coerce it to a boolean.
    */
-  ValueSoyType soyType();
+  JavaValue asSoyBoolean();
 
-  /** The runtime types supported by JavaValue. */
-  // Implementation note: This replicates some of the code from SoyType#Kind,
-  // because this is exposed to users, and we don't want to expose Soy's internals
-  // to users.
-  enum ValueSoyType {
-    /** Corresponds to the Soy type {@code null}. */
-    NULL,
-    /** Corresponds to the Soy type {@code bool}. */
-    BOOLEAN,
-    /** Corresponds to the Soy type {@code float}. */
-    FLOAT,
-    /** Corresponds to the Soy type {@code int}. */
-    INTEGER,
-    /** Corresponds to the Soy type {@code string}. */
-    STRING,
-    /** Corresponds to the Soy type {@code list}. */
-    LIST,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.HTML}. */
-    HTML,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.ATTRIBUTES}. */
-    ATTRIBUTES,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.JS}. */
-    JS,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.CSS}. */
-    CSS,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.URI}. */
-    URI,
-    /** Corresponds to a SanitizedContent of {@code ContentKind.TRUSTED_RESOURCE_URI}. */
-    TRUSTED_RESOURCE_URI,
+  /**
+   * Asserts that this JavaValue is a soy string. This method is only useful if your signature is
+   * overly broad (e.g, 'any' or '?'). Updating the {@code SoyFunctionSignature} is a better option
+   * than using this method, but if updating the signature is too difficult then this method will
+   * allow templates using this function to fail at template render time if they pass something
+   * other than a soy string. If Soy knows at compile time that this JavaValue is incompatible with
+   * a soy string, then compilation will fail.
+   *
+   * <p>For example, a function with a parameter type of {@code ?} could use {@code asSoyString()}
+   * to pass the parameter to a method accepting a 'soy string'.
+   *
+   * <pre>{@code
+   * @SoyFunctionSignature(name = "fn", value = @Signature(parameterTypes="?", returnType="?")))
+   * MyFn implements SoyJavaSourceFunction {
+   *   private static final Method DO_FN = JavaValueFactory.createMethod(
+   *       MyFn.class, "doFn", String.class);
+   *
+   *   public static String doFn(String param) { return param + "_"; }
+   *
+   *   @Override
+   *   public JavaValue applyForJavaSource(
+   *       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+   *     return factory.callStaticMethod(DO_FN, args.get(0).asSoyString());
+   *   }
+   * }
+   * }</pre>
+   *
+   * However, if the parameterType was {@code boolean}, then the above code would fail to compile
+   * because boolean is incompatible with a soy string. (Note that this is different than {@link
+   * #coerceToSoyString}, which effectively calls {@link
+   * com.google.template.soy.data.SoyValue#coereceToString} and will work with any parameter type
+   * and coerce it to a soy string.
+   */
+  JavaValue asSoyString();
 
-    /** Corresponds to everything else. */
-    OTHER,
-  }
+  /**
+   * Asserts that this JavaValue is a soy int. This method is only useful if your signature is
+   * overly broad (e.g, 'any' or '?'). Updating the {@code SoyFunctionSignature} is a better option
+   * than using this method, but if updating the signature is too difficult then this method will
+   * allow templates using this function to fail at template render time if they pass something
+   * other than a soy int. If Soy knows at compile time that this JavaValue is incompatible with a
+   * soy int, then compilation will fail.
+   *
+   * <p>For example, a function with a parameter type of {@code ?} could use {@code asSoyInt()} to
+   * pass the parameter to a method accepting a 'soy int'.
+   *
+   * <pre>{@code
+   * @SoyFunctionSignature(name = "fn", value = @Signature(parameterTypes="?", returnType="?")))
+   * MyFn implements SoyJavaSourceFunction {
+   *   private static final Method DO_FN = JavaValueFactory.createMethod(
+   *       MyFn.class, "doFn", long.class);
+   *
+   *   public static long doFn(long param) { return param + 1; }
+   *
+   *   @Override
+   *   public JavaValue applyForJavaSource(
+   *       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+   *     return factory.callStaticMethod(DO_FN, args.get(0).asSoyInt());
+   *   }
+   * }
+   * }</pre>
+   *
+   * However, if the parameterType was {@code boolean}, then the above code would fail to compile
+   * because boolean is incompatible with a soy int.
+   */
+  JavaValue asSoyInt();
+
+  /**
+   * Asserts that this JavaValue is a soy float. This method is only useful if your signature is
+   * overly broad (e.g, 'any' or '?'). Updating the {@code SoyFunctionSignature} is a better option
+   * than using this method, but if updating the signature is too difficult then this method will
+   * allow templates using this function to fail at template render time if they pass something
+   * other than a soy float. If Soy knows at compile time that this JavaValue is incompatible with a
+   * soy float, then compilation will fail.
+   *
+   * <p>For example, a function with a parameter type of {@code ?} could use {@code asSoyFloat()} to
+   * pass the parameter to a method accepting a 'soy float'.
+   *
+   * <pre>{@code
+   * @SoyFunctionSignature(name = "fn", value = @Signature(parameterTypes="?", returnType="?")))
+   * MyFn implements SoyJavaSourceFunction {
+   *   private static final Method DO_FN = JavaValueFactory.createMethod(
+   *       MyFn.class, "doFn", double.class);
+   *
+   *   public static double doFn(double param) { return param + 1; }
+   *
+   *   @Override
+   *   public JavaValue applyForJavaSource(
+   *       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+   *     return factory.callStaticMethod(DO_FN, args.get(0).asSoyFloat());
+   *   }
+   * }
+   * }</pre>
+   *
+   * However, if the parameterType was {@code boolean}, then the above code would fail to compile
+   * because boolean is incompatible with a soy float.
+   */
+  JavaValue asSoyFloat();
+
+  /**
+   * Coerces this JavaValue to a soy boolean. Using this method can avoid overhead if Soy knows the
+   * type is already a boolean (or is compatible with 'boolean'), because it can avoid boxing the
+   * type into a SoyValue. See {@link #asSoyBoolean} for more details.
+   */
+  JavaValue coerceToSoyBoolean();
+
+  /**
+   * Coerces this JavaValue to a soy string. Using this method can avoid overhead if Soy knows the
+   * type is already a string (or is compatible with 'String'), because it can avoid boxing the type
+   * into a SoyValue. See {@link #asSoyString} for more details.
+   */
+  JavaValue coerceToSoyString();
 }

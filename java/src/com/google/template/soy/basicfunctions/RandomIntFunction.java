@@ -43,6 +43,7 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "randomInt",
+    // TODO(b/70946095): param should be an 'int', not a 'number'
     value = @Signature(returnType = "int", parameterTypes = "number"))
 public final class RandomIntFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction, SoyJbcSrcFunction {
@@ -74,7 +75,7 @@ public final class RandomIntFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.RANDOM_INT_FN, args.get(0));
+    return factory.callStaticMethod(Methods.RANDOM_INT_FN, args.get(0).asSoyInt());
   }
 
   @Override

@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -92,9 +93,9 @@ public final class KeysFunction extends TypedSoyFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method KEYS_FN =
-        JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
-    static final MethodRef KEYS_FN_REF = MethodRef.create(KEYS_FN);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "keys", SoyValue.class);
+    static final MethodRef KEYS_FN_REF =
+        MethodRef.create(BasicFunctionsRuntime.class, "keys", SoyLegacyObjectMap.class);
   }
 
   @Override

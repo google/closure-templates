@@ -18,10 +18,14 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.types.SoyType;
+import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * A node representing a function (with args as children).
@@ -38,6 +42,9 @@ public final class FunctionNode extends AbstractParentExprNode {
    * SoySourceFunction everywhere.
    */
   private final Object soyFunction;
+
+  /** The parameter types this function allows. */
+  @Nullable private ImmutableList<SoyType> allowedParamTypes;
 
   /** Convenience constructor for SoyFunctions. */
   public FunctionNode(SoyFunction soyFunction, SourceLocation sourceLocation) {
@@ -64,6 +71,7 @@ public final class FunctionNode extends AbstractParentExprNode {
     super(orig, copyState);
     this.name = orig.name;
     this.soyFunction = orig.soyFunction;
+    this.allowedParamTypes = orig.allowedParamTypes;
   }
 
   @Override
@@ -78,6 +86,21 @@ public final class FunctionNode extends AbstractParentExprNode {
 
   public Object getSoyFunction() {
     return soyFunction;
+  }
+
+  public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
+    checkState(
+        allowedParamTypes.size() == numChildren(),
+        "allowedParamTypes.size (%s) != numChildren (%s)",
+        allowedParamTypes.size(),
+        numChildren());
+    this.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
+  }
+
+  /** Returns null if ResolveExpressionTypesPass has not run yet. */
+  @Nullable
+  public ImmutableList<SoyType> getAllowedParamTypes() {
+    return allowedParamTypes;
   }
 
   @Override

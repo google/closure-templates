@@ -20,57 +20,80 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
 import java.lang.reflect.Method;
 import javax.annotation.Nullable;
-import org.objectweb.asm.Type;
 
-/**
- * Adapts an Expression to a JavaValue. By having an adapter instead of letting Expression
- * implementing JavaValue, we avoid mixing the concerns of JavaValue w/ Expression. JavaValue
- * special-cases SoyExpression a lot, although needs to also work with Expression in a few places.
- * In addition, it can optionally capture the Method that the Expression is calling (for use with
- * user-friendly error messages).
- */
+/** Adapts an Expression to a JavaValue. */
 final class JbcSrcJavaValue implements JavaValue {
 
-  /**
-   * A stub value that exists for error scenarios. This intentionally points to a method that
-   * doesn't exist, so that if ever it leaks out, then compilation will fail.
-   */
-  static final JbcSrcJavaValue ERROR_VALUE =
-      new JbcSrcJavaValue(
-          MethodRef.createStaticMethod(
-                  TypeInfo.create(
-                      "if.you.see.this.please.report.a.bug.because.an.error.message.was.swallowed"),
-                  new org.objectweb.asm.commons.Method("oops", Type.BOOLEAN_TYPE, new Type[0]))
-              .invoke(),
-          null);
+  /** Constructs a JbcSrcJavaValue that represents an error. */
+  static JbcSrcJavaValue error(Expression expr, JbcSrcValueErrorReporter reporter) {
+    return new JbcSrcJavaValue(
+        expr, /* method= */ null, /* allowedType= */ null, /* error= */ true, reporter);
+  }
 
   /** Constructs a JbcSrcJavaValue based on the Expression. */
-  static JbcSrcJavaValue of(Expression expr) {
-    return new JbcSrcJavaValue(checkNotNull(expr), null);
+  static JbcSrcJavaValue of(Expression expr, JbcSrcValueErrorReporter reporter) {
+    if (expr instanceof SoyExpression) {
+      return new JbcSrcJavaValue(
+          expr, /* method= */ null, ((SoyExpression) expr).soyType(), /* error= */ false, reporter);
+    }
+    return new JbcSrcJavaValue(
+        expr, /* method= */ null, /* allowedType= */ null, /* error= */ false, reporter);
   }
 
   /**
-   * Constructs a JbcSrcJavaValue based on the Expression. The method is used for validating the
-   * return type of the expression (when translating it to a SoyExpression), and also to display
-   * helpful error messages to the user if necessary. It is not invoked.
+   * Constructs a JbcSrcJavaValue based on the Expression. The method is used to display helpful
+   * error messages to the user if necessary. It is not invoked.
    */
-  static JbcSrcJavaValue of(Expression expr, Method method) {
-    return new JbcSrcJavaValue(checkNotNull(expr), checkNotNull(method));
+  static JbcSrcJavaValue of(Expression expr, Method method, JbcSrcValueErrorReporter reporter) {
+    checkNotNull(method);
+    if (expr instanceof SoyExpression) {
+      return new JbcSrcJavaValue(
+          expr, method, ((SoyExpression) expr).soyType(), /* error= */ false, reporter);
+    }
+    return new JbcSrcJavaValue(expr, method, /* allowedType= */ null, /* error= */ false, reporter);
+  }
+
+  /**
+   * Constructs a JbcSrcJavaValue based on the Expression, with the given SoyType as allowed types.
+   * The SoyType is expected to be based on the function signature, so can be broader than the soy
+   * type of the expression itself. The expression is expected to be assignable to the type.
+   */
+  static JbcSrcJavaValue of(
+      SoyExpression expr, SoyType allowedType, JbcSrcValueErrorReporter reporter) {
+    return new JbcSrcJavaValue(
+        expr, /* method= */ null, checkNotNull(allowedType), /* error= */ false, reporter);
   }
 
   private final Expression expr;
+  private final JbcSrcValueErrorReporter reporter;
+  @Nullable private final SoyType allowedType;
   @Nullable private final Method method;
+  private final boolean error;
 
-  private JbcSrcJavaValue(Expression expr, Method method) {
-    this.expr = expr;
+  private JbcSrcJavaValue(
+      Expression expr,
+      Method method,
+      SoyType allowedType,
+      boolean error,
+      JbcSrcValueErrorReporter reporter) {
+    this.expr = checkNotNull(expr);
+    this.reporter = checkNotNull(reporter);
     this.method = method;
+    this.allowedType = allowedType;
+    this.error = error;
+  }
+
+  boolean isError() {
+    return error;
   }
 
   Expression expr() {
@@ -78,9 +101,18 @@ final class JbcSrcJavaValue implements JavaValue {
   }
 
   /**
-   * Returns the method that this expression will invoke at runtime. The return type is used for
-   * additional validation, and the method signature is used to display helpful error messages to
-   * the user, if necessary.
+   * Returns the SoyType of the parameter at this value's index that the function's signature allows
+   * (if the expression comes from a function parameter), or the type of the SoyExpression (if the
+   * expression comes from something else).
+   */
+  @Nullable
+  SoyType getAllowedType() {
+    return allowedType;
+  }
+
+  /**
+   * Returns the method that this expression is delegating to. The method signature is used to
+   * display helpful error messages to the user, if necessary.
    */
   @Nullable
   Method methodInfo() {
@@ -89,32 +121,78 @@ final class JbcSrcJavaValue implements JavaValue {
 
   @Override
   public JbcSrcJavaValue isNonNull() {
-    return of(BytecodeUtils.isNonNull(expr));
+    return of(BytecodeUtils.isNonNull(expr), reporter);
   }
 
   @Override
   public JbcSrcJavaValue isNull() {
-    return of(BytecodeUtils.isNull(expr));
+    return of(BytecodeUtils.isNull(expr), reporter);
   }
 
   @Override
-  public ValueSoyType soyType() {
-    if (expr() instanceof SoyExpression) {
-      SoyType soyType = ((SoyExpression) expr()).soyType();
-      return JbcSrcValueFactory.valueForKind(soyType.getKind());
-    }
+  public JbcSrcJavaValue asSoyBoolean() {
+    return asSoyType(BoolType.getInstance(), boolean.class, "asSoyBoolean");
+  }
 
-    throw new UnsupportedOperationException(
-        "soyType is only currently supported on the JavaValue parameters "
-            + "of callStaticMethod or callRuntimeMethod");
+  @Override
+  public JbcSrcJavaValue asSoyFloat() {
+    return asSoyType(FloatType.getInstance(), double.class, "asSoyFloat");
+  }
+
+  @Override
+  public JbcSrcJavaValue asSoyInt() {
+    return asSoyType(IntType.getInstance(), long.class, "asSoyInt");
+  }
+
+  @Override
+  public JbcSrcJavaValue asSoyString() {
+    return asSoyType(StringType.getInstance(), String.class, "asSoyString");
+  }
+
+  private JbcSrcJavaValue asSoyType(SoyType newType, Class<?> newClass, String methodName) {
+    if (allowedType == null) {
+      reporter.nonSoyExpressionNotConvertible(expr, newType, methodName);
+      return error(JbcSrcValueFactory.stubExpression(newClass), reporter);
+    }
+    if (!allowedType.isAssignableFrom(newType)) {
+      reporter.incompatibleSoyType(allowedType, newType, methodName);
+      return error(JbcSrcValueFactory.stubExpression(newClass), reporter);
+    }
+    return new JbcSrcJavaValue(expr, method, checkNotNull(newType), /* error= */ false, reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue coerceToSoyBoolean() {
+    if (!(expr instanceof SoyExpression)) {
+      reporter.nonSoyExpressionNotCoercible(expr, BoolType.getInstance(), "coerceToSoyBoolean");
+      return error(JbcSrcValueFactory.stubExpression(boolean.class), reporter);
+    }
+    return new JbcSrcJavaValue(
+        ((SoyExpression) expr).coerceToBoolean(),
+        method,
+        BoolType.getInstance(),
+        /* error= */ false,
+        reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue coerceToSoyString() {
+    if (!(expr instanceof SoyExpression)) {
+      reporter.nonSoyExpressionNotCoercible(expr, StringType.getInstance(), "coerceToSoyString");
+      return error(JbcSrcValueFactory.stubExpression(String.class), reporter);
+    }
+    return new JbcSrcJavaValue(
+        ((SoyExpression) expr).coerceToString(),
+        method,
+        StringType.getInstance(),
+        /* error= */ false,
+        reporter);
   }
 
   @Override
   public String toString() {
-    if (method != null) {
-      return "JbcSrcJavaValue[expr=" + expr + ", method= " + method + "]";
-    } else {
-      return "JbcSrcJavaValue[expr=" + expr + "]";
-    }
+    String typeStr = allowedType == null ? "" : (", allowedType= " + allowedType);
+    String methodStr = method == null ? "" : (", method= " + method);
+    return "JbcSrcJavaValue[expr=" + expr + typeStr + methodStr + "]";
   }
 }

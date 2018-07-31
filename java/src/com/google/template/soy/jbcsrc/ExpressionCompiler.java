@@ -936,7 +936,7 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJavaSourceFunction) {
         return new JbcSrcValueFactory(
                 node,
-                parameters.getJavaPluginContext(),
+                parameters.getPluginContext(),
                 new JbcSrcValueFactory.PluginInstanceLookup() {
                   @Override
                   public Expression getPluginInstance(String pluginName) {

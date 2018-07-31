@@ -39,16 +39,16 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -108,23 +108,25 @@ public class SoyJavaSourceFunctionTester {
   public Object callFunction(Object... args) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     FunctionNode fnNode = new FunctionNode(fnSig.name(), fn, SourceLocation.UNKNOWN);
-    SoyType returnType = null;
+    Signature matchingSig = null;
     for (Signature sig : fnSig.value()) {
       if (sig.parameterTypes().length == args.length) {
-        returnType =
-            SoyFileParser.parseType(
-                sig.returnType(),
-                new SoyTypeRegistry(),
-                fn.getClass().getName(),
-                ErrorReporter.exploding());
+        matchingSig = sig;
         break;
       }
     }
-    if (returnType == null) {
+    if (matchingSig == null) {
       throw new IllegalArgumentException(
           "No signature on " + fn.getClass().getName() + " with " + args.length + " parameters");
     }
-    fnNode.setType(returnType);
+    // Setting the allowed param types requires the node have that # of children,
+    // so we add fake children.
+    for (int i = 0; i < matchingSig.parameterTypes().length; i++) {
+      fnNode.addChild(new NullNode(SourceLocation.UNKNOWN));
+    }
+    fnNode.setAllowedParamTypes(
+        Stream.of(matchingSig.parameterTypes()).map(this::parseType).collect(toImmutableList()));
+    fnNode.setType(parseType(matchingSig.returnType()));
 
     try {
       return ExpressionEvaluator.evaluate(
@@ -136,6 +138,11 @@ public class SoyJavaSourceFunctionTester {
     } catch (ReflectiveOperationException roe) {
       throw new RuntimeException(roe);
     }
+  }
+
+  private SoyType parseType(String type) {
+    return SoyFileParser.parseType(
+        type, new SoyTypeRegistry(), fn.getClass().getName(), ErrorReporter.exploding());
   }
 
   /**
@@ -229,23 +236,26 @@ public class SoyJavaSourceFunctionTester {
     throw new UnsupportedOperationException("Not implemented yet");
   }
 
-  private class InternalContext implements JavaPluginContext {
+  private class InternalContext implements JbcSrcPluginContext {
     @Override
-    public JavaValue getULocale() {
+    public Expression getULocale() {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public JavaValue getBidiDir() {
+    public Expression getBidiGlobalDir() {
       if (bidiGlobalDir == BidiGlobalDir.RTL) {
-        return JbcSrcJavaValues.newValue(
-            staticFieldReference(BidiGlobalDir.class, "RTL").accessor());
+        return staticFieldReference(BidiGlobalDir.class, "RTL").accessor();
       }
       if (bidiGlobalDir == BidiGlobalDir.LTR) {
-        return JbcSrcJavaValues.newValue(
-            staticFieldReference(BidiGlobalDir.class, "LTR").accessor());
+        return staticFieldReference(BidiGlobalDir.class, "LTR").accessor();
       }
       throw new IllegalStateException("no bidiGlobalDir set.");
+    }
+
+    @Override
+    public Expression getDebugSoyTemplateInfo() {
+      throw new UnsupportedOperationException();
     }
   }
 }

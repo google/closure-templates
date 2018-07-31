@@ -25,6 +25,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
@@ -39,6 +40,14 @@ import java.util.Map;
 
 /** static functions for implementing the basic functions for java. */
 public final class BasicFunctionsRuntime {
+  /**
+   * Combine the two maps -- for the JavaSource variant while the function signature is still ?
+   * instead of map.
+   */
+  public static SoyDict augmentMap(SoyValue first, SoyValue second) {
+    return augmentMap((SoyDict) first, (SoyDict) second);
+  }
+
   /** Combine the two maps. */
   public static SoyDict augmentMap(SoyDict first, SoyDict second) {
     Map<String, SoyValueProvider> map =
@@ -84,6 +93,14 @@ public final class BasicFunctionsRuntime {
     } else {
       return (long) Math.floor(arg.floatValue());
     }
+  }
+
+  /**
+   * Returns a list of all the keys in the given map. For the JavaSource variant, while the function
+   * signature is ? instead of legacy_object_map.
+   */
+  public static List<SoyValue> keys(SoyValue map) {
+    return keys((SoyLegacyObjectMap) map);
   }
 
   /** Returns a list of all the keys in the given map. */
@@ -201,8 +218,8 @@ public final class BasicFunctionsRuntime {
     return list;
   }
 
-  public static boolean strContains(String left, SoyValue right) {
-    return left.contains(right.coerceToString());
+  public static boolean strContains(String left, String right) {
+    return left.contains(right);
   }
 
   public static int strIndexOf(String left, String right) {
@@ -221,9 +238,12 @@ public final class BasicFunctionsRuntime {
     return str.substring(start, end);
   }
 
-  // Note: This takes a SoyList (not a List), because for some reason we get compilation errors
-  // (when commenting out the jbcsrc variant) that inputs aren't a list:
-  public static int length(SoyList list) {
-    return list.length();
+  public static int length(List<?> list) {
+    return list.size();
+  }
+
+  @SuppressWarnings("deprecation")
+  public static SoyMap legacyObjectMapToMap(SoyValue value) {
+    return SoyMaps.legacyObjectMapToMap((SoyLegacyObjectMap) value);
   }
 }

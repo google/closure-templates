@@ -13567,22 +13567,29 @@ goog.require('goog.string.TypedString');
  * `goog.string.Const.from` and not by invoking its constructor.  The
  * constructor intentionally takes no parameters and the type is immutable;
  * hence only a default instance corresponding to the empty string can be
- * obtained via constructor invocation.
+ * obtained via constructor invocation.  Use goog.string.Const.EMPTY
+ * instead of using this constructor to get an empty Const string.
  *
  * @see goog.string.Const#from
  * @constructor
  * @final
  * @struct
  * @implements {goog.string.TypedString}
+ * @param {Object=} opt_token package-internal implementation detail.
+ * @param {string=} opt_content package-internal implementation detail.
  */
-goog.string.Const = function() {
+goog.string.Const = function(opt_token, opt_content) {
   /**
    * The wrapped value of this Const object.  The field has a purposely ugly
    * name to make (non-compiled) code that attempts to directly access this
    * field stand out.
    * @private {string}
    */
-  this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ = '';
+  this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ =
+      ((opt_token ===
+        goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_) &&
+       opt_content) ||
+      '';
 
   /**
    * A type marker used to implement additional run-time type checking.
@@ -13683,9 +13690,9 @@ goog.string.Const.unwrap = function(stringConst) {
  * @return {!goog.string.Const} A Const object initialized to stringConst.
  */
 goog.string.Const.from = function(s) {
-  return goog.string.Const.create__googStringSecurityPrivate_(s);
+  return new goog.string.Const(
+      goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_, s);
 };
-
 
 /**
  * Type marker for the Const type, used to implement additional run-time
@@ -13695,20 +13702,12 @@ goog.string.Const.from = function(s) {
  */
 goog.string.Const.TYPE_MARKER_ = {};
 
-
 /**
- * Utility method to create Const instances.
- * @param {string} s The string to initialize the Const object with.
- * @return {!goog.string.Const} The initialized Const object.
+ * @type {!Object}
  * @private
+ * @const
  */
-goog.string.Const.create__googStringSecurityPrivate_ = function(s) {
-  var stringConst = new goog.string.Const();
-  stringConst.stringConstValueWithSecurityContract__googStringSecurityPrivate_ =
-      s;
-  return stringConst;
-};
-
+goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 /**
  * A Const instance wrapping the empty string.
@@ -15659,6 +15658,55 @@ goog.html.SafeUrl.fromSipUrl = function(sipUrl) {
   }
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
       sipUrl);
+};
+
+
+/**
+ * Creates a SafeUrl wrapping a sms: URL.
+ *
+ * @param {string} smsUrl A sms URL.
+ * @return {!goog.html.SafeUrl} A matching safe URL, or {@link INNOCUOUS_STRING}
+ *     wrapped as a SafeUrl if it does not pass.
+ */
+goog.html.SafeUrl.fromSmsUrl = function(smsUrl) {
+  if (!goog.string.caseInsensitiveStartsWith(smsUrl, 'sms:') ||
+      !goog.html.SafeUrl.isSmsUrlBodyValid_(smsUrl)) {
+    smsUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
+  }
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
+      smsUrl);
+};
+
+
+/**
+ * Validates SMS URL `body` parameter, which is optional and should appear at
+ * most once and should be percentage-encoded if present.
+ *
+ * @param {string} smsUrl A sms URL.
+ * @return {boolean} Whether SMS URL has a valid `body` parameter if it exists.
+ * @private
+ */
+goog.html.SafeUrl.isSmsUrlBodyValid_ = function(smsUrl) {
+  var bodyParams = smsUrl.match(/[?&]body=/gi);
+  // "body" param is optional
+  if (!bodyParams) {
+    return true;
+  }
+  // "body" MUST only appear once
+  if (bodyParams.length > 1) {
+    return false;
+  }
+  // Get the encoded `body` parameter value.
+  var bodyValue = smsUrl.match(/[?&]body=([^&]+)/)[1];
+  if (!bodyValue) {
+    return true;
+  }
+  try {
+    return goog.string.urlEncode(bodyValue) === bodyValue ||
+        goog.string.urlDecode(bodyValue) !== bodyValue;
+  } catch (error) {
+    return false;
+  }
 };
 
 

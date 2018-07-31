@@ -91,7 +91,8 @@ final class StrIndexOfFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.INDEX_OF, args.get(0), args.get(1));
+    return factory.callStaticMethod(
+        Methods.INDEX_OF, args.get(0).asSoyString(), args.get(1).asSoyString());
   }
 
   @Override

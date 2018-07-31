@@ -83,7 +83,7 @@ final class StrLenFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.STR_LEN, args.get(0));
+    return factory.callStaticMethod(Methods.STR_LEN, args.get(0).asSoyString());
   }
 
   @Override

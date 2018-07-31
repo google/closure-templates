@@ -26,8 +26,6 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
-import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -169,20 +167,5 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   public Expression hasLogger() {
     return delegate.invoke(HAS_LOGGER);
-  }
-
-  /** Returns this {@link RenderContextExpression} as a {@link JavaPluginContext}. */
-  public JavaPluginContext asJavaPluginContext() {
-    return new JavaPluginContext() {
-      @Override
-      public JavaValue getULocale() {
-        return JbcSrcJavaValue.of(RenderContextExpression.this.getULocale());
-      }
-
-      @Override
-      public JavaValue getBidiDir() {
-        return JbcSrcJavaValue.of(RenderContextExpression.this.getBidiGlobalDir());
-      }
-    };
   }
 }

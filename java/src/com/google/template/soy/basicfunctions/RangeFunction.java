@@ -56,6 +56,7 @@ import org.objectweb.asm.Type;
  */
 @SoyFunctionSignature(
     name = "range",
+    // TODO(b/70946095): params should be an 'int', not a 'number'
     value = {
       @Signature(
           parameterTypes = {"number"},
@@ -93,11 +94,16 @@ public final class RangeFunction extends TypedSoyFunction
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     switch (args.size()) {
       case 1:
-        return factory.callStaticMethod(Methods.RANGE_1, args.get(0));
+        return factory.callStaticMethod(Methods.RANGE_1, args.get(0).asSoyInt());
       case 2:
-        return factory.callStaticMethod(Methods.RANGE_2, args.get(0), args.get(1));
+        return factory.callStaticMethod(
+            Methods.RANGE_2, args.get(0).asSoyInt(), args.get(1).asSoyInt());
       case 3:
-        return factory.callStaticMethod(Methods.RANGE_3, args.get(0), args.get(1), args.get(2));
+        return factory.callStaticMethod(
+            Methods.RANGE_3,
+            args.get(0).asSoyInt(),
+            args.get(1).asSoyInt(),
+            args.get(2).asSoyInt());
       default:
         throw new AssertionError();
     }

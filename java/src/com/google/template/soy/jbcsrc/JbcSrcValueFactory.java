@@ -16,28 +16,46 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
+import com.google.protobuf.Message;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
-import com.google.template.soy.plugin.java.restricted.JavaValue.ValueSoyType;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -45,6 +63,51 @@ import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
 final class JbcSrcValueFactory extends JavaValueFactory {
+
+  // List of classes that are allowed as parameter types for each soy types.
+
+  private static final ImmutableSet<Class<?>> UNKNOWN_TYPES = ImmutableSet.of(SoyValue.class);
+
+  private static final ImmutableSet<Class<?>> SANITIZED_TYPES =
+      ImmutableSet.of(SoyValue.class, SanitizedContent.class, String.class);
+
+  private static final ImmutableSet<Class<?>> BOOL_TYPES =
+      ImmutableSet.of(SoyValue.class, boolean.class, BooleanData.class);
+
+  private static final ImmutableSet<Class<?>> FLOAT_TYPES =
+      ImmutableSet.of(SoyValue.class, double.class, FloatData.class, NumberData.class);
+
+  // We allow 'double' for soy int types because double has more precision than soy guarantees
+  // for its int type.
+  private static final ImmutableSet<Class<?>> INT_TYPES =
+      ImmutableSet.of(
+          SoyValue.class, long.class, IntegerData.class, NumberData.class, int.class, double.class);
+
+  @SuppressWarnings("deprecation") // SoyLegacyObjectMap is deprecated
+  private static final ImmutableSet<Class<?>> LEGACY_OBJECT_MAP_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyLegacyObjectMap.class, SoyDict.class);
+
+  // TODO(sameb): Remove List?  We can't validate it's generic type.
+  private static final ImmutableSet<Class<?>> LIST_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyList.class, List.class);
+
+  private static final ImmutableSet<Class<?>> MAP_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyMap.class, SoyDict.class, SoyRecord.class);
+
+  private static final ImmutableSet<Class<?>> RECORD_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyRecord.class);
+
+  private static final ImmutableSet<Class<?>> STRING_TYPES =
+      ImmutableSet.of(SoyValue.class, String.class, StringData.class);
+
+  private static final ImmutableSet<Class<?>> NULL_TYPES =
+      ImmutableSet.of(SoyValue.class, NullData.class);
+
+  private static final ImmutableSet<Class<?>> PROTO_TYPES =
+      ImmutableSet.of(SoyValue.class, Message.class, SoyProtoValue.class);
+
+  private static final ImmutableSet<Class<?>> PROTO_ENUM_TYPES =
+      ImmutableSet.of(SoyValue.class, int.class);
 
   /** Interface that looks up an expression for a given plugin name. */
   interface PluginInstanceLookup {
@@ -59,34 +122,47 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   JbcSrcValueFactory(
       FunctionNode fnNode,
-      JavaPluginContext context,
+      final JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
-      ErrorReporter reporter) {
+      ErrorReporter errorReporter) {
     this.fnNode = fnNode;
-    this.context = context;
     this.pluginInstanceLookup = pluginInstanceLookup;
-    this.reporter = new JbcSrcValueErrorReporter(reporter, fnNode);
+    this.reporter = new JbcSrcValueErrorReporter(errorReporter, fnNode);
+    this.context =
+        new JavaPluginContext() {
+          @Override
+          public JavaValue getULocale() {
+            return JbcSrcJavaValue.of(jbcPluginContext.getULocale(), reporter);
+          }
+
+          @Override
+          public JavaValue getBidiDir() {
+            return JbcSrcJavaValue.of(jbcPluginContext.getBidiGlobalDir(), reporter);
+          }
+        };
   }
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    // Transform and copy to an ImmutableList to avoid exposing a mutable list to user code.
-    List<JavaValue> javaArgs =
-        ImmutableList.copyOf(
-            Lists.transform(
-                args,
-                new Function<SoyExpression, JavaValue>() {
-                  @Override
-                  public JavaValue apply(SoyExpression expr) {
-                    return JbcSrcJavaValue.of(expr);
-                  }
-                }));
+
+    checkState(fnNode.getAllowedParamTypes() != null, "allowed param types must be set");
+    checkState(
+        fnNode.getAllowedParamTypes().size() == args.size(),
+        "wrong # of allowed param types (%s), expected %s",
+        fnNode.getAllowedParamTypes(),
+        args.size());
+
+    ImmutableList.Builder<JavaValue> jvBuilder = ImmutableList.builder();
+    for (int i = 0; i < args.size(); i++) {
+      jvBuilder.add(
+          JbcSrcJavaValue.of(args.get(i), fnNode.getAllowedParamTypes().get(i), reporter));
+    }
     SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
 
-    JavaValue result = javaSrcFn.applyForJavaSource(this, javaArgs, context);
+    JavaValue result = javaSrcFn.applyForJavaSource(this, jvBuilder.build(), context);
     if (result == null) {
       reporter.nullReturn();
-      result = JbcSrcJavaValue.ERROR_VALUE;
+      result = errorValue();
     }
 
     Optional<SoyExpression> soyExpr = toSoyExpression((JbcSrcJavaValue) result);
@@ -101,7 +177,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   public JbcSrcJavaValue callStaticMethod(Method method, JavaValue... params) {
     if (method == null) {
       reporter.nullMethod("callStaticMethod");
-      return JbcSrcJavaValue.ERROR_VALUE;
+      return errorValue();
     }
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
@@ -110,17 +186,17 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
     Optional<Expression[]> adapted = adaptParams(method, params, "callStaticMethod");
     if (!adapted.isPresent()) {
-      return JbcSrcJavaValue.ERROR_VALUE;
+      return errorValue();
     }
     return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(MethodRef.create(method).invoke(adapted.get())), method);
+        tryToWrapInSoyExpression(MethodRef.create(method).invoke(adapted.get())), method, reporter);
   }
 
   @Override
   public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
     if (method == null) {
       reporter.nullMethod("callInstanceMethod");
-      return JbcSrcJavaValue.ERROR_VALUE;
+      return errorValue();
     }
 
     // We need to cast to the method's declaring class in order for the owner type
@@ -133,10 +209,12 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
     Optional<Expression[]> adapted = adaptParams(method, params, "callInstanceMethod");
     if (!adapted.isPresent()) {
-      return JbcSrcJavaValue.ERROR_VALUE;
+      return errorValue();
     }
     return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(runtime.invoke(MethodRef.create(method), adapted.get())), method);
+        tryToWrapInSoyExpression(runtime.invoke(MethodRef.create(method), adapted.get())),
+        method,
+        reporter);
   }
 
   @Override
@@ -150,7 +228,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
                 return (SoyExpression) ((JbcSrcJavaValue) value).expr();
               }
             });
-    return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs));
+    return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs), reporter);
   }
 
   private Optional<Expression[]> adaptParams(
@@ -174,24 +252,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         params[i] = stubExpression(methodParam);
         continue;
       }
-      Expression expr = ((JbcSrcJavaValue) userParams[i]).expr();
-      // TODO(sameb): This could probably do with a whole lot more checking and user-friendly
-      // exceptions.  Things to check for:
-      //   * Method arg wants non-Soy-supported type
-      //   * Support SoyValueProvider too?
-      // Note: We expect most parameters to be a SoyExpression, however there are some cases where
-      // they won't be.  For example:
-      //    * If the user passed the result of JavaValueFactory.asList.
-      //      (The list is just an Expression of type List.  It's not a SoyExpression, because
-      //       we don't know the parameter types.  This could change if we want to use 'unknown'
-      //       as the parameter types.)
-      //   * If the user composed multiple callXMethod calls together and the result of an inner
-      //     one was a Soy type that required parameters.  (This could also change if we want
-      //     to eagerly use 'unknown' as the parameter types.)
-      //   * If the user passed the result of a JavaPluginContext call, like the BidiGlobalDir,
-      //     which has no SoyExpression that can wrap it.
+      JbcSrcJavaValue jbcJv = (JbcSrcJavaValue) userParams[i];
+      Expression expr = jbcJv.expr();
       if (expr instanceof SoyExpression) {
-        params[i] = adaptParameter(method, i, methodParam, (SoyExpression) expr);
+        params[i] =
+            adaptParameter(method, i, methodParam, (SoyExpression) expr, jbcJv.getAllowedType());
       } else {
         if (!BytecodeUtils.isDefinitelyAssignableFrom(
             Type.getType(methodParam), expr.resultType())) {
@@ -205,75 +270,112 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private Expression adaptParameter(
-      Method method, int paramIdx, Class<?> expectedParamType, SoyExpression actualParam) {
+      Method method,
+      int paramIdx,
+      Class<?> expectedParamType,
+      SoyExpression actualParam,
+      SoyType allowedType) {
+
+    // First we validate that the type is allowed based on the function's signature (if any).
+    if (!isValidClassForType(expectedParamType, allowedType)) {
+      reporter.invalidParameterType(method, paramIdx + 1, expectedParamType, allowedType);
+      return stubExpression(expectedParamType);
+    }
+
+    // Then adapt the expression to fit the parameter type.  We know the below calls are all
+    // safe because we've already validated the parameter type against the allowed soy types.
+
+    // If expecting a bland 'SoyValue', just box the expr.
     if (expectedParamType == SoyValue.class) {
-      // If expecting a bland 'SoyValue', just box the expr.
       return actualParam.box();
-    } else if (SoyValue.class.isAssignableFrom(expectedParamType)) {
-      // If we expect a specific SoyValue subclass (e.g, SoyDict), then box + cast.
-      // Ideally we'd also do some kind of compiler-time check here
-      // (like isDefinitelyAssignableFrom(getType(expected), actual.resultType)
-      // but the actual type of a boxed dict is SoyRecord, not SoyDict.... so oh well.)
+    }
+    // If we expect a specific SoyValue subclass, then box + cast.
+    if (SoyValue.class.isAssignableFrom(expectedParamType)) {
       return actualParam.box().checkedCast(expectedParamType);
     }
 
-    // Otherwise we want an unboxed param, so inspect a little more closely...
-    switch (valueForKind(actualParam.soyType().getKind())) {
-      case NULL:
-        if (!Primitives.allPrimitiveTypes().contains(expectedParamType)) {
-          // TODO(sameb): No guarantee we can unbox as the expected type...
-          return actualParam.unboxAs(expectedParamType);
-        }
-        break;
-      case BOOLEAN:
-        if (expectedParamType == boolean.class) {
-          return actualParam.unboxAs(boolean.class);
-        }
-        break;
-      case FLOAT:
-        if (expectedParamType == double.class) {
-          return actualParam.unboxAs(double.class);
-        }
-        break;
-      case INTEGER:
-        if (expectedParamType == long.class) {
-          return actualParam.unboxAs(long.class);
-        } else if (expectedParamType == int.class) {
-          // TODO(sameb): This could overflow -- ideally we should generate bounds checks like
-          // IntegerData.integerValue() has.
-          return BytecodeUtils.numericConversion(actualParam.unboxAs(long.class), Type.INT_TYPE);
-        } else if (expectedParamType == double.class) {
-          // long can be represented as a double, e.g IntegerData.floatValue works fine.
-          return actualParam.coerceToDouble();
-        }
-        break;
-      case LIST:
-        // TODO(sameb): This doesn't validate the generic types.  I'm not sure we can even do that.
-        // Should we require SoyList (boxed) instead when a list?
-        if (expectedParamType == List.class || expectedParamType == FluentIterable.class) {
-          return actualParam.unboxAs(List.class);
-        }
-        break;
-      case STRING:
+    // Otherwise, we're an unboxed type (non-SoyValue).
+
+    // int needs special-casing for overflow, and because we can't unboxAs(int.class)
+    if (expectedParamType == int.class) {
+      // We box + invoke rather than unboxAs(long.class) + numericConversion so that we get
+      // overflow checking (built into integerValue()).
+      return actualParam.box().invoke(MethodRef.SOY_VALUE_INTEGER_VALUE);
+    }
+    // double needs special casing since we allow soy int -> double conversions (since double
+    // has enough precision to hold soy int data).  We can't unbox longs as double, so we coerce.
+    if (expectedParamType == double.class) {
+      return actualParam.coerceToDouble();
+    }
+
+    return actualParam.unboxAs(expectedParamType);
+  }
+
+  /** Returns true if the clazz is allowed as a parameter type for the given soy type. */
+  private boolean isValidClassForType(Class<?> clazz, SoyType type) {
+    // Exit early if the class is primitive and the type is nullable -- that's not allowed.
+    // Then remove null from the type.  This allows us to accept precise params for nullable
+    // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
+    if (SoyTypes.isNullable(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
+      return false;
+    }
+    type = SoyTypes.tryRemoveNull(type);
+    switch (type.getKind()) {
+      case ANY:
+      case UNKNOWN:
+        return UNKNOWN_TYPES.contains(clazz);
       case ATTRIBUTES:
       case CSS:
       case HTML:
-      case JS:
-      case TRUSTED_RESOURCE_URI:
       case URI:
-        // TODO(sameb): For the SanitizedContent types, we may want to support params like
-        // SafeHtml, SafeCss, etc.. which'd require boxing to SanitizedContent & then calling
-        // toXXX.
-        if (expectedParamType == String.class) {
-          return actualParam.unboxAs(String.class);
+      case TRUSTED_RESOURCE_URI:
+      case JS:
+        return SANITIZED_TYPES.contains(clazz);
+      case BOOL:
+        return BOOL_TYPES.contains(clazz);
+      case FLOAT:
+        return FLOAT_TYPES.contains(clazz);
+      case INT:
+        return INT_TYPES.contains(clazz);
+      case LEGACY_OBJECT_MAP:
+        return LEGACY_OBJECT_MAP_TYPES.contains(clazz);
+      case LIST:
+        return LIST_TYPES.contains(clazz);
+      case MAP:
+        return MAP_TYPES.contains(clazz);
+      case RECORD:
+        return RECORD_TYPES.contains(clazz);
+      case STRING:
+        return STRING_TYPES.contains(clazz);
+      case NULL:
+        return NULL_TYPES.contains(clazz);
+      case PROTO:
+        return PROTO_TYPES.contains(clazz);
+      case PROTO_ENUM:
+        return PROTO_ENUM_TYPES.contains(clazz);
+      case UNION:
+        // If this is a union, make sure the type is valid for every member.
+        // If the type isn't valid for any member, then there's no guarantee this will work
+        // for an arbitrary template at runtime.
+        for (SoyType member : ((UnionType) type).getMembers()) {
+          if (!isValidClassForType(clazz, member)) {
+            return false;
+          }
         }
-        break;
-      case OTHER:
-        // TODO(sameb): Figure this out.  Fail for now.
+        return true;
+      case ERROR:
+        throw new IllegalStateException("Cannot have error type from function signature");
     }
 
-    reporter.invalidParameterType(method, paramIdx + 1, expectedParamType, actualParam);
-    return stubExpression(expectedParamType);
+    throw new AssertionError("above switch is exhaustive");
+  }
+
+  /**
+   * Returns a stub error value, for use in continuing in scenarios where we don't know expected
+   * type.
+   */
+  private JbcSrcJavaValue errorValue() {
+    return JbcSrcJavaValue.error(stubExpression(boolean.class), reporter);
   }
 
   /**
@@ -281,7 +383,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
    * given class. Useful for scenarios where we're reporting an error and just need an Expression of
    * the appropriate type to be able to continue.
    */
-  private Expression stubExpression(Class<?> clazz) {
+  static Expression stubExpression(Class<?> clazz) {
     return MethodRef.createStaticMethod(
             TypeInfo.create(
                 "if.you.see.this.please.report.a.bug.because.an.error.message.was.swallowed"),
@@ -294,25 +396,30 @@ final class JbcSrcValueFactory extends JavaValueFactory {
    * statically know are Soy Expressions and don't require additional runtime type args.
    */
   private Expression tryToWrapInSoyExpression(Expression expr) {
-    Class<?> type = BytecodeUtils.classFromAsmType(expr.resultType());
-    if (type == boolean.class) {
-      return SoyExpression.forBool(expr);
-    } else if (type == int.class) {
-      return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
-    } else if (type == long.class) {
-      return SoyExpression.forInt(expr);
-    } else if (type == float.class || type == double.class) {
-      return SoyExpression.forFloat(expr);
-    } else if (type == String.class) {
-      return SoyExpression.forString(expr);
+    switch (expr.resultType().getSort()) {
+      case Type.BOOLEAN:
+        return SoyExpression.forBool(expr);
+      case Type.INT:
+        return SoyExpression.forInt(BytecodeUtils.numericConversion(expr, Type.LONG_TYPE));
+      case Type.LONG:
+        return SoyExpression.forInt(expr);
+      case Type.DOUBLE:
+        return SoyExpression.forFloat(expr);
+      case Type.OBJECT:
+        if (expr.resultType().equals(BytecodeUtils.STRING_TYPE)) {
+          return SoyExpression.forString(expr);
+        }
+        break;
+      default:
+        break;
     }
     // TODO(sameb): Maybe wrap List/SoyValue types too, as 'unknown' parameter types?
     return expr;
   }
 
   private Optional<SoyExpression> toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
-    // Don't bother doing anything if this is a stub value, we already recorded errors.
-    if (pluginReturnValue == JbcSrcJavaValue.ERROR_VALUE) {
+    // Don't bother doing anything if this is an error value, we already recorded errors.
+    if (pluginReturnValue.isError()) {
       return Optional.absent();
     }
 
@@ -325,11 +432,14 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expr instanceof SoyExpression) {
       soyExpr = (SoyExpression) expr;
     } else {
+      // All expressions are guaranteed to be on the classpath because they're
+      // from an Expression wrapped around a Method.
       Class<?> type = BytecodeUtils.classFromAsmType(expr.resultType());
       if (List.class.isAssignableFrom(type)) {
         if (expectedType instanceof ListType) {
           soyExpr = SoyExpression.forList((ListType) expectedType, expr);
-        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN) {
+        } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
+            || expectedType.getKind() == SoyType.Kind.ANY) {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
         } else {
           reporter.invalidReturnType(type, pluginReturnValue.methodInfo());
@@ -351,46 +461,5 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return Optional.absent();
     }
     return Optional.of(soyExpr);
-  }
-  
-  static ValueSoyType valueForKind(SoyType.Kind kind) {
-    switch (kind) {
-      case BOOL:
-        return ValueSoyType.BOOLEAN;
-      case FLOAT:
-        return ValueSoyType.FLOAT;
-      case INT:
-        return ValueSoyType.INTEGER;
-      case LIST:
-        return ValueSoyType.LIST;
-      case NULL:
-        return ValueSoyType.NULL;
-      case STRING:
-        return ValueSoyType.STRING;
-      case HTML:
-        return ValueSoyType.HTML;
-      case ATTRIBUTES:
-        return ValueSoyType.ATTRIBUTES;
-      case JS:
-        return ValueSoyType.JS;
-      case CSS:
-        return ValueSoyType.CSS;
-      case URI:
-        return ValueSoyType.URI;
-      case TRUSTED_RESOURCE_URI:
-        return ValueSoyType.TRUSTED_RESOURCE_URI;
-
-      case ERROR:
-      case LEGACY_OBJECT_MAP:
-      case MAP:
-      case PROTO:
-      case PROTO_ENUM:
-      case ANY:
-      case RECORD:
-      case UNION:
-      case UNKNOWN:
-        return ValueSoyType.OTHER;
-    }
-    throw new AssertionError("above switch is exhaustive");
   }
 }

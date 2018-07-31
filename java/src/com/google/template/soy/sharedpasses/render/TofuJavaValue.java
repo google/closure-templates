@@ -19,12 +19,18 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
 import com.ibm.icu.util.ULocale;
 import javax.annotation.Nullable;
 
@@ -92,8 +98,49 @@ final class TofuJavaValue implements JavaValue {
   }
 
   @Override
-  public ValueSoyType soyType() {
-    throw new UnsupportedOperationException();
+  public TofuJavaValue asSoyBoolean() {
+    checkType(BoolType.getInstance());
+    return this;
+  }
+
+  @Override
+  public TofuJavaValue asSoyFloat() {
+    checkType(StringType.getInstance());
+    return this;
+  }
+
+  @Override
+  public TofuJavaValue asSoyInt() {
+    checkType(IntType.getInstance());
+    return this;
+  }
+
+  @Override
+  public TofuJavaValue asSoyString() {
+    checkType(StringType.getInstance());
+    return this;
+  }
+
+  @Override
+  public JavaValue coerceToSoyBoolean() {
+    return TofuJavaValue.forSoyValue(BooleanData.forValue(soyValue.coerceToBoolean()));
+  }
+
+  @Override
+  public JavaValue coerceToSoyString() {
+    return TofuJavaValue.forSoyValue(StringData.forValue(soyValue.coerceToString()));
+  }
+
+  private void checkType(SoyType type) {
+    if (!TofuTypeChecks.isInstance(type, soyValue, SourceLocation.UNKNOWN)) {
+      throw RenderException.create(
+          "SoyValue["
+              + soyValue
+              + "] of type: "
+              + soyValue.getClass()
+              + " is incompatible with soy type: "
+              + type);
+    }
   }
 
   @Override

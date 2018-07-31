@@ -18,6 +18,7 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -78,19 +79,18 @@ public final class AugmentMapFunction extends TypedSoyFunction
   private static final class MethodRefs {
     static final Method AUGMENT_MAP_FN =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "augmentMap", SoyDict.class, SoyDict.class);
+            BasicFunctionsRuntime.class, "augmentMap", SoyValue.class, SoyValue.class);
 
-    static final MethodRef AUGMENT_MAP_FN_REF = MethodRef.create(AUGMENT_MAP_FN).asNonNullable();
+    static final MethodRef AUGMENT_MAP_FN_REF =
+        MethodRef.create(BasicFunctionsRuntime.class, "augmentMap", SoyDict.class, SoyDict.class)
+            .asNonNullable();
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    JavaValue arg0 = args.get(0);
-    JavaValue arg1 = args.get(1);
-
     // TODO(sameb): Update ResolveExpressionTypesPass to set the node type, so it's set correctly.
-    return factory.callStaticMethod(MethodRefs.AUGMENT_MAP_FN, arg0, arg1);
+    return factory.callStaticMethod(MethodRefs.AUGMENT_MAP_FN, args.get(0), args.get(1));
   }
 
   @Override

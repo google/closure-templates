@@ -184,7 +184,7 @@ public final class RoundFunction extends TypedSoyFunction
       return factory.callStaticMethod(Methods.BOXED_ROUND_FN, args.get(0));
     } else {
       return factory.callStaticMethod(
-          Methods.BOXED_ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN, args.get(0), args.get(1));
+          Methods.BOXED_ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN, args.get(0), args.get(1).asSoyInt());
     }
   }
 

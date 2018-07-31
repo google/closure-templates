@@ -115,10 +115,14 @@ final class StrSubFunction extends TypedSoyFunction
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     if (args.size() == 2) {
-      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1));
+      return factory.callStaticMethod(
+          Methods.STR_SUB_START, args.get(0).asSoyString(), args.get(1).asSoyInt());
     }
     return factory.callStaticMethod(
-        Methods.STR_SUB_START_END, args.get(0), args.get(1), args.get(2));
+        Methods.STR_SUB_START_END,
+        args.get(0).asSoyString(),
+        args.get(1).asSoyInt(),
+        args.get(2).asSoyInt());
   }
 
   @Override
