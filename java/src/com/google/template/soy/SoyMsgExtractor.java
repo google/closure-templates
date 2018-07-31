@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.common.io.Files;
-import com.google.inject.Injector;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.SoyMsgPlugin;
@@ -96,7 +95,7 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   SoyMsgExtractor() {}
 
   @Override
-  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
+  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 

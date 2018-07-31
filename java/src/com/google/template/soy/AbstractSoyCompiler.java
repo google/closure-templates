@@ -19,7 +19,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -28,6 +27,7 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -106,6 +106,12 @@ abstract class AbstractSoyCompiler {
     handler = SoyCmdLineParser.ModuleListOptionHandler.class
   )
   private List<Module> pluginModules = new ArrayList<>();
+
+  @Option(
+      name = "--pluginFunctions",
+      usage = "Specifies the full class names of SoySourceFunction plugins (comma-delimited list).",
+      handler = SoyCmdLineParser.SourceFunctionListOptionHandler.class)
+  private List<SoySourceFunction> sourceFunctions = new ArrayList<>();
 
   @Option(
     name = "--protoFileDescriptors",
@@ -212,20 +218,25 @@ abstract class AbstractSoyCompiler {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
-    List<Module> modules = new ArrayList<>();
-    modules.add(new SoyModule());
-    modules.addAll(pluginModules);
-    // TODO(lukes): Stage.PRODUCTION?
-    Injector injector = Guice.createInjector(modules);
+    SoyFileSet.Builder sfsBuilder;
+    if (!pluginModules.isEmpty()) {
+      // Only create the Builder through an Injector if the user passed pluginModules.
+      // Otherwise, we don't need to go through Guice at all.
+      List<Module> modules = new ArrayList<>();
+      modules.add(new SoyModule());
+      modules.addAll(pluginModules);
+      sfsBuilder = Guice.createInjector(modules).getInstance(SoyFileSet.Builder.class);
+    } else {
+      sfsBuilder = SoyFileSet.builder();
+    }
     ValidatedConformanceConfig conformanceConfig = parseConformanceConfig();
-    SoyFileSet.Builder sfsBuilder =
-        injector
-            .getInstance(SoyFileSet.Builder.class)
-            .setWarningSink(err)
-            .setConformanceConfig(conformanceConfig)
-            .setValidatedLoggingConfig(parseLoggingConfig())
-            // Set experimental features that are not generally available.
-            .setExperimentalFeatures(experimentalFeatures);
+    sfsBuilder
+        .addSourceFunctions(sourceFunctions)
+        .setWarningSink(err)
+        .setConformanceConfig(conformanceConfig)
+        .setValidatedLoggingConfig(parseLoggingConfig())
+        // Set experimental features that are not generally available.
+        .setExperimentalFeatures(experimentalFeatures);
 
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
@@ -246,7 +257,7 @@ abstract class AbstractSoyCompiler {
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
     }
-    compile(sfsBuilder, injector);
+    compile(sfsBuilder);
   }
 
   private ValidatedConformanceConfig parseConformanceConfig() {
@@ -292,19 +303,6 @@ abstract class AbstractSoyCompiler {
    */
   @ForOverride
   void validateFlags() {}
-
-  /**
-   * Performs the actual compilation.
-   *
-   * @param sfsBuilder The builder, already populated with sources, globals (if set) and plugins.
-   *     subclasses may set additional compilation options on the builder.
-   * @param injector The injector
-   * @throws IOException
-   */
-  @ForOverride
-  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
-    compile(sfsBuilder);
-  }
 
   /**
    * Performs the actual compilation.

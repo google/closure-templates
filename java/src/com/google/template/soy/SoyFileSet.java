@@ -1083,6 +1083,18 @@ public final class SoyFileSet {
     reportWarnings();
   }
 
+  ImmutableMap<String, SoyFunction> getSoyFunctions() {
+    return soyFunctionMap;
+  }
+
+  ImmutableMap<String, SoyPrintDirective> getSoyPrintDirectives() {
+    return printDirectives;
+  }
+
+  ImmutableMap<String, SoySourceFunction> getSoySourceFunctions() {
+    return soySourceFunctionMap;
+  }
+
   // Parse the current file set with the given default syntax version.
   private ParseResult parse() {
     return parse(passManagerBuilder());

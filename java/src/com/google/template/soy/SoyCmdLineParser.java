@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgPlugin;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.io.File;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -166,6 +167,27 @@ final class SoyCmdLineParser extends CmdLineParser {
     }
   }
 
+  /** OptionHandler for args4j that handles a comma-delimited list of SoySourceFunctions. */
+  public static final class SourceFunctionListOptionHandler
+      extends ListOptionHandler<SoySourceFunction> {
+
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public SourceFunctionListOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SoySourceFunction> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    SoySourceFunction parseItem(String item) {
+      return instantiateObject(
+          ((NamedOptionDef) option).name(),
+          "plugin SoySourceFunction",
+          SoySourceFunction.class,
+          ((SoyCmdLineParser) this.owner).pluginLoader,
+          item);
+    }
+  }
+
   /** OptionHandler for args4j that handles a comma-delimited list of files. */
   public static final class FileListOptionHandler extends ListOptionHandler<File> {
 
@@ -252,19 +274,19 @@ final class SoyCmdLineParser extends CmdLineParser {
   }
 
   /**
-   * Private helper for createInjector().
+   * Private helper for creating objects from flags.
    *
-   * @param moduleName The name of the plugin module to instantiate.
+   * @param instanceClassName The name of the class to instantiate.
    * @return A new instance of the specified plugin module.
    */
   private static <T> T instantiateObject(
-      String moduleFlagName,
+      String flagName,
       String objectType,
       Class<T> clazz,
       ClassLoader loader,
-      String moduleName) {
+      String instanceClassName) {
     try {
-      return Class.forName(moduleName, true, loader)
+      return Class.forName(instanceClassName, true, loader)
           .asSubclass(clazz)
           .getConstructor()
           .newInstance();
@@ -273,8 +295,9 @@ final class SoyCmdLineParser extends CmdLineParser {
       throw new CommandLineError(
           String.format(
               "Cannot instantiate %s \"%s\" registered with flag --%s.  Please make "
-                  + "sure that the %s exists and is on the compiler classpath.\nCaused by: %s",
-              objectType, moduleName, moduleFlagName, objectType, e));
+                  + "sure that the %s exists and is on the compiler classpath and has a public "
+                  + "zero arguments constructor.\nCaused by: %s",
+              objectType, instanceClassName, flagName, objectType, e));
     }
   }
 }
