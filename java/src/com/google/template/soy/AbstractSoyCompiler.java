@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -158,10 +159,17 @@ abstract class AbstractSoyCompiler {
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
+  private final SoyCompilerFileReader soyCompilerFileReader;
+
   final ClassLoader pluginClassLoader;
 
-  AbstractSoyCompiler(ClassLoader pluginClassLoader) {
+  AbstractSoyCompiler(ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
     this.pluginClassLoader = pluginClassLoader;
+    this.soyCompilerFileReader = soyCompilerFileReader;
+  }
+
+  AbstractSoyCompiler(ClassLoader pluginClassLoader) {
+    this(pluginClassLoader, new FileSystemSoyFileReader());
   }
 
   AbstractSoyCompiler() {
@@ -333,7 +341,7 @@ abstract class AbstractSoyCompiler {
    * @param deps The deps from the --deps flag, or empty list if not applicable.
    * @param indirectDeps The deps from the --indirectDeps flag, or empty list if not applicable.
    */
-  private static void addSoyFilesToBuilder(
+  private void addSoyFilesToBuilder(
       SoyFileSet.Builder sfsBuilder,
       Collection<String> srcs,
       Collection<String> deps,
@@ -349,14 +357,12 @@ abstract class AbstractSoyCompiler {
     addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, indirectDeps, soFar);
   }
 
-  private static void addAllIfNotPresent(
-      SoyFileSet.Builder builder,
-      SoyFileKind kind,
-      Collection<String> files,
-      Set<String> soFar) {
+  private void addAllIfNotPresent(
+      SoyFileSet.Builder builder, SoyFileKind kind, Collection<String> files, Set<String> soFar) {
     for (String file : files) {
       if (soFar.add(file)) {
-        builder.addWithKind(new File(file), kind);
+        builder.addWithKind(
+            soyCompilerFileReader.read(file).asCharSource(StandardCharsets.UTF_8), kind, file);
       }
     }
   }
