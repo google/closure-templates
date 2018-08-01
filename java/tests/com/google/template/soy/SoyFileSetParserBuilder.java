@@ -137,6 +137,12 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  /** Enable experiments. Returns this object, for chaining. */
+  public SoyFileSetParserBuilder enableExperimentalFeatures(ImmutableList<String> experiments) {
+    this.options.setExperimentalFeatures(experiments);
+    return this;
+  }
+
   public SoyFileSetParserBuilder errorReporter(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     return this;
