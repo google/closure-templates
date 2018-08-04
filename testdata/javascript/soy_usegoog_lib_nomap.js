@@ -21812,7 +21812,7 @@ goog.uri.utils.parseQueryData = function(encodedQuery, callback) {
  * @private
  */
 goog.uri.utils.splitQueryData_ = function(uri) {
-  // Find the query data and and hash.
+  // Find the query data and hash.
   var hashIndex = uri.indexOf('#');
   if (hashIndex < 0) {
     hashIndex = uri.length;
