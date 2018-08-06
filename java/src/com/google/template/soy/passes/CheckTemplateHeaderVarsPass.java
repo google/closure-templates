@@ -32,7 +32,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,16 +47,18 @@ import java.util.Set;
  *
  * <p>Note this visitor only works for code in Soy V2 syntax.
  */
-final class CheckTemplateParamsPass extends CompilerFileSetPass {
+final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind UNDECLARED_DATA_KEY =
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNUSED_PARAM =
       SoyErrorKind.of("Param ''{0}'' unused in template body.");
+  private static final SoyErrorKind UNUSED_STATE =
+      SoyErrorKind.of("State var ''{0}'' unused in template body.");
 
   private final ErrorReporter errorReporter;
 
-  CheckTemplateParamsPass(ErrorReporter errorReporter) {
+  CheckTemplateHeaderVarsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
@@ -79,17 +83,18 @@ final class CheckTemplateParamsPass extends CompilerFileSetPass {
     ListMultimap<String, SourceLocation> dataKeys = ArrayListMultimap.create();
 
     for (VarRefNode varRefNode : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
-      if (varRefNode.isPossibleParam()) {
+      if (varRefNode.isPossibleHeaderVar()) {
         dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
       }
     }
 
     IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
 
-    Set<String> allParamNames = new HashSet<>();
-    List<TemplateParam> unusedParams = new ArrayList<>();
+    Set<String> allHeaderVarNames = new HashSet<>();
+    List<TemplateHeaderVarDefn> unusedParams = new ArrayList<>();
+    // Process @param header variables.
     for (TemplateParam param : node.getAllParams()) {
-      allParamNames.add(param.name());
+      allHeaderVarNames.add(param.name());
       if (dataKeys.containsKey(param.name())) {
         // Good: Declared and referenced in template. We remove these from dataKeys so
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
@@ -107,9 +112,22 @@ final class CheckTemplateParamsPass extends CompilerFileSetPass {
       }
     }
 
+    // Process @state header variables.
+    List<TemplateHeaderVarDefn> unusedStateVars = new ArrayList<>();
+    for (TemplateStateVar stateVar : node.getStateVars()) {
+      allHeaderVarNames.add(stateVar.name());
+      if (dataKeys.containsKey(stateVar.name())) {
+        // Good: declared and referenced in the template.
+        dataKeys.removeAll(stateVar.name());
+      } else {
+        // Bad: declared in the header, but not used.
+        unusedStateVars.add(stateVar);
+      }
+    }
     // At this point, the only keys left in dataKeys are undeclared.
     for (Entry<String, SourceLocation> undeclared : dataKeys.entries()) {
-      String extraErrorMessage = SoyErrors.getDidYouMeanMessage(allParamNames, undeclared.getKey());
+      String extraErrorMessage =
+          SoyErrors.getDidYouMeanMessage(allHeaderVarNames, undeclared.getKey());
       errorReporter.report(
           undeclared.getValue(), UNDECLARED_DATA_KEY, undeclared.getKey(), extraErrorMessage);
     }
@@ -117,9 +135,17 @@ final class CheckTemplateParamsPass extends CompilerFileSetPass {
     // Delegate templates can declare unused params because other implementations
     // of the same delegate may need to use those params.
     if (node instanceof TemplateBasicNode) {
-      for (TemplateParam unusedParam : unusedParams) {
-        errorReporter.report(unusedParam.nameLocation(), UNUSED_PARAM, unusedParam.name());
-      }
+      reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_PARAM);
+      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_STATE);
+    }
+  }
+
+  private static void reportUnusedHeaderVars(
+      ErrorReporter errorReporter,
+      List<TemplateHeaderVarDefn> unusedHeaderVars,
+      SoyErrorKind soyError) {
+    for (TemplateHeaderVarDefn unusedVar : unusedHeaderVars) {
+      errorReporter.report(unusedVar.nameLocation(), soyError, unusedVar.name());
     }
   }
 }

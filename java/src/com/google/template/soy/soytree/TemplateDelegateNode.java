@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import javax.annotation.Nullable;
 
 /**
@@ -58,7 +59,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     public abstract String variant();
 
     @Override
-    public String toString() {
+    public final String toString() {
       return name() + (variant().isEmpty() ? "" : ":" + variant());
     }
   }
@@ -92,14 +93,16 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       String delTemplateName,
       @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
-      ImmutableList<TemplateParam> params) {
+      ImmutableList<TemplateParam> params,
+      ImmutableList<TemplateStateVar> stateVars) {
 
     super(
         nodeBuilder,
         "deltemplate",
         soyFileHeaderInfo,
         Visibility.PUBLIC /* deltemplate always has public visibility */,
-        params);
+        params,
+        stateVars);
     this.delTemplateName = checkNotNull(delTemplateName);
     this.delTemplateVariantExpr = delTemplateVariantExpr;
     this.delPriority = checkNotNull(delPriority);

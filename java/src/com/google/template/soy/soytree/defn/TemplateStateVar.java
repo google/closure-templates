@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,67 +18,52 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * An explicitly declared template parameter.
+ * An explicitly declared template state variable.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
 @Immutable
-public abstract class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
-  /** Enum for the location of the declaration. */
-  public static enum DeclLoc {
-    // Declaration in template SoyDoc, e.g.
-    //     @param foo Blah blah blah.
-    SOY_DOC,
-    // Declaration in template header, e.g.
-    //     {@param foo: list<int>}  /** Blah blah blah. */
-    HEADER,
-  }
-
+public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final SourceLocation nameLocation;
   private final String desc;
+  private final TypeNode typeNode;
 
-  /** Whether the param is required. */
-  private final boolean isRequired;
-
-  /** Whether the param is an injected param. */
-  private final boolean isInjected;
-
-  public TemplateParam(
+  public TemplateStateVar(
       String name,
       SoyType type,
-      boolean isRequired,
-      boolean isInjected,
+      TypeNode typeNode,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
     super(name, type);
-    this.isRequired = isRequired;
-    this.isInjected = isInjected;
+    this.typeNode = typeNode;
     this.desc = desc;
     this.nameLocation = nameLocation;
   }
 
-  TemplateParam(TemplateParam param) {
-    super(param);
-    this.isRequired = param.isRequired;
-    this.isInjected = param.isInjected;
-    this.desc = param.desc;
-    this.nameLocation = param.nameLocation;
+  TemplateStateVar(TemplateStateVar stateVar) {
+    super(stateVar);
+    this.typeNode = stateVar.typeNode;
+    this.desc = stateVar.desc;
+    this.nameLocation = stateVar.nameLocation;
+  }
+
+  public TypeNode typeNode() {
+    return typeNode;
   }
 
   @Override
   public Kind kind() {
-    return Kind.PARAM;
+    return Kind.STATE;
   }
 
-  /** Returns whether the param is an injected (declared with {@code @inject}) or not. */
   @Override
   public boolean isInjected() {
-    return isInjected;
+    return false;
   }
 
   @Override
@@ -88,7 +73,7 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
 
   @Override
   public boolean isRequired() {
-    return isRequired;
+    return true;
   }
 
   @Override
@@ -98,11 +83,10 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "{name = " + name() + ", desc = " + desc + "}";
+    StringBuilder description = new StringBuilder();
+    description.append(getClass().getSimpleName());
+    description.append("{name = ").append(name());
+    description.append(", desc = ").append(desc).append("}");
+    return description.toString();
   }
-
-  /** Returns the location of the parameter declaration. */
-  public abstract DeclLoc declLoc();
-
-  public abstract TemplateParam copyEssential();
 }

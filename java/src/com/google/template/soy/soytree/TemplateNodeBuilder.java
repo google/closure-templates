@@ -19,12 +19,17 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -34,7 +39,10 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.SoyDocParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -57,6 +65,8 @@ public abstract class TemplateNodeBuilder {
   private static final boolean DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION =
       Boolean.getBoolean("DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION");
 
+  private static final SoyErrorKind DUPLICATE_DECLARATION =
+      SoyErrorKind.of("Param ''{0}'' is a duplicate of state var ''{0}''.");
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
       SoyErrorKind.of("Found invalid soydoc param name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
@@ -133,6 +143,9 @@ public abstract class TemplateNodeBuilder {
 
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
+
+  /** The state variables from template header. */
+  protected ImmutableList<TemplateStateVar> stateVars = ImmutableList.of();
 
   protected boolean isMarkedDeprecatedV1;
 
@@ -236,7 +249,7 @@ public abstract class TemplateNodeBuilder {
    * Helper for {@code setSoyDoc()} and {@code setHeaderDecls()}. This method is intended to be
    * called at most once for SoyDoc params and at most once for header params.
    *
-   * @param params The params to add.
+   * @param newParams The params to add.
    */
   public TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> newParams) {
 
@@ -247,7 +260,7 @@ public abstract class TemplateNodeBuilder {
     } else {
       for (TemplateParam oldParam : this.params) {
         seenParamKeys.add(oldParam.name());
-        hasTemplateHeaderParams |= oldParam.declLoc() == TemplateParam.DeclLoc.HEADER;
+        hasTemplateHeaderParams |= oldParam.declLoc() == DeclLoc.HEADER;
       }
       this.params =
           ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(newParams).build();
@@ -255,7 +268,7 @@ public abstract class TemplateNodeBuilder {
 
     // Check new params.
     for (TemplateParam param : newParams) {
-      hasTemplateHeaderParams |= param.declLoc() == TemplateParam.DeclLoc.HEADER;
+      hasTemplateHeaderParams |= param.declLoc() == DeclLoc.HEADER;
       if (param.name().equals("ij")) {
         errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
       }
@@ -266,13 +279,19 @@ public abstract class TemplateNodeBuilder {
     // if the template has any header params, report an error on each soydoc param
     if (hasTemplateHeaderParams) {
       for (TemplateParam param : this.params) {
-        if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC
-            && !DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION) {
+        if (param.declLoc() == DeclLoc.SOY_DOC && !DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION) {
           errorReporter.report(
               param.nameLocation(), MIXED_PARAM_STYLES, param.nameLocation().getFilePath());
         }
       }
     }
+    checkDuplicateHeaderVars(params, stateVars, errorReporter);
+    return this;
+  }
+
+  public TemplateNodeBuilder setStateVars(ImmutableList<TemplateStateVar> newStateVars) {
+    this.stateVars = newStateVars;
+    checkDuplicateHeaderVars(params, stateVars, errorReporter);
     return this;
   }
 
@@ -549,5 +568,49 @@ public abstract class TemplateNodeBuilder {
     }
 
     return params;
+  }
+
+  /**
+   * Check for duplicate header variable names and append error text for each duplicate to the
+   * `errorReporter`. For example, this is an error:
+   *
+   * <pre>{@code
+   * {@param s: bool}
+   * {@state s: bool}
+   * }</pre>
+   *
+   * Note that it is not possible to have duplicate names of the same declaration type. Any
+   * duplicate {@code @state} or {@code @param} will have been flagged as error during the resolve-
+   * names pass or in {@link #addParams(Iterable)}.
+   */
+  @VisibleForTesting
+  static void checkDuplicateHeaderVars(
+      ImmutableList<? extends TemplateHeaderVarDefn> params,
+      ImmutableList<? extends TemplateHeaderVarDefn> stateVars,
+      ErrorReporter errorReporter) {
+
+    final Set<String> stateVarNames =
+        FluentIterable.from(stateVars)
+            .transform(
+                new Function<TemplateHeaderVarDefn, String>() {
+                  @Override
+                  public String apply(TemplateHeaderVarDefn stateVar) {
+                    return stateVar.name();
+                  }
+                })
+            .toSet();
+
+    Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
+        Iterables.filter(
+            params,
+            new Predicate<TemplateHeaderVarDefn>() {
+              @Override
+              public boolean apply(TemplateHeaderVarDefn param) {
+                return stateVarNames.contains(param.name());
+              }
+            });
+    for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
+      errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
+    }
   }
 }

@@ -29,11 +29,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link CheckTemplateParamsPass}.
+ * Unit tests for {@link CheckTemplateHeaderVarsPass}.
  *
  */
 @RunWith(JUnit4.class)
-public final class CheckTemplateParamsPassTest {
+public final class CheckTemplateHeaderVarsPassTest {
 
   @Test
   public void testMatchingSimple() {
@@ -333,6 +333,25 @@ public final class CheckTemplateParamsPassTest {
     assertThat(Iterables.getOnlyElement(errors).message()).isEqualTo("Unknown data key 'y'.");
   }
 
+  @Test
+  public void testUndeclaredStateVar() {
+    String stateVarDecl = "{@state foo: int}";
+    String templateBody = "{$boo}";
+    ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
+    assertThat(errors.get(1).message()).isEqualTo("State var 'foo' unused in template body.");
+  }
+
+  @Test
+  public void testUnusedStateVar() {
+    String stateVarDecl = "{@state foo: int}";
+    String templateBody = "Hello";
+    ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
+    assertThat(Iterables.getOnlyElement(errors).message())
+        .isEqualTo("State var 'foo' unused in template body.");
+  }
+
   private static ImmutableList<SoyError> soyDocErrorsForTemplate(
       String soyDoc, String templateBody) {
     String testFileContent =
@@ -353,6 +372,26 @@ public final class CheckTemplateParamsPassTest {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .declaredSyntaxVersion(SyntaxVersion.V1_0)
+        .errorReporter(errorReporter)
+        .parse();
+    return errorReporter.getErrors();
+  }
+
+  private static ImmutableList<SoyError> soyErrorsForTemplate(
+      String headerVarDecl, String templateBody) {
+    String testFileContent =
+        "{namespace boo}\n"
+            + "\n"
+            + "{template .foo}\n"
+            + headerVarDecl
+            + templateBody
+            + "\n"
+            + "{/template}\n";
+
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileSetParserBuilder.forFileContents(testFileContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .enableExperimentalFeatures(ImmutableList.of("state_vars"))
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();

@@ -254,6 +254,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
         delTemplateName,
         delTemplateVariantExpr,
         delPriority,
-        params);
+        params,
+        stateVars);
   }
 }

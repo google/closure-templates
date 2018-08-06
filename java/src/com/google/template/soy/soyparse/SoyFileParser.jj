@@ -80,6 +80,7 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -235,6 +236,15 @@ import javax.annotation.Nullable;
  *    {@inject? foo:
  *        list<int>}  /**
  *        A list of numbers. *&#47;
+ *
+ * 4. State variable declaration:
+ *    + Soy tag with command name "@state" and command text "key: type".
+ *    + State variables must be explicitly initialized.
+ *    + Optional desc string is written as a block doc comment, which either must
+ *      precede the state tag, or must start on the same line as the end of the '@state' tag.
+ *    Examples:
+ *    {@state foo: bool = true}
+ *    {@state foo: list<int> = [1, 2, 3]}  /** A list of numbers. *&#47;
  *
  * Body:
  *
@@ -425,6 +435,8 @@ public class SoyFileParser {
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
+  private static final SoyErrorKind STATE_VARS_NOT_ALLOWED =
+      SoyErrorKind.of("@state declarations are not available for general use.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -938,6 +950,8 @@ TOKEN_MGR_DECLS: {
 | < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG
 | < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
+
+| < DECL_BEGIN_STATE_VAR         : "{@state"        > : IN_CMD_TAG
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -1721,7 +1735,7 @@ private RawTextNode RawText() :
 
 /**
  * Important: The template header consists of a sequence of ParamDecls() separated by optional
- * whitespace
+ * whitespace.
  *
  * TemplateHeader -> ( Whitespace() | ParamDecl() )*
  *
@@ -1734,6 +1748,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
   Token tok;
   HeaderParam param;
   List<HeaderParam> params = ImmutableList.of();
+  TemplateStateVar stateVar;
+  ImmutableList.Builder<TemplateStateVar> stateVars = ImmutableList.builder();
   RawTextNode whitespace = null;
   String soyDoc = null;
 }
@@ -1763,10 +1779,23 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
         }
         params.add(param);
       }
+    |
+      stateVar = StateVarDecl(soyDoc)
+      {
+        if (!experimentalFeatures.contains("state_vars")) {
+         errorReporter.report(stateVar.nameLocation(), STATE_VARS_NOT_ALLOWED);
+        } else {
+          // We just parsed a state var, preceding whitespace/doc comments are not important.
+          whitespace = null;
+          soyDoc = null;
+          stateVars.add(stateVar);
+        }
+      }
     )
   )*
 
   { templateBuilder.addParams(params);
+    templateBuilder.setStateVars(stateVars.build());
     return whitespace;
   }
 }
@@ -1829,6 +1858,46 @@ private HeaderParam ParamDecl(@Nullable String desc) :
         !optional && !SoyTypes.isNullable(paramType),
         inject,
         desc);
+  }
+}
+
+/**
+ * StateVarDecl -> ( DECL_BEGIN_STATE_VAR ) <NAME> <CMD_COLON>
+ *                 TypeExpr() <CMD_END>
+ *
+ * @param desc The doc comment that was attached to whitespace preceding this param, if any.
+ *
+ * TODO(b/111998618): Support initialization from an expression.
+ */
+private TemplateStateVar StateVarDecl(@Nullable String desc) :
+{
+  Token stateVarBegin, name, stateVarEnd;
+  TypeNode stateVarTypeNode = null;
+  SoyType stateVarType = ErrorType.getInstance();
+}
+{
+  (
+    stateVarBegin = <DECL_BEGIN_STATE_VAR>
+  )
+
+  name = <NAME>
+
+  <CMD_COLON>
+
+  try {
+    stateVarTypeNode = TypeExpr()
+    { stateVarType = typeNodeConverter.getOrCreateType(stateVarTypeNode); }
+    stateVarEnd = <CMD_END>
+  } catch (ParseException parseException) {
+    stateVarEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+  }
+  {
+    return new TemplateStateVar(
+        name.image,
+        stateVarType,
+        stateVarTypeNode,
+        desc,
+        createSrcLoc(name));
   }
 }
 

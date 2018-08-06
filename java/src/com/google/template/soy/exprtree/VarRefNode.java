@@ -131,14 +131,16 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   /**
-   * Returns whether this might be a local variable reference. If the variable definition is
-   * unknown, then it returns true.
+   * Returns whether this might be header variable reference. A header variable is declared in Soy
+   * with the @param or @state annotation.
    */
-  public Boolean isPossibleParam() {
+  public Boolean isPossibleHeaderVar() {
     if (defn == null) {
       throw new NullPointerException(getSourceLocation().toString());
     }
-    return defn.kind() == VarDefn.Kind.PARAM || defn.kind() == VarDefn.Kind.UNDECLARED;
+    return defn.kind() == VarDefn.Kind.PARAM
+        || defn.kind() == VarDefn.Kind.STATE
+        || defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 
   /**

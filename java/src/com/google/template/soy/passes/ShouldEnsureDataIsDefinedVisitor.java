@@ -74,7 +74,7 @@ public final class ShouldEnsureDataIsDefinedVisitor {
           VarRefNode varRefNode = (VarRefNode) node;
           VarDefn var = varRefNode.getDefnDecl();
           // Don't include injected params in this analysis
-          if (varRefNode.isPossibleParam()
+          if (varRefNode.isPossibleHeaderVar()
               && (var.kind() != VarDefn.Kind.PARAM // a soydoc param -> not ij
                   || !((TemplateParam) var).isInjected())) { // an {@param but not {@inject
             shouldEnsureDataIsDefined = true;

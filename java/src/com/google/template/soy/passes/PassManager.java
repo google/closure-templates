@@ -162,7 +162,7 @@ public final class PassManager {
     // use.
     ImmutableList.Builder<CompilerFileSetPass> beforeAutoescaperFileSetPassBuilder =
         ImmutableList.<CompilerFileSetPass>builder()
-            .add(new CheckTemplateParamsPass(errorReporter));
+            .add(new CheckTemplateHeaderVarsPass(errorReporter));
     if (!disableAllTypeChecking) {
       beforeAutoescaperFileSetPassBuilder.add(new CheckTemplateCallsPass(errorReporter));
     }
