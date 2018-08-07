@@ -19,6 +19,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -233,7 +234,8 @@ abstract class AbstractSoyCompiler {
       List<Module> modules = new ArrayList<>();
       modules.add(new SoyModule());
       modules.addAll(pluginModules);
-      sfsBuilder = Guice.createInjector(modules).getInstance(SoyFileSet.Builder.class);
+      Injector injector = Guice.createInjector(modules);
+      sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     } else {
       sfsBuilder = SoyFileSet.builder();
     }
