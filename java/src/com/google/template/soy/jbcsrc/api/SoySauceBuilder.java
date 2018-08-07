@@ -42,10 +42,11 @@ public final class SoySauceBuilder {
   }
 
   /**
-   * Sets the user functions. Not exposed externally because external usage should solely be
-   * SoySourceFunction, which are only needed at compile time.
+   * Sets the user functions.
+   *
+   * <p><b>DO NOT USE THIS METHOD!</b> It is temporarily public to help with a migration.
    */
-  SoySauceBuilder withFunctions(Map<String, ? extends SoyFunction> userFunctions) {
+  public SoySauceBuilder withFunctions(Map<String, ? extends SoyFunction> userFunctions) {
     this.userFunctions = ImmutableMap.copyOf(userFunctions);
     return this;
   }
