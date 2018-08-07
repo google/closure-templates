@@ -47,6 +47,7 @@ public abstract class DoWhile extends Statement {
       ctx.appendAll(body());
     }
     ctx.append(" while (").appendOutputExpression(condition()).append(");");
+    ctx.endLine();
   }
 
   /** A builder for a {@link DoWhile}. */
