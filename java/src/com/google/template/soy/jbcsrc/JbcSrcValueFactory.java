@@ -513,18 +513,19 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         if (!returnType.isPresent()) {
           return Optional.absent(); // error already reported
         }
-        // jbcsrc stores proto enums as a SoyValue whose type is a SoyProtoEnumType,
-        // and whose expression is a boxed soy int (e.g, IntegerData).
-        // We need to get the # out of the enum, cast to a long, box & then wrap.
+        // Eagerly check compatibility, so we can avoid boxing the int in a SoyValue.
+        if (!expectedType.isAssignableFrom(returnType.get())) {
+          reporter.incompatibleReturnType(returnType.get(), method);
+          return Optional.absent();
+        }
+        // We need to get the # out of the enum & cast to a long.
+        // Note that this causes the return expr to lose its enum info.
         // TODO(lukes): SoyExpression should have a way to track type information with an unboxed
         // int that is actually a proto enum.  Like we do with SanitizedContents
         soyExpr =
-            SoyExpression.forSoyValue(
-                returnType.get(),
-                SoyExpression.forInt(
-                        BytecodeUtils.numericConversion(
-                            MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE))
-                    .box());
+            SoyExpression.forInt(
+                BytecodeUtils.numericConversion(
+                    MethodRef.PROTOCOL_ENUM_GET_NUMBER.invoke(expr), Type.LONG_TYPE));
       } else {
         reporter.invalidReturnType(type, method);
         return Optional.absent();
