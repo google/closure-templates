@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.api;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -45,6 +46,12 @@ public interface SoySauce {
 
     /** Configures the {@code $ij} to pass to the template. */
     Renderer setIj(Map<String, ?> record);
+
+    /**
+     * Sets the plugin instances that will be used to for method calls from {@code
+     * SoyJavaSourceFunctions} that called {@code JavaValueFactory.callInstanceMethod}.
+     */
+    Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
     /** Configures the {@code {css ..}} renaming map. */
     Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);

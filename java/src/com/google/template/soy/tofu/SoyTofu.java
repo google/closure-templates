@@ -17,6 +17,7 @@
 package com.google.template.soy.tofu;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
@@ -137,6 +138,12 @@ public interface SoyTofu {
      */
     @Deprecated
     Renderer setIjData(SoyRecord ijData);
+
+    /**
+     * Sets the plugin instances that will be used to for method calls from {@code
+     * SoyJavaSourceFunctions} that called {@code JavaValueFactory.callInstanceMethod}.
+     */
+    Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 
     /**
      * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.

@@ -242,7 +242,7 @@ public final class BaseTofu implements SoyTofu {
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
     private boolean debugSoyTemplateInfo;
-    private final ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
+    private ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
@@ -278,6 +278,12 @@ public final class BaseTofu implements SoyTofu {
     @Override
     public Renderer setIjData(SoyRecord ijData) {
       this.ijData = ijData;
+      return this;
+    }
+
+    @Override
+    public Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+      this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
       return this;
     }
 

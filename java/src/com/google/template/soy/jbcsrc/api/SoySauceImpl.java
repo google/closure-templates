@@ -56,7 +56,7 @@ import java.util.Map;
 public final class SoySauceImpl implements SoySauce {
   private final CompiledTemplates templates;
   private final SoyScopedData.Enterable apiCallScope;
-  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+  private final ImmutableMap<String, Supplier<Object>> additionalPluginInstances;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
   public SoySauceImpl(
@@ -67,7 +67,8 @@ public final class SoySauceImpl implements SoySauce {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
 
-    ImmutableMap.Builder<String, Supplier<Object>> pluginInstancesBuilder = ImmutableMap.builder();
+    ImmutableMap.Builder<String, Supplier<Object>> additionalPluginInstancesBuilder =
+        ImmutableMap.builder();
 
     for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
       String fnName = entry.getKey();
@@ -77,7 +78,8 @@ public final class SoySauceImpl implements SoySauce {
       if (entry.getValue() instanceof SoyJavaFunction
           && !(entry.getValue() instanceof SoyJbcSrcFunction)) {
         SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
-        pluginInstancesBuilder.put(fnName, Suppliers.ofInstance(new LegacyFunctionAdapter(fn)));
+        additionalPluginInstancesBuilder.put(
+            fnName, Suppliers.ofInstance(new LegacyFunctionAdapter(fn)));
       }
     }
 
@@ -92,7 +94,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
     this.printDirectives = soyJavaPrintDirectives.build();
-    this.pluginInstances = pluginInstancesBuilder.build();
+    this.additionalPluginInstances = additionalPluginInstancesBuilder.build();
   }
 
   @Override
@@ -122,6 +124,7 @@ public final class SoySauceImpl implements SoySauce {
     private SoyRecord ij = SoyValueConverter.EMPTY_DICT;
     private ContentKind expectedContentKind = ContentKind.HTML;
     private boolean contentKindExplicitlySet;
+    private Map<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
 
     RendererImpl(
         String templateName,
@@ -135,6 +138,12 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
       this.ij = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
+      return this;
+    }
+
+    @Override
+    public Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+      this.userPluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
@@ -226,7 +235,11 @@ public final class SoySauceImpl implements SoySauce {
     private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
       RenderContext context =
           contextBuilder
-              .withPluginInstances(pluginInstances)
+              .withPluginInstances(
+                  ImmutableMap.<String, Supplier<Object>>builder()
+                      .putAll(additionalPluginInstances)
+                      .putAll(userPluginInstances)
+                      .build())
               .withMessageBundle(msgs)
               .withActiveDelPackageSelector(activeDelegatePackages)
               .build();
