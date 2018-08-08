@@ -211,24 +211,29 @@ public final class BasicFunctionsRuntime {
     return list;
   }
 
-  public static boolean strContains(String left, String right) {
-    return left.contains(right);
+  public static boolean strContains(SoyValue left, String right) {
+    // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
+    return left.stringValue().contains(right);
   }
 
-  public static int strIndexOf(String left, String right) {
-    return left.indexOf(right);
+  public static int strIndexOf(SoyValue left, SoyValue right) {
+    // TODO(b/74259210) -- Change the params to String & avoid using stringValue().
+    return left.stringValue().indexOf(right.stringValue());
   }
 
-  public static int strLen(String str) {
-    return str.length();
+  public static int strLen(SoyValue str) {
+    // TODO(b/74259210) -- Change the param to String & avoid using stringValue().
+    return str.stringValue().length();
   }
 
-  public static String strSub(String str, int start) {
-    return str.substring(start);
+  public static String strSub(SoyValue str, int start) {
+    // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
+    return str.stringValue().substring(start);
   }
 
-  public static String strSub(String str, int start, int end) {
-    return str.substring(start, end);
+  public static String strSub(SoyValue str, int start, int end) {
+    // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
+    return str.stringValue().substring(start, end);
   }
 
   public static int length(List<?> list) {

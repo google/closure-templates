@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
@@ -80,13 +81,13 @@ final class StrContainsFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method STR_CONTAINS =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strContains", String.class, String.class);
+            BasicFunctionsRuntime.class, "strContains", SoyValue.class, String.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(
-        Methods.STR_CONTAINS, args.get(0).asSoyString(), args.get(1).coerceToSoyString());
+        Methods.STR_CONTAINS, args.get(0), args.get(1).coerceToSoyString());
   }
 }

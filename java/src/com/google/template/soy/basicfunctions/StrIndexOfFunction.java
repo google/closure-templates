@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -77,13 +78,12 @@ final class StrIndexOfFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method INDEX_OF =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strIndexOf", String.class, String.class);
+            BasicFunctionsRuntime.class, "strIndexOf", SoyValue.class, SoyValue.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(
-        Methods.INDEX_OF, args.get(0).asSoyString(), args.get(1).asSoyString());
+    return factory.callStaticMethod(Methods.INDEX_OF, args.get(0), args.get(1));
   }
 }

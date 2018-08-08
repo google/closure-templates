@@ -36,26 +36,32 @@ import javax.annotation.Nullable;
 
 /** Wraps a {@link SoyValue} into a {@link JavaValue}. */
 final class TofuJavaValue implements JavaValue {
-  static TofuJavaValue forSoyValue(SoyValue soyValue) {
-    return new TofuJavaValue(checkNotNull(soyValue), null, null);
+  static TofuJavaValue forSoyValue(SoyValue soyValue, SourceLocation sourceLocation) {
+    return new TofuJavaValue(checkNotNull(soyValue), null, null, checkNotNull(sourceLocation));
   }
 
   static TofuJavaValue forULocale(ULocale locale) {
-    return new TofuJavaValue(null, checkNotNull(locale), null);
+    return new TofuJavaValue(null, checkNotNull(locale), null, null);
   }
 
   static JavaValue forBidiDir(BidiGlobalDir bidiGlobalDir) {
-    return new TofuJavaValue(null, null, checkNotNull(bidiGlobalDir));
+    return new TofuJavaValue(null, null, checkNotNull(bidiGlobalDir), null);
   }
 
   @Nullable private final SoyValue soyValue;
+  @Nullable private final SourceLocation sourceLocation;
   @Nullable private final ULocale locale;
   @Nullable private final BidiGlobalDir bidiGlobalDir;
 
-  private TofuJavaValue(SoyValue soyValue, ULocale locale, BidiGlobalDir bidiGlobalDir) {
+  private TofuJavaValue(
+      SoyValue soyValue,
+      ULocale locale,
+      BidiGlobalDir bidiGlobalDir,
+      SourceLocation sourceLocation) {
     this.soyValue = soyValue;
     this.locale = locale;
     this.bidiGlobalDir = bidiGlobalDir;
+    this.sourceLocation = sourceLocation;
   }
 
   boolean hasSoyValue() {
@@ -84,7 +90,8 @@ final class TofuJavaValue implements JavaValue {
           "isNonNull is only supported on the 'args' parameters of JavaValueFactory methods");
     }
     return forSoyValue(
-        BooleanData.forValue(!(soyValue instanceof UndefinedData || soyValue instanceof NullData)));
+        BooleanData.forValue(!(soyValue instanceof UndefinedData || soyValue instanceof NullData)),
+        sourceLocation);
   }
 
   @Override
@@ -94,7 +101,8 @@ final class TofuJavaValue implements JavaValue {
           "isNull is only supported on the 'args' parameters of JavaValueFactory methods");
     }
     return forSoyValue(
-        BooleanData.forValue(soyValue instanceof UndefinedData || soyValue instanceof NullData));
+        BooleanData.forValue(soyValue instanceof UndefinedData || soyValue instanceof NullData),
+        sourceLocation);
   }
 
   @Override
@@ -123,16 +131,18 @@ final class TofuJavaValue implements JavaValue {
 
   @Override
   public JavaValue coerceToSoyBoolean() {
-    return TofuJavaValue.forSoyValue(BooleanData.forValue(soyValue.coerceToBoolean()));
+    return TofuJavaValue.forSoyValue(
+        BooleanData.forValue(soyValue.coerceToBoolean()), sourceLocation);
   }
 
   @Override
   public JavaValue coerceToSoyString() {
-    return TofuJavaValue.forSoyValue(StringData.forValue(soyValue.coerceToString()));
+    return TofuJavaValue.forSoyValue(
+        StringData.forValue(soyValue.coerceToString()), sourceLocation);
   }
 
   private void checkType(SoyType type) {
-    if (!TofuTypeChecks.isInstance(type, soyValue, SourceLocation.UNKNOWN)) {
+    if (!TofuTypeChecks.isInstance(type, soyValue, sourceLocation)) {
       throw RenderException.create(
           "SoyValue["
               + soyValue

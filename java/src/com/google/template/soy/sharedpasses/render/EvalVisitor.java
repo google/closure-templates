@@ -736,8 +736,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     */
 
     try {
-      return new TofuValueFactory(fnNode.getFunctionName(), pluginInstances)
-          .computeForJava(fn, args, context);
+      return new TofuValueFactory(fnNode, pluginInstances).computeForJava(fn, args, context);
     } catch (Exception e) {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);

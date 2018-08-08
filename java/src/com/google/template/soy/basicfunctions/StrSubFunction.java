@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -94,23 +95,19 @@ final class StrSubFunction extends TypedSoyFunction
   private static final class Methods {
     static final Method STR_SUB_START =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", String.class, int.class);
+            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class);
     static final Method STR_SUB_START_END =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strSub", String.class, int.class, int.class);
+            BasicFunctionsRuntime.class, "strSub", SoyValue.class, int.class, int.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     if (args.size() == 2) {
-      return factory.callStaticMethod(
-          Methods.STR_SUB_START, args.get(0).asSoyString(), args.get(1).asSoyInt());
+      return factory.callStaticMethod(Methods.STR_SUB_START, args.get(0), args.get(1).asSoyInt());
     }
     return factory.callStaticMethod(
-        Methods.STR_SUB_START_END,
-        args.get(0).asSoyString(),
-        args.get(1).asSoyInt(),
-        args.get(2).asSoyInt());
+        Methods.STR_SUB_START_END, args.get(0), args.get(1).asSoyInt(), args.get(2).asSoyInt());
   }
 }

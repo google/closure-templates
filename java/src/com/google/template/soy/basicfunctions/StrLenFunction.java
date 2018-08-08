@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -70,12 +71,12 @@ final class StrLenFunction extends TypedSoyFunction
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method STR_LEN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "strLen", String.class);
+        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "strLen", SoyValue.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.STR_LEN, args.get(0).asSoyString());
+    return factory.callStaticMethod(Methods.STR_LEN, args.get(0));
   }
 }
