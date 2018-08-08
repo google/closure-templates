@@ -3922,7 +3922,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
   /**
    * Bootstraps the given namespaces and calls the callback once they are
    * available either via goog.require. This is a replacement for using
-   * `goog.require` to bootstrap Closure Javascript. Previously a `goog.require`
+   * `goog.require` to bootstrap Closure JavaScript. Previously a `goog.require`
    * in an HTML file would guarantee that the require'd namespace was available
    * in the next immediate script tag. With ES6 modules this no longer a
    * guarantee.
@@ -6769,7 +6769,6 @@ goog.string.newLineToBr = function(str, opt_xml) {
  * @return {string} An escaped copy of `str`.
  */
 goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
-
   if (opt_isLikelyToContainHtmlChars) {
     str = str.replace(goog.string.AMP_RE_, '&amp;')
               .replace(goog.string.LT_RE_, '&lt;')
@@ -7412,7 +7411,7 @@ goog.string.buildString = function(var_args) {
 /**
  * Returns a string with at least 64-bits of randomness.
  *
- * Doesn't trust Javascript's random function entirely. Uses a combination of
+ * Doesn't trust JavaScript's random function entirely. Uses a combination of
  * random and current timestamp, and then encodes the string in base-36 to
  * make it shorter.
  *
@@ -7548,7 +7547,7 @@ goog.string.createUniqueString = function() {
  * This function strips whitespace: (toNumber(' 123') === 123)
  * This function accepts scientific notation: (toNumber('1e1') === 10)
  *
- * This is better than Javascript's built-in conversions because, sadly:
+ * This is better than JavaScript's built-in conversions because, sadly:
  *     (Number(' ') === 0) and (parseFloat('123a') === 123)
  *
  * @param {string} str The string to convert.
@@ -7599,8 +7598,9 @@ goog.string.isUpperCamelCase = function(str) {
  * @return {string} The string in camelCase form.
  */
 goog.string.toCamelCase = function(str) {
-  return String(str).replace(
-      /\-([a-z])/g, function(all, match) { return match.toUpperCase(); });
+  return String(str).replace(/\-([a-z])/g, function(all, match) {
+    return match.toUpperCase();
+  });
 };
 
 
@@ -7657,8 +7657,9 @@ goog.string.toTitleCase = function(str, opt_delimiters) {
   delimiters = delimiters ? '|[' + delimiters + ']+' : '';
 
   var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
-  return str.replace(
-      regexp, function(all, p1, p2) { return p1 + p2.toUpperCase(); });
+  return str.replace(regexp, function(all, p1, p2) {
+    return p1 + p2.toUpperCase();
+  });
 };
 
 
@@ -23908,10 +23909,10 @@ goog.soy.data.SanitizedContentKind = {
   HTML: goog.DEBUG ? {sanitizedContentKindHtml: true} : {},
 
   /**
-   * Executable Javascript code or expression, safe for insertion in a
+   * Executable JavaScript code or expression, safe for insertion in a
    * script-tag or event handler context, known to be free of any
    * attacker-controlled scripts. This can either be side-effect-free
-   * Javascript (such as JSON) or Javascript that's entirely under Google's
+   * JavaScript (such as JSON) or JavaScript that's entirely under Google's
    * control.
    */
   JS: goog.DEBUG ? {sanitizedContentJsChars: true} : {},
@@ -24104,8 +24105,7 @@ goog.soy.data.SanitizedHtml.prototype.contentKind =
  * @return {boolean}
  */
 goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedHtml ||
+  return goog.isString(value) || value instanceof goog.soy.data.SanitizedHtml ||
       value instanceof goog.soy.data.UnsanitizedText ||
       value instanceof goog.html.SafeHtml;
 };
@@ -24139,8 +24139,7 @@ goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedJs ||
+  return goog.isString(value) || value instanceof goog.soy.data.SanitizedJs ||
       value instanceof goog.soy.data.UnsanitizedText ||
       value instanceof goog.html.SafeScript;
 };
@@ -24174,8 +24173,7 @@ goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedUri ||
+  return goog.isString(value) || value instanceof goog.soy.data.SanitizedUri ||
       value instanceof goog.soy.data.UnsanitizedText ||
       value instanceof goog.html.SafeUrl ||
       value instanceof goog.html.TrustedResourceUrl ||
@@ -24340,8 +24338,7 @@ goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedCss ||
+  return goog.isString(value) || value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.soy.data.UnsanitizedText ||
       value instanceof goog.html.SafeStyle ||  // TODO(jakubvrana): Delete.
       value instanceof goog.html.SafeStyleSheet;

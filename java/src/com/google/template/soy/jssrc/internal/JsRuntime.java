@@ -118,6 +118,9 @@ public final class JsRuntime {
   public static final Expression XID = XID_REQUIRE.reference();
 
   /** A constant for the template parameter {@code opt_data}. */
+  public static final Expression STATE = id("this").dotAccess("state");
+
+  /** A constant for the template parameter {@code opt_data}. */
   public static final Expression OPT_DATA = id("opt_data");
 
   /** A constant for the template parameter {@code opt_ijData}. */

@@ -39,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
+import static com.google.template.soy.jssrc.internal.JsRuntime.STATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
@@ -79,6 +80,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -183,11 +185,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * Method that returns code to access a named parameter.
    *
    * @param paramName the name of the parameter.
-   * @param isInjected true if this is an injected parameter.
+   * @param varDefn The variable definition of the parameter
    * @return The code to access the value of that parameter.
    */
-  static Expression genCodeForParamAccess(String paramName, boolean isInjected) {
-    return isInjected ? OPT_IJ_DATA.dotAccess(paramName) : OPT_DATA.dotAccess(paramName);
+  static Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
+    Expression source = OPT_DATA;
+    if (varDefn.isInjected()) {
+      source = OPT_IJ_DATA;
+    } else if (varDefn.kind() == VarDefn.Kind.STATE) {
+      source = STATE;
+    }
+    return source.dotAccess(paramName);
   }
 
   @Override
@@ -304,7 +312,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       return translation;
     } else {
       // Case 3: Data reference.
-      return genCodeForParamAccess(node.getName(), node.getDefnDecl().isInjected());
+      return genCodeForParamAccess(node.getName(), node.getDefnDecl());
     }
   }
 

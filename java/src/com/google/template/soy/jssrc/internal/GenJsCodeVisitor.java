@@ -1436,8 +1436,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String paramName = param.name();
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
-      Expression paramChunk =
-          TranslateExprNodeVisitor.genCodeForParamAccess(paramName, param.isInjected());
+      Expression paramChunk = TranslateExprNodeVisitor.genCodeForParamAccess(paramName, param);
       JsType jsType = getJsType(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);
