@@ -19,7 +19,6 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
@@ -28,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -44,6 +45,9 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
 
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
   private final Map<Long, SoyMsg> msgMap;
+
+  /** Regex pattern for extracting message attributes from the message description. */
+  private static final Pattern MESSAGE_ATTRIBUTE_PATTERN = Pattern.compile("\\[[^\\[\\]]*\\]");
 
   /**
    * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
@@ -72,13 +76,29 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
         tempMsgMap.put(msgId, msg);
 
       } else { // duplicate message id
-        for (SourceLocation source : msg.getSourceLocations()) {
-          existingMsg.addSourceLocation(source);
-        }
+        SoyMsg.Builder mergedMessage =
+            existingMsg
+                .toBuilder()
+                .setDesc(existingMsg.getDesc() + extractAttributes(msg))
+                .addAllSourceLocations(msg.getSourceLocations());
+        tempMsgMap.put(msgId, mergedMessage.build());
       }
     }
 
     msgMap = ImmutableMap.copyOf(tempMsgMap);
+  }
+
+  /**
+   * Extracts message attributes from the message description. Returns an empty {@link String} if
+   * the description doesn't contain any message attribute.
+   */
+  private String extractAttributes(SoyMsg msg) {
+    StringBuilder attributes = new StringBuilder();
+    Matcher matcher = MESSAGE_ATTRIBUTE_PATTERN.matcher(msg.getDesc());
+    while (matcher.find()) {
+      attributes.append(matcher.group());
+    }
+    return attributes.toString();
   }
 
   @Override

@@ -53,7 +53,7 @@ public abstract class SoyMsg {
     private @Nullable String desc;
     private boolean isHidden;
     private @Nullable String contentType;
-    private @Nullable SourceLocation sourceLocation;
+    private final ImmutableSet.Builder<SourceLocation> sourceLocations = ImmutableSet.builder();
     private boolean isPlrselMsg;
     private ImmutableList<SoyMsgPart> parts;
 
@@ -120,13 +120,15 @@ public abstract class SoyMsg {
       return this;
     }
 
-    /**
-     * @param sourceLocation Location of a source file that this message comes from. More sources
-     *     can be added using {@code addSourceLocation()}. May not be applicable to all message
-     *     plugins.
-     */
-    public Builder setSourceLocation(SourceLocation sourceLocation) {
-      this.sourceLocation = checkNotNull(sourceLocation);
+    /** @param sourceLocation Location of a source file that this message comes from. */
+    public Builder addSourceLocation(SourceLocation sourceLocation) {
+      sourceLocations.add(checkNotNull(sourceLocation));
+      return this;
+    }
+
+    /** @param sourceLocations Locations of source files that this message comes from. */
+    public Builder addAllSourceLocations(Iterable<SourceLocation> sourceLocations) {
+      this.sourceLocations.addAll(checkNotNull(sourceLocations));
       return this;
     }
 
@@ -144,18 +146,50 @@ public abstract class SoyMsg {
     }
 
     public SoyMsg build() {
-      SoyMsg msg =
-          new AutoValue_SoyMsg(
-              localeString, id, altId, meaning, desc, isHidden, contentType, isPlrselMsg, parts);
-      if (sourceLocation != null) {
-        msg.addSourceLocation(sourceLocation);
-      }
-      return msg;
+      return new AutoValue_SoyMsg(
+          localeString,
+          id,
+          altId,
+          meaning,
+          desc,
+          isHidden,
+          contentType,
+          isPlrselMsg,
+          parts,
+          sourceLocations.build());
     }
   }
 
-  /** Location(s) of the source file(s) that this message comes from. */
-  private ImmutableSet<SourceLocation> sourceLocations = ImmutableSet.of();
+  SoyMsg() {
+    // Prevent inheritance outside of the package.
+  }
+
+  /** Creates a new {@link Builder} based on the current instance. */
+  Builder toBuilder() {
+    Builder builder =
+        builder()
+            .setId(getId())
+            .setIsHidden(isHidden())
+            .setParts(getParts())
+            .addAllSourceLocations(getSourceLocations())
+            .setIsPlrselMsg(isPlrselMsg());
+    if (getLocaleString() != null) {
+      builder.setLocaleString(getLocaleString());
+    }
+    if (getMeaning() != null) {
+      builder.setMeaning(getMeaning());
+    }
+    if (getDesc() != null) {
+      builder.setDesc(getDesc());
+    }
+    if (getAltId() != -1) {
+      builder.setAltId(getAltId());
+    }
+    if (getContentType() != null) {
+      builder.setContentType(getContentType());
+    }
+    return builder;
+  }
 
   /** Returns the language/locale string. */
   @Nullable
@@ -182,20 +216,12 @@ public abstract class SoyMsg {
   @Nullable
   public abstract String getContentType();
 
-  /** @param sourceLocation Location of a source file that this message comes from. */
-  public void addSourceLocation(SourceLocation sourceLocation) {
-    sourceLocations =
-        ImmutableSet.<SourceLocation>builder().addAll(sourceLocations).add(sourceLocation).build();
-  }
-
-  /** Returns the location(s) of the source file(s) that this message comes from. */
-  public ImmutableSet<SourceLocation> getSourceLocations() {
-    return sourceLocations;
-  }
-
   /** Returns whether this is a plural/select message. */
   public abstract boolean isPlrselMsg();
 
   /** Returns the parts that make up the message content. */
   public abstract ImmutableList<SoyMsgPart> getParts();
+
+  /** Returns the location(s) of the source file(s) that this message comes from. */
+  public abstract ImmutableSet<SourceLocation> getSourceLocations();
 }

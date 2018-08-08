@@ -109,7 +109,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
             .setDesc(node.getDesc())
             .setIsHidden(node.isHidden())
             .setContentType(node.getContentType())
-            .setSourceLocation(node.getSourceLocation())
+            .addSourceLocation(node.getSourceLocation())
             .setIsPlrselMsg(node.isPlrselMsg())
             .setParts(msgPartsAndIds.parts)
             .build();

@@ -34,17 +34,26 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SoyMsgBundleImplTest {
 
+  private static final SourceLocation SOURCE_1 =
+      new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+  private static final SourceLocation SOURCE_2 =
+      new SourceLocation("/path/to/source2", 20, 1, 20, 10);
+  private static final SourceLocation SOURCE_3 =
+      new SourceLocation("/path/to/source3", 20, 1, 20, 10);
+  private static final SourceLocation SOURCE_4 =
+      new SourceLocation("/path/to/source4", 20, 1, 20, 10);
+
   @Test
   public void testBasic() {
 
     List<SoyMsg> inMsgs = Lists.newArrayList();
-    SourceLocation source1 = new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+
     inMsgs.add(
         SoyMsg.builder()
             .setId(0x123)
             .setLocaleString("x-zz")
             .setDesc("Boo message.")
-            .setSourceLocation(source1)
+            .addSourceLocation(SOURCE_1)
             .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
             .build());
     inMsgs.add(
@@ -61,14 +70,13 @@ public class SoyMsgBundleImplTest {
                     new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
                     SoyMsgRawTextPart.of("!")))
             .build());
-    SourceLocation source2 = new SourceLocation("/path/to/source2", 20, 1, 20, 10);
     inMsgs.add(
         SoyMsg.builder()
             .setId(0x123)
             .setLocaleString("x-zz")
             .setDesc("Boo message 2.")
             .setIsHidden(false)
-            .setSourceLocation(source2)
+            .addSourceLocation(SOURCE_2)
             .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!")))
             .build());
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
@@ -77,10 +85,7 @@ public class SoyMsgBundleImplTest {
     assertThat(msgBundle.isRtl()).isFalse();
     assertThat(msgBundle).hasSize(2);
 
-    List<SoyMsg> outMsgs = Lists.newArrayList();
-    for (SoyMsg msg : msgBundle) {
-      outMsgs.add(msg);
-    }
+    List<SoyMsg> outMsgs = ImmutableList.copyOf(msgBundle);
     assertThat(outMsgs).hasSize(2);
 
     SoyMsg booMsg = msgBundle.getMsg(0x123);
@@ -91,8 +96,7 @@ public class SoyMsgBundleImplTest {
     assertThat(booMsg.getDesc()).isEqualTo("Boo message.");
     assertThat(booMsg.isHidden()).isFalse();
     assertThat(booMsg.getContentType()).isEqualTo(null);
-    assertThat(booMsg.getSourceLocations()).hasSize(2);
-    assertThat(booMsg.getSourceLocations()).containsExactly(source1, source2);
+    assertThat(booMsg.getSourceLocations()).containsExactly(SOURCE_1, SOURCE_2);
     List<SoyMsgPart> booMsgParts = booMsg.getParts();
     assertThat(booMsgParts).hasSize(1);
     assertThat(((SoyMsgRawTextPart) booMsgParts.get(0)).getRawText()).isEqualTo("Boo!");
@@ -120,5 +124,66 @@ public class SoyMsgBundleImplTest {
     assertThat(new SoyMsgBundleImpl("iw", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
     assertThat(new SoyMsgBundleImpl("fr", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
     assertThat(new SoyMsgBundleImpl("en", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
+  }
+
+  @Test
+  public void mergeAttributes() {
+    List<SoyMsg> inMsgs =
+        ImmutableList.of(
+            SoyMsg.builder()
+                .setId(0x123)
+                .setLocaleString("x-zz")
+                .setDesc("Boo message. [CHAR_LIMIT=40]")
+                .addSourceLocation(SOURCE_1)
+                .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+                .build(),
+            SoyMsg.builder()
+                .setId(0x123)
+                .setLocaleString("x-zz")
+                .setDesc("Second message. [FAKE_ATTRIBUTE=1] Text. [FAKE_ATTRIBUTE=2]")
+                .addSourceLocation(SOURCE_2)
+                .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+                .build(),
+            SoyMsg.builder()
+                .setId(0x123)
+                .setLocaleString("x-zz")
+                .setDesc("Message without attributes")
+                .addSourceLocation(SOURCE_3)
+                .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+                .build(),
+            SoyMsg.builder()
+                .setId(0x123)
+                .setLocaleString("x-zz")
+                .setDesc("Third message. [FAKE_ATTRIBUTE=3]")
+                .addSourceLocation(SOURCE_4)
+                .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+                .build(),
+            SoyMsg.builder()
+                .setId(0x456)
+                .setLocaleString("x-zz")
+                .setDesc("Message with different ID [FAKE_ATTRIBUTE=3]")
+                .addSourceLocation(SOURCE_1)
+                .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+                .build());
+    SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
+    List<SoyMsg> outMsgs = ImmutableList.copyOf(msgBundle);
+    assertThat(outMsgs).hasSize(2);
+
+    SoyMsg mergedMsg = msgBundle.getMsg(0x123);
+    assertThat(mergedMsg.getId()).isEqualTo(0x123);
+    assertThat(mergedMsg.getLocaleString()).isEqualTo("x-zz");
+    assertThat(mergedMsg.getMeaning()).isEqualTo(null);
+    assertThat(mergedMsg.getDesc())
+        .isEqualTo(
+            "Boo message. [CHAR_LIMIT=40][FAKE_ATTRIBUTE=1][FAKE_ATTRIBUTE=2][FAKE_ATTRIBUTE=3]");
+    assertThat(mergedMsg.isHidden()).isFalse();
+    assertThat(mergedMsg.getContentType()).isEqualTo(null);
+    assertThat(mergedMsg.getSourceLocations())
+        .containsExactly(SOURCE_1, SOURCE_2, SOURCE_3, SOURCE_4);
+    assertThat(mergedMsg.getParts()).hasSize(1);
+
+    SoyMsg unmergedMsg = msgBundle.getMsg(0x456);
+    assertThat(unmergedMsg.getDesc()).isEqualTo("Message with different ID [FAKE_ATTRIBUTE=3]");
+    assertThat(unmergedMsg.getSourceLocations()).containsExactly(SOURCE_1);
   }
 }
