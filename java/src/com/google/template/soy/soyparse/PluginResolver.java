@@ -27,6 +27,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
@@ -77,6 +79,11 @@ public final class PluginResolver {
               + "Classes implementing SoySourceFunction must be annotated with "
               + "@SoyFunctionSignature.");
 
+  private static final SoyErrorKind MULTIPLE_PLUGIN_INSTANCES =
+      SoyErrorKind.of(
+          "Plugin class ''{0}'' uses callInstanceMethod for methods on multiple classes {1}. "
+              + "SoyJavaSourceFunctions must only use a single class for callInstanceMethod.");
+
   private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
 
   /** Configures the behavior of the resolver when a lookup fails. */
@@ -104,15 +111,15 @@ public final class PluginResolver {
 
   public PluginResolver(
       Mode mode,
-      ImmutableMap<String, SoyPrintDirective> printDirectives,
-      ImmutableMap<String, SoyFunction> functions,
+      ImmutableMap<String, SoyPrintDirective> soyPrintDirectives,
+      ImmutableMap<String, SoyFunction> soyFunctions,
       ImmutableMap<String, SoySourceFunction> sourceFunctions,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
-    this.printDirectives = checkNotNull(printDirectives);
+    this.printDirectives = checkNotNull(soyPrintDirectives);
     this.reporter = checkNotNull(reporter);
     for (String illegalName : ILLEGAL_PLUGIN_NAMES) {
-      if (functions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
+      if (soyFunctions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
         reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
       }
     }
@@ -121,7 +128,7 @@ public final class PluginResolver {
     // indicates a partially migrated plugin.
     // Also confirm that each SoySourceFunction has a @SoyFunctionSignature, which is required.
     ImmutableMap.Builder<String, Object> mergedFunctions = ImmutableMap.builder();
-    for (Map.Entry<String, SoyFunction> entry : functions.entrySet()) {
+    for (Map.Entry<String, SoyFunction> entry : soyFunctions.entrySet()) {
       SoySourceFunction source = sourceFunctions.get(entry.getKey());
       if (source != null) {
         if (source != entry.getValue()) {
@@ -144,11 +151,24 @@ public final class PluginResolver {
     // Go back over our merged functions and validate all the SoySourceFunction implementations.
     // We explicitly look *after* merging because SoySourceFunctions might be registered
     // as SoyFunctions if they also implemented other backends like SoyJsFunction.
-    for (Object function : functions.values()) {
-      if (function instanceof SoySourceFunction
-          && !function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
-        reporter.report(
-            SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
+    for (Object function : this.functions.values()) {
+      if (function instanceof SoySourceFunction) {
+        if (!function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+          // Make sure a function sig exists.
+          reporter.report(
+              SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
+        } else if (function instanceof SoyJavaSourceFunction) {
+          // Also make sure that the applyForJavaSource impl uses a single plugin instance.
+          // We don't support multiple instances.
+          Set<Class<?>> instances = PluginInstanceFinder.find((SoyJavaSourceFunction) function);
+          if (instances.size() > 1) {
+            reporter.report(
+                SourceLocation.UNKNOWN,
+                MULTIPLE_PLUGIN_INSTANCES,
+                function.getClass().getName(),
+                instances);
+          }
+        }
       }
     }
   }

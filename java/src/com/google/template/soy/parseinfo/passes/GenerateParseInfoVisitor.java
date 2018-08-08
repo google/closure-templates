@@ -45,6 +45,8 @@ import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -70,10 +72,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -304,11 +306,13 @@ public final class GenerateParseInfoVisitor
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
     // + for any params whose type is a proto, get the proto name and Java class name.
+    // + all plugin instances used by any SoyJavaSourceFunctions
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     List<String> deltemplates = new ArrayList<>();
     Set<String> allParamKeys = Sets.newHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
     SortedSet<String> protoTypes = Sets.newTreeSet();
+    Map<String, String> pluginInstances = new TreeMap<>();
     for (TemplateNode template : node.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC && template instanceof TemplateBasicNode) {
         publicBasicTemplateMap.put(
@@ -356,6 +360,21 @@ public final class GenerateParseInfoVisitor
           SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
         if (protoInit.getType().getKind() == SoyType.Kind.PROTO) {
           protoTypes.add(((SoyProtoType) protoInit.getType()).getDescriptorExpression());
+        }
+      }
+      // Add plugin instances
+      for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+        if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
+            && !pluginInstances.containsKey(fnNode.getFunctionName())) {
+          Set<Class<?>> instances =
+              PluginInstanceFinder.find(
+                  (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren());
+          if (!instances.isEmpty()) {
+            // We guarantee there's either 0 or 1 instances in the plugin because we already
+            // passed through PluginResolver, which checked this.
+            pluginInstances.put(
+                fnNode.getFunctionName(), Iterables.getOnlyElement(instances).getName());
+          }
         }
       }
     }
@@ -433,7 +452,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("private TemplateName() {}");
     ilb.appendLine();
 
-    for (Entry<String, TemplateNode> templateEntry : publicBasicTemplateMap.entrySet()) {
+    for (Map.Entry<String, TemplateNode> templateEntry : publicBasicTemplateMap.entrySet()) {
       StringBuilder javadocSb = new StringBuilder();
       javadocSb
           .append("The full template name of the ")
@@ -518,6 +537,14 @@ public final class GenerateParseInfoVisitor
     appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", cssTagPrefixes.build());
     ilb.appendLineEnd(",");
     appendImmutableList(ilb, "<String>", deltemplates);
+    ilb.appendLineEnd(",");
+
+    // Plugin Instances
+    ImmutableMap.Builder<String, String> pluginInstanceSnippets = ImmutableMap.builder();
+    for (Map.Entry<String, String> entry : pluginInstances.entrySet()) {
+      pluginInstanceSnippets.put("\"" + entry.getKey() + "\"", "\"" + entry.getValue() + "\"");
+    }
+    appendImmutableMap(ilb, "<String, String>", pluginInstanceSnippets.build());
     ilb.appendLineEnd(");");
 
     ilb.decreaseIndent(2);

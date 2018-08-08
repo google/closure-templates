@@ -73,10 +73,14 @@ public final class AnnotationRef<T extends Annotation> {
         Class<?> returnType = method.getReturnType();
         if (returnType.isArray()) {
           if (returnType.getComponentType().isAnnotation()) {
-            // These could be supported, but we don't have a usecase yet.
-            throw new UnsupportedOperationException("Arrays of annotations are not supported");
+            @SuppressWarnings("unchecked") // we just checked above
+            AnnotationRef<?> forType =
+                forType((Class<? extends Annotation>) returnType.getComponentType());
+            writersBuilder.put(method, annotationArrayFieldWriter(method.getName(), forType));
+          } else {
+            // simple array type
+            writersBuilder.put(method, simpleArrayFieldWriter(method.getName()));
           }
-          writersBuilder.put(method, arrayFieldWriter(method.getName()));
         } else if (returnType.isAnnotation()) {
           // N.B. this is recursive and will fail if we encounter recursive annotations
           // (StackOverflowError).  This could be resolved when we have a usecase, but the failure
@@ -147,8 +151,8 @@ public final class AnnotationRef<T extends Annotation> {
     };
   }
 
-  /** Writes an array valued field to the annotation visitor. */
-  private static FieldWriter arrayFieldWriter(final String name) {
+  /** Writes an simple array valued field to the annotation visitor. */
+  private static FieldWriter simpleArrayFieldWriter(final String name) {
     return new FieldWriter() {
       @Override
       public void write(AnnotationVisitor visitor, Object value) {
@@ -156,6 +160,24 @@ public final class AnnotationRef<T extends Annotation> {
         AnnotationVisitor arrayVisitor = visitor.visitArray(name);
         for (int i = 0; i < len; i++) {
           arrayVisitor.visit(null, Array.get(value, i));
+        }
+        arrayVisitor.visitEnd();
+      }
+    };
+  }
+
+  /** Writes an annotation array valued field to the annotation visitor. */
+  private static <T extends Annotation> FieldWriter annotationArrayFieldWriter(
+      final String name, final AnnotationRef<T> ref) {
+    return new FieldWriter() {
+      @Override
+      public void write(AnnotationVisitor visitor, Object value) {
+        int len = Array.getLength(value);
+        AnnotationVisitor arrayVisitor = visitor.visitArray(name);
+        for (int i = 0; i < len; i++) {
+          ref.doWrite(
+              ref.annType.cast(Array.get(value, i)),
+              arrayVisitor.visitAnnotation(null, ref.typeDescriptor));
         }
         arrayVisitor.visitEnd();
       }

@@ -93,8 +93,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String ITEMS = "items";
     /** Listed by .demoBidiSupport. */
     public static final String KEYWORDS = "keywords";
-    /** Listed by .demoMsg. */
-    public static final String LABS_URL = "labsUrl";
     /** Listed by .demoParamWithKindAttribute. */
     public static final String LIST = "list";
     /** Listed by .demoParamWithKindAttributeCallee_ (private). */
@@ -314,15 +312,11 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** Listed by . */
     public static final String NAME = "name";
 
-    /** The name of the person to say hello to. */
-    public static final String LABS_URL = "labsUrl";
-
     private DemoMsgSoyTemplateInfo() {
       super(
           "soy.examples.features.demoMsg",
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
-              .put("labsUrl", ParamRequisiteness.REQUIRED)
               .build(),
           ImmutableSortedSet.<String>of(),
           "strict");
@@ -479,6 +473,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
   /** Same as DemoForRangeSoyTemplateInfo.getInstance(). */
   public static final DemoForRangeSoyTemplateInfo DEMO_FOR_RANGE =
       DemoForRangeSoyTemplateInfo.getInstance();
+
 
   /**
    * Demo 'call' without 'param's.
@@ -691,7 +686,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** Listed by . */
     public static final String STUDENTS = "students";
 
-    /** Nonempty list of students. Each student must have 'name', 'major', and 'year'. */
+    /** List of students. */
     public static final String CURRENT_YEAR = "currentYear";
 
     private DemoExpressionsSoyTemplateInfo() {
@@ -905,7 +900,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
         ImmutableMap.<String, CssTagsPrefixPresence>of(),
-        ImmutableList.<String>of());
+        ImmutableList.<String>of(),
+        ImmutableMap.<String, String>of());
   }
 
 

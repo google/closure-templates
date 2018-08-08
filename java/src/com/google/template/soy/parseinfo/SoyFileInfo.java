@@ -56,6 +56,9 @@ public class SoyFileInfo {
   /** Map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
   private final ImmutableMap<String, CssTagsPrefixPresence> cssNameMap;
 
+  /** Map of function name to plugin instances used by all templates in this file. */
+  private final ImmutableMap<String, String> pluginInstances;
+
   /**
    * Constructor for internal use only.
    *
@@ -71,12 +74,14 @@ public class SoyFileInfo {
       String namespace,
       ImmutableList<SoyTemplateInfo> templates,
       ImmutableMap<String, CssTagsPrefixPresence> cssNameMap,
-      ImmutableList<String> deltemplateNames) {
+      ImmutableList<String> deltemplateNames,
+      ImmutableMap<String, String> pluginInstances) {
     this.fileName = fileName;
     this.namespace = namespace;
     this.templates = templates;
     this.cssNameMap = cssNameMap;
     this.deltemplateNames = deltemplateNames;
+    this.pluginInstances = pluginInstances;
   }
 
   /** Returns the source Soy file's name. */
@@ -111,5 +116,14 @@ public class SoyFileInfo {
   /** Returns the fully qualified names of all deltemplates in the file. */
   public final ImmutableList<String> getDelTemplateNames() {
     return deltemplateNames;
+  }
+
+  /**
+   * Returns the map of plugin instances (where the key is the function name and the value is the
+   * fully qualified classname of the instance used by that function) used by all templates in this
+   * file.
+   */
+  public ImmutableMap<String, String> getPluginInstances() {
+    return pluginInstances;
   }
 }

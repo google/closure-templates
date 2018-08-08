@@ -55,6 +55,8 @@ public class AnnotationRefTest {
     String[] strings() default {};
 
     AParam aParam() default @AParam;
+
+    AParam[] params() default {};
   }
 
   @NoParams
@@ -82,11 +84,11 @@ public class AnnotationRefTest {
   }
 
   @ComplexParams(
-    value = "foo",
-    ints = {1, 2, 3},
-    strings = {"a", "b", "c"},
-    aParam = @AParam("foo")
-  )
+      value = "foo",
+      ints = {1, 2, 3},
+      strings = {"a", "b", "c"},
+      aParam = @AParam("foo"),
+      params = {@AParam("foo1"), @AParam("foo2")})
   @Test
   public void testAnnotation_complex() {
     runCurrentAnnotationTest();
