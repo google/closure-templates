@@ -64,6 +64,11 @@ public abstract class Statement extends CodeChunk {
     return For.create(localVar, initial, limit, increment, body);
   }
 
+  /** Creates a code chunk representing a for of loop. */
+  public static Statement forOf(String localVar, Expression collection, Statement body) {
+    return ForOf.create(localVar, collection, body);
+  }
+
   /** Creates a code chunk representing a for loop, with default values for initial & increment. */
   public static Statement forLoop(String localVar, Expression limit, Statement body) {
     return For.create(localVar, Expression.number(0), limit, Expression.number(1), body);
