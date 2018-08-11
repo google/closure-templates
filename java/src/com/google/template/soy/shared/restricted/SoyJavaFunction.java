@@ -26,7 +26,9 @@ import java.util.List;
  *
  * <p>Important: This may only be used in implementing function plugins.
  *
+ * @deprecated Use SoyJavaSourceFunction instead
  */
+@Deprecated
 public interface SoyJavaFunction extends SoyFunction {
 
   /**
