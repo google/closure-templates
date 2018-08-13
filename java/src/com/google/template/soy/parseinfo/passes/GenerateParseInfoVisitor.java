@@ -149,10 +149,8 @@ public final class GenerateParseInfoVisitor
 
         case GENERIC:
           return "File";
-
-        default:
-          throw new AssertionError();
       }
+      throw new AssertionError();
     }
 
     /**
@@ -1037,7 +1035,7 @@ public final class GenerateParseInfoVisitor
     private void collectSelector(String selector, boolean hasComponentName) {
       CssTagsPrefixPresence existingCssTagsPrefixPresence = cssNamesMap.get(selector);
       CssTagsPrefixPresence additionalCssTagsPrefixPresence =
-          (hasComponentName) ? CssTagsPrefixPresence.ALWAYS : CssTagsPrefixPresence.NEVER;
+          hasComponentName ? CssTagsPrefixPresence.ALWAYS : CssTagsPrefixPresence.NEVER;
 
       if (existingCssTagsPrefixPresence == null) {
         cssNamesMap.put(selector, additionalCssTagsPrefixPresence);

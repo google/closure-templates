@@ -306,7 +306,7 @@ final class Inferences {
                     tn.getRequiredCssNamespaces())
                 .addParams(trivialClonedTemplate.getAllParams())
                 .build();
-        if (!(derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
+        if (!derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName())) {
           throw new AssertionError();
         }
 

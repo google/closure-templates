@@ -95,7 +95,7 @@ public class FeaturesUsage {
    * @throws IOException If there is an error reading the input files.
    */
   public static void main(String[] args) throws IOException {
-    (new FeaturesUsage()).execMain(args);
+    new FeaturesUsage().execMain(args);
   }
 
   private void execMain(String[] args) throws IOException {

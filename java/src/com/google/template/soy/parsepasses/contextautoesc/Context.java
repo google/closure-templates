@@ -241,7 +241,6 @@ public final class Context {
         case REGEX:
           return derive(JsFollowingSlash.DIV_OP);
         case NONE:
-        default:
           throw new IllegalStateException(slashType.name());
       }
     } else if (state == HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
@@ -1251,8 +1250,6 @@ public final class Context {
         break;
       case NONE:
         throw new IllegalStateException();
-      default:
-        throw new AssertionError("Unrecognized state " + elType);
     }
     return builder.build();
   }
@@ -1340,10 +1337,10 @@ public final class Context {
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
-    } else if (elType == ElementType.SCRIPT && "src".equals(attrName)
-        || elType == ElementType.IFRAME && "src".equals(attrName)
-        || elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName)
-        || elType == ElementType.BASE && "href".equals(attrName)) {
+    } else if ((elType == ElementType.SCRIPT && "src".equals(attrName))
+        || (elType == ElementType.IFRAME && "src".equals(attrName))
+        || (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
+        || (elType == ElementType.BASE && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
     } else if (URI_ATTR_NAMES.contains(localName)
@@ -1748,8 +1745,6 @@ public final class Context {
           withUriPart(UriPart.START);
           withUriType(UriType.TRUSTED_RESOURCE);
           break;
-        default:
-          throw new AssertionError();
       }
       if (!inTag) {
         withElType(ElementType.NONE);
