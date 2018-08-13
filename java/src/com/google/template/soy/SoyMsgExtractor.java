@@ -95,7 +95,7 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
   SoyMsgExtractor() {}
 
   @Override
-  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 

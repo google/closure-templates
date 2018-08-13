@@ -51,7 +51,7 @@ import org.kohsuke.args4j.Option;
  *
  * <p>Defines common flags and performs shared initialization routines.
  */
-abstract class AbstractSoyCompiler {
+public abstract class AbstractSoyCompiler {
   /** The string to prepend to the usage message. */
   private final String usagePrefix =
       "Usage:\n"
@@ -164,7 +164,8 @@ abstract class AbstractSoyCompiler {
 
   final ClassLoader pluginClassLoader;
 
-  AbstractSoyCompiler(ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
+  protected AbstractSoyCompiler(
+      ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
     this.pluginClassLoader = pluginClassLoader;
     this.soyCompilerFileReader = soyCompilerFileReader;
   }
@@ -184,7 +185,7 @@ abstract class AbstractSoyCompiler {
 
   @VisibleForTesting
   @CheckReturnValue
-  int run(final String[] args, PrintStream err) {
+  public int run(final String[] args, PrintStream err) {
     try {
       doMain(args, err);
       return 0;
@@ -322,7 +323,7 @@ abstract class AbstractSoyCompiler {
    * @throws IOException
    */
   @ForOverride
-  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     throw new AbstractMethodError("must override at least one overload of compile()");
   }
 
