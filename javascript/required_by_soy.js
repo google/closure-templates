@@ -104,6 +104,7 @@ goog.exportSymbol('goog.isNumber', goog.isNumber);
 goog.exportSymbol('goog.isObject', goog.isObject);
 goog.exportSymbol('goog.isString', goog.isString);
 goog.exportSymbol('goog.module', goog.module);
+goog.exportSymbol('goog.module.get', goog.module.get);
 goog.exportSymbol('goog.object', goog.object);
 goog.exportSymbol('goog.inherits', goog.inherits);
 goog.exportSymbol('goog.provide', goog.provide);

@@ -83,6 +83,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -93,6 +94,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -170,12 +172,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    */
   private final SoyToJsVariableMappings variableMappings;
 
+  private final SoyJsSrcOptions jsSrcOptions;
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
 
   public TranslateExprNodeVisitor(
+      SoyJsSrcOptions jsSrcOptions,
       TranslationContext translationContext,
       ErrorReporter errorReporter) {
+    this.jsSrcOptions = jsSrcOptions;
     this.errorReporter = errorReporter;
     this.variableMappings = translationContext.soyToJsVariableMappings();
     this.codeGenerator = translationContext.codeGenerator();
@@ -590,6 +595,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     } else if (soyFunction instanceof LoggingFunction) {
       return stringLiteral(((LoggingFunction) soyFunction).getPlaceholder());
+    } else if (soyFunction instanceof SoyJavaScriptSourceFunction) {
+      return new JavaScriptValueFactoryImpl(jsSrcOptions, codeGenerator, errorReporter)
+          .applyFunction(
+              node.getSourceLocation(),
+              node.getFunctionName(),
+              (SoyJavaScriptSourceFunction) soyFunction,
+              visitChildren(node));
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
         // No SoyJsSrcFunction found. This is either a non-JS function or a v1 experssion.

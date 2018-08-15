@@ -103,6 +103,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_GET_DELTEMPLATE_ID = SOY.dotAccess("$$getDelTemplateId");
 
+  public static final Expression SOY_IS_LOCALE_RTL = SOY.dotAccess("$$IS_LOCALE_RTL");
+
   public static final Expression SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
   public static final Expression SOY_MAP_MAYBE_COERCE_KEY_TO_STRING =

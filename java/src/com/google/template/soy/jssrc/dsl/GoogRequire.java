@@ -67,6 +67,15 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     }
   }
 
+  /** Returns a reference to the module object using {@code goog.module.get} */
+  public Expression googModuleGet() {
+    if (chunk() instanceof VariableDeclaration) {
+      throw new IllegalStateException("requires with aliases shouldn't use goog.module.get");
+    }
+    return dottedIdWithRequires("goog.module.get", ImmutableSet.of(this))
+        .call(stringLiteral(symbol()));
+  }
+
   /** Access a member of this required symbol. */
   public Expression dotAccess(String ident) {
     return reference().dotAccess(ident);

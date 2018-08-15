@@ -24,6 +24,7 @@ import com.google.common.base.Supplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
@@ -60,12 +61,15 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   public static class GenJsExprsVisitorFactory {
     // We are using a provider to resolve a circular dependency between GenCallCodeUtils and this
     // factory.
+    protected final SoyJsSrcOptions jsSrcOptions;
     protected final Supplier<GenCallCodeUtils> genCallCodeUtils;
     protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
     protected GenJsExprsVisitorFactory(
+        SoyJsSrcOptions jsSrcOptions,
         Supplier<GenCallCodeUtils> genCallCodeUtils,
         IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
+      this.jsSrcOptions = jsSrcOptions;
       this.genCallCodeUtils = genCallCodeUtils;
       this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     }
@@ -79,6 +83,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
         TemplateAliases templateAliases,
         ErrorReporter errorReporter) {
       return new GenJsExprsVisitor(
+          jsSrcOptions,
           genCallCodeUtils.get(),
           isComputableAsJsExprsVisitor,
           this,
@@ -91,6 +96,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
+  private final SoyJsSrcOptions jsSrcOptions;
   private final GenCallCodeUtils genCallCodeUtils;
   protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
@@ -117,12 +123,14 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    *     name.
    */
   protected GenJsExprsVisitor(
+      SoyJsSrcOptions jsSrcOptions,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       TranslationContext translationContext,
       ErrorReporter errorReporter,
       TemplateAliases templateAliases) {
+    this.jsSrcOptions = jsSrcOptions;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -238,7 +246,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   }
 
   private Expression translateExpr(ExprRootNode argNode) {
-    return new TranslateExprNodeVisitor(translationContext, errorReporter).exec(argNode);
+    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter)
+        .exec(argNode);
   }
 
   /**
