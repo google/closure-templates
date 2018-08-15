@@ -94,6 +94,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
@@ -188,6 +189,8 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
+  private static final SoyErrorKind TYPE_MISMATCH_STATE =
+      SoyErrorKind.of("''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
@@ -224,6 +227,16 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     protected void visitTemplateNode(TemplateNode node) {
       visitSoyNode(node);
+      for (TemplateStateVar state : node.getStateVars()) {
+        if (!state.type().isAssignableFrom(state.initialValue().getType())) {
+          errorReporter.report(
+              state.initialValue().getSourceLocation(),
+              TYPE_MISMATCH_STATE,
+              state.name(),
+              state.type(),
+              state.initialValue().getType());
+        }
+      }
     }
 
     @Override
