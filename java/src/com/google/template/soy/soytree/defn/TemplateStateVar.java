@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
@@ -32,17 +33,20 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   private final SourceLocation nameLocation;
   private final String desc;
   private final TypeNode typeNode;
+  private final ExprNode initialValue;
 
   public TemplateStateVar(
       String name,
       SoyType type,
       TypeNode typeNode,
+      ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
     super(name, type);
     this.typeNode = typeNode;
     this.desc = desc;
     this.nameLocation = nameLocation;
+    this.initialValue = initialValue;
   }
 
   TemplateStateVar(TemplateStateVar stateVar) {
@@ -50,10 +54,15 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     this.typeNode = stateVar.typeNode;
     this.desc = stateVar.desc;
     this.nameLocation = stateVar.nameLocation;
+    this.initialValue = stateVar.initialValue;
   }
 
   public TypeNode typeNode() {
     return typeNode;
+  }
+
+  public ExprNode initialValue() {
+    return initialValue;
   }
 
   @Override

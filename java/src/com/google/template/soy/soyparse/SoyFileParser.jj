@@ -1152,6 +1152,7 @@ TOKEN_MGR_DECLS: {
 | < LPAREN: "(" >
 | < RPAREN: ")" >
 | < VBAR: "|" > // an operator for type unions
+| < ASSIGN: "=" > // For state assignments
 }
 
 
@@ -1867,13 +1868,13 @@ private HeaderParam ParamDecl(@Nullable String desc) :
  *
  * @param desc The doc comment that was attached to whitespace preceding this param, if any.
  *
- * TODO(b/111998618): Support initialization from an expression.
  */
 private TemplateStateVar StateVarDecl(@Nullable String desc) :
 {
   Token stateVarBegin, name, stateVarEnd;
   TypeNode stateVarTypeNode = null;
   SoyType stateVarType = ErrorType.getInstance();
+  ExprNode value = null;
 }
 {
   (
@@ -1887,6 +1888,8 @@ private TemplateStateVar StateVarDecl(@Nullable String desc) :
   try {
     stateVarTypeNode = TypeExpr()
     { stateVarType = typeNodeConverter.getOrCreateType(stateVarTypeNode); }
+    <ASSIGN>
+    value = Expr()
     stateVarEnd = <CMD_END>
   } catch (ParseException parseException) {
     stateVarEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
@@ -1896,6 +1899,7 @@ private TemplateStateVar StateVarDecl(@Nullable String desc) :
         name.image,
         stateVarType,
         stateVarTypeNode,
+        value,
         desc,
         createSrcLoc(name));
   }

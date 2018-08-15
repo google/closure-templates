@@ -335,7 +335,7 @@ public final class CheckTemplateHeaderVarsPassTest {
 
   @Test
   public void testUndeclaredStateVar() {
-    String stateVarDecl = "{@state foo: int}";
+    String stateVarDecl = "{@state foo: int = 1}";
     String templateBody = "{$boo}";
     ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
     assertThat(errors).hasSize(2);
@@ -345,7 +345,7 @@ public final class CheckTemplateHeaderVarsPassTest {
 
   @Test
   public void testUnusedStateVar() {
-    String stateVarDecl = "{@state foo: int}";
+    String stateVarDecl = "{@state foo: int = 2}";
     String templateBody = "Hello";
     ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
