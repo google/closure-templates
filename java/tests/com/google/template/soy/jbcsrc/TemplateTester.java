@@ -28,6 +28,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -265,7 +266,9 @@ public final class TemplateTester {
 
     @CheckReturnValue
     public IterableSubject failsToCompileWithErrorsThat() {
-      SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
+      SoyFileSetParserBuilder builder =
+          SoyFileSetParserBuilder.forFileContents(actual())
+              .enableExperimentalFeatures(ImmutableList.of("state_vars"));
       for (SoyFunction function : soyFunctions) {
         builder.addSoyFunction(function);
       }
@@ -353,6 +356,7 @@ public final class TemplateTester {
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
                 .errorReporter(ErrorReporter.exploding())
+                .enableExperimentalFeatures(ImmutableList.of("state_vars"))
                 .parse()
                 .fileSet();
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show

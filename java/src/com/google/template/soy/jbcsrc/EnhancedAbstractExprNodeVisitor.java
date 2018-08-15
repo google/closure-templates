@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 
 /**
  * An abstract base class that adds extra visitor methods for unpacking varrefs and functions based
@@ -65,6 +66,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         return visitParam(node, (TemplateParam) defn);
       case IJ_PARAM:
         return visitIjParam(node, (InjectedParam) defn);
+        // State is inlined since it is always a constant
+      case STATE:
+        return visitStateNode((TemplateStateVar) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
       default:
@@ -151,5 +155,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   T visitPluginFunction(FunctionNode node) {
     return visitExprNode(node);
+  }
+
+  T visitStateNode(TemplateStateVar state) {
+    // TODO(lukes): make this be a static field
+    return visit(state.initialValue());
   }
 }

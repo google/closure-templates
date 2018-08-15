@@ -145,6 +145,7 @@ public class BytecodeCompilerTest {
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
+            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
             .build();
     SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
@@ -458,6 +459,16 @@ public class BytecodeCompilerTest {
             "{/for}")
         .rendersAs(
             "123", ImmutableMap.of("map", ImmutableMap.of("key", ImmutableList.of(1, 2, 3))));
+  }
+
+  @Test
+  public void testStateNodeNumber() {
+    assertThatTemplateBody("{@state foo:int = 1}", "{$foo}").rendersAs("1");
+  }
+
+  @Test
+  public void testStateNodeBoolean() {
+    assertThatTemplateBody("{@state foo:int = 1}", "{if $foo}1{else}0{/if}").rendersAs("1");
   }
 
   @Test
