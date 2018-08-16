@@ -71,6 +71,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -174,6 +175,7 @@ final class LazyClosureCompiler {
   private final TemplateVariableManager parentVariables;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
+  private final List<TemplateStateVar> stateVars;
 
   LazyClosureCompiler(
       CompiledTemplateRegistry registry,
@@ -182,7 +184,8 @@ final class LazyClosureCompiler {
       TemplateVariableManager parentVariables,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       ErrorReporter reporter,
-      SoyTypeRegistry typeRegistry) {
+      SoyTypeRegistry typeRegistry,
+      List<TemplateStateVar> stateVars) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
@@ -190,6 +193,7 @@ final class LazyClosureCompiler {
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
     this.reporter = reporter;
     this.typeRegistry = typeRegistry;
+    this.stateVars = stateVars;
   }
 
   Expression compileLazyExpression(
@@ -383,7 +387,8 @@ final class LazyClosureCompiler {
               variableSet,
               lookup,
               reporter,
-              typeRegistry);
+              typeRegistry,
+              stateVars);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();

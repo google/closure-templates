@@ -88,6 +88,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -330,6 +331,20 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitGlobalNode(GlobalNode node) {
       return visit(node.getValue());
+    }
+
+    @Override
+    SoyExpression visitStateNode(TemplateStateVar state) {
+      // In every other case the runtime type for the value can be used as is. However, null types
+      // must be upgraded to the declared type to be used correctly.
+      if (state.initialValue().getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
+        return SoyExpression.forSoyValue(
+            state.type(),
+            BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(state.type()).runtimeType()));
+      }
+      SoyExpression initialVal = visit(state.initialValue());
+      FieldRef ref = varManager.getStateVariable(state.name());
+      return initialVal.withSource(ref.accessor());
     }
 
     // Collection literals
@@ -1161,6 +1176,11 @@ final class ExpressionCompiler {
     @Override
     Boolean visitIjParam(VarRefNode node, InjectedParam param) {
       return true;
+    }
+
+    @Override
+    Boolean visitStateNode(TemplateStateVar state) {
+      return false;
     }
 
     @Override

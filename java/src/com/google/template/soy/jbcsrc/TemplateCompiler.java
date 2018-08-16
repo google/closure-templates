@@ -273,7 +273,8 @@ final class TemplateCompiler {
                 variableSet,
                 variables,
                 reporter,
-                soyTypeRegistry)
+                soyTypeRegistry,
+                node.getStateVars())
             .compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {

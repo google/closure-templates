@@ -103,6 +103,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,12 +141,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
       ErrorReporter reporter,
-      SoyTypeRegistry typeRegistry) {
+      SoyTypeRegistry typeRegistry,
+      List<TemplateStateVar> stateVars) {
     DetachState detachState = new DetachState(variables, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(detachState, parameterLookup, variables, reporter, typeRegistry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
-        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, parameterLookup);
+        ExpressionToSoyValueProviderCompiler.create(variables, expressionCompiler, parameterLookup);
+    for (TemplateStateVar state : stateVars) {
+      variables.addStateVariable(state.name(), expressionCompiler.compile(state.initialValue()));
+    }
     return new SoyNodeCompiler(
         thisVar,
         registry,
@@ -162,7 +167,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             variables,
             soyValueProviderCompiler,
             reporter,
-            typeRegistry));
+            typeRegistry,
+            stateVars));
   }
 
   private final Expression thisVar;

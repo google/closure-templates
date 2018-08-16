@@ -37,6 +37,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -70,17 +71,23 @@ final class ExpressionToSoyValueProviderCompiler {
    * ExpressionDetacher.Factory}
    */
   static ExpressionToSoyValueProviderCompiler create(
-      ExpressionCompiler exprCompiler, TemplateParameterLookup variables) {
-    return new ExpressionToSoyValueProviderCompiler(exprCompiler, variables);
+      TemplateVariableManager varManager,
+      ExpressionCompiler exprCompiler,
+      TemplateParameterLookup variables) {
+    return new ExpressionToSoyValueProviderCompiler(varManager, exprCompiler, variables);
   }
 
   private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
+  private final TemplateVariableManager varManager;
 
   private ExpressionToSoyValueProviderCompiler(
-      ExpressionCompiler exprCompiler, TemplateParameterLookup variables) {
+      TemplateVariableManager varManager,
+      ExpressionCompiler exprCompiler,
+      TemplateParameterLookup variables) {
     this.exprCompiler = exprCompiler;
     this.variables = variables;
+    this.varManager = varManager;
   }
 
   /**
@@ -95,7 +102,8 @@ final class ExpressionToSoyValueProviderCompiler {
    */
   Optional<Expression> compileAvoidingBoxing(ExprNode node, Label reattachPoint) {
     checkNotNull(node);
-    return new CompilerVisitor(variables, null, exprCompiler.asBasicCompiler(reattachPoint))
+    return new CompilerVisitor(
+            variables, varManager, null, exprCompiler.asBasicCompiler(reattachPoint))
         .exec(node);
   }
 
@@ -109,12 +117,13 @@ final class ExpressionToSoyValueProviderCompiler {
    */
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
     checkNotNull(node);
-    return new CompilerVisitor(variables, exprCompiler, null).exec(node);
+    return new CompilerVisitor(variables, varManager, exprCompiler, null).exec(node);
   }
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<Optional<Expression>> {
     final TemplateParameterLookup variables;
+    final TemplateVariableManager varManager;
 
     // depending on the mode one or the other of these will be null
     @Nullable final ExpressionCompiler exprCompiler;
@@ -122,12 +131,14 @@ final class ExpressionToSoyValueProviderCompiler {
 
     CompilerVisitor(
         TemplateParameterLookup variables,
-        ExpressionCompiler exprCompiler,
-        BasicExpressionCompiler detachingExprCompiler) {
+        TemplateVariableManager varManager,
+        @Nullable ExpressionCompiler exprCompiler,
+        @Nullable BasicExpressionCompiler detachingExprCompiler) {
       this.variables = variables;
       checkArgument((exprCompiler == null) != (detachingExprCompiler == null));
       this.exprCompiler = exprCompiler;
       this.detachingExprCompiler = detachingExprCompiler;
+      this.varManager = varManager;
     }
 
     private boolean allowsBoxing() {
@@ -194,7 +205,7 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     Optional<Expression> visitForLoopVar(VarRefNode varRef, LocalVar local) {
       Expression loopVar = variables.getLocal(local);
-      if (loopVar.resultType() == Type.LONG_TYPE) {
+      if (loopVar.resultType().equals(Type.LONG_TYPE)) {
         // this happens in foreach loops over ranges
         if (allowsBoxing()) {
           return Optional.of(SoyExpression.forInt(loopVar).box());
@@ -215,6 +226,17 @@ final class ExpressionToSoyValueProviderCompiler {
       return Optional.of(
           MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
               variables.getIjRecord(), constant(ij.name())));
+    }
+
+    @Override
+    Optional<Expression> visitStateNode(TemplateStateVar state) {
+      Optional<Expression> initialValue = visit(state.initialValue());
+      if (initialValue.isPresent()) {
+        return Optional.of(
+            SoyExpression.forSoyValue(
+                state.type(), varManager.getStateVariable(state.name()).accessor()));
+      }
+      return Optional.absent();
     }
 
     @Override

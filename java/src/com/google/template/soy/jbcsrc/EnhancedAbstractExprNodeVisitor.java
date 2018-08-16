@@ -157,8 +157,5 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  T visitStateNode(TemplateStateVar state) {
-    // TODO(lukes): make this be a static field
-    return visit(state.initialValue());
-  }
+  abstract T visitStateNode(TemplateStateVar state);
 }

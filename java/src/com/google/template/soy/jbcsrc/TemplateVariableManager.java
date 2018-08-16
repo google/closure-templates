@@ -292,6 +292,7 @@ final class TemplateVariableManager implements ClassFieldManager {
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
   private final LocalVariable thisVar;
+  private final Map<String, FieldRef> stateVariables = new LinkedHashMap<>();
   // Allocated lazily
   @Nullable private FieldRef currentCalleeField;
   // Allocated lazily
@@ -421,6 +422,15 @@ final class TemplateVariableManager implements ClassFieldManager {
         throw new RuntimeException("unable to write table entry for: " + var.local, t);
       }
     }
+  }
+
+  public FieldRef addStateVariable(String name, Expression initializer) {
+    stateVariables.put(name, addStaticField(name, initializer));
+    return getStateVariable(name);
+  }
+
+  public FieldRef getStateVariable(String name) {
+    return stateVariables.get(name);
   }
 
   @Override
