@@ -39,7 +39,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
-import static com.google.template.soy.jssrc.internal.JsRuntime.STATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
@@ -99,6 +98,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -193,12 +193,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param varDefn The variable definition of the parameter
    * @return The code to access the value of that parameter.
    */
-  static Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
+  Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
     Expression source = OPT_DATA;
     if (varDefn.isInjected()) {
       source = OPT_IJ_DATA;
     } else if (varDefn.kind() == VarDefn.Kind.STATE) {
-      source = STATE;
+      // TODO: Promote this to a statically initialized variable.
+      TemplateStateVar state = (TemplateStateVar) varDefn;
+      return visit(state.initialValue());
     }
     return source.dotAccess(paramName);
   }

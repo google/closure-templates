@@ -1038,6 +1038,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .exec(expr);
   }
 
+  protected Expression genCodeForParamAccess(String paramName, TemplateParam param) {
+    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
+        .genCodeForParamAccess(paramName, param);
+  }
+
   /**
    * Example:
    *
@@ -1436,7 +1441,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String paramName = param.name();
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
-      Expression paramChunk = TranslateExprNodeVisitor.genCodeForParamAccess(paramName, param);
+      Expression paramChunk = genCodeForParamAccess(paramName, param);
       JsType jsType = getJsType(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);

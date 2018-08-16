@@ -124,6 +124,7 @@ public abstract class ClassExpression extends Expression {
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
+      ctx.endLine();
       ctx.append(jsDoc());
       ctx.endLine();
       ctx.append(name() + "(");
