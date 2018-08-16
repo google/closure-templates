@@ -69,7 +69,7 @@ public abstract class FieldDeclaration extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(jsdoc().toString());
+    ctx.append(jsdoc());
     Expression assignment = Expression.id("this").dotAccess(fieldName());
     if (value() != null) {
       assignment = assignment.assign(value());

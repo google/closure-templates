@@ -19,8 +19,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Represents an anonymous JavaScript function declaration.
@@ -63,19 +61,7 @@ abstract class FunctionDeclaration extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("function(");
-    ImmutableList<JsDoc.Param> params = jsDoc().params();
-    List<String> functionParameters = new ArrayList<>();
-    for (JsDoc.Param param : params) {
-      if ("param".equals(param.annotationType())) {
-        functionParameters.add(param.paramTypeName());
-      }
-    }
-    for (int i = 0; i < functionParameters.size(); i++) {
-      ctx.append(functionParameters.get(i));
-      if (i + 1 < functionParameters.size()) {
-        ctx.append(", ");
-      }
-    }
+    ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
     ctx.append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(body());

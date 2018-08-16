@@ -47,7 +47,7 @@ abstract class Assignment extends Statement {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     if (jsDoc() != null) {
-      ctx.append(jsDoc().toString()).endLine();
+      ctx.append(jsDoc()).endLine();
     }
     ctx.appendInitialStatements(rhs())
         .append(varName())

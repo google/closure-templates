@@ -564,4 +564,21 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
           srcLocation.getBeginLine());
     }
   }
+
+  /** Returns whether the template node is stateful (has at least one @state variable). */
+  public boolean isStatefulTemplate() {
+    return !getStateVars().isEmpty();
+  }
+
+  /** Returns true if the template has at least one strict param. */
+  public boolean hasStrictParams() {
+    for (TemplateParam param : getParams()) {
+      if (param.declLoc() == TemplateParam.DeclLoc.HEADER) {
+        return true;
+      }
+    }
+    // Note: If there are only injected params, don't use strong typing for
+    // the function signature, because what it will produce is an empty struct.
+    return false;
+  }
 }

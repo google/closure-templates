@@ -68,7 +68,7 @@ public abstract class VariableDeclaration extends Statement {
       ctx.appendInitialStatements(rhs());
     }
     if (jsDoc() != null) {
-      ctx.append(jsDoc().toString()).endLine();
+      ctx.append(jsDoc()).endLine();
     }
     ctx.append("var ").append(varName());
     if (rhs() != null) {

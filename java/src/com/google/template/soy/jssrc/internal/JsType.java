@@ -70,7 +70,7 @@ import javax.annotation.Nullable;
  * <p>This is geared toward generating jscompiler compatible type expressions for the purpose of
  * declarations and cast operators.
  */
-final class JsType {
+public final class JsType {
 
   /**
    * In some cases we need to coerce a user provided value to something else to support
@@ -215,7 +215,7 @@ final class JsType {
    * @param soyType the soy type
    * @param isIncrementalDom whether or not this is for incremental dom.
    */
-  static JsType forSoyType(SoyType soyType, boolean isIncrementalDom) {
+  public static JsType forSoyType(SoyType soyType, boolean isIncrementalDom) {
     switch (soyType.getKind()) {
       case NULL:
         return NULL_OR_UNDEFINED_TYPE;
@@ -453,7 +453,7 @@ final class JsType {
   /**
    * Returns a type expression for a record member. In some cases this requires additional parens.
    */
-  String typeExprForRecordMember(boolean isOptional) {
+  public String typeExprForRecordMember(boolean isOptional) {
     if (typeExpressions.size() > 1 || isOptional) {
       // needs parens
       return "("

@@ -365,7 +365,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
-
     if (node.getSoyFileKind() != SoyFileKind.SRC) {
       return; // don't generate code for deps
     }
@@ -616,7 +615,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     // TODO(lukes): why don't we always do this?  even for old style params this would be useful
-    boolean useStrongTyping = hasStrictParams(node);
+    boolean useStrongTyping = node.hasStrictParams();
 
     String templateName = node.getTemplateName();
     String partialName = node.getPartialTemplateName();
@@ -1490,17 +1489,5 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
-  }
-
-  /** Return true if the template has at least one strict param. */
-  private boolean hasStrictParams(TemplateNode template) {
-    for (TemplateParam param : template.getParams()) {
-      if (param.declLoc() == TemplateParam.DeclLoc.HEADER) {
-        return true;
-      }
-    }
-    // Note: If there are only injected params, don't use strong typing for
-    // the function signature, because what it will produce is an empty struct.
-    return false;
   }
 }

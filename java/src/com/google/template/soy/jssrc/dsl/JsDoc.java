@@ -18,7 +18,9 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /** Expresses JSDoc comment blocks and how to print them out. */
@@ -31,21 +33,6 @@ public abstract class JsDoc {
   }
 
   abstract ImmutableList<Param> params();
-
-  @Override
-  public String toString() {
-    // Typedefs usually span more than one line.
-    if (params().size() == 1 && !"typedef".equals(params().get(0).annotationType())) {
-      return String.format("/** %s */", params().get(0));
-    }
-    StringBuilder builder = new StringBuilder();
-    builder.append("/**\n");
-    for (Param param : params()) {
-      builder.append(" * ").append(param).append("\n");
-    }
-    builder.append(" */");
-    return builder.toString();
-  }
 
   /** Builder for JsDoc. */
   @AutoValue.Builder
@@ -74,6 +61,11 @@ public abstract class JsDoc {
       paramsBuilder().add(Param.create("param", type, name));
       return this;
     }
+
+    public Builder addParam(String name, ImmutableMap<String, String> recordLiteralType) {
+      paramsBuilder().add(Param.create("param", name, recordLiteralType));
+      return this;
+    }
   }
 
   @AutoValue
@@ -90,30 +82,100 @@ public abstract class JsDoc {
     @Nullable
     abstract String paramTypeName();
 
+    /**
+     * Non-null if the param type is a record literal (e.g. `{foo: boolean}`, with key = `foo` and
+     * value = `boolean`).
+     */
+    @Nullable
+    abstract ImmutableMap<String, String> recordLiteralType();
+
     static Param createTag(String annotationType, String field) {
-      return new AutoValue_JsDoc_Param(annotationType, field, null, null);
+      return new AutoValue_JsDoc_Param(annotationType, field, null, null, null);
     }
 
     static Param create(String annotationType, String type) {
-      return new AutoValue_JsDoc_Param(annotationType, null, type, null);
+      return new AutoValue_JsDoc_Param(annotationType, null, type, null, null);
     }
 
     static Param create(String annotationType, String type, String paramTypeName) {
-      return new AutoValue_JsDoc_Param(annotationType, null, type, paramTypeName);
+      return new AutoValue_JsDoc_Param(annotationType, null, type, paramTypeName, null);
+    }
+
+    static Param create(
+        String annotationType,
+        String paramTypeName,
+        ImmutableMap<String, String> recordLiteralType) {
+      return new AutoValue_JsDoc_Param(
+          annotationType, null, null, paramTypeName, recordLiteralType);
+    }
+
+    void format(FormattingContext ctx) {
+      if (recordLiteralType() != null) {
+        ctx.append(String.format("@%s {{", annotationType()));
+        ctx.endLine();
+        for (Map.Entry<String, String> entry : recordLiteralType().entrySet()) {
+          ctx.append(" *   " + entry.getKey() + ": " + entry.getValue() + ",");
+          ctx.endLine();
+        }
+        ctx.append(String.format(" * }} %s", paramTypeName()));
+      } else {
+        ctx.append(this.toString());
+      }
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
       if (type() == null && field() == null) {
         return String.format("@%s", annotationType());
-      }
-      if (field() != null) {
+      } else if (field() != null) {
         return String.format("@%s %s", annotationType(), field());
-      }
-      if (paramTypeName() == null) {
+      } else if (paramTypeName() == null) {
         return String.format("@%s {%s}", annotationType(), type());
+      } else {
+        return String.format("@%s {%s} %s", annotationType(), type(), paramTypeName());
       }
-      return String.format("@%s {%s} %s", annotationType(), type(), paramTypeName());
     }
+  }
+
+  /** Should only be invoked from FormattingContext#appendJsDoc. */
+  public void doFormatJsDoc(FormattingContext ctx) {
+    if (this.isSingleLine()) {
+      ctx.append(this.toString());
+      return;
+    }
+    ctx.append("/**");
+    ctx.endLine();
+    for (Param param : params()) {
+      ctx.append(" * ");
+      param.format(ctx);
+      ctx.endLine();
+    }
+    ctx.append(" */");
+  }
+
+  /**
+   * For use when appending jsdoc outside of a FormattingContext (e.g, @fileoverview at file start).
+   * Otherwise, use FormattingContext#format(JsDoc), as this does not respect the current indent.
+   */
+  @Override
+  public final String toString() {
+    if (this.isSingleLine()) {
+      return String.format("/** %s */", params().get(0));
+    }
+    StringBuilder sb = new StringBuilder();
+    sb.append("/**\n");
+    for (Param param : params()) {
+      sb.append(" * ").append(param).append("\n");
+    }
+    sb.append(" */");
+    return sb.toString();
+  }
+
+  private boolean isSingleLine() {
+    return params().size() == 1
+        // Typedefs usually span more than one line.
+        && !"typedef".equals(params().get(0).annotationType())
+        // Record literals always span more than one line.
+        && params().get(0).recordLiteralType() == null;
   }
 }
