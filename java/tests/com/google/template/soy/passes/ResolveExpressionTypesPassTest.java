@@ -32,16 +32,21 @@ import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
+import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,6 +87,33 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
+  }
+
+  @Test
+  public void testState() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@state pa: bool = true}",
+                    "{@state pb: list<int> = [1,2,3]}",
+                    "{@state pc: bool|null = null}",
+                    "{@state pd: list<int>|null = null}",
+                    "{assertType('bool', $pa)}",
+                    "{assertType('list<int>', $pb)}",
+                    "{assertType('bool|null', $pc)}",
+                    "{assertType('list<int>|null', $pd)}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+    TemplateNode node = soyTree.getChild(0).getChild(0);
+    List<TemplateStateVar> states = node.getStateVars();
+    assertThat(states.get(0).initialValue().getType()).isEqualTo(BoolType.getInstance());
+    assertThat(states.get(1).initialValue().getType())
+        .isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(states.get(2).initialValue().getType()).isEqualTo(NullType.getInstance());
+    assertThat(states.get(3).initialValue().getType()).isEqualTo(NullType.getInstance());
   }
 
   @Test

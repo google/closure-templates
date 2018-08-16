@@ -29,6 +29,8 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
@@ -48,7 +50,8 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class TemplateNode extends AbstractBlockCommandNode implements RenderUnitNode {
+public abstract class TemplateNode extends AbstractBlockCommandNode
+    implements RenderUnitNode, ExprHolderNode {
 
   /** Priority for delegate templates. */
   public enum Priority {
@@ -316,6 +319,15 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.isDeprecatedV1 = orig.isDeprecatedV1;
+  }
+
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
+    for (TemplateStateVar state : getStateVars()) {
+      builder.add(state.initialValue());
+    }
+    return builder.build();
   }
 
   /** Returns info from the containing Soy file's header declarations. */
