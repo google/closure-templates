@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.api;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
@@ -43,6 +44,9 @@ public final class PrecompiledSoyModule extends AbstractModule {
     install(new SharedModule());
     OptionalBinder.newOptionalBinder(
         binder(), new Key<ImmutableSet<String>>(Deltemplates.class) {});
+
+    OptionalBinder.newOptionalBinder(
+        binder(), new Key<ImmutableMap<String, Supplier<Object>>>(PluginInstances.class) {});
   }
 
   @Provides
@@ -52,12 +56,14 @@ public final class PrecompiledSoyModule extends AbstractModule {
       SoyScopedData scopedData,
       @Deltemplates Optional<ImmutableSet<String>> allDeltemplates,
       ImmutableMap<String, ? extends SoyFunction> pluginFunctions,
-      ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives) {
+      ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives,
+      @PluginInstances Optional<ImmutableMap<String, Supplier<Object>>> pluginInstances) {
     return new SoySauceBuilder()
         .withDelTemplates(allDeltemplates.or(ImmutableSet.<String>of()))
         .withScope(scopedData)
         .withFunctions(pluginFunctions)
         .withDirectives(pluginDirectives)
+        .withPluginInstances(pluginInstances.or(ImmutableMap.<String, Supplier<Object>>of()))
         .build();
   }
 

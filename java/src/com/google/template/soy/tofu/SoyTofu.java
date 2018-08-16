@@ -142,6 +142,9 @@ public interface SoyTofu {
     /**
      * Sets the plugin instances that will be used to for method calls from {@code
      * SoyJavaSourceFunctions} that called {@code JavaValueFactory.callInstanceMethod}.
+     *
+     * <p>Most plugin instances should be associated with the Tofu instance during construction, but
+     * this method can be used to add more if that is not feasible or desireable.
      */
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 

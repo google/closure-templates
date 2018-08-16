@@ -48,8 +48,11 @@ public interface SoySauce {
     Renderer setIj(Map<String, ?> record);
 
     /**
-     * Sets the plugin instances that will be used to for method calls from {@code
-     * SoyJavaSourceFunctions} that called {@code JavaValueFactory.callInstanceMethod}.
+     * Sets the plugin instances that will be used to for plugins that are implemented with {@code
+     * SoyJavaSourceFunctions} that use {@code JavaValueFactory.callInstanceMethod}.
+     *
+     * <p>Most plugin instances should be associated with the SoySauce instance during construction,
+     * but this method can be used to add more if that is not feasible.
      */
     Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances);
 

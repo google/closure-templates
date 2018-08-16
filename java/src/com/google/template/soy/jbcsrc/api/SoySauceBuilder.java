@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.api;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -31,9 +32,21 @@ public final class SoySauceBuilder {
   private ImmutableSet<String> allDeltemplates = ImmutableSet.of();
   private ImmutableMap<String, SoyFunction> userFunctions = ImmutableMap.of();
   private ImmutableMap<String, SoyPrintDirective> userDirectives = ImmutableMap.of();
+  private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
   private SoyScopedData scopedData;
 
   public SoySauceBuilder() {}
+
+  /**
+   * Sets the plugin instance factories, to be used when constructing the SoySauce.
+   *
+   * <p>These are used to supply the runtime instances needed by SoyJavaSourceFunction
+   * implementations which use the {@code callInstanceMethod} API.
+   */
+  public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+    this.userPluginInstances = ImmutableMap.copyOf(pluginInstances);
+    return this;
+  }
 
   /** Sets the delTemplates, to be used when constructing the SoySauce. */
   public SoySauceBuilder withDelTemplates(Iterable<String> delTemplates) {
@@ -76,6 +89,7 @@ public final class SoySauceBuilder {
             // in order to handle escaping logging function invocations.
             .putAll(InternalPlugins.internalDirectiveMap(scopedData))
             .putAll(userDirectives)
-            .build());
+            .build(),
+        userPluginInstances);
   }
 }

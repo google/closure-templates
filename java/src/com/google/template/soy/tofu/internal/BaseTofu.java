@@ -16,6 +16,8 @@
 
 package com.google.template.soy.tofu.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -59,14 +61,18 @@ public final class BaseTofu implements SoyTofu {
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
+  private final ImmutableMap<String, Supplier<Object>> pluginInstances;
+
   /** @param apiCallScope The scope object that manages the API call scope. */
   public BaseTofu(
       SoyScopedData.Enterable apiCallScope,
       TemplateRegistry templates,
-      ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
+      ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap,
+      Map<String, Supplier<Object>> pluginInstances) {
     this.apiCallScope = apiCallScope;
     this.templateRegistry = templates;
     this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
+    this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
   }
 
   /**
@@ -242,7 +248,7 @@ public final class BaseTofu implements SoyTofu {
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
     private boolean debugSoyTemplateInfo;
-    private ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
+    private Map<String, Supplier<Object>> perRenderPluginInstances;
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
@@ -283,7 +289,7 @@ public final class BaseTofu implements SoyTofu {
 
     @Override
     public Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
-      this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
+      this.perRenderPluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
@@ -331,6 +337,17 @@ public final class BaseTofu implements SoyTofu {
       return sb.toString();
     }
 
+    private ImmutableMap<String, Supplier<Object>> getPluginInstances() {
+
+      if (perRenderPluginInstances != null) {
+        return ImmutableMap.<String, Supplier<Object>>builder()
+            .putAll(baseTofu.pluginInstances)
+            .putAll(perRenderPluginInstances)
+            .build();
+      }
+      return baseTofu.pluginInstances;
+    }
+
     @Override
     public SanitizedContent.ContentKind render(Appendable out) {
       TemplateNode template =
@@ -344,7 +361,7 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              pluginInstances);
+              getPluginInstances());
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -371,7 +388,7 @@ public final class BaseTofu implements SoyTofu {
               idRenamingMap,
               cssRenamingMap,
               debugSoyTemplateInfo,
-              pluginInstances);
+              getPluginInstances());
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.

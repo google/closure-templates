@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -790,21 +791,33 @@ public final class SoyFileSet {
    * @throws SoyCompilationException If compilation fails.
    */
   public SoyTofu compileToTofu() {
+    return compileToTofu(ImmutableMap.of());
+  }
+  /**
+   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
+   * compiled templates.
+   *
+   * @return The resulting {@code SoyTofu} object.
+   * @throws SoyCompilationException If compilation fails.
+   */
+  public SoyTofu compileToTofu(Map<String, Supplier<Object>> pluginInstances) {
     resetErrorReporter();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     throwIfErrorsPresent();
-    SoyTofu tofu = doCompileToTofu(primitives);
+    SoyTofu tofu = doCompileToTofu(primitives, pluginInstances);
 
     reportWarnings();
     return tofu;
   }
 
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
-  private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
+  private SoyTofu doCompileToTofu(
+      ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
     return new BaseTofu(
         scopedData.enterable(),
         primitives.registry,
-        getTransitiveIjs(primitives.soyTree, primitives.registry));
+        getTransitiveIjs(primitives.soyTree, primitives.registry),
+        pluginInstances);
   }
 
   /**
@@ -821,11 +834,27 @@ public final class SoyFileSet {
    * @throws SoyCompilationException If compilation fails.
    */
   public SoySauce compileTemplates() {
+    return compileTemplates(ImmutableMap.of());
+  }
+  /**
+   * Compiles this Soy file set into a set of java classes implementing the {@link SoySauce}
+   * interface.
+   *
+   * <p>This is useful for implementing 'edit refresh' workflows. Most production usecases should
+   * use the command line interface to 'ahead of time' compile templates to jar files and then use
+   * {@code PrecompiledSoyModule} or {@code SoySauceBuilder} to get access to a {@link SoySauce}
+   * object without invoking the compiler. This will allow applications to avoid invoking the soy
+   * compiler at runtime which can be relatively slow.
+   *
+   * @return A set of compiled templates
+   * @throws SoyCompilationException If compilation fails.
+   */
+  public SoySauce compileTemplates(Map<String, Supplier<Object>> pluginInstances) {
     resetErrorReporter();
     disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     throwIfErrorsPresent();
-    SoySauce sauce = doCompileSoySauce(primitives);
+    SoySauce sauce = doCompileSoySauce(primitives, pluginInstances);
 
     reportWarnings();
     return sauce;
@@ -850,7 +879,8 @@ public final class SoyFileSet {
   }
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
-  private SoySauce doCompileSoySauce(ServerCompilationPrimitives primitives) {
+  private SoySauce doCompileSoySauce(
+      ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
             primitives.registry,
@@ -863,7 +893,11 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
 
     return new SoySauceImpl(
-        templates.get(), scopedData.enterable(), soyFunctionMap, printDirectives);
+        templates.get(),
+        scopedData.enterable(),
+        soyFunctionMap,
+        printDirectives,
+        ImmutableMap.copyOf(pluginInstances));
   }
 
   /**
