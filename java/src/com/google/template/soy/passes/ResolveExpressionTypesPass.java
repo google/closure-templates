@@ -192,6 +192,8 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
   private static final SoyErrorKind TYPE_MISMATCH_STATE =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
+  private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
+      SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
@@ -236,6 +238,10 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
               state.name(),
               state.initialValue().getType(),
               state.type());
+        }
+        if (!SoyTreeUtils.isConstantExpr(state.initialValue())) {
+          errorReporter.report(
+              state.initialValue().getSourceLocation(), STATE_MUST_BE_CONSTANT, state.name());
         }
       }
     }
