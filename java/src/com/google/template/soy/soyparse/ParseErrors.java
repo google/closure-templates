@@ -221,8 +221,6 @@ final class ParseErrors {
         return "attribute name";
       case SoyFileParserConstants.SQ_ATTRIBUTE_VALUE:
       case SoyFileParserConstants.DQ_ATTRIBUTE_VALUE:
-      case SoyFileParserConstants.EQ_DOUBLE_QUOTE:
-      case SoyFileParserConstants.EQ_SINGLE_QUOTE:
         return "attribute value";
 
       case SoyFileParserConstants.CMD_FULL_SP:

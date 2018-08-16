@@ -854,12 +854,6 @@ TOKEN_MGR_DECLS: {
 | < LOGONLY_ATTR_SQ: "logonly" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
 }
 
-// used for things like phname/phex which only happen in the EXPR state
-<EXPR> TOKEN: {
-  < EQ_DOUBLE_QUOTE: "=" ( <WS> )* "\"" > { pushState(IN_DQ_ATTRIBUTE_VALUE); }
-| < EQ_SINGLE_QUOTE: "=" ( <WS> )* "'" > { pushState(IN_SQ_ATTRIBUTE_VALUE); }
-}
-
 // exits the attribute value
 <EXPR_NO_DOUBLE_QUOTE> TOKEN: {
   < END_DQ_EXPR_ATTR: "\"" >: IN_CMD_TAG
@@ -1126,33 +1120,33 @@ TOKEN_MGR_DECLS: {
 // Operators.
 
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < QMARK: "?" >    // Precedence 1 operators
-| < COLON: ":" >    // Also used as part of part of map literal syntax
+  < QMARK: "?" >      // Precedence 1 operators
+| < COLON: ":" >      // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
-| < OR: "or" >      // Precedence 2 operators
-| < AND: "and" >    // Precedence 3 operators
-| < EQ: "==">       // Precedence 4 operators
+| < OR: "or" >        // Precedence 2 operators
+| < AND: "and" >      // Precedence 3 operators
+| < DOUBLE_EQ: "==">  // Precedence 4 operators
 | < NOT_EQ: "!=" >
-| < LANGLE: "<" >   // Precedence 5 operators
+| < LANGLE: "<" >     // Precedence 5 operators
 | < RANGLE: ">" >
 | < LT_EQ: "<=" >
 | < GT_EQ: ">=" >
-| < PLUS: "+">      // Precedence 6 operators
-| < MINUS: "-">     // Precedence 6 as a binary operator and 8 as a unary operator
-| < TIMES: "*">     // Precedence 7 operators
+| < PLUS: "+">        // Precedence 6 operators
+| < MINUS: "-">       // Precedence 6 as a binary operator and 8 as a unary operator
+| < TIMES: "*">       // Precedence 7 operators
 | < DIV: "/">
 | < MOD: "%">
-| < NOT: "not" >    // Precedence 8 as a unary operator (along with MINUS)
-| < DOT: "." >      // Precedence 9 operators
+| < NOT: "not" >      // Precedence 8 as a unary operator (along with MINUS)
+| < DOT: "." >        // Precedence 9 operators
 | < QDOT: "?." >
-| < LBRACKET: "[" > // Precedence 9 data access operators and part of legacy map literal syntax
+| < LBRACKET: "[" >   // Precedence 9 data access operators and part of legacy map literal syntax
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
-| < COMMA: "," >    // Not actually an operator, part of map/list literal syntax
+| < COMMA: "," >      // Not actually an operator, part of map/list literal syntax
 | < LPAREN: "(" >
 | < RPAREN: ")" >
-| < VBAR: "|" > // an operator for type unions
-| < ASSIGN: "=" > // For state assignments
+| < VBAR: "|" >       // an operator for type unions
+| < EQ: "=" >         // For state assignments and attribute value pairs in EXPR
 }
 
 
@@ -1458,32 +1452,31 @@ private CommandTagAttribute Attribute() :
 
 
 /**
- * Matches an attribute in EXPR lexical state.
+ * Matches an attribute value pair in the EXPR lexical state.
  *
- * ExprAttribute -> Ident EqQuote AttributeValue
+ * ExprAttribute -> Ident EQ StringLiteral()
  */
 private CommandTagAttribute ExprAttribute() :
 {
-  Token name, value;
-  QuoteStyle quoteStyle;
+  Token name;
+  StringNode value;
 }
 {
   name = <IDENT>
-  (
-    <EQ_DOUBLE_QUOTE>
-    value = <DQ_ATTRIBUTE_VALUE>
-    {quoteStyle = QuoteStyle.DOUBLE; }
-  |
-    <EQ_SINGLE_QUOTE>
-    value = <SQ_ATTRIBUTE_VALUE>
-    {quoteStyle = QuoteStyle.SINGLE; }
-  )
+  <EQ>
+  // This is slightly inconsistent with other attribute values in Soy.  For things like msg.desc, we
+  // allow newlines and don't support unicode and hex escapes, but for string literals we do support
+  // those escapes and don't support internal newlines (you have to escape them with \n).  For most,
+  // ExprAttributes this is fine since they are simple values (number, identifier), but for phex
+  // this could be confusing.
+  value = StringLiteral()
   {
     return new CommandTagAttribute(
         Identifier.create(name.image, createSrcLoc(name)),
-        quoteStyle,
-        value.image,
-        createSrcLoc(value));
+        value.getQuoteStyle(),
+        value.getValue(),
+        // offset so the value location points at the body of the string, not the quotation marks
+        value.getSourceLocation().offsetEndCol(-1).offsetStartCol(1));
   }
 }
 
@@ -1888,7 +1881,7 @@ private TemplateStateVar StateVarDecl(@Nullable String desc) :
   try {
     stateVarTypeNode = TypeExpr()
     { stateVarType = typeNodeConverter.getOrCreateType(stateVarTypeNode); }
-    <ASSIGN>
+    <EQ>
     value = Expr()
     stateVarEnd = <CMD_END>
   } catch (ParseException parseException) {
@@ -3293,7 +3286,7 @@ private ExprNode PrecExpr4() :
   expr = PrecExpr5()
   (
     (
-      op = <EQ>
+      op = <DOUBLE_EQ>
     |
       op = <NOT_EQ>
     )
@@ -3848,28 +3841,36 @@ private PrimitiveNode Primitive() :
     tok = <FLOAT>
     { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
   |
-    {QuoteStyle quoteStyle; }
-    (
-      quote = <SINGLE_QUOTE>
-      tok = <SQ_STRING>
-      { quoteStyle = QuoteStyle.SINGLE; }
-    |
-      quote = <DOUBLE_QUOTE>
-      tok = <DQ_STRING>
-      { quoteStyle = QuoteStyle.DOUBLE; }
-    )
-    {
-      SourceLocation loc = createSrcLoc(quote, tok);
-      // strip the final character which is the closing quotation mark.
-      String rawString = tok.image.substring(0, tok.image.length() - 1);
-      String unescaped = SoyParseUtils.unescapeString(rawString, errorReporter, loc);
-      primitive = new StringNode(unescaped, quoteStyle, loc);
-    }
+    primitive = StringLiteral()
   )
 
   { return primitive; }
 }
 
+
+private StringNode StringLiteral() :
+{
+  Token quote, value;
+  QuoteStyle quoteStyle;
+}
+{
+  (
+    quote = <SINGLE_QUOTE>
+    value = <SQ_STRING>
+    { quoteStyle = QuoteStyle.SINGLE; }
+  |
+    quote = <DOUBLE_QUOTE>
+    value = <DQ_STRING>
+    { quoteStyle = QuoteStyle.DOUBLE; }
+  )
+  {
+    SourceLocation loc = createSrcLoc(quote, value);
+    // strip the final character which is the closing quotation mark.
+    String rawString = value.image.substring(0, value.image.length() - 1);
+    String unescaped = SoyParseUtils.unescapeString(rawString, errorReporter, loc);
+    return new StringNode(unescaped, quoteStyle, loc);
+  }
+}
 
 /**
  * A helper to parse a dotted identifier.

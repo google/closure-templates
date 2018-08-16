@@ -72,6 +72,11 @@ public final class StringNode extends AbstractPrimitiveNode {
     return value;
   }
 
+  /** Return the quote style of this string. */
+  public QuoteStyle getQuoteStyle() {
+    return quoteStyle;
+  }
+
   /**
    * Equivalent to {@code toSourceString(false)}.
    *

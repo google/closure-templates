@@ -127,9 +127,9 @@ public final class TemplateParserTest {
             "parse error at '@': expected null, true, false, number, string, -, not, "
                 + "[, (, identifier, $ij, or variable");
     TemplateSubject.assertThatTemplateContent("{sp ace}")
-        .causesError("parse error at '}': expected attribute value");
+        .causesError("parse error at '}': expected =");
     TemplateSubject.assertThatTemplateContent("{literal a=b}")
-        .causesError("parse error at '=': expected attribute value");
+        .causesError("parse error at 'b': expected string");
 
     assertValidTemplate("{@param blah : ?}\n{if $blah == 'phname = \"foo\"'}{/if}");
     assertInvalidTemplate("{blah phname=\"\"}");
