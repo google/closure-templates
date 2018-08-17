@@ -38,6 +38,8 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SwitchCaseNode;
+import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
@@ -142,6 +144,16 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
 
   @Override
   protected Boolean visitSwitchNode(SwitchNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitSwitchCaseNode(SwitchCaseNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitSwitchDefaultNode(SwitchDefaultNode node) {
     return false;
   }
 

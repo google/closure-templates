@@ -35,6 +35,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -181,6 +182,11 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   }
 
   @Override protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+    visitChildren(node);
+  }
+
+  @Override
+  protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
     visitChildren(node);
   }
 
