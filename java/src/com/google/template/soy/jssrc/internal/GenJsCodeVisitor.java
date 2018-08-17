@@ -382,14 +382,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     file.append("\n");
     String fileOverviewDescription = "Templates in namespace " + node.getNamespace() + ".";
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    jsDocBuilder.addTag("fileoverview", fileOverviewDescription);
+    jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
     if (node.getDelPackageName() != null) {
-      jsDocBuilder.addParameterizedTag("modName", node.getDelPackageName());
+      jsDocBuilder.addParameterizedAnnotation("modName", node.getDelPackageName());
     }
     addJsDocToProvideDelTemplates(jsDocBuilder, node);
     addJsDocToRequireDelTemplates(jsDocBuilder, node);
     addCodeToRequireCss(jsDocBuilder, node);
-    jsDocBuilder.addTag("public");
+    jsDocBuilder.addAnnotation("public");
     file.append(jsDocBuilder.build());
     file.append("\n\n");
 
@@ -437,7 +437,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // NOTE: CSS requires in JS can only be done on a file by file basis at this time.  Perhaps in
     // the future, this might be supported per function.
     for (String requiredCssNamespace : requiredCssNamespaces) {
-      header.addParameterizedTag("requirecss", requiredCssNamespace);
+      header.addParameterizedAnnotation("requirecss", requiredCssNamespace);
     }
   }
 
@@ -532,7 +532,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
     for (String delTemplateName : delTemplateNames) {
-      header.addParameterizedTag("hassoydeltemplate", delTemplateName);
+      header.addParameterizedAnnotation("hassoydeltemplate", delTemplateName);
     }
   }
 
@@ -544,7 +544,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
     }
     for (String delTemplateName : delTemplateNames) {
-      header.addParameterizedTag("hassoydelcall", delTemplateName);
+      header.addParameterizedAnnotation("hassoydelcall", delTemplateName);
     }
   }
 
@@ -653,11 +653,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsDocBuilder.addParam("opt_ijData_deprecated", "Object<string, *>=");
 
     String returnType = getTemplateReturnType(node);
-    jsDocBuilder.addParameterizedTag("return", returnType);
+    jsDocBuilder.addParameterizedAnnotation("return", returnType);
     // TODO(b/11787791): make the checkTypes suppression more fine grained.
-    jsDocBuilder.addParameterizedTag("suppress", "checkTypes");
+    jsDocBuilder.addParameterizedAnnotation("suppress", "checkTypes");
     if (node.getVisibility() == Visibility.PRIVATE) {
-      jsDocBuilder.addTag("private");
+      jsDocBuilder.addAnnotation("private");
     }
 
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
@@ -688,7 +688,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // ------ Add the @typedef of opt_data. ------
     if (paramsRecordType != null) {
       StringBuilder sb = new StringBuilder();
-      sb.append(JsDoc.builder().addParameterizedTag("typedef", paramsRecordType).build());
+      sb.append(JsDoc.builder().addParameterizedAnnotation("typedef", paramsRecordType).build());
       sb.append("\n");
       // TODO(b/35203585): find a way to represent declarations like this in codechunks
       sb.append(alias).append(".Params");
@@ -1470,7 +1470,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .setRhs(value)
               .setGoogRequires(jsType.getGoogRequires());
       declarationBuilder.setJsDoc(
-          JsDoc.builder().addParameterizedTag("type", jsType.typeExpr()).build());
+          JsDoc.builder().addParameterizedAnnotation("type", jsType.typeExpr()).build());
       VariableDeclaration declaration = declarationBuilder.build();
       declarations.add(declaration);
 

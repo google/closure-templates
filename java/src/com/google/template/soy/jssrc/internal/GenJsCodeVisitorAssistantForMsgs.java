@@ -300,11 +300,11 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // Generate JS comment (JSDoc) block for the goog.getMsg() call.
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     if (msgNode.getMeaning() != null) {
-      jsDocBuilder.addTag("meaning", msgNode.getMeaning());
+      jsDocBuilder.addAnnotation("meaning", msgNode.getMeaning());
     }
-    jsDocBuilder.addTag("desc", msgNode.getDesc());
+    jsDocBuilder.addAnnotation("desc", msgNode.getDesc());
     if (msgNode.isHidden()) {
-      jsDocBuilder.addTag("hidden");
+      jsDocBuilder.addAnnotation("hidden");
     }
 
     // Generate goog.getMsg() call.

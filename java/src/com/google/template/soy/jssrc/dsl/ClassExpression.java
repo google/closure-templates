@@ -77,8 +77,12 @@ public abstract class ClassExpression extends Expression {
     }
     ctx.append(" ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      for (MethodDeclaration method : methods()) {
-        method.doFormatOutputExpr(ctx);
+      for (int i = 0; i < methods().size(); i++) {
+        if (i > 0) {
+          ctx.append('\n');
+          ctx.endLine();
+        }
+        methods().get(i).doFormatOutputExpr(ctx);
       }
     }
   }
@@ -124,7 +128,6 @@ public abstract class ClassExpression extends Expression {
 
     @Override
     void doFormatOutputExpr(FormattingContext ctx) {
-      ctx.endLine();
       ctx.append(jsDoc());
       ctx.endLine();
       ctx.append(name() + "(");

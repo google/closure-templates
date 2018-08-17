@@ -42,18 +42,18 @@ public abstract class JsDoc {
 
     public abstract JsDoc build();
 
-    public Builder addParameterizedTag(String name, String value) {
+    public Builder addParameterizedAnnotation(String name, String value) {
       paramsBuilder().add(Param.create(name, value));
       return this;
     }
 
-    public Builder addTag(String type) {
-      paramsBuilder().add(Param.createTag(type, null));
+    public Builder addAnnotation(String type) {
+      paramsBuilder().add(Param.createAnnotation(type, null));
       return this;
     }
 
-    public Builder addTag(String type, String value) {
-      paramsBuilder().add(Param.createTag(type, value));
+    public Builder addAnnotation(String type, String value) {
+      paramsBuilder().add(Param.createAnnotation(type, value));
       return this;
     }
 
@@ -89,7 +89,7 @@ public abstract class JsDoc {
     @Nullable
     abstract ImmutableMap<String, String> recordLiteralType();
 
-    static Param createTag(String annotationType, String field) {
+    static Param createAnnotation(String annotationType, String field) {
       return new AutoValue_JsDoc_Param(annotationType, field, null, null, null);
     }
 
