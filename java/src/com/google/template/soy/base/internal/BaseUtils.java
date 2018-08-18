@@ -19,6 +19,7 @@ package com.google.template.soy.base.internal;
 import com.google.common.base.Ascii;
 import com.google.common.collect.Sets;
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -263,6 +264,18 @@ public class BaseUtils {
           .append(HEX_DIGITS[(codePoint >>> 8) & 0xF])
           .append(HEX_DIGITS[(codePoint >>> 4) & 0xF])
           .append(HEX_DIGITS[codePoint & 0xF]);
+    }
+  }
+
+  /** Trims the stack trace of the throwable such that the top item points at {@code cls}. */
+  public static void trimStackTraceTo(Throwable t, Class<?> cls) {
+    StackTraceElement[] ste = t.getStackTrace();
+    String name = cls.getName();
+    for (int i = 0; i < ste.length; i++) {
+      if (ste[i].getClassName().equals(name)) {
+        t.setStackTrace(Arrays.copyOf(ste, i));
+        return;
+      }
     }
   }
 }

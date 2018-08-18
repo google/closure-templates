@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -102,27 +101,6 @@ public final class JavaScriptValueFactoryImplTest {
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("foo.bar.baz();");
-  }
-
-  @Test
-  public void testCallNamespaceFn_error() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldProvideRequireSoyNamespaces(true);
-
-    try {
-      applyFunction(
-          new SoyJsSrcOptions(),
-          (JavaScriptValueFactory factory,
-              List<JavaScriptValue> args,
-              JavaScriptPluginContext context) -> factory.callNamespaceFunction("foo.bar", "baz"));
-      fail();
-    } catch (IllegalArgumentException iae) {
-      assertThat(iae)
-          .hasMessageThat()
-          .isEqualTo(
-              "expected 'baz' to be in the namespace of 'foo.bar'. "
-                  + "'baz' should be fully qualified");
-    }
   }
 
   @Test

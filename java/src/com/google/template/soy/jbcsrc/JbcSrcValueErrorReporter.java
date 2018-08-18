@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.base.Throwables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -89,6 +90,9 @@ final class JbcSrcValueErrorReporter {
       SoyErrorKind.of(
           formatPlain("Invalid call to {2}, {3} is incompatible with {4}."),
           StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind UNEXPECTED_ERROR =
+      SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter reporter;
   private final FunctionNode fnNode;
@@ -240,6 +244,10 @@ final class JbcSrcValueErrorReporter {
         "null",
         paramIdx + getOrdinalSuffix(paramIdx),
         simpleMethodName(method));
+  }
+
+  void unexpectedError(Throwable t) {
+    report(UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
   }
 
   private static String formatPlain(String innerFmt) {

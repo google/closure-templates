@@ -22,8 +22,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -53,10 +55,14 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
                       + "an error :-(');})()",
                   Integer.MAX_VALUE),
               ImmutableList.<GoogRequire>of()));
+
   private static final SoyErrorKind NULL_RETURN =
       SoyErrorKind.of(
           formatPlain("{2}.applyForJavaScriptSource returned null."),
           StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind UNEXPECTED_ERROR =
+      SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
   private static String formatPlain(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."
@@ -94,10 +100,16 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
 
   Expression applyFunction(
       SourceLocation location, String name, SoyJavaScriptSourceFunction fn, List<Expression> args) {
-    JavaScriptValueImpl result =
-        (JavaScriptValueImpl) fn.applyForJavaScriptSource(this, wrapParams(args), context);
-    if (result == null) {
-      report(location, name, fn, NULL_RETURN, fn.getClass().getSimpleName());
+    JavaScriptValueImpl result;
+    try {
+      result = (JavaScriptValueImpl) fn.applyForJavaScriptSource(this, wrapParams(args), context);
+      if (result == null) {
+        report(location, name, fn, NULL_RETURN, fn.getClass().getSimpleName());
+        result = ERROR_VALUE;
+      }
+    } catch (Throwable t) {
+      BaseUtils.trimStackTraceTo(t, getClass());
+      report(location, name, fn, UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
       result = ERROR_VALUE;
     }
     return result.impl;
@@ -214,12 +226,12 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
 
     @Override
     public JavaScriptValueImpl isNonNull() {
-      return new JavaScriptValueImpl(impl.tripleNotEquals(Expression.LITERAL_NULL));
+      return new JavaScriptValueImpl(impl.doubleNotEquals(Expression.LITERAL_NULL));
     }
 
     @Override
     public JavaScriptValueImpl isNull() {
-      return new JavaScriptValueImpl(impl.tripleEquals(Expression.LITERAL_NULL));
+      return new JavaScriptValueImpl(impl.doubleEquals(Expression.LITERAL_NULL));
     }
 
     @Override

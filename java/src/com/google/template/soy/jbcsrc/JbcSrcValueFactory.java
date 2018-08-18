@@ -27,6 +27,7 @@ import com.google.common.primitives.Primitives;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -166,10 +167,16 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           JbcSrcJavaValue.of(args.get(i), fnNode.getAllowedParamTypes().get(i), reporter));
     }
     SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
-
-    JavaValue result = javaSrcFn.applyForJavaSource(this, jvBuilder.build(), context);
-    if (result == null) {
-      reporter.nullReturn();
+    JavaValue result;
+    try {
+      result = javaSrcFn.applyForJavaSource(this, jvBuilder.build(), context);
+      if (result == null) {
+        reporter.nullReturn();
+        result = errorValue();
+      }
+    } catch (Throwable t) {
+      BaseUtils.trimStackTraceTo(t, getClass());
+      reporter.unexpectedError(t);
       result = errorValue();
     }
 
