@@ -2455,7 +2455,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         // in a block
         errorReporter.report(
             currentPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
-        throw new AbortParsingBlockError();
+        resetAttribute();
       }
       if (attributeName != null) {
         SourceLocation location = attributeName.getSourceLocation();
