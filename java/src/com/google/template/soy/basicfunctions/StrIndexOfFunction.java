@@ -17,14 +17,13 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.JsExprUtils;
+import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
-import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -55,12 +54,15 @@ import java.util.List;
     })
 @SoyPureFunction
 final class StrIndexOfFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
   @Override
-  public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return args.get(0).coerceToString().invokeMethod("indexOf", args.get(1).coerceToString());
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
+    // Coerce SanitizedContent args to strings.
+    String arg0 = JsExprUtils.toString(args.get(0)).getText();
+    String arg1 = JsExprUtils.toString(args.get(1)).getText();
+
+    return new JsExpr("(" + arg0 + ").indexOf(" + arg1 + ")", Integer.MAX_VALUE);
   }
 
   @Override

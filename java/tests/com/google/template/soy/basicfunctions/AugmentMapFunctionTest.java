@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
@@ -52,6 +53,17 @@ public class AugmentMapFunctionTest {
     assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue())
         .isEqualTo(5);
     assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("xxx")).isEqualTo(null);
+  }
+
+  @Test
+  public void testComputeForJsSrc() {
+    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
+    JsExpr baseMapExpr = new JsExpr("BASE_MAP_JS_CODE", Integer.MAX_VALUE);
+    JsExpr additionalMapExpr = new JsExpr("ADDITIONAL_MAP_JS_CODE", Integer.MAX_VALUE);
+    assertThat(augmentMapFunction.computeForJsSrc(ImmutableList.of(baseMapExpr, additionalMapExpr)))
+        .isEqualTo(
+            new JsExpr(
+                "soy.$$augmentMap(BASE_MAP_JS_CODE, ADDITIONAL_MAP_JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

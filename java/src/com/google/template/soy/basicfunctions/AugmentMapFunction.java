@@ -16,15 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
-import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -54,12 +53,15 @@ import java.util.List;
     "This function will be deleted along with legacy_object_maps."
         + " If you need AugmentMap-like functionality, please implement it as a custom Soy plugin.")
 public final class AugmentMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
-  public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$augmentMap", args.get(0), args.get(1));
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
+    JsExpr arg0 = args.get(0);
+    JsExpr arg1 = args.get(1);
+
+    String exprText = "soy.$$augmentMap(" + arg0.getText() + ", " + arg1.getText() + ")";
+    return new JsExpr(exprText, Integer.MAX_VALUE);
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
@@ -73,6 +75,11 @@ public final class AugmentMapFunction extends TypedSoyFunction
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
     return factory.callStaticMethod(Methods.AUGMENT_MAP_FN, args.get(0), args.get(1));
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
   @Override

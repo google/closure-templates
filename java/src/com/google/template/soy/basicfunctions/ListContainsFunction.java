@@ -16,16 +16,15 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
-import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -54,12 +53,18 @@ import java.util.List;
             returnType = "bool"))
 @SoyPureFunction
 public class ListContainsFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
-  public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$listContains", args.get(0), args.get(1));
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
+    return new JsExpr(
+        "soy.$$listContains(" + args.get(0).getText() + "," + args.get(1).getText() + ")",
+        Integer.MAX_VALUE);
   }
 
   @Override

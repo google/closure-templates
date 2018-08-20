@@ -16,14 +16,13 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
-import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -43,12 +42,17 @@ import java.util.List;
             parameterTypes = {"string"},
             returnType = "uri"))
 final class StrSmsUriToUriFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
-  public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$strSmsUriToUri", args.get(0));
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
+    String arg = args.get(0).getText();
+    return new JsExpr(String.format("soy.$$strSmsUriToUri(String(%s))", arg), Integer.MAX_VALUE);
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
   @Override

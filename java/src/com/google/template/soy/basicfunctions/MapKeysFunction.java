@@ -16,15 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
-import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -51,15 +50,18 @@ import java.util.List;
     value = @Signature(parameterTypes = "map<?, any>", returnType = "list<?>"))
 @SoyPureFunction
 public final class MapKeysFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Override
-  public JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    // TODO(lukes) this could be callModuleFunction but other parts of soy don't generate aliased
-    // requires so we can't generate one here without create a 'multiple require' error
-    // this could be handled via more clever require handling in the compiler.
-    return factory.callNamespaceFunction("soy.map", "soy.map.$$getMapKeys", args.get(0));
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
+    JsExpr arg = args.get(0);
+
+    return new JsExpr("soy.map.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.<String>of("soy.map");
   }
 
   @Override
