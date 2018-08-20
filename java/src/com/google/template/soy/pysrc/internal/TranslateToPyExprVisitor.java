@@ -442,6 +442,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitXidFunction(node);
       case IS_PRIMARY_MSG_IN_USE:
         return visitIsPrimaryMsgInUseFunction(node);
+      case TO_FLOAT:
+        // this is a no-op in python
+        return visit(node.getChild(0));
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");

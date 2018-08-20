@@ -28,7 +28,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -37,7 +36,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
-import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -107,10 +106,11 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
 
-  private static final ImmutableTable<SoyType, SoyType, SoyFunction> AVAILABLE_CALL_SITE_COERCIONS =
-      new ImmutableTable.Builder<SoyType, SoyType, SoyFunction>()
-          .put(IntType.getInstance(), FloatType.getInstance(), FloatFunction.INSTANCE)
-          .build();
+  private static final ImmutableTable<SoyType, SoyType, BuiltinFunction>
+      AVAILABLE_CALL_SITE_COERCIONS =
+          new ImmutableTable.Builder<SoyType, SoyType, BuiltinFunction>()
+              .put(IntType.getInstance(), FloatType.getInstance(), BuiltinFunction.TO_FLOAT)
+              .build();
 
   CheckTemplateCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -336,7 +336,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         }
       }
       for (SoyType coercionTargetType : AVAILABLE_CALL_SITE_COERCIONS.row(argType).keySet()) {
-        SoyFunction function = null;
+        BuiltinFunction function = null;
         for (SoyType formalType : declaredTypes) {
           if (!formalType.isAssignableFrom(coercionTargetType)) {
             continue;

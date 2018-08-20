@@ -45,6 +45,7 @@ public enum BuiltinFunction implements SoyFunction {
   REMAINDER("remainder"),
   MSG_WITH_ID("msgWithId"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
+  TO_FLOAT("$$toFloat"),
   ;
 
   public static ImmutableSet<String> names() {

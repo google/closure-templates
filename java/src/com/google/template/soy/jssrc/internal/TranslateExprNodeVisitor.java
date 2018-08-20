@@ -588,6 +588,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitV1ExpressionFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
+        case TO_FLOAT:
+          // this is a no-op in js
+          return visit(node.getChild(0));
         case REMAINDER:
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler

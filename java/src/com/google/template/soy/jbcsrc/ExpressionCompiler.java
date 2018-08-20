@@ -258,7 +258,7 @@ final class ExpressionCompiler {
             varManager,
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
-            // neccesary.
+            // necessary.
             Suppliers.memoize(
                 new Supplier<ExpressionDetacher>() {
                   @Override
@@ -952,6 +952,13 @@ final class ExpressionCompiler {
               .usePrimaryMsg(
                   ((IntegerNode) node.getChild(1)).getValue(),
                   ((IntegerNode) node.getChild(2)).getValue()));
+    }
+
+    @Override
+    SoyExpression visitToFloatFunction(FunctionNode node) {
+      SoyExpression arg = visit(node.getChild(0));
+      return SoyExpression.forFloat(
+          BytecodeUtils.numericConversion(arg.unboxAs(long.class), Type.DOUBLE_TYPE));
     }
 
     // Non-builtin functions

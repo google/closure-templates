@@ -640,6 +640,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");
+        case TO_FLOAT:
+          return visitToFloatFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -822,6 +824,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     long fallbackMsgId = ((IntegerNode) node.getChild(2)).getValue();
     return BooleanData.forValue(msgBundle.getMsgParts(fallbackMsgId).isEmpty());
+  }
+
+  private SoyValue visitToFloatFunction(FunctionNode node) {
+    IntegerData v = (IntegerData) visit(node.getChild(0));
+    return FloatData.forValue((double) v.longValue());
   }
 
   // -----------------------------------------------------------------------------------------------

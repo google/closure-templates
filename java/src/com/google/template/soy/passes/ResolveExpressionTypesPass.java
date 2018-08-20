@@ -1303,6 +1303,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           checkArgIsStringLiteral(arg1, "v1Expression");
           node.setType(UnknownType.getInstance());
           break;
+        case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
         case MSG_WITH_ID: // should have already been removed from the tree
           throw new AssertionError();
