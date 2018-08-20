@@ -16,13 +16,14 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -52,19 +53,13 @@ import java.util.List;
             // TODO(b/70946095): should be nullable
             returnType = "float"))
 public final class ParseFloatFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
-
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     // TODO(user): parseFloat('123abc') == 123; JS parseFloat tries to parse as much as it can.
     // That means parseFloat('1.1.1') == 1.1
-    String arg = args.get(0).getText();
-    return new JsExpr(String.format("soy.$$parseFloat(%s)", arg), Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+    return factory.callNamespaceFunction("soy", "soy.$$parseFloat", args.get(0));
   }
 
   @Override

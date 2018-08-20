@@ -17,13 +17,14 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.JsExprUtils;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -61,23 +62,14 @@ import java.util.List;
     })
 @SoyPureFunction
 final class StrSubFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    // Coerce SanitizedContent args to strings.
-    String arg0 = JsExprUtils.toString(args.get(0)).getText();
-    JsExpr arg1 = args.get(1);
-    JsExpr arg2 = args.size() == 3 ? args.get(2) : null;
-
-    return new JsExpr(
-        "("
-            + arg0
-            + ").substring("
-            + arg1.getText()
-            + (arg2 != null ? "," + arg2.getText() : "")
-            + ")",
-        Integer.MAX_VALUE);
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return args.size() == 2
+        ? args.get(0).invokeMethod("substring", args.get(1))
+        : args.get(0).invokeMethod("substring", args.get(1), args.get(2));
   }
 
   @Override

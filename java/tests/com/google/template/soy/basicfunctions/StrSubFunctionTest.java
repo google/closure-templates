@@ -21,8 +21,6 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -61,25 +59,6 @@ public class StrSubFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
     assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT), 2, 7))
         .isEqualTo("obarf");
-  }
-
-  @Test
-  public void testComputeForJsSrc_noEndIndex() {
-    StrSubFunction strSub = new StrSubFunction();
-    JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
-    JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
-    assertThat(strSub.computeForJsSrc(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(new JsExpr("('' + ('foo' + 'bar')).substring(3)", Integer.MAX_VALUE));
-  }
-
-  @Test
-  public void testComputeForJsSrc_endIndex() {
-    StrSubFunction strSub = new StrSubFunction();
-    JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
-    JsExpr arg1 = new JsExpr("3", Integer.MAX_VALUE);
-    JsExpr arg2 = new JsExpr("5", Integer.MAX_VALUE);
-    assertThat(strSub.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)))
-        .isEqualTo(new JsExpr("('' + ('foo' + 'bar')).substring(3,5)", Integer.MAX_VALUE));
   }
 
   @Test
