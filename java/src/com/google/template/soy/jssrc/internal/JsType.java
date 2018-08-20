@@ -42,7 +42,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.jssrc.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;

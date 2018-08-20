@@ -48,7 +48,7 @@ import com.google.common.collect.TreeMultimap;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.jssrc.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;

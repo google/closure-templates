@@ -55,7 +55,7 @@ final class NullSafeAccumulator {
   /**
    * A chain of dot accesses can end in a {@link com.google.common.html.types.SafeHtmlProto}
    * (SafeStyleProto, etc.). Such a chain needs to be {@link
-   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpacked} to a
+   * com.google.template.soy.jssrc.internalutils.NodeContentKinds#toJsUnpackFunction unpacked} to a
    * SanitizedContent object before it can be used in the JS runtime.
    */
   @Nullable private Expression unpackFunction;
@@ -64,7 +64,7 @@ final class NullSafeAccumulator {
    * A chain of dot accesses can end in a reference to a repeated or map {@link
    * com.google.common.html.types.SafeHtmlProto} field (SafeStyleProto field, etc.). The array/map
    * representing the field needs to be unpacked by running it through the appropriate {@link
-   * com.google.template.soy.data.internalutils.NodeContentKinds#toJsUnpackFunction unpack} function
+   * com.google.template.soy.jssrc.internalutils.NodeContentKinds#toJsUnpackFunction unpack} function
    * to produce SanitizedContent objects before it can be used in the JS runtime. This tracks the
    * type of the field so we know if/how to unpack it.
    */
