@@ -566,6 +566,13 @@ final class LazyClosureCompiler {
     }
 
     @Override
+    public SoyExpression getState(TemplateStateVar stateVar) {
+      // We can always just access the parent directly instead of capturing because these are simple
+      // expressions or static field references.
+      return parentParameterLookup.getState(stateVar);
+    }
+
+    @Override
     public Expression getLocal(LocalVar local) {
       if (isDescendantOf(local.declaringNode(), params.node)) {
         // in this case, we just delegate to VariableSet

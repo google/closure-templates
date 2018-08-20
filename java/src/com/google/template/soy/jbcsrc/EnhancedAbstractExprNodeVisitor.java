@@ -68,7 +68,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         return visitIjParam(node, (InjectedParam) defn);
         // State is inlined since it is always a constant
       case STATE:
-        return visitStateNode((TemplateStateVar) defn);
+        return visitStateNode(node, (TemplateStateVar) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
       default:
@@ -123,6 +123,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
+  T visitStateNode(VarRefNode node, TemplateStateVar state) {
+    return visitExprNode(node);
+  }
+
   T visitIjParam(VarRefNode varRef, InjectedParam ij) {
     return visitExprNode(varRef);
   }
@@ -163,5 +167,4 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  abstract T visitStateNode(TemplateStateVar state);
 }

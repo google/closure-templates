@@ -67,6 +67,39 @@ interface ExpressionDetacher {
   Expression resolveSoyValueProviderMap(Expression soyValueProviderMap);
 
   /**
+   * An {@link ExpressionDetacher} for use by the {@link ExpressionCompiler#createConstantCompiler}.
+   *
+   * <p>This assumes that no SoyValueProviders will be accessed and has no-op implementations of the
+   * list and map resolvers for use by the proto-init code.
+   */
+  static final class NullDetatcher implements ExpressionDetacher, Factory {
+    static final NullDetatcher INSTANCE = new NullDetatcher();
+
+    @Override
+    public NullDetatcher createExpressionDetacher(Label reattachPoint) {
+      return this;
+    }
+
+    @Override
+    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      throw new AssertionError("shouldn't be called");
+    }
+
+    // These 2 are used by proto-init code for repeated fields.
+
+    @Override
+    public Expression resolveSoyValueProviderList(final Expression soyValueProviderList) {
+      soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
+      return soyValueProviderList;
+    }
+
+    @Override
+    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+      soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
+      return soyValueProviderMap;
+    }
+  }
+  /**
    * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from {@link
    * SoyValueProvider#status()} if it isn't done.
    *

@@ -52,6 +52,8 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -68,6 +70,8 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -262,7 +266,11 @@ final class TemplateCompiler {
             fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
     TemplateVariables variables =
-        new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
+        new TemplateVariables(
+            variableSet,
+            thisVar,
+            generateStateInitializers(node, variableSet),
+            new RenderContextExpression(contextVar));
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -294,6 +302,35 @@ final class TemplateCompiler {
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
     variableSet.defineStaticFields(writer);
     return variableSet.defineFields(writer);
+  }
+
+  private ImmutableMap<TemplateStateVar, SoyExpression> generateStateInitializers(
+      TemplateNode node, TemplateVariableManager varManager) {
+    ExpressionCompiler constantCompiler =
+        ExpressionCompiler.createConstantCompiler(varManager, reporter, soyTypeRegistry);
+    ImmutableMap.Builder<TemplateStateVar, SoyExpression> builder = ImmutableMap.builder();
+    for (TemplateStateVar state : node.getStateVars()) {
+      SoyExpression stateValue;
+      if (state.initialValue().getType() == NullType.getInstance()) {
+        // a special case for null to avoid poor handling elsewhere in the compiler.
+        stateValue =
+            SoyExpression.forSoyValue(
+                state.type(),
+                BytecodeUtils.constantNull(
+                    SoyRuntimeType.getBoxedType(state.type()).runtimeType()));
+      } else {
+        stateValue = constantCompiler.compile(state.initialValue());
+      }
+      if (!stateValue.isCheap()) {
+        // these fields are package private so that lazy closures can access them directly.
+        FieldRef ref =
+            varManager.addPackagePrivateStaticField(
+                state.name(), stateValue.resultType(), stateValue);
+        stateValue = stateValue.withSource(ref.accessor());
+      }
+      builder.put(state, stateValue);
+    }
+    return builder.build();
   }
 
   /**
@@ -357,19 +394,27 @@ final class TemplateCompiler {
     private final TemplateVariableManager variableSet;
     private final Expression thisRef;
     private final RenderContextExpression renderContext;
+    private final ImmutableMap<TemplateStateVar, SoyExpression> stateVars;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         Expression thisRef,
+        ImmutableMap<TemplateStateVar, SoyExpression> stateVars,
         RenderContextExpression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;
+      this.stateVars = stateVars;
     }
 
     @Override
     public Expression getParam(TemplateParam param) {
       return paramFields.get(param.name()).accessor(thisRef);
+    }
+
+    @Override
+    public SoyExpression getState(TemplateStateVar stateVar) {
+      return stateVars.get(stateVar);
     }
 
     @Override

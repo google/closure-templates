@@ -30,6 +30,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitiv
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -59,7 +60,10 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
@@ -80,6 +84,7 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
@@ -380,9 +385,8 @@ final class ProtoUtils {
           return messageToSoyExpression(field);
         case BYTE_STRING:
           return byteStringToBase64String(field);
-        default:
-          throw new AssertionError("unsupported field type: " + descriptor);
       }
+      throw new AssertionError("unsupported field type: " + descriptor);
     }
 
     private SoyExpression handleExtension(final SoyExpression typedBaseExpr) {
@@ -481,9 +485,8 @@ final class ProtoUtils {
         case BYTE_STRING:
           // Current tofu support for ByteString is to base64 encode it.
           return byteStringToBase64String(field.checkedCast(ByteString.class));
-        default:
-          throw new AssertionError("unsupported field type: " + descriptor);
       }
+      throw new AssertionError("unsupported field type: " + descriptor);
     }
 
     private SoyExpression byteStringToBase64String(Expression byteString) {
@@ -559,15 +562,15 @@ final class ProtoUtils {
    */
   static SoyExpression createProto(
       ProtoInitNode node,
-      List<SoyExpression> args,
+      Function<ExprNode, SoyExpression> compilerFunction,
       Supplier<? extends ExpressionDetacher> detacher,
       TemplateVariableManager varManager) {
-    return new ProtoInitGenerator(node, args, detacher, varManager).generate();
+    return new ProtoInitGenerator(node, compilerFunction, detacher, varManager).generate();
   }
 
   private static final class ProtoInitGenerator {
     private final ProtoInitNode node;
-    private final List<SoyExpression> args;
+    private final Function<ExprNode, SoyExpression> compilerFunction;
     private final Supplier<? extends ExpressionDetacher> detacher;
     private final TemplateVariableManager varManager;
 
@@ -576,11 +579,11 @@ final class ProtoUtils {
 
     ProtoInitGenerator(
         ProtoInitNode node,
-        List<SoyExpression> args,
+        Function<ExprNode, SoyExpression> compilerFunction,
         Supplier<? extends ExpressionDetacher> detacher,
         TemplateVariableManager varManager) {
       this.node = node;
-      this.args = args;
+      this.compilerFunction = compilerFunction;
       this.detacher = detacher;
       this.varManager = varManager;
 
@@ -588,9 +591,13 @@ final class ProtoUtils {
       this.descriptor = protoType.getDescriptor();
     }
 
+    private SoyExpression compile(ExprNode expr) {
+      return compilerFunction.apply(expr);
+    }
+
     SoyExpression generate() {
       // For cases with no field assignments, return proto.defaultInstance().
-      if (args.isEmpty()) {
+      if (node.numChildren() == 0) {
         final Expression defaultInstance = getDefaultInstanceMethod(descriptor).invoke();
         return SoyExpression.forProto(
             SoyRuntimeType.getUnboxedType(protoType).get(), defaultInstance);
@@ -620,18 +627,18 @@ final class ProtoUtils {
 
     private ImmutableList<Statement> getFieldSetters() {
       ImmutableList.Builder<Statement> setters = ImmutableList.builder();
-      for (int i = 0; i < args.size(); i++) {
+      for (int i = 0; i < node.numChildren(); i++) {
         FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i).identifier());
-        SoyExpression baseArg = args.get(i);
+        ExprNode baseArg = node.getChild(i);
 
         Statement setter;
         if (field.isRepeated()) {
           setter = handleRepeated(baseArg, field);
         } else {
           if (field.isExtension()) {
-            setter = handleExtension(baseArg, field);
+            setter = handleExtension(compile(baseArg), field);
           } else {
-            setter = handleNormalSetter(baseArg, field);
+            setter = handleNormalSetter(compile(baseArg), field);
           }
         }
         setters.add(setter);
@@ -793,13 +800,40 @@ final class ProtoUtils {
       };
     }
 
-    private Statement handleRepeated(final SoyExpression baseArg, FieldDescriptor field) {
+    private Statement handleRepeated(ExprNode argNode, FieldDescriptor field) {
+      if (argNode.getKind() == ExprNode.Kind.LIST_LITERAL_NODE) {
+        checkState(!field.isMapField());
+        List<Statement> additions = new ArrayList<>();
+        ListLiteralNode list = (ListLiteralNode) argNode;
+        for (ExprNode element : list.getChildren()) {
+          // it is an error to assign a null list element, so just assert non-null so that it will
+          // fail with an NPE if it happens to be null
+          SoyExpression expression = compile(element).asNonNullable();
+          additions.add(
+              field.isExtension()
+                  ? handleExtension(expression, field)
+                  : handleNormalSetter(expression, field));
+        }
+        return Statement.concat(additions);
+      }
+      if (argNode.getKind() == ExprNode.Kind.MAP_LITERAL_NODE) {
+        checkState(field.isMapField());
+        List<Statement> puts = new ArrayList<>();
+        MapLiteralNode map = (MapLiteralNode) argNode;
+        for (int i = 0; i < map.numChildren(); i += 2) {
+          SoyExpression key = compile(map.getChild(i));
+          SoyExpression value = compile(map.getChild(i + 1));
+          puts.add(handleMapSetter(key, value, field));
+        }
+        return Statement.concat(puts);
+      }
+
+      final SoyExpression baseArg = compile(argNode);
       // If the list arg is definitely an empty list/map, do nothing
       if (baseArg.soyType().equals(ListType.EMPTY_LIST)
           || baseArg.soyType().equals(MapType.EMPTY_MAP)) {
         return Statement.NULL_STATEMENT;
       }
-
       if (baseArg.isNonNullable()) {
         return field.isMapField()
             ? handleMapSetterNotNull(baseArg, field)
@@ -1019,9 +1053,8 @@ final class ProtoUtils {
             throw new IllegalStateException("SanitizedContent objects shouldn't be unboxed");
           }
           return Message.class;
-        default:
-          throw new AssertionError("unsupported field type: " + field);
       }
+          throw new AssertionError("unsupported field type: " + field);
     }
 
     /**
@@ -1078,8 +1111,6 @@ final class ProtoUtils {
             getForNumberMethod(field.getEnumType()).invokeUnchecked(cb);
           }
           return;
-        default:
-          throw new AssertionError("unsupported field type: " + field);
       }
       if (field.isExtension()) {
         // primitive extensions need to be boxed since the api is generic
@@ -1160,9 +1191,8 @@ final class ProtoUtils {
         return TypeInfo.create(JavaQualifiedNames.getClassName(field.getMessageType())).type();
       case STRING:
         return STRING_TYPE;
-      default:
-        throw new AssertionError("unexpected type");
     }
+        throw new AssertionError("unexpected type");
   }
 
   /** Returns the {@link MethodRef} for the generated getter method. */

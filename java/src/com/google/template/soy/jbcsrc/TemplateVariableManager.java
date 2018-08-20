@@ -292,7 +292,6 @@ final class TemplateVariableManager implements ClassFieldManager {
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
   private final LocalVariable thisVar;
-  private final Map<String, FieldRef> stateVariables = new LinkedHashMap<>();
   // Allocated lazily
   @Nullable private FieldRef currentCalleeField;
   // Allocated lazily
@@ -424,15 +423,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     }
   }
 
-  public FieldRef addStateVariable(String name, Expression initializer) {
-    stateVariables.put(name, addStaticField(name, initializer));
-    return getStateVariable(name);
-  }
-
-  public FieldRef getStateVariable(String name) {
-    return stateVariables.get(name);
-  }
-
   @Override
   public FieldRef addStaticField(String proposedName, Expression initializer) {
     String name = fieldNames.generateName(proposedName);
@@ -442,6 +432,20 @@ final class TemplateVariableManager implements ClassFieldManager {
             name,
             initializer.resultType(),
             Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE,
+            !initializer.isNonNullable());
+    staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
+    return ref;
+  }
+
+  FieldRef addPackagePrivateStaticField(
+      String proposedName, Type fieldType, Expression initializer) {
+    String name = fieldNames.generateName(proposedName);
+    FieldRef ref =
+        FieldRef.create(
+            owner,
+            name,
+            fieldType,
+            Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
             !initializer.isNonNullable());
     staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
     return ref;

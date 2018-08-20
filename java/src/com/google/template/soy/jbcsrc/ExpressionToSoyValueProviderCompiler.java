@@ -229,12 +229,10 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    Optional<Expression> visitStateNode(TemplateStateVar state) {
-      Optional<Expression> initialValue = visit(state.initialValue());
-      if (initialValue.isPresent()) {
-        return Optional.of(
-            SoyExpression.forSoyValue(
-                state.type(), varManager.getStateVariable(state.name()).accessor()));
+    Optional<Expression> visitStateNode(VarRefNode node, TemplateStateVar state) {
+      SoyExpression expression = variables.getState(state);
+      if (allowsBoxing()) {
+        return Optional.of(expression.boxAsSoyValueProvider());
       }
       return Optional.absent();
     }

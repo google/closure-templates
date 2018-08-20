@@ -148,9 +148,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         ExpressionCompiler.create(detachState, parameterLookup, variables, reporter, typeRegistry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(variables, expressionCompiler, parameterLookup);
-    for (TemplateStateVar state : stateVars) {
-      variables.addStateVariable(state.name(), expressionCompiler.compile(state.initialValue()));
-    }
     return new SoyNodeCompiler(
         thisVar,
         registry,

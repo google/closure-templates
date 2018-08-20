@@ -25,6 +25,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -77,6 +78,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
@@ -96,6 +98,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -169,6 +172,16 @@ final class ExpressionCompiler {
     return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter, registry);
   }
 
+  static ExpressionCompiler createConstantCompiler(
+      TemplateVariableManager varManager, ErrorReporter reporter, SoyTypeRegistry registry) {
+    return new ExpressionCompiler(
+        ExpressionDetacher.NullDetatcher.INSTANCE,
+        /* parameters= */ null,
+        varManager,
+        reporter,
+        registry);
+  }
+
   /**
    * Create a basic compiler with trivial detaching logic.
    *
@@ -183,7 +196,7 @@ final class ExpressionCompiler {
     return new BasicExpressionCompiler(parameters, varManager, reporter, registry);
   }
 
-  private final TemplateParameterLookup parameters;
+  @Nullable private final TemplateParameterLookup parameters;
   private final TemplateVariableManager varManager;
   private final ExpressionDetacher.Factory detacherFactory;
   private final ErrorReporter reporter;
@@ -334,17 +347,8 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitStateNode(TemplateStateVar state) {
-      // In every other case the runtime type for the value can be used as is. However, null types
-      // must be upgraded to the declared type to be used correctly.
-      if (state.initialValue().getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
-        return SoyExpression.forSoyValue(
-            state.type(),
-            BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(state.type()).runtimeType()));
-      }
-      SoyExpression initialVal = visit(state.initialValue());
-      FieldRef ref = varManager.getStateVariable(state.name());
-      return initialVal.withSource(ref.accessor());
+    final SoyExpression visitStateNode(VarRefNode node, TemplateStateVar state) {
+      return parameters.getState(state);
     }
 
     // Collection literals
@@ -974,10 +978,37 @@ final class ExpressionCompiler {
       if (fn instanceof SoyJavaSourceFunction) {
         return new JbcSrcValueFactory(
                 node,
-                parameters.getPluginContext(),
+                // parameters is null when we are in a constant context.
+                parameters == null
+                    ? new JbcSrcPluginContext() {
+                      private Expression error() {
+                        throw new UnsupportedOperationException(
+                            "Cannot access contextual data from a pure context");
+                      }
+
+                      @Override
+                      public Expression getBidiGlobalDir() {
+                        return error();
+                      }
+
+                      @Override
+                      public Expression getDebugSoyTemplateInfo() {
+                        return error();
+                      }
+
+                      @Override
+                      public Expression getULocale() {
+                        return error();
+                      }
+                    }
+                    : parameters.getPluginContext(),
                 new JbcSrcValueFactory.PluginInstanceLookup() {
                   @Override
                   public Expression getPluginInstance(String pluginName) {
+                    if (parameters == null) {
+                      throw new UnsupportedOperationException(
+                          "Pure functions cannot have instances");
+                    }
                     return parameters.getRenderContext().getPluginInstance(pluginName);
                   }
                 },
@@ -1006,8 +1037,16 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitProtoInitNode(ProtoInitNode node) {
-      List<SoyExpression> args = visitChildren(node);
-      return ProtoUtils.createProto(node, args, detacher, varManager);
+      return ProtoUtils.createProto(
+          node,
+          new Function<ExprNode, SoyExpression>() {
+            @Override
+            public SoyExpression apply(ExprNode expr) {
+              return visit(expr);
+            }
+          },
+          detacher,
+          varManager);
     }
 
     // Catch-all for unimplemented nodes
@@ -1186,7 +1225,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    Boolean visitStateNode(TemplateStateVar state) {
+    Boolean visitStateNode(VarRefNode node, TemplateStateVar state) {
       return false;
     }
 
