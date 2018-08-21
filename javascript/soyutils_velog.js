@@ -67,12 +67,10 @@ class FunctionMetadata {
   /**
    * @param {string} name
    * @param {!Array<?>} args
-   * @param {string} attr
    */
-  constructor(name, args, attr) {
+  constructor(name, args) {
     this.name = name;
     this.args = args;
-    this.attr = attr;
   }
 }
 
@@ -88,9 +86,14 @@ class Metadata {
 
 /** @type {?Metadata} */ let metadata;
 
-/** @package */ const ELEMENT_ATTR = 'data-' + xid('soylog');
 
-/** @package */ const FUNCTION_ATTR = 'data-' + xid('soyloggingfunction-');
+// NOTE: we need to use toLowerCase in case the xid contains upper case
+// characters, browsers normalize keys to their ascii lowercase versions when
+// accessing attributes via the programmatic APIs (as we do below).
+/** @package */ const ELEMENT_ATTR = 'data-' + xid('soylog').toLowerCase();
+
+/** @package */ const FUNCTION_ATTR =
+    'data-' + xid('soyloggingfunction').toLowerCase() + '-';
 
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
@@ -170,16 +173,14 @@ function $$getLoggingAttribute(veid, veData, logOnly) {
  * @param {string} name Obfuscated logging function name.
  * @param {!Array<?>} args List of arguments for the logging function.
  * @param {string} attr The original HTML attribute name.
- * @param {number} counter Used to disambiguate multiple instances of the
- *     attribute in a single tag.
  *
  * @return {string} The HTML attribute that will be stored in the DOM.
  */
-function $$getLoggingFunctionAttribute(name, args, attr, counter) {
+function $$getLoggingFunctionAttribute(name, args, attr) {
   if ($$hasMetadata()) {
     const functionIdx =
-        metadata.functions.push(new FunctionMetadata(name, args, attr)) - 1;
-    return ' ' + FUNCTION_ATTR + counter + '="' + functionIdx + '"';
+        metadata.functions.push(new FunctionMetadata(name, args)) - 1;
+    return ' ' + FUNCTION_ATTR + attr + '="' + functionIdx + '"';
   } else {
     return '';
   }
@@ -263,7 +264,8 @@ function replaceFunctionAttributes(element, logger) {
           !Number.isNaN(funcIndex) && funcIndex < metadata.functions.length,
           'Invalid logging attribute.');
       const funcMetadata = metadata.functions[funcIndex];
-      attributeMap[funcMetadata.attr] =
+      const attr = attributeName.substring(FUNCTION_ATTR.length);
+      attributeMap[attr] =
           logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args);
       element.removeAttribute(attributeName);
     }

@@ -44,7 +44,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 
@@ -56,9 +55,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   private final TemplateRegistry templateRegistry;
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
-
-  /** This counter is used for creating unique data attribute names for logging functions. */
-  private int counter;
 
   VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
     this.templateRegistry = templateRegistry;
@@ -105,25 +101,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
     tag.addChild(attributeNode);
-    visitChildren(node);
-  }
-
-  @Override
-  protected void visitTemplateNode(TemplateNode node) {
-    // Resets the counter whenever we visit a template node.
-    counter = 0;
-    // Allows the children to insert the nodes as its siblings.
     visitChildrenAllowingConcurrentModification(node);
-  }
-
-  @Override
-  protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-    // Stores the original counter that might be useful for nested tags.
-    int oldCounter = counter;
-    counter = 0;
-    // Allows the children to insert the nodes as its siblings.
-    visitChildrenAllowingConcurrentModification(node);
-    counter = oldCounter;
   }
 
   /**
@@ -156,7 +134,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         // Otherwise wrap the print node or call node into a let block, and use the let variable
         // as a function argument.
-        String varName = "soy_logging_function_attribute_" + counter;
+        String varName = "soy_logging_function_attribute_" + node.getId();
         LetContentNode letNode =
             LetContentNode.forVariable(
                 nodeIdGen.genId(), attributeName.getSourceLocation(), varName, null);
@@ -175,7 +153,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
         funcNode.addChild(new VarRefNode(varName, insertionLocation, false, letNode.getVar()));
       }
-      funcNode.addChild(new IntegerNode(counter++, insertionLocation));
       PrintNode loggingFunctionAttribute =
           new PrintNode(
               nodeIdGen.genId(),
@@ -200,13 +177,13 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       // logging function in a html attribute value.
       break;
     }
-    visitChildren(node);
+    visitChildrenAllowingConcurrentModification(node);
   }
 
   @Override
   protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
+      visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }
   }
 }

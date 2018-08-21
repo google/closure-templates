@@ -121,7 +121,7 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog Bar}"
                 + "<div{$$velog(2, null)}>"
                 + "<span data-ved=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], 'data-ved', 0)}>"
+                + "{$$loggingFunction('currentVed', [], 'data-ved')}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");
@@ -131,7 +131,7 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog Bar}"
                 + "<div{$$velog(2, null)}>"
                 + "<span data-ved=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], 'data-ved', 0)}>"
+                + "{$$loggingFunction('currentVed', [1], 'data-ved')}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");
@@ -148,9 +148,9 @@ public final class VeLogInstrumentationVisitorTest {
             "{let $foo : 'data-ved' /}{velog Bar}"
                 + "<div{$$velog(2, null)}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_0}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0, 0)}"
+                + "{let $soy_logging_function_attribute_16}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_16}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_16)}"
                 + "></span>"
                 + "</div>"
                 + "{/velog}");
@@ -165,12 +165,12 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog Bar}"
                 + "<div{$$velog(2, null)}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_0}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0, 0)}"
-                + "{let $soy_logging_function_attribute_1}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_1}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_1, 1)}"
+                + "{let $soy_logging_function_attribute_19}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_19}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_19)}"
+                + "{let $soy_logging_function_attribute_21}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_21}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_21)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -190,13 +190,13 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog Bar}"
                 + "<div{$$velog(2, null)}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_0}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_0}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0, 0)}"
+                + "{let $soy_logging_function_attribute_24}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_24}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}"
                 + "{let $baz kind=\"html\"}<input>{/let}"
-                + "{let $soy_logging_function_attribute_1}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_1}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_1, 1)}"
+                + "{let $soy_logging_function_attribute_26}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_26}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_26)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -226,9 +226,9 @@ public final class VeLogInstrumentationVisitorTest {
     node.getChild(0).getChild(1).appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
-            "{let $soy_logging_function_attribute_0}{$foo}{/let}"
-                + "{$soy_logging_function_attribute_0}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_0, 0)}");
+            "{let $soy_logging_function_attribute_24}{$foo}{/let}"
+                + "{$soy_logging_function_attribute_24}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}");
   }
 
   private static final class TestLoggingFunction implements LoggingFunction {

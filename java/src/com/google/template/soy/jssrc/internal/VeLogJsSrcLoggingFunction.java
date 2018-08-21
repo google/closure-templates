@@ -44,18 +44,15 @@ public final class VeLogJsSrcLoggingFunction implements SoyLibraryAssistedJsSrcF
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(4);
+    return ImmutableSet.of(3);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
         String.format(
-            "soy.velog.$$getLoggingFunctionAttribute(xid(%1$s), %2$s, %3$s, %4$s)",
-            args.get(0).getText(),
-            args.get(1).getText(),
-            args.get(2).getText(),
-            args.get(3).getText()),
+            "soy.velog.$$getLoggingFunctionAttribute(xid(%1$s), %2$s, %3$s)",
+            args.get(0).getText(), args.get(1).getText(), args.get(2).getText()),
         Integer.MAX_VALUE);
   }
 
