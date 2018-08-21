@@ -446,7 +446,7 @@ public final class JsType {
   }
 
   /** Returns a type expression. */
-  String typeExpr() {
+  public String typeExpr() {
     return Joiner.on('|').join(typeExpressions);
   }
 
