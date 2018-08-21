@@ -16,6 +16,7 @@
 package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
@@ -24,6 +25,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
@@ -68,7 +70,11 @@ public final class InternalPluginsTest {
         InternalPlugins.internalFunctionMap(data).entrySet()) {
       Object function = entry.getValue();
       assertThat(function).isInstanceOf(TypedSoyFunction.class);
-      assertThat(function).isInstanceOf(SoyJsSrcFunction.class);
+      if (!(function instanceof SoyJsSrcFunction)
+          && !(function instanceof SoyJavaScriptSourceFunction)) {
+        fail(function + " should implement SoyJsSrcFunction or SoyJavaScriptSourceFunction");
+      }
+
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       assertThat(function).isInstanceOf(SoyPySrcFunction.class);
       // Internal functions should no longer implement SoyJbcSrcFunction

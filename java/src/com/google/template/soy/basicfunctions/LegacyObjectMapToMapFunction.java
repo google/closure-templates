@@ -16,15 +16,16 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -50,14 +51,7 @@ import java.util.List;
     // Note: the return type is overridden in ResolveExpressionTypePass
     value = @Signature(parameterTypes = "?", returnType = "?"))
 public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction,
-        SoyPySrcFunction,
-        SoyLibraryAssistedJsSrcFunction {
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy.newmaps");
-  }
+    implements SoyJavaSourceFunction, SoyPySrcFunction, SoyJavaScriptSourceFunction {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
@@ -73,9 +67,9 @@ public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
   }
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    return new JsExpr(
-        "soy.newmaps.$$legacyObjectMapToMap(" + args.get(0).getText() + ")", Integer.MAX_VALUE);
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return factory.callModuleFunction("soy.newmaps", "$$legacyObjectMapToMap", args.get(0));
   }
 
   @Override

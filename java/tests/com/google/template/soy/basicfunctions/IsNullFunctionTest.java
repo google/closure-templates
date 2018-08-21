@@ -23,7 +23,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -46,13 +45,6 @@ public final class IsNullFunctionTest {
     assertThat(tester.callFunction(0)).isEqualTo(false);
     assertThat(tester.callFunction(IntegerData.forValue(0))).isEqualTo(false);
     assertThat(tester.callFunction("")).isEqualTo(false);
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertThat(IS_NULL.computeForJsSrc(ImmutableList.of(expr)))
-        .isEqualTo(new JsExpr("JS_CODE == null", Operator.EQUAL.getPrecedence()));
   }
 
   @Test

@@ -21,8 +21,6 @@ import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordain
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -65,25 +63,6 @@ public class StrIndexOfFunctionTest {
             tester.callFunction(
                 ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("baz", ContentKind.TEXT)))
         .isEqualTo(-1);
-  }
-
-  @Test
-  public void testComputeForJsSrc_lowPrecedenceArg() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
-    JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(
-            new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE));
-  }
-
-  @Test
-  public void testComputeForJsSrc_maxPrecedenceArgs() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
-    JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertThat(strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)))
-        .isEqualTo(new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE));
   }
 
   @Test

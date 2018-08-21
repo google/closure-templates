@@ -23,7 +23,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -48,14 +47,6 @@ public class IsNonnullFunctionTest {
     assertThat(tester.callFunction(0)).isEqualTo(true);
     assertThat(tester.callFunction(IntegerData.forValue(0))).isEqualTo(true);
     assertThat(tester.callFunction("")).isEqualTo(true);
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
-    JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertThat(isNonnullFunction.computeForJsSrc(ImmutableList.of(expr)))
-        .isEqualTo(new JsExpr("JS_CODE != null", Operator.NOT_EQUAL.getPrecedence()));
   }
 
   @Test

@@ -25,7 +25,6 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
@@ -53,13 +52,6 @@ public final class LegacyObjectMapToMapFunctionTest {
     SoyMapImpl convertedMap = (SoyMapImpl) tester.callFunction(legacyObjectMap);
     assertThat(map.get(StringData.forValue("x")))
         .isEqualTo(convertedMap.get(StringData.forValue("x")));
-  }
-
-  @Test
-  public void computeForJsSrc() {
-    JsExpr legacyObjectMap = new JsExpr("legacyObjectMap", Integer.MAX_VALUE);
-    JsExpr map = LEGACY_OBJECT_MAP_TO_MAP.computeForJsSrc(ImmutableList.of(legacyObjectMap));
-    assertThat(map.getText()).isEqualTo("soy.newmaps.$$legacyObjectMapToMap(legacyObjectMap)");
   }
 
   @Test
