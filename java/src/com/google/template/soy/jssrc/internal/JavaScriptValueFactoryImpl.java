@@ -200,6 +200,11 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     return new JavaScriptValueImpl(bool ? Expression.LITERAL_TRUE : Expression.LITERAL_FALSE);
   }
 
+  @Override
+  public JavaScriptValueImpl global(String globalSymbol) {
+    return new JavaScriptValueImpl(Expression.dottedIdNoRequire(globalSymbol));
+  }
+
   private static List<Expression> unwrapParams(List<JavaScriptValue> params) {
     List<Expression> exprs = new ArrayList<>(params.size());
     for (JavaScriptValue v : params) {
@@ -249,6 +254,11 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     public JavaScriptValueImpl invokeMethod(String methodName, JavaScriptValue... args) {
       return new JavaScriptValueImpl(
           impl.dotAccess(methodName).call(unwrapParams(Arrays.asList(args))));
+    }
+
+    @Override
+    public JavaScriptValueImpl accessProperty(String ident) {
+      return new JavaScriptValueImpl(impl.dotAccess(ident));
     }
 
     @Override

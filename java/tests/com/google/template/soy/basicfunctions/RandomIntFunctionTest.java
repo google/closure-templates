@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import java.util.Set;
@@ -57,14 +56,6 @@ public class RandomIntFunctionTest {
       }
     }
     assertThat(seenResults).hasSize(3);
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    RandomIntFunction randomIntFunction = new RandomIntFunction();
-    JsExpr argExpr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertThat(randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)))
-        .isEqualTo(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test

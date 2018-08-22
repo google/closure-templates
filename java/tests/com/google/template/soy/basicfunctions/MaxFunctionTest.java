@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
@@ -56,15 +55,6 @@ public class MaxFunctionTest {
     assertThat(tester.callFunction(FloatData.forValue(7.5), 8)).isEqualTo(IntegerData.forValue(8));
     assertThat(tester.callFunction(FloatData.forValue(7.5), IntegerData.forValue(8)))
         .isEqualTo(IntegerData.forValue(8));
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    MaxFunction maxFunction = new MaxFunction();
-    JsExpr expr0 = new JsExpr("JS_CODE_0", Integer.MAX_VALUE);
-    JsExpr expr1 = new JsExpr("JS_CODE_1", Integer.MAX_VALUE);
-    assertThat(maxFunction.computeForJsSrc(ImmutableList.of(expr0, expr1)))
-        .isEqualTo(new JsExpr("Math.max(JS_CODE_0, JS_CODE_1)", Integer.MAX_VALUE));
   }
 
   @Test

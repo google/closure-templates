@@ -17,12 +17,14 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -46,15 +48,12 @@ import java.util.List;
             parameterTypes = {"?", "?"}))
 @SoyPureFunction
 public final class MaxFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    JsExpr arg0 = args.get(0);
-    JsExpr arg1 = args.get(1);
-
-    return new JsExpr(
-        "Math.max(" + arg0.getText() + ", " + arg1.getText() + ")", Integer.MAX_VALUE);
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return factory.global("Math").invokeMethod("max", args.get(0), args.get(1));
   }
 
   @Override

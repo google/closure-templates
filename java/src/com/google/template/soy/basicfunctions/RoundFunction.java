@@ -16,17 +16,16 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
-import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -40,6 +39,12 @@ import java.util.List;
  * Soy function that rounds a number to a specified number of digits before or after the decimal
  * point.
  *
+ * <p>TODO(b/112835292): No one should use the 2 parameter overload, it is inaccurate because
+ * floating point != decimal, instead they should use an i18n friendly number formatting routine. We
+ * should deprecated the 2 argument overload by adding a new function {@code brokenRound()} and then
+ * we can encourage people to migrate to a less broken approach. (or we could just add a pow
+ * function and inline it).
+ *
  */
 @SoyFunctionSignature(
     name = "round",
@@ -52,51 +57,15 @@ import java.util.List;
     })
 @SoyPureFunction
 public final class RoundFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    JsExpr value = args.get(0);
-    JsExpr numDigitsAfterPt = (args.size() == 2) ? args.get(1) : null;
-
-    int numDigitsAfterPtAsInt = convertNumDigits(numDigitsAfterPt);
-
-    if (numDigitsAfterPtAsInt == 0) {
-      // Case 1: round() has only one argument or the second argument is 0.
-      return new JsExpr("Math.round(" + value.getText() + ")", Integer.MAX_VALUE);
-
-    } else if ((numDigitsAfterPtAsInt >= 0 && numDigitsAfterPtAsInt <= 12)
-        || numDigitsAfterPtAsInt == Integer.MIN_VALUE) {
-      String shiftExprText;
-      if (numDigitsAfterPtAsInt >= 0 && numDigitsAfterPtAsInt <= 12) {
-        shiftExprText = "1" + "000000000000".substring(0, numDigitsAfterPtAsInt);
-      } else {
-        shiftExprText = "Math.pow(10, " + numDigitsAfterPt.getText() + ")";
-      }
-      JsExpr shift = new JsExpr(shiftExprText, Integer.MAX_VALUE);
-      JsExpr valueTimesShift =
-          SoyJsPluginUtils.genJsExprUsingSoySyntax(
-              Operator.TIMES, Lists.newArrayList(value, shift));
-      return new JsExpr(
-          "Math.round(" + valueTimesShift.getText() + ") / " + shift.getText(),
-          Operator.DIVIDE_BY.getPrecedence());
-
-    } else if (numDigitsAfterPtAsInt < 0 && numDigitsAfterPtAsInt >= -12) {
-      String shiftExprText = "1" + "000000000000".substring(0, -numDigitsAfterPtAsInt);
-      JsExpr shift = new JsExpr(shiftExprText, Integer.MAX_VALUE);
-      JsExpr valueDivideByShift =
-          SoyJsPluginUtils.genJsExprUsingSoySyntax(
-              Operator.DIVIDE_BY, Lists.newArrayList(value, shift));
-      return new JsExpr(
-          "Math.round(" + valueDivideByShift.getText() + ") * " + shift.getText(),
-          Operator.TIMES.getPrecedence());
-
-    } else {
-      throw new IllegalArgumentException(
-          "Second argument to round() function is "
-              + numDigitsAfterPtAsInt
-              + ", which is too large in magnitude.");
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    if (args.size() == 1) {
+      return factory.global("Math").invokeMethod("round", args.get(0));
     }
+    return factory.callNamespaceFunction("soy", "soy.$$round", args.get(0), args.get(1));
   }
 
   @Override

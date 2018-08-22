@@ -18,12 +18,14 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
@@ -88,17 +90,14 @@ import java.util.List;
     })
 @SoyPureFunction
 public final class ConcatListsFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    ImmutableList.Builder<String> expTexts = ImmutableList.builder();
-    for (JsExpr expr : args) {
-      expTexts.add(expr.getText());
-    }
-
-    return new JsExpr(
-        "Array.prototype.concat(" + Joiner.on(',').join(expTexts.build()) + ")", Integer.MAX_VALUE);
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return factory
+        .global("Array.prototype")
+        .invokeMethod("concat", args.toArray(new JavaScriptValue[0]));
   }
 
   @Override

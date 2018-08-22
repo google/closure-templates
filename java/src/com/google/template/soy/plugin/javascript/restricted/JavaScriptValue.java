@@ -39,4 +39,7 @@ public interface JavaScriptValue extends SoySourceValue {
 
   /** Invokes a method on the given object. Useful for accessing String or Array methods. */
   JavaScriptValue invokeMethod(String ident, JavaScriptValue... args);
+
+  /** Accesses a property on the given object. */
+  JavaScriptValue accessProperty(String ident);
 }

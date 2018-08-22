@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
@@ -47,38 +46,6 @@ public class RoundFunctionTest {
     assertThat(tester.callFunction(input, 0)).isEqualTo(IntegerData.forValue(9753));
     assertThat(tester.callFunction(input, 4)).isEqualTo(FloatData.forValue(9753.1416));
     assertThat(tester.callFunction(input, -2)).isEqualTo(IntegerData.forValue(9800));
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    RoundFunction roundFunction = new RoundFunction();
-
-    JsExpr floatExpr = new JsExpr("FLOAT_JS_CODE", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForJsSrc(ImmutableList.of(floatExpr)))
-        .isEqualTo(new JsExpr("Math.round(FLOAT_JS_CODE)", Integer.MAX_VALUE));
-
-    JsExpr numDigitsAfterPtExpr = new JsExpr("0", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForJsSrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(new JsExpr("Math.round(FLOAT_JS_CODE)", Integer.MAX_VALUE));
-
-    numDigitsAfterPtExpr = new JsExpr("4", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForJsSrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new JsExpr(
-                "Math.round(FLOAT_JS_CODE * 10000) / 10000", Operator.DIVIDE_BY.getPrecedence()));
-
-    numDigitsAfterPtExpr = new JsExpr("-2", Operator.NEGATIVE.getPrecedence());
-    assertThat(roundFunction.computeForJsSrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new JsExpr("Math.round(FLOAT_JS_CODE / 100) * 100", Operator.TIMES.getPrecedence()));
-
-    numDigitsAfterPtExpr = new JsExpr("NUM_DIGITS_JS_CODE", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForJsSrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new JsExpr(
-                "Math.round(FLOAT_JS_CODE * Math.pow(10, NUM_DIGITS_JS_CODE)) /"
-                    + " Math.pow(10, NUM_DIGITS_JS_CODE)",
-                Operator.DIVIDE_BY.getPrecedence()));
   }
 
   @Test

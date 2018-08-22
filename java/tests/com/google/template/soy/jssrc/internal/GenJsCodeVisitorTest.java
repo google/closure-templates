@@ -627,7 +627,7 @@ public final class GenJsCodeVisitorTest {
             "var $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!(('' + gooData8).indexOf('goo') != -1)) {",
+            "} else if (!soy.$$strContains('' + gooData8, 'goo')) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -657,7 +657,7 @@ public final class GenJsCodeVisitorTest {
             + "    var i9Data = 0 + i9Index * 1;\n"
             + "    output += i9Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!(('' + gooData8).indexOf('goo') != -1)) {\n"
+            + "} else if (!soy.$$strContains('' + gooData8, 'goo')) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"

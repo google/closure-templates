@@ -25188,6 +25188,32 @@ soy.$$parseFloat = function(str) {
   return isNaN(parsed) ? null : parsed;
 };
 
+/**
+ * Returns a random integer.
+ * @return {number} a random integer between 0 and num
+ */
+soy.$$randomInt = function(/** number */ num) {
+  return Math.floor(Math.random() * num);
+};
+
+/**
+ * Rounds the given value to the closest decimal point left (negative numbers)
+ * or right (positive numbers) of the decimal point
+ *
+ * TODO(b/112835292): This is probably not something that anyone should use,
+ * instead they should use an i18n friendly number formatting routine.
+ *
+ * @return {number} the rounded value
+ */
+soy.$$round = function(/** number */ num, /** number */ numDigitsAfterPt) {
+  const shift = Math.pow(10, numDigitsAfterPt);
+  return Math.round(num * shift) / shift;
+};
+
+/** @return {boolean} returns whether the needle was found in the haystack */
+soy.$$strContains = function(/** string */ haystack, /** string */ needle) {
+  return haystack.indexOf(needle) != -1;
+};
 
 /**
  * Coerce the given value into a bool.
