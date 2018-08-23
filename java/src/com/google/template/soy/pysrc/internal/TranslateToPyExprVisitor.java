@@ -234,7 +234,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case VAR_REF_NODE:
         {
           VarRefNode varRef = (VarRefNode) node;
-          if (varRef.isInjected()) {
+          if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+            TemplateStateVar state = (TemplateStateVar) varRef.getDefnDecl();
+            // This means we will generate code for the state initializer multiple times.  This
+            // could be improved but this is not yet important for pysrc
+            return visitNullSafeNodeRecurse(state.initialValue(), nullSafetyPrefix);
+          } else if (varRef.isInjected()) {
             // Case 1: Injected data reference.
             return genCodeForLiteralKeyAccess("ijData", varRef.getName());
           } else {
