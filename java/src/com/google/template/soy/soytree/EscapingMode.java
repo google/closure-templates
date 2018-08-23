@@ -140,7 +140,7 @@ public enum EscapingMode {
    * SanitizedContent of kind TEXT, but this may never be used manually by the developer. This has
    * no escaping.
    */
-  TEXT(false, SanitizedContentKind.TEXT, true /* internal-only */);
+  TEXT(false, SanitizedContentKind.TEXT, /* internalOnly= */ true);
 
   /** The Soy <code>{print}</code> directive that specifies this escaping mode. */
   public final String directiveName;
@@ -163,7 +163,7 @@ public enum EscapingMode {
   }
 
   EscapingMode(boolean escapesQuotes, @Nullable SanitizedContentKind contentKind) {
-    this(escapesQuotes, contentKind, false /* internal-only */);
+    this(escapesQuotes, contentKind, /* internalOnly= */ false);
   }
 
   /** The escaping mode corresponding to the given directive or null. */

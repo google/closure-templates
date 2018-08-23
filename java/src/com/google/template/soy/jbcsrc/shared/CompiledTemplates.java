@@ -158,7 +158,7 @@ public final class CompiledTemplates {
     try {
       String templateName = Names.javaClassNameFromSoyTemplateName(name);
       templateClass =
-          Class.forName(templateName, true /* run clinit */, loader)
+          Class.forName(templateName, /* initialize= */ true, loader)
               .asSubclass(CompiledTemplate.class);
     } catch (ClassNotFoundException e) {
       throw new IllegalArgumentException("No class was compiled for template: " + name, e);

@@ -41,7 +41,7 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
    * @param nodeIdGen The node id generator for this parse tree.
    */
   public SoyFileSetNode(int id, IdGenerator nodeIdGen) {
-    super(id, null /* there is no source location. */);
+    super(id, /* sourceLocation= */ null);
     this.nodeIdGen = nodeIdGen;
   }
 

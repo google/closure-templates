@@ -719,7 +719,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void handleRcData(TagName.RcDataTagName tagName) {
       boolean foundLt = advanceWhileMatches(NOT_LT);
       if (foundLt) {
-        if (matchPrefixIgnoreCase("</" + tagName, false /* don't advance */)) {
+        if (matchPrefixIgnoreCase("</" + tagName, /* advance= */ false)) {
           // pseudo re-enter pcdata so that we trigger the normal logic for starting a tag
           handlePcData();
         } else {
@@ -1355,7 +1355,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
               return "ifempty block";
             }
           },
-          false /* no guarantee that the children will only execute once. */,
+          /* willExactlyOneBranchExecuteOnce= */ false,
           node.hasIfEmptyBlock() /* one branch will execute if there is an ifempty block. */);
     }
 

@@ -204,6 +204,6 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         CSP_NONCE_VARIABLE_NAME,
         insertionLocation,
         /* isDollarSignIjParameter= */ true,
-        null /* var defn, will be assigned by resolvenamespass */);
+        /* defn= */ null /* will be assigned by resolvenamespass */);
   }
 }
