@@ -59,7 +59,6 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
-import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -73,7 +72,6 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
@@ -217,9 +215,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       SoyErrorKind.of(
           "Unexpected smart quote character ''”'',  Did you mean ''\"''?  If this is intentional,"
               + " replace with the HTML entity ''&ldquo;'' or ''&rdquo;''.");
-
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
-      SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
 
   private static final SoyErrorKind UNEXPECTED_WS_AFTER_LT =
       SoyErrorKind.of("Unexpected whitespace after ''<'', did you mean ''&lt;''?");
@@ -413,26 +408,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
-    /*
-     * Validates that the only children of close tags can be {@code phname} attributes.
-     *
-     * <p>Later passes validate that phnames for close tags only appear in messages.
-     */
-    for (HtmlCloseTagNode closeTag : SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
-      List<StandaloneNode> children = closeTag.getChildren();
-      HtmlAttributeNode phNameAttribute =
-          closeTag.getDirectAttributeNamed(MessagePlaceholders.PHNAME_ATTR);
-      HtmlAttributeNode phExAttribute =
-          closeTag.getDirectAttributeNamed(MessagePlaceholders.PHEX_ATTR);
-      // the child at index 0 is the tag name
-      for (int i = 1; i < children.size(); i++) {
-        StandaloneNode child = children.get(i);
-        if (child == phNameAttribute || child == phExAttribute) {
-          continue; // the phname and phex attributes are validated later and allowed in close nodes
-        }
-        errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
-      }
-    }
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
@@ -2461,9 +2436,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
         SourceLocation location = attributeName.getSourceLocation();
         HtmlAttributeNode attribute;
         if (attributeValue != null) {
+          location = location.extend(attributeValue.getSourceLocation());
           attribute =
               new HtmlAttributeNode(nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
-          location = location.extend(attributeValue.getSourceLocation());
           edits.addChild(attribute, attributeName);
           edits.addChild(attribute, attributeValue);
         } else {

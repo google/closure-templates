@@ -97,6 +97,7 @@ public final class PassManager {
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
             .add(new HtmlRewritePass(errorReporter))
+            .add(new BasicHtmlValidationPass(errorReporter))
             // The check conformance pass needs to run on the rewritten html nodes, so it must
             // run after HtmlRewritePass
             .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
