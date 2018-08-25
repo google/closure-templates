@@ -23,8 +23,6 @@ package com.google.template.soy.jbcsrc.restricted;
 public interface JbcSrcPluginContext {
   /** Returns an expression that evaluates to the current {@link BidiGlobalDir} */
   Expression getBidiGlobalDir();
-  /** Returns an expression that evaluates to {@code true} if debug tracing comments are enabled. */
-  Expression getDebugSoyTemplateInfo();
 
   /** Returns an expression that evaluates to the current {@code ULocale}. */
   Expression getULocale();

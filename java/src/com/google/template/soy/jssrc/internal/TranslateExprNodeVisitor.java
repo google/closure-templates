@@ -24,7 +24,6 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
-import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.not;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
@@ -51,7 +50,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -158,8 +156,6 @@ import java.util.Set;
 public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<Expression> {
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
-  private static final ImmutableSet<String> TRUST_PRECEDENCE_PLUGINS =
-      ImmutableSet.of(DebugSoyTemplateInfoFunction.NAME);
 
   private static final SoyErrorKind UNION_ACCESSOR_MISMATCH =
       SoyErrorKind.of(
@@ -591,6 +587,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case TO_FLOAT:
           // this is a no-op in js
           return visit(node.getChild(0));
+        case DEBUG_SOY_TEMPLATE_INFO:
+          return Expression.dottedIdNoRequire("goog.DEBUG")
+              .and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
         case REMAINDER:
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler
@@ -637,10 +636,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
 
       JsExpr outputExpr = soyJsSrcFunction.computeForJsSrc(functionInputs);
-      Expression functionOutput =
-          TRUST_PRECEDENCE_PLUGINS.contains(soyJsSrcFunction.getName())
-              ? fromExpr(outputExpr, collector.get())
-              : dontTrustPrecedenceOf(outputExpr, collector.get());
+      Expression functionOutput = dontTrustPrecedenceOf(outputExpr, collector.get());
 
       return functionOutput.withInitialStatements(initialStatements);
     }
