@@ -635,6 +635,11 @@ final class LazyClosureCompiler {
         }
 
         @Override
+        public Expression getDebugSoyTemplateInfo() {
+          return getDelegate().getDebugSoyTemplateInfo();
+        }
+
+        @Override
         public Expression getULocale() {
           return getDelegate().getULocale();
         }

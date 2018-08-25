@@ -92,7 +92,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_BIDI_GLOBAL_DIR);
   }
 
-  Expression getDebugSoyTemplateInfo() {
+  @Override
+  public Expression getDebugSoyTemplateInfo() {
     return delegate.invoke(GET_DEBUG_SOY_TEMPLATE_INFO);
   }
 

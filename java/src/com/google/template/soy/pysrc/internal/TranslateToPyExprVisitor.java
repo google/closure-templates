@@ -450,10 +450,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case TO_FLOAT:
         // this is a no-op in python
         return visit(node.getChild(0));
-      case DEBUG_SOY_TEMPLATE_INFO:
-        // 'debugSoyTemplateInfo' is used for inpsecting soy template info from rendered pages.
-        // Always resolve to false since there is no plan to support this feature in PySrc.
-        return new PyExpr("False", Integer.MAX_VALUE);
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
