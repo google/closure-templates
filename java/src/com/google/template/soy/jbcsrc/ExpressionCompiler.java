@@ -965,6 +965,11 @@ final class ExpressionCompiler {
           BytecodeUtils.numericConversion(arg.unboxAs(long.class), Type.DOUBLE_TYPE));
     }
 
+    @Override
+    SoyExpression visitDebugSoyTemplateInfoFunction(FunctionNode node) {
+      return SoyExpression.forBool(parameters.getRenderContext().getDebugSoyTemplateInfo());
+    }
+
     // Non-builtin functions
 
     @Override
@@ -988,11 +993,6 @@ final class ExpressionCompiler {
 
                       @Override
                       public Expression getBidiGlobalDir() {
-                        return error();
-                      }
-
-                      @Override
-                      public Expression getDebugSoyTemplateInfo() {
                         return error();
                       }
 

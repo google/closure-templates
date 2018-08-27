@@ -99,6 +99,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitIsPrimaryMsgInUse(node);
         case TO_FLOAT:
           return visitToFloatFunction(node);
+        case DEBUG_SOY_TEMPLATE_INFO:
+          return visitDebugSoyTemplateInfoFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -160,6 +162,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitToFloatFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitDebugSoyTemplateInfoFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

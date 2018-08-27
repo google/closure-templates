@@ -46,6 +46,7 @@ public enum BuiltinFunction implements SoyFunction {
   MSG_WITH_ID("msgWithId"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
+  DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -92,6 +93,8 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(1, 2);
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
+      case DEBUG_SOY_TEMPLATE_INFO:
+        return ImmutableSet.of(0);
       default:
         return ImmutableSet.of(1);
     }

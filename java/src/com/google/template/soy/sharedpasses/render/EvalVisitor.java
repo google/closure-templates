@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
@@ -642,6 +641,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               "the v1Expression function can't be used in templates compiled to Java");
         case TO_FLOAT:
           return visitToFloatFunction(node);
+        case DEBUG_SOY_TEMPLATE_INFO:
+          return BooleanData.forValue(debugSoyTemplateInfo);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -707,12 +708,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @ForOverride
   protected SoyValue computeFunctionHelper(
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
-    if (fn instanceof DebugSoyTemplateInfoFunction) {
-      // DebugSoyTemplateInfoFunction is a special plugin. We should not call computeForJava method
-      // on it; instead we should directly return a boolean here, based on debugSoyTemplateInfo that
-      // is not visible to the plugin.
-      return BooleanData.forValue(debugSoyTemplateInfo);
-    }
     try {
       return fn.computeForJava(args);
     } catch (Exception e) {
@@ -732,16 +727,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @ForOverride
   protected SoyValue computeFunctionHelper(
       SoyJavaSourceFunction fn, List<SoyValue> args, final FunctionNode fnNode) {
-    // TODO(b/19252021): Uncomment once DebugSoyTemplateInfoFunction makes the transition.
-    /*
-    if (fn instanceof DebugSoyTemplateInfoFunction) {
-      // DebugSoyTemplateInfoFunction is a special plugin. We should not call computeForJava method
-      // on it; instead we should directly return a boolean here, based on debugSoyTemplateInfo that
-      // is not visible to the plugin.
-      return BooleanData.forValue(debugSoyTemplateInfo);
-    }
-    */
-
     try {
       return new TofuValueFactory(fnNode, pluginInstances).computeForJava(fn, args, context);
     } catch (Exception e) {

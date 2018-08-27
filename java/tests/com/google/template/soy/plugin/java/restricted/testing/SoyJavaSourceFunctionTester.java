@@ -252,10 +252,5 @@ public class SoyJavaSourceFunctionTester {
       }
       throw new IllegalStateException("no bidiGlobalDir set.");
     }
-
-    @Override
-    public Expression getDebugSoyTemplateInfo() {
-      throw new UnsupportedOperationException();
-    }
   }
 }

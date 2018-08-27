@@ -18,8 +18,8 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -148,7 +148,7 @@ final class AddDebugAttributesPass extends CompilerFilePass {
     private IfNode createSoyDebug(SourceLocation insertionLocation) {
       IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
       FunctionNode funcNode =
-          new FunctionNode(DebugSoyTemplateInfoFunction.INSTANCE, insertionLocation);
+          new FunctionNode(BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO, insertionLocation);
       IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), insertionLocation, "if", funcNode);
       HtmlAttributeNode attribute =
           new HtmlAttributeNode(

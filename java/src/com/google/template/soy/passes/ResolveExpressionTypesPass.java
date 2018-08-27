@@ -1303,8 +1303,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
      * built-in functions.
      */
     private void visitBuiltinFunction(BuiltinFunction builtinFunction, FunctionNode node) {
-      // Most non-plugin functions have exactly 1 arg
-      ExprNode arg1 = node.getChild(0);
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
           SoyType type = node.getChild(0).getType();
@@ -1316,7 +1314,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           }
           break;
         case INDEX:
-          requireLoopVariableInScope(node, arg1);
+          requireLoopVariableInScope(node, node.getChild(0));
           node.setType(IntType.getInstance());
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -1325,7 +1323,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           break;
         case IS_FIRST:
         case IS_LAST:
-          requireLoopVariableInScope(node, arg1);
+          requireLoopVariableInScope(node, node.getChild(0));
           node.setType(BoolType.getInstance());
           break;
         case CSS:
@@ -1337,8 +1335,11 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           node.setType(StringType.getInstance());
           break;
         case V1_EXPRESSION:
-          checkArgIsStringLiteral(arg1, "v1Expression");
+          checkArgIsStringLiteral(node.getChild(0), "v1Expression");
           node.setType(UnknownType.getInstance());
+          break;
+        case DEBUG_SOY_TEMPLATE_INFO:
+          node.setType(BoolType.getInstance());
           break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
