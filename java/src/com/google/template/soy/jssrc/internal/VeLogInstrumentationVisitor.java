@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -83,7 +84,11 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             .getEndPoint()
             .offset(0, tag.isSelfClosing() ? -2 : -1)
             .asLocation(tag.getSourceLocation().getFilePath());
-    FunctionNode funcNode = new FunctionNode(VeLogFunction.INSTANCE, insertionLocation);
+    FunctionNode funcNode =
+        new FunctionNode(
+            Identifier.create(VeLogFunction.INSTANCE.getName(), insertionLocation),
+            VeLogFunction.INSTANCE,
+            insertionLocation);
     funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
     funcNode.addChild(
         node.getConfigExpression() == null
@@ -121,7 +126,10 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         continue;
       }
       FunctionNode funcNode =
-          new FunctionNode(VeLogJsSrcLoggingFunction.INSTANCE, insertionLocation);
+          new FunctionNode(
+              Identifier.create(VeLogJsSrcLoggingFunction.INSTANCE.getName(), insertionLocation),
+              VeLogJsSrcLoggingFunction.INSTANCE,
+              insertionLocation);
       funcNode.addChild(
           new StringNode(function.getFunctionName(), QuoteStyle.SINGLE, insertionLocation));
       funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));

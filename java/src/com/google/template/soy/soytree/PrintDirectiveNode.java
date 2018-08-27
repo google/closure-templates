@@ -16,11 +16,12 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -36,6 +37,7 @@ import java.util.List;
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
+  private final Identifier name;
   private final SoyPrintDirective printDirective;
 
   /** The parsed args. */
@@ -49,13 +51,16 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   public PrintDirectiveNode(
       int id,
+      Identifier name,
       SourceLocation location,
       ImmutableList<ExprNode> args,
       SoyPrintDirective printDirective,
       boolean isSynthetic) {
     super(id, location);
+    checkArgument(name.identifier().equals(printDirective.getName()));
+    this.name = name;
     this.args = ExprRootNode.wrap(args);
-    this.printDirective = checkNotNull(printDirective);
+    this.printDirective = printDirective;
     this.isSynthetic = isSynthetic;
   }
 
@@ -70,6 +75,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     for (ExprRootNode origArg : orig.args) {
       tempArgs.add(origArg.copy(copyState));
     }
+    this.name = orig.name;
     this.args = ImmutableList.copyOf(tempArgs);
     this.printDirective = orig.printDirective;
     this.isSynthetic = orig.isSynthetic;
@@ -83,6 +89,10 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   /** Returns the directive name (including vertical bar). */
   public String getName() {
     return printDirective.getName();
+  }
+
+  public SourceLocation getNameLocation() {
+    return name.location();
   }
 
   /** Returns true if this node was inserted by the autoescaper. */

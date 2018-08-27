@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.RoundFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -40,7 +41,11 @@ public final class FunctionNodeTest {
 
   @Test
   public void testToSourceString() {
-    FunctionNode fn = new FunctionNode(new RoundFunction(), SourceLocation.UNKNOWN);
+    FunctionNode fn =
+        new FunctionNode(
+            Identifier.create("round", SourceLocation.UNKNOWN),
+            new RoundFunction(),
+            SourceLocation.UNKNOWN);
     fn.addChild(new FloatNode(3.14159, SourceLocation.UNKNOWN));
     fn.addChild(new IntegerNode(2, SourceLocation.UNKNOWN));
     assertThat(fn.toSourceString()).isEqualTo("round(3.14159, 2)");

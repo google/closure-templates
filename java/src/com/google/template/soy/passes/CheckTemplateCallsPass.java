@@ -27,6 +27,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -356,7 +357,11 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         ExprRootNode root = paramNode.getExpr();
 
         // create a node to wrap param in coercion
-        FunctionNode newParam = new FunctionNode(function, root.getRoot().getSourceLocation());
+        FunctionNode newParam =
+            new FunctionNode(
+                Identifier.create(function.getName(), root.getRoot().getSourceLocation()),
+                function,
+                root.getRoot().getSourceLocation());
         newParam.setType(coercionTargetType);
 
         newParam.addChild(root.getRoot());

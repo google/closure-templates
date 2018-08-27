@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -107,7 +108,9 @@ public class SoyJavaSourceFunctionTester {
    */
   public Object callFunction(Object... args) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
-    FunctionNode fnNode = new FunctionNode(fnSig.name(), fn, SourceLocation.UNKNOWN);
+    FunctionNode fnNode =
+        new FunctionNode(
+            Identifier.create(fnSig.name(), SourceLocation.UNKNOWN), fn, SourceLocation.UNKNOWN);
     Signature matchingSig = null;
     for (Signature sig : fnSig.value()) {
       if (sig.parameterTypes().length == args.length) {

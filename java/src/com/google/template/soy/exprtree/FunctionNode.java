@@ -16,10 +16,12 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -35,7 +37,7 @@ import javax.annotation.Nullable;
  */
 public final class FunctionNode extends AbstractParentExprNode {
 
-  private final String name;
+  private final Identifier name;
 
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
@@ -47,19 +49,22 @@ public final class FunctionNode extends AbstractParentExprNode {
   @Nullable private ImmutableList<SoyType> allowedParamTypes;
 
   /** Convenience constructor for SoyFunctions. */
-  public FunctionNode(SoyFunction soyFunction, SourceLocation sourceLocation) {
-    this(soyFunction.getName(), soyFunction, sourceLocation);
+  public FunctionNode(Identifier name, SoyFunction soyFunction, SourceLocation sourceLocation) {
+    this(name, (Object) soyFunction, sourceLocation);
   }
 
   /**
    * @param soyFunction The SoyFunction.
    * @param sourceLocation The node's source location.
    */
-  public FunctionNode(String name, Object soyFunction, SourceLocation sourceLocation) {
+  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.name = name;
     checkState(soyFunction instanceof SoyFunction || soyFunction instanceof SoySourceFunction);
     this.soyFunction = soyFunction;
+    if (soyFunction instanceof SoyFunction) {
+      checkArgument(name.identifier().equals(((SoyFunction) soyFunction).getName()));
+    }
   }
 
   /**
@@ -81,7 +86,12 @@ public final class FunctionNode extends AbstractParentExprNode {
 
   /** Returns the function name. */
   public String getFunctionName() {
-    return name;
+    return name.identifier();
+  }
+
+  /** Returns the location of the function name. */
+  public SourceLocation getFunctionNameLocation() {
+    return name.location();
   }
 
   public Object getSoyFunction() {

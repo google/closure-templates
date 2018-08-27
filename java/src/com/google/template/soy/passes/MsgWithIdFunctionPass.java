@@ -59,8 +59,6 @@ import com.google.template.soy.soytree.defn.LocalVar;
  *       usable.
  * </ul>
  *
- * <p>TODO(b/79240335): delete the {@code msgId} function.
- *
  * <p>Must run after the ResolveNamesPass and the CheckNonEmptyMsgNodesPass since we depend on
  * finding local variable definitions and empty message nodes don't have valid ids. Should run
  * before ResolveExpressionTypesPass so that we don't need to worry about assigning types here.
@@ -163,7 +161,11 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
       long fallbackMsgId = MsgUtils.computeMsgIdForDualFormat(msgNode.getChild(1));
       ConditionalOpNode condOpNode = new ConditionalOpNode(fn.getSourceLocation());
       FunctionNode isPrimaryMsgInUse =
-          new FunctionNode(BuiltinFunction.IS_PRIMARY_MSG_IN_USE, fn.getSourceLocation());
+          new FunctionNode(
+              Identifier.create(
+                  BuiltinFunction.IS_PRIMARY_MSG_IN_USE.getName(), fn.getSourceLocation()),
+              BuiltinFunction.IS_PRIMARY_MSG_IN_USE,
+              fn.getSourceLocation());
       // We add the varRef, and the 2 message ids to the funcitonnode as arguments so they are
       // trivial to access in the backends.  This is a little hacky however since we never generate
       // code for these things.

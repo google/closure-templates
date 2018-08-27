@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -99,12 +100,14 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
     // motivation for fixing this is low because it would risk breaking old templates, which
     // ideally should migrate off of deprecated-noncontextual autoescape.
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL && !shouldCancelAutoescape) {
+      EscapeHtmlDirective directive = new EscapeHtmlDirective();
       PrintDirectiveNode newEscapeHtmlDirectiveNode =
           new PrintDirectiveNode(
               nodeIdGen.genId(),
+              Identifier.create(directive.getName(), node.getSourceLocation()),
               node.getSourceLocation(),
               ImmutableList.<ExprNode>of(),
-              new EscapeHtmlDirective(),
+              directive,
               /* isSynthetic= */ true);
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }

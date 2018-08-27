@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
@@ -104,6 +105,7 @@ final class Rewriter {
         PrintDirectiveNode newPrintDirective =
             new PrintDirectiveNode(
                 inferences.getIdGenerator().genId(),
+                Identifier.create(escapingMode.directiveName, printNode.getSourceLocation()),
                 printNode.getSourceLocation(),
                 ImmutableList.<ExprNode>of(),
                 printDirectives.get(escapingMode.directiveName),

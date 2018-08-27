@@ -23,6 +23,7 @@ import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_AT
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -48,7 +49,7 @@ public final class CallBasicNode extends CallNode {
   private String fullCalleeName;
 
   /** The callee name string as it appears in the source code. */
-  private String sourceCalleeName;
+  private Identifier sourceCalleeName;
 
   /**
    * The list of params that need to be type checked when this node is run. All the params that
@@ -64,7 +65,7 @@ public final class CallBasicNode extends CallNode {
   public CallBasicNode(
       int id,
       SourceLocation location,
-      String sourceCalleeName,
+      Identifier sourceCalleeName,
       String fullCalleeName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
@@ -114,7 +115,12 @@ public final class CallBasicNode extends CallNode {
 
   /** Returns the callee name string as it appears in the source code. */
   public String getSourceCalleeName() {
-    return sourceCalleeName;
+    return sourceCalleeName.identifier();
+  }
+
+  @Override
+  public SourceLocation getSourceCalleeLocation() {
+    return sourceCalleeName.location();
   }
 
   /** Returns the full name of the template being called, or null if not yet set. */
@@ -125,7 +131,7 @@ public final class CallBasicNode extends CallNode {
   /** Do not call this method outside the contextual autoescaper. */
   public void setNewCalleeName(String name) {
     checkArgument(BaseUtils.isDottedIdentifier(name));
-    this.sourceCalleeName = name;
+    this.sourceCalleeName = Identifier.create(name, this.sourceCalleeName.location());
     this.fullCalleeName = name;
   }
 
@@ -142,7 +148,7 @@ public final class CallBasicNode extends CallNode {
 
   @Override
   public String getCommandText() {
-    StringBuilder commandText = new StringBuilder(sourceCalleeName);
+    StringBuilder commandText = new StringBuilder(getSourceCalleeName());
 
     if (isPassingAllData()) {
       commandText.append(" data=\"all\"");

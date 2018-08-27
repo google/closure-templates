@@ -224,6 +224,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
+  /** Returns the location of the callee name in the source code. */
+  public abstract SourceLocation getSourceCalleeLocation();
+
   /**
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
    * type checking when this node is being rendered.

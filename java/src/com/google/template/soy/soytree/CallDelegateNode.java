@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -49,6 +50,7 @@ public final class CallDelegateNode extends CallNode {
           "Invalid variant expression \"{0}\" in ''delcall''"
               + " (variant expression must evaluate to an identifier).");
 
+  private final Identifier sourceDelCalleeName;
   /**
    * The name of the delegate template being called.
    *
@@ -83,12 +85,12 @@ public final class CallDelegateNode extends CallNode {
   public CallDelegateNode(
       int id,
       SourceLocation location,
-      String delCalleeName,
+      Identifier delCalleeName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, location, "delcall", attributes, errorReporter);
-    this.delCalleeName = delCalleeName;
-
+    this.delCalleeName = delCalleeName.identifier();
+    this.sourceDelCalleeName = delCalleeName;
     ExprRootNode variantExpr = null;
     boolean allowEmptyDefault = false;
 
@@ -146,6 +148,7 @@ public final class CallDelegateNode extends CallNode {
   private CallDelegateNode(CallDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
+    this.sourceDelCalleeName = orig.sourceDelCalleeName;
     this.variantExpr = (orig.variantExpr != null) ? orig.variantExpr.copy(copyState) : null;
     this.allowEmptyDefault = orig.allowEmptyDefault;
     this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
@@ -159,6 +162,11 @@ public final class CallDelegateNode extends CallNode {
   /** Returns the name of the delegate template being called. */
   public String getDelCalleeName() {
     return delCalleeName;
+  }
+
+  @Override
+  public SourceLocation getSourceCalleeLocation() {
+    return sourceDelCalleeName.location();
   }
 
   /** Do not call this method outside the contextual autoescaper. */

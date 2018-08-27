@@ -2472,15 +2472,16 @@ private PrintDirectiveNode PrintDirective() :
       errorReporter.report(createSrcLoc(vbar), UNEXPECTED_PIPE);
     }
     SourceLocation loc = createSrcLoc(vbar, directive);
+    Identifier ident = Identifier.create("|" + directive.image, loc);
     if (!args.isEmpty()) {
       loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
-    String name = "|" + directive.image;
     return new PrintDirectiveNode(
         nodeIdGen.genId(),
-        loc,
+        /* name= */ ident,
+        /* location= */ loc,
         args,
-        pluginResolver.lookupPrintDirective(name, args.size(), loc),
+        pluginResolver.lookupPrintDirective(ident.identifier(), args.size(), loc),
         /* isSynthetic= */ false);
   }
 }
@@ -2923,7 +2924,7 @@ private CallNode CallStmt() :
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagEnd),
-          calleeName.identifier(),
+          calleeName,
           fullName,
           attributes,
           errorReporter);
@@ -2959,7 +2960,7 @@ private CallNode CallStmt() :
       CallDelegateNode node = new CallDelegateNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagEnd),
-          calleeName.identifier(),
+          calleeName,
           attributes,
           errorReporter);
       node.addChildren(params);
@@ -3726,7 +3727,7 @@ private ExprNode GlobalOrFunctionCallLike() :
             SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
             FunctionNode fnNode =
                 new FunctionNode(
-                    ident.identifier(),
+                    ident,
                     pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
                     loc);
             fnNode.addChildren(params);
@@ -3755,7 +3756,7 @@ private ExprNode GlobalOrFunctionCallLike() :
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
       return new ProtoInitNode(resolvedName, ImmutableList.of(), loc);
     } else {
-      return new FunctionNode(name, pluginResolver.lookupSoyFunction(name, 0, loc), loc);
+      return new FunctionNode(ident, pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
   }
 }

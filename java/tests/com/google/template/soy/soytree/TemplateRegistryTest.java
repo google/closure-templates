@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -192,8 +193,15 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
+
     CallBasicNode node =
-        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", "ns.foo", NO_ATTRS, FAIL);
+        new CallBasicNode(
+            0,
+            SourceLocation.UNKNOWN,
+            Identifier.create("ns.foo", SourceLocation.UNKNOWN),
+            "ns.foo",
+            NO_ATTRS,
+            FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
@@ -211,7 +219,13 @@ public final class TemplateRegistryTest {
             .parse()
             .registry();
     CallBasicNode node =
-        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.moo", "ns.moo", NO_ATTRS, FAIL);
+        new CallBasicNode(
+            0,
+            SourceLocation.UNKNOWN,
+            Identifier.create("ns.moo", SourceLocation.UNKNOWN),
+            "ns.moo",
+            NO_ATTRS,
+            FAIL);
     assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 
@@ -229,7 +243,12 @@ public final class TemplateRegistryTest {
             .parse()
             .registry();
     CallDelegateNode node =
-        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
+        new CallDelegateNode(
+            0,
+            SourceLocation.UNKNOWN,
+            Identifier.create("ns.foo", SourceLocation.UNKNOWN),
+            NO_ATTRS,
+            FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
@@ -247,7 +266,12 @@ public final class TemplateRegistryTest {
             .parse()
             .registry();
     CallDelegateNode node =
-        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.moo", NO_ATTRS, FAIL);
+        new CallDelegateNode(
+            0,
+            SourceLocation.UNKNOWN,
+            Identifier.create("ns.moo", SourceLocation.UNKNOWN),
+            NO_ATTRS,
+            FAIL);
     assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 }
