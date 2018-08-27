@@ -79,6 +79,11 @@ public abstract class Statement extends CodeChunk {
     return Return.create(returnValue);
   }
 
+  /** Creates a code chunk that represents an empty return statement. */
+  public static Statement returnNothing() {
+    return Return.create();
+  }
+
   /** Creates a code chunk that represents a throw statement. */
   public static Statement throwValue(Expression throwValue) {
     return Throw.create(throwValue);

@@ -1033,7 +1033,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return switchOn;
   }
 
-  private Expression translateExpr(ExprNode expr) {
+  protected Expression translateExpr(ExprNode expr) {
     return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
         .exec(expr);
   }

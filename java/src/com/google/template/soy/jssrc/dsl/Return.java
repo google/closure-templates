@@ -18,28 +18,42 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nullable;
 
 /** Represents a JavaScript return statement. */
 @AutoValue
 @Immutable
 abstract class Return extends Statement {
+  private static final Return EMPTY_RETURN = new AutoValue_Return(null);
 
+  @Nullable
   abstract Expression value();
 
   static Return create(Expression value) {
     return new AutoValue_Return(value);
   }
 
+  /** Creates an empty (no return value) return statement. */
+  static Return create() {
+    return EMPTY_RETURN;
+  }
+
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(value())
-        .append("return ")
-        .appendOutputExpression(value())
-        .append(';');
+    if (value() != null) {
+      ctx.appendInitialStatements(value());
+    }
+    ctx.append("return");
+    if (value() != null) {
+      ctx.append(" ").appendOutputExpression(value());
+    }
+    ctx.append(";");
   }
-  
+
   @Override
   public void collectRequires(RequiresCollector collector) {
-    value().collectRequires(collector);
+    if (value() != null) {
+      value().collectRequires(collector);
+    }
   }
 }
