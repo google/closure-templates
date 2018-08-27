@@ -198,11 +198,20 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     if (varDefn.isInjected()) {
       source = OPT_IJ_DATA;
     } else if (varDefn.kind() == VarDefn.Kind.STATE) {
-      // TODO: Promote this to a statically initialized variable.
-      TemplateStateVar state = (TemplateStateVar) varDefn;
-      return visit(state.initialValue());
+      return genCodeForStateAccess(paramName, (TemplateStateVar) varDefn);
     }
     return source.dotAccess(paramName);
+  }
+
+  /**
+   * Method that returns code to access a named state parameter.
+   *
+   * @param paramName The name of the state parameter.
+   * @param stateVar The variable definition of the state parameter
+   * @return The code to access the value of that parameter.
+   */
+  protected Expression genCodeForStateAccess(String paramName, TemplateStateVar stateVar) {
+    return visit(stateVar.initialValue());
   }
 
   @Override

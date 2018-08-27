@@ -485,7 +485,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   }
 
   private Expression translateExpr(ExprNode expr) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter).exec(expr);
+    return master.getExprTranslator().exec(expr);
   }
 
   /**
@@ -567,7 +567,12 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         }
 
         Expression call =
-            genCallCodeUtils.gen(callNode, templateAliases, translationContext, errorReporter);
+            genCallCodeUtils.gen(
+                callNode,
+                templateAliases,
+                translationContext,
+                errorReporter,
+                master.getExprTranslator());
         contentChunks.add(call);
       } else {
         List<Expression> chunks = genJsExprsVisitor.exec(contentNode);

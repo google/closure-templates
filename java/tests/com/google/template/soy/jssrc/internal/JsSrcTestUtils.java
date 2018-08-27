@@ -46,8 +46,7 @@ final class JsSrcTestUtils {
 
       @Override
       public GenCallCodeUtils get() {
-        return new GenCallCodeUtils(
-            options, delTemplateNamer, isComputableAsJsExprsVisitor, factory);
+        return new GenCallCodeUtils(delTemplateNamer, isComputableAsJsExprsVisitor, factory);
       }
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();

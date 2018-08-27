@@ -1033,14 +1033,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return switchOn;
   }
 
-  protected Expression translateExpr(ExprNode expr) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
-        .exec(expr);
+  protected TranslateExprNodeVisitor getExprTranslator() {
+    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter);
   }
 
-  protected Expression genCodeForParamAccess(String paramName, TemplateParam param) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter)
-        .genCodeForParamAccess(paramName, param);
+  protected Expression translateExpr(ExprNode expr) {
+    return getExprTranslator().exec(expr);
+  }
+
+  private Expression genCodeForParamAccess(String paramName, TemplateParam param) {
+    return getExprTranslator().genCodeForParamAccess(paramName, param);
   }
 
   /**
@@ -1256,7 +1258,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Add the call's result to the current output var.
     Expression call =
-        genCallCodeUtils.gen(node, templateAliases, templateTranslationContext, errorReporter);
+        genCallCodeUtils.gen(
+            node, templateAliases, templateTranslationContext, errorReporter, getExprTranslator());
     jsCodeBuilder.addChunkToOutputVar(call);
   }
 

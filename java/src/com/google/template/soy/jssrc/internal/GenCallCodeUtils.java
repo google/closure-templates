@@ -31,7 +31,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -56,8 +55,6 @@ import java.util.List;
  */
 public class GenCallCodeUtils {
 
-  private final SoyJsSrcOptions jsSrcOptions;
-
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
@@ -68,11 +65,9 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   protected GenCallCodeUtils(
-      SoyJsSrcOptions jsSrcOptions,
       DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.jsSrcOptions = jsSrcOptions;
     this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -124,14 +119,15 @@ public class GenCallCodeUtils {
       CallNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      TranslateExprNodeVisitor exprTranslator) {
 
     // Build the JS CodeChunk for the callee's name.
-    Expression callee = genCallee(callNode, templateAliases, translationContext, errorReporter);
+    Expression callee = genCallee(callNode, templateAliases, exprTranslator);
 
     // Generate the data object to pass to callee
     Expression objToPass =
-        genObjToPass(callNode, templateAliases, translationContext, errorReporter);
+        genObjToPass(callNode, templateAliases, translationContext, errorReporter, exprTranslator);
 
     // Generate the main call expression.
     Expression call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
@@ -174,10 +170,7 @@ public class GenCallCodeUtils {
    * @return The JS expression for the template to call
    */
   public Expression genCallee(
-      CallNode callNode,
-      TemplateAliases templateAliases,
-      TranslationContext translationContext,
-      ErrorReporter errorReporter) {
+      CallNode callNode, TemplateAliases templateAliases, TranslateExprNodeVisitor exprTranslator) {
     // Build the JS CodeChunk for the callee's name.
     Expression callee;
     if (callNode instanceof CallBasicNode) {
@@ -202,9 +195,7 @@ public class GenCallCodeUtils {
         variant = LITERAL_EMPTY_STRING;
       } else {
         // Case 2b: Delegate call with variant expression.
-        variant =
-            new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter)
-                .exec(variantSoyExpr);
+        variant = exprTranslator.exec(variantSoyExpr);
       }
 
       callee =
@@ -262,16 +253,15 @@ public class GenCallCodeUtils {
       CallNode callNode,
       TemplateAliases templateAliases,
       TranslationContext translationContext,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      TranslateExprNodeVisitor exprTranslator) {
 
     // ------ Generate the expression for the original data to pass ------
     Expression dataToPass;
     if (callNode.isPassingAllData()) {
       dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.isPassingData()) {
-      dataToPass =
-          new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter)
-              .exec(callNode.getDataExpr());
+      dataToPass = exprTranslator.exec(callNode.getDataExpr());
     } else {
       dataToPass = LITERAL_NULL;
     }
@@ -290,9 +280,7 @@ public class GenCallCodeUtils {
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        Expression value =
-            new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter)
-                .exec(cpvn.getExpr());
+        Expression value = exprTranslator.exec(cpvn.getExpr());
         values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;

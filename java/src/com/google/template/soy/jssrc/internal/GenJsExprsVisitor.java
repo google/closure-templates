@@ -97,13 +97,13 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
-  private final SoyJsSrcOptions jsSrcOptions;
+  protected final SoyJsSrcOptions jsSrcOptions;
   private final GenCallCodeUtils genCallCodeUtils;
   protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
-  private final TranslationContext translationContext;
-  private final ErrorReporter errorReporter;
+  protected final TranslationContext translationContext;
+  protected final ErrorReporter errorReporter;
 
   /** List to collect the results. */
   protected List<Expression> chunks;
@@ -251,9 +251,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
     chunks.add(expr);
   }
 
+  protected TranslateExprNodeVisitor getExprTranslator() {
+    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter);
+  }
+
   private Expression translateExpr(ExprRootNode argNode) {
-    return new TranslateExprNodeVisitor(jsSrcOptions, translationContext, errorReporter)
-        .exec(argNode);
+    return getExprTranslator().exec(argNode);
   }
 
   /**
@@ -343,7 +346,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    */
   @Override protected void visitCallNode(CallNode node) {
     Expression call =
-        genCallCodeUtils.gen(node, templateAliases, translationContext, errorReporter);
+        genCallCodeUtils.gen(
+            node, templateAliases, translationContext, errorReporter, getExprTranslator());
     chunks.add(call);
   }
 
