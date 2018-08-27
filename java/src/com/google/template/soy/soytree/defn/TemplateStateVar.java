@@ -33,13 +33,13 @@ import javax.annotation.concurrent.Immutable;
 public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final SourceLocation nameLocation;
   private final String desc;
-  private final TypeNode typeNode;
+  @Nullable private final TypeNode typeNode;
   private final ExprRootNode initialValue;
 
   public TemplateStateVar(
       String name,
-      SoyType type,
-      TypeNode typeNode,
+      @Nullable SoyType type,
+      @Nullable TypeNode typeNode,
       ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
@@ -74,6 +74,14 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   @Override
   public boolean isInjected() {
     return false;
+  }
+
+  public void setType(SoyType type) {
+    if (this.type == null) {
+      this.type = type;
+    } else {
+      throw new IllegalStateException("type has already been set.");
+    }
   }
 
   @Override

@@ -94,8 +94,8 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@state pa: bool = true}",
-                    "{@state pb: list<int> = [1,2,3]}",
+                    "{@state pa:= true}",
+                    "{@state pb:= [1,2,3]}",
                     "{@state pc: bool|null = null}",
                     "{@state pd: list<int>|null = null}",
                     "{assertType('bool', $pa)}",
@@ -114,6 +114,41 @@ public final class ResolveExpressionTypesPassTest {
         .isEqualTo(ListType.of(IntType.getInstance()));
     assertThat(states.get(2).initialValue().getType()).isEqualTo(NullType.getInstance());
     assertThat(states.get(3).initialValue().getType()).isEqualTo(NullType.getInstance());
+  }
+
+  @Test
+  public void testStateTypeInference() {
+    SoyTypeRegistry typeRegistry =
+        new SoyTypeRegistry.Builder()
+            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
+            .build();
+
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@state pa:= true}",
+                    "{@state pb:= [1,2,3]}",
+                    "{@state proto:= example.ExampleExtendable()}",
+                    "{assertType('bool', $pa)}",
+                    "{assertType('list<int>', $pb)}",
+                    "{assertType('example.ExampleExtendable', $proto)}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+    TemplateNode node = soyTree.getChild(0).getChild(0);
+    List<TemplateStateVar> states = node.getStateVars();
+
+    assertThat(states.get(0).name()).isEqualTo("pa");
+    assertThat(states.get(0).type()).isEqualTo(BoolType.getInstance());
+
+    assertThat(states.get(1).name()).isEqualTo("pb");
+    assertThat(states.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
+
+    assertThat(states.get(2).name()).isEqualTo("proto");
+    assertThat(states.get(2).type()).isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
   }
 
   @Test

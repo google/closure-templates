@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Strings.lenientFormat;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
@@ -747,12 +748,22 @@ public class SoyTypesTest {
     private static SoyType parseType(String input) {
       TemplateNode template =
           SoyFileSetParserBuilder.forTemplateContents(
-                  "{@param p : " + input + "}\n{$p ? 't' : 'f'}")
+                  "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
               .parse()
               .fileSet()
               .getChild(0)
               .getChild(0);
-      return Iterables.getOnlyElement(template.getAllParams()).type();
+      SoyType type = Iterables.getOnlyElement(template.getAllParams()).type();
+      if (type.equals(StringType.getInstance())
+          || type.equals(UnknownType.getInstance())
+          || type.equals(AnyType.getInstance())) {
+        return type;
+      }
+      return UnionType.of(
+          ((UnionType) type)
+              .getMembers().stream()
+                  .filter(t -> !t.equals(StringType.getInstance()))
+                  .collect(toImmutableList()));
     }
   }
 }

@@ -94,6 +94,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
@@ -204,6 +205,16 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Function ''{0}'' must have a loop variable as its argument.");
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
+  private static final SoyErrorKind EXPLICIT_NULL =
+      SoyErrorKind.of("Explicit use of the ''null'' type is not allowed.");
+  private static final SoyErrorKind INFERRED_NULL =
+      SoyErrorKind.of(
+          "The inferred type of this parameter is ''null'' which is not a useful type. "
+              + "Use an explicit type declaration to specify a wider type..");
+  private static final SoyErrorKind EXPLICIT_TYPE_SAME_AS_INFERRED =
+      SoyErrorKind.of(
+          "The inferred type of this parameter is the same as the declared type, use the '':='' "
+              + "syntax to use the inferred type.");
 
   private final ErrorReporter errorReporter;
   /** Type registry. */
@@ -229,21 +240,47 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      visitSoyNode(node);
+      // need to visit expressions first so parameters with inferred types have their expressions
+      // analyzed
+      visitExpressions(node);
       for (TemplateStateVar state : node.getStateVars()) {
-        if (!state.type().isAssignableFrom(state.initialValue().getType())) {
-          errorReporter.report(
-              state.initialValue().getSourceLocation(),
-              TYPE_MISMATCH_STATE,
-              state.name(),
-              state.initialValue().getType(),
-              state.type());
+        SoyType declaredType = state.type();
+        SoyType actualType = state.initialValue().getType();
+        if (declaredType != null) {
+          if (declaredType.equals(NullType.getInstance())) {
+            errorReporter.report(state.nameLocation(), EXPLICIT_NULL);
+          }
+          if (!declaredType.isAssignableFrom(actualType)) {
+            errorReporter.report(
+                state.initialValue().getSourceLocation(),
+                TYPE_MISMATCH_STATE,
+                state.name(),
+                actualType,
+                declaredType);
+          }
+          if (declaredType.equals(actualType)) {
+            errorReporter.report(state.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
+          }
+        } else {
+          // in this case the declaredType is inferred from the initializer expression, so just
+          // assign
+          state.setType(actualType);
+          if (actualType.equals(NullType.getInstance())) {
+            errorReporter.report(state.nameLocation(), INFERRED_NULL);
+          }
         }
         if (!SoyTreeUtils.isConstantExpr(state.initialValue())) {
           errorReporter.report(
               state.initialValue().getSourceLocation(), STATE_MUST_BE_CONSTANT, state.name());
         }
       }
+      for (TemplateParam param : node.getAllParams()) {
+        if (param.type().equals(NullType.getInstance())) {
+          errorReporter.report(param.nameLocation(), EXPLICIT_NULL);
+        }
+      }
+
+      visitChildren(node);
     }
 
     @Override
