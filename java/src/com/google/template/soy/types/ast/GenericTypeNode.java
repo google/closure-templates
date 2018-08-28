@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 
 /** A typename with type arguments (eg, list<someType>). */
 @AutoValue
@@ -27,17 +28,25 @@ public abstract class GenericTypeNode extends TypeNode {
   GenericTypeNode() {}
 
   public static GenericTypeNode create(
-      SourceLocation sourceLocation, String name, Iterable<? extends TypeNode> arguments) {
+      SourceLocation sourceLocation, Identifier name, Iterable<? extends TypeNode> arguments) {
     return new AutoValue_GenericTypeNode(sourceLocation, name, ImmutableList.copyOf(arguments));
   }
 
-  public abstract String name();
+  abstract Identifier identifier();
+
+  public String name() {
+    return identifier().identifier();
+  }
+
+  public SourceLocation nameLocation() {
+    return identifier().location();
+  }
 
   /** All the type parameters, possibly empty. */
   public abstract ImmutableList<TypeNode> arguments();
 
   @Override
-  public String toString() {
+  public final String toString() {
     return name() + "<" + Joiner.on(", ").join(arguments()) + ">";
   }
 

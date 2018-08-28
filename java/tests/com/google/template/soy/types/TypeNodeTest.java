@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -53,13 +54,24 @@ public final class TypeNodeTest {
   @Test
   public void testGenericTypeToString() throws Exception {
     assertThat(
-            GenericTypeNode.create(sourceLocation, "foo", ImmutableList.<TypeNode>of()).toString())
+            GenericTypeNode.create(
+                    sourceLocation,
+                    Identifier.create("foo", sourceLocation),
+                    ImmutableList.<TypeNode>of())
+                .toString())
         .isEqualTo("foo<>");
     assertThat(
-            GenericTypeNode.create(sourceLocation, "list", ImmutableList.of(TYPE_ABC)).toString())
+            GenericTypeNode.create(
+                    sourceLocation,
+                    Identifier.create("list", sourceLocation),
+                    ImmutableList.of(TYPE_ABC))
+                .toString())
         .isEqualTo("list<abc>");
     assertThat(
-            GenericTypeNode.create(sourceLocation, "map", ImmutableList.of(TYPE_ABC, TYPE_DEF))
+            GenericTypeNode.create(
+                    sourceLocation,
+                    Identifier.create("map", sourceLocation),
+                    ImmutableList.of(TYPE_ABC, TYPE_DEF))
                 .toString())
         .isEqualTo("map<abc, def>");
   }

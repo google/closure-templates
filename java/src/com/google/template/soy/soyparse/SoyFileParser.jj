@@ -4076,6 +4076,7 @@ private TypeNode NullType() : {
 private TypeNode NamedType() :
 {
   Token first, open, close;
+  Identifier identifier;
   Token next = null;
   String ident;
   SourceLocation fullLocation;
@@ -4086,21 +4087,13 @@ private TypeNode NamedType() :
 }
 {
 
-  first = <IDENT>
-  (
-    <DOT>
-    next = <IDENT>
-    {
-      if (sb == null) {
-        sb = new StringBuilder(first.image);
-      }
-      sb.append('.');
-      sb.append(next.image);
-    }
-  )*
+  identifier = Identifier()
   {
-    ident = headerInfo.resolveAlias(sb == null ? first.image : sb.toString());
-    fullLocation = next == null ? createSrcLoc(first) : createSrcLoc(first, next);
+    // TODO(lukes): we support aliasing list and map.... but why...?
+    identifier = Identifier.create(
+        headerInfo.resolveAlias(identifier.identifier()),
+        identifier.location());
+    fullLocation = identifier.location();
   }
 
   [
@@ -4123,12 +4116,12 @@ private TypeNode NamedType() :
     {
       return GenericTypeNode.create(
           fullLocation.extend(createSrcLoc(close)),
-          ident,
+          identifier,
           genericArgs);
     }
   ]
   {
-    return NamedTypeNode.create(fullLocation, ident);
+    return NamedTypeNode.create(identifier);
   }
 }
 
