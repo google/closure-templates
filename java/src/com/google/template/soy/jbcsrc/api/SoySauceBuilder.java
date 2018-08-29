@@ -34,6 +34,7 @@ public final class SoySauceBuilder {
   private ImmutableMap<String, SoyPrintDirective> userDirectives = ImmutableMap.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
   private SoyScopedData scopedData;
+  private ClassLoader loader;
 
   public SoySauceBuilder() {}
 
@@ -51,6 +52,19 @@ public final class SoySauceBuilder {
   /** Sets the delTemplates, to be used when constructing the SoySauce. */
   public SoySauceBuilder withDelTemplates(Iterable<String> delTemplates) {
     this.allDeltemplates = ImmutableSet.copyOf(delTemplates);
+    return this;
+  }
+
+  /**
+   * Sets the {@link ClassLoader}, to be used when loading generated soy classes.
+   *
+   * <p>In most cases there is no need to use this method, and a default classloader (the one that
+   * loaded this class) will be used. The only use case is when generated templates can not be
+   * located through the standard java binary classpath, so a special classloader can be set to
+   * allow the soy framework to find generated classes.
+   */
+  public SoySauceBuilder withClassLoader(ClassLoader loader) {
+    this.loader = loader;
     return this;
   }
 
@@ -80,8 +94,11 @@ public final class SoySauceBuilder {
     if (scopedData == null) {
       scopedData = new SoySimpleScope();
     }
+    if (loader == null) {
+      loader = SoySauceBuilder.class.getClassLoader();
+    }
     return new SoySauceImpl(
-        new CompiledTemplates(allDeltemplates),
+        new CompiledTemplates(allDeltemplates, loader),
         scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
         ImmutableMap.<String, SoyPrintDirective>builder()
