@@ -24729,8 +24729,8 @@ goog.require('goog.string');
 goog.require('goog.string.Const');
 
 // -----------------------------------------------------------------------------
-// soydata: Defines typed strings, e.g. an HTML string {@code "a<b>c"} is
-// semantically distinct from the plain text string {@code "a<b>c"} and smart
+// soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
+// semantically distinct from the plain text string `"a<b>c"` and smart
 // templates can take that distinction into account.
 
 /**
@@ -25017,7 +25017,7 @@ soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
  * HTML attribute.
  *
  * @param {?} content An attribute name and value, such as
- *     {@code dir="ltr"}.
+ *     `dir="ltr"`.
  * @return {!goog.soy.data.SanitizedHtmlAttribute} Sanitized content wrapper
  *     that indicates to Soy not to escape when printed as an HTML attribute.
  */
@@ -25738,13 +25738,13 @@ soy.$$normalizeHtml = function(value) {
  * RCDATA.
  * <p>
  * Escapes HTML special characters so that the value will not prematurely end
- * the body of a tag like {@code <textarea>} or {@code <title>}. RCDATA tags
+ * the body of a tag like `<textarea>` or `<title>`. RCDATA tags
  * cannot contain other HTML entities, so it is not strictly necessary to escape
  * HTML special characters except when part of that text looks like an HTML
- * entity or like a close tag : {@code </textarea>}.
+ * entity or like a close tag : `</textarea>`.
  * <p>
  * Will normalize known safe HTML to make sure that sanitized HTML (which could
- * contain an innocuous {@code </textarea>} don't prematurely end an RCDATA
+ * contain an innocuous `</textarea>` don't prematurely end an RCDATA
  * element.
  *
  * @param {?} value The string-like value to be escaped. May not be a string,
@@ -25869,7 +25869,7 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
 
 /**
  * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
- * {@code <style>} element.
+ * `<style>` element.
  * @param {string} css
  * @return {string}
  * @private
@@ -25883,8 +25883,8 @@ soy.$$embedCssIntoHtml_ = function(css) {
 
 /**
  * Throw out any close tags that don't correspond to start tags.
- * If {@code <table>} is used for formatting, embedded HTML shouldn't be able
- * to use a mismatched {@code </table>} to break page layout.
+ * If `<table>` is used for formatting, embedded HTML shouldn't be able
+ * to use a mismatched `</table>` to break page layout.
  *
  * @param {Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
  *    that will be modified in place to be either an open tag, one or more close
@@ -25965,7 +25965,7 @@ soy.$$escapeHtmlAttributeNospace = function(value) {
  * @param {?} value The value to escape. May not be a string, but the value
  *     will be coerced to a string.
  * @return {string} A valid HTML attribute name part or name/value pair.
- *     {@code "zSoyz"} if the input is invalid.
+ *     `"zSoyz"` if the input is invalid.
  */
 soy.$$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
@@ -25993,7 +25993,7 @@ soy.$$filterHtmlAttributes = function(value) {
  * @param {?} value The value to escape. May not be a string, but the value
  *     will be coerced to a string.
  * @return {string} A valid HTML element name part.
- *     {@code "zSoyz"} if the input is invalid.
+ *     `"zSoyz"` if the input is invalid.
  */
 soy.$$filterHtmlElementName = function(value) {
   // NOTE: We don't accept any SanitizedContent here. HTML indicates valid
@@ -26573,6 +26573,35 @@ soy.$$bidiDirAttr = function(bidiGlobalDir, text, opt_isHtml) {
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute(
       formatter.knownDirAttr(contentDir));
+};
+
+/**
+ * Returns the name of the start edge ('left' or 'right') for the current global
+ * bidi directionality.
+ *
+ * @return {string}
+ */
+soy.$$bidiStartEdge = function(/** number */ dir) {
+  return dir < 0 ? 'right' : 'left';
+};
+
+/**
+ * Returns the name of the end edge ('left' or 'right') for the current global
+ * bidi directionality.
+ *
+ * @return {string}
+ */
+soy.$$bidiEndEdge = function(/** number */ dir) {
+  return dir < 0 ? 'left' : 'right';
+};
+
+/**
+ * Returns a bidi mark character (LRM or RLM) for the given bidi directionality.
+ *
+ * @return {string}
+ */
+soy.$$bidiMark = function(/** number */ dir) {
+  return dir < 0 ? '\\u200F' /*RLM*/ : '\\u200E' /*LRM*/;
 };
 
 

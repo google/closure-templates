@@ -16,11 +16,11 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Soy special function for internal usages.
@@ -28,7 +28,7 @@ import java.util.Set;
  * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists for
  * client-side VE logging, and should not be used by Soy users.
  */
-public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
+public final class VeLogFunction implements SoyJavaScriptSourceFunction {
 
   // $$ prefix ensures that the function cannot be used directly
   public static final String NAME = "$$velog";
@@ -39,28 +39,13 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
   private VeLogFunction() {}
 
   @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(2, 3);
-  }
-
-  @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    return new JsExpr(
-        String.format(
-            "soy.velog.$$getLoggingAttribute('%1$s', %2$s, %3$s)",
-            args.get(0).getText(),
-            args.get(1).getText(),
-            args.size() > 2 ? args.get(2).getText() : "false"),
-        Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy.velog");
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return factory.callNamespaceFunction(
+        "soy.velog",
+        "soy.velog.$$getLoggingAttribute",
+        args.get(0),
+        args.get(1),
+        args.size() > 2 ? args.get(2) : factory.constant(false));
   }
 }

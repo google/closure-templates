@@ -18,11 +18,9 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -54,24 +52,6 @@ public class BidiStartEdgeFunctionTest {
     tester =
         new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.RTL).build();
     assertThat(tester.callFunction()).isEqualTo("right");
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    BidiStartEdgeFunction ltr = new BidiStartEdgeFunction(Suppliers.ofInstance(BidiGlobalDir.LTR));
-    BidiStartEdgeFunction rtl = new BidiStartEdgeFunction(Suppliers.ofInstance(BidiGlobalDir.RTL));
-    assertThat(ltr.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr("'left'", Integer.MAX_VALUE));
-    assertThat(rtl.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr("'right'", Integer.MAX_VALUE));
-
-    BidiStartEdgeFunction codeSnippet =
-        new BidiStartEdgeFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
-    assertThat(codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(
-            new JsExpr(
-                "(IS_RTL?-1:1) < 0 ? 'right' : 'left'", Operator.CONDITIONAL.getPrecedence()));
   }
 
   @Test

@@ -17,21 +17,23 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,7 +54,7 @@ import java.util.List;
           parameterTypes = {"?", "?"}),
     })
 final class BidiMarkAfterFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -91,27 +93,13 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
   }
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    JsExpr value = args.get(0);
-    JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
-
-    String callText =
-        "soy.$$bidiMarkAfter("
-            + bidiGlobalDirProvider.get().getCodeSnippet()
-            + ", "
-            + value.getText()
-            + (isHtml != null ? ", " + isHtml.getText() : "")
-            + ")";
-
-    return new JsExpr(callText, Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.<String>builder()
-        .addAll(bidiGlobalDirProvider.get().getNamespace().asSet())
-        .add("soy")
-        .build();
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    List<JavaScriptValue> fnArgs = new ArrayList<>(args.size() + 1);
+    fnArgs.add(context.getBidiDir());
+    fnArgs.addAll(args);
+    return factory.callNamespaceFunction(
+        "soy", "soy.$$bidiMarkAfter", fnArgs.toArray(new JavaScriptValue[0]));
   }
 
   @Override
