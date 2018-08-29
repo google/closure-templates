@@ -138,6 +138,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
 
+  protected final JavaScriptValueFactoryImpl javaScriptValueFactory;
+
   /** Instance of DelTemplateNamer to use. */
   private final DelTemplateNamer delTemplateNamer;
 
@@ -180,6 +182,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
+      JavaScriptValueFactoryImpl javaScriptValueFactory,
       DelTemplateNamer delTemplateNamer,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -187,6 +190,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       SoyTypeRegistry typeRegistry) {
     this.jsSrcOptions = jsSrcOptions;
+    this.javaScriptValueFactory = javaScriptValueFactory;
     this.delTemplateNamer = delTemplateNamer;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -1034,7 +1038,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   protected TranslateExprNodeVisitor getExprTranslator() {
-    return new TranslateExprNodeVisitor(jsSrcOptions, templateTranslationContext, errorReporter);
+    return new TranslateExprNodeVisitor(
+        javaScriptValueFactory, templateTranslationContext, errorReporter);
   }
 
   protected Expression translateExpr(ExprNode expr) {

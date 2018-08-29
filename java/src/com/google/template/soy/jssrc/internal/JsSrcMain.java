@@ -103,7 +103,7 @@ public class JsSrcMain {
       }
       // Combine raw text nodes before codegen.
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
-      return createVisitor(jsSrcOptions, typeRegistry)
+      return createVisitor(jsSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
           .gen(soyTree, templateRegistry, errorReporter);
     }
   }
@@ -172,10 +172,15 @@ public class JsSrcMain {
   }
 
   static GenJsCodeVisitor createVisitor(
-      final SoyJsSrcOptions options, SoyTypeRegistry typeRegistry) {
+      final SoyJsSrcOptions options,
+      SoyTypeRegistry typeRegistry,
+      BidiGlobalDir dir,
+      ErrorReporter errorReporter) {
     final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
+    final JavaScriptValueFactoryImpl javaScriptValueFactory =
+        new JavaScriptValueFactoryImpl(options, dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     // This supplier is used to break a circular dependency between GenCallCodeUtils and
@@ -192,11 +197,13 @@ public class JsSrcMain {
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(
+            javaScriptValueFactory, supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new GenJsCodeVisitor(
         options,
+        javaScriptValueFactory,
         delTemplateNamer,
         supplier.get(),
         isComputableAsJsExprsVisitor,

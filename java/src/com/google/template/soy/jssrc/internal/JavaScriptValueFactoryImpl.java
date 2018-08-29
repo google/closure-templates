@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -46,7 +47,7 @@ import java.util.List;
 /**
  * Implementation of {@link JavaScriptValueFactory} that delegates to the {@link Expression} API.
  */
-final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
+public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   private static final JavaScriptValueImpl ERROR_VALUE =
       new JavaScriptValueImpl(
           Expression.fromExpr(
@@ -71,38 +72,43 @@ final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
         + "\nPlugin implementation: {1}";
   }
 
-  private final SoyJsSrcOptions jsSrcOptions;
-  private final CodeChunk.Generator codeGenerator;
   private final ErrorReporter reporter;
-  private final JavaScriptPluginContext context =
-      new JavaScriptPluginContext() {
-        @Override
-        public JavaScriptValue getBidiDir() {
-          if (jsSrcOptions.getBidiGlobalDir() == 0) {
-            if (!jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
-              throw new RuntimeException("no known bidi dir");
-            }
-            return new JavaScriptValueImpl(
-                Expression.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expression.number(-1))
-                    .setElse(Expression.number(1))
-                    .build(codeGenerator));
-          }
-          return new JavaScriptValueImpl(Expression.number(jsSrcOptions.getBidiGlobalDir()));
-        }
-      };
+  private final SoyJsSrcOptions jsSrcOptions;
+  private final BidiGlobalDir dir;
 
-  JavaScriptValueFactoryImpl(
-      SoyJsSrcOptions jsSrcOptions, CodeChunk.Generator codeGenerator, ErrorReporter reporter) {
+  private JavaScriptPluginContext createContext(final CodeChunk.Generator codeGenerator) {
+    return new JavaScriptPluginContext() {
+      @Override
+      public JavaScriptValue getBidiDir() {
+        if (dir.isStaticValue()) {
+          return new JavaScriptValueImpl(Expression.number(dir.getStaticValue()));
+        }
+        return new JavaScriptValueImpl(
+            Expression.ifExpression(JsRuntime.SOY_IS_LOCALE_RTL, Expression.number(-1))
+                .setElse(Expression.number(1))
+                .build(codeGenerator));
+      }
+    };
+  }
+
+  public JavaScriptValueFactoryImpl(
+      SoyJsSrcOptions jsSrcOptions, BidiGlobalDir dir, ErrorReporter reporter) {
+    this.dir = dir;
     this.jsSrcOptions = jsSrcOptions;
-    this.codeGenerator = codeGenerator;
     this.reporter = reporter;
   }
 
   Expression applyFunction(
-      SourceLocation location, String name, SoyJavaScriptSourceFunction fn, List<Expression> args) {
+      SourceLocation location,
+      String name,
+      SoyJavaScriptSourceFunction fn,
+      List<Expression> args,
+      CodeChunk.Generator codeGenerator) {
     JavaScriptValueImpl result;
     try {
-      result = (JavaScriptValueImpl) fn.applyForJavaScriptSource(this, wrapParams(args), context);
+      result =
+          (JavaScriptValueImpl)
+              fn.applyForJavaScriptSource(this, wrapParams(args), createContext(codeGenerator));
       if (result == null) {
         report(location, name, fn, NULL_RETURN, fn.getClass().getSimpleName());
         result = ERROR_VALUE;

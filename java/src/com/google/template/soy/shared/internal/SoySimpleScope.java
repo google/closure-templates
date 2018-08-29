@@ -38,9 +38,22 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
     private boolean isClosed;
     private final Thread openThread = Thread.currentThread();
     private final ArrayDeque<Data> deque;
+    private final Data data;
 
-    InScope(ArrayDeque<Data> deque) {
+    InScope(Data data, ArrayDeque<Data> deque) {
       this.deque = deque;
+      this.data = data;
+    }
+
+    @Override
+    @Nullable
+    public String getLocale() {
+      return data.locale();
+    }
+
+    @Override
+    public BidiGlobalDir getBidiGlobalDir() {
+      return data.bidiGlobalDir();
     }
 
     /** Exits the scope */
@@ -88,8 +101,9 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
       stack = new ArrayDeque<>();
       scopedValuesTl.set(stack);
     }
-    stack.push(Data.create(locale, bidiGlobalDir));
-    return new InScope(stack);
+    Data data = Data.create(locale, bidiGlobalDir);
+    stack.push(data);
+    return new InScope(data, stack);
   }
 
   @Override

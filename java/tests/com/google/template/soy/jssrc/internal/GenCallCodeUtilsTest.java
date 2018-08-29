@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -231,7 +232,10 @@ public final class GenCallCodeUtilsTest {
             nameGenerator);
     ErrorReporter errorReporter = ErrorReporter.exploding();
     TranslateExprNodeVisitor exprTranslator =
-        new TranslateExprNodeVisitor(new SoyJsSrcOptions(), translationContext, errorReporter);
+        new TranslateExprNodeVisitor(
+            new JavaScriptValueFactoryImpl(new SoyJsSrcOptions(), BidiGlobalDir.LTR, errorReporter),
+            translationContext,
+            errorReporter);
     CodeChunk call =
         genCallCodeUtils.gen(
             callNode,

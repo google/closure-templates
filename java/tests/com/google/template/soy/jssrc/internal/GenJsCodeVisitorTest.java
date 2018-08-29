@@ -27,6 +27,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -92,7 +93,9 @@ public final class GenJsCodeVisitorTest {
   @Before
   public void setUp() {
     jsSrcOptions = new SoyJsSrcOptions();
-    genJsCodeVisitor = JsSrcMain.createVisitor(jsSrcOptions, new SoyTypeRegistry());
+    genJsCodeVisitor =
+        JsSrcMain.createVisitor(
+            jsSrcOptions, new SoyTypeRegistry(), BidiGlobalDir.LTR, ErrorReporter.exploding());
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
   }
 

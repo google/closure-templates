@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
@@ -228,7 +229,8 @@ public final class JspbTest {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
 
     GenJsCodeVisitor genJsCodeVisitor =
-        JsSrcMain.createVisitor(jsSrcOptions, new SoyTypeRegistry());
+        JsSrcMain.createVisitor(
+            jsSrcOptions, new SoyTypeRegistry(), BidiGlobalDir.LTR, ErrorReporter.exploding());
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
     String testFileContent =

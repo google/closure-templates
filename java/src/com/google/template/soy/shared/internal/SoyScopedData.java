@@ -52,6 +52,12 @@ public interface SoyScopedData {
 
   /** A subtype of {@link AutoCloseable} that can be closed without an IOException. */
   public interface InScope extends AutoCloseable {
+
+    @Nullable
+    String getLocale();
+
+    BidiGlobalDir getBidiGlobalDir();
+
     @Override
     void close();
   }

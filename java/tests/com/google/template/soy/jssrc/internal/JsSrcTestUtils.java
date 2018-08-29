@@ -17,6 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Supplier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 
@@ -41,6 +43,8 @@ final class JsSrcTestUtils {
     final DelTemplateNamer delTemplateNamer = new DelTemplateNamer();
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
+    final JavaScriptValueFactoryImpl javaScriptValueFactory =
+        new JavaScriptValueFactoryImpl(options, BidiGlobalDir.LTR, ErrorReporter.exploding());
     class GenCallCodeUtilsSupplier implements Supplier<GenCallCodeUtils> {
       GenJsExprsVisitorFactory factory;
 
@@ -51,7 +55,8 @@ final class JsSrcTestUtils {
     }
     GenCallCodeUtilsSupplier supplier = new GenCallCodeUtilsSupplier();
     GenJsExprsVisitorFactory genJsExprsVisitorFactory =
-        new GenJsExprsVisitorFactory(options, supplier, isComputableAsJsExprsVisitor);
+        new GenJsExprsVisitorFactory(
+            javaScriptValueFactory, supplier, isComputableAsJsExprsVisitor);
     supplier.factory = genJsExprsVisitorFactory;
 
     return new Objects(supplier, genJsExprsVisitorFactory);

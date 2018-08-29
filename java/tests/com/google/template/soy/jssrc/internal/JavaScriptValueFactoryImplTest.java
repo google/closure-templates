@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -107,7 +108,7 @@ public final class JavaScriptValueFactoryImplTest {
   public void testConstant() {
     JavaScriptValueFactoryImpl factory =
         new JavaScriptValueFactoryImpl(
-            new SoyJsSrcOptions(), newGenerator(), ErrorReporter.exploding());
+            new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding());
     assertThat(factory.constant(1).toString()).isEqualTo("1;");
     assertThat(factory.constant(1.1).toString()).isEqualTo("1.1;");
     assertThat(factory.constant(false).toString()).isEqualTo("false;");
@@ -118,7 +119,7 @@ public final class JavaScriptValueFactoryImplTest {
   public void testInvokeMethod() {
     JavaScriptValueFactoryImpl factory =
         new JavaScriptValueFactoryImpl(
-            new SoyJsSrcOptions(), newGenerator(), ErrorReporter.exploding());
+            new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding());
     assertThat(factory.constant("str").invokeMethod("indexOf", factory.constant("s")).toString())
         .isEqualTo("'str'.indexOf('s');");
   }
@@ -131,8 +132,13 @@ public final class JavaScriptValueFactoryImplTest {
 
   static Expression applyFunction(
       SoyJsSrcOptions opts, SoyJavaScriptSourceFunction fn, Expression... args) {
-    return new JavaScriptValueFactoryImpl(opts, newGenerator(), ErrorReporter.exploding())
-        .applyFunction(SourceLocation.UNKNOWN, "foo", fn, ImmutableList.<Expression>copyOf(args));
+    return new JavaScriptValueFactoryImpl(opts, BidiGlobalDir.LTR, ErrorReporter.exploding())
+        .applyFunction(
+            SourceLocation.UNKNOWN,
+            "foo",
+            fn,
+            ImmutableList.<Expression>copyOf(args),
+            newGenerator());
   }
 
   static CodeChunk.Generator newGenerator() {
