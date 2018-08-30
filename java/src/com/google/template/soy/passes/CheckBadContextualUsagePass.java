@@ -22,12 +22,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AutoescapeMode;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -42,6 +44,15 @@ import com.google.template.soy.types.UnknownType;
 
 /** Checks if HTML is printed only from HTML context. */
 final class CheckBadContextualUsagePass extends CompilerFileSetPass {
+
+  private static final SoyErrorKind CALLS_HTML_FROM_NON_HTML =
+      SoyErrorKind.of(
+          "Calling HTML templates from non-HTML context is not allowed. You have these options: "
+              + "1. Mark the called template with kind=\"text\" or more appropriate kind. "
+              + "2. Convert the HTML to plain text by '{let $html kind=\"html\"}{call ...}{/let}"
+              + "{htmlToText($html)}', e.g. inside <title>. "
+              + "3. Stringify the HTML by '{let $html kind=\"html\"}{call ...}{/let}"
+              + "{'''' + $html}', e.g. inside <pre>.");
 
   private static final SoyErrorKind PRINTS_HTML_FROM_NON_HTML =
       SoyErrorKind.of(
@@ -66,10 +77,27 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
         if (template.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
           continue; // Everything is treated as HTML. We also don't have getHtmlContext().
         }
+        // TODO(jakubvrana): Warn against {call} too.
+        for (CallDelegateNode node : getAllNodesOfType(template, CallDelegateNode.class)) {
+          checkCallDelegateNode(node, deltemplates);
+        }
         for (PrintNode node : getAllNodesOfType(template, PrintNode.class)) {
           checkPrintNode(node);
         }
-        // TODO(jakubvrana): Warn against {call} and {delcall} too.
+      }
+    }
+  }
+
+  private void checkCallDelegateNode(
+      CallDelegateNode node, ImmutableListMultimap<String, TemplateDelegateNode> deltemplates) {
+    if (!allowsHtml(node.getHtmlContext())) {
+      String name = node.getDelCalleeName();
+      for (TemplateDelegateNode deltemplate : deltemplates.get(name)) {
+        if (deltemplate.getContentKind() == SanitizedContentKind.HTML) {
+          errorReporter.warn(node.getSourceLocation(), CALLS_HTML_FROM_NON_HTML);
+        }
+        // Other parts of the compiler ensure that all known delegates have the same kind.
+        break;
       }
     }
   }
