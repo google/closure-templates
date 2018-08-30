@@ -18,11 +18,9 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -54,23 +52,6 @@ public class BidiGlobalDirFunctionTest {
     tester =
         new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.RTL).build();
     assertThat(tester.callFunction()).isEqualTo(-1);
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    BidiGlobalDirFunction ltr = new BidiGlobalDirFunction(Suppliers.ofInstance(BidiGlobalDir.LTR));
-    BidiGlobalDirFunction rtl = new BidiGlobalDirFunction(Suppliers.ofInstance(BidiGlobalDir.RTL));
-
-    assertThat(ltr.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr("1", Integer.MAX_VALUE));
-    assertThat(rtl.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr("-1", Integer.MAX_VALUE));
-
-    BidiGlobalDirFunction codeSnippet =
-        new BidiGlobalDirFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
-    assertThat(codeSnippet.computeForJsSrc(ImmutableList.<JsExpr>of()))
-        .isEqualTo(new JsExpr("IS_RTL?-1:1", Operator.CONDITIONAL.getPrecedence()));
   }
 
   @Test

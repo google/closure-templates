@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
@@ -51,20 +50,6 @@ public class BidiTextDirFunctionTest {
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL))).isEqualTo(-1);
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
         .isEqualTo(0);
-  }
-
-  @Test
-  public void testComputeForJsSrc() {
-    BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
-
-    JsExpr textExpr = new JsExpr("TEXT_JS_CODE", Integer.MAX_VALUE);
-    assertThat(bidiTextDirFunction.computeForJsSrc(ImmutableList.of(textExpr)))
-        .isEqualTo(new JsExpr("soy.$$bidiTextDir(TEXT_JS_CODE)", Integer.MAX_VALUE));
-
-    JsExpr isHtmlExpr = new JsExpr("IS_HTML_JS_CODE", Integer.MAX_VALUE);
-    assertThat(bidiTextDirFunction.computeForJsSrc(ImmutableList.of(textExpr, isHtmlExpr)))
-        .isEqualTo(
-            new JsExpr("soy.$$bidiTextDir(TEXT_JS_CODE, IS_HTML_JS_CODE)", Integer.MAX_VALUE));
   }
 
   @Test
