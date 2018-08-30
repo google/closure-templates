@@ -24,7 +24,10 @@ import java.util.List;
  *
  * <p>Important: This may only be used in implementing function plugins.
  *
+ * @deprecated Switch to using SoyJavaScriptSourceFunction. It has the ability to depend on {@code
+ *     goog.module} symbols and is a safer, more typesafe API.
  */
+@Deprecated
 public interface SoyJsSrcFunction extends SoyFunction {
 
   /**

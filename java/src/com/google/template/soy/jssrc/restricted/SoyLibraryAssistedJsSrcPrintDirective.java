@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableSet;
  *
  * <p>Important: This may only be used in implementing print directive plugins.
  *
+ * @deprecated Use Soy functions instead
  */
+@Deprecated
 public interface SoyLibraryAssistedJsSrcPrintDirective extends SoyJsSrcPrintDirective {
 
   /**

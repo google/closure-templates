@@ -21,7 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** A soy function that carries type information. */
+/**
+ * A soy function that carries type information.
+ *
+ * <p>New functions should use {@code SoyJavaSourceFunction} and/or {@code
+ * SoyJavaScriptSourceFunction} instead of this.
+ */
 public abstract class TypedSoyFunction implements SoyFunction {
 
   @Override
