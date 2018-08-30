@@ -121,7 +121,7 @@ public final class BytecodeCompiler {
               @Override
               public List<ClassData> getResult() {
                 logger.log(
-                    Level.INFO,
+                    Level.FINE,
                     "Compilation took {0}\n"
                         + "     templates: {1}\n"
                         + "       classes: {2}\n"
@@ -147,7 +147,7 @@ public final class BytecodeCompiler {
             compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(classes));
     stopwatch.reset().start();
     templates.loadAll(compilerRegistry.getTemplateNames());
-    logger.log(Level.INFO, "Loaded all classes in {0}", stopwatch);
+    logger.log(Level.FINE, "Loaded all classes in {0}", stopwatch);
     return Optional.of(templates);
   }
 
