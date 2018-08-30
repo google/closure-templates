@@ -39,7 +39,6 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
     HEADER,
   }
 
-  private final SourceLocation nameLocation;
   private final String desc;
 
   /** Whether the param is required. */
@@ -55,11 +54,10 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
       boolean isInjected,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
-    super(name, type);
+    super(name, nameLocation, type);
     this.isRequired = isRequired;
     this.isInjected = isInjected;
     this.desc = desc;
-    this.nameLocation = nameLocation;
   }
 
   TemplateParam(TemplateParam param) {
@@ -67,7 +65,6 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
     this.desc = param.desc;
-    this.nameLocation = param.nameLocation;
   }
 
   @Override
@@ -79,11 +76,6 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
   @Override
   public boolean isInjected() {
     return isInjected;
-  }
-
-  @Override
-  public @Nullable SourceLocation nameLocation() {
-    return nameLocation;
   }
 
   @Override

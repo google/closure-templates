@@ -47,8 +47,10 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
       int id,
       SourceLocation sourceLocation,
       String varName,
+      SourceLocation varNameLocation,
       @Nullable SanitizedContentKind contentKind) {
-    LetContentNode node = new LetContentNode(id, sourceLocation, varName, contentKind);
+    LetContentNode node =
+        new LetContentNode(id, sourceLocation, varName, varNameLocation, contentKind);
     SoyType type =
         (contentKind != null)
             ? SanitizedType.getTypeForContentKind(contentKind)
@@ -67,9 +69,10 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
       int id,
       SourceLocation location,
       String varName,
+      SourceLocation varNameLocation,
       @Nullable CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
-    super(id, location, varName);
+    super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
 
     if (kindAttr != null && !kindAttr.hasName("kind")) {
@@ -85,8 +88,12 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   }
 
   private LetContentNode(
-      int id, SourceLocation location, String varName, @Nullable SanitizedContentKind contentKind) {
-    super(id, location, varName);
+      int id,
+      SourceLocation location,
+      String varName,
+      SourceLocation varNameLocation,
+      @Nullable SanitizedContentKind contentKind) {
+    super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
     this.contentKind = contentKind;
   }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 
@@ -26,12 +27,12 @@ import com.google.template.soy.types.UnknownType;
 public final class InjectedParam extends AbstractVarDefn {
 
   /** @param name The variable name. */
-  public InjectedParam(String name) {
-    this(name, UnknownType.getInstance());
+  public InjectedParam(String name, SourceLocation nameLocation) {
+    this(name, nameLocation, UnknownType.getInstance());
   }
 
-  public InjectedParam(String name, SoyType type) {
-    super(name, type);
+  public InjectedParam(String name, SourceLocation nameLocation, SoyType type) {
+    super(name, nameLocation, type);
   }
 
   @Override

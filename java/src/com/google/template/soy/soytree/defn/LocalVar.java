@@ -18,6 +18,7 @@ package com.google.template.soy.soytree.defn;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.types.SoyType;
 
@@ -27,6 +28,15 @@ import com.google.template.soy.types.SoyType;
  */
 public class LocalVar extends AbstractVarDefn {
 
+  /**
+   * {@link VarDen#name()} expects the name without the dollar sign, but LocalVar names are declared
+   * with the dollar sign.
+   */
+  private static String checkAndFixName(String name) {
+    checkArgument(name.charAt(0) == '$');
+    return name.substring(1);
+  }
+
   private final LocalVarNode declaringNode;
 
   /**
@@ -34,8 +44,9 @@ public class LocalVar extends AbstractVarDefn {
    * @param declaringNode The statement in which this variable is defined.
    * @param type The data type of the variable.
    */
-  public LocalVar(String name, LocalVarNode declaringNode, SoyType type) {
-    super(name, type);
+  public LocalVar(
+      String name, SourceLocation nameLocation, LocalVarNode declaringNode, SoyType type) {
+    super(checkAndFixName(name), nameLocation, type);
     this.declaringNode = declaringNode;
   }
 

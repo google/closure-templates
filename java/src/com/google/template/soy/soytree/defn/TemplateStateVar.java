@@ -31,7 +31,6 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
-  private final SourceLocation nameLocation;
   private final String desc;
   @Nullable private final TypeNode typeNode;
   private final ExprRootNode initialValue;
@@ -43,10 +42,9 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
       ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
-    super(name, type);
+    super(name, nameLocation, type);
     this.typeNode = typeNode;
     this.desc = desc;
-    this.nameLocation = nameLocation;
     this.initialValue = new ExprRootNode(initialValue);
   }
 
@@ -54,7 +52,6 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     super(stateVar);
     this.typeNode = stateVar.typeNode;
     this.desc = stateVar.desc;
-    this.nameLocation = stateVar.nameLocation;
     this.initialValue = stateVar.initialValue;
   }
 
@@ -82,11 +79,6 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     } else {
       throw new IllegalStateException("type has already been set.");
     }
-  }
-
-  @Override
-  public @Nullable SourceLocation nameLocation() {
-    return nameLocation;
   }
 
   @Override

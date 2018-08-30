@@ -16,9 +16,12 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /**
  * Implementation of common features of {@link VarDefn}.
@@ -29,6 +32,8 @@ abstract class AbstractVarDefn implements VarDefn {
   /** The name of the value. */
   private final String name;
 
+  @Nullable private final SourceLocation nameLocation;
+
   /** The data type of the value. */
   protected SoyType type;
 
@@ -38,14 +43,15 @@ abstract class AbstractVarDefn implements VarDefn {
    * @param name The name of the value.
    * @param type The data type of the value.
    */
-  public AbstractVarDefn(String name, SoyType type) {
-    Preconditions.checkArgument(name != null);
-    this.name = name;
+  public AbstractVarDefn(String name, @Nullable SourceLocation nameLocation, SoyType type) {
+    this.name = checkNotNull(name);
+    this.nameLocation = nameLocation;
     this.type = type;
   }
 
   protected AbstractVarDefn(AbstractVarDefn var) {
     this.name = var.name;
+    this.nameLocation = var.nameLocation;
     this.type = var.type;
     this.localVariableIndex = var.localVariableIndex;
   }
@@ -53,6 +59,11 @@ abstract class AbstractVarDefn implements VarDefn {
   @Override
   public String name() {
     return name;
+  }
+
+  @Override
+  public SourceLocation nameLocation() {
+    return nameLocation;
   }
 
   @Override

@@ -47,8 +47,8 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
    * @param location The node's source location
    * @param expr The loop collection expression
    */
-  public ForNode(int id, SourceLocation location, String commandName, ExprNode expr) {
-    super(id, location, commandName);
+  public ForNode(int id, SourceLocation location, ExprNode expr) {
+    super(id, location, "for");
     this.expr = new ExprRootNode(expr);
   }
 

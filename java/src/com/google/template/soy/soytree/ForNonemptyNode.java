@@ -39,9 +39,10 @@ public final class ForNonemptyNode extends AbstractBlockNode
    * @param location The node's source location.
    * @param varName The variable name of the loop index variable.
    */
-  public ForNonemptyNode(int id, SourceLocation location, String varName) {
-    super(id, location);
-    this.var = new LoopVar(varName, this, null);
+  public ForNonemptyNode(int id, String varName, SourceLocation varNameLocation) {
+    // TODO(lukes): this is a weird location for this node.  Not sure what would be better
+    super(id, varNameLocation);
+    this.var = new LoopVar(varName, varNameLocation, this, null);
   }
 
   /**

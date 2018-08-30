@@ -387,7 +387,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
       if (varRef.isDollarSignIjParameter()) {
         InjectedParam ijParam = ijParams.get(varRef.getName());
         if (ijParam == null) {
-          ijParam = new InjectedParam(varRef.getName());
+          ijParam = new InjectedParam(varRef.getName(), varRef.getSourceLocation());
           ijParams.put(varRef.getName(), ijParam);
         }
         varRef.setDefn(ijParam);
@@ -397,7 +397,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
       if (varDefn == null) {
         // this case is mostly about supporting v1 templates.  Undeclared vars for v2 templates are
         // flagged as errors in the CheckTemplateParamsPass
-        varDefn = new UndeclaredVar(varRef.getName());
+        varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
       }
       varRef.setDefn(varDefn);
     }

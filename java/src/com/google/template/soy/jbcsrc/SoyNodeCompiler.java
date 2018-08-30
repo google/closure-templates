@@ -1122,7 +1122,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               ExtraCodeCompiler prefix,
               ExtraCodeCompiler suffix) {
             LetContentNode fakeLet =
-                LetContentNode.forVariable(/*id=*/ -1, node.getSourceLocation(), phname, null);
+                LetContentNode.forVariable(
+                    /*id=*/ -1,
+                    node.getSourceLocation(),
+                    "$" + phname,
+                    node.getSourceLocation(),
+                    null);
             // copy the node so we don't end up removing it from the parent as a side effect.
             fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
             return lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname, prefix, suffix);

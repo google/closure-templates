@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -40,9 +41,13 @@ public abstract class LetNode extends AbstractCommandNode
    * @param sourceLocation The node's source location.
    * @param localVarName The let variable name.
    */
-  protected LetNode(int id, SourceLocation sourceLocation, String localVarName) {
+  protected LetNode(
+      int id,
+      SourceLocation sourceLocation,
+      String localVarName,
+      SourceLocation localVaNameLocation) {
     super(id, sourceLocation, "let");
-    this.var = new LocalVar(localVarName, this, /* type= */ null);
+    this.var = new LocalVar(localVarName, localVaNameLocation, this, /* type= */ null);
   }
 
   /**

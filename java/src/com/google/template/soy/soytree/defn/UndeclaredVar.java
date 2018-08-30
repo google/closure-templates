@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.UnknownType;
 
 /**
@@ -25,8 +26,8 @@ import com.google.template.soy.types.UnknownType;
 public final class UndeclaredVar extends AbstractVarDefn {
 
   /** @param name The variable name. */
-  public UndeclaredVar(String name) {
-    super(name, UnknownType.getInstance());
+  public UndeclaredVar(String name, SourceLocation nameLocation) {
+    super(name, nameLocation, UnknownType.getInstance());
   }
 
   private UndeclaredVar(UndeclaredVar var) {

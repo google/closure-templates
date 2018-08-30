@@ -16,7 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /**
  * Interface for the definition of a variable, i.e. a value that can be referred to by name.
@@ -43,8 +45,16 @@ public interface VarDefn {
   /** What kind of variable this is (param, local var, etc). */
   Kind kind();
 
-  /** The name of this variable. */
+  /**
+   * The name of this variable.
+   *
+   * <p><em>Not including the {@code $}.</em>
+   */
   String name();
+
+  /** The source location of the variable name. */
+  @Nullable
+  SourceLocation nameLocation();
 
   /** Returns the data type of this variable. */
   SoyType type();

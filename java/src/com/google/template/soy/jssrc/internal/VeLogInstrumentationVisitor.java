@@ -142,10 +142,14 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         // Otherwise wrap the print node or call node into a let block, and use the let variable
         // as a function argument.
-        String varName = "soy_logging_function_attribute_" + node.getId();
+        String varName = "$soy_logging_function_attribute_" + node.getId();
         LetContentNode letNode =
             LetContentNode.forVariable(
-                nodeIdGen.genId(), attributeName.getSourceLocation(), varName, null);
+                nodeIdGen.genId(),
+                attributeName.getSourceLocation(),
+                varName,
+                attributeName.getSourceLocation(),
+                null);
         // Adds a let var which references to the original attribute name, and move the name to
         // the let block.
         node.replaceChild(
@@ -154,12 +158,14 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 nodeIdGen.genId(),
                 insertionLocation,
                 /* isImplicit= */ true,
-                /* expr= */ new VarRefNode(varName, insertionLocation, false, letNode.getVar()),
+                /* expr= */ new VarRefNode(
+                    letNode.getVar().name(), insertionLocation, false, letNode.getVar()),
                 /* attributes= */ ImmutableList.of(),
                 ErrorReporter.exploding()));
         letNode.addChild(attributeName);
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
-        funcNode.addChild(new VarRefNode(varName, insertionLocation, false, letNode.getVar()));
+        funcNode.addChild(
+            new VarRefNode(letNode.getVar().name(), insertionLocation, false, letNode.getVar()));
       }
       PrintNode loggingFunctionAttribute =
           new PrintNode(

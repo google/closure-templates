@@ -2550,8 +2550,7 @@ private LogNode CssStmt() :
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin, tagEnd;
-  VarRefNode letVar = null;
+  Token tagBegin, tagEnd, nameTok = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
@@ -2560,10 +2559,11 @@ private LetNode LetStmt() :
   tagBegin = <CMD_BEGIN_LET>
 
   try {
-    letVar = VarRef()
+    nameTok = <DOLLAR_IDENT>
   } catch (ParseException e) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    return new LetValueNode(-1, createSrcLoc(tagBegin, tagEnd), "error", errorExpr(tagBegin));
+    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
+    return new LetValueNode(-1, loc, "$error", loc, errorExpr(tagBegin));
   }
 
   (
@@ -2583,7 +2583,8 @@ private LetNode LetStmt() :
       return new LetValueNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagEnd),
-          letVar.getName(),
+          nameTok.image,
+          createSrcLoc(nameTok),
           valueExpr);
     }
   |
@@ -2603,7 +2604,8 @@ private LetNode LetStmt() :
           new LetContentNode(
               nodeIdGen.genId(),
               createSrcLoc(tagBegin, tagEnd),
-              letVar.getName(),
+              nameTok.image,
+              createSrcLoc(nameTok),
               attr,
               errorReporter);
       node.addChildren(templateBlock);
@@ -2806,15 +2808,20 @@ private SwitchNode SwitchStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagEnd, in, ifemptyTag;
-  VarRefNode var = null;
+  Token tagBegin, tagEnd, in, ifemptyTag, nameTok;
   ExprNode expr = null;
+  String name = null;
+  SourceLocation nameLocation = null;
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_FOR>
   try {
-    var = VarRef()
+    nameTok = <DOLLAR_IDENT>
+    {
+        name = nameTok.image;
+        nameLocation = createSrcLoc(nameTok);
+    }
     in = Keyword("in")
     expr = Expr()
 
@@ -2822,8 +2829,9 @@ private ForNode ForStmt() :
   } catch (ParseException e) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
 
-    if (var == null) {
-      var = errorExpr(tagBegin);
+    if (name == null) {
+      name = "$error";
+      nameLocation = createSrcLoc(tagBegin);
     }
     if (expr == null) {
       expr = errorExpr(tagBegin);
@@ -2835,10 +2843,12 @@ private ForNode ForStmt() :
         new ForNode(
             nodeIdGen.genId(),
             createSrcLoc(tagBegin, tagEnd),
-            tagBegin.kind == CMD_BEGIN_FOREACH ? "foreach": "for",
             expr);
     ForNonemptyNode nonEmpty =
-        new ForNonemptyNode(nodeIdGen.genId(), var.getSourceLocation(), var.getName());
+        new ForNonemptyNode(
+            nodeIdGen.genId(),
+            name,
+            nameLocation);
     forNode.addChild(nonEmpty);
   }
 

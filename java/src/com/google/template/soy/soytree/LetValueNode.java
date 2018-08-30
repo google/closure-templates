@@ -34,8 +34,13 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;
 
-  public LetValueNode(int id, SourceLocation location, String varName, ExprNode expr) {
-    super(id, location, varName);
+  public LetValueNode(
+      int id,
+      SourceLocation location,
+      String varName,
+      SourceLocation varNameLocation,
+      ExprNode expr) {
+    super(id, location, varName, varNameLocation);
     this.valueExpr = new ExprRootNode(expr);
   }
 

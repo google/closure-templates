@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.types.SoyType;
 
@@ -36,8 +37,9 @@ public class LoopVar extends LocalVar {
    * @param declaringNode The statement in which this variable is defined.
    * @param type The data type of the variable.
    */
-  public LoopVar(String name, LocalVarNode declaringNode, SoyType type) {
-    super(name, declaringNode, type);
+  public LoopVar(
+      String name, SourceLocation nameLocation, LocalVarNode declaringNode, SoyType type) {
+    super(name, nameLocation, declaringNode, type);
   }
 
   /** Copy constructor for when the declaring node is being cloned. */
