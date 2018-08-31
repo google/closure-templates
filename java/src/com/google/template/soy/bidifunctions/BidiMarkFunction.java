@@ -17,15 +17,16 @@
 package com.google.template.soy.bidifunctions;
 
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
+import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
+import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -41,7 +42,7 @@ import java.util.List;
  */
 @SoyFunctionSignature(name = "bidiMark", value = @Signature(returnType = "string"))
 final class BidiMarkFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   /** Supplier for the current bidi global directionality. */
   private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
@@ -64,21 +65,9 @@ final class BidiMarkFunction extends TypedSoyFunction
   }
 
   @Override
-  public JsExpr computeForJsSrc(List<JsExpr> args) {
-    BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
-    if (bidiGlobalDir.isStaticValue()) {
-      return new JsExpr(
-          (bidiGlobalDir.getStaticValue() < 0) ? "'\\u200F'" /*RLM*/ : "'\\u200E'" /*LRM*/,
-          Integer.MAX_VALUE);
-    }
-    return new JsExpr(
-        "(" + bidiGlobalDir.getCodeSnippet() + ") < 0 ? '\\u200F' : '\\u200E'",
-        Operator.CONDITIONAL.getPrecedence());
-  }
-
-  @Override
-  public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.copyOf(bidiGlobalDirProvider.get().getNamespace().asSet());
+  public JavaScriptValue applyForJavaScriptSource(
+      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
+    return factory.callNamespaceFunction("soy", "soy.$$bidiMark", context.getBidiDir());
   }
 
   @Override
