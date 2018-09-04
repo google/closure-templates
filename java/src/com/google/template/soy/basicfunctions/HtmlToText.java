@@ -17,6 +17,12 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Preconditions;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.UnsanitizedString;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,7 +49,15 @@ public final class HtmlToText {
   private static final Pattern TRAILING_NON_NEWLINE = Pattern.compile("[^\n]\\z");
   private static final Pattern LEADING_SPACE = Pattern.compile("^ ");
 
-  public static String convert(String html) {
+  public static String convert(SoyValue value) {
+    if (value == null || value instanceof NullData) {
+      return "";
+    }
+    if (!(value instanceof SanitizedContent) || value instanceof UnsanitizedString) {
+      return value.stringValue();
+    }
+    Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);
+    String html = value.stringValue();
     StringBuilder text = new StringBuilder();
     int start = 0;
     String removingUntil = "";

@@ -25433,10 +25433,18 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
 /**
  * Converts HTML to plain text by removing tags, normalizing spaces and
  * converting entities.
- * @param {string} html
+ * TODO(tomnguyen): Support IdomFunction in value.
+ * @param {string|?goog.soy.data.SanitizedHtml} value
  * @return {string}
  */
-soy.$$htmlToText = function(html) {
+soy.$$htmlToText = function(value) {
+  if (value == null) {
+    return '';
+  }
+  if (!soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
+    return goog.asserts.assertString(value);
+  }
+  var html = value.toString();
   var text = '';
   var start = 0;
   // Tag name to stop removing contents, e.g. '/script'.

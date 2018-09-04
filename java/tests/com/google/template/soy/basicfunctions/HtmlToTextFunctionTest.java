@@ -38,6 +38,7 @@ public final class HtmlToTextFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(htmlToTextFunction);
     SoyValue html = SanitizedContents.constantHtml(HTML);
     assertThat(tester.callFunction(html)).isEqualTo(TEXT);
+    assertThat(tester.callFunction(TEXT)).isEqualTo(TEXT);
   }
 
   @Test
@@ -45,6 +46,6 @@ public final class HtmlToTextFunctionTest {
     HtmlToTextFunction htmlToTextFunction = new HtmlToTextFunction();
     PyExpr expr = new PyExpr("PY_CODE", Integer.MAX_VALUE);
     assertThat(htmlToTextFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("sanitize.html_to_text(str(PY_CODE))", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("sanitize.html_to_text(PY_CODE)", Integer.MAX_VALUE));
   }
 }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -42,7 +43,7 @@ import java.util.List;
     name = "htmlToText",
     value =
         @Signature(
-            parameterTypes = {"html"},
+            parameterTypes = {"html|string|null"},
             returnType = "string"))
 final class HtmlToTextFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
@@ -50,19 +51,19 @@ final class HtmlToTextFunction extends TypedSoyFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction("soy", "soy.$$htmlToText", args.get(0).coerceToString());
+    return factory.callNamespaceFunction("soy", "soy.$$htmlToText", args.get(0));
   }
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
-    return new PyExpr("sanitize.html_to_text(str(" + arg.getText() + "))", Integer.MAX_VALUE);
+    return new PyExpr("sanitize.html_to_text(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
   // Lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
     static final Method HTML_TO_TEXT =
-        JavaValueFactory.createMethod(HtmlToText.class, "convert", String.class);
+        JavaValueFactory.createMethod(HtmlToText.class, "convert", SoyValue.class);
   }
 
   @Override
