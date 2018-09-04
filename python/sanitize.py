@@ -129,15 +129,18 @@ _TRAILING_NON_NEWLINE_RE = re.compile(r'[^\n]\Z')
 _LEADING_SPACE_RE = re.compile(r'^ ')
 
 
-def html_to_text(html):
+def html_to_text(value):
   """Converts HTML to plain text.
 
   Args:
-    html: HTML.
+    value: HTML.
 
   Returns:
     Plain text.
   """
+  html = str(value)
+  if not isinstance(value, SanitizedHtml):
+    return html
   text = ''
   start = 0
   removing_until = ''
