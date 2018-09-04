@@ -31,6 +31,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.operation;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
+import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
@@ -41,7 +42,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANS
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
-import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 
 import com.google.common.base.Joiner;
@@ -49,6 +49,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -330,6 +331,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitDataAccessNode(DataAccessNode node) {
     return visitNullSafeNode(node).result(codeGenerator);
+  }
+
+  /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
+  protected Expression sanitizedContentToProtoConverterFunction(Descriptor messageType) {
+    return JS_TO_PROTO_PACK_FN.get(messageType.getFullName());
   }
 
   /** See {@link NullSafeAccumulator} for discussion. */

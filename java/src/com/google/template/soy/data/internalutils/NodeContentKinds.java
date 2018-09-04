@@ -132,29 +132,6 @@ public final class NodeContentKinds {
               "soydata.unpackProtoToSanitizedTrustedResourceUri")
           .build();
 
-  /** The JavaScript method to pack a sanitized object into a safe proto. */
-  private static final ImmutableMap<String, String> JS_TO_PROTO_PACK_FN =
-      ImmutableMap.<String, String>builder()
-          .put(
-              SafeHtmlProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedHtmlToProtoSoyRuntimeOnly")
-          .put(
-              SafeScriptProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedJsToProtoSoyRuntimeOnly")
-          .put(
-              SafeUrlProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedUriToProtoSoyRuntimeOnly")
-          .put(
-              SafeStyleProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly")
-          .put(
-              SafeStyleSheetProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly")
-          .put(
-              TrustedResourceUrlProto.getDescriptor().getFullName(),
-              "soydata.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly")
-          .build();
-
   /** The Python sanitized classes. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_PY_SANITIZED_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
@@ -245,11 +222,6 @@ public final class NodeContentKinds {
       return "soydata";
     }
     return "soydata.VERY_UNSAFE";
-  }
-
-  /** Returns the pack function for converting SanitizedContent objects to safe protos. */
-  public static String toJsPackFunction(Descriptor protoDescriptor) {
-    return Preconditions.checkNotNull(JS_TO_PROTO_PACK_FN.get(protoDescriptor.getFullName()));
   }
 
   /** Returns the unpack function for converting safe protos to JS SanitizedContent. */
