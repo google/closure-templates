@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -41,11 +42,14 @@ import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -77,12 +81,17 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyErrorKind.of(
           "Unexpected HTML close tag. Within an if or switch block, "
               + "all branches must end with unmatched open tags or unmatched close tags.");
+
   private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
       SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
   private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
       SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
+
+  private static final SoyErrorKind STATEFUL_TEMPLATE_EXACTLY_ONE_TAG =
+      SoyErrorKind.of(
+          "Stateful templates must contain exactly one top-level HTML element (e.g, span, div).");
 
   private final ErrorReporter errorReporter;
 
@@ -151,8 +160,8 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     private boolean inForeignContent = false;
 
     /**
-     * A map that records the tag matching process. The keys are open tags, and the values are the
-     * close tags that actually match the corresponding open tags.
+     * A map that records the tag matching process. The keys are close tags, and the values are the
+     * open tags that actually match the corresponding close tags.
      */
     // TODO(user): Change this to a multimap and use it for improving error messages.
     private final Map<HtmlCloseTagNode, HtmlOpenTagNode> tagMatches = new IdentityHashMap<>();
@@ -329,7 +338,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
     @Override
     protected void visitVeLogNode(VeLogNode node) {
-      // {velog} must contains at least one child.
+      // {velog} must contain at least one child.
       if (node.numChildren() == 0) {
         errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
         return;
@@ -358,7 +367,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         }
       }
       visitBlockChildren(node, /* inControlBlock= */ false);
-      // After visiting all the children, we should have alreday built the map.
+      // After visiting all the children, we should have already built the map.
       // At this point, we check the map and verify that the first child is actually popped by the
       // last child. Otherwise, report an error.
       if (lastTag != null) {
@@ -382,8 +391,63 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       if (errorReporter.errorsSince(checkpoint)) {
         return;
       }
+
       // Match the tags in the deques.
       HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
+
+      if (node.isStatefulTemplate()) {
+        validateStatefulTemplateHasOneRootTagNode(node);
+      }
+    }
+
+    private void validateStatefulTemplateHasOneRootTagNode(TemplateNode node) {
+      class HtmlOrControlNode implements Predicate<SoyNode> {
+        @Override
+        public boolean apply(SoyNode node) {
+          ImmutableList<Kind> validKinds =
+              ImmutableList.of(Kind.HTML_COMMENT_NODE, Kind.LET_CONTENT_NODE, Kind.LET_VALUE_NODE);
+          return !validKinds.contains(node.getKind())
+              // Skip empty raw text nodes. They will be later be stripped out as part
+              // of {@link CombineConsecutiveRawTextNodesPass}.
+              && !(node instanceof RawTextNode && ((RawTextNode) node).isEmpty());
+        }
+      }
+
+      SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
+      SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      if (firstNode == null || lastNode == null) {
+        errorReporter.report(node.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        return;
+      }
+
+      HtmlOpenTagNode firstNodeAsOpenTag =
+          (HtmlOpenTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(firstNode, /* openTag= */ true);
+      HtmlCloseTagNode lastNodeAsCloseTag =
+          (HtmlCloseTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(lastNode, /* openTag= */ false);
+      boolean firstTagIsSelfClosing =
+          firstNodeAsOpenTag != null
+              && firstNodeAsOpenTag.isSelfClosing()
+              && firstNodeAsOpenTag.getTagName().isDefinitelyVoid();
+      if (firstTagIsSelfClosing) {
+        if (!firstNode.equals(lastNode)) {
+          // First node is self-closing, but there is another element after the self-closing node.
+          errorReporter.report(lastNode.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        }
+      } else if (firstNodeAsOpenTag == null || lastNodeAsCloseTag == null) {
+        // Either the first or last node is not an HTML tag.
+        SoyNode nodeToReport = firstNodeAsOpenTag == null ? firstNode : lastNode;
+        errorReporter.report(nodeToReport.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        return;
+      }
+
+      if (tagMatches.get(lastNodeAsCloseTag) != null
+          && !tagMatches.get(lastNodeAsCloseTag).equals(firstNodeAsOpenTag)) {
+        // The last close tag does not match the first open tag, i.e. there are multiple root
+        // HTML tag elements.
+        errorReporter.report(
+            tagMatches.get(lastNodeAsCloseTag).getSourceLocation(),
+            STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+      }
     }
 
     @Override

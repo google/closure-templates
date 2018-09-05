@@ -98,10 +98,12 @@ public final class ResolveExpressionTypesPassTest {
                     "{@state pb:= [1,2,3]}",
                     "{@state pc: bool|null = null}",
                     "{@state pd: list<int>|null = null}",
+                    "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
                     "{assertType('bool|null', $pc)}",
-                    "{assertType('list<int>|null', $pd)}"))
+                    "{assertType('list<int>|null', $pd)}",
+                    "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .enableExperimentalFeatures(ImmutableList.of("state_vars"))
             .parse()
@@ -129,9 +131,11 @@ public final class ResolveExpressionTypesPassTest {
                     "{@state pa:= true}",
                     "{@state pb:= [1,2,3]}",
                     "{@state proto:= example.ExampleExtendable()}",
+                    "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
-                    "{assertType('example.ExampleExtendable', $proto)}"))
+                    "{assertType('example.ExampleExtendable', $proto)}",
+                    "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .enableExperimentalFeatures(ImmutableList.of("state_vars"))
             .typeRegistry(typeRegistry)

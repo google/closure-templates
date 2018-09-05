@@ -463,13 +463,14 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testStateNodeNumber() {
-    assertThatTemplateBody("{@state foo: number= 1}", "{$foo}").rendersAs("1");
-    assertThatTemplateBody("{@state foo:= 1}", "{$foo}").rendersAs("1");
+    assertThatTemplateBody("{@state foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
+    assertThatTemplateBody("{@state foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
   }
 
   @Test
   public void testStateNodeBoolean() {
-    assertThatTemplateBody("{@state foo:= 1}", "{if $foo}1{else}0{/if}").rendersAs("1");
+    assertThatTemplateBody("{@state foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
+        .rendersAs("<p>1</p>");
   }
 
   @Test

@@ -153,6 +153,9 @@ public final class PassManager {
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));
     }
+    // Needs to run after HtmlRewritePass.
+    singleFilePassesBuilder.add(new StatefulTemplatePass(errorReporter));
+
     this.singleFilePasses = singleFilePassesBuilder.build();
 
     // Cross template checking passes

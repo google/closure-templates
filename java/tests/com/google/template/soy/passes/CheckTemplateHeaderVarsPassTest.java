@@ -336,7 +336,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   @Test
   public void testUndeclaredStateVar() {
     String stateVarDecl = "{@state foo:= 1}";
-    String templateBody = "{$boo}";
+    String templateBody = "<div>{$boo}</div>";
     ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
@@ -346,7 +346,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   @Test
   public void testUnusedStateVar() {
     String stateVarDecl = "{@state foo:= 2}";
-    String templateBody = "Hello";
+    String templateBody = "<b>Hello</b>";
     ImmutableList<SoyError> errors = soyErrorsForTemplate(stateVarDecl, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
         .isEqualTo("State var 'foo' unused in template body.");
