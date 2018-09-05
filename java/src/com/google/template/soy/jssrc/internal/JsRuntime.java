@@ -18,6 +18,13 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
@@ -128,6 +135,37 @@ public final class JsRuntime {
   /** A constant for the template parameter {@code opt_ijData}. */
   public static final Expression OPT_IJ_DATA = id("opt_ijData");
 
+  /** The JavaScript method to pack a sanitized object into a safe proto. */
+  public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
+      ImmutableMap.<String, Expression>builder()
+          .put(
+              SafeScriptProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedJsToProtoSoyRuntimeOnly").reference())
+          .put(
+              SafeUrlProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedUriToProtoSoyRuntimeOnly").reference())
+          .put(
+              SafeStyleProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly")
+                  .reference())
+          .put(
+              SafeStyleSheetProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly")
+                  .reference())
+          .put(
+              TrustedResourceUrlProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly")
+                  .reference())
+          .build();
+
+  public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN =
+      ImmutableMap.<String, Expression>builder()
+          .put(
+              SafeHtmlProto.getDescriptor().getFullName(),
+              GoogRequire.create("soydata.packSanitizedHtmlToProtoSoyRuntimeOnly").reference())
+          .putAll(JS_TO_PROTO_PACK_FN_BASE)
+          .build();
+
   /** Returns the field containing the extension object for the given field descriptor. */
   public static Expression extensionField(FieldDescriptor desc) {
     String jsExtensionImport = ProtoUtils.getJsExtensionImport(desc);
@@ -138,11 +176,6 @@ public final class JsRuntime {
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static Expression protoToSanitizedContentConverterFunction(Descriptor messageType) {
     return GoogRequire.create(NodeContentKinds.toJsUnpackFunction(messageType)).reference();
-  }
-
-  /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
-  public static Expression sanitizedContentToProtoConverterFunction(Descriptor messageType) {
-    return GoogRequire.create(NodeContentKinds.toJsPackFunction(messageType)).reference();
   }
 
   /**
