@@ -88,10 +88,10 @@ public enum HtmlContext {
   JS(EscapingMode.ESCAPE_JS_VALUE),
 
   /** In JavaScript inside a line comment. */
-  JS_LINE_COMMENT("JS comments cannot contain dynamic values."),
+  JS_LINE_COMMENT(EscapingMode.ESCAPE_JS_STRING),
 
   /** In JavaScript inside a block comment. */
-  JS_BLOCK_COMMENT("JS comments cannot contain dynamic values."),
+  JS_BLOCK_COMMENT(EscapingMode.ESCAPE_JS_STRING),
 
   /** In JavaScript inside a double quoted string. */
   JS_DQ_STRING(EscapingMode.ESCAPE_JS_STRING),

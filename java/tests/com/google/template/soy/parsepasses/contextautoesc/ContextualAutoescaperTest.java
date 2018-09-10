@@ -510,7 +510,9 @@ public final class ContextualAutoescaperTest {
             "bar(\"{$b |escapeJsString}\"); ",
             "baz(\'{$c |escapeJsString}\'); ",
             "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
-            " : /{$f |escapeJsRegex}/);",
+            " : /{$f |escapeJsRegex}/); ",
+            "/* {$a |escapeJsString} */ ",
+            "// {$a |escapeJsString}",
             "</script>\n",
             "{/template}"),
         join(
@@ -527,21 +529,9 @@ public final class ContextualAutoescaperTest {
             "bar(\"{$b}\");\n",
             "baz(\'{$c}\');\n",
             "boo(/{$d}/.test(s) ? 1 / {$e} : /{$f}/);\n",
+            "/{nil}* {$a} */\n",
+            "/{nil}/ {$a}\n",
             "</script>\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testPrintInsideJsCommentRejected() throws Exception {
-    assertRewriteFails(
-        "JS comments cannot contain dynamic values.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            // NOTE: Lack of whitespace before "//" makes sure it's not interpreted as a Soy
-            // comment.
-            "<script>// {$x}</script>\n",
             "{/template}"));
   }
 
