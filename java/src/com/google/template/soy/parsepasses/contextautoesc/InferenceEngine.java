@@ -182,9 +182,6 @@ final class InferenceEngine {
   /** Receives modifications and typing inferences. */
   private final Inferences inferences;
 
-  /** The escaping mode to assume when none is specified. */
-  private final EscapingMode defaultEscapingMode;
-
   /** For reporting errors. */
   private final ErrorReporter errorReporter;
 
@@ -196,7 +193,6 @@ final class InferenceEngine {
     this.autoescapeMode = autoescapeMode;
     this.templateAutoescapeMode = templateAutoescapeMode;
     this.inferences = inferences;
-    this.defaultEscapingMode = EscapingMode.ESCAPE_HTML;
     this.errorReporter = errorReporter;
   }
 
@@ -273,42 +269,33 @@ final class InferenceEngine {
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       checkUriEnd();
 
-      if (autoescapeMode == AutoescapeMode.STRICT || autoescapeMode == AutoescapeMode.CONTEXTUAL) {
-        // (1) Determine the escaping we should do on the node itself, and the context we should
-        // parse the children in.
-        Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy(node);
-        if (!maybeStrategy.isPresent()) {
-          throw SoyAutoescapeException.createWithNode(
-              "Messages are not supported in this context, because it would mean asking "
-                  + "translators to write source code; if this is desired, try factoring the "
-                  + "message into a {let} block: "
-                  + context,
-              node);
-        }
-        Context.MsgEscapingStrategy strategy = maybeStrategy.get();
-        inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
+      // (1) Determine the escaping we should do on the node itself, and the context we should
+      // parse the children in.
+      Optional<Context.MsgEscapingStrategy> maybeStrategy = context.getMsgEscapingStrategy(node);
+      if (!maybeStrategy.isPresent()) {
+        throw SoyAutoescapeException.createWithNode(
+            "Messages are not supported in this context, because it would mean asking "
+                + "translators to write source code; if this is desired, try factoring the "
+                + "message into a {let} block: "
+                + context,
+            node);
+      }
+      Context.MsgEscapingStrategy strategy = maybeStrategy.get();
+      inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
 
-        // (2) Run the inference engine on the parts of the message in that context.
-        Context msgEndContext =
-            new InferenceEngine(
-                    autoescapeMode,
-                    templateAutoescapeMode,
-                    inferences,
-                    errorReporter)
-                .inferChildren(node, strategy.childContext);
+      // (2) Run the inference engine on the parts of the message in that context.
+      Context msgEndContext =
+          new InferenceEngine(autoescapeMode, templateAutoescapeMode, inferences, errorReporter)
+              .inferChildren(node, strategy.childContext);
 
-        // (3) Make sure the message didn't itself change context.
-        if (!msgEndContext.equals(strategy.childContext)) {
-          throw SoyAutoescapeException.createWithNode(
-              "Message text should not alter the escaping context. "
-                  + context
-                  + " != "
-                  + strategy.childContext,
-              node);
-        }
-      } else {
-        // In a non-contextual mode, we just descend into the children.
-        visitChildren(node);
+      // (3) Make sure the message didn't itself change context.
+      if (!msgEndContext.equals(strategy.childContext)) {
+        throw SoyAutoescapeException.createWithNode(
+            "Message text should not alter the escaping context. "
+                + context
+                + " != "
+                + strategy.childContext,
+            node);
       }
     }
 
@@ -363,12 +350,6 @@ final class InferenceEngine {
         case STRICT:
           // The CheckEscapingSanityVisitor ensures that node.getContentKind is non-null
           inferInStrictMode(node);
-          break;
-        case NONCONTEXTUAL:
-          // do nothing.  If the let content nodes with a {@code kind} attribute is in
-          // non-contextual template it is handled by another visitor:
-          // ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor called from
-          // ContextualAutoescaper.
           break;
       }
     }
@@ -488,17 +469,9 @@ final class InferenceEngine {
         // The inferences set below specify which nodes to change. In the non-contextual modes,
         // we leave escapingModesToSet null since no changes are to be made to this print node.
         List<EscapingMode> escapingModesToSet = null;
-        switch (autoescapeMode) {
-          case STRICT:
-          case CONTEXTUAL:
-            // Infer one.
-            escapingModes =
-                escapingModesToSet = context.getEscapingModes(printNode, printNode.getChildren());
-            break;
-          case NONCONTEXTUAL:
-            escapingModes = ImmutableList.of(defaultEscapingMode);
-            break;
-        }
+        // Infer one.
+        escapingModes =
+            escapingModesToSet = context.getEscapingModes(printNode, printNode.getChildren());
         inferences.setEscapingDirectives(printNode, prev, escapingModesToSet);
       } else if (!context.isCompatibleWith(escapingModes.get(0))) {
         String msg =
@@ -507,18 +480,7 @@ final class InferenceEngine {
       }
 
       // Figure out the context at the end.
-      if (!escapingModes.isEmpty()
-          || autoescapeMode == AutoescapeMode.CONTEXTUAL
-          || autoescapeMode == AutoescapeMode.STRICT) {
-        // If we know the escaping mode or we're supposed to choose one, then use that.
-        context = context.getContextAfterDynamicValue();
-      } else {
-        // If we are not in an autoescaping template, assume that the author knows what they're
-        // doing and simulate an innocuous value.
-        context =
-            RawTextContextUpdater.processRawText(
-                new RawTextNode(-1, "z", printNode.getSourceLocation()), context);
-      }
+      context = context.getContextAfterDynamicValue();
     }
 
     private void checkUriEnd() {

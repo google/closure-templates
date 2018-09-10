@@ -198,11 +198,9 @@ public final class CommandTagAttribute {
       mode = AutoescapeMode.STRICT; // default for unparsed
       errorReporter.report(
           valueLocation,
-          INVALID_ATTRIBUTE_LIST,
+          INVALID_ATTRIBUTE,
           key.identifier(),
-          ImmutableList.of(
-              AutoescapeMode.CONTEXTUAL.getAttributeValue(),
-              AutoescapeMode.NONCONTEXTUAL.getAttributeValue()));
+          AutoescapeMode.CONTEXTUAL.getAttributeValue());
     }
     return mode;
   }

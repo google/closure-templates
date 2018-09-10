@@ -1519,7 +1519,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (blockKind == null) {
         switch (autoescapeMode) {
           case CONTEXTUAL:
-          case NONCONTEXTUAL:
             blockKind = SanitizedContentKind.HTML;
             break;
           case STRICT:

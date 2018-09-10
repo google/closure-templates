@@ -106,7 +106,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  {call .goo data=\"all\" /}\n"
             + "  {call boo.woo.hoo data=\"all\" /}\n" // not defined in this file
             + "{/template}\n";
@@ -126,6 +126,7 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     List<String> jsFilesContents =
@@ -141,7 +142,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  {call boo.woo.aaa data=\"all\" /}\n"
             + "  {call boo.woo.aaa.bbb data=\"all\" /}\n"
             + "  {call boo.woo.bbb data=\"all\" /}\n"
@@ -163,6 +164,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('boo.woo');\n"
             + "goog.require('boo.woo.aaa');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -179,7 +181,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  {call for.function.aaa data=\"all\" /}\n"
             + "  {noopRequire()}\n"
             + "{/template}\n";
@@ -203,6 +205,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('also.for.function');\n"
             + "goog.require('for.function');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -223,7 +226,7 @@ public final class GenJsCodeVisitorTest {
             + "        aaa.bbb.ccc\"}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  blah\n"
             + "{/template}\n";
 
@@ -255,7 +258,7 @@ public final class GenJsCodeVisitorTest {
             + "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"
-            + "{deltemplate myDelegates.goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{deltemplate myDelegates.goo}\n"
             + "  {delcall myDelegates.soo /}\n"
             + "{/deltemplate}\n";
 
@@ -277,20 +280,21 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo');\n"
             + "\n"
             + "goog.require('soy');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
             + " * @param {Object<string, *>=} opt_data\n"
             + " * @param {Object<string, *>=} opt_ijData\n"
             + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
-            + " * @return {string}\n"
+            + " * @return {!goog.soy.data.SanitizedHtml}\n"
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_ = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-            + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'), "
-            + "'', false)(null, opt_ijData);\n"
+            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn("
+            + "soy.$$getDelTemplateId('myDelegates.soo'), '', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName = "
@@ -311,8 +315,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test delegate template. */\n"
-            + "{deltemplate myDelegates.goo variant=\"'googoo'\""
-            + " autoescape=\"deprecated-noncontextual\"}\n"
+            + "{deltemplate myDelegates.goo variant=\"'googoo'\"}\n"
             + "  {delcall myDelegates.moo variant=\"'moomoo'\" /}\n"
             + "{/deltemplate}\n";
 
@@ -332,20 +335,21 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo');\n"
             + "\n"
             + "goog.require('soy');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
             + "\n"
             + "/**\n"
             + " * @param {Object<string, *>=} opt_data\n"
             + " * @param {Object<string, *>=} opt_ijData\n"
             + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
-            + " * @return {string}\n"
+            + " * @return {!goog.soy.data.SanitizedHtml}\n"
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.__deltemplate__myDelegates_goo_googoo = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-            + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'), "
-            + "'moomoo', false)(null, opt_ijData);\n"
+            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.$$getDelegateFn("
+            + "soy.$$getDelTemplateId('myDelegates.moo'), 'moomoo', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName = "
@@ -779,7 +783,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .goo}\n"
             + "  {xid('some-id')}\n"
             + "{/template}\n";
 
@@ -1242,7 +1246,7 @@ public final class GenJsCodeVisitorTest {
         "{namespace boo.foo}\n"
             + "\n"
             + "/** Test template. */\n"
-            + "{template .goo autoescape=\"deprecated-noncontextual\" visibility=\"private\"}\n"
+            + "{template .goo visibility=\"private\"}\n"
             + "  Blah\n"
             + "{/template}\n";
 
@@ -1252,13 +1256,13 @@ public final class GenJsCodeVisitorTest {
             + " * @param {Object<string, *>=} opt_data\n"
             + " * @param {Object<string, *>=} opt_ijData\n"
             + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
-            + " * @return {string}\n"
+            + " * @return {!goog.soy.data.SanitizedHtml}\n"
             + " * @suppress {checkTypes}\n"
             + " * @private\n"
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-            + "  return 'Blah';\n"
+            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"

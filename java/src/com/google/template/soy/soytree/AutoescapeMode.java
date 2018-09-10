@@ -26,8 +26,6 @@ import java.util.Set;
  *
  */
 public enum AutoescapeMode {
-  /** Auto-escaping is on for the template so directiveless prints will be HTML escaped. */
-  NONCONTEXTUAL("deprecated-noncontextual"),
   /**
    * Contextual auto-escaping is on for the template so directiveless prints will be escaped based
    * on the surrounding context.

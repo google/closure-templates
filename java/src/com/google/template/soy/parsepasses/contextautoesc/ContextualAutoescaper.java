@@ -29,15 +29,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -70,9 +64,6 @@ public final class ContextualAutoescaper {
       SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}", StyleAllowance.NO_PUNCTUATION);
 
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
-
-  /** The conclusions drawn by the last {@link #rewrite}. */
-  private Inferences inferences;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
@@ -143,46 +134,10 @@ public final class ContextualAutoescaper {
       return ImmutableList.<TemplateNode>of();
     }
 
-    // Store inferences so that after processing, clients can access the output contexts for
-    // templates.
-    this.inferences = inferences;
-
-    runVisitorOnAllSrcTemplatesIncludingNewOnes(
-        inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
-
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     List<TemplateNode> extraTemplates = new Rewriter(inferences, printDirectives).rewrite(fileSet);
 
-    runVisitorOnAllSrcTemplatesIncludingNewOnes(
-        inferences,
-        new PerformDeprecatedNonContextualAutoescapeVisitor(fileSet.getNodeIdGenerator()));
-
     return extraTemplates;
-  }
-
-  /**
-   * Runs a visitor on all templates, including newly-generated ones.
-   *
-   * <p>After running the inference engine, new re-contextualized templates have been generated, but
-   * haven't been folded back into the SoyFileSetNode (which happens in the SoyFileSet monster
-   * class).
-   *
-   * <p>Note this is true even for non-contextual templates. If a non-contextual template eventually
-   * is called by a contextual one, the call subtree will be rewritten for the alternate context
-   * (even though they remain non-contextually autoescaped).
-   */
-  private void runVisitorOnAllSrcTemplatesIncludingNewOnes(
-      Inferences inferences, AbstractSoyNodeVisitor<?> visitor) {
-    List<TemplateNode> allTemplatesIncludingNewOnes = inferences.getAllTemplates();
-    for (TemplateNode templateNode : allTemplatesIncludingNewOnes) {
-      // TODO(b/80336719): For newly derived templates, they don't have a parent yet.  So just
-      // always run on them. Otherwise only run on sources.  Once deprecated-contextual is gone we
-      // can simplify this.
-      if (templateNode.getParent() == null
-          || templateNode.getParent().getSoyFileKind() == SoyFileKind.SRC) {
-        visitor.exec(templateNode);
-      }
-    }
   }
 
   /** Reports an autoescape exception. */
@@ -245,53 +200,4 @@ public final class ContextualAutoescaper {
                   || templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL);
         }
       };
-
-  private final class NonContextualTypedRenderUnitNodesVisitor
-      extends AbstractSoyNodeVisitor<Void> {
-
-    final ErrorReporter errorReporter;
-
-    NonContextualTypedRenderUnitNodesVisitor(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
-
-    @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
-        visitChildren(node);
-      }
-    }
-
-    @Override
-    protected void visitLetContentNode(LetContentNode node) {
-      visitRenderUnitNode(node);
-    }
-
-    @Override
-    protected void visitCallParamContentNode(CallParamContentNode node) {
-      visitRenderUnitNode(node);
-    }
-
-    protected void visitRenderUnitNode(RenderUnitNode node) {
-      if (node.getContentKind() != null) {
-        // Not visiting children in this block.
-        // In processing a strict block (any block with a kind), contextualAutoescaper will
-        // automatically go into the children.
-        // Secondly, CheckEscapingSanityVisitor makes sure that all the children {let} or {param}
-        // blocks of a strict {let} or {param} block are also strict.
-        InferenceEngine.inferStrictRenderUnitNode(
-            // As this visitor visits only non-contextual templates.
-            AutoescapeMode.NONCONTEXTUAL, node, inferences, errorReporter);
-      } else {
-        visitChildren(node);
-      }
-    }
-
-    @Override
-    protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-    }
-  }
 }

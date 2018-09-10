@@ -129,7 +129,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       this(
           null,
           namespace,
-          AutoescapeMode.NONCONTEXTUAL,
+          AutoescapeMode.STRICT,
           ImmutableMap.<String, String>of(),
           ImmutableList.<AliasDeclaration>of());
     }

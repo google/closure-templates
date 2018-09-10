@@ -18,13 +18,10 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -34,7 +31,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -60,11 +56,6 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
           "In strict templates, '{'{0}'}'...'{'/{0}'}' blocks "
               + "require an explicit kind=\"<html|css|text|attributes>\".");
 
-  private static final SoyErrorKind STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE =
-      SoyErrorKind.of(
-          "Calls to strict templates with ''kind=\"text\"'' are not allowed "
-              + "in non-contextually autoescaped templates.");
-
 
   private final ErrorReporter errorReporter;
 
@@ -75,7 +66,7 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
   @Override
   public void run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    Visitor visitor = new Visitor(errorReporter, registry);
+    Visitor visitor = new Visitor(errorReporter);
     for (SoyFileNode file : sourceFiles) {
       visitor.exec(file);
     }
@@ -85,12 +76,10 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
     /** Current escaping mode. */
     AutoescapeMode autoescapeMode;
 
-    final TemplateRegistry templateRegistry;
     final ErrorReporter errorReporter;
 
-    Visitor(ErrorReporter errorReporter, TemplateRegistry templateRegistry) {
+    Visitor(ErrorReporter errorReporter) {
       this.errorReporter = errorReporter;
-      this.templateRegistry = templateRegistry;
     }
     // --------------------------------------------------------------------------------------------
     // Implementations for specific nodes.
@@ -112,42 +101,6 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
     @Override
     protected void visitLetContentNode(LetContentNode node) {
       visitRenderUnitNode(node);
-    }
-
-    @Override
-    protected void visitCallBasicNode(CallBasicNode node) {
-      if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
-        TemplateNode callee = templateRegistry.getBasicTemplate((node).getCalleeName());
-        // It's possible that the callee template is in another file, and Soy is being used to
-        // compile one file at a time without context (not recommended, but supported). In this case
-        // callee will be null.
-        if (callee != null && callee.getContentKind() == SanitizedContentKind.TEXT) {
-          errorReporter.report(
-              node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
-        }
-      }
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitCallDelegateNode(CallDelegateNode node) {
-      if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
-        ImmutableList<TemplateDelegateNode> divisions =
-            templateRegistry
-                .getDelTemplateSelector()
-                .delTemplateNameToValues()
-                .get(node.getDelCalleeName());
-        if (!divisions.isEmpty()) {
-          // As the callee is required only to know the kind of the content and as all templates in
-          // delPackage are of the same kind it is sufficient to choose only the first template.
-          TemplateNode callee = divisions.get(0);
-          if (callee.getContentKind() == SanitizedContentKind.TEXT) {
-            errorReporter.report(
-                node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
-          }
-        }
-      }
-      visitChildren(node);
     }
 
     @Override

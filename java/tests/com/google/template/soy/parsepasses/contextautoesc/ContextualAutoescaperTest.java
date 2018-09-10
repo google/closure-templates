@@ -1421,31 +1421,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testNonContextualCallers() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
-            "  {@param? x: ?}\n",
-            "{$x |escapeHtml}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
-            "  {@param y: ?}\n",
-            "<b>{call .foo /}</b> {$y |escapeHtml}\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
-            "  {@param? x: ?}\n",
-            "{$x}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
-            "  {@param y: ?}\n",
-            "<b>{call .foo /}</b> {$y}\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testUnquotedAttributes() throws Exception {
     assertContextualRewriting(
         join(

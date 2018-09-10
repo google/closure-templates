@@ -28,7 +28,6 @@ import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -74,9 +73,6 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
         registry.getDelTemplateSelector().delTemplateNameToValues();
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
-        if (template.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
-          continue; // Everything is treated as HTML. We also don't have getHtmlContext().
-        }
         // TODO(jakubvrana): Warn against {call} too.
         for (CallDelegateNode node : getAllNodesOfType(template, CallDelegateNode.class)) {
           checkCallDelegateNode(node, deltemplates);
