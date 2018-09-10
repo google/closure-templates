@@ -126,12 +126,12 @@ public final class SoyProtoType extends SoyType {
 
     @Override
     protected SoyType visitSafeStyle() {
-      return SanitizedType.CssType.getInstance();
+      return SanitizedType.StyleType.getInstance();
     }
 
     @Override
     protected SoyType visitSafeStyleSheet() {
-      return SanitizedType.CssType.getInstance();
+      return SanitizedType.StyleType.getInstance();
     }
 
     @Override

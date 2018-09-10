@@ -252,9 +252,9 @@ public class TofuTypeChecksTest {
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.CssType.getInstance(), cssData);
+    assertIsInstance(SanitizedType.StyleType.getInstance(), cssData);
     assertIsNotInstance(
-        SanitizedType.CssType.getInstance(),
+        SanitizedType.StyleType.getInstance(),
         NULL_DATA,
         BOOLEAN_DATA,
         STRING_DATA,

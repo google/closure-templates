@@ -46,7 +46,7 @@ public abstract class SanitizedType extends PrimitiveType {
         return AttributesType.getInstance();
 
       case CSS:
-        return CssType.getInstance();
+        return StyleType.getInstance();
 
       case HTML:
         return HtmlType.getInstance();
@@ -167,13 +167,13 @@ public abstract class SanitizedType extends PrimitiveType {
     }
   }
 
-  /** Type produced by templates whose kind is "css". */
-  public static final class CssType extends SanitizedType {
+  /** Type produced by templates whose kind is "style". */
+  public static final class StyleType extends SanitizedType {
 
-    private static final CssType INSTANCE = new CssType();
+    private static final StyleType INSTANCE = new StyleType();
 
     // Not constructible - use getInstance().
-    private CssType() {}
+    private StyleType() {}
 
     @Override
     public Kind getKind() {
@@ -186,7 +186,7 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     /** Return the single instance of this type. */
-    public static CssType getInstance() {
+    public static StyleType getInstance() {
       return INSTANCE;
     }
   }

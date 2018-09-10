@@ -47,9 +47,9 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.types.SanitizedType.AttributesType;
-import com.google.template.soy.types.SanitizedType.CssType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
+import com.google.template.soy.types.SanitizedType.StyleType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import java.io.BufferedInputStream;
@@ -98,7 +98,7 @@ public class SoyTypeRegistry {
           .put("number", NUMBER_TYPE)
           .put("html", HtmlType.getInstance())
           .put("attributes", AttributesType.getInstance())
-          .put("css", CssType.getInstance())
+          .put("css", StyleType.getInstance())
           .put("uri", UriType.getInstance())
           .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
@@ -108,10 +108,10 @@ public class SoyTypeRegistry {
       ImmutableMap.<String, SanitizedType>builder()
           .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
           .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
-          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.CssType.getInstance())
+          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.StyleType.getInstance())
           .put(
               SafeStyleSheetProto.getDescriptor().getFullName(),
-              SanitizedType.CssType.getInstance())
+              SanitizedType.StyleType.getInstance())
           .put(SafeUrlProto.getDescriptor().getFullName(), SanitizedType.UriType.getInstance())
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
