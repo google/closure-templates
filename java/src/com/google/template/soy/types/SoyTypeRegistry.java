@@ -98,8 +98,7 @@ public class SoyTypeRegistry {
           .put("number", NUMBER_TYPE)
           .put("html", HtmlType.getInstance())
           .put("attributes", AttributesType.getInstance())
-          .put("css", StyleType.getInstance()) // TODO(b/114317172): Delete.
-          .put("style", StyleType.getInstance())
+          .put("css", StyleType.getInstance())
           .put("uri", UriType.getInstance())
           .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
