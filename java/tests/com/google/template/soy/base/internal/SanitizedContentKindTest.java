@@ -33,8 +33,8 @@ public final class SanitizedContentKindTest {
     for (SanitizedContentKind sck : SanitizedContentKind.values()) {
       ContentKind.valueOf(sck.name());
     }
-    for (ContentKind sck : ContentKind.values()) {
-      SanitizedContentKind.valueOf(sck.name());
+    for (ContentKind ck : ContentKind.values()) {
+      SanitizedContentKind.valueOf(ck.name());
     }
   }
 
