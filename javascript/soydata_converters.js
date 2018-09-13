@@ -29,13 +29,11 @@ goog.provide('soydata.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly');
 goog.provide('soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly');
 goog.provide('soydata.packSanitizedHtmlToProtoSoyRuntimeOnly');
 goog.provide('soydata.packSanitizedJsToProtoSoyRuntimeOnly');
-goog.provide('soydata.packSanitizedStyleToSafeStyleProtoSoyRuntimeOnly');
 goog.provide('soydata.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly');
 goog.provide('soydata.packSanitizedUriToProtoSoyRuntimeOnly');
 goog.provide('soydata.unpackProtoToSanitizedCss');
 goog.provide('soydata.unpackProtoToSanitizedHtml');
 goog.provide('soydata.unpackProtoToSanitizedJs');
-goog.provide('soydata.unpackProtoToSanitizedStyle');
 goog.provide('soydata.unpackProtoToSanitizedTrustedResourceUri');
 goog.provide('soydata.unpackProtoToSanitizedUri');
 
@@ -50,7 +48,6 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.soy.data.SanitizedCss');
 goog.require('goog.soy.data.SanitizedHtml');
 goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedStyle');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.string');
@@ -65,30 +62,6 @@ goog.require('security.html.jspbconversions');
 goog.require('soydata.VERY_UNSAFE');
 
 
-/**
- * Converts a STYLE Sanitized Content object to a corresponding Safe Style
- * Proto.
- * @param {!goog.soy.data.SanitizedStyle} sanitizedStyle
- * @return {!proto.webutil.html.types.SafeStyleProto}
- */
-soydata.packSanitizedStyleToSafeStyleProtoSoyRuntimeOnly = function(
-    sanitizedStyle) {
-  if (!(sanitizedStyle instanceof goog.soy.data.SanitizedStyle)) {
-    throw new Error(
-        'expected SanitizedStyle, got ' +
-        goog.debug.runtimeType(sanitizedStyle));
-  }
-
-  var safeStyle =
-      goog.html.uncheckedconversions
-          .safeStyleFromStringKnownToSatisfyTypeContract(
-              goog.string.Const.from('from Soy SanitizedStyle object'),
-              sanitizedStyle.getContent());
-  return security.html.jspbconversions.safeStyleToProto(safeStyle);
-};
-
-
-// TODO(jakubvrana): Delete.
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
  * @param {!goog.soy.data.SanitizedCss|string} sanitizedCss
@@ -135,7 +108,6 @@ soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
         'expected SanitizedCss, got ' + goog.debug.runtimeType(sanitizedCss));
   }
 
-  // TODO(jakubvrana): Delete.
   // Sanity check: Try to prevent accidental misuse when this is a declaration
   // list rather than a full stylesheet. The error may trigger incorrectly if
   // the content contains curly brackets inside comments or quoted strings.
@@ -266,29 +238,11 @@ soydata.unpackProtoToSanitizedHtml = function(x) {
  * Converts a Safe String Proto to CSS Sanitized Content.
  * @param {?proto.webutil.html.types.SafeStyleProto | proto.webutil.html.types.SafeStyleSheetProto} x
  *   null or a safe string proto.
- * @return {?goog.soy.data.SanitizedStyle}
- */
-soydata.unpackProtoToSanitizedStyle = function(x) {
-  var safeCss;
-  if (x instanceof proto.webutil.html.types.SafeStyleProto) {
-    safeCss = security.html.jspbconversions.safeStyleFromProto(x);
-    return soydata.VERY_UNSAFE.ordainSanitizedStyle(
-        goog.html.SafeStyle.unwrap(safeCss));
-  }
-  return null;
-};
-
-
-/**
- * Converts a Safe String Proto to CSS Sanitized Content.
- * @param {?proto.webutil.html.types.SafeStyleProto | proto.webutil.html.types.SafeStyleSheetProto} x
- *   null or a safe string proto.
  * @return {?goog.soy.data.SanitizedCss}
  */
 soydata.unpackProtoToSanitizedCss = function(x) {
   var safeCss;
   if (x instanceof proto.webutil.html.types.SafeStyleProto) {
-    // TODO(jakubvrana): Remove the support for proto.webutil.html.types.SafeStyleProto.
     safeCss = security.html.jspbconversions.safeStyleFromProto(x);
     return soydata.VERY_UNSAFE.ordainSanitizedCss(
         goog.html.SafeStyle.unwrap(safeCss));

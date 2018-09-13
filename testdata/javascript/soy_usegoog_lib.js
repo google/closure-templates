@@ -15722,6 +15722,23 @@ goog.html.SafeUrl.fromSipUrl = function(sipUrl) {
 
 
 /**
+ * Creates a SafeUrl wrapping a fb-messenger://share URL.
+ *
+ * @param {string} facebookMessengerUrl A facebook messenger URL.
+ * @return {!goog.html.SafeUrl} A matching safe URL, or {@link INNOCUOUS_STRING}
+ *     wrapped as a SafeUrl if it does not pass.
+ */
+goog.html.SafeUrl.fromFacebookMessengerUrl = function(facebookMessengerUrl) {
+  if (!goog.string.caseInsensitiveStartsWith(
+          facebookMessengerUrl, 'fb-messenger://share')) {
+    facebookMessengerUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
+  }
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
+      facebookMessengerUrl);
+};
+
+
+/**
  * Creates a SafeUrl wrapping a sms: URL.
  *
  * @param {string} smsUrl A sms URL.
@@ -24819,7 +24836,6 @@ goog.require('goog.soy.data.SanitizedCss');
 goog.require('goog.soy.data.SanitizedHtml');
 goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedStyle');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.soy.data.UnsanitizedText');
@@ -25122,20 +25138,6 @@ soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
 soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         goog.soy.data.SanitizedHtmlAttribute);
-
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as STYLE
- * in a style attribute.
- *
- * @param {?} content CSS, such as `color:#c3d9ff`.
- * @return {!goog.soy.data.SanitizedStyle} Sanitized style wrapper that
- *     indicates to Soy there is no need to escape or filter when printed in CSS
- *     context.
- */
-soydata.VERY_UNSAFE.ordainSanitizedStyle =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedStyle);
 
 
 /**
@@ -25673,18 +25675,6 @@ soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
 soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
         goog.soy.data.SanitizedHtmlAttribute);
-
-
-/**
- * Creates kind="style" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {goog.soy.data.SanitizedStyle|soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedStyleForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedStyle);
 
 
 /**
