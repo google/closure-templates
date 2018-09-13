@@ -4099,7 +4099,7 @@ goog.dom.NodeType = {
  * Methods in this package are given special treatment by the compiler
  * for type-inference. For example, <code>goog.asserts.assert(foo)</code>
  * will make the compiler treat <code>foo</code> as non-nullable. Similarly,
- * <code>goog.asserts.assertNnumber(foo)</code> informs the compiler about the
+ * <code>goog.asserts.assertNumber(foo)</code> informs the compiler about the
  * type of <code>foo</code>. Where applicable, such assertions are preferable to
  * casts by jsdoc with <code>@type</code>.
  *
@@ -15609,7 +15609,7 @@ goog.html.SafeUrl.fromConstant = function(url) {
 goog.html.SAFE_MIME_TYPE_PATTERN_ = new RegExp(
     // Note: Due to content-sniffing concerns, only add MIME types for
     // media formats.
-    '^(?:audio/(?:3gpp2|3gpp|aac|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-wav|wav|webm)|' +
+    '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-wav|wav|webm)|' +
         'image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|' +
         // TODO(b/68188949): Due to content-sniffing concerns, text/csv should
         // be removed from the whitelist.
@@ -24057,7 +24057,6 @@ goog.provide('goog.soy.data.SanitizedCss');
 goog.provide('goog.soy.data.SanitizedHtml');
 goog.provide('goog.soy.data.SanitizedHtmlAttribute');
 goog.provide('goog.soy.data.SanitizedJs');
-goog.provide('goog.soy.data.SanitizedStyle');
 goog.provide('goog.soy.data.SanitizedTrustedResourceUri');
 goog.provide('goog.soy.data.SanitizedUri');
 goog.provide('goog.soy.data.UnsanitizedText');
@@ -24454,44 +24453,6 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
 
 
 /**
- * Content of type {@link goog.soy.data.SanitizedContentKind.STYLE}.
- *
- * The content is non-attacker-exploitable CSS, such as `color:#c3d9ff`.
- * The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedStyle = function() {
-  goog.soy.data.SanitizedStyle.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedStyle, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedStyle.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.STYLE;
-
-
-/** @override */
-goog.soy.data.SanitizedStyle.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {css}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedStyle.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedStyle ||
-      value instanceof goog.soy.data.UnsanitizedText ||
-      value instanceof goog.html.SafeStyle;
-};
-
-
-
-/**
  * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
  *
  * The content is non-attacker-exploitable CSS, such as {@code @import url(x)}.
@@ -24523,7 +24484,7 @@ goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
   return goog.isString(value) || value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.soy.data.UnsanitizedText ||
-      value instanceof goog.html.SafeStyle ||  // TODO(jakubvrana): Delete.
+      value instanceof goog.html.SafeStyle ||
       value instanceof goog.html.SafeStyleSheet;
 };
 
@@ -24537,8 +24498,6 @@ goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
  */
 goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
   var value = this.toString();
-  // TODO(jakubvrana): Remove this check when there's a separate type for style
-  // declaration.
   goog.asserts.assert(
       /[@{]|^\s*$/.test(value),
       'value doesn\'t look like style sheet: ' + value);
