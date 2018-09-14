@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -36,9 +35,16 @@ abstract class FunctionDeclaration extends Expression {
 
   abstract Statement body();
 
+  abstract boolean isArrowFunction();
+
   static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body);
+        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body, false);
+  }
+
+  static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
+    return new AutoValue_FunctionDeclaration(
+        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body, true);
   }
 
   @Override
@@ -60,9 +66,15 @@ abstract class FunctionDeclaration extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append("function(");
+    if (!isArrowFunction()) {
+      ctx.append("function");
+    }
+    ctx.append("(");
     ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
     ctx.append(") ");
+    if (isArrowFunction()) {
+      ctx.append("=> ");
+    }
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(body());
     }

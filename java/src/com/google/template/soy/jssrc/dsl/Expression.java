@@ -164,6 +164,11 @@ public abstract class Expression extends CodeChunk {
     return FunctionDeclaration.create(parameters, body);
   }
 
+  /** Creates a code chunk representing an arrow function. */
+  public static Expression arrowFunction(JsDoc parameters, Statement body) {
+    return FunctionDeclaration.createArrowFunction(parameters, body);
+  }
+
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
   public static Expression not(Expression arg) {
     return PrefixUnaryOperation.create(Operator.NOT, arg);
