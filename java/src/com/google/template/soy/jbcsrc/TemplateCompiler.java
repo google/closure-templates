@@ -70,7 +70,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -282,7 +282,7 @@ final class TemplateCompiler {
                 variables,
                 reporter,
                 soyTypeRegistry,
-                node.getStateVars())
+                node.getPropVars())
             .compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
@@ -304,31 +304,29 @@ final class TemplateCompiler {
     return variableSet.defineFields(writer);
   }
 
-  private ImmutableMap<TemplateStateVar, SoyExpression> generateStateInitializers(
+  private ImmutableMap<TemplatePropVar, SoyExpression> generateStateInitializers(
       TemplateNode node, TemplateVariableManager varManager) {
     ExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(varManager, reporter, soyTypeRegistry);
-    ImmutableMap.Builder<TemplateStateVar, SoyExpression> builder = ImmutableMap.builder();
-    for (TemplateStateVar state : node.getStateVars()) {
-      SoyExpression stateValue;
-      if (state.initialValue().getType() == NullType.getInstance()) {
+    ImmutableMap.Builder<TemplatePropVar, SoyExpression> builder = ImmutableMap.builder();
+    for (TemplatePropVar prop : node.getPropVars()) {
+      SoyExpression propValue;
+      if (prop.initialValue().getType() == NullType.getInstance()) {
         // a special case for null to avoid poor handling elsewhere in the compiler.
-        stateValue =
+        propValue =
             SoyExpression.forSoyValue(
-                state.type(),
-                BytecodeUtils.constantNull(
-                    SoyRuntimeType.getBoxedType(state.type()).runtimeType()));
+                prop.type(),
+                BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(prop.type()).runtimeType()));
       } else {
-        stateValue = constantCompiler.compile(state.initialValue());
+        propValue = constantCompiler.compile(prop.initialValue());
       }
-      if (!stateValue.isCheap()) {
+      if (!propValue.isCheap()) {
         // these fields are package private so that lazy closures can access them directly.
         FieldRef ref =
-            varManager.addPackagePrivateStaticField(
-                state.name(), stateValue.resultType(), stateValue);
-        stateValue = stateValue.withSource(ref.accessor());
+            varManager.addPackagePrivateStaticField(prop.name(), propValue.resultType(), propValue);
+        propValue = propValue.withSource(ref.accessor());
       }
-      builder.put(state, stateValue);
+      builder.put(prop, propValue);
     }
     return builder.build();
   }
@@ -394,17 +392,17 @@ final class TemplateCompiler {
     private final TemplateVariableManager variableSet;
     private final Expression thisRef;
     private final RenderContextExpression renderContext;
-    private final ImmutableMap<TemplateStateVar, SoyExpression> stateVars;
+    private final ImmutableMap<TemplatePropVar, SoyExpression> propVars;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         Expression thisRef,
-        ImmutableMap<TemplateStateVar, SoyExpression> stateVars,
+        ImmutableMap<TemplatePropVar, SoyExpression> propVars,
         RenderContextExpression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;
-      this.stateVars = stateVars;
+      this.propVars = propVars;
     }
 
     @Override
@@ -413,8 +411,8 @@ final class TemplateCompiler {
     }
 
     @Override
-    public SoyExpression getState(TemplateStateVar stateVar) {
-      return stateVars.get(stateVar);
+    public SoyExpression getProp(TemplatePropVar propVar) {
+      return propVars.get(propVar);
     }
 
     @Override

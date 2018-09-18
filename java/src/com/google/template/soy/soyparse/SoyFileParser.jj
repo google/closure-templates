@@ -80,7 +80,7 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -237,14 +237,14 @@ import javax.annotation.Nullable;
  *        list<int>}  /**
  *        A list of numbers. *&#47;
  *
- * 4. State variable declaration:
- *    + Soy tag with command name "@state" and command text "key: type".
- *    + State variables must be explicitly initialized.
+ * 4. Prop variable declaration:
+ *    + Soy tag with command name "@prop" and command text "key: type".
+ *    + Prop variables must be explicitly initialized.
  *    + Optional desc string is written as a block doc comment, which either must
- *      precede the state tag, or must start on the same line as the end of the '@state' tag.
+ *      precede the prop tag, or must start on the same line as the end of the '@prop' tag.
  *    Examples:
- *    {@state foo: bool = true}
- *    {@state foo: list<int> = [1, 2, 3]}  /** A list of numbers. *&#47;
+ *    {@prop foo: bool = true}
+ *    {@prop foo: list<int> = [1, 2, 3]}  /** A list of numbers. *&#47;
  *
  * Body:
  *
@@ -435,8 +435,8 @@ public class SoyFileParser {
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
-  private static final SoyErrorKind STATE_VARS_NOT_ALLOWED =
-      SoyErrorKind.of("@state declarations are not available for general use.");
+  private static final SoyErrorKind PROP_VARS_NOT_ALLOWED =
+      SoyErrorKind.of("@prop declarations are not available for general use.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -945,7 +945,7 @@ TOKEN_MGR_DECLS: {
 | < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
 
-| < DECL_BEGIN_STATE_VAR         : "{@state"        > : IN_CMD_TAG
+| < DECL_BEGIN_PROP_VAR          : "{@prop"        > : IN_CMD_TAG
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -1743,8 +1743,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
   Token tok;
   HeaderParam param;
   List<HeaderParam> params = ImmutableList.of();
-  TemplateStateVar stateVar;
-  ImmutableList.Builder<TemplateStateVar> stateVars = ImmutableList.builder();
+  TemplatePropVar propVar;
+  ImmutableList.Builder<TemplatePropVar> propVars = ImmutableList.builder();
   RawTextNode whitespace = null;
   String soyDoc = null;
 }
@@ -1775,17 +1775,17 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
         params.add(param);
       }
     |
-      stateVar = StateVarDecl(soyDoc)
+      propVar = PropVarDecl(soyDoc)
       {
         // it will be null if there is a parse error
-        if (stateVar != null) {
-          if (!experimentalFeatures.contains("state_vars")) {
-           errorReporter.report(stateVar.nameLocation(), STATE_VARS_NOT_ALLOWED);
+        if (propVar != null) {
+          if (!experimentalFeatures.contains("prop_vars")) {
+           errorReporter.report(propVar.nameLocation(), PROP_VARS_NOT_ALLOWED);
           } else {
-            // We just parsed a state var, preceding whitespace/doc comments are not important.
+            // We just parsed a prop var, preceding whitespace/doc comments are not important.
             whitespace = null;
             soyDoc = null;
-            stateVars.add(stateVar);
+            propVars.add(propVar);
           }
         }
       }
@@ -1793,7 +1793,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
   )*
 
   { templateBuilder.addParams(params);
-    templateBuilder.setStateVars(stateVars.build());
+    templateBuilder.setPropVars(propVars.build());
     return whitespace;
   }
 }
@@ -1860,22 +1860,22 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 }
 
 /**
- * StateVarDecl -> ( DECL_BEGIN_STATE_VAR ) <NAME> <CMD_COLON>
+ * PropVarDecl -> ( DECL_BEGIN_PROP_VAR ) <NAME> <CMD_COLON>
  *                 TypeExpr() <CMD_END>
  *
  * @param desc The doc comment that was attached to whitespace preceding this param, if any.
  *
  */
-private TemplateStateVar StateVarDecl(@Nullable String desc) :
+private TemplatePropVar PropVarDecl(@Nullable String desc) :
 {
-  Token stateVarBegin, name, stateVarEnd;
-  TypeNode stateVarTypeNode = null;
-  SoyType stateVarType = null;
+  Token propVarBegin, name, propVarEnd;
+  TypeNode propVarTypeNode = null;
+  SoyType propVarType = null;
   ExprNode value = null;
 }
 {
   (
-    stateVarBegin = <DECL_BEGIN_STATE_VAR>
+    propVarBegin = <DECL_BEGIN_PROP_VAR>
   )
 
   name = <NAME>
@@ -1884,24 +1884,24 @@ private TemplateStateVar StateVarDecl(@Nullable String desc) :
     (
       <CMD_COLON>
 
-      stateVarTypeNode = TypeExpr()
-      { stateVarType = typeNodeConverter.getOrCreateType(stateVarTypeNode); }
+      propVarTypeNode = TypeExpr()
+      { propVarType = typeNodeConverter.getOrCreateType(propVarTypeNode); }
       <EQ>
       value = Expr()
     |
       <CMD_COLON_EQ>
       value = Expr()
     )
-    stateVarEnd = <CMD_END>
+    propVarEnd = <CMD_END>
   } catch (ParseException parseException) {
-    stateVarEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+    propVarEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
     return null;
   }
   {
-    return new TemplateStateVar(
+    return new TemplatePropVar(
         name.image,
-        stateVarType,
-        stateVarTypeNode,
+        propVarType,
+        propVarTypeNode,
         value,
         desc,
         createSrcLoc(name));

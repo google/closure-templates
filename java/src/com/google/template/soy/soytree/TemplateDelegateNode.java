@@ -29,7 +29,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import javax.annotation.Nullable;
 
 /**
@@ -94,7 +94,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
       ImmutableList<TemplateParam> params,
-      ImmutableList<TemplateStateVar> stateVars) {
+      ImmutableList<TemplatePropVar> propVars) {
 
     super(
         nodeBuilder,
@@ -102,7 +102,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
         soyFileHeaderInfo,
         Visibility.PUBLIC /* deltemplate always has public visibility */,
         params,
-        stateVars);
+        propVars);
     this.delTemplateName = checkNotNull(delTemplateName);
     this.delTemplateVariantExpr = delTemplateVariantExpr;
     this.delPriority = checkNotNull(delPriority);

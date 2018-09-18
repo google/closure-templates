@@ -145,7 +145,7 @@ public class BytecodeCompilerTest {
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
-            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .build();
     SoyFileSetNode soyTree = parser.parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
@@ -462,14 +462,14 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testStateNodeNumber() {
-    assertThatTemplateBody("{@state foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
-    assertThatTemplateBody("{@state foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
+  public void testPropNodeNumber() {
+    assertThatTemplateBody("{@prop foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
+    assertThatTemplateBody("{@prop foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
   }
 
   @Test
-  public void testStateNodeBoolean() {
-    assertThatTemplateBody("{@state foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
+  public void testPropNodeBoolean() {
+    assertThatTemplateBody("{@prop foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
         .rendersAs("<p>1</p>");
   }
 

@@ -268,7 +268,7 @@ public final class TemplateTester {
     public IterableSubject failsToCompileWithErrorsThat() {
       SoyFileSetParserBuilder builder =
           SoyFileSetParserBuilder.forFileContents(actual())
-              .enableExperimentalFeatures(ImmutableList.of("state_vars"));
+              .enableExperimentalFeatures(ImmutableList.of("prop_vars"));
       for (SoyFunction function : soyFunctions) {
         builder.addSoyFunction(function);
       }
@@ -356,7 +356,7 @@ public final class TemplateTester {
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
                 .errorReporter(ErrorReporter.exploding())
-                .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+                .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
                 .parse()
                 .fileSet();
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show

@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 
 /**
  * An abstract base class that adds extra visitor methods for unpacking varrefs and functions based
@@ -66,9 +66,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         return visitParam(node, (TemplateParam) defn);
       case IJ_PARAM:
         return visitIjParam(node, (InjectedParam) defn);
-        // State is inlined since it is always a constant
-      case STATE:
-        return visitStateNode(node, (TemplateStateVar) defn);
+        // Prop is inlined since it is always a constant
+      case PROP:
+        return visitPropNode(node, (TemplatePropVar) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
       default:
@@ -125,7 +125,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(varRef);
   }
 
-  T visitStateNode(VarRefNode node, TemplateStateVar state) {
+  T visitPropNode(VarRefNode node, TemplatePropVar prop) {
     return visitExprNode(node);
   }
 

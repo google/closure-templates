@@ -96,7 +96,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -193,21 +193,21 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression source = OPT_DATA;
     if (varDefn.isInjected()) {
       source = OPT_IJ_DATA;
-    } else if (varDefn.kind() == VarDefn.Kind.STATE) {
-      return genCodeForStateAccess(paramName, (TemplateStateVar) varDefn);
+    } else if (varDefn.kind() == VarDefn.Kind.PROP) {
+      return genCodeForPropAccess(paramName, (TemplatePropVar) varDefn);
     }
     return source.dotAccess(paramName);
   }
 
   /**
-   * Method that returns code to access a named state parameter.
+   * Method that returns code to access a named prop parameter.
    *
-   * @param paramName The name of the state parameter.
-   * @param stateVar The variable definition of the state parameter
+   * @param paramName The name of the prop parameter.
+   * @param propVar The variable definition of the prop parameter
    * @return The code to access the value of that parameter.
    */
-  protected Expression genCodeForStateAccess(String paramName, TemplateStateVar stateVar) {
-    return visit(stateVar.initialValue());
+  protected Expression genCodeForPropAccess(String paramName, TemplatePropVar propVar) {
+    return visit(propVar.initialValue());
   }
 
   @Override

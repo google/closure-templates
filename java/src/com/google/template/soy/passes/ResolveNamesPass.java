@@ -46,7 +46,7 @@ import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
 import java.util.ArrayDeque;
 import java.util.BitSet;
@@ -243,8 +243,8 @@ public final class ResolveNamesPass extends CompilerFilePass {
       for (TemplateParam param : node.getAllParams()) {
         localVariables.define(param, node);
       }
-      for (TemplateStateVar stateVar : node.getStateVars()) {
-        localVariables.define(stateVar, node);
+      for (TemplatePropVar propVar : node.getPropVars()) {
+        localVariables.define(propVar, node);
       }
 
       visitSoyNode(node);
@@ -325,8 +325,8 @@ public final class ResolveNamesPass extends CompilerFilePass {
         return Optional.of(((TemplateParam) varDefn).nameLocation());
       case LOCAL_VAR:
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
-      case STATE:
-        return Optional.of(((TemplateStateVar) varDefn).nameLocation());
+      case PROP:
+        return Optional.of(((TemplatePropVar) varDefn).nameLocation());
       case IJ_PARAM:
       case UNDECLARED:
         return Optional.absent();

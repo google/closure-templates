@@ -19,7 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import javax.annotation.Nullable;
 
 /**
@@ -38,15 +38,15 @@ public final class TemplateBasicNode extends TemplateNode {
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param visibility visibility of this template
    * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param stateVars the state variables from the template header
+   * @param propVars the prop variables from the template header
    */
   TemplateBasicNode(
       TemplateBasicNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params,
-      ImmutableList<TemplateStateVar> stateVars) {
-    super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params, stateVars);
+      ImmutableList<TemplatePropVar> propVars) {
+    super(nodeBuilder, "template", soyFileHeaderInfo, visibility, params, propVars);
   }
 
   @Override

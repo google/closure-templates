@@ -152,6 +152,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
   @Override
   public TemplateBasicNode build() {
     Preconditions.checkState(id != null && cmdText != null);
-    return new TemplateBasicNode(this, soyFileHeaderInfo, visibility, params, stateVars);
+    return new TemplateBasicNode(this, soyFileHeaderInfo, visibility, params, propVars);
   }
 }

@@ -95,7 +95,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -347,9 +347,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         throw RenderException.create(
             "Injected data not provided, yet referenced (" + varRef.toSourceString() + ").");
       }
-    } else if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
-      TemplateStateVar state = (TemplateStateVar) varRef.getDefnDecl();
-      return visit(state.initialValue());
+    } else if (varRef.getDefnDecl().kind() == VarDefn.Kind.PROP) {
+      TemplatePropVar prop = (TemplatePropVar) varRef.getDefnDecl();
+      return visit(prop.initialValue());
     } else {
       return env.getVar(varRef.getDefnDecl());
     }

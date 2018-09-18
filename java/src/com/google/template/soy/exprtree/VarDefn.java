@@ -36,8 +36,8 @@ public interface VarDefn {
     IJ_PARAM,
     // Local variable
     LOCAL_VAR,
-    // State variable
-    STATE,
+    // Prop variable
+    PROP,
     // Undeclared variable reference (for legacy templates).
     UNDECLARED,
   }

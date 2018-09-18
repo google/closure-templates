@@ -34,7 +34,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -53,8 +53,8 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNUSED_PARAM =
       SoyErrorKind.of("Param ''{0}'' unused in template body.");
-  private static final SoyErrorKind UNUSED_STATE =
-      SoyErrorKind.of("State var ''{0}'' unused in template body.");
+  private static final SoyErrorKind UNUSED_PROP =
+      SoyErrorKind.of("Prop var ''{0}'' unused in template body.");
 
   private final ErrorReporter errorReporter;
 
@@ -112,16 +112,16 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       }
     }
 
-    // Process @state header variables.
-    List<TemplateHeaderVarDefn> unusedStateVars = new ArrayList<>();
-    for (TemplateStateVar stateVar : node.getStateVars()) {
-      allHeaderVarNames.add(stateVar.name());
-      if (dataKeys.containsKey(stateVar.name())) {
+    // Process @prop header variables.
+    List<TemplateHeaderVarDefn> unusedPropVars = new ArrayList<>();
+    for (TemplatePropVar propVar : node.getPropVars()) {
+      allHeaderVarNames.add(propVar.name());
+      if (dataKeys.containsKey(propVar.name())) {
         // Good: declared and referenced in the template.
-        dataKeys.removeAll(stateVar.name());
+        dataKeys.removeAll(propVar.name());
       } else {
         // Bad: declared in the header, but not used.
-        unusedStateVars.add(stateVar);
+        unusedPropVars.add(propVar);
       }
     }
     // At this point, the only keys left in dataKeys are undeclared.
@@ -136,7 +136,7 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
     // of the same delegate may need to use those params.
     if (node instanceof TemplateBasicNode) {
       reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_PARAM);
-      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_STATE);
+      reportUnusedHeaderVars(errorReporter, unusedPropVars, UNUSED_PROP);
     }
   }
 

@@ -56,7 +56,7 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.LinkedHashMap;
@@ -205,9 +205,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitVarRefNode(VarRefNode node) {
-    if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
-      TemplateStateVar state = (TemplateStateVar) node.getDefnDecl();
-      return visit(state.initialValue());
+    if (node.getDefnDecl().kind() == VarDefn.Kind.PROP) {
+      TemplatePropVar prop = (TemplatePropVar) node.getDefnDecl();
+      return visit(prop.initialValue());
     }
     return visitNullSafeNode(node);
   }
@@ -234,11 +234,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case VAR_REF_NODE:
         {
           VarRefNode varRef = (VarRefNode) node;
-          if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
-            TemplateStateVar state = (TemplateStateVar) varRef.getDefnDecl();
-            // This means we will generate code for the state initializer multiple times.  This
+          if (varRef.getDefnDecl().kind() == VarDefn.Kind.PROP) {
+            TemplatePropVar prop = (TemplatePropVar) varRef.getDefnDecl();
+            // This means we will generate code for the prop initializer multiple times.  This
             // could be improved but this is not yet important for pysrc
-            return visitNullSafeNodeRecurse(state.initialValue(), nullSafetyPrefix);
+            return visitNullSafeNodeRecurse(prop.initialValue(), nullSafetyPrefix);
           } else if (varRef.isInjected()) {
             // Case 1: Injected data reference.
             return genCodeForLiteralKeyAccess("ijData", varRef.getName());

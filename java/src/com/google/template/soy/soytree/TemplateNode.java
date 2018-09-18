@@ -38,7 +38,7 @@ import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -237,8 +237,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** The injected params from template header. */
   private ImmutableList<TemplateParam> injectedParams;
 
-  /** The state variables from template header. */
-  private ImmutableList<TemplateStateVar> stateVars;
+  /** The prop variables from template header. */
+  private ImmutableList<TemplatePropVar> propVars;
 
   private int maxLocalVariableTableSize = -1;
 
@@ -254,7 +254,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param visibility Visibility of this template.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param stateVars The state variables from the template header.
+   * @param propVars The prop variables from the template header.
    */
   TemplateNode(
       TemplateNodeBuilder nodeBuilder,
@@ -262,7 +262,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params,
-      ImmutableList<TemplateStateVar> stateVars) {
+      ImmutableList<TemplatePropVar> propVars) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
     this.isDeprecatedV1 = nodeBuilder.isMarkedDeprecatedV1;
     this.soyFileHeaderInfo = soyFileHeaderInfo;
@@ -291,7 +291,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
     this.params = regularParams.build();
     this.injectedParams = injectedParams.build();
-    this.stateVars = stateVars;
+    this.propVars = propVars;
     this.commandText = nodeBuilder.getCmdText().trim();
   }
 
@@ -315,7 +315,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     // cloning them here and modifying SoyTreeUtils.cloneNode to reassign these as well.
     this.params = orig.params; // immutable
     this.injectedParams = orig.injectedParams;
-    this.stateVars = orig.stateVars;
+    this.propVars = orig.propVars;
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
@@ -325,8 +325,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
-    for (TemplateStateVar state : getStateVars()) {
-      builder.add(state.initialValue());
+    for (TemplatePropVar prop : getPropVars()) {
+      builder.add(prop.initialValue());
     }
     return builder.build();
   }
@@ -462,9 +462,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return injectedParams;
   }
 
-  /** Returns the state variables from template header. */
-  public ImmutableList<TemplateStateVar> getStateVars() {
-    return stateVars;
+  /** Returns the prop variables from template header. */
+  public ImmutableList<TemplatePropVar> getPropVars() {
+    return propVars;
   }
 
   /** Returns all params from template header or SoyDoc, both regular and injected. */
@@ -504,7 +504,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       }
     }
     appendHeaderVarDecl(headerOnlyParams.build(), sb);
-    appendHeaderVarDecl(stateVars, sb);
+    appendHeaderVarDecl(propVars, sb);
 
     // Body.
     // If first or last char of template body is a space, must be turned into '{sp}'.
@@ -535,7 +535,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         ImmutableMap.of(
             HeaderParam.class, "@param",
             InjectedParam.class, "@inject",
-            TemplateStateVar.class, "@state");
+            TemplatePropVar.class, "@prop");
 
     for (TemplateHeaderVarDefn headerVar : headerVars) {
       // Ignore any unknown declaration type.
@@ -578,9 +578,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
   }
 
-  /** Returns whether the template node is stateful (has at least one @state variable). */
+  /** Returns whether the template node is stateful (has at least one @prop variable). */
   public boolean isStatefulTemplate() {
-    return !getStateVars().isEmpty();
+    return !getPropVars().isEmpty();
   }
 
   /** Returns true if the template has at least one strict param. */

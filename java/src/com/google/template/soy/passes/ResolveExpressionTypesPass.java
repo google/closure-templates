@@ -95,7 +95,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
@@ -190,10 +190,10 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
-  private static final SoyErrorKind TYPE_MISMATCH_STATE =
+  private static final SoyErrorKind TYPE_MISMATCH_PROP =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
-  private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
+  private static final SoyErrorKind PROP_MUST_BE_CONSTANT =
       SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
@@ -243,35 +243,35 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
       visitExpressions(node);
-      for (TemplateStateVar state : node.getStateVars()) {
-        SoyType declaredType = state.type();
-        SoyType actualType = state.initialValue().getType();
+      for (TemplatePropVar prop : node.getPropVars()) {
+        SoyType declaredType = prop.type();
+        SoyType actualType = prop.initialValue().getType();
         if (declaredType != null) {
           if (declaredType.equals(NullType.getInstance())) {
-            errorReporter.report(state.nameLocation(), EXPLICIT_NULL);
+            errorReporter.report(prop.nameLocation(), EXPLICIT_NULL);
           }
           if (!declaredType.isAssignableFrom(actualType)) {
             errorReporter.report(
-                state.initialValue().getSourceLocation(),
-                TYPE_MISMATCH_STATE,
-                state.name(),
+                prop.initialValue().getSourceLocation(),
+                TYPE_MISMATCH_PROP,
+                prop.name(),
                 actualType,
                 declaredType);
           }
           if (declaredType.equals(actualType)) {
-            errorReporter.report(state.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
+            errorReporter.report(prop.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
           }
         } else {
           // in this case the declaredType is inferred from the initializer expression, so just
           // assign
-          state.setType(actualType);
+          prop.setType(actualType);
           if (actualType.equals(NullType.getInstance())) {
-            errorReporter.report(state.nameLocation(), INFERRED_NULL);
+            errorReporter.report(prop.nameLocation(), INFERRED_NULL);
           }
         }
-        if (!SoyTreeUtils.isConstantExpr(state.initialValue())) {
+        if (!SoyTreeUtils.isConstantExpr(prop.initialValue())) {
           errorReporter.report(
-              state.initialValue().getSourceLocation(), STATE_MUST_BE_CONSTANT, state.name());
+              prop.initialValue().getSourceLocation(), PROP_MUST_BE_CONSTANT, prop.name());
         }
       }
       for (TemplateParam param : node.getAllParams()) {

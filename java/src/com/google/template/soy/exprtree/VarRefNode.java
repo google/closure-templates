@@ -139,7 +139,7 @@ public final class VarRefNode extends AbstractExprNode {
       throw new NullPointerException(getSourceLocation().toString());
     }
     return defn.kind() == VarDefn.Kind.PARAM
-        || defn.kind() == VarDefn.Kind.STATE
+        || defn.kind() == VarDefn.Kind.PROP
         || defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 

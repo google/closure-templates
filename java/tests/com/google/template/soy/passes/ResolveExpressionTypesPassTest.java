@@ -33,7 +33,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -90,14 +90,14 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testState() {
+  public void testProp() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@state pa:= true}",
-                    "{@state pb:= [1,2,3]}",
-                    "{@state pc: bool|null = null}",
-                    "{@state pd: list<int>|null = null}",
+                    "{@prop pa:= true}",
+                    "{@prop pb:= [1,2,3]}",
+                    "{@prop pc: bool|null = null}",
+                    "{@prop pd: list<int>|null = null}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
@@ -105,21 +105,20 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .parse()
             .fileSet();
     assertTypes(soyTree);
     TemplateNode node = soyTree.getChild(0).getChild(0);
-    List<TemplateStateVar> states = node.getStateVars();
-    assertThat(states.get(0).initialValue().getType()).isEqualTo(BoolType.getInstance());
-    assertThat(states.get(1).initialValue().getType())
-        .isEqualTo(ListType.of(IntType.getInstance()));
-    assertThat(states.get(2).initialValue().getType()).isEqualTo(NullType.getInstance());
-    assertThat(states.get(3).initialValue().getType()).isEqualTo(NullType.getInstance());
+    List<TemplatePropVar> props = node.getPropVars();
+    assertThat(props.get(0).initialValue().getType()).isEqualTo(BoolType.getInstance());
+    assertThat(props.get(1).initialValue().getType()).isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(props.get(2).initialValue().getType()).isEqualTo(NullType.getInstance());
+    assertThat(props.get(3).initialValue().getType()).isEqualTo(NullType.getInstance());
   }
 
   @Test
-  public void testStateTypeInference() {
+  public void testPropTypeInference() {
     SoyTypeRegistry typeRegistry =
         new SoyTypeRegistry.Builder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
@@ -128,31 +127,31 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@state pa:= true}",
-                    "{@state pb:= [1,2,3]}",
-                    "{@state proto:= example.ExampleExtendable()}",
+                    "{@prop pa:= true}",
+                    "{@prop pb:= [1,2,3]}",
+                    "{@prop proto:= example.ExampleExtendable()}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
                     "{assertType('example.ExampleExtendable', $proto)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("state_vars"))
+            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .typeRegistry(typeRegistry)
             .parse()
             .fileSet();
     assertTypes(soyTree);
     TemplateNode node = soyTree.getChild(0).getChild(0);
-    List<TemplateStateVar> states = node.getStateVars();
+    List<TemplatePropVar> props = node.getPropVars();
 
-    assertThat(states.get(0).name()).isEqualTo("pa");
-    assertThat(states.get(0).type()).isEqualTo(BoolType.getInstance());
+    assertThat(props.get(0).name()).isEqualTo("pa");
+    assertThat(props.get(0).type()).isEqualTo(BoolType.getInstance());
 
-    assertThat(states.get(1).name()).isEqualTo("pb");
-    assertThat(states.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(props.get(1).name()).isEqualTo("pb");
+    assertThat(props.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
 
-    assertThat(states.get(2).name()).isEqualTo("proto");
-    assertThat(states.get(2).type()).isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
+    assertThat(props.get(2).name()).isEqualTo("proto");
+    assertThat(props.get(2).type()).isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
   }
 
   @Test
