@@ -90,7 +90,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
       String name = node.getDelCalleeName();
       for (TemplateDelegateNode deltemplate : deltemplates.get(name)) {
         if (deltemplate.getContentKind() == SanitizedContentKind.HTML) {
-          errorReporter.warn(node.getSourceLocation(), CALLS_HTML_FROM_NON_HTML);
+          errorReporter.report(node.getSourceLocation(), CALLS_HTML_FROM_NON_HTML);
         }
         // Other parts of the compiler ensure that all known delegates have the same kind.
         break;
@@ -112,7 +112,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
         isHtml = contentKindOfPrintDirectives == ContentKind.HTML;
       }
       if (isHtml) {
-        errorReporter.warn(node.getSourceLocation(), PRINTS_HTML_FROM_NON_HTML);
+        errorReporter.report(node.getSourceLocation(), PRINTS_HTML_FROM_NON_HTML);
       }
     }
   }

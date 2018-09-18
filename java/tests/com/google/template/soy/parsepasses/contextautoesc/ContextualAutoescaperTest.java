@@ -1716,21 +1716,6 @@ public final class ContextualAutoescaperTest {
             "  {@param x: ?}\n",
             "{$x |bidiSpanWrap}\n",
             "{/template}"));
-
-    // But if we have a |bidiSpanWrap directive in a non HTML context, then don't reorder.
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "<script>var html = {$x |bidiSpanWrap |escapeJsValue}</script>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "<script>var html = {$x |bidiSpanWrap}</script>\n",
-            "{/template}"));
   }
 
   @Test
