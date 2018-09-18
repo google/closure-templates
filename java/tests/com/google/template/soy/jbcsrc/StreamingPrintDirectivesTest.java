@@ -286,16 +286,13 @@ public final class StreamingPrintDirectivesTest {
             "",
             "{template .nested kind=\"text\"}",
             "  {@param p : ?}",
-            // escapeHtml is not closeable and it is streaming
-            "  {$p|escapeHtml|streamingCloseable:'(close)'}",
+            "  {$p|streamingCloseable:'(c1)'|streamingCloseable:'(close)'}",
             "{/template}",
             "",
             "{template .nestedDeeper kind=\"text\"}",
             "  {@param p : ?}",
-            "  {$p|escapeHtml",
-            "     |streamingCloseable:'(c1)'",
+            "  {$p|streamingCloseable:'(c1)'",
             "     |streamingCloseable:'(c2)'",
-            "     |escapeHtml",
             "     |streamingCloseable:'(c3)'}",
             "{/template}",
             "");
@@ -303,7 +300,7 @@ public final class StreamingPrintDirectivesTest {
     assertThat(renderToString("ns.basic", ImmutableMap.of("p", "hello"), templates, context))
         .isEqualTo("hello closed!");
     assertThat(renderToString("ns.nested", ImmutableMap.of("p", "hello"), templates, context))
-        .isEqualTo("hello(close)");
+        .isEqualTo("hello(c1)(close)");
     assertThat(renderToString("ns.nestedDeeper", ImmutableMap.of("p", "hello"), templates, context))
         .isEqualTo("hello(c1)(c2)(c3)");
   }

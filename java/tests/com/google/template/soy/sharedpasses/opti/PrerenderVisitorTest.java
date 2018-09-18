@@ -50,19 +50,17 @@ public class PrerenderVisitorTest {
 
     String printNodesSource =
         "{let $boo: 8 /}\n"
-            + "{'<b>&</b>' |escapeHtml}   {sp}\n"
             + "{'aaa+bbb = ccc' |escapeUri}   {sp}\n"
             + "{'0123456789' |truncate:5,true}   {sp}\n"
             + "{'0123456789' |truncate:$boo,false}   {sp}\n"
-            + "{'0123456789' |escapeHtml |insertWordBreaks:5}   {sp}\n"
-            + "{'0123456789' |insertWordBreaks:$boo |escapeHtml}   {sp}\n";
+            + "{'0123456789' |insertWordBreaks:5}   {sp}\n"
+            + "{'0123456789' |insertWordBreaks:$boo}   {sp}\n";
     String expectedResult =
-        "&lt;b&gt;&amp;&lt;/b&gt;    "
-            + "aaa%2Bbbb%20%3D%20ccc    "
+        "aaa%2Bbbb%20%3D%20ccc    "
             + "01...    "
             + "01234567    "
             + "01234<wbr>56789    "
-            + "01234567&lt;wbr&gt;89    ";
+            + "01234567<wbr>89    ";
     assertThat(prerender(printNodesSource)).isEqualTo(expectedResult);
   }
 

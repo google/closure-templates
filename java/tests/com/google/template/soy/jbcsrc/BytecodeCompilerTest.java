@@ -689,8 +689,8 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testPrintDirectives() {
-    assertThatTemplateBody("{' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}")
-        .rendersAs(" blah &amp;&amp;blahbl<wbr>ahblah");
+    assertThatTemplateBody("{' blah aablahblahblah' |insertWordBreaks:8}")
+        .rendersAs(" blah aablahbl<wbr>ahblah");
   }
 
   @Test
@@ -804,7 +804,7 @@ public class BytecodeCompilerTest {
             "{namespace ns}",
             "{template .foo}",
             "  {@param? content : string}",
-            "  {$content ?: 'empty' |escapeHtml}",
+            "  {$content ?: 'empty'}",
             "{/template}");
     subject.rendersAs("empty");
     subject.rendersAs(

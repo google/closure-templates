@@ -119,13 +119,8 @@ public class SimplifyVisitorTest {
     soyCode = "{'foo'}";
     assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("foo");
 
-    soyCode = "{'<b>&</b>' |escapeHtml}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("&lt;b&gt;&amp;&lt;/b&gt;");
-
-    soyCode = "{'<b>&</b>' |escapeHtml |insertWordBreaks:5}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString())
-        .isEqualTo("&lt;b&gt;&amp;&lt;<wbr>/b&gt;");
+    soyCode = "{'abcdefgh' |insertWordBreaks:5}";
+    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("abcde<wbr>fgh");
 
     // Doesn't simplify PrintNode with non-constant expression (but expression is simplified).
     soyCode = "{@param boo : ?}\n" + "{1 + 3 + $boo}";

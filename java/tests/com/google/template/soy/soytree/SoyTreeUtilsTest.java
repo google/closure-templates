@@ -140,7 +140,7 @@ public final class SoyTreeUtilsTest {
               "  {@param foo : ?}",
               "  Hello, World!",
               "  {lb}{call .foo data=\"all\"}{param x: $x /}{/call}{rb}",
-              "  {$x |escapeHtml}",
+              "  {$x}",
               "  {if $cond0}",
               "    {$a}",
               "  {elseif $cond1}",

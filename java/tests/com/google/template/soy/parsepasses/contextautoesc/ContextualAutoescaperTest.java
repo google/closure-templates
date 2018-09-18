@@ -536,18 +536,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testJsStringInsideQuotesRejected() throws Exception {
-    assertRewriteFails(
-        "Escaping modes [|escapeJsValue] not compatible with (Context JS_SQ_STRING).",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "<script>alert('Hello {$world |escapeJsValue}');</script>\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testJsTemplateStrings() {
     // these first three examples used to fail because the '/' in '</div' would be interpreted as a
     // regex and then we would get an error for exiting the script or template in js regex.
@@ -667,8 +655,8 @@ public final class ContextualAutoescaperTest {
             "  {@param n: ?}\n",
             "  <style>\n",
             "    {for $i in range($n)}\n",
-            "      .foo{$i |filterCssValue}:before {lb}\n",
-            "        content: '{$i |escapeCssString}\n", // Missing close quote.
+            "      .foo{$i}:before {lb}\n",
+            "        content: '{$i}\n", // Missing close quote.
             "      {rb}\n",
             "    {/for}\n",
             "  </style>\n",

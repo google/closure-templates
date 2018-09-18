@@ -374,12 +374,11 @@ public class RenderVisitorTest {
             + "  {$ij.ijStr}\n"
             + "  {$goo[5] + 1}{sp}\n"
             + "  {$f ?: ''} {$undefined ?: -1}{sp}\n"
-            + "  {print ' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}{sp}\n"
+            + "  {' blah aablahblahblah' |insertWordBreaks:8}{sp}\n"
             + "  {$toStringTestValue |noAutoescape}\n";
 
     assertRender(
-        templateBody,
-        "8 baz injected22 false -1  blah &amp;&amp;blahbl<wbr>ahblah coerceToString()");
+        templateBody, "8 baz injected22 false -1  blah aablahbl<wbr>ahblah coerceToString()");
   }
 
   @Test
@@ -855,15 +854,9 @@ public class RenderVisitorTest {
   @Test
   public void testRenderPcdataWithKnownSafeHtml() throws Exception {
     String templateBody =
-        "{@param plainText : ?}\n"
-            + "{@param sanitizedContent : ?}\n"
-            + "plain: {$plainText |escapeHtml}{\\n}"
-            + "html:  {$sanitizedContent |escapeHtml}{\\n}"
-            + "The end.";
+        "{@param sanitizedContent : ?}\n" + "html:  {$sanitizedContent}{\\n}" + "The end.";
 
-    assertRender(
-        templateBody,
-        "plain: &lt;plaintext id=foo&gt;\n" + "html:  <plaintext id=foo>\n" + "The end.");
+    assertRender(templateBody, "html:  <plaintext id=foo>\n" + "The end.");
   }
 
   @Test

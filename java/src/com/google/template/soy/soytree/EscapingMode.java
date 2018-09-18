@@ -29,70 +29,71 @@ import javax.annotation.Nullable;
 public enum EscapingMode {
 
   /** Encodes HTML special characters. */
-  ESCAPE_HTML(true, SanitizedContentKind.HTML),
+  ESCAPE_HTML(true, SanitizedContentKind.HTML, /* internalOnly= */ true),
 
   /** Escapes HTML except preserves ampersands and entities. */
-  NORMALIZE_HTML(true, null),
+  NORMALIZE_HTML(true, null, /* internalOnly= */ true),
 
   /** Like {@link #ESCAPE_HTML} but normalizes known safe HTML since RCDATA can't contain tags. */
-  ESCAPE_HTML_RCDATA(true, null),
+  ESCAPE_HTML_RCDATA(true, null, /* internalOnly= */ true),
 
   /**
    * Encodes HTML special characters, including quotes, so that the value can appear as part of a
    * quoted attribute value. This differs from {@link #ESCAPE_HTML} in that it strips tags from
    * known safe HTML.
    */
-  ESCAPE_HTML_ATTRIBUTE(true, null),
+  ESCAPE_HTML_ATTRIBUTE(true, null, /* internalOnly= */ true),
 
   /**
    * Encodes HTML special characters and spaces so that the value can appear as part of an unquoted
    * attribute.
    */
-  ESCAPE_HTML_ATTRIBUTE_NOSPACE(true, null),
+  ESCAPE_HTML_ATTRIBUTE_NOSPACE(true, null, /* internalOnly= */ true),
 
   /**
    * Only allow a valid identifier - letters, numbers, dashes, and underscores. Throw a runtime
    * exception otherwise.
    */
-  FILTER_HTML_ELEMENT_NAME(true, null),
+  FILTER_HTML_ELEMENT_NAME(true, null, /* internalOnly= */ true),
 
   /**
    * Only allow a valid identifier - letters, numbers, dashes, and underscores or a subset of
    * attribute value pairs. Throw a runtime exception otherwise.
    */
-  FILTER_HTML_ATTRIBUTES(true, null),
+  FILTER_HTML_ATTRIBUTES(true, null, /* internalOnly= */ true),
 
   /**
    * Encode all HTML special characters and quotes, and JS newlines as if to allow them to appear
    * literally in a JS string.
    */
-  ESCAPE_JS_STRING(false, null),
+  ESCAPE_JS_STRING(false, null, /* internalOnly= */ true),
 
   /**
    * If a number or boolean, output as a JS literal. Otherwise surround in quotes and escape. Make
    * sure all HTML and space characters are quoted.
    */
-  ESCAPE_JS_VALUE(false, null),
+  ESCAPE_JS_VALUE(false, null, /* internalOnly= */ true),
 
   /**
    * Like {@link #ESCAPE_JS_STRING} but additionally escapes RegExp specials like <code>.+*?$^[](){}
    * </code>.
    */
-  ESCAPE_JS_REGEX(false, null),
+  ESCAPE_JS_REGEX(false, null, /* internalOnly= */ true),
 
   /**
    * Must escape all quotes, newlines, and the close parenthesis using {@code \} followed by hex
    * followed by a space.
    */
-  ESCAPE_CSS_STRING(true, null),
+  ESCAPE_CSS_STRING(true, null, /* internalOnly= */ true),
 
   /**
    * If the value is numeric, renders it as a numeric value so that <code>{$n}px</code> works as
    * expected, otherwise if it is a valid CSS identifier, outputs it without escaping, otherwise
    * replaces with "zSoyz" to indicate the value was rejected.
    */
-  FILTER_CSS_VALUE(false, SanitizedContentKind.CSS),
+  FILTER_CSS_VALUE(false, SanitizedContentKind.CSS, /* internalOnly= */ true),
 
+  // TODO(jakubvrana): Make internal-only.
   /**
    * Percent encode all URI special characters and characters that cannot appear unescaped in a URI
    * such as spaces. Make sure to encode pluses and parentheses. This corresponds to the JavaScript
@@ -100,6 +101,7 @@ public enum EscapingMode {
    */
   ESCAPE_URI(true, SanitizedContentKind.URI),
 
+  // TODO(jakubvrana): Make internal-only.
   /**
    * Percent encode non-URI characters that cannot appear unescaped in a URI such as spaces, and
    * encode characters that are not special in URIs that are special in languages that URIs are
@@ -115,7 +117,7 @@ public enum EscapingMode {
   /**
    * Like {@link #NORMALIZE_URI}, but filters out everything except relative and http/https URIs.
    */
-  FILTER_NORMALIZE_URI(false, SanitizedContentKind.URI),
+  FILTER_NORMALIZE_URI(false, SanitizedContentKind.URI, /* internalOnly= */ true),
 
   /**
    * Like {@link #FILTER_NORMALIZE_URI}, but also accepts some {@code data:} URIs, since image
@@ -123,14 +125,14 @@ public enum EscapingMode {
    * discovered from time to time, a templating language can't realistically try to protect against
    * such a thing.
    */
-  FILTER_NORMALIZE_MEDIA_URI(false, SanitizedContentKind.URI),
+  FILTER_NORMALIZE_MEDIA_URI(false, SanitizedContentKind.URI, /* internalOnly= */ true),
 
   /**
    * Makes sure there URIs are trusted and not input variables. Currently used only for script
    * sources.
    */
   // TODO(shwetakarwa): Change second argument when function is implemented.
-  FILTER_TRUSTED_RESOURCE_URI(false, null),
+  FILTER_TRUSTED_RESOURCE_URI(false, null, /* internalOnly= */ true),
 
   /** The explicit rejection of escaping. */
   NO_AUTOESCAPE(false, SanitizedContentKind.TEXT),

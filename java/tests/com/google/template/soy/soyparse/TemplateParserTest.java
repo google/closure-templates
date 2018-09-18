@@ -927,7 +927,7 @@ public final class TemplateParserTest {
         "{@param boo : ?}{@param goo : ?}\n"
             + "  {$boo.foo}{$boo.foo}\n"
             + "  {$goo + 1 |noAutoescape}\n"
-            + "  {print 'blah    blahblahblah' |escapeHtml|insertWordBreaks:8}\n";
+            + "  {'blah    blahblahblah' |insertWordBreaks:8}\n";
 
     List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(4, nodes.size());
@@ -953,12 +953,10 @@ public final class TemplateParserTest {
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertEquals("'blah    blahblahblah'", pn3.getExpr().toSourceString());
-    assertEquals(2, pn3.getChildren().size());
+    assertEquals(1, pn3.getChildren().size());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
-    assertEquals("|escapeHtml", pn3d0.getName());
-    PrintDirectiveNode pn3d1 = pn3.getChild(1);
-    assertEquals("|insertWordBreaks", pn3d1.getName());
-    assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getRoot()).getValue());
+    assertEquals("|insertWordBreaks", pn3d0.getName());
+    assertEquals(8, ((IntegerNode) pn3d0.getArgs().get(0).getRoot()).getValue());
     assertEquals("XXX", pn3.genBasePhName());
     assertTrue(pn3.getExpr().getRoot() instanceof StringNode);
 
