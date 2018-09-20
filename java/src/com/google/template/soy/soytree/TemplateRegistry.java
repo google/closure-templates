@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -215,12 +214,7 @@ public final class TemplateRegistry {
     if (templateNode == null) {
       return Optional.absent();
     }
-    Preconditions.checkState(
-        templateNode instanceof TemplateBasicNode
-            || templateNode.getAutoescapeMode() == AutoescapeMode.STRICT,
-        "Cannot determine the content kind for a delegate template that does not use strict "
-            + "autoescaping.");
 
-    return Optional.of(templateNode.getContentKind());
+    return Optional.fromNullable(templateNode.getContentKind());
   }
 }

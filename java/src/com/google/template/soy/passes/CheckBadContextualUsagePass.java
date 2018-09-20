@@ -18,8 +18,9 @@ package com.google.template.soy.passes;
 
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -29,17 +30,16 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.UnknownType;
 
 /** Checks if HTML is printed only from HTML context. */
 final class CheckBadContextualUsagePass extends CompilerFileSetPass {
@@ -60,6 +60,16 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
               + "2. Convert the HTML to plain text by htmlToText($html), e.g. inside <title>. "
               + "3. Stringify the HTML by outputting '''' + $html, e.g. inside <pre>.");
 
+  private static final SoyErrorKind CALLS_CSS_FROM_NON_CSS =
+      SoyErrorKind.of(
+          "Calling CSS templates from non-CSS context is not allowed. You likely need to change "
+              + "the kind to \"text\".");
+
+  private static final SoyErrorKind PRINTS_CSS_FROM_NON_CSS =
+      SoyErrorKind.of(
+          "Printing CSS from non-CSS context is not allowed. You likely need to change the type to "
+              + "string (kind=\"text\").");
+
   private final ErrorReporter errorReporter;
 
   CheckBadContextualUsagePass(ErrorReporter errorReporter) {
@@ -69,50 +79,54 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
   @Override
   public void run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    ImmutableListMultimap<String, TemplateDelegateNode> deltemplates =
-        registry.getDelTemplateSelector().delTemplateNameToValues();
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
         // TODO(jakubvrana): Warn against {call} too.
         for (CallDelegateNode node : getAllNodesOfType(template, CallDelegateNode.class)) {
-          checkCallDelegateNode(node, deltemplates);
+          checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
+          checkCallNode(node, registry, SanitizedContentKind.CSS, CALLS_CSS_FROM_NON_CSS);
         }
         for (PrintNode node : getAllNodesOfType(template, PrintNode.class)) {
-          checkPrintNode(node);
+          checkPrintNode(node, SanitizedContentKind.HTML, PRINTS_HTML_FROM_NON_HTML);
+          checkPrintNode(node, SanitizedContentKind.CSS, PRINTS_CSS_FROM_NON_CSS);
         }
       }
     }
   }
 
-  private void checkCallDelegateNode(
-      CallDelegateNode node, ImmutableListMultimap<String, TemplateDelegateNode> deltemplates) {
-    if (!allowsHtml(node.getHtmlContext())) {
-      String name = node.getDelCalleeName();
-      for (TemplateDelegateNode deltemplate : deltemplates.get(name)) {
-        if (deltemplate.getContentKind() == SanitizedContentKind.HTML) {
-          errorReporter.report(node.getSourceLocation(), CALLS_HTML_FROM_NON_HTML);
-        }
-        // Other parts of the compiler ensure that all known delegates have the same kind.
-        break;
+  private static final ImmutableMap<SanitizedContentKind, HtmlContext> ALLOWED_CONTEXTS =
+      ImmutableMap.of(
+          SanitizedContentKind.HTML, HtmlContext.HTML_PCDATA,
+          SanitizedContentKind.CSS, HtmlContext.CSS);
+
+  private void checkCallNode(
+      CallNode node,
+      TemplateRegistry registry,
+      SanitizedContentKind contentKind,
+      SoyErrorKind errorKind) {
+    if (node.getHtmlContext() != ALLOWED_CONTEXTS.get(contentKind)) {
+      Optional<SanitizedContentKind> calleeContentKind = registry.getCallContentKind(node);
+      if (calleeContentKind.orNull() == contentKind) {
+        errorReporter.report(node.getSourceLocation(), errorKind);
       }
     }
   }
 
-  private void checkPrintNode(PrintNode node) {
-    if (!allowsHtml(node.getHtmlContext())) {
-      boolean isHtml;
+  private void checkPrintNode(
+      PrintNode node, SanitizedContentKind contentKind, SoyErrorKind errorKind) {
+    if (node.getHtmlContext() != ALLOWED_CONTEXTS.get(contentKind)) {
+      boolean report;
       ContentKind contentKindOfPrintDirectives = getContentKindOfPrintDirectives(node);
       if (contentKindOfPrintDirectives == null) {
         SoyType type = node.getExpr().getRoot().getType();
-        isHtml =
-            type != UnknownType.getInstance()
-                && type != AnyType.getInstance()
-                && type.isAssignableFrom(HtmlType.getInstance());
+        report =
+            !type.isAssignableFrom(AnyType.getInstance())
+                && type.isAssignableFrom(SanitizedType.getTypeForContentKind(contentKind));
       } else {
-        isHtml = contentKindOfPrintDirectives == ContentKind.HTML;
+        report = contentKindOfPrintDirectives.name().equals(contentKind.name());
       }
-      if (isHtml) {
-        errorReporter.report(node.getSourceLocation(), PRINTS_HTML_FROM_NON_HTML);
+      if (report) {
+        errorReporter.report(node.getSourceLocation(), errorKind);
       }
     }
   }
@@ -127,9 +141,5 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
       }
     }
     return null;
-  }
-
-  private boolean allowsHtml(HtmlContext htmlContext) {
-    return htmlContext == HtmlContext.HTML_PCDATA;
   }
 }
