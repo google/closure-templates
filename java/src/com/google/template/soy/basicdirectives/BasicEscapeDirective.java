@@ -239,6 +239,20 @@ public abstract class BasicEscapeDirective
     }
   }
 
+  /** Implements the |escapeHtmlHtmlAttribute directive. */
+  @SoyPurePrintDirective
+  static final class EscapeHtmlHtmlAttribute extends BasicEscapeDirective {
+
+    EscapeHtmlHtmlAttribute() {
+      super("|escapeHtmlHtmlAttribute");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.escapeHtmlHtmlAttribute(value);
+    }
+  }
+
   /** Implements the |escapeHtmlAttributeNospace directive. */
   @SoyPurePrintDirective
   static final class EscapeHtmlAttributeNospace extends BasicEscapeDirective {

@@ -204,6 +204,11 @@ def escape_html_attribute(value):
   return generated_sanitize.escape_html_helper(value)
 
 
+def escape_html_html_attribute(value):
+  # TODO(b/113065826): Double-escape plain text.
+  return str(value)
+
+
 def escape_html_attribute_nospace(value):
   if is_content_kind(value, CONTENT_KIND.HTML):
     return generated_sanitize.normalize_html_nospace_helper(

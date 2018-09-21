@@ -144,6 +144,9 @@ public final class Context {
   /** Determines the context in which this URI is being used. */
   public final UriType uriType;
 
+  /** Determines position in the HTML attribute value containing HTML. */
+  public final HtmlHtmlAttributePosition htmlHtmlAttributePosition;
+
   /** The count of {@code <template>} elements entered and not subsequently exited. */
   public final int templateNestDepth;
 
@@ -159,6 +162,7 @@ public final class Context {
       JsFollowingSlash slashType,
       UriPart uriPart,
       UriType uriType,
+      HtmlHtmlAttributePosition htmlHtmlAttributePosition,
       int templateNestDepth,
       int jsTemplateLiteralNestDepth) {
     this.state = state;
@@ -175,6 +179,7 @@ public final class Context {
         "If in a URI, the type of URI must be specified. UriType = %s but UriPart = %s",
         uriType,
         uriPart);
+    this.htmlHtmlAttributePosition = htmlHtmlAttributePosition;
     this.templateNestDepth = templateNestDepth;
     this.jsTemplateLiteralNestDepth = jsTemplateLiteralNestDepth;
   }
@@ -189,6 +194,7 @@ public final class Context {
         JsFollowingSlash.NONE,
         UriPart.NONE,
         UriType.NONE,
+        HtmlHtmlAttributePosition.NONE,
         0,
         0);
   }
@@ -212,6 +218,13 @@ public final class Context {
   /** Returns a context that differs only in the uri part. */
   public Context derive(UriPart uriPart) {
     return uriPart == this.uriPart ? this : toBuilder().withUriPart(uriPart).build();
+  }
+
+  /** Returns a context that differs only in the HTML attribute containing HTML position. */
+  public Context derive(HtmlHtmlAttributePosition htmlHtmlAttributePosition) {
+    return htmlHtmlAttributePosition == this.htmlHtmlAttributePosition
+        ? this
+        : toBuilder().withHtmlHtmlAttributePosition(htmlHtmlAttributePosition).build();
   }
 
   /** A mutable builder that allows deriving variant contexts. */
@@ -302,6 +315,9 @@ public final class Context {
       case STYLE:
         state = HtmlContext.CSS;
         break;
+      case HTML:
+        state = HtmlContext.HTML_HTML_ATTR_VALUE;
+        break;
       case URI:
         state = HtmlContext.URI;
         uriPart = UriPart.START;
@@ -316,7 +332,16 @@ public final class Context {
         uriType,
         attrType);
     return new Context(
-        state, elType, attrType, delim, slash, uriPart, uriType, templateNestDepth, 0);
+        state,
+        elType,
+        attrType,
+        delim,
+        slash,
+        uriPart,
+        uriType,
+        HtmlHtmlAttributePosition.NONE,
+        templateNestDepth,
+        0);
   }
 
   private static boolean hasBlessStringAsTrustedResourceUrlForLegacyDirective(
@@ -464,7 +489,7 @@ public final class Context {
         } else if (!escapingMode.isHtmlEmbeddable) {
           // Some modes, like JS and CSS value modes, might insert quotes to make
           // a quoted string, so make sure to escape those as HTML.
-          // E.g. when the value of $s is " onmouseover=evil() foo=", in
+          // E.g. when the value of $s is “' onmouseover=evil() foo='”, in
           //    <a onclick='alert({$s})'>
           // we want to produce
           //    <a onclick='alert(&#39; onmouseover=evil() foo=&#39;)'>
@@ -1349,6 +1374,8 @@ public final class Context {
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
       uriType = UriType.NORMAL;
+    } else if (elType == ElementType.IFRAME && "srcdoc".equals(attrName)) {
+      attr = Context.AttributeType.HTML;
     } else {
       attr = Context.AttributeType.PLAIN_TEXT;
     }
@@ -1420,6 +1447,9 @@ public final class Context {
 
     /** Mime-type text/css. */
     STYLE,
+
+    /** Mime-type text/html. */
+    HTML,
 
     /** A URI or URI reference. */
     URI,
@@ -1625,6 +1655,14 @@ public final class Context {
     TRUSTED_RESOURCE;
   }
 
+  /** Describes position in HTML attribute value containing HTML (e.g. {@code <iframe srcdoc>}). */
+  public enum HtmlHtmlAttributePosition {
+    /** Not in HTML attribute value containing HTML or at its start. */
+    NONE,
+    /** Inside HTML attribute value containing HTML but not at the start. */
+    NOT_START;
+  }
+
   /** A mutable builder for {@link Context}s. */
   static final class Builder {
     private HtmlContext state;
@@ -1634,6 +1672,7 @@ public final class Context {
     private JsFollowingSlash slashType;
     private UriPart uriPart;
     private UriType uriType;
+    private HtmlHtmlAttributePosition htmlHtmlAttributePosition;
     private int templateNestDepth;
     private int jsTemplateLiteralNestDepth;
 
@@ -1645,6 +1684,7 @@ public final class Context {
       this.slashType = context.slashType;
       this.uriPart = context.uriPart;
       this.uriType = context.uriType;
+      this.htmlHtmlAttributePosition = context.htmlHtmlAttributePosition;
       this.templateNestDepth = context.templateNestDepth;
       this.jsTemplateLiteralNestDepth = context.jsTemplateLiteralNestDepth;
     }
@@ -1681,6 +1721,11 @@ public final class Context {
 
     Builder withUriType(UriType uriType) {
       this.uriType = Preconditions.checkNotNull(uriType);
+      return this;
+    }
+
+    Builder withHtmlHtmlAttributePosition(HtmlHtmlAttributePosition htmlHtmlAttributePosition) {
+      this.htmlHtmlAttributePosition = Preconditions.checkNotNull(htmlHtmlAttributePosition);
       return this;
     }
 
@@ -1761,6 +1806,7 @@ public final class Context {
           slashType,
           uriPart,
           uriType,
+          htmlHtmlAttributePosition,
           templateNestDepth,
           jsTemplateLiteralNestDepth);
     }

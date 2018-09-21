@@ -158,12 +158,25 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "Error while re-contextualizing template ns.uri "
             + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
-            + "- In file no-path:8:2, template ns.uri__C113757: Soy can't prove this URI has a "
+            + "- In file no-path:8:2, template ns.uri__C113958: Soy can't prove this URI has a "
             + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
             + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
             + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
             + "instead of href=\"foo{$bar}\").",
         template);
+  }
+
+  @Test
+  public void testHtmlHtmlAttributePosition() throws Exception {
+    assertRewriteFails(
+        "HTML attribute values containing HTML can use dynamic expressions only at the start "
+            + "of the value.",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "  {@param x: ?}\n",
+            "  <iframe srcdoc='&lt;script&gt;{$x}&lt;/script&gt;'></iframe>\n",
+            "{/template}"));
   }
 
   @Test
@@ -241,6 +254,8 @@ public final class ContextualAutoescaperTest {
             "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
             "<base href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
             "<iframe src='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></iframe>",
+            "<iframe srcdoc='{$x |escapeHtmlHtmlAttribute |escapeHtmlAttribute}'></iframe>",
+            "<iframe srcdoc={$x |escapeHtmlHtmlAttribute |escapeHtmlAttributeNospace}></iframe>",
             "<link rel='shortcut icon' href='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<link rel='stylesheet' href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'>",
             "<link rel='{$x |escapeHtmlAttribute}' "
@@ -265,6 +280,8 @@ public final class ContextualAutoescaperTest {
             "<audio src='{$x}'></audio>\n",
             "<base href='{$x}'>\n",
             "<iframe src='{$x}'></iframe>",
+            "<iframe srcdoc='{$x}'></iframe>",
+            "<iframe srcdoc={$x}></iframe>",
             "<link rel='shortcut icon' href='{$x}'>\n",
             "<link rel='stylesheet' href='{$x}'>\n",
             "<link rel='{$x}' href='{$x}'>\n",
@@ -776,14 +793,14 @@ public final class ContextualAutoescaperTest {
             "  {@param world: ?}\n",
             "{call .bar data=\"all\" /}",
             "<script>",
-            "alert('{call ns.bar__C14 data=\"all\" /}');",
+            "alert('{call ns.bar__C15 data=\"all\" /}');",
             "</script>\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}\n\n",
-            "{template .bar__C14 autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar__C15 autoescape=\"deprecated-contextual\"}\n",
             "  {@param world: ?}\n",
             "Hello, {$world |escapeJsString}!\n",
             "{/template}"),
@@ -810,7 +827,7 @@ public final class ContextualAutoescaperTest {
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
             "<script>",
-            "x = [{call ns.countDown__C4010 data=\"all\" /}]",
+            "x = [{call ns.countDown__C4011 data=\"all\" /}]",
             "</script>\n",
             "{/template}\n\n",
             "{template .countDown autoescape=\"deprecated-contextual\"}\n",
@@ -820,11 +837,11 @@ public final class ContextualAutoescaperTest {
             "{call .countDown}{param x : $x - 1 /}{/call}",
             "{/if}\n",
             "{/template}\n\n",
-            "{template .countDown__C4010 autoescape=\"deprecated-contextual\"}\n",
+            "{template .countDown__C4011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
             "{if $x > 0}",
             "{print --$x |escapeJsValue},",
-            "{call ns.countDown__C4010}{param x : $x - 1 /}{/call}",
+            "{call ns.countDown__C4011}{param x : $x - 1 /}{/call}",
             "{/if}\n",
             "{/template}"),
         join(
@@ -850,7 +867,7 @@ public final class ContextualAutoescaperTest {
             "  {@param declare: ?}\n",
             "<script>",
             "{if $declare}var {/if}",
-            "x = {call ns.bar__C4010 /}{\\n}",
+            "x = {call ns.bar__C4011 /}{\\n}",
             "y = 2",
             "  </script>\n",
             "{/template}\n\n",
@@ -861,7 +878,7 @@ public final class ContextualAutoescaperTest {
             " , ",
             "{/if}\n",
             "{/template}\n\n",
-            "{template .bar__C4010 autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar__C4011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param? declare: ?}\n",
             "42",
             "{if $declare}",
@@ -1138,9 +1155,9 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "Error while re-contextualizing template ns.quot in"
             + " context (Context JS REGEX):"
-            + "\n- In file no-path:10:27, template ns.quot__C4010: Error while re-contextualizing"
+            + "\n- In file no-path:10:27, template ns.quot__C4011: Error while re-contextualizing"
             + " template ns.quot in context (Context JS_DQ_STRING):"
-            + "\n- In file no-path:10:5, template ns.quot__C13: {if} command without {else} changes"
+            + "\n- In file no-path:10:5, template ns.quot__C14: {if} command without {else} changes"
             + " context.",
         join(
             "{namespace ns}\n\n",

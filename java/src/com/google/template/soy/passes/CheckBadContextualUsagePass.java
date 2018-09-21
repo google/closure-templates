@@ -20,7 +20,7 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -94,9 +94,10 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
     }
   }
 
-  private static final ImmutableMap<SanitizedContentKind, HtmlContext> ALLOWED_CONTEXTS =
-      ImmutableMap.of(
+  private static final ImmutableMultimap<SanitizedContentKind, HtmlContext> ALLOWED_CONTEXTS =
+      ImmutableMultimap.of(
           SanitizedContentKind.HTML, HtmlContext.HTML_PCDATA,
+          SanitizedContentKind.HTML, HtmlContext.HTML_HTML_ATTR_VALUE,
           SanitizedContentKind.CSS, HtmlContext.CSS);
 
   private void checkCallNode(
@@ -104,7 +105,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
       TemplateRegistry registry,
       SanitizedContentKind contentKind,
       SoyErrorKind errorKind) {
-    if (node.getHtmlContext() != ALLOWED_CONTEXTS.get(contentKind)) {
+    if (!ALLOWED_CONTEXTS.containsEntry(contentKind, node.getHtmlContext())) {
       Optional<SanitizedContentKind> calleeContentKind = registry.getCallContentKind(node);
       if (calleeContentKind.orNull() == contentKind) {
         errorReporter.report(node.getSourceLocation(), errorKind);
@@ -114,7 +115,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
 
   private void checkPrintNode(
       PrintNode node, SanitizedContentKind contentKind, SoyErrorKind errorKind) {
-    if (node.getHtmlContext() != ALLOWED_CONTEXTS.get(contentKind)) {
+    if (!ALLOWED_CONTEXTS.containsEntry(contentKind, node.getHtmlContext())) {
       boolean report;
       ContentKind contentKindOfPrintDirectives = getContentKindOfPrintDirectives(node);
       if (contentKindOfPrintDirectives == null) {

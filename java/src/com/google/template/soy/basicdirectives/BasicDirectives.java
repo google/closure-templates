@@ -31,6 +31,7 @@ public final class BasicDirectives {
         new BasicEscapeDirective.NormalizeHtml(),
         new BasicEscapeDirective.EscapeHtmlRcdata(),
         new BasicEscapeDirective.EscapeHtmlAttribute(),
+        new BasicEscapeDirective.EscapeHtmlHtmlAttribute(),
         new BasicEscapeDirective.EscapeHtmlAttributeNospace(),
         new BasicEscapeDirective.FilterHtmlAttributes(),
         new BasicEscapeDirective.FilterHtmlElementName(),

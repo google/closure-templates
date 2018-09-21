@@ -335,6 +335,25 @@ public final class Sanitizers {
   }
 
   /**
+   * Escapes HTML special characters in an HTML attribute value containing HTML code, such as {@code
+   * <iframe srcdoc>}.
+   */
+  public static String escapeHtmlHtmlAttribute(SoyValue value) {
+    value = normalizeNull(value);
+    // TODO(b/113065826): Double-escape plain text.
+    return value.coerceToString();
+  }
+
+  /**
+   * Escapes HTML special characters in an HTML attribute value containing HTML code, such as {@code
+   * <iframe srcdoc>}.
+   */
+  public static String escapeHtmlHtmlAttribute(String value) {
+    // TODO(b/113065826): Double-escape plain text.
+    return value;
+  }
+
+  /**
    * Converts plain text to HTML by entity escaping, stripping tags in sanitized content so the
    * result can safely be embedded in an unquoted HTML attribute value.
    */

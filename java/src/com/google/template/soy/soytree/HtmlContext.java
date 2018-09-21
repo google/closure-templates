@@ -60,8 +60,11 @@ public enum HtmlContext {
   /** Inside an HTML comment. */
   HTML_COMMENT(EscapingMode.ESCAPE_HTML_RCDATA),
 
-  /** Inside a normal (non-CSS, JS, or URI) HTML attribute value. */
+  /** Inside a normal (non-CSS, JS, HTML, or URI) HTML attribute value. */
   HTML_NORMAL_ATTR_VALUE(EscapingMode.ESCAPE_HTML_ATTRIBUTE),
+
+  /** Inside an HTML attribute value containing HTML such as {@code <iframe srcdoc="">}. */
+  HTML_HTML_ATTR_VALUE(EscapingMode.ESCAPE_HTML_HTML_ATTRIBUTE),
 
   /** In CSS content outside a comment, string, or URI. */
   CSS(EscapingMode.FILTER_CSS_VALUE),

@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.parsepasses.contextautoesc.Context.HtmlHtmlAttributePosition;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -306,6 +307,7 @@ final class InferenceEngine {
     @Override
     protected void visitCallNode(CallNode callNode) {
       checkUriEnd();
+      checkHtmlHtmlAttributePosition(callNode);
 
       callNode.setHtmlContext(context.state);
 
@@ -462,6 +464,7 @@ final class InferenceEngine {
       }
 
       checkUriEnd();
+      checkHtmlHtmlAttributePosition(printNode);
 
       List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
       Context prev = context;
@@ -496,6 +499,15 @@ final class InferenceEngine {
             // We switch to UriPart.TRUSTED_RESOURCE_URI_END in RawTextNode where we also store
             // uriStart.
             uriStart);
+      }
+    }
+
+    private void checkHtmlHtmlAttributePosition(SoyNode node) {
+      if (context.htmlHtmlAttributePosition == HtmlHtmlAttributePosition.NOT_START) {
+        throw SoyAutoescapeException.createWithNode(
+            "HTML attribute values containing HTML can use dynamic expressions only at the start "
+                + "of the value.",
+            node);
       }
     }
 

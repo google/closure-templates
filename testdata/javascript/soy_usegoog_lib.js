@@ -26021,6 +26021,20 @@ soy.$$escapeHtmlAttribute = function(value) {
 
 
 /**
+ * Escapes HTML special characters in an HTML attribute value containing HTML
+ * code, such as <iframe srcdoc>.
+ *
+ * @param {?} value The HTML to be escaped. May not be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} An escaped version of value.
+ */
+soy.$$escapeHtmlHtmlAttribute = function(value) {
+  // TODO(b/113065826): Double-escape plain text.
+  return String(value);
+};
+
+
+/**
  * Escapes HTML special characters in a string including space and other
  * characters that can end an unquoted HTML attribute value.
  *

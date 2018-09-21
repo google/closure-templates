@@ -134,6 +134,8 @@ public final class InternalPluginsTest {
             "|filterImageDataUri",
             "|filterSipUri",
             "|filterTelUri",
+            // This is used only with escapeHtmlAttribute* which are not streaming.
+            "|escapeHtmlHtmlAttribute",
             // These two could be made streaming, it would require some refactoring of the
             // Sanitizers.stripHtmlTags method but it is probably a good idea.
             "|escapeHtmlAttribute",
