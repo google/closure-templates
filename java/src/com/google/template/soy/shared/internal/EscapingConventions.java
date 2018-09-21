@@ -546,7 +546,7 @@ public final class EscapingConventions {
   }
 
   /**
-   * Implements the {@code |escapeHtmlNoSpace} directive which allows arbitrary content to be
+   * Implements the {@code |escapeHtmlNospace} directive which allows arbitrary content to be
    * included in the value of an unquoted HTML attribute.
    */
   public static final class EscapeHtmlNospace extends CrossLanguageStringXform {
