@@ -116,14 +116,13 @@ public abstract class AbstractSoyCompiler {
   private List<SoySourceFunction> sourceFunctions = new ArrayList<>();
 
   @Option(
-    name = "--protoFileDescriptors",
-    usage =
-        "Location of protocol buffer definitions in the form of a file descriptor set."
-            + "The compiler needs defs for parameter type checking and generating direct "
-            + "access support for proto types.",
-    handler = SoyCmdLineParser.FileListOptionHandler.class
-  )
-  private final List<File> protoFileDescriptors = new ArrayList<>();
+      name = "--protoFileDescriptors",
+      usage =
+          "Location of protocol buffer definitions in the form of a file descriptor set."
+              + "The compiler needs defs for parameter type checking and generating direct "
+              + "access support for proto types.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> protoFileDescriptors = new ArrayList<>();
 
   @Option(
     name = "--conformanceConfig",
@@ -138,15 +137,14 @@ public abstract class AbstractSoyCompiler {
   private File loggingConfig = null;
 
   @Option(
-    name = "--enableExperimentalFeatures",
-    usage =
-        "Enable experimental features that are not generally available. "
-            + "These experimental features may change, break, or disappear at any time. "
-            + "We make absolutely no guarantees about what may happen if you turn one of these "
-            + "experiments on. Please proceed with caution at your own risk.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
-  private final List<String> experimentalFeatures = new ArrayList<>();
+      name = "--enableExperimentalFeatures",
+      usage =
+          "Enable experimental features that are not generally available. "
+              + "These experimental features may change, break, or disappear at any time. "
+              + "We make absolutely no guarantees about what may happen if you turn one of these "
+              + "experiments on. Please proceed with caution at your own risk.",
+      handler = SoyCmdLineParser.StringListOptionHandler.class)
+  private List<String> experimentalFeatures = new ArrayList<>();
 
   @Option(
     name = "--disableOptimizerForTestingUseOnly",
@@ -158,7 +156,7 @@ public abstract class AbstractSoyCompiler {
   private boolean disableOptimizer = false;
 
   /** The remaining arguments after parsing command-line flags. */
-  @Argument private final List<String> arguments = new ArrayList<>();
+  @Argument private List<String> arguments = new ArrayList<>();
 
   private final SoyCompilerFileReader soyCompilerFileReader;
 
