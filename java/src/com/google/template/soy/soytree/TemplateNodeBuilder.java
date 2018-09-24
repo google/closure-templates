@@ -77,10 +77,9 @@ public abstract class TemplateNodeBuilder {
           StyleAllowance.NO_CAPS);
   private static final SoyErrorKind LEGACY_COMPATIBLE_PARAM_TAG =
       SoyErrorKind.of(
-          "Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
-              + "legacy templates marked ''deprecatedV1=\"true\"''.  The proper soydoc @param "
-              + "syntax is: ''@param <name> <optional comment>''. Soy does not understand JsDoc "
-              + "style type declarations in SoyDoc.");
+          "Found invalid SoyDoc param tag ''{0}''. The proper soydoc @param syntax is: "
+              + "''@param <name> <optional comment>''. Soy does not understand JsDoc style type "
+              + "declarations in SoyDoc.");
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("Param ''{0}'' already declared.");
 
@@ -553,10 +552,7 @@ public abstract class TemplateNodeBuilder {
 
         } else {
           if (declText.startsWith("{")) {
-            // v1 is allowed for compatibility reasons
-            if (!isMarkedDeprecatedV1) {
-              errorReporter.report(paramLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
-            }
+            errorReporter.report(paramLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
           } else {
             errorReporter.report(paramLocation, INVALID_SOYDOC_PARAM, declText);
           }

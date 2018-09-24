@@ -9,10 +9,6 @@ issues.
 The V1_0 mode in the compiler disables some common compiler checks. With the
 exception of uses of the `v1Expression` function these should all be fixable.
 
-### Eliminate support for buggy soydoc params in v1 templates
-
-v1 allows soydoc that looks like `@param {string} foo` which is an error in 2.0.
-
 ### Eliminate support for templates that don't declare parameters
 
 `{@param ...}` tags allow Soy authors to declare parameters that provide a [type]
