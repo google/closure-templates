@@ -1025,7 +1025,7 @@ TOKEN_MGR_DECLS: {
 <IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
 | < CMD_COLON: ":" > : EXPR  // for type expressions or param/let expressions
-| < CMD_COLON_EQ: ":=" > : EXPR  // @state declarations where the type is inferred
+| < CMD_COLON_EQ: ":=" > : EXPR  // @prop declarations where the type is inferred
 | < CMD_EQ: "=" >
 | < CMD_DOT: "." >
 }

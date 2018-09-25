@@ -132,7 +132,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   /**
    * Returns whether this might be header variable reference. A header variable is declared in Soy
-   * with the @param or @state annotation.
+   * with the @param or @prop annotation.
    */
   public Boolean isPossibleHeaderVar() {
     if (defn == null) {
