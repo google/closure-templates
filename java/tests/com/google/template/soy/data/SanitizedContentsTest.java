@@ -208,6 +208,17 @@ public class SanitizedContentsTest {
   }
 
   @Test
+  public void testNumberJs() {
+    SanitizedContent js = SanitizedContents.numberJs(42);
+    assertThat(js.getContent()).isEqualTo("42");
+    assertThat(js.getContentKind()).isEqualTo(ContentKind.JS);
+
+    js = SanitizedContents.numberJs(4.2);
+    assertThat(js.getContent()).isEqualTo("4.2");
+    assertThat(js.getContentKind()).isEqualTo(ContentKind.JS);
+  }
+
+  @Test
   public void testCommonSafeHtmlTypeConversions() {
     final String helloWorldHtml = "Hello <em>World</em>";
     final SafeHtml safeHtml =

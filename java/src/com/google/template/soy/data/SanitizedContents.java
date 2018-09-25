@@ -216,6 +216,26 @@ public final class SanitizedContents {
     return fromConstant(constant, ContentKind.CSS, Dir.LTR);
   }
 
+  /**
+   * Creates JS from a number.
+   *
+   * <p>Soy prints numbers as floats and it wraps them in spaces. This is undesirable if the source
+   * code is presented to the user, e.g. in {@code <textarea>}. This function allows converting the
+   * number to JS which is then printed as is.
+   */
+  public static SanitizedContent numberJs(final long number) {
+    return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
+  }
+
+  /**
+   * Creates JS from a number.
+   *
+   * @see #numberJs(long)
+   */
+  public static SanitizedContent numberJs(final double number) {
+    return SanitizedContent.create(String.valueOf(number), ContentKind.JS);
+  }
+
   /** Wraps an assumed-safe constant string. */
   @SuppressWarnings("ReferenceEquality") // need to use a reference check to ensure it is a constant
   private static SanitizedContent fromConstant(
