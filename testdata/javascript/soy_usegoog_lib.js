@@ -26030,6 +26030,9 @@ soy.$$escapeHtmlAttribute = function(value) {
  */
 soy.$$escapeHtmlHtmlAttribute = function(value) {
   // TODO(b/113065826): Double-escape plain text.
+  if (value instanceof goog.html.SafeHtml) {
+    value = goog.html.SafeHtml.unwrap(value);
+  }
   return String(value);
 };
 
