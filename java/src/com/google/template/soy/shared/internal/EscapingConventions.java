@@ -804,19 +804,17 @@ public final class EscapingConventions {
             // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
             // for an explanation of why expression and moz-binding are bad.
             "^(?!-*(?:expression|(?:moz-)?binding))"
-                + // Should not start with spaces. Since we allow spaces between sub-values,
-                // we need this condition to disable space-only values.
-                "(?!\\s+)(?:"
+                + "(?:(?:"
                 + // A latin class name or ID, CSS identifier, hex color or unicode range.
                 "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
                 + // A non-hex color
                 "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
-                + // A quantity
-                "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,2}|%)?|"
+                + // A quantity, with an optional unit
+                "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,4}|%)?|"
                 + // The special value !important.
-                "!important|"
+                "!important)"
                 + // Spaces.
-                "\\s+"
+                "(?:\\s+|\\z)"
                 + ")*\\z",
             Pattern.CASE_INSENSITIVE);
 
