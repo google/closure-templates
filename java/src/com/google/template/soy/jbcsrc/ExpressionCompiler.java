@@ -172,14 +172,15 @@ final class ExpressionCompiler {
     return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter, registry);
   }
 
-  static ExpressionCompiler createConstantCompiler(
+  static BasicExpressionCompiler createConstantCompiler(
       TemplateVariableManager varManager, ErrorReporter reporter, SoyTypeRegistry registry) {
-    return new ExpressionCompiler(
-        ExpressionDetacher.NullDetatcher.INSTANCE,
-        /* parameters= */ null,
-        varManager,
-        reporter,
-        registry);
+    return new BasicExpressionCompiler(
+        new CompilerVisitor(
+            /* parameters= */ null,
+            varManager,
+            Suppliers.ofInstance(ExpressionDetacher.NullDetatcher.INSTANCE),
+            reporter,
+            registry));
   }
 
   /**

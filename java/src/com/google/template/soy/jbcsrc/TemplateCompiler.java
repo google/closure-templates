@@ -39,6 +39,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -306,7 +307,7 @@ final class TemplateCompiler {
 
   private ImmutableMap<TemplatePropVar, SoyExpression> generateStateInitializers(
       TemplateNode node, TemplateVariableManager varManager) {
-    ExpressionCompiler constantCompiler =
+    BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(varManager, reporter, soyTypeRegistry);
     ImmutableMap.Builder<TemplatePropVar, SoyExpression> builder = ImmutableMap.builder();
     for (TemplatePropVar prop : node.getPropVars()) {
