@@ -81,9 +81,10 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
-        // TODO(jakubvrana): Warn against {call} too.
-        for (CallDelegateNode node : getAllNodesOfType(template, CallDelegateNode.class)) {
-          checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
+        for (CallNode node : getAllNodesOfType(template, CallNode.class)) {
+          if (node instanceof CallDelegateNode) { // TODO(jakubvrana): Warn against {call} too.
+            checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
+          }
           checkCallNode(node, registry, SanitizedContentKind.CSS, CALLS_CSS_FROM_NON_CSS);
         }
         for (PrintNode node : getAllNodesOfType(template, PrintNode.class)) {
