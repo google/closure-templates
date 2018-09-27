@@ -284,7 +284,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   }
 
   @Test
-  public void testOnlyCheckFilesInV2() {
+  public void testDeprecatedV1() {
     String fileContent0 =
         "{namespace boo0}\n"
             + "\n"
@@ -298,10 +298,8 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "\n"
             + "/** Template 1 */\n"
             + "{template .foo1 deprecatedV1=\"true\"}\n"
-            + "  {$goo1}\n"
             + "  {v1Expression('$goo1.moo1()')}\n"
-            + // file is not all V2 syntax due to this expression
-            "{/template}\n";
+            + "{/template}\n";
 
     String fileContent2 =
         "{namespace boo2}\n"
@@ -312,25 +310,10 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "{/template}\n";
 
     ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
-    assertThat(errors).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errors).message()).contains("Unknown data key 'goo2'.");
-  }
-
-  @Test
-  public void testDeprecatedV1() {
-    String fileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{template .v1 deprecatedV1=\"true\"}\n"
-            + "  {$x}\n" // Ignored.
-            + "{/template}\n"
-            + "\n"
-            + "{template .v2}\n"
-            + "  {$y}\n" // Checked.
-            + "{/template}\n";
-
-    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent);
-    assertThat(Iterables.getOnlyElement(errors).message()).isEqualTo("Unknown data key 'y'.");
+    assertThat(errors).hasSize(3);
+    assertThat(errors.get(0).message()).isEqualTo("Unknown data key 'goo0'.");
+    assertThat(errors.get(1).message()).isEqualTo("Unknown data key 'goo1'.");
+    assertThat(errors.get(2).message()).isEqualTo("Unknown data key 'goo2'.");
   }
 
   @Test

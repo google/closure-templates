@@ -291,10 +291,6 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
         Preconditions.checkNotNull(param.type());
         indirectParamTypes.put(param.name(), param.type());
       }
-      if (node.isDeprecatedV1()) {
-        // V1 templates don't need to declare all params.
-        mayHaveIndirectParamsInExternalCalls = true;
-      }
     }
 
     // Visit children to recurse on callees.

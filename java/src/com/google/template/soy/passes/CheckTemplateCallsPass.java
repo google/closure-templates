@@ -541,11 +541,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       if (caller.numChildren() == 0) {
         return;
       }
-      // If we are calling a deprecatedV1 template, we cannot check it since the declarations are
-      // likely wrong.
-      if (callee.isDeprecatedV1()) {
-        return;
-      }
       Set<String> paramNames = Sets.newHashSet();
       for (TemplateParam param : callee.getParams()) {
         paramNames.add(param.name());

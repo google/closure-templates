@@ -76,10 +76,6 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
   // Implementations for specific nodes.
 
   private void checkTemplate(TemplateNode node, TemplateRegistry templateRegistry) {
-    if (node.isDeprecatedV1()) {
-      return;
-    }
-
     ListMultimap<String, SourceLocation> dataKeys = ArrayListMultimap.create();
 
     for (VarRefNode varRefNode : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {

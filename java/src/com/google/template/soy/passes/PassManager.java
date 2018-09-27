@@ -117,6 +117,8 @@ public final class PassManager {
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             // needs to happen after rewrite globals
             .add(new XidPass(errorReporter))
+            // Needs to be before ResolveNamesPass.
+            .add(new V1ExpressionPass(errorReporter))
             .add(new ResolveNamesPass(errorReporter))
             // needs to be after ResolveNames and MsgsPass
             .add(new MsgWithIdFunctionPass(errorReporter));

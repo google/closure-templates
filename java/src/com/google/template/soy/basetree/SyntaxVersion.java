@@ -33,11 +33,8 @@ public enum SyntaxVersion {
    * V1.0 allows these legacy deprecated items:
    *
    * <ul>
-   *   <li>Some prevalent forms of incorrect param declarations in template SoyDoc.
-   *   <li>Expressions that cannot be parsed as a Soy V2 expression.
-   *   <li>Not declaring all the parameters you use or using all the parameters you delcare is
-   *       allowed.
-   *   <li>Failure to pass a required parameter is not an error.
+   *   <li>Using deprecatedV1="true" which allows the v1Expression() function.
+   *   <li>Calling undefined functions.
    * </ul>
    */
   V1_0,

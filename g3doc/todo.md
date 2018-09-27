@@ -9,32 +9,6 @@ issues.
 The V1_0 mode in the compiler disables some common compiler checks. With the
 exception of uses of the `v1Expression` function these should all be fixable.
 
-### Eliminate support for templates that don't declare parameters
-
-`{@param ...}` tags allow Soy authors to declare parameters that provide a [type]
-(https://developers.google.com/closure/templates/docs/commands#parameter-type-expressions)
-for that parameter. v1 Soy templates do not have to declare parameters in SoyDoc
-or `{@param ...}` tags. This will convert all templates that do not already
-declare parameters to instead look like:
-
-```soy
-{template .foo}
-  {@param myVar: ?}
-
-  {$myVar}
-{/template}
-```
-
-The default type for these parameter declarations will be `?`, the unknown type.
-It would be possible for us to infer the type in certain circumstances, but that
-would increase the complexity of the tool significantly.
-
-### Enforce that all required parameters are passed
-
-v1 templates don't have to pass all parameters required by their callees. This
-is very errorprone and could be easily removed by marking parameters as optional
-where callers don't pass them.
-
 ## Eliminate legacy compiler options
 
 *   --allowv1syntax This should be mostly redundant now that v1 templates need
