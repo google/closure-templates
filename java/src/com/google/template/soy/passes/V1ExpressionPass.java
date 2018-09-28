@@ -24,6 +24,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.regex.Matcher;
@@ -57,9 +58,7 @@ final class V1ExpressionPass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      // Comparing getSoyFunction() to BuiltinFunction.V1_EXPRESSION doesn't work because it returns
-      // PluginResolver.ERROR_PLACEHOLDER_FUNCTION when executed from RunParser.
-      if (!fn.getFunctionName().equals("v1Expression")) {
+      if (fn.getSoyFunction() != BuiltinFunction.V1_EXPRESSION) {
         continue;
       }
       if (!allowV1Expression) {
