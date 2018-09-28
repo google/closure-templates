@@ -134,7 +134,10 @@ public class GenCallCodeUtils {
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
+    return applyEscapingDirectives(call, callNode);
+  }
 
+  public static Expression applyEscapingDirectives(Expression call, CallNode callNode) {
     // Apply escaping directives as necessary.
     //
     // The print directive system continues to use JsExpr, as it is a publicly available API and
