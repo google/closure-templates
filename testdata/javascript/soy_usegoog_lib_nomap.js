@@ -24364,9 +24364,11 @@ goog.soy.data.SanitizedHtml = function() {
 };
 goog.inherits(goog.soy.data.SanitizedHtml, goog.soy.data.SanitizedContent);
 
+
 /** @override */
 goog.soy.data.SanitizedHtml.prototype.contentKind =
     goog.soy.data.SanitizedContentKind.HTML;
+
 
 /**
  * Checks if the value could be used as the Soy type {html}.
@@ -24379,6 +24381,17 @@ goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
       value instanceof goog.html.SafeHtml;
 };
 
+
+/**
+ * Checks if the value could be used as the Soy type {html}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedHtml ||
+      value instanceof goog.html.SafeHtml;
+};
 
 
 /**
@@ -24395,12 +24408,15 @@ goog.soy.data.SanitizedJs = function() {
 };
 goog.inherits(goog.soy.data.SanitizedJs, goog.soy.data.SanitizedContent);
 
+
 /** @override */
 goog.soy.data.SanitizedJs.prototype.contentKind =
     goog.soy.data.SanitizedContentKind.JS;
 
+
 /** @override */
 goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
 
 /**
  * Checks if the value could be used as the Soy type {js}.
@@ -24413,6 +24429,16 @@ goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
       value instanceof goog.html.SafeScript;
 };
 
+/**
+ * Checks if the value could be used as the Soy type {js}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedJs ||
+      value instanceof goog.html.SafeHtml;
+};
 
 
 /**
@@ -24433,8 +24459,10 @@ goog.inherits(goog.soy.data.SanitizedUri, goog.soy.data.SanitizedContent);
 goog.soy.data.SanitizedUri.prototype.contentKind =
     goog.soy.data.SanitizedContentKind.URI;
 
+
 /** @override */
 goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
 
 /**
  * Checks if the value could be used as the Soy type {uri}.
@@ -24444,6 +24472,20 @@ goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
   return goog.isString(value) || value instanceof goog.soy.data.SanitizedUri ||
       value instanceof goog.soy.data.UnsanitizedText ||
+      value instanceof goog.html.SafeUrl ||
+      value instanceof goog.html.TrustedResourceUrl ||
+      value instanceof goog.Uri;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {uri}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedUri ||
       value instanceof goog.html.SafeUrl ||
       value instanceof goog.html.TrustedResourceUrl ||
       value instanceof goog.Uri;
@@ -24467,13 +24509,16 @@ goog.soy.data.SanitizedTrustedResourceUri = function() {
 goog.inherits(
     goog.soy.data.SanitizedTrustedResourceUri, goog.soy.data.SanitizedContent);
 
+
 /** @override */
 goog.soy.data.SanitizedTrustedResourceUri.prototype.contentKind =
     goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI;
 
+
 /** @override */
 goog.soy.data.SanitizedTrustedResourceUri.prototype.contentDir =
     goog.i18n.bidi.Dir.LTR;
+
 
 /**
  * Converts sanitized content into TrustedResourceUrl without modification.
@@ -24489,6 +24534,7 @@ goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
           this.toString());
 };
 
+
 /**
  * Checks if the value could be used as the Soy type {trusted_resource_uri}.
  * @param {*} value
@@ -24498,6 +24544,19 @@ goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
   return goog.isString(value) ||
       value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
       value instanceof goog.soy.data.UnsanitizedText ||
+      value instanceof goog.html.TrustedResourceUrl;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {trusted_resource_uri}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(
+    value) {
+  return value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
       value instanceof goog.html.TrustedResourceUrl;
 };
 
@@ -24518,13 +24577,16 @@ goog.soy.data.SanitizedHtmlAttribute = function() {
 goog.inherits(
     goog.soy.data.SanitizedHtmlAttribute, goog.soy.data.SanitizedContent);
 
+
 /** @override */
 goog.soy.data.SanitizedHtmlAttribute.prototype.contentKind =
     goog.soy.data.SanitizedContentKind.ATTRIBUTES;
 
+
 /** @override */
 goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir =
     goog.i18n.bidi.Dir.LTR;
+
 
 /**
  * Checks if the value could be used as the Soy type {attribute}.
@@ -24535,6 +24597,17 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
   return goog.isString(value) ||
       value instanceof goog.soy.data.SanitizedHtmlAttribute ||
       value instanceof goog.soy.data.UnsanitizedText;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {attribute}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedHtmlAttribute;
 };
 
 
@@ -24571,6 +24644,19 @@ goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
   return goog.isString(value) || value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.soy.data.UnsanitizedText ||
+      value instanceof goog.html.SafeStyle ||
+      value instanceof goog.html.SafeStyleSheet;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {css}.
+ * Strict: disallows strings or UnsanitizedText.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.html.SafeStyle ||
       value instanceof goog.html.SafeStyleSheet;
 };

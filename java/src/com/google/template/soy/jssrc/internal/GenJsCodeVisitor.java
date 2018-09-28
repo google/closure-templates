@@ -31,7 +31,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
@@ -1460,15 +1459,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
       // The param value to assign
       Expression value;
-      Optional<Expression> typeAssertion = jsType.getTypeAssertion(paramChunk, generator);
+      Optional<Expression> soyTypeAssertion =
+          jsType.getSoyTypeAssertion(paramChunk, paramName, generator);
       // The type-cast expression.
-      if (typeAssertion.isPresent()) {
-        value =
-            SOY_ASSERTS_ASSERT_TYPE.call(
-                typeAssertion.get(),
-                stringLiteral(paramName),
-                paramChunk,
-                stringLiteral(jsType.typeExpr()));
+      if (soyTypeAssertion.isPresent()) {
+        value = soyTypeAssertion.get();
       } else {
         value = paramChunk;
       }
@@ -1493,7 +1488,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private JsType getJsType(SoyType paramType) {
     boolean isIncrementalDom = !getClass().equals(GenJsCodeVisitor.class);
-    return JsType.forSoyType(paramType, isIncrementalDom);
+    return isIncrementalDom ? JsType.forIncrementalDom(paramType) : JsType.forJsSrc(paramType);
   }
 
   /**
