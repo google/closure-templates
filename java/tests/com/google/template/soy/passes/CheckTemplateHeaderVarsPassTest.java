@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import org.junit.Test;
@@ -354,7 +353,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .declaredSyntaxVersion(SyntaxVersion.V1_0)
+        .allowV1Expression(true)
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();
@@ -373,7 +372,6 @@ public final class CheckTemplateHeaderVarsPassTest {
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
         .errorReporter(errorReporter)
         .parse();

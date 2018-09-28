@@ -35,6 +35,10 @@ import java.util.regex.Pattern;
  */
 final class V1ExpressionPass extends CompilerFilePass {
 
+  private static final SoyErrorKind INCORRECT_V1_EXPRESSION_USE =
+      SoyErrorKind.of(
+          "The ''v1Expression'' function can only be used in legacy JS only templates.");
+
   private static final SoyErrorKind USING_IJ_VARIABLE =
       SoyErrorKind.of("''v1Expression'' does not support using the ''$ij'' variable.");
 
@@ -42,9 +46,11 @@ final class V1ExpressionPass extends CompilerFilePass {
   private static final Pattern VARIABLE_PATTERN =
       Pattern.compile("\\$(" + BaseUtils.IDENT_RE + ")");
 
+  private final boolean allowV1Expression;
   private final ErrorReporter errorReporter;
 
-  V1ExpressionPass(ErrorReporter errorReporter) {
+  V1ExpressionPass(boolean allowV1Expression, ErrorReporter errorReporter) {
+    this.allowV1Expression = allowV1Expression;
     this.errorReporter = errorReporter;
   }
 
@@ -55,6 +61,9 @@ final class V1ExpressionPass extends CompilerFilePass {
       // PluginResolver.ERROR_PLACEHOLDER_FUNCTION when executed from RunParser.
       if (!fn.getFunctionName().equals("v1Expression")) {
         continue;
+      }
+      if (!allowV1Expression) {
+        errorReporter.report(fn.getSourceLocation(), INCORRECT_V1_EXPRESSION_USE);
       }
       // PluginResolver checks that the function has one argument, ResolveExpressionTypesPass checks
       // that it is a string literal.

@@ -58,6 +58,7 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
+  private boolean allowV1Expression;
   private final SoyScopedData scopedData;
   private ImmutableMap<String, SoyFunction> soyFunctionMap;
   private ImmutableMap<String, SoyPrintDirective> soyPrintDirectiveMap;
@@ -208,6 +209,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public SoyFileSetParserBuilder allowV1Expression(boolean allowV1Expression) {
+    this.allowV1Expression = allowV1Expression;
+    return this;
+  }
+
   public SoyFileSetParserBuilder setConformanceConfig(ValidatedConformanceConfig config) {
     this.conformanceConfig = checkNotNull(config);
     return this;
@@ -279,6 +285,9 @@ public final class SoyFileSetParserBuilder {
             .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
+    }
+    if (allowV1Expression) {
+      passManager.allowV1Expression();
     }
     return SoyFileSetParser.newBuilder()
         .setCache(astCache)

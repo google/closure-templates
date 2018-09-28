@@ -118,7 +118,7 @@ public final class PassManager {
             // needs to happen after rewrite globals
             .add(new XidPass(errorReporter))
             // Needs to be before ResolveNamesPass.
-            .add(new V1ExpressionPass(errorReporter))
+            .add(new V1ExpressionPass(builder.allowV1Expression, errorReporter))
             .add(new ResolveNamesPass(errorReporter))
             // needs to be after ResolveNames and MsgsPass
             .add(new MsgWithIdFunctionPass(errorReporter));
@@ -140,11 +140,7 @@ public final class PassManager {
       // may issue better error messages.
       singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
-    singleFilePassesBuilder
-        .add(new ValidateAliasesPass(registry, errorReporter, options))
-        // This could go earlier or later.  It doesn't depend on other passes and is doesn't affect
-        // other passes.
-        .add(new DeprecatedV1Pass(options.getDeclaredSyntaxVersion(), errorReporter));
+    singleFilePassesBuilder.add(new ValidateAliasesPass(registry, errorReporter, options));
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
       // TODO(lukes): both of these are really about type checking, they should be part of
@@ -293,6 +289,7 @@ public final class PassManager {
     private ErrorReporter errorReporter;
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
+    private boolean allowV1Expression;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
@@ -341,6 +338,16 @@ public final class PassManager {
      */
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
+      return this;
+    }
+
+    /**
+     * Allows v1Expression().
+     *
+     * <p>This option is only available for backwards compatibility with legacy JS only templates.
+     */
+    public Builder allowV1Expression() {
+      this.allowV1Expression = true;
       return this;
     }
 

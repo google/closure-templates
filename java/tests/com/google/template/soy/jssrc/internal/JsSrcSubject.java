@@ -157,6 +157,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forFileContents(actual())
             .allowUnboundGlobals(true)
+            .allowV1Expression(true)
             .typeRegistry(typeRegistry)
             .options(generalOptions);
     for (SoyFunction soyFunction : soyFunctions) {

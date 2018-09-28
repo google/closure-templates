@@ -33,7 +33,6 @@ public enum SyntaxVersion {
    * V1.0 allows these legacy deprecated items:
    *
    * <ul>
-   *   <li>Using deprecatedV1="true" which allows the v1Expression() function.
    *   <li>Calling undefined functions.
    * </ul>
    */

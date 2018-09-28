@@ -765,6 +765,7 @@ public final class SoyFileSet {
         parse(
                 passManagerBuilder()
                     .allowUnknownGlobals()
+                    .allowV1Expression()
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     .disableAllTypeChecking(),
                 // override the type registry so that the parser doesn't report errors when it
@@ -1073,7 +1074,7 @@ public final class SoyFileSet {
     // and constants. For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
     PassManager.Builder builder =
-        passManagerBuilder().allowUnknownGlobals().desugarHtmlNodes(false);
+        passManagerBuilder().allowUnknownGlobals().allowV1Expression().desugarHtmlNodes(false);
     ParseResult parseResult = parse(builder);
     throwIfErrorsPresent();
     return parseResult;

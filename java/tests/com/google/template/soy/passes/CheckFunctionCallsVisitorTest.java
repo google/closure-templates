@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -149,14 +148,14 @@ public final class CheckFunctionCallsVisitorTest {
   @Test
   public void testV1ExpressionFunction() {
     assertPasses(
-        SyntaxVersion.V1_0,
+        /* allowV1Expression= */ true,
         "{namespace ns}\n",
         "{template .foo deprecatedV1=\"true\"}",
         "  {let $m: v1Expression('blah.length') /}",
         "{/template}");
 
     assertFunctionCallsInvalid(
-        SyntaxVersion.V1_0,
+        /* allowV1Expression= */ true,
         "Argument to function 'v1Expression' must be a string literal.",
         "{namespace ns}\n",
         "{template .foo deprecatedV1=\"true\"}",
@@ -166,25 +165,25 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   private void assertSuccess(String... lines) {
-    assertPasses(SyntaxVersion.V2_0, lines);
+    assertPasses(/* allowV1Expression= */ false, lines);
   }
 
-  private void assertPasses(SyntaxVersion declaredSyntaxVersion, String... lines) {
+  private void assertPasses(boolean allowV1Expression, String... lines) {
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .declaredSyntaxVersion(declaredSyntaxVersion)
+        .allowV1Expression(allowV1Expression)
         .parse()
         .fileSet();
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
-    assertFunctionCallsInvalid(SyntaxVersion.V2_0, errorMessage, lines);
+    assertFunctionCallsInvalid(/* allowV1Expression= */ false, errorMessage, lines);
   }
 
   private void assertFunctionCallsInvalid(
-      SyntaxVersion declaredSyntaxVersion, String errorMessage, String... lines) {
+      boolean allowV1Expression, String errorMessage, String... lines) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .declaredSyntaxVersion(declaredSyntaxVersion)
+        .allowV1Expression(allowV1Expression)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);

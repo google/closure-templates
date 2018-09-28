@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,7 +48,7 @@ public final class V1ExpressionPassTest {
   private void assertRewrites(String input, String output) {
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(String.format(WRAPPER, input))
-            .declaredSyntaxVersion(SyntaxVersion.V1_0)
+            .allowV1Expression(true)
             .parse();
     assertThat(result.fileSet().getChild(0).toSourceString())
         .isEqualTo(String.format(WRAPPER, output));
@@ -58,7 +57,7 @@ public final class V1ExpressionPassTest {
   private void assertRewritingFails(String input, String error) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(String.format(WRAPPER, input))
-        .declaredSyntaxVersion(SyntaxVersion.V1_0)
+        .allowV1Expression(true)
         .errorReporter(errorReporter)
         .parse();
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message()).isEqualTo(error);
