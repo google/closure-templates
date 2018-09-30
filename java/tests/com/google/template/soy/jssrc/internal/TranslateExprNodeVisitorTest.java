@@ -227,7 +227,7 @@ public final class TranslateExprNodeVisitorTest {
         ""
             + "{namespace ns}\n"
             + "/** @param goo */\n"
-            + "{template .foo deprecatedV1=\"true\"}\n"
+            + "{template .foo}\n"
             + "  {v1Expression('$goo.length()')}\n"
             + "{/template}";
     String expectedJs =

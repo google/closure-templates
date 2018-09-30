@@ -146,8 +146,6 @@ public abstract class TemplateNodeBuilder {
   /** The prop variables from template header. */
   protected ImmutableList<TemplatePropVar> propVars = ImmutableList.of();
 
-  protected boolean isMarkedDeprecatedV1;
-
   protected boolean strictHtmlDisabled;
 
   SourceLocation sourceLocation;
@@ -186,7 +184,7 @@ public abstract class TemplateNodeBuilder {
       Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "deprecatedV1", "stricthtml");
+      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
@@ -211,9 +209,6 @@ public abstract class TemplateNodeBuilder {
           break;
         case "cssbase":
           setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
-          break;
-        case "deprecatedV1":
-          this.isMarkedDeprecatedV1 = attribute.valueAsEnabled(errorReporter);
           break;
         case "stricthtml":
           strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);

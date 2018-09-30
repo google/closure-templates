@@ -150,7 +150,7 @@ public final class CheckFunctionCallsVisitorTest {
     assertPasses(
         /* allowV1Expression= */ true,
         "{namespace ns}\n",
-        "{template .foo deprecatedV1=\"true\"}",
+        "{template .foo}",
         "  {let $m: v1Expression('blah.length') /}",
         "{/template}");
 
@@ -158,7 +158,7 @@ public final class CheckFunctionCallsVisitorTest {
         /* allowV1Expression= */ true,
         "Argument to function 'v1Expression' must be a string literal.",
         "{namespace ns}\n",
-        "{template .foo deprecatedV1=\"true\"}",
+        "{template .foo}",
         "  {let $blah: 'foo' /}",
         "  {let $m: v1Expression($blah) /}",
         "{/template}");

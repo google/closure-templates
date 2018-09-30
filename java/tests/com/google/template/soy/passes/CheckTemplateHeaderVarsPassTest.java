@@ -283,20 +283,12 @@ public final class CheckTemplateHeaderVarsPassTest {
   }
 
   @Test
-  public void testDeprecatedV1() {
-    String fileContent0 =
-        "{namespace boo0}\n"
-            + "\n"
-            + // template is tagged as v1
-            "{template .foo0 deprecatedV1=\"true\"}\n"
-            + "  {$goo0.moo0}\n"
-            + "{/template}\n";
-
+  public void testV1Expression() {
     String fileContent1 =
         "{namespace boo1}\n"
             + "\n"
             + "/** Template 1 */\n"
-            + "{template .foo1 deprecatedV1=\"true\"}\n"
+            + "{template .foo1}\n"
             + "  {v1Expression('$goo1.moo1()')}\n"
             + "{/template}\n";
 
@@ -308,11 +300,10 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "  {$goo2.moo2}\n"
             + "{/template}\n";
 
-    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
-    assertThat(errors).hasSize(3);
-    assertThat(errors.get(0).message()).isEqualTo("Unknown data key 'goo0'.");
-    assertThat(errors.get(1).message()).isEqualTo("Unknown data key 'goo1'.");
-    assertThat(errors.get(2).message()).isEqualTo("Unknown data key 'goo2'.");
+    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent1, fileContent2);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0).message()).isEqualTo("Unknown data key 'goo1'.");
+    assertThat(errors.get(1).message()).isEqualTo("Unknown data key 'goo2'.");
   }
 
   @Test

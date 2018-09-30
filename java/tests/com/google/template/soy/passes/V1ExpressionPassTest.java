@@ -29,8 +29,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class V1ExpressionPassTest {
 
-  private static final String WRAPPER =
-      "{namespace ns}\n\n{template .a deprecatedV1=\"true\"}\n%s\n{/template}\n";
+  private static final String WRAPPER = "{namespace ns}\n\n{template .a}\n%s\n{/template}\n";
 
   @Test
   public void testVar() throws Exception {

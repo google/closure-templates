@@ -228,9 +228,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
-  /** Whether or not this template is marked as deprecatedV1=true. */
-  private final boolean isDeprecatedV1;
-
   /** The params from template header or SoyDoc. */
   private ImmutableList<TemplateParam> params;
 
@@ -264,7 +261,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       @Nullable ImmutableList<TemplateParam> params,
       ImmutableList<TemplatePropVar> propVars) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
-    this.isDeprecatedV1 = nodeBuilder.isMarkedDeprecatedV1;
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
@@ -319,7 +315,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
-    this.isDeprecatedV1 = orig.isDeprecatedV1;
   }
 
   @Override
@@ -349,14 +344,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return templateName;
   }
 
-  /** Returns this template's partial name. Only applicable for V2 (null for V1). */
+  /** Returns this template's partial name. */
   @Nullable
   public String getPartialTemplateName() {
     return partialTemplateName;
-  }
-
-  public boolean isDeprecatedV1() {
-    return isDeprecatedV1;
   }
 
   /** Returns the visibility of this template. */
@@ -559,23 +550,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * template.
    */
   public StackTraceElement createStackTraceElement(SourceLocation srcLocation) {
-    if (partialTemplateName == null) {
-      // V1 soy templates.
-      return new StackTraceElement(
-          /* declaringClass= */ "(UnknownSoyNamespace)",
-          /* methodName= */ templateName,
-          srcLocation.getFileName(),
-          srcLocation.getBeginLine());
-    } else {
-      // V2 soy templates.
-      return new StackTraceElement(
-          /* declaringClass= */ soyFileHeaderInfo.namespace,
-          // The partial template name begins with a '.' that causes the stack trace element to
-          // print "namespace..templateName" otherwise.
-          /* methodName= */ partialTemplateName.substring(1),
-          srcLocation.getFileName(),
-          srcLocation.getBeginLine());
-    }
+    return new StackTraceElement(
+        /* declaringClass= */ soyFileHeaderInfo.namespace,
+        // The partial template name begins with a '.' that causes the stack trace element to
+        // print "namespace..templateName" otherwise.
+        /* methodName= */ partialTemplateName.substring(1),
+        srcLocation.getFileName(),
+        srcLocation.getBeginLine());
   }
 
   /** Returns whether the template node is stateful (has at least one @prop variable). */

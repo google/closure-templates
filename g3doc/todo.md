@@ -11,10 +11,7 @@ exception of uses of the `v1Expression` function these should all be fixable.
 
 ## Eliminate legacy compiler options
 
-*   --allowv1syntax This should be mostly redundant now that v1 templates need
-    the `deprecatedV1="true"` attribute. But eliminating it will be a little
-    tricky due to the way 'declaredSyntaxVersion' is used when configuring the
-    compiler.
+*   --allowv1syntax This currently only allows calling undefined functions.
 
 ## Improve the plugin apis {#better_plugins}
 
