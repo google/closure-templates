@@ -1140,9 +1140,7 @@ public final class SoyFileSet {
         builder,
         typeRegistry,
         new PluginResolver(
-            generalOptions.getDeclaredSyntaxVersion() == SyntaxVersion.V1_0
-                ? PluginResolver.Mode.ALLOW_UNDEFINED_FUNCTIONS_FOR_V1_SUPPORT
-                : PluginResolver.Mode.REQUIRE_DEFINITIONS,
+            PluginResolver.Mode.REQUIRE_DEFINITIONS,
             printDirectives,
             soyFunctionMap,
             soySourceFunctionMap,

@@ -96,12 +96,7 @@ public final class PluginResolver {
      */
     ALLOW_UNDEFINED,
     /** This is the normal thing, it is an error for the plugin to not exist. */
-    REQUIRE_DEFINITIONS,
-    /**
-     * This is a special case for deprecatedv1 where we allow the function to not exist and just
-     * plop it into the js gencode.
-     */
-    ALLOW_UNDEFINED_FUNCTIONS_FOR_V1_SUPPORT;
+    REQUIRE_DEFINITIONS;
   }
 
   private final Mode mode;
@@ -182,8 +177,7 @@ public final class PluginResolver {
   public SoyPrintDirective lookupPrintDirective(String name, int numArgs, SourceLocation location) {
     SoyPrintDirective soyPrintDirective = printDirectives.get(name);
     if (soyPrintDirective == null) {
-      if (mode == Mode.REQUIRE_DEFINITIONS
-          || mode == Mode.ALLOW_UNDEFINED_FUNCTIONS_FOR_V1_SUPPORT) {
+      if (mode == Mode.REQUIRE_DEFINITIONS) {
         reporter.report(
             location,
             UNKNOWN_PLUGIN,
