@@ -4,15 +4,6 @@ This file is meant to track technical debt issues in the Soy codebase. This
 isn't meant to track bugs or feature requests, but rather long term design
 issues.
 
-## Eliminate `V1_0` features whenever possible
-
-The V1_0 mode in the compiler disables some common compiler checks. With the
-exception of uses of the `v1Expression` function these should all be fixable.
-
-## Eliminate legacy compiler options
-
-*   --allowv1syntax This currently only allows calling undefined functions.
-
 ## Improve the plugin apis {#better_plugins}
 
 Implementing a soy plugin is pretty easy (implement `SoyFunction`) but the

@@ -37,7 +37,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
@@ -757,10 +756,6 @@ public final class SoyFileSet {
   private SoyMsgBundle doExtractMsgs() {
     // extractMsgs disables a bunch of passes since it is typically not configured with things
     // like global definitions, type definitions, etc.
-    // TODO(b/32091399): Message Extraction doesn't have a way to configure the version and it needs
-    // to support all soy files so we assume the worst and configure v1.0.  This can go away when
-    // jssrc no longer supports v1.0
-    generalOptions.setDeclaredSyntaxVersionName("1.0");
     SoyFileSetNode soyTree =
         parse(
                 passManagerBuilder()
@@ -982,7 +977,7 @@ public final class SoyFileSet {
   @SuppressWarnings("deprecation")
   public List<String> compileToJsSrc(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
-    ParseResult result = preprocessJsSrcResults(jsSrcOptions);
+    ParseResult result = preprocessJsSrcResults();
     TemplateRegistry registry = result.registry();
     SoyFileSetNode fileSet = result.fileSet();
     List<String> generatedSrcs =
@@ -1014,7 +1009,7 @@ public final class SoyFileSet {
       @Nullable SoyMsgPlugin msgPlugin,
       @Nullable String messageFilePathFormat)
       throws IOException {
-    ParseResult result = preprocessJsSrcResults(jsSrcOptions);
+    ParseResult result = preprocessJsSrcResults();
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
@@ -1063,13 +1058,9 @@ public final class SoyFileSet {
   }
 
   @SuppressWarnings("deprecation")
-  private ParseResult preprocessJsSrcResults(SoyJsSrcOptions jsSrcOptions) {
+  private ParseResult preprocessJsSrcResults() {
     resetErrorReporter();
 
-    // Synchronize old and new ways to declare syntax version V1.
-    if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
-      generalOptions.setDeclaredSyntaxVersionName("1.0");
-    }
     // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
     // and constants. For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
@@ -1083,11 +1074,6 @@ public final class SoyFileSet {
   /** Prepares the parsed result for use in generating Incremental DOM source code. */
   @SuppressWarnings("deprecation")
   private ParseResult preprocessIncrementalDOMResults() {
-    SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion();
-
-    Preconditions.checkState(
-        declaredSyntaxVersion == SyntaxVersion.V2_0,
-        "Incremental DOM code generation only supports syntax version of V2");
     requireStrictAutoescaping();
     // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
     ParseResult result = parse(passManagerBuilder().desugarHtmlNodes(false));
@@ -1130,7 +1116,7 @@ public final class SoyFileSet {
     return soySourceFunctionMap;
   }
 
-  // Parse the current file set with the given default syntax version.
+  // Parse the current file set.
   private ParseResult parse() {
     return parse(passManagerBuilder());
   }

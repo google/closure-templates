@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
@@ -130,12 +129,6 @@ public final class SoyFileSetParserBuilder {
     this.soyFunctionMap = InternalPlugins.internalLegacyFunctionMap();
     this.soyPrintDirectiveMap = InternalPlugins.internalDirectiveMap(scopedData);
     this.sourceFunctionMap = InternalPlugins.internalFunctionMap(scopedData);
-  }
-
-  /** Sets the parser's declared syntax version. Returns this object, for chaining. */
-  public SoyFileSetParserBuilder declaredSyntaxVersion(SyntaxVersion version) {
-    this.options.setDeclaredSyntaxVersionName(version.name);
-    return this;
   }
 
   /** Enable experiments. Returns this object, for chaining. */

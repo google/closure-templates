@@ -26,23 +26,18 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
 import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
  *
  */
 public final class SoyGeneralOptions implements Cloneable {
-
-  /** User-declared syntax version, or V2_0 if not set. */
-  private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
 
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
   private TriState allowExternalCalls = TriState.UNSET;
@@ -62,7 +57,6 @@ public final class SoyGeneralOptions implements Cloneable {
   public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
-    this.declaredSyntaxVersion = orig.declaredSyntaxVersion;
     this.allowExternalCalls = orig.allowExternalCalls;
     this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
     this.compileTimeGlobals = orig.compileTimeGlobals;
@@ -90,26 +84,6 @@ public final class SoyGeneralOptions implements Cloneable {
   /** Returns the set of enabled experimental features. */
   public ImmutableSet<String> getExperimentalFeatures() {
     return experimentalFeatures;
-  }
-
-  /**
-   * Sets the user-declared syntax version name for the Soy file bundle.
-   *
-   * @param versionName The syntax version name, e.g. "1.0", "2.0", "2.3".
-   */
-  public SoyGeneralOptions setDeclaredSyntaxVersionName(@Nonnull String versionName) {
-    this.declaredSyntaxVersion = SyntaxVersion.forName(versionName);
-    return this;
-  }
-
-  /**
-   * Returns the user-declared syntax version, or the given default value if the user did not
-   * declare a syntax version.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
-  public SyntaxVersion getDeclaredSyntaxVersion() {
-    return declaredSyntaxVersion;
   }
 
   /**
@@ -242,7 +216,6 @@ public final class SoyGeneralOptions implements Cloneable {
   @Override
   public final String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("declaredSyntaxVersion", declaredSyntaxVersion)
         .add("allowExternalCalls", allowExternalCalls)
         .add("strictAutoescapingRequired", strictAutoescapingRequired)
         .add("compileTimeGlobals", compileTimeGlobals)

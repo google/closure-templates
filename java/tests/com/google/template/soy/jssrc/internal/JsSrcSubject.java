@@ -31,7 +31,6 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
@@ -138,12 +137,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   T withTypeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
-    return typedThis();
-  }
-
-  @CheckReturnValue
-  T withDeclaredSyntaxVersion(SyntaxVersion version) {
-    this.generalOptions.setDeclaredSyntaxVersionName(version.name);
     return typedThis();
   }
 

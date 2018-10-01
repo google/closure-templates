@@ -32,9 +32,6 @@ public final class SoyJsSrcOptions implements Cloneable {
     MODULE;
   }
 
-  /** Whether to allow deprecated syntax (semi backwards compatible mode). */
-  private boolean shouldAllowDeprecatedSyntax;
-
   private JsDepsStrategy depsStrategy;
 
   /** Whether we should generate Closure Library message definitions (i.e. goog.getMsg). */
@@ -59,7 +56,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   private boolean useGoogIsRtlForBidiGlobalDir;
 
   public SoyJsSrcOptions() {
-    shouldAllowDeprecatedSyntax = false;
     depsStrategy = JsDepsStrategy.NAMESPACES;
 
     shouldGenerateGoogMsgDefs = false;
@@ -69,7 +65,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
-    this.shouldAllowDeprecatedSyntax = orig.shouldAllowDeprecatedSyntax;
     this.depsStrategy = orig.depsStrategy;
     this.shouldGenerateGoogMsgDefs = orig.shouldGenerateGoogMsgDefs;
     this.googMsgsAreExternal = orig.googMsgsAreExternal;
@@ -78,24 +73,12 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   /**
-   * Sets whether to allow deprecated syntax (semi backwards compatible mode).
+   * Does nothing.
    *
-   * @param shouldAllowDeprecatedSyntax The value to set.
-   */
-  // TODO SOON: Deprecate. (Use setDeclaredSyntaxVersionName() on SoyFileSet or SoyGeneralOptions.)
-  public void setShouldAllowDeprecatedSyntax(boolean shouldAllowDeprecatedSyntax) {
-    this.shouldAllowDeprecatedSyntax = shouldAllowDeprecatedSyntax;
-  }
-
-  /**
-   * Returns whether we're set to allow deprecated syntax (semi backwards compatible mode).
-   *
-   * @deprecated Use {@code SoyGeneralOptions.getDeclaredSyntaxVersion()}.
+   * @deprecated Does nothing.
    */
   @Deprecated
-  public boolean shouldAllowDeprecatedSyntax() {
-    return shouldAllowDeprecatedSyntax;
-  }
+  public void setShouldAllowDeprecatedSyntax(boolean shouldAllowDeprecatedSyntax) {}
 
   /**
    * Sets whether we should generate code to provide/require Soy namespaces.
@@ -237,7 +220,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   @Override
   public final String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("shouldAllowDeprecatedSyntax", shouldAllowDeprecatedSyntax)
         .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces())
         .add("shouldGenerateGoogMsgDefs", shouldGenerateGoogMsgDefs)
         .add("shouldGenerateGoogModules", shouldGenerateGoogModules())

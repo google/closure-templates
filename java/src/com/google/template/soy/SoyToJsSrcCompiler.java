@@ -55,14 +55,8 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private boolean allowExternalCalls = true;
 
-  @Option(
-    name = "--shouldAllowDeprecatedSyntax",
-    usage =
-        "[Deprecated: Please use --syntaxVersion instead.] Whether to allow Soy V1"
-            + " syntax (for backwards compatibility during the transition period)."
-  )
+  @Option(name = "--shouldAllowDeprecatedSyntax", usage = "[Deprecated: Ignored.]")
   private boolean shouldAllowDeprecatedSyntax = false;
-
 
   @Option(
     name = "--locales",
@@ -176,7 +170,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setShouldAllowDeprecatedSyntax(shouldAllowDeprecatedSyntax);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(shouldGenerateGoogMsgDefs);
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(bidiGlobalDir);
