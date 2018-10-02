@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -78,6 +79,15 @@ public final class BasicFunctionsRuntime {
   /** Checks if list contains a value. */
   public static boolean listContains(SoyList list, SoyValue value) {
     return list.asJavaList().contains(value);
+  }
+
+  /** Joins the list elements by a separator. */
+  public static String join(SoyList list, String separator) {
+    List<String> stringList = new ArrayList<>();
+    for (SoyValue value : list.asResolvedJavaList()) {
+      stringList.add(value.stringValue());
+    }
+    return Joiner.on(separator).join(stringList);
   }
 
   /**

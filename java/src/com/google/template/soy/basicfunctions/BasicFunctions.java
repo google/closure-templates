@@ -33,6 +33,7 @@ public class BasicFunctions {
         new HtmlToTextFunction(),
         new IsNonnullFunction(),
         new IsNullFunction(),
+        new JoinFunction(),
         new KeysFunction(),
         new LegacyObjectMapToMapFunction(),
         new LengthFunction(),
