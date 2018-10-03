@@ -339,9 +339,7 @@ public final class Sanitizers {
    * <iframe srcdoc>}.
    */
   public static String escapeHtmlHtmlAttribute(SoyValue value) {
-    value = normalizeNull(value);
-    // TODO(b/113065826): Double-escape plain text.
-    return value.coerceToString();
+    return escapeHtml(value);
   }
 
   /**
@@ -349,8 +347,7 @@ public final class Sanitizers {
    * <iframe srcdoc>}.
    */
   public static String escapeHtmlHtmlAttribute(String value) {
-    // TODO(b/113065826): Double-escape plain text.
-    return value;
+    return escapeHtml(value);
   }
 
   /**

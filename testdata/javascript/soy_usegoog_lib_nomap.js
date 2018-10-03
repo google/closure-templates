@@ -25962,11 +25962,7 @@ soy.$$escapeHtmlAttribute = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeHtmlHtmlAttribute = function(value) {
-  // TODO(b/113065826): Double-escape plain text.
-  if (value instanceof goog.html.SafeHtml) {
-    value = goog.html.SafeHtml.unwrap(value);
-  }
-  return String(value);
+  return String(soy.$$escapeHtml(value));
 };
 
 

@@ -205,8 +205,7 @@ def escape_html_attribute(value):
 
 
 def escape_html_html_attribute(value):
-  # TODO(b/113065826): Double-escape plain text.
-  return str(value)
+  return str(escape_html(value))
 
 
 def escape_html_attribute_nospace(value):
