@@ -73,14 +73,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
   /**
-   * Does nothing.
-   *
-   * @deprecated Does nothing.
-   */
-  @Deprecated
-  public void setShouldAllowDeprecatedSyntax(boolean shouldAllowDeprecatedSyntax) {}
-
-  /**
    * Sets whether we should generate code to provide/require Soy namespaces.
    *
    * @param shouldProvideRequireSoyNamespaces The value to set.

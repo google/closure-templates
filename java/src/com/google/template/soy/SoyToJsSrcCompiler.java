@@ -55,9 +55,6 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private boolean allowExternalCalls = true;
 
-  @Option(name = "--shouldAllowDeprecatedSyntax", usage = "[Deprecated: Ignored.]")
-  private boolean shouldAllowDeprecatedSyntax = false;
-
   @Option(
     name = "--locales",
     usage =
