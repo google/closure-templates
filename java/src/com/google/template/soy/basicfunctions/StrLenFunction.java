@@ -46,12 +46,11 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "strLen",
-    value = {
-      @Signature(
-          returnType = "int",
-          // TODO(b/62134073): should be string
-          parameterTypes = {"?"}),
-    })
+    value =
+        @Signature(
+            returnType = "int",
+            // TODO(b/62134073): should be string
+            parameterTypes = {"?"}))
 @SoyPureFunction
 final class StrLenFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {

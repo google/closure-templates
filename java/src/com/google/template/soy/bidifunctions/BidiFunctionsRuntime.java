@@ -26,10 +26,6 @@ import com.google.template.soy.internal.i18n.BidiUtils;
 /** Contains static functions that implement the java versions of the bidifunctions. */
 public final class BidiFunctionsRuntime {
 
-  public static SanitizedContent bidiDirAttrSanitized(BidiGlobalDir dir, SoyValue value) {
-    return bidiDirAttrSanitized(dir, value, /* isHtml= */ false);
-  }
-
   public static SanitizedContent bidiDirAttrSanitized(
       BidiGlobalDir dir, SoyValue value, boolean isHtml) {
     Dir valueDir = null;
@@ -59,10 +55,6 @@ public final class BidiFunctionsRuntime {
     return bidiGlobalDir.getStaticValue() < 0 ? "right" : "left";
   }
 
-  public static String bidiMarkAfter(BidiGlobalDir bidiGlobalDir, SoyValue value) {
-    return bidiMarkAfter(bidiGlobalDir, value, /* isHtml= */ false);
-  }
-
   public static String bidiMarkAfter(BidiGlobalDir bidiGlobalDir, SoyValue value, boolean isHtml) {
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
@@ -79,10 +71,6 @@ public final class BidiFunctionsRuntime {
 
   public static String bidiMark(BidiGlobalDir bidiGlobalDir) {
     return (bidiGlobalDir.getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/;
-  }
-
-  public static int bidiTextDir(SoyValue value) {
-    return bidiTextDir(value, /* isHtml= */ false);
   }
 
   public static int bidiTextDir(SoyValue value, boolean isHtml) {

@@ -38,6 +38,21 @@ public abstract class JavaValueFactory {
    */
   public abstract JavaValue listOf(List<JavaValue> args);
 
+  /** Returns a JavaValue that corresponds to the given constant. */
+  public abstract JavaValue constant(double value);
+
+  /** Returns a JavaValue that corresponds to the given constant. */
+  public abstract JavaValue constant(long value);
+
+  /** Returns a JavaValue that corresponds to the given constant. */
+  public abstract JavaValue constant(String value);
+
+  /** Returns a JavaValue that corresponds to the given constant. */
+  public abstract JavaValue constant(boolean value);
+
+  /** Returns a JavaValue that corresponds to null. */
+  public abstract JavaValue constantNull();
+
   /**
    * Convenience method for retrieving a {@link Method} from a class.
    *

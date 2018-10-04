@@ -56,6 +56,7 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -246,6 +247,31 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs), reporter);
   }
 
+  @Override
+  public JbcSrcJavaValue constant(double value) {
+    return JbcSrcJavaValue.of(SoyExpression.forFloat(BytecodeUtils.constant(value)), reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue constant(long value) {
+    return JbcSrcJavaValue.of(SoyExpression.forInt(BytecodeUtils.constant(value)), reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue constant(String value) {
+    return JbcSrcJavaValue.of(SoyExpression.forString(BytecodeUtils.constant(value)), reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue constant(boolean value) {
+    return JbcSrcJavaValue.of(value ? SoyExpression.TRUE : SoyExpression.FALSE, reporter);
+  }
+
+  @Override
+  public JbcSrcJavaValue constantNull() {
+    return JbcSrcJavaValue.ofConstantNull(reporter);
+  }
+
   private Optional<Expression[]> adaptParams(
       Method method, JavaValue[] userParams, String callerMethodName) {
     if (userParams == null) {
@@ -270,8 +296,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       JbcSrcJavaValue jbcJv = (JbcSrcJavaValue) userParams[i];
       Expression expr = jbcJv.expr();
       if (expr instanceof SoyExpression) {
-        params[i] =
-            adaptParameter(method, i, methodParam, (SoyExpression) expr, jbcJv.getAllowedType());
+        params[i] = adaptParameter(method, i, methodParam, jbcJv);
       } else {
         if (!BytecodeUtils.isDefinitelyAssignableFrom(
             Type.getType(methodParam), expr.resultType())) {
@@ -285,20 +310,35 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private Expression adaptParameter(
-      Method method,
-      int paramIdx,
-      Class<?> expectedParamType,
-      SoyExpression actualParam,
-      SoyType allowedType) {
-
+      Method method, int paramIdx, Class<?> expectedParamType, JbcSrcJavaValue value) {
     // First we validate that the type is allowed based on the function's signature (if any).
-    if (!isValidClassForType(expectedParamType, allowedType)) {
+    boolean validType;
+    SoyType allowedType;
+    if (value.isConstantNull()) {
+      // If the value is for our "constant null", then we special-case things to allow
+      // any valid type (expect primitives).
+      // TODO(sameb): Limit the allowed types to ones that valid for real soy types, e.g
+      // the union of all the values the *_TYPES constants + protos + proto enums - primitives.
+      validType = !Primitives.allPrimitiveTypes().contains(expectedParamType);
+      allowedType = NullType.getInstance();
+    } else {
+      validType = isValidClassForType(expectedParamType, value.getAllowedType());
+      allowedType = value.getAllowedType();
+    }
+    if (!validType) {
       reporter.invalidParameterType(method, paramIdx + 1, expectedParamType, allowedType);
       return stubExpression(expectedParamType);
     }
 
     // Then adapt the expression to fit the parameter type.  We know the below calls are all
     // safe because we've already validated the parameter type against the allowed soy types.
+    SoyExpression actualParam = (SoyExpression) value.expr();
+
+    // For "constant null", we can just cast w/o doing any other work.
+    // We already validated that it isn't primitive types.
+    if (value.isConstantNull()) {
+      return actualParam.checkedCast(expectedParamType);
+    }
 
     // If expecting a bland 'SoyValue', just box the expr.
     if (expectedParamType == SoyValue.class) {

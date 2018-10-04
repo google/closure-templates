@@ -69,6 +69,9 @@ public abstract class JavaScriptValueFactory {
   /** Creates a boolean constant. */
   public abstract JavaScriptValue constant(boolean bool);
 
+  /** Creates a null constant. */
+  public abstract JavaScriptValue constantNull();
+
   /** Creates a reference to a global symbol, e.g. {@code Math}. */
   public abstract JavaScriptValue global(String globalSymbol);
 

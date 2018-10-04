@@ -189,14 +189,6 @@ public final class BasicFunctionsRuntime {
     }
   }
 
-  public static List<IntegerData> range(int end) {
-    return range(0, end, 1);
-  }
-
-  public static List<IntegerData> range(int start, int end) {
-    return range(start, end, 1);
-  }
-
   public static List<IntegerData> range(int start, int end, int step) {
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));

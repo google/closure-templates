@@ -41,11 +41,10 @@ import java.util.List;
 @SoyPureFunction
 @SoyFunctionSignature(
     name = "floor",
-    value = {
-      @Signature(
-          parameterTypes = {"number"},
-          returnType = "int")
-    })
+    value =
+        @Signature(
+            parameterTypes = {"number"},
+            returnType = "int"))
 public final class FloorFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 

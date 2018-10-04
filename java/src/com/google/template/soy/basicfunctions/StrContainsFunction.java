@@ -47,12 +47,11 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "strContains",
-    value = {
-      @Signature(
-          // TODO(b/62134073): should be string, string and return a bool
-          returnType = "?",
-          parameterTypes = {"?", "?"}),
-    })
+    value =
+        @Signature(
+            // TODO(b/62134073): should be string, string and return a bool
+            returnType = "?",
+            parameterTypes = {"?", "?"}))
 @SoyPureFunction
 final class StrContainsFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {

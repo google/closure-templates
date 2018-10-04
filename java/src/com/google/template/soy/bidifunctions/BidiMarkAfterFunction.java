@@ -66,10 +66,7 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method MARK_AFTER_NO_HTML =
-        JavaValueFactory.createMethod(
-            BidiFunctionsRuntime.class, "bidiMarkAfter", BidiGlobalDir.class, SoyValue.class);
-    static final Method MARK_AFTER_MAYBE_HTML =
+    static final Method MARK_AFTER =
         JavaValueFactory.createMethod(
             BidiFunctionsRuntime.class,
             "bidiMarkAfter",
@@ -81,15 +78,8 @@ final class BidiMarkAfterFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    if (args.size() == 1) {
-      return factory.callStaticMethod(
-          Methods.MARK_AFTER_NO_HTML, context.getBidiDir(), args.get(0));
-    }
-    return factory.callStaticMethod(
-        Methods.MARK_AFTER_MAYBE_HTML,
-        context.getBidiDir(),
-        args.get(0),
-        args.get(1).asSoyBoolean());
+    JavaValue html = args.size() == 1 ? factory.constant(false) : args.get(1).asSoyBoolean();
+    return factory.callStaticMethod(Methods.MARK_AFTER, context.getBidiDir(), args.get(0), html);
   }
 
   @Override

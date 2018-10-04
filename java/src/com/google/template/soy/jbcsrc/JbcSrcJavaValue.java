@@ -17,11 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -36,17 +38,32 @@ final class JbcSrcJavaValue implements JavaValue {
   /** Constructs a JbcSrcJavaValue that represents an error. */
   static JbcSrcJavaValue error(Expression expr, JbcSrcValueErrorReporter reporter) {
     return new JbcSrcJavaValue(
-        expr, /* method= */ null, /* allowedType= */ null, /* error= */ true, reporter);
+        expr,
+        /* method= */ null,
+        /* allowedType= */ null,
+        /* constantNull= */ false,
+        /* error= */ true,
+        reporter);
   }
 
   /** Constructs a JbcSrcJavaValue based on the Expression. */
   static JbcSrcJavaValue of(Expression expr, JbcSrcValueErrorReporter reporter) {
     if (expr instanceof SoyExpression) {
       return new JbcSrcJavaValue(
-          expr, /* method= */ null, ((SoyExpression) expr).soyType(), /* error= */ false, reporter);
+          expr,
+          /* method= */ null,
+          /* allowedType= */ ((SoyExpression) expr).soyType(),
+          /* constantNull= */ false,
+          /* error= */ false,
+          reporter);
     }
     return new JbcSrcJavaValue(
-        expr, /* method= */ null, /* allowedType= */ null, /* error= */ false, reporter);
+        expr,
+        /* method= */ null,
+        /* allowedType= */ null,
+        /* constantNull= */ false,
+        /* error= */ false,
+        reporter);
   }
 
   /**
@@ -57,9 +74,20 @@ final class JbcSrcJavaValue implements JavaValue {
     checkNotNull(method);
     if (expr instanceof SoyExpression) {
       return new JbcSrcJavaValue(
-          expr, method, ((SoyExpression) expr).soyType(), /* error= */ false, reporter);
+          expr,
+          method,
+          /* allowedType= */ ((SoyExpression) expr).soyType(),
+          /* constantNull= */ false,
+          /* error= */ false,
+          reporter);
     }
-    return new JbcSrcJavaValue(expr, method, /* allowedType= */ null, /* error= */ false, reporter);
+    return new JbcSrcJavaValue(
+        expr,
+        method,
+        /* allowedType= */ null,
+        /* constantNull= */ false,
+        /* error= */ false,
+        reporter);
   }
 
   /**
@@ -70,7 +98,28 @@ final class JbcSrcJavaValue implements JavaValue {
   static JbcSrcJavaValue of(
       SoyExpression expr, SoyType allowedType, JbcSrcValueErrorReporter reporter) {
     return new JbcSrcJavaValue(
-        expr, /* method= */ null, checkNotNull(allowedType), /* error= */ false, reporter);
+        expr,
+        /* method= */ null,
+        checkNotNull(allowedType),
+        /* constantNull= */ false,
+        /* error= */ false,
+        reporter);
+  }
+
+  /**
+   * Constructs a JbcSrcJavaValue specifically for 'constantNull', in which case the 'allowedType'
+   * is any valid type (including specific proto or proto enum types). There's no SoyType we can use
+   * to indicate this, and we can't construct our own SoyType because the cxtor is package-private,
+   * so we have a separate bool to indicate it.
+   */
+  static JbcSrcJavaValue ofConstantNull(JbcSrcValueErrorReporter reporter) {
+    return new JbcSrcJavaValue(
+        SoyExpression.NULL,
+        /* method= */ null,
+        /* allowedType= */ null,
+        /* constantNull= */ true,
+        /* error= */ false,
+        reporter);
   }
 
   private final Expression expr;
@@ -78,18 +127,35 @@ final class JbcSrcJavaValue implements JavaValue {
   @Nullable private final SoyType allowedType;
   @Nullable private final Method method;
   private final boolean error;
+  private final boolean constantNull;
 
   private JbcSrcJavaValue(
       Expression expr,
       Method method,
       SoyType allowedType,
+      boolean constantNull,
       boolean error,
       JbcSrcValueErrorReporter reporter) {
     this.expr = checkNotNull(expr);
     this.reporter = checkNotNull(reporter);
     this.method = method;
     this.allowedType = allowedType;
+    this.constantNull = constantNull;
     this.error = error;
+
+    if (expr instanceof SoyExpression) {
+      checkState(
+          constantNull == (allowedType == null),
+          "Invalid combo of constantNull (%s) and allowedType (%s). "
+              + "If allowedType is null, constantNull must be true. "
+              + "If allowedType is non-null, constantNull must be false.",
+          constantNull,
+          allowedType);
+    } else {
+      checkState(!constantNull, "Non-SoyExpression cannot have constantNull==true");
+      checkState(
+          allowedType == null, "Non-SoyExpression cannot have an allowedType (%s)", allowedType);
+    }
   }
 
   boolean isError() {
@@ -108,6 +174,11 @@ final class JbcSrcJavaValue implements JavaValue {
   @Nullable
   SoyType getAllowedType() {
     return allowedType;
+  }
+
+  /** Returns true if this is the JbcSrcValue for a {@link JavaValueFactory#constantNull} call. */
+  public boolean isConstantNull() {
+    return constantNull;
   }
 
   /**
@@ -158,12 +229,18 @@ final class JbcSrcJavaValue implements JavaValue {
       reporter.incompatibleSoyType(allowedType, newType, methodName);
       return error(JbcSrcValueFactory.stubExpression(newClass), reporter);
     }
-    return new JbcSrcJavaValue(expr, method, checkNotNull(newType), /* error= */ false, reporter);
+    return new JbcSrcJavaValue(
+        expr,
+        method,
+        checkNotNull(newType),
+        /* constantNull= */ false,
+        /* error= */ false,
+        reporter);
   }
 
   @Override
   public JbcSrcJavaValue coerceToSoyBoolean() {
-    if (!(expr instanceof SoyExpression)) {
+    if (!(expr instanceof SoyExpression) || constantNull) {
       reporter.nonSoyExpressionNotCoercible(expr, BoolType.getInstance(), "coerceToSoyBoolean");
       return error(JbcSrcValueFactory.stubExpression(boolean.class), reporter);
     }
@@ -171,13 +248,14 @@ final class JbcSrcJavaValue implements JavaValue {
         ((SoyExpression) expr).coerceToBoolean(),
         method,
         BoolType.getInstance(),
+        /* constantNull= */ false,
         /* error= */ false,
         reporter);
   }
 
   @Override
   public JbcSrcJavaValue coerceToSoyString() {
-    if (!(expr instanceof SoyExpression)) {
+    if (!(expr instanceof SoyExpression) || constantNull) {
       reporter.nonSoyExpressionNotCoercible(expr, StringType.getInstance(), "coerceToSoyString");
       return error(JbcSrcValueFactory.stubExpression(String.class), reporter);
     }
@@ -185,6 +263,7 @@ final class JbcSrcJavaValue implements JavaValue {
         ((SoyExpression) expr).coerceToString(),
         method,
         StringType.getInstance(),
+        /* constantNull= */ false,
         /* error= */ false,
         reporter);
   }

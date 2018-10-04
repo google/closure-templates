@@ -61,13 +61,7 @@ public final class RangeFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
 
   private static final class Methods {
-    static final Method RANGE_1 =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "range", int.class);
-
-    static final Method RANGE_2 =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "range", int.class, int.class);
-
-    static final Method RANGE_3 =
+    static final Method RANGE =
         JavaValueFactory.createMethod(
             BasicFunctionsRuntime.class, "range", int.class, int.class, int.class);
   }
@@ -75,21 +69,29 @@ public final class RangeFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+    JavaValue start;
+    JavaValue end;
+    JavaValue step;
     switch (args.size()) {
       case 1:
-        return factory.callStaticMethod(Methods.RANGE_1, args.get(0).asSoyInt());
+        start = factory.constant(0);
+        end = args.get(0).asSoyInt();
+        step = factory.constant(1);
+        break;
       case 2:
-        return factory.callStaticMethod(
-            Methods.RANGE_2, args.get(0).asSoyInt(), args.get(1).asSoyInt());
+        start = args.get(0).asSoyInt();
+        end = args.get(1).asSoyInt();
+        step = factory.constant(1);
+        break;
       case 3:
-        return factory.callStaticMethod(
-            Methods.RANGE_3,
-            args.get(0).asSoyInt(),
-            args.get(1).asSoyInt(),
-            args.get(2).asSoyInt());
+        start = args.get(0).asSoyInt();
+        end = args.get(1).asSoyInt();
+        step = args.get(2).asSoyInt();
+        break;
       default:
         throw new AssertionError();
     }
+    return factory.callStaticMethod(Methods.RANGE, start, end, step);
   }
 
   @Override

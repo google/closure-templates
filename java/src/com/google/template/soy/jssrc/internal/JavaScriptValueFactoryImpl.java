@@ -207,6 +207,11 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   }
 
   @Override
+  public JavaScriptValue constantNull() {
+    return new JavaScriptValueImpl(Expression.LITERAL_NULL);
+  }
+
+  @Override
   public JavaScriptValueImpl global(String globalSymbol) {
     return new JavaScriptValueImpl(Expression.dottedIdNoRequire(globalSymbol));
   }

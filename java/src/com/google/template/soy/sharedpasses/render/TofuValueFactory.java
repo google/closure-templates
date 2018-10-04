@@ -23,11 +23,18 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -115,6 +122,31 @@ class TofuValueFactory extends JavaValueFactory {
         SoyValueConverter.INSTANCE.convert(values).resolve(), fn.getSourceLocation());
   }
 
+  @Override
+  public TofuJavaValue constant(boolean value) {
+    return TofuJavaValue.forSoyValue(BooleanData.forValue(value), SourceLocation.UNKNOWN);
+  }
+
+  @Override
+  public TofuJavaValue constant(double value) {
+    return TofuJavaValue.forSoyValue(FloatData.forValue(value), SourceLocation.UNKNOWN);
+  }
+
+  @Override
+  public TofuJavaValue constant(long value) {
+    return TofuJavaValue.forSoyValue(IntegerData.forValue(value), SourceLocation.UNKNOWN);
+  }
+
+  @Override
+  public TofuJavaValue constant(String value) {
+    return TofuJavaValue.forSoyValue(StringData.forValue(value), SourceLocation.UNKNOWN);
+  }
+
+  @Override
+  public TofuJavaValue constantNull() {
+    return TofuJavaValue.forSoyValue(NullData.INSTANCE, SourceLocation.UNKNOWN);
+  }
+
   private TofuJavaValue wrapInTofuValue(Method method, Object object) {
     if (object instanceof SoyValue) {
       return TofuJavaValue.forSoyValue((SoyValue) object, fn.getSourceLocation());
@@ -156,8 +188,23 @@ class TofuValueFactory extends JavaValueFactory {
           throw RenderException.create("Invalid parameter: " + tofuVal);
         }
         SoyValue value = tofuVal.soyValue();
-        // TODO(b/19252021): Deal with null values
-        if (type.isInstance(value)) {
+        if (value instanceof NullData || value instanceof UndefinedData) {
+          if (Primitives.allPrimitiveTypes().contains(type)) {
+            throw RenderException.create(
+                "cannot call method "
+                    + method.getDeclaringClass().getName()
+                    + "."
+                    + method.getName()
+                    + " because parameter["
+                    + i
+                    + "] expects a primitive type ["
+                    + type
+                    + "], but actual value is null [ "
+                    + tofuVal
+                    + "]");
+          }
+          params[i] = null;
+        } else if (type.isInstance(value)) {
           params[i] = value;
         } else if (type == boolean.class) {
           params[i] = value.booleanValue();
@@ -181,7 +228,6 @@ class TofuValueFactory extends JavaValueFactory {
             throw RenderException.create("Invalid parameter: " + tofuVal, roe);
           }
         } else {
-          // TODO(b/19252021): Map, Iterable, Future, SafeHtml, etc..?
           throw new UnsupportedOperationException(
               "cannot call method "
                   + method.getDeclaringClass().getName()

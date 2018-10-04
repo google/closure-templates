@@ -53,9 +53,7 @@ final class BidiTextDirFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method BIDI_TEXT_DIR_NO_HTML =
-        JavaValueFactory.createMethod(BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class);
-    static final Method BIDI_TEXT_DIR_MAYBE_HTML =
+    static final Method BIDI_TEXT_DIR =
         JavaValueFactory.createMethod(
             BidiFunctionsRuntime.class, "bidiTextDir", SoyValue.class, boolean.class);
   }
@@ -63,11 +61,8 @@ final class BidiTextDirFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    if (args.size() == 1) {
-      return factory.callStaticMethod(Methods.BIDI_TEXT_DIR_NO_HTML, args.get(0));
-    }
-    return factory.callStaticMethod(
-        Methods.BIDI_TEXT_DIR_MAYBE_HTML, args.get(0), args.get(1).asSoyBoolean());
+    JavaValue html = args.size() == 2 ? args.get(1).asSoyBoolean() : factory.constant(false);
+    return factory.callStaticMethod(Methods.BIDI_TEXT_DIR, args.get(0), html);
   }
 
   @Override

@@ -67,13 +67,7 @@ final class BidiDirAttrFunction extends TypedSoyFunction
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method DIR_ATTR_SANITIZED_NO_HTML =
-        JavaValueFactory.createMethod(
-            BidiFunctionsRuntime.class,
-            "bidiDirAttrSanitized",
-            BidiGlobalDir.class,
-            SoyValue.class);
-    static final Method DIR_ATTR_SANITIZED_MAYBE_HTML =
+    static final Method DIR_ATTR_SANITIZED =
         JavaValueFactory.createMethod(
             BidiFunctionsRuntime.class,
             "bidiDirAttrSanitized",
@@ -85,15 +79,9 @@ final class BidiDirAttrFunction extends TypedSoyFunction
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    if (args.size() == 1) {
-      return factory.callStaticMethod(
-          Methods.DIR_ATTR_SANITIZED_NO_HTML, context.getBidiDir(), args.get(0));
-    }
+    JavaValue html = args.size() == 1 ? factory.constant(false) : args.get(1).asSoyBoolean();
     return factory.callStaticMethod(
-        Methods.DIR_ATTR_SANITIZED_MAYBE_HTML,
-        context.getBidiDir(),
-        args.get(0),
-        args.get(1).asSoyBoolean());
+        Methods.DIR_ATTR_SANITIZED, context.getBidiDir(), args.get(0), html);
   }
 
   @Override

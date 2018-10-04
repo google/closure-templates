@@ -47,12 +47,11 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "strIndexOf",
-    value = {
-      @Signature(
-          returnType = "int",
-          // TODO(b/62134073): should be string, string
-          parameterTypes = {"?", "?"}),
-    })
+    value =
+        @Signature(
+            returnType = "int",
+            // TODO(b/62134073): should be string, string
+            parameterTypes = {"?", "?"}))
 @SoyPureFunction
 final class StrIndexOfFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {

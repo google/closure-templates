@@ -113,6 +113,7 @@ public final class JavaScriptValueFactoryImplTest {
     assertThat(factory.constant(1.1).toString()).isEqualTo("1.1;");
     assertThat(factory.constant(false).toString()).isEqualTo("false;");
     assertThat(factory.constant("false").toString()).isEqualTo("'false';");
+    assertThat(factory.constantNull().toString()).isEqualTo("null;");
   }
 
   @Test

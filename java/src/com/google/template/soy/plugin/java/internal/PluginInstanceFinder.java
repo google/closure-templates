@@ -61,18 +61,43 @@ public final class PluginInstanceFinder {
     Set<Class<?>> instances = new LinkedHashSet<>();
 
     @Override
-    public JavaValue callInstanceMethod(Method method, JavaValue... params) {
+    public FinderValue callInstanceMethod(Method method, JavaValue... params) {
       instances.add(method.getDeclaringClass());
       return FinderValue.INSTANCE;
     }
 
     @Override
-    public JavaValue callStaticMethod(Method method, JavaValue... params) {
+    public FinderValue callStaticMethod(Method method, JavaValue... params) {
       return FinderValue.INSTANCE;
     }
 
     @Override
-    public JavaValue listOf(List<JavaValue> args) {
+    public FinderValue listOf(List<JavaValue> args) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
+    public FinderValue constant(boolean value) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
+    public FinderValue constant(double value) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
+    public FinderValue constant(long value) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
+    public FinderValue constant(String value) {
+      return FinderValue.INSTANCE;
+    }
+
+    @Override
+    public FinderValue constantNull() {
       return FinderValue.INSTANCE;
     }
   }
