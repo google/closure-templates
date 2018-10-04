@@ -162,6 +162,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           "Cannot access field ''{0}'' of type ''{1}'', "
               + "because the different union member types have different access methods.");
 
+  private static final SoyErrorKind SOY_JS_SRC_FUNCTION_NOT_FOUND =
+      SoyErrorKind.of(
+          "Function ''{0}'' implemented by ''{1}'' does not have a JavaScript implementation.");
+
   /**
    * The current replacement JS expressions for the local variables (and foreach-loop special
    * functions) current in scope.
@@ -622,8 +626,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           codeGenerator);
     } else {
       if (!(soyFunction instanceof SoyJsSrcFunction)) {
-        // No SoyJsSrcFunction found. This is either a non-JS function or a v1 experssion.
-        // TODO(user): Eliminate this case.
+        errorReporter.report(
+            node.getSourceLocation(),
+            SOY_JS_SRC_FUNCTION_NOT_FOUND,
+            node.getFunctionName(),
+            soyFunction == null ? "missing implementation" : soyFunction.getClass().getName());
+        // use a fake function and keep going
         soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
       }
 
