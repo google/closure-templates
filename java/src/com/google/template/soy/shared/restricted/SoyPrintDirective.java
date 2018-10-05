@@ -48,6 +48,8 @@ public interface SoyPrintDirective {
    *
    * @return Whether the appearance of this directive on a 'print' tag should cancel autoescape for
    *     that 'print' tag.
+   * @deprecated Is going to be ignored and then deleted.
    */
+  @Deprecated
   public boolean shouldCancelAutoescape();
 }
