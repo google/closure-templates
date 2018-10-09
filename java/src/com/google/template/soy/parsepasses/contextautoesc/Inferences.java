@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -171,8 +172,7 @@ final class Inferences {
       EscapingMode mode = EscapingMode.fromDirective(directiveNode.getName());
       if (mode != null) {
         modes.add(mode);
-      } else if (directiveNode.getPrintDirective() != null
-          && directiveNode.getPrintDirective().shouldCancelAutoescape()) {
+      } else if (directiveNode.getPrintDirective() instanceof NoAutoescapeDirective) {
         modes.add(EscapingMode.NO_AUTOESCAPE);
       }
     }

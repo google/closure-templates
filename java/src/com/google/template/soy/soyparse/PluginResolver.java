@@ -259,11 +259,6 @@ public final class PluginResolver {
       public Set<Integer> getValidArgsSizes() {
         return validArgSizes;
       }
-
-      @Override
-      public boolean shouldCancelAutoescape() {
-        return false;
-      }
     };
   }
 }

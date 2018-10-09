@@ -121,11 +121,6 @@ class FormatNumDirective
   }
 
   @Override
-  public boolean shouldCancelAutoescape() {
-    return false;
-  }
-
-  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get());
     String formatType = args.isEmpty() ? DEFAULT_FORMAT : args.get(0).stringValue();

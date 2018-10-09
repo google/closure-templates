@@ -62,11 +62,6 @@ public final class BlessStringAsTrustedResourceUrlForLegacyDirective
   }
 
   @Override
-  public boolean shouldCancelAutoescape() {
-    return false;
-  }
-
-  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.blessStringAsTrustedResourceUrlForLegacy(value);
   }
