@@ -53,9 +53,7 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind RENDER_UNIT_WITHOUT_KIND =
       SoyErrorKind.of(
-          "In strict templates, '{'{0}'}'...'{'/{0}'}' blocks "
-              + "require an explicit kind=\"<html|css|text|attributes>\".");
-
+          "In strict templates, '{'{0}'}'...'{'/{0}'}' blocks require an explicit kind=\"\".");
 
   private final ErrorReporter errorReporter;
 
