@@ -433,6 +433,7 @@ final class InferenceEngine {
             // - It is allowed in strict sub-contexts if the surrounding template is non-strict,
             // to help with migration. This does not apply to other escaping directives since
             // they are just as dangerous, but less obvious to auditors.
+            // - It deserves a more useful error message.
             if (templateAutoescapeMode == AutoescapeMode.STRICT) {
               // Help the user figure out the best content kind to use, using existing heuristics.
               SanitizedContentKind recommendedKind = context.getMostAppropriateContentKind();
@@ -447,6 +448,17 @@ final class InferenceEngine {
                       + " or SanitizedContent.",
                   printNode);
             }
+          } else if (printDirective.getPrintDirective() != null
+              && printDirective.getPrintDirective().shouldCancelAutoescape()) {
+            throw SoyAutoescapeException.createWithNode(
+                "Autoescape-cancelling print directives like "
+                    + printDirective.getName()
+                    + " are only allowed in kind=\"text\" blocks. If you really want to "
+                    + "over-escape, try using a let block: "
+                    + "{let $foo kind=\"text\"}"
+                    + printNode.toSourceString()
+                    + "{/let}{$foo}.",
+                printNode);
           }
         }
       }

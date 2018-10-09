@@ -357,6 +357,11 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
+    public boolean shouldCancelAutoescape() {
+      return false;
+    }
+
+    @Override
     public AppendableAndOptions applyForJbcSrcStreaming(
         JbcSrcPluginContext context, Expression delegateAppendable, List<SoyExpression> args) {
       Expression wrapperText;
@@ -387,6 +392,11 @@ public final class StreamingPrintDirectivesTest {
     @Override
     public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
+    }
+
+    @Override
+    public boolean shouldCancelAutoescape() {
+      return false;
     }
   }
 
@@ -462,6 +472,11 @@ public final class StreamingPrintDirectivesTest {
     @Override
     public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(1);
+    }
+
+    @Override
+    public boolean shouldCancelAutoescape() {
+      return false;
     }
 
     @Override

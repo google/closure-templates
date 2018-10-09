@@ -69,6 +69,11 @@ final class BidiUnicodeWrapDirective
   }
 
   @Override
+  public boolean shouldCancelAutoescape() {
+    return false;
+  }
+
+  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return BidiDirectivesRuntime.bidiUnicodeWrap(bidiGlobalDirProvider.get(), value);
   }

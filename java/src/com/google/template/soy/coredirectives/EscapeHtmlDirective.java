@@ -62,6 +62,11 @@ public class EscapeHtmlDirective
   }
 
   @Override
+  public boolean shouldCancelAutoescape() {
+    return true;
+  }
+
+  @Override
   public boolean isNoopForKind(ContentKind kind) {
     return kind == SanitizedContent.ContentKind.HTML;
   }

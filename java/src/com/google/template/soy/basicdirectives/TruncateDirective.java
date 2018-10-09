@@ -61,6 +61,11 @@ final class TruncateDirective
   }
 
   @Override
+  public boolean shouldCancelAutoescape() {
+    return false;
+  }
+
+  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     int maxLen;
     try {

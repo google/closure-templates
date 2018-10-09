@@ -56,6 +56,11 @@ public class NoAutoescapeDirective
   }
 
   @Override
+  public boolean shouldCancelAutoescape() {
+    return true;
+  }
+
+  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterNoAutoescape(value);
   }
