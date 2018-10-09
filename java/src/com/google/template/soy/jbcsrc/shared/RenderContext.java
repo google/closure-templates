@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
@@ -114,14 +113,12 @@ public final class RenderContext {
 
   public Object getPluginInstance(String name) {
     Supplier<Object> instanceSupplier = pluginInstances.get(name);
-    // TODO(b/19252021): Throw a more meaningful exception once users can register their own
-    // plugin instances.
-    // This is the path they'll hit if the user calls JavaValueFactory.callRuntimeMethod without
-    // having supplied a runtime for that function.
-    checkState(
-        instanceSupplier != null,
-        "No plugin instance registered for function with name '%s'",
-        name);
+    if (instanceSupplier == null) {
+      // This is the path a user will hit if they call JavaValueFactory.callInstanceMethod without
+      // having supplied a runtime for that function.
+      throw new MissingPluginInstanceException(
+          name, String.format("No plugin instance registered for function with name '%s'.", name));
+    }
     return instanceSupplier.get();
   }
 
