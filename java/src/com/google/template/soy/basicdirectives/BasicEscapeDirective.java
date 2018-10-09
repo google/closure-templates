@@ -84,11 +84,6 @@ public abstract class BasicEscapeDirective
     return VALID_ARGS_SIZES;
   }
 
-  @Override
-  public final boolean shouldCancelAutoescape() {
-    return true;
-  }
-
   /**
    * Returns whether or not the streaming version of this directive is closeable.
    *

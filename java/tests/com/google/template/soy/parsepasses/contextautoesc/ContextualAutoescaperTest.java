@@ -53,33 +53,12 @@ public final class ContextualAutoescaperTest {
           new SoyPrintDirective() {
             @Override
             public String getName() {
-              return "|customEscapeDirective";
-            }
-
-            @Override
-            public Set<Integer> getValidArgsSizes() {
-              return ImmutableSet.of(0);
-            }
-
-            @Override
-            public boolean shouldCancelAutoescape() {
-              return true;
-            }
-          },
-          new SoyPrintDirective() {
-            @Override
-            public String getName() {
               return "|customOtherDirective";
             }
 
             @Override
             public Set<Integer> getValidArgsSizes() {
               return ImmutableSet.of(0);
-            }
-
-            @Override
-            public boolean shouldCancelAutoescape() {
-              return false;
             }
           },
           new SoyPrintDirective() {
@@ -91,11 +70,6 @@ public final class ContextualAutoescaperTest {
             @Override
             public Set<Integer> getValidArgsSizes() {
               return ImmutableSet.of(0);
-            }
-
-            @Override
-            public boolean shouldCancelAutoescape() {
-              return true;
             }
           },
           new FakeBidiSpanWrapDirective());
@@ -1380,15 +1354,13 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            "  {@param y: ?}\n",
-            "{$x |customEscapeDirective} - {$y |customOtherDirective |escapeHtml}\n",
+            "{$x |customOtherDirective |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            "  {@param y: ?}\n",
-            "  {$x |customEscapeDirective} - {$y |customOtherDirective}\n",
+            "  {$x |customOtherDirective}\n",
             "{/template}"));
   }
 
@@ -1700,23 +1672,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testOptionalValuelessAttributes() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "<input{if c} checked{/if}>",
-            "<input{if c} id={id |customEscapeDirective}{/if}>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "<input {if c}checked{/if}>",
-            "<input {if c}id={id |customEscapeDirective}{/if}>\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testDirectivesOrderedProperly() throws Exception {
     // The |bidiSpanWrap directive takes HTML and produces HTML, so the |escapeHTML
     // should appear first.
@@ -1809,19 +1764,6 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testTypedLetBlockIsStrictModeAutoescaped() {
-    assertRewriteFails(
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
-            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
-            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .t autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "{let $l kind=\"html\"}\n",
-            "<b>{$y |customEscapeDirective}</b>",
-            "{/let}\n",
-            "{/template}"));
-
     assertRewriteFails(
         "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
@@ -1972,25 +1914,6 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testTypedParamBlockIsStrictModeAutoescaped() {
-    assertRewriteFails(
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
-            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
-            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}",
-            "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
-            "{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee visibility=\"private\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x}</b>\n",
-            "{/template}"));
-
     // noAutoescape has a special error message.
     assertRewriteFails(
         "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
@@ -2092,26 +2015,6 @@ public final class ContextualAutoescaperTest {
             "<div>",
             "{call .callee}",
             "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-            "{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x}</b>\n",
-            "{/template}"));
-
-    // Other escape-cancelling directives are still not allowed.
-    assertRewriteFails(
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
-            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
-            + "{let $foo kind=\"text\"}{$y |customEscapeDirective}{/let}{$foo}.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}",
-            "{param x kind=\"html\"}<b>{$y |customEscapeDirective}</b>{/param}",
             "{/call}",
             "</div>\n",
             "{/template}\n\n",
@@ -2244,17 +2147,6 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testStrictModeRejectsAutoescapeCancellingDirectives() {
-    assertRewriteFails(
-        "Autoescape-cancelling print directives like |customEscapeDirective are only allowed "
-            + "in kind=\"text\" blocks. If you really want to over-escape, try using a let block: "
-            + "{let $foo kind=\"text\"}{$foo |customEscapeDirective}{/let}{$foo}.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<b>{$foo|customEscapeDirective}</b>\n",
-            "{/template}"));
-
     assertRewriteFails(
         "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
             + "with kind=\"html\" or SanitizedContent.",
@@ -2871,11 +2763,6 @@ public final class ContextualAutoescaperTest {
     @Override
     public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
-    }
-
-    @Override
-    public boolean shouldCancelAutoescape() {
-      return false;
     }
 
     @Override

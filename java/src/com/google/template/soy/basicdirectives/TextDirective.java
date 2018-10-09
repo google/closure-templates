@@ -60,14 +60,6 @@ final class TextDirective
   }
 
   @Override
-  public boolean shouldCancelAutoescape() {
-    // TODO: This simply indicates simply that the "blanket html-escape everything and its cousin"
-    // should not run, but eventually, it'd be nice for this to end up forcing the result to be
-    // re-escaped. For now, CheckEscapingSanityVisitor bans non-internal use of this.
-    return true;
-  }
-
-  @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     // TODO: If this directive is opened up to users, this needs to coerce the value to a string.
     return value;
