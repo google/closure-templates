@@ -310,7 +310,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   public void testUndeclaredPropVar() {
     String propVarDecl = "{@prop foo:= 1}";
     String templateBody = "<div>{$boo}</div>";
-    ImmutableList<SoyError> errors = soyErrorsForTemplate(propVarDecl, templateBody);
+    ImmutableList<SoyError> errors = soyErrorsForElement(propVarDecl, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
     assertThat(errors.get(1).message()).isEqualTo("Prop var 'foo' unused in template body.");
@@ -320,7 +320,7 @@ public final class CheckTemplateHeaderVarsPassTest {
   public void testUnusedPropVar() {
     String propVarDecl = "{@prop foo:= 2}";
     String templateBody = "<b>Hello</b>";
-    ImmutableList<SoyError> errors = soyErrorsForTemplate(propVarDecl, templateBody);
+    ImmutableList<SoyError> errors = soyErrorsForElement(propVarDecl, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
         .isEqualTo("Prop var 'foo' unused in template body.");
   }
@@ -350,16 +350,16 @@ public final class CheckTemplateHeaderVarsPassTest {
     return errorReporter.getErrors();
   }
 
-  private static ImmutableList<SoyError> soyErrorsForTemplate(
+  private static ImmutableList<SoyError> soyErrorsForElement(
       String headerVarDecl, String templateBody) {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "{template .foo}\n"
+            + "{element .foo}\n"
             + headerVarDecl
             + templateBody
             + "\n"
-            + "{/template}\n";
+            + "{/element}\n";
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(testFileContent)

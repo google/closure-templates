@@ -19,17 +19,12 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -39,10 +34,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.SoyDocParam;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -65,8 +58,6 @@ public abstract class TemplateNodeBuilder {
   private static final boolean DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION =
       Boolean.getBoolean("DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION");
 
-  private static final SoyErrorKind DUPLICATE_DECLARATION =
-      SoyErrorKind.of("Param ''{0}'' is a duplicate of prop var ''{0}''.");
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
       SoyErrorKind.of("Found invalid soydoc param name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
@@ -143,9 +134,6 @@ public abstract class TemplateNodeBuilder {
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
-  /** The prop variables from template header. */
-  protected ImmutableList<TemplatePropVar> propVars = ImmutableList.of();
-
   protected boolean strictHtmlDisabled;
 
   SourceLocation sourceLocation;
@@ -220,7 +208,6 @@ public abstract class TemplateNodeBuilder {
     setAutoescapeInfo(autoescapeMode, kind, kindLocation);
   }
 
-
   /**
    * Sets the SoyDoc for the node to be built. The SoyDoc will be parsed to fill in SoyDoc param
    * info.
@@ -279,13 +266,6 @@ public abstract class TemplateNodeBuilder {
         }
       }
     }
-    checkDuplicateHeaderVars(params, propVars, errorReporter);
-    return this;
-  }
-
-  public TemplateNodeBuilder setPropVars(ImmutableList<TemplatePropVar> newPropVars) {
-    this.propVars = newPropVars;
-    checkDuplicateHeaderVars(params, propVars, errorReporter);
     return this;
   }
 
@@ -559,49 +539,5 @@ public abstract class TemplateNodeBuilder {
     }
 
     return params;
-  }
-
-  /**
-   * Check for duplicate header variable names and append error text for each duplicate to the
-   * `errorReporter`. For example, this is an error:
-   *
-   * <pre>{@code
-   * {@param s: bool}
-   * {@prop s: bool}
-   * }</pre>
-   *
-   * Note that it is not possible to have duplicate names of the same declaration type. Any
-   * duplicate {@code @prop} or {@code @param} will have been flagged as error during the resolve-
-   * names pass or in {@link #addParams(Iterable)}.
-   */
-  @VisibleForTesting
-  static void checkDuplicateHeaderVars(
-      ImmutableList<? extends TemplateHeaderVarDefn> params,
-      ImmutableList<? extends TemplateHeaderVarDefn> propVars,
-      ErrorReporter errorReporter) {
-
-    final Set<String> propVarNames =
-        FluentIterable.from(propVars)
-            .transform(
-                new Function<TemplateHeaderVarDefn, String>() {
-                  @Override
-                  public String apply(TemplateHeaderVarDefn propVar) {
-                    return propVar.name();
-                  }
-                })
-            .toSet();
-
-    Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
-        Iterables.filter(
-            params,
-            new Predicate<TemplateHeaderVarDefn>() {
-              @Override
-              public boolean apply(TemplateHeaderVarDefn param) {
-                return propVarNames.contains(param.name());
-              }
-            });
-    for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
-      errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
-    }
   }
 }

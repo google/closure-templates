@@ -17,11 +17,14 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
@@ -52,7 +55,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
       SoyFileHeaderInfo soyFileHeaderInfo,
       @Nullable ImmutableList<TemplateParam> params,
       ImmutableList<TemplatePropVar> propVars) {
-    super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params, propVars);
+    super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
     this.propVars = propVars;
   }
 
@@ -67,7 +70,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   }
 
   /** Returns the prop variables from template header. */
-  @Override
   public ImmutableList<TemplatePropVar> getPropVars() {
     return propVars;
   }
@@ -90,7 +92,18 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   protected ImmutableList<TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
     // Header.
     // Gather up all the @params declared in the template header (not in the SoyDoc).
-    return ImmutableList.copyOf(super.getHeaderParamsForSourceString());
+    return new ImmutableList.Builder<TemplateHeaderVarDefn>()
+        .addAll(super.getHeaderParamsForSourceString())
+        .addAll(propVars)
+        .build();
+  }
+
+  @Override
+  protected ImmutableMap<Class<?>, String> getDeclNameMap() {
+    return ImmutableMap.of(
+        HeaderParam.class, "@param",
+        InjectedParam.class, "@inject",
+        TemplatePropVar.class, "@prop");
   }
 
   @Override

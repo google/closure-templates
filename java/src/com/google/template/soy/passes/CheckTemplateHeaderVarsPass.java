@@ -30,6 +30,7 @@ import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsIn
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -108,16 +109,19 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       }
     }
 
-    // Process @prop header variables.
     List<TemplateHeaderVarDefn> unusedPropVars = new ArrayList<>();
-    for (TemplatePropVar propVar : node.getPropVars()) {
-      allHeaderVarNames.add(propVar.name());
-      if (dataKeys.containsKey(propVar.name())) {
-        // Good: declared and referenced in the template.
-        dataKeys.removeAll(propVar.name());
-      } else {
-        // Bad: declared in the header, but not used.
-        unusedPropVars.add(propVar);
+    // Process @prop header variables.
+    if (node instanceof TemplateElementNode) {
+      TemplateElementNode el = (TemplateElementNode) node;
+      for (TemplatePropVar propVar : el.getPropVars()) {
+        allHeaderVarNames.add(propVar.name());
+        if (dataKeys.containsKey(propVar.name())) {
+          // Good: declared and referenced in the template.
+          dataKeys.removeAll(propVar.name());
+        } else {
+          // Bad: declared in the header, but not used.
+          unusedPropVars.add(propVar);
+        }
       }
     }
     // At this point, the only keys left in dataKeys are undeclared.
@@ -132,6 +136,8 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
     // of the same delegate may need to use those params.
     if (node instanceof TemplateBasicNode) {
       reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_PARAM);
+    }
+    if (node instanceof TemplateElementNode) {
       reportUnusedHeaderVars(errorReporter, unusedPropVars, UNUSED_PROP);
     }
   }

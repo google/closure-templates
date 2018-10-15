@@ -396,7 +396,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // Match the tags in the deques.
       HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
 
-      if (node.isStatefulTemplate() || node instanceof TemplateElementNode) {
+      if (node instanceof TemplateElementNode) {
         validateStatefulTemplateHasOneRootTagNode(node);
       }
     }

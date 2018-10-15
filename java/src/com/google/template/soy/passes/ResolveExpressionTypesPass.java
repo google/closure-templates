@@ -92,6 +92,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -242,36 +243,39 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     protected void visitTemplateNode(TemplateNode node) {
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
-      visitExpressions(node);
-      for (TemplatePropVar prop : node.getPropVars()) {
-        SoyType declaredType = prop.type();
-        SoyType actualType = prop.initialValue().getType();
-        if (declaredType != null) {
-          if (declaredType.equals(NullType.getInstance())) {
-            errorReporter.report(prop.nameLocation(), EXPLICIT_NULL);
+      if (node instanceof TemplateElementNode) {
+        TemplateElementNode el = (TemplateElementNode) node;
+        visitExpressions(el);
+        for (TemplatePropVar prop : el.getPropVars()) {
+          SoyType declaredType = prop.type();
+          SoyType actualType = prop.initialValue().getType();
+          if (declaredType != null) {
+            if (declaredType.equals(NullType.getInstance())) {
+              errorReporter.report(prop.nameLocation(), EXPLICIT_NULL);
+            }
+            if (!declaredType.isAssignableFrom(actualType)) {
+              errorReporter.report(
+                  prop.initialValue().getSourceLocation(),
+                  TYPE_MISMATCH_PROP,
+                  prop.name(),
+                  actualType,
+                  declaredType);
+            }
+            if (declaredType.equals(actualType)) {
+              errorReporter.report(prop.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
+            }
+          } else {
+            // in this case the declaredType is inferred from the initializer expression, so just
+            // assign
+            prop.setType(actualType);
+            if (actualType.equals(NullType.getInstance())) {
+              errorReporter.report(prop.nameLocation(), INFERRED_NULL);
+            }
           }
-          if (!declaredType.isAssignableFrom(actualType)) {
+          if (!SoyTreeUtils.isConstantExpr(prop.initialValue())) {
             errorReporter.report(
-                prop.initialValue().getSourceLocation(),
-                TYPE_MISMATCH_PROP,
-                prop.name(),
-                actualType,
-                declaredType);
+                prop.initialValue().getSourceLocation(), PROP_MUST_BE_CONSTANT, prop.name());
           }
-          if (declaredType.equals(actualType)) {
-            errorReporter.report(prop.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
-          }
-        } else {
-          // in this case the declaredType is inferred from the initializer expression, so just
-          // assign
-          prop.setType(actualType);
-          if (actualType.equals(NullType.getInstance())) {
-            errorReporter.report(prop.nameLocation(), INFERRED_NULL);
-          }
-        }
-        if (!SoyTreeUtils.isConstantExpr(prop.initialValue())) {
-          errorReporter.report(
-              prop.initialValue().getSourceLocation(), PROP_MUST_BE_CONSTANT, prop.name());
         }
       }
       for (TemplateParam param : node.getAllParams()) {

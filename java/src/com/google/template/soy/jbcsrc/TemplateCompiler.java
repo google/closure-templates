@@ -32,6 +32,7 @@ import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThis
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -67,6 +68,7 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -266,12 +268,17 @@ final class TemplateCompiler {
         new TemplateVariableManager(
             fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
+    ImmutableMap<TemplatePropVar, SoyExpression> propInitializers = ImmutableMap.of();
+    if (node instanceof TemplateElementNode) {
+      propInitializers = generatePropInitializers((TemplateElementNode) node, variableSet);
+    }
     TemplateVariables variables =
         new TemplateVariables(
-            variableSet,
-            thisVar,
-            generateStateInitializers(node, variableSet),
-            new RenderContextExpression(contextVar));
+            variableSet, thisVar, propInitializers, new RenderContextExpression(contextVar));
+    List<TemplatePropVar> propVars = ImmutableList.of();
+    if (node instanceof TemplateElementNode) {
+      propVars = ((TemplateElementNode) node).getPropVars();
+    }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -283,7 +290,7 @@ final class TemplateCompiler {
                 variables,
                 reporter,
                 soyTypeRegistry,
-                node.getPropVars())
+                propVars)
             .compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
@@ -305,8 +312,8 @@ final class TemplateCompiler {
     return variableSet.defineFields(writer);
   }
 
-  private ImmutableMap<TemplatePropVar, SoyExpression> generateStateInitializers(
-      TemplateNode node, TemplateVariableManager varManager) {
+  private ImmutableMap<TemplatePropVar, SoyExpression> generatePropInitializers(
+      TemplateElementNode node, TemplateVariableManager varManager) {
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(varManager, reporter, soyTypeRegistry);
     ImmutableMap.Builder<TemplatePropVar, SoyExpression> builder = ImmutableMap.builder();

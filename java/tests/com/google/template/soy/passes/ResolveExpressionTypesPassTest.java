@@ -32,7 +32,7 @@ import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.AnyType;
@@ -93,7 +93,7 @@ public final class ResolveExpressionTypesPassTest {
   public void testProp() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructElementSource(
                     "{@prop pa:= true}",
                     "{@prop pb:= [1,2,3]}",
                     "{@prop pc: bool|null = null}",
@@ -109,7 +109,7 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
-    TemplateNode node = soyTree.getChild(0).getChild(0);
+    TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
     List<TemplatePropVar> props = node.getPropVars();
     assertThat(props.get(0).initialValue().getType()).isEqualTo(BoolType.getInstance());
     assertThat(props.get(1).initialValue().getType()).isEqualTo(ListType.of(IntType.getInstance()));
@@ -126,7 +126,7 @@ public final class ResolveExpressionTypesPassTest {
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
+                constructElementSource(
                     "{@prop pa:= true}",
                     "{@prop pb:= [1,2,3]}",
                     "{@prop proto:= example.ExampleExtendable()}",
@@ -141,7 +141,7 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
-    TemplateNode node = soyTree.getChild(0).getChild(0);
+    TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
     List<TemplatePropVar> props = node.getPropVars();
 
     assertThat(props.get(0).name()).isEqualTo("pa");
@@ -836,6 +836,23 @@ public final class ResolveExpressionTypesPassTest {
         + Joiner.on("\n   ").join(body)
         + "\n"
         + "{/template}\n";
+  }
+
+  /**
+   * Helper function that constructs a boilerplate template given a list of body statements to
+   * insert into the middle of the template. The body statements will be indented and separated with
+   * newlines.
+   *
+   * @param body The body statements.
+   * @return The combined template.
+   */
+  private static String constructElementSource(String... body) {
+    return ""
+        + "{namespace ns}\n"
+        + "/***/\n"
+        + "{element .aaa}\n"
+        + Joiner.on("\n   ").join(body)
+        + "{/element}\n";
   }
 
   /**

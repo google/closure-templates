@@ -30,15 +30,12 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +48,7 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class TemplateNode extends AbstractBlockCommandNode
-    implements RenderUnitNode, ExprHolderNode {
+public abstract class TemplateNode extends AbstractBlockCommandNode implements RenderUnitNode {
 
   /** Priority for delegate templates. */
   public enum Priority {
@@ -234,9 +230,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** The injected params from template header. */
   private ImmutableList<TemplateParam> injectedParams;
 
-  /** The prop variables from template header. */
-  private ImmutableList<TemplatePropVar> propVars;
-
   private int maxLocalVariableTableSize = -1;
 
   // TODO(user): Remove.
@@ -251,15 +244,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param visibility Visibility of this template.
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param propVars The prop variables from the template header.
    */
   TemplateNode(
       TemplateNodeBuilder nodeBuilder,
       String cmdName,
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
-      @Nullable ImmutableList<TemplateParam> params,
-      ImmutableList<TemplatePropVar> propVars) {
+      @Nullable ImmutableList<TemplateParam> params) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
@@ -287,7 +278,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
     this.params = regularParams.build();
     this.injectedParams = injectedParams.build();
-    this.propVars = propVars;
     this.commandText = nodeBuilder.getCmdText().trim();
   }
 
@@ -311,19 +301,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     // cloning them here and modifying SoyTreeUtils.cloneNode to reassign these as well.
     this.params = orig.params; // immutable
     this.injectedParams = orig.injectedParams;
-    this.propVars = orig.propVars;
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
-  }
-
-  @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
-    for (TemplatePropVar prop : getPropVars()) {
-      builder.add(prop.initialValue());
-    }
-    return builder.build();
   }
 
   /** Returns info from the containing Soy file's header declarations. */
@@ -358,6 +338,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns the mode of autoescaping. */
   public AutoescapeMode getAutoescapeMode() {
     return autoescapeMode;
+  }
+
+  protected ImmutableMap<Class<?>, String> getDeclNameMap() {
+    return ImmutableMap.of(
+        HeaderParam.class, "@param",
+        InjectedParam.class, "@inject");
   }
 
   private boolean computeStrictHtmlMode(boolean strictHtmlDisabled) {
@@ -453,11 +439,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return injectedParams;
   }
 
-  /** Returns the prop variables from template header. */
-  public ImmutableList<TemplatePropVar> getPropVars() {
-    return propVars;
-  }
-
   /** Returns all params from template header or SoyDoc, both regular and injected. */
   @Nullable
   public Iterable<TemplateParam> getAllParams() {
@@ -499,7 +480,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     sb.append(getTagString()).append("\n");
 
     appendHeaderVarDecl(getHeaderParamsForSourceString(), sb);
-    appendHeaderVarDecl(propVars, sb);
 
     // Body.
     // If first or last char of template body is a space, must be turned into '{sp}'.
@@ -524,20 +504,15 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Add the Soy template syntax that declares `headerVar` to the string builder. */
-  private static <T extends TemplateHeaderVarDefn> void appendHeaderVarDecl(
+  protected <T extends TemplateHeaderVarDefn> void appendHeaderVarDecl(
       ImmutableList<T> headerVars, StringBuilder sb) {
-    final ImmutableMap<Class<?>, String> declNameMap =
-        ImmutableMap.of(
-            HeaderParam.class, "@param",
-            InjectedParam.class, "@inject",
-            TemplatePropVar.class, "@prop");
 
     for (TemplateHeaderVarDefn headerVar : headerVars) {
       // Ignore any unknown declaration type.
-      if (!declNameMap.containsKey(headerVar.getClass())) {
+      if (!getDeclNameMap().containsKey(headerVar.getClass())) {
         continue;
       }
-      sb.append("  {").append(declNameMap.get(headerVar.getClass()));
+      sb.append("  {").append(getDeclNameMap().get(headerVar.getClass()));
       if (!headerVar.isRequired()) {
         sb.append("?");
       }
@@ -561,11 +536,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* methodName= */ partialTemplateName.substring(1),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
-  }
-
-  /** Returns whether the template node is stateful (has at least one @prop variable). */
-  public boolean isStatefulTemplate() {
-    return !getPropVars().isEmpty();
   }
 
   /** Returns true if the template has at least one strict param. */

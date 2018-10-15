@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
 import javax.annotation.Nullable;
 
 /**
@@ -85,7 +84,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * @param delTemplateName The delegate template name.
    * @param delTemplateVariantExpr An expression that references a delegate template variant.
    * @param delPriority The delegate priority.
-   * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
   TemplateDelegateNode(
       TemplateDelegateNodeBuilder nodeBuilder,
@@ -93,16 +91,14 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       String delTemplateName,
       @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
-      ImmutableList<TemplateParam> params,
-      ImmutableList<TemplatePropVar> propVars) {
+      ImmutableList<TemplateParam> params) {
 
     super(
         nodeBuilder,
         "deltemplate",
         soyFileHeaderInfo,
         Visibility.PUBLIC /* deltemplate always has public visibility */,
-        params,
-        propVars);
+        params);
     this.delTemplateName = checkNotNull(delTemplateName);
     this.delTemplateVariantExpr = delTemplateVariantExpr;
     this.delPriority = checkNotNull(delPriority);

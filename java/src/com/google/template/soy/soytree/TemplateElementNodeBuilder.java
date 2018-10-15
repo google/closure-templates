@@ -16,10 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
@@ -27,9 +32,11 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -40,6 +47,9 @@ import javax.annotation.Nullable;
  */
 public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
 
+  private static final SoyErrorKind DUPLICATE_DECLARATION =
+      SoyErrorKind.of("Param ''{0}'' is a duplicate of prop var ''{0}''.");
+
   protected static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
       ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
 
@@ -47,6 +57,9 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
       SoyErrorKind.of("Attribute ''{0}'' is not allowed on Soy elements.");
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
+
+  /** The prop variables from template header. */
+  private ImmutableList<TemplatePropVar> propVars = ImmutableList.of();
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
@@ -115,7 +128,6 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-  @Override
   public TemplateNodeBuilder setPropVars(ImmutableList<TemplatePropVar> newPropVars) {
     this.propVars = newPropVars;
     checkDuplicateHeaderVars(params, propVars, errorReporter);
@@ -144,5 +156,49 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
       }
     }
     return new TemplateElementNode(this, soyFileHeaderInfo, params, propVars);
+  }
+
+  /**
+   * Check for duplicate header variable names and append error text for each duplicate to the
+   * `errorReporter`. For example, this is an error:
+   *
+   * <pre>{@code
+   * {@param s: bool}
+   * {@prop s: bool}
+   * }</pre>
+   *
+   * Note that it is not possible to have duplicate names of the same declaration type. Any
+   * duplicate {@code @prop} or {@code @param} will have been flagged as error during the resolve-
+   * names pass or in {@link #addParams(Iterable)}.
+   */
+  @VisibleForTesting
+  static void checkDuplicateHeaderVars(
+      ImmutableList<? extends TemplateHeaderVarDefn> params,
+      ImmutableList<? extends TemplateHeaderVarDefn> propVars,
+      ErrorReporter errorReporter) {
+
+    final Set<String> propVarNames =
+        FluentIterable.from(propVars)
+            .transform(
+                new Function<TemplateHeaderVarDefn, String>() {
+                  @Override
+                  public String apply(TemplateHeaderVarDefn propVar) {
+                    return propVar.name();
+                  }
+                })
+            .toSet();
+
+    Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
+        Iterables.filter(
+            params,
+            new Predicate<TemplateHeaderVarDefn>() {
+              @Override
+              public boolean apply(TemplateHeaderVarDefn param) {
+                return propVarNames.contains(param.name());
+              }
+            });
+    for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
+      errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
+    }
   }
 }

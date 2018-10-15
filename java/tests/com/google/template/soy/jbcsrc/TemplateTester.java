@@ -132,6 +132,16 @@ public final class TemplateTester {
     return assertThatFile(template);
   }
 
+  /**
+   * Returns a truth subject that can be used to assert on an element given the element body.
+   *
+   * <p>The given body lines are wrapped in a template called {@code ns.foo} that has no params.
+   */
+  public static CompiledTemplateSubject assertThatElementBody(String... body) {
+    String template = toElement(body);
+    return assertThatFile(template);
+  }
+
   static CompiledTemplateSubject assertThatFile(String... template) {
     return Truth.assertAbout(FACTORY).that(Joiner.on('\n').join(template));
   }
@@ -469,6 +479,14 @@ public final class TemplateTester {
     builder.append("{namespace ns}\n").append("{template .foo}\n");
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/template}\n");
+    return builder.toString();
+  }
+
+  private static String toElement(String... body) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("{namespace ns}\n").append("{element .foo}\n");
+    Joiner.on("\n").appendTo(builder, body);
+    builder.append("\n{/element}\n");
     return builder.toString();
   }
 

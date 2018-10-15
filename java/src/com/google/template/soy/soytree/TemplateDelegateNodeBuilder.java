@@ -249,12 +249,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     Preconditions.checkState(id != null && cmdText != null);
 
     return new TemplateDelegateNode(
-        this,
-        soyFileHeaderInfo,
-        delTemplateName,
-        delTemplateVariantExpr,
-        delPriority,
-        params,
-        propVars);
+        this, soyFileHeaderInfo, delTemplateName, delTemplateVariantExpr, delPriority, params);
   }
 }

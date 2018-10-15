@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_LIST;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
+import static com.google.template.soy.jbcsrc.TemplateTester.assertThatElementBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
@@ -463,14 +464,13 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testPropNodeNumber() {
-    assertThatTemplateBody("{@prop foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
-    assertThatTemplateBody("{@prop foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
+    assertThatElementBody("{@prop foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
+    assertThatElementBody("{@prop foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
   }
 
   @Test
   public void testPropNodeBoolean() {
-    assertThatTemplateBody("{@prop foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
-        .rendersAs("<p>1</p>");
+    assertThatElementBody("{@prop foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>").rendersAs("<p>1</p>");
   }
 
   @Test

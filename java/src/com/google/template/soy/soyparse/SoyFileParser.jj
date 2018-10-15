@@ -1811,8 +1811,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
   Token tok;
   HeaderParam param;
   List<HeaderParam> params = ImmutableList.of();
-  TemplatePropVar propVar;
-  ImmutableList.Builder<TemplatePropVar> propVars = ImmutableList.builder();
   RawTextNode whitespace = null;
   String soyDoc = null;
 }
@@ -1842,26 +1840,10 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
         }
         params.add(param);
       }
-    |
-      propVar = PropVarDecl(soyDoc)
-      {
-        // it will be null if there is a parse error
-        if (propVar != null) {
-          if (!experimentalFeatures.contains("prop_vars")) {
-           errorReporter.report(propVar.nameLocation(), PROP_VARS_NOT_ALLOWED);
-          } else {
-            // We just parsed a prop var, preceding whitespace/doc comments are not important.
-            whitespace = null;
-            soyDoc = null;
-            propVars.add(propVar);
-          }
-        }
-      }
     )
   )*
 
   { templateBuilder.addParams(params);
-    templateBuilder.setPropVars(propVars.build());
     return whitespace;
   }
 }
