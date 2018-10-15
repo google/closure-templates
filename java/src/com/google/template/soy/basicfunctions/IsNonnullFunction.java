@@ -41,8 +41,7 @@ import java.util.List;
     name = "isNonnull",
     value =
         @Signature(
-            // TODO(b/70946095): should return bool
-            returnType = "?",
+            returnType = "bool",
             parameterTypes = {"any"}))
 @SoyPureFunction
 class IsNonnullFunction extends TypedSoyFunction

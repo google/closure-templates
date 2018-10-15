@@ -96,7 +96,7 @@ public final class GenJsExprsVisitorTest {
     assertGeneratedChunks(JOINER.join("{@param goo : ?}", "{$goo.moo}"), "gooData8.moo;");
 
     assertGeneratedChunks(
-        JOINER.join("{@param goo : ?}", "{isNonnull($goo)+1}"), "(gooData8 != null) + 1;");
+        JOINER.join("{@param goo : ?}", "{length($goo)+1}"), "gooData8.length + 1;");
   }
 
   @Test
