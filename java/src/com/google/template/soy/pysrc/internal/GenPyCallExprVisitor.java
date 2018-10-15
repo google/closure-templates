@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import java.util.LinkedHashMap;
@@ -128,7 +129,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
     // Build the Python expr text for the callee.
     String calleeExprText;
-    TemplateBasicNode template = getTemplateIfInSameFile(node);
+    TemplateNode template = getTemplateIfInSameFile(node);
     if (template != null) {
       // If in the same module no namespace is required.
       calleeExprText = getLocalTemplateName(template);
@@ -284,12 +285,12 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
   }
 
   @Nullable
-  private TemplateBasicNode getTemplateIfInSameFile(CallBasicNode callBasicNode) {
+  private TemplateNode getTemplateIfInSameFile(CallBasicNode callBasicNode) {
     SoyFileNode file = callBasicNode.getNearestAncestor(SoyFileNode.class);
     for (TemplateNode template : file.getChildren()) {
-      if (template instanceof TemplateBasicNode
+      if ((template instanceof TemplateBasicNode || template instanceof TemplateElementNode)
           && template.getTemplateName().equals(callBasicNode.getCalleeName())) {
-        return (TemplateBasicNode) template;
+        return template;
       }
     }
     return null;

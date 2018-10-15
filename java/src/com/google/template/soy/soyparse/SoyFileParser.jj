@@ -121,6 +121,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.TemplateElementNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
@@ -916,6 +917,7 @@ TOKEN_MGR_DECLS: {
 <DEFAULT> TOKEN: {
   < DELTEMPLATE_OPEN : "{deltemplate" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < TEMPLATE_OPEN: "{template" <WS> > { isInTemplate = true; } : IN_CMD_TAG
+| < ELEMENT_OPEN: "{element" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 }
 
 
@@ -939,6 +941,7 @@ TOKEN_MGR_DECLS: {
 <TEMPLATE_DEFAULT> TOKEN: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { resetState(); } : DEFAULT
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { resetState(); } : DEFAULT
+| < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG
@@ -1178,6 +1181,7 @@ TOKEN_MGR_DECLS: {
 | < UNEXPECTED_NAMESPACE    : "{namespace" >
 | < UNEXPECTED_DELPACKAGE   : "{delpackage" >
 | < UNEXPECTED_TEMPLATE     : "{template" >
+| < UNEXPECTED_ELEMENT      : "{element" >
 | < UNEXPECTED_DELTEMPLATE  : "{deltemplate" >
 }
 
@@ -1537,6 +1541,17 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       // do nothing, continue trying to parse other templates
       return null;
     }
+  |
+    open = <ELEMENT_OPEN>
+    try {
+      templateNode = ElementHelper(new TemplateElementNodeBuilder(soyFileHeaderInfo, errorReporter), open)
+      <CMD_CLOSE_ELEMENT>
+    } catch (ParseException e) {
+      reportFileErrorAndSkipTo(e, CMD_CLOSE_ELEMENT);
+    } catch (AbortParsingError e) {
+      // do nothing, continue trying to parse other templates
+      return null;
+    }
   )
   { return templateNode; }
 }
@@ -1594,6 +1609,58 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
   { builder.setSourceLocation(createSrcLoc(open, close)); }
 
   initialWhitespace = TemplateHeader(builder)
+  templateBodyNodes = TemplateBlock()
+
+  {
+    TemplateNode templateNode = builder.build();
+    if (initialWhitespace != null) {
+      templateNode.addChild(initialWhitespace);
+    }
+    templateNode.addChildren(templateBodyNodes);
+    return templateNode;
+  }
+}
+
+/**
+ * A helper for parsing everything except the open and close tags of a template.
+ *
+ * TemplateHelper -> TemplateName Attributes CmdEnd TemplateHeader TemplateBlock
+ *
+ * @param builder Template node builder.
+ */
+private TemplateNode ElementHelper(TemplateElementNodeBuilder builder, Token open) :
+{
+  Identifier templateName;
+  List<CommandTagAttribute> attributes;
+  RawTextNode initialWhitespace;
+  Token close;
+  List<StandaloneNode> templateBodyNodes;
+}
+{
+  {
+    // eagerly fetch the id to be backwards compatible.  if we delay allocating, all the ids in the
+    // file will change.  TODO(user): remove ids
+    builder.setId(nodeIdGen.genId());
+  }
+
+  templateName = TemplateName()
+
+  attributes = Attributes()
+  {
+    builder.setCommandValues(templateName, attributes);
+    // We can't set soy doc until after setCommandValues due to conditions in the builder.
+    // --- Set the SoyDoc. ---
+    // special tokens are accessible from the non-special tokens that come after them.
+    Token soyDoc = open.specialToken;
+    if (soyDoc != null && soyDoc.kind == SOYDOC) {
+      builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
+    }
+  }
+
+  close = <CMD_END>
+  { builder.setSourceLocation(createSrcLoc(open, close)); }
+
+  initialWhitespace = ElementHeader(builder)
   templateBodyNodes = TemplateBlock()
 
   {
@@ -1737,8 +1804,79 @@ private RawTextNode RawText() :
  * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
+ * TODO(b/117677765): Remove prop functionality from this function
  */
 private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
+{
+  Token tok;
+  HeaderParam param;
+  List<HeaderParam> params = ImmutableList.of();
+  TemplatePropVar propVar;
+  ImmutableList.Builder<TemplatePropVar> propVars = ImmutableList.builder();
+  RawTextNode whitespace = null;
+  String soyDoc = null;
+}
+{
+  ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
+    (
+      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen); }
+
+      ( LOOKAHEAD(1)  // prefer staying in the loop
+        tok = <TOKEN_WS>
+        { if (tok.specialToken != null) {
+            soyDoc = tok.specialToken.image;
+          }
+          builder.addBasic(tok);
+        }
+      )+
+
+      { whitespace = builder.build(); }
+    |
+      param = ParamDecl(soyDoc)
+      {
+        // we just parsed a param, preceding whitespace/doc comments are not important
+        whitespace = null;
+        soyDoc = null;
+        if (params.isEmpty()) {
+          params = new ArrayList<HeaderParam>();
+        }
+        params.add(param);
+      }
+    |
+      propVar = PropVarDecl(soyDoc)
+      {
+        // it will be null if there is a parse error
+        if (propVar != null) {
+          if (!experimentalFeatures.contains("prop_vars")) {
+           errorReporter.report(propVar.nameLocation(), PROP_VARS_NOT_ALLOWED);
+          } else {
+            // We just parsed a prop var, preceding whitespace/doc comments are not important.
+            whitespace = null;
+            soyDoc = null;
+            propVars.add(propVar);
+          }
+        }
+      }
+    )
+  )*
+
+  { templateBuilder.addParams(params);
+    templateBuilder.setPropVars(propVars.build());
+    return whitespace;
+  }
+}
+
+/**
+ * Important: The element header consists of a sequence of ParamDecls() separated by optional
+ * whitespace.
+ *
+ * ElementHeader -> ( Whitespace() | ParamDecl() )*
+ *
+ * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
+ * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
+ * consumed here, and returned as RawTextNode.
+ */
+private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
 {
   Token tok;
   HeaderParam param;

@@ -170,6 +170,8 @@ final class ParseErrors {
         return "{namespace";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
+      case SoyFileParserConstants.ELEMENT_OPEN:
+        return "{element";
       case SoyFileParserConstants.EOF:
         return "eof";
 

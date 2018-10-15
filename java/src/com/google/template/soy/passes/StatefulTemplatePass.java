@@ -20,6 +20,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 /** Passes through file stateful templates to validate that they are stricthtml templates. */
@@ -37,7 +38,7 @@ final class StatefulTemplatePass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
-      if (!template.isStatefulTemplate()) {
+      if (!template.isStatefulTemplate() || template instanceof TemplateElementNode) {
         continue;
       }
 

@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
@@ -395,7 +396,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // Match the tags in the deques.
       HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
 
-      if (node.isStatefulTemplate()) {
+      if (node.isStatefulTemplate() || node instanceof TemplateElementNode) {
         validateStatefulTemplateHasOneRootTagNode(node);
       }
     }
