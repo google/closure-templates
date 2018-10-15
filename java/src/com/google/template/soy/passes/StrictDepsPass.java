@@ -63,12 +63,12 @@ public final class StrictDepsPass extends CompilerFileSetPass {
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
   private void checkBasicCall(CallBasicNode node, TemplateRegistry registry) {
-    TemplateNode callee = registry.getBasicTemplate(node.getCalleeName());
+    TemplateNode callee = registry.getTemplateOrElement(node.getCalleeName());
 
     if (callee == null) {
       String extraErrorMessage =
           SoyErrors.getDidYouMeanMessage(
-              registry.getBasicTemplatesMap().keySet(), node.getCalleeName());
+              registry.getTemplatesOrElementsMap().keySet(), node.getCalleeName());
       errorReporter.report(
           node.getSourceLocation(),
           CALL_TO_UNDEFINED_TEMPLATE,

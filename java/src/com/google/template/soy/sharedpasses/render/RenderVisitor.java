@@ -475,7 +475,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
 
-    TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
+    TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
     if (callee == null) {
       throw RenderException.createWithSource(
           "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);

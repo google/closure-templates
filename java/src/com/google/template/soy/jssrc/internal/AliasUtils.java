@@ -17,11 +17,14 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -76,11 +79,14 @@ final class AliasUtils {
     Set<String> localTemplates = new HashSet<>();
     int counter = 0;
 
+    ImmutableList.Builder<TemplateNode> templates = ImmutableList.builder();
+    templates
+        .addAll(SoyTreeUtils.getAllNodesOfType(fileNode, TemplateBasicNode.class))
+        .addAll(SoyTreeUtils.getAllNodesOfType(fileNode, TemplateElementNode.class));
     // Go through templates first and just alias them to their local name.
-    for (TemplateBasicNode templateBasicNode :
-        SoyTreeUtils.getAllNodesOfType(fileNode, TemplateBasicNode.class)) {
-      String partialName = templateBasicNode.getPartialTemplateName();
-      String fullyQualifiedName = templateBasicNode.getTemplateName();
+    for (TemplateNode templateNode : templates.build()) {
+      String partialName = templateNode.getPartialTemplateName();
+      String fullyQualifiedName = templateNode.getTemplateName();
       localTemplates.add(fullyQualifiedName);
 
       Preconditions.checkState(partialName != null, "Aliasing not supported for V1 templates");

@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -46,6 +45,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -179,11 +179,11 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
     @Override
     public boolean equals(Object other) {
-      if (other == null || other.getClass() != this.getClass()) {
+      if (!(other instanceof CallSituation)) {
         return false;
       }
       CallSituation otherCallSit = (CallSituation) other;
-      return otherCallSit.callee == this.callee
+      return Objects.equals(otherCallSit.callee, this.callee)
           && otherCallSit.allCallParamKeys.equals(this.allCallParamKeys);
     }
 
@@ -310,7 +310,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
       return;
     }
 
-    TemplateBasicNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
+    TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
 
     // Note the template may be null because we allow calls to external templates not within this
     // Soy file set.
@@ -352,7 +352,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
   private void visitCalleeHelper(CallNode caller, TemplateNode callee) {
 
     // We must not revisit the current template or any templates already in the caller stack.
-    if (callee == currTemplate || callerStack.peek().allCallers.contains(callee)) {
+    if (Objects.equals(callee, currTemplate) || callerStack.peek().allCallers.contains(callee)) {
       return;
     }
 

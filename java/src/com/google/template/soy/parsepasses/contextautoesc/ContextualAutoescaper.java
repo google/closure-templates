@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.Collection;
 import java.util.HashSet;
@@ -173,7 +174,7 @@ public final class ContextualAutoescaper {
     for (SoyFileNode file : files) {
       for (TemplateNode template : file.getChildren()) {
         String templateName;
-        if (template instanceof TemplateBasicNode) {
+        if (template instanceof TemplateBasicNode || template instanceof TemplateElementNode) {
           templateName = template.getTemplateName();
         } else {
           templateName = ((TemplateDelegateNode) template).getDelTemplateName();

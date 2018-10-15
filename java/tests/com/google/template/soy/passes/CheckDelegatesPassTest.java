@@ -105,7 +105,7 @@ public final class CheckDelegatesPassTest {
   @Test
   public void testErrorReusedTemplateName() {
     assertInvalidSoyFiles(
-        "Found deltemplate ns1.boo with the same name as a basic template at no-path:4:1.",
+        "Found deltemplate ns1.boo with the same name as a template/element at no-path:4:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"

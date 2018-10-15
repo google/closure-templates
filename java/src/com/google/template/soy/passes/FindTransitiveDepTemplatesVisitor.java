@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -44,6 +43,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -387,7 +387,7 @@ public final class FindTransitiveDepTemplatesVisitor
     // Don't forget to visit content within CallParamContentNodes.
     visitChildren(node);
 
-    TemplateBasicNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
+    TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
 
     // If the callee is null (i.e. not within the Soy file set), then this is an external call.
     if (callee == null) {
@@ -422,7 +422,7 @@ public final class FindTransitiveDepTemplatesVisitor
       // Case 1: The callee was already finished in a previous pass (previous call to exec).
       currTemplateVisitInfo.incorporateCalleeFinishedInfo(templateToFinishedInfoMap.get(callee));
 
-    } else if (callee == currTemplateVisitInfo.rootTemplate) {
+    } else if (Objects.equals(callee, currTemplateVisitInfo.rootTemplate)) {
       // Case 2: The callee is the current template (direct recursive call). Nothing to do here.
 
     } else if (activeTemplateSet.contains(callee)) {

@@ -43,13 +43,14 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   }
 
   TemplateBasicNodeSubject containsBasicTemplate(String name) {
-    Truth.assertThat(actual().getBasicTemplatesMap()).containsKey(name);
-    TemplateBasicNode templateBasicNode = actual().getBasicTemplatesMap().get(name);
+    Truth.assertThat(actual().getTemplatesOrElementsMap()).containsKey(name);
+    TemplateBasicNode templateBasicNode =
+        (TemplateBasicNode) actual().getTemplatesOrElementsMap().get(name);
     return Truth.assertAbout(TemplateBasicNodeSubject.TEMPLATE_BASIC_NODE).that(templateBasicNode);
   }
 
   void doesNotContainBasicTemplate(String name) {
-    Truth.assertThat(actual().getBasicTemplatesMap()).doesNotContainKey(name);
+    Truth.assertThat(actual().getTemplatesOrElementsMap()).doesNotContainKey(name);
   }
 
   TemplateDelegateNodesSubject containsDelTemplate(String name) {

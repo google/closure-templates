@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -204,7 +203,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
-    TemplateBasicNode callee = templateRegistry.getBasicTemplate(calleeName);
+    TemplateNode callee = templateRegistry.getTemplateOrElement(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
@@ -234,7 +233,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     String delCalleeName = node.getDelCalleeName();
 
     // Check that the callee name is not a basic template name.
-    if (templateRegistry.getBasicTemplate(delCalleeName) != null) {
+    if (templateRegistry.getTemplateOrElement(delCalleeName) != null) {
       errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
     }
   }

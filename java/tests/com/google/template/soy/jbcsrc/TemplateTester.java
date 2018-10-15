@@ -378,7 +378,8 @@ public final class TemplateTester {
         // intermediate data structures.
         TemplateRegistry registry = new TemplateRegistry(fileSet, ErrorReporter.exploding());
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-        String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
+        String templateName =
+            Iterables.getOnlyElement(registry.getTemplatesOrElementsMap().keySet());
         classData =
             new TemplateCompiler(
                     compilerRegistry,

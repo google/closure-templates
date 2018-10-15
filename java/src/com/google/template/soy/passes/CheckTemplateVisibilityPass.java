@@ -49,7 +49,7 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
     for (SoyFileNode file : sourceFiles) {
       for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
         String calleeName = node.getCalleeName();
-        TemplateNode definition = registry.getBasicTemplate(calleeName);
+        TemplateNode definition = registry.getTemplateOrElement(calleeName);
         if (definition != null && !isVisible(file, definition)) {
           errorReporter.report(
               node.getSourceLocation(),

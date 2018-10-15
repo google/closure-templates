@@ -41,9 +41,9 @@ import javax.annotation.Nullable;
 public final class TemplateRegistry {
 
   private static final SoyErrorKind DUPLICATE_TEMPLATES =
-      SoyErrorKind.of("Template ''{0}'' already defined at {1}.");
-  private static final SoyErrorKind BASIC_AND_DELTEMPLATE_WITH_SAME_NAME =
-      SoyErrorKind.of("Found deltemplate {0} with the same name as a basic template at {1}.");
+      SoyErrorKind.of("Template/element ''{0}'' already defined at {1}.");
+  private static final SoyErrorKind TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME =
+      SoyErrorKind.of("Found deltemplate {0} with the same name as a template/element at {1}.");
   private static final SoyErrorKind DUPLICATE_DEFAULT_DELEGATE_TEMPLATES =
       SoyErrorKind.of("Delegate template ''{0}'' already has a default defined at {1}.");
   private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE =
@@ -51,8 +51,8 @@ public final class TemplateRegistry {
           "Delegate template ''{0}'' already defined in delpackage {1}: {2}",
           StyleAllowance.NO_PUNCTUATION);
 
-  /** Map from basic template name to node. */
-  private final ImmutableMap<String, TemplateBasicNode> basicTemplatesMap;
+  /** Map from template or element name to node. */
+  private final ImmutableMap<String, TemplateNode> templatesOrElementsMap;
 
   private final DelTemplateSelector<TemplateDelegateNode> delTemplateSelector;
   private final ImmutableList<TemplateNode> allTemplates;
@@ -68,15 +68,14 @@ public final class TemplateRegistry {
     ImmutableList.Builder<TemplateNode> allTemplatesBuilder = ImmutableList.builder();
     DelTemplateSelector.Builder<TemplateDelegateNode> delTemplateSelectorBuilder =
         new DelTemplateSelector.Builder<>();
-    Map<String, TemplateBasicNode> basicTemplates = new LinkedHashMap<>();
+    Map<String, TemplateNode> templatesOrElements = new LinkedHashMap<>();
     Multimap<String, TemplateDelegateNode> delegateTemplates = HashMultimap.create();
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       for (TemplateNode template : soyFile.getChildren()) {
         allTemplatesBuilder.add(template);
-        if (template instanceof TemplateBasicNode) {
-          // Case 1: Basic template.
-          TemplateBasicNode prev =
-              basicTemplates.put(template.getTemplateName(), (TemplateBasicNode) template);
+        if (template instanceof TemplateBasicNode || template instanceof TemplateElementNode) {
+          // Case 1: Template or Element node
+          TemplateNode prev = templatesOrElements.put(template.getTemplateName(), template);
           if (prev != null) {
             errorReporter.report(
                 template.getSourceLocation(),
@@ -120,37 +119,37 @@ public final class TemplateRegistry {
     }
     // make sure no basic nodes conflict with deltemplates
     for (Map.Entry<String, TemplateDelegateNode> entry : delegateTemplates.entries()) {
-      TemplateBasicNode basicNode = basicTemplates.get(entry.getKey());
-      if (basicNode != null) {
+      TemplateNode node = templatesOrElements.get(entry.getKey());
+      if (node != null) {
         errorReporter.report(
             entry.getValue().getSourceLocation(),
-            BASIC_AND_DELTEMPLATE_WITH_SAME_NAME,
+            TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,
             entry.getKey(),
-            basicNode.getSourceLocation());
+            node.getSourceLocation());
       }
     }
 
     // ------ Build the final data structures. ------
 
-    basicTemplatesMap = ImmutableMap.copyOf(basicTemplates);
+    templatesOrElementsMap = ImmutableMap.copyOf(templatesOrElements);
     delTemplateSelector = delTemplateSelectorBuilder.build();
     this.allTemplates = allTemplatesBuilder.build();
   }
 
   /** Returns a map from basic template name to node. */
-  public ImmutableMap<String, TemplateBasicNode> getBasicTemplatesMap() {
-    return basicTemplatesMap;
+  public ImmutableMap<String, TemplateNode> getTemplatesOrElementsMap() {
+    return templatesOrElementsMap;
   }
 
   /**
-   * Retrieves a basic template given the template name.
+   * Retrieves a template or element given the template name.
    *
    * @param templateName The basic template name to retrieve.
-   * @return The corresponding basic template, or null if the template name is not defined.
+   * @return The corresponding template/element, or null if the name is not defined.
    */
   @Nullable
-  public TemplateBasicNode getBasicTemplate(String templateName) {
-    return basicTemplatesMap.get(templateName);
+  public TemplateNode getTemplateOrElement(String templateName) {
+    return templatesOrElementsMap.get(templateName);
   }
 
   /** Returns a multimap from delegate template name to set of keys. */
@@ -199,7 +198,7 @@ public final class TemplateRegistry {
 
     if (node instanceof CallBasicNode) {
       String calleeName = ((CallBasicNode) node).getCalleeName();
-      templateNode = getBasicTemplate(calleeName);
+      templateNode = getTemplateOrElement(calleeName);
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
       ImmutableList<TemplateDelegateNode> templateNodes =

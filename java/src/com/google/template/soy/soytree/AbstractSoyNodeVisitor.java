@@ -60,6 +60,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitSoyFileNode((SoyFileNode) node);
         break;
 
+      case TEMPLATE_ELEMENT_NODE:
+        visitTemplateElementNode((TemplateElementNode) node);
+        break;
       case TEMPLATE_BASIC_NODE:
         visitTemplateBasicNode((TemplateBasicNode) node);
         break;
@@ -227,6 +230,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitTemplateBasicNode(TemplateBasicNode node) {
+    visitTemplateNode(node);
+  }
+
+  protected void visitTemplateElementNode(TemplateElementNode node) {
     visitTemplateNode(node);
   }
 

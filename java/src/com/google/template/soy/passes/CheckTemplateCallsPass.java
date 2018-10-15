@@ -148,7 +148,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     }
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
-      TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
+      TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
       if (callee != null) {
         Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(callerTemplate, node, callee);
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
