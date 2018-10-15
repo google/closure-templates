@@ -474,6 +474,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return commandText;
   }
 
+  protected ImmutableList<TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
+    // Header.
+    // Gather up all the @params declared in the template header (not in the SoyDoc).
+    ImmutableList.Builder<TemplateHeaderVarDefn> headerOnlyParams = ImmutableList.builder();
+    for (TemplateParam headerParam : params) {
+      if (headerParam.declLoc().equals(DeclLoc.HEADER)) {
+        headerOnlyParams.add(headerParam);
+      }
+    }
+    return headerOnlyParams.build();
+  }
+
   @Override
   public String toSourceString() {
     StringBuilder sb = new StringBuilder();
@@ -486,15 +498,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     // Begin tag.
     sb.append(getTagString()).append("\n");
 
-    // Header.
-    // Gather up all the @params declared in the template header (not in the SoyDoc).
-    ImmutableList.Builder<TemplateParam> headerOnlyParams = ImmutableList.builder();
-    for (TemplateParam headerParam : params) {
-      if (headerParam.declLoc().equals(DeclLoc.HEADER)) {
-        headerOnlyParams.add(headerParam);
-      }
-    }
-    appendHeaderVarDecl(headerOnlyParams.build(), sb);
+    appendHeaderVarDecl(getHeaderParamsForSourceString(), sb);
     appendHeaderVarDecl(propVars, sb);
 
     // Body.
