@@ -406,7 +406,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         @Override
         public boolean apply(SoyNode node) {
           ImmutableList<Kind> validKinds =
-              ImmutableList.of(Kind.HTML_COMMENT_NODE, Kind.LET_CONTENT_NODE, Kind.LET_VALUE_NODE);
+              ImmutableList.of(
+                  Kind.HTML_COMMENT_NODE,
+                  Kind.LET_CONTENT_NODE,
+                  Kind.LET_VALUE_NODE,
+                  Kind.DEBUGGER_NODE);
           return !validKinds.contains(node.getKind())
               // Skip empty raw text nodes. They will be later be stripped out as part
               // of {@link CombineConsecutiveRawTextNodesPass}.
