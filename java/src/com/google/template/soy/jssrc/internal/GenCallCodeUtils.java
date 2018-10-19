@@ -129,12 +129,15 @@ public class GenCallCodeUtils {
     Expression objToPass =
         genObjToPass(callNode, templateAliases, translationContext, errorReporter, exprTranslator);
 
-    // Generate the main call expression.
-    Expression call = callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
+    Expression call = genMainCall(callee, objToPass);
     if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
     return applyEscapingDirectives(call, callNode);
+  }
+
+  protected Expression genMainCall(Expression callee, Expression objToPass) {
+    return callee.call(objToPass, JsRuntime.OPT_IJ_DATA);
   }
 
   public static Expression applyEscapingDirectives(Expression call, CallNode callNode) {
