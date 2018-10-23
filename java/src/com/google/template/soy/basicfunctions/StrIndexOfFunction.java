@@ -50,8 +50,7 @@ import java.util.List;
     value =
         @Signature(
             returnType = "int",
-            // TODO(b/62134073): should be string, string
-            parameterTypes = {"?", "?"}))
+            parameterTypes = {"string", "string"}))
 @SoyPureFunction
 final class StrIndexOfFunction extends TypedSoyFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
