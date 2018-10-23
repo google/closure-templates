@@ -50,7 +50,6 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.soy.data.SanitizedCss');
 goog.require('goog.soy.data.SanitizedHtml');
 goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedStyle');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.string');
@@ -63,29 +62,6 @@ goog.require('proto.webutil.html.types.SafeUrlProto');
 goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
 goog.require('security.html.jspbconversions');
 goog.require('soydata.VERY_UNSAFE');
-
-
-/**
- * Converts a STYLE Sanitized Content object to a corresponding Safe Style
- * Proto.
- * @param {!goog.soy.data.SanitizedStyle} sanitizedStyle
- * @return {!proto.webutil.html.types.SafeStyleProto}
- */
-soydata.packSanitizedStyleToSafeStyleProtoSoyRuntimeOnly = function(
-    sanitizedStyle) {
-  if (!(sanitizedStyle instanceof goog.soy.data.SanitizedStyle)) {
-    throw new Error(
-        'expected SanitizedStyle, got ' +
-        goog.debug.runtimeType(sanitizedStyle));
-  }
-
-  var safeStyle =
-      goog.html.uncheckedconversions
-          .safeStyleFromStringKnownToSatisfyTypeContract(
-              goog.string.Const.from('from Soy SanitizedStyle object'),
-              sanitizedStyle.getContent());
-  return security.html.jspbconversions.safeStyleToProto(safeStyle);
-};
 
 
 // TODO(jakubvrana): Delete.
@@ -257,23 +233,6 @@ soydata.unpackProtoToSanitizedHtml = function(x) {
     var safeHtml = security.html.jspbconversions.safeHtmlFromProto(x);
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(
         goog.html.SafeHtml.unwrap(safeHtml), safeHtml.getDirection());
-  }
-  return null;
-};
-
-
-/**
- * Converts a Safe String Proto to CSS Sanitized Content.
- * @param {?proto.webutil.html.types.SafeStyleProto | proto.webutil.html.types.SafeStyleSheetProto} x
- *   null or a safe string proto.
- * @return {?goog.soy.data.SanitizedStyle}
- */
-soydata.unpackProtoToSanitizedStyle = function(x) {
-  var safeCss;
-  if (x instanceof proto.webutil.html.types.SafeStyleProto) {
-    safeCss = security.html.jspbconversions.safeStyleFromProto(x);
-    return soydata.VERY_UNSAFE.ordainSanitizedStyle(
-        goog.html.SafeStyle.unwrap(safeCss));
   }
   return null;
 };

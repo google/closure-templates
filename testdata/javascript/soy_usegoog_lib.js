@@ -23874,7 +23874,6 @@ goog.provide('goog.soy.data.SanitizedCss');
 goog.provide('goog.soy.data.SanitizedHtml');
 goog.provide('goog.soy.data.SanitizedHtmlAttribute');
 goog.provide('goog.soy.data.SanitizedJs');
-goog.provide('goog.soy.data.SanitizedStyle');
 goog.provide('goog.soy.data.SanitizedTrustedResourceUri');
 goog.provide('goog.soy.data.SanitizedUri');
 goog.provide('goog.soy.data.UnsanitizedText');
@@ -24269,45 +24268,6 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
 };
 
 
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.STYLE}.
- *
- * The content is non-attacker-exploitable CSS, such as `color:#c3d9ff`.
- * The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedStyle = function() {
-  goog.soy.data.SanitizedStyle.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedStyle, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedStyle.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.STYLE;
-
-
-/** @override */
-goog.soy.data.SanitizedStyle.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {css}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedStyle.isCompatibleWith = function(value) {
-  return goog.isString(value) ||
-      value instanceof goog.soy.data.SanitizedStyle ||
-      value instanceof goog.soy.data.UnsanitizedText ||
-      value instanceof goog.html.SafeStyle;
-};
-
-
-
 /**
  * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
  *
@@ -24653,7 +24613,6 @@ goog.require('goog.soy.data.SanitizedCss');
 goog.require('goog.soy.data.SanitizedHtml');
 goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedStyle');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.soy.data.UnsanitizedText');
@@ -24957,19 +24916,6 @@ soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         goog.soy.data.SanitizedHtmlAttribute);
 
-
-/**
- * Takes a leap of faith that the provided content is "safe" to use as STYLE
- * in a style attribute.
- *
- * @param {?} content CSS, such as `color:#c3d9ff`.
- * @return {!goog.soy.data.SanitizedStyle} Sanitized style wrapper that
- *     indicates to Soy there is no need to escape or filter when printed in CSS
- *     context.
- */
-soydata.VERY_UNSAFE.ordainSanitizedStyle =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
-        goog.soy.data.SanitizedStyle);
 
 
 /**
@@ -25481,18 +25427,6 @@ soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
 soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
         goog.soy.data.SanitizedHtmlAttribute);
-
-
-/**
- * Creates kind="style" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {goog.soy.data.SanitizedStyle|soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.VERY_UNSAFE.$$ordainSanitizedStyleForInternalBlocks =
-    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
-        goog.soy.data.SanitizedStyle);
 
 
 /**
