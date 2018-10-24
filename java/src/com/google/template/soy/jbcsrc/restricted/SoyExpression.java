@@ -453,8 +453,10 @@ public final class SoyExpression extends Expression {
     }
 
     // Attempting to unbox an unboxed proto
+    // (We compare the non-nullable type because being null doesn't impact unboxability,
+    //  and if we didn't remove null then isKnownProtoOrUnionOfProtos would fail.)
     if (asType.equals(Message.class)
-        && soyRuntimeType.isKnownProtoOrUnionOfProtos()
+        && soyRuntimeType.asNonNullable().isKnownProtoOrUnionOfProtos()
         && !isBoxed()) {
       return this;
     }
