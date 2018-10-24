@@ -92,6 +92,9 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SwitchCaseNode;
+import com.google.template.soy.soytree.SwitchDefaultNode;
+import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
@@ -310,7 +313,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitIfNode(IfNode node) {
-      // TODO(user): Also support switch / case.
       TypeSubstitution savedSubstitutionState = substitutions;
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
@@ -343,6 +345,57 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           // For the else node, we simply inherit the previous set of subsitutions.
           IfElseNode ien = (IfElseNode) child;
           visitChildren(ien);
+        }
+      }
+      substitutions = savedSubstitutionState;
+    }
+
+    @Override
+    protected void visitSwitchNode(SwitchNode node) {
+      visitExpressions(node);
+
+      TypeSubstitution savedSubstitutionState = substitutions;
+      ExprNode switchExpr = node.getExpr().getRoot();
+      for (SoyNode child : node.getChildren()) {
+        if (child instanceof SwitchCaseNode) {
+          SwitchCaseNode scn = ((SwitchCaseNode) child);
+          visitExpressions(scn);
+
+          // Calculate a new type for the switch expression: the union of the types of the case
+          // statement.
+          List<SoyType> caseTypes = new ArrayList<>();
+          boolean nullFound = false;
+          for (ExprRootNode expr : scn.getExprList()) {
+            caseTypes.add(expr.getType());
+            if (expr.getRoot().getKind() == ExprNode.Kind.NULL_NODE) {
+              nullFound = true;
+            }
+          }
+          SoyType caseType = typeRegistry.getOrCreateUnionType(caseTypes);
+
+          TypeSubstitution previousSubstitutionState = substitutions;
+
+          Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = new HashMap<>();
+          positiveTypeConstraints.put(ExprEquivalence.get().wrap(switchExpr), caseType);
+          addTypeSubstitutions(positiveTypeConstraints);
+          visitChildren(scn);
+
+          substitutions = previousSubstitutionState;
+
+          if (nullFound) {
+            // If a case statement has a null literal, the switch expression can't be null for any
+            // of the following case statements.
+            Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = new HashMap<>();
+            negativeTypeConstraints.put(
+                ExprEquivalence.get().wrap(switchExpr),
+                SoyTypes.tryRemoveNull(switchExpr.getType()));
+            addTypeSubstitutions(negativeTypeConstraints);
+          }
+        } else if (child instanceof SwitchDefaultNode) {
+          // No new type substitutions for a default statement, but inherit the previous (negative)
+          // subsitutions.
+          SwitchDefaultNode sdn = ((SwitchDefaultNode) child);
+          visitChildren(sdn);
         }
       }
       substitutions = savedSubstitutionState;

@@ -636,6 +636,44 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testDataFlowTypeNarrowing_switch() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param? p: string|bool|int}",
+                    "{switch $p}",
+                    "  {case 'str'}",
+                    "    {assertType('string', $p)}",
+                    "  {case true}",
+                    "    {assertType('bool', $p)}",
+                    "  {case 'str', 'str2'}",
+                    "    {assertType('string', $p)}",
+                    "  {case 'str', 8675309}",
+                    "    {assertType('int|string', $p)}",
+                    "  {default}",
+                    "    {assertType('bool|int|null|string', $p)}",
+                    "{/switch}",
+                    "",
+                    "{switch $p}",
+                    "  {case null}",
+                    "    {assertType('null', $p)}",
+                    "  {default}",
+                    "    {assertType('bool|int|string', $p)}",
+                    "{/switch}",
+                    "",
+                    "{switch $p}",
+                    "  {case 'str', null}",
+                    "    {assertType('null|string', $p)}",
+                    "  {default}",
+                    "    {assertType('bool|int|string', $p)}",
+                    "{/switch}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testConditionalOperatorDataFlowTypeNarrowing() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
