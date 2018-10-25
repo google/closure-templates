@@ -59,6 +59,10 @@ public abstract class SoyAbstractValue implements SoyValue {
   @Override
   public abstract boolean equals(Object other);
 
+  // Force subtypes to implement hashCode
+  @Override
+  public abstract int hashCode();
+
   @Override
   public boolean booleanValue() {
     throw new SoyDataException(

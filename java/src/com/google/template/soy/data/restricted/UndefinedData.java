@@ -53,14 +53,16 @@ public final class UndefinedData extends PrimitiveData {
     return toString();
   }
 
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override
   public boolean equals(Object other) {
-    return other == UndefinedData.INSTANCE || other == NullData.INSTANCE;
+    if (other instanceof PrimitiveData) {
+      return other == UndefinedData.INSTANCE || other == NullData.INSTANCE;
+    }
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return super.hashCode();
+    return getClass().hashCode();
   }
 }
