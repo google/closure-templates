@@ -53,12 +53,10 @@ import java.util.List;
     value = {
       @Signature(
           returnType = "string",
-          // TODO(b/62134073): should be string, int
-          parameterTypes = {"?", "?"}),
+          parameterTypes = {"string", "int"}),
       @Signature(
           returnType = "string",
-          // TODO(b/62134073): should be string, int, int
-          parameterTypes = {"?", "?", "?"}),
+          parameterTypes = {"string", "int", "int"}),
     })
 @SoyPureFunction
 final class StrSubFunction extends TypedSoyFunction
