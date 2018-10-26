@@ -16,20 +16,30 @@
 
 package com.google.template.soy.jbcsrc.api;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.Map;
 
 /** Constructs {@link SoySauce} implementations. */
 public final class SoySauceBuilder {
-  private ImmutableSet<String> allDeltemplates = ImmutableSet.of();
+  private ImmutableSet<String> userSpecifiedDelTemplates;
   private ImmutableMap<String, SoyFunction> userFunctions = ImmutableMap.of();
   private ImmutableMap<String, SoyPrintDirective> userDirectives = ImmutableMap.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
@@ -51,7 +61,7 @@ public final class SoySauceBuilder {
 
   /** Sets the delTemplates, to be used when constructing the SoySauce. */
   public SoySauceBuilder withDelTemplates(Iterable<String> delTemplates) {
-    this.allDeltemplates = ImmutableSet.copyOf(delTemplates);
+    this.userSpecifiedDelTemplates = ImmutableSet.copyOf(delTemplates);
     return this;
   }
 
@@ -97,8 +107,20 @@ public final class SoySauceBuilder {
     if (loader == null) {
       loader = SoySauceBuilder.class.getClassLoader();
     }
+    ImmutableSet<String> delTemplatesToUse;
+    ImmutableSet<String> metaInfDelTemplates = readDelTemplatesFromMetaInf(loader);
+    if (userSpecifiedDelTemplates == null) {
+      delTemplatesToUse = metaInfDelTemplates;
+    } else {
+      delTemplatesToUse = userSpecifiedDelTemplates;
+      if (!metaInfDelTemplates.containsAll(userSpecifiedDelTemplates)) {
+        throw new IllegalStateException(
+            "Expected more delTemplates than exists in META-INF: "
+                + Sets.difference(userSpecifiedDelTemplates, metaInfDelTemplates));
+      }
+    }
     return new SoySauceImpl(
-        new CompiledTemplates(allDeltemplates, loader),
+        new CompiledTemplates(delTemplatesToUse, loader),
         scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
         ImmutableMap.<String, SoyPrintDirective>builder()
@@ -108,5 +130,25 @@ public final class SoySauceBuilder {
             .putAll(userDirectives)
             .build(),
         userPluginInstances);
+  }
+
+  /** Walks all resources with the META_INF_DELTEMPLATE_PATH and collects the deltemplates. */
+  private static ImmutableSet<String> readDelTemplatesFromMetaInf(ClassLoader loader) {
+    try {
+      ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+      Enumeration<URL> resources = loader.getResources(Names.META_INF_DELTEMPLATE_PATH);
+      while (resources.hasMoreElements()) {
+        URL url = resources.nextElement();
+        try (InputStream in = url.openStream()) {
+          BufferedReader reader = new BufferedReader(new InputStreamReader(in, UTF_8));
+          for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            builder.add(line);
+          }
+        }
+      }
+      return builder.build();
+    } catch (IOException iox) {
+      throw new RuntimeException("Unable to read deltemplate listing", iox);
+    }
   }
 }

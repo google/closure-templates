@@ -25,6 +25,12 @@ import com.google.template.soy.base.internal.BaseUtils;
  * files. These utilities are shared between the compiler and the runtime system.
  */
 public final class Names {
+  // Note: This writes into META-INF/services even though they aren't services,
+  // because the surrounding tools already merge data in META-INF/services files.
+  // (The tools do *not* merge other files in META-INF, which is why we hijack the services dir.)
+  public static final String META_INF_DELTEMPLATE_PATH =
+      "META-INF/services/com.google.template.soy.deltemplates";
+
   public static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
   public static final String INTERNAL_CLASS_PREFIX = CLASS_PREFIX.replace('.', '/');
 

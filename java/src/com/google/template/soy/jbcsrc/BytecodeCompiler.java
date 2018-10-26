@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
@@ -36,6 +37,7 @@ import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -44,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -177,6 +180,7 @@ public final class BytecodeCompiler {
       return;
     }
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
+      final Set<String> delTemplates = new TreeSet<>();
       compileTemplates(
           compilerRegistry,
           reporter,
@@ -187,7 +191,14 @@ public final class BytecodeCompiler {
               writer.writeEntry(
                   clazz.type().internalName() + ".class", ByteSource.wrap(clazz.data()));
             }
+
+            @Override
+            void onCompileDelTemplate(String name) {
+              delTemplates.add(name);
+            }
           });
+      String delData = Joiner.on('\n').join(delTemplates);
+      writer.writeEntry(Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
     }
   }
 
@@ -224,7 +235,22 @@ public final class BytecodeCompiler {
   }
 
   private abstract static class CompilerListener<T> {
+    /** Callback for for class data that was generated. */
     abstract void onCompile(ClassData newClass) throws Exception;
+
+    /**
+     * Callback to notify a deltemplate was compiled.
+     *
+     * @param name The full name as would be returned by SoyTemplateInfo.getName()
+     */
+    void onCompileDelTemplate(String name) {}
+
+    /**
+     * Callback to notify a template (not a deltemplate) was compiled.
+     *
+     * @param name The full name as would be returned by SoyTemplateInfo.getName()
+     */
+    void onCompileTemplate(String name) {}
 
     T getResult() {
       return null;
@@ -249,6 +275,11 @@ public final class BytecodeCompiler {
             clazz.checkClass();
           }
           listener.onCompile(clazz);
+        }
+        if (classInfo.node() instanceof TemplateDelegateNode) {
+          listener.onCompileDelTemplate(classInfo.node().getTemplateName());
+        } else {
+          listener.onCompileTemplate(classInfo.node().getTemplateName());
         }
         // Report unexpected errors and keep going to try to collect more.
       } catch (UnexpectedCompilerFailureException e) {
