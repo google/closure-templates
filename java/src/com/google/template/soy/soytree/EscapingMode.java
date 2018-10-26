@@ -45,7 +45,7 @@ public enum EscapingMode {
   ESCAPE_HTML_ATTRIBUTE(true, null, /* internalOnly= */ true),
 
   /** Escapes HTML but doesn't mark it as HTML embeddable to allow double escaping it. */
-  ESCAPE_HTML_HTML_ATTRIBUTE(false, null),
+  ESCAPE_HTML_HTML_ATTRIBUTE(false, null, /* internalOnly= */ true),
 
   /**
    * Encodes HTML special characters and spaces so that the value can appear as part of an unquoted
