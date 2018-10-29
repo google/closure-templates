@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.shared.internal.InternalPlugins;
@@ -39,7 +38,6 @@ import java.util.Map;
 
 /** Constructs {@link SoySauce} implementations. */
 public final class SoySauceBuilder {
-  private ImmutableSet<String> userSpecifiedDelTemplates;
   private ImmutableMap<String, SoyFunction> userFunctions = ImmutableMap.of();
   private ImmutableMap<String, SoyPrintDirective> userDirectives = ImmutableMap.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
@@ -56,12 +54,6 @@ public final class SoySauceBuilder {
    */
   public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
     this.userPluginInstances = ImmutableMap.copyOf(pluginInstances);
-    return this;
-  }
-
-  /** Sets the delTemplates, to be used when constructing the SoySauce. */
-  public SoySauceBuilder withDelTemplates(Iterable<String> delTemplates) {
-    this.userSpecifiedDelTemplates = ImmutableSet.copyOf(delTemplates);
     return this;
   }
 
@@ -107,20 +99,8 @@ public final class SoySauceBuilder {
     if (loader == null) {
       loader = SoySauceBuilder.class.getClassLoader();
     }
-    ImmutableSet<String> delTemplatesToUse;
-    ImmutableSet<String> metaInfDelTemplates = readDelTemplatesFromMetaInf(loader);
-    if (userSpecifiedDelTemplates == null) {
-      delTemplatesToUse = metaInfDelTemplates;
-    } else {
-      delTemplatesToUse = userSpecifiedDelTemplates;
-      if (!metaInfDelTemplates.containsAll(userSpecifiedDelTemplates)) {
-        throw new IllegalStateException(
-            "Expected more delTemplates than exists in META-INF: "
-                + Sets.difference(userSpecifiedDelTemplates, metaInfDelTemplates));
-      }
-    }
     return new SoySauceImpl(
-        new CompiledTemplates(delTemplatesToUse, loader),
+        new CompiledTemplates(readDelTemplatesFromMetaInf(loader), loader),
         scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
         ImmutableMap.<String, SoyPrintDirective>builder()
