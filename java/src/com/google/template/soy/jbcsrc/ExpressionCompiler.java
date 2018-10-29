@@ -81,7 +81,6 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -977,10 +976,6 @@ final class ExpressionCompiler {
     SoyExpression visitPluginFunction(FunctionNode node) {
       Object fn = node.getSoyFunction();
       List<SoyExpression> args = visitChildren(node);
-      if (fn instanceof SoyJbcSrcFunction) {
-        return ((SoyJbcSrcFunction) fn).computeForJbcSrc(parameters.getPluginContext(), args);
-      }
-
       if (fn instanceof SoyJavaSourceFunction) {
         return new JbcSrcValueFactory(
                 node,

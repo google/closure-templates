@@ -35,7 +35,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
@@ -72,11 +71,7 @@ public final class SoySauceImpl implements SoySauce {
 
     for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
       String fnName = entry.getKey();
-      // Store runtime adapters for all SoyJavaFunctions that *aren't* also SoyJbcSrcFunction.
-      // (We don't need to capture SoyJbcSrcFunction functions because the compiler will never
-      // delegate to them at runtime -- they are only needed at compile time.)
-      if (entry.getValue() instanceof SoyJavaFunction
-          && !(entry.getValue() instanceof SoyJbcSrcFunction)) {
+      if (entry.getValue() instanceof SoyJavaFunction) {
         SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
         pluginInstanceBuilder.put(fnName, Suppliers.ofInstance(new LegacyFunctionAdapter(fn)));
       }

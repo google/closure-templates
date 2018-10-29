@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcFunction;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -73,11 +72,9 @@ public final class InternalPluginsTest {
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       assertThat(function).isInstanceOf(SoyPySrcFunction.class);
-      // Internal functions should no longer implement SoyJbcSrcFunction, SoyJavaFunction, or
-      // SoyJsSrcFunction
+      // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
-      assertThat(function).isNotInstanceOf(SoyJbcSrcFunction.class);
     }
   }
 
