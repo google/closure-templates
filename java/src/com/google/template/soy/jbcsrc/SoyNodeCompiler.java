@@ -70,6 +70,7 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -571,9 +572,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           parameterLookup.getRenderContext().getEscapingDirectiveAsFunction(child.getName()));
     }
     Label reattachPoint = new Label();
+    SoyFunctionSignature functionSignature =
+        loggingFunction.getClass().getAnnotation(SoyFunctionSignature.class);
+    checkNotNull(
+        functionSignature,
+        "LoggingFunction %s must be annotated with @SoyFunctionSignature",
+        loggingFunction.getClass().getName());
     return appendableExpression
         .appendLoggingFunctionInvocation(
-            loggingFunction.getName(),
+            functionSignature.name(),
             loggingFunction.getPlaceholder(),
             exprCompiler.asBasicCompiler(reattachPoint).compileToList(fn.getChildren()),
             printDirectives)

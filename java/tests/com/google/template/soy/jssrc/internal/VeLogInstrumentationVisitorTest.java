@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -28,10 +27,11 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -231,17 +231,15 @@ public final class VeLogInstrumentationVisitorTest {
                 + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}");
   }
 
+  @SoyFunctionSignature(
+      name = "currentVed",
+      value = {
+        @Signature(returnType = "string"),
+        @Signature(
+            parameterTypes = {"int"},
+            returnType = "string")
+      })
   private static final class TestLoggingFunction implements LoggingFunction {
-    @Override
-    public String getName() {
-      return "currentVed";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0, 1);
-    }
-
     @Override
     public String getPlaceholder() {
       return "placeholder";
@@ -262,7 +260,7 @@ public final class VeLogInstrumentationVisitorTest {
                         ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                     .build())
             .setLoggingConfig(LOGGING_CONFIG)
-            .addSoyFunction(new TestLoggingFunction())
+            .addSoySourceFunction(new TestLoggingFunction())
             .errorReporter(ErrorReporter.exploding())
             .parse();
     TemplateRegistry templateRegistry = result.registry();

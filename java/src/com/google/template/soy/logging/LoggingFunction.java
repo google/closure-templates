@@ -15,16 +15,16 @@
  */
 package com.google.template.soy.logging;
 
-import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 
 /**
- * A LoggingFunction is a SoyFunction that is meant to interact with the logging subsystem.
+ * A LoggingFunction is a SoySourceFunction that is meant to interact with the logging subsystem.
  *
- * <p>Unlike a {@link SoyJsSrcFunction} or a {@link SoyJavaFunction} the author of a LoggingFunction
- * does not implement the function logic here, but instead it will be implemented by a user supplied
- * logging plugin at render time.
+ * <p>Unlike a {@link SoyJavaScriptSourceFunction} or a {@link SoyJavaSourceFunction} the author of
+ * a LoggingFunction does not implement the function logic here, but instead it will be implemented
+ * by a user supplied logging plugin at render time.
  */
-public interface LoggingFunction extends SoyFunction {
+public interface LoggingFunction extends SoySourceFunction {
   /**
    * A static placeholder that can be used in place of the real implementation in the logging
    * plugin. This can happen in several cases:
