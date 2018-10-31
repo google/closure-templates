@@ -29,7 +29,6 @@ import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -82,9 +81,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
         for (CallNode node : getAllNodesOfType(template, CallNode.class)) {
-          if (node instanceof CallDelegateNode) { // TODO(jakubvrana): Warn against {call} too.
-            checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
-          }
+          checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
           checkCallNode(node, registry, SanitizedContentKind.CSS, CALLS_CSS_FROM_NON_CSS);
         }
         for (PrintNode node : getAllNodesOfType(template, PrintNode.class)) {

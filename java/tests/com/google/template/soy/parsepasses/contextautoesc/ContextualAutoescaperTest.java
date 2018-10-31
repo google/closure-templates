@@ -1434,8 +1434,8 @@ public final class ContextualAutoescaperTest {
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum visibility=\"private\"}\n",
-            "{$pageIndex |escapeHtml} of {$pageCount |escapeHtml}\n",
+            "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
+            "{$pageIndex |text} of {$pageCount |text}\n",
             "{/template}"),
         join(
             "{namespace soy.examples.codelab}\n\n",
@@ -1451,7 +1451,7 @@ public final class ContextualAutoescaperTest {
             " * @param pageIndex 0-indexed index of the current page.\n",
             " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
             " */\n",
-            "{template .pagenum visibility=\"private\"}\n",
+            "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
             "  {$pageIndex} of {$pageCount}\n",
             "{/template}"));
   }
@@ -2455,7 +2455,6 @@ public final class ContextualAutoescaperTest {
         "{namespace ns}\n\n"
             + "{template .main}\n"
             + "{call .htmltemplate /}"
-            + "<script>var x={call .htmltemplate /};</script>\n"
             + "<script>var x={call .jstemplate /};</script>\n"
             + "{call .externtemplate /}"
             + "\n{/template}\n\n"
@@ -2469,16 +2468,13 @@ public final class ContextualAutoescaperTest {
     TemplateNode mainTemplate = rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
-    assertThat(callNodes).hasSize(4);
+    assertThat(callNodes).hasSize(3);
     assertWithMessage("HTML->HTML escaping should be pruned")
         .that(callNodes.get(0).getEscapingDirectives())
         .isEmpty();
-    assertWithMessage("JS -> HTML call should be escaped")
-        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
-        .containsExactly("|escapeJsValue");
-    assertWithMessage("JS -> JS pruned").that(callNodes.get(2).getEscapingDirectives()).isEmpty();
+    assertWithMessage("JS -> JS pruned").that(callNodes.get(1).getEscapingDirectives()).isEmpty();
     assertWithMessage("HTML -> extern call should be escaped")
-        .that(getDirectiveNames(callNodes.get(3).getEscapingDirectives()))
+        .that(getDirectiveNames(callNodes.get(2).getEscapingDirectives()))
         .containsExactly("|escapeHtml");
   }
 
