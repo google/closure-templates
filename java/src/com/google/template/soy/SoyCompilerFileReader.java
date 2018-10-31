@@ -17,9 +17,14 @@
 package com.google.template.soy;
 
 import com.google.common.io.ByteSource;
+import java.io.FileNotFoundException;
 
 /** Provides a way for the compiler to read files. */
 public interface SoyCompilerFileReader {
-  /** Reads the file with the given path and returns the contents. */
-  ByteSource read(String path);
+  /**
+   * Reads the file with the given path and returns the contents.
+   *
+   * @throws FileNotFoundException if the file doesn't exist
+   */
+  ByteSource read(String path) throws FileNotFoundException;
 }

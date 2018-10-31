@@ -19,11 +19,16 @@ package com.google.template.soy;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import java.io.File;
+import java.io.FileNotFoundException;
 
 /** Reads files from the file system. */
 class FileSystemSoyFileReader implements SoyCompilerFileReader {
   @Override
-  public ByteSource read(String path) {
-    return Files.asByteSource(new File(path));
+  public ByteSource read(String path) throws FileNotFoundException {
+    File f = new File(path);
+    if (!f.exists()) {
+      throw new FileNotFoundException(path);
+    }
+    return Files.asByteSource(f);
   }
 }

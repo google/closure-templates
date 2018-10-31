@@ -31,6 +31,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -353,17 +354,25 @@ public abstract class AbstractSoyCompiler {
     // an error in SoyFileSet).  Do it in this order, so that the if a file is both a src and a dep
     // we will treat it as a src.
     Set<String> soFar = new HashSet<>();
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.SRC, srcs, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.DEP, deps, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, indirectDeps, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.SRC, "--srcs", srcs, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.DEP, "--deps", deps, soFar);
+    addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, "--indirectDeps", indirectDeps, soFar);
   }
 
   private void addAllIfNotPresent(
-      SoyFileSet.Builder builder, SoyFileKind kind, Collection<String> files, Set<String> soFar) {
+      SoyFileSet.Builder builder,
+      SoyFileKind kind,
+      String flag,
+      Collection<String> files,
+      Set<String> soFar) {
     for (String file : files) {
       if (soFar.add(file)) {
-        builder.addWithKind(
-            soyCompilerFileReader.read(file).asCharSource(StandardCharsets.UTF_8), kind, file);
+        try {
+          builder.addWithKind(
+              soyCompilerFileReader.read(file).asCharSource(StandardCharsets.UTF_8), kind, file);
+        } catch (FileNotFoundException fnfe) {
+          throw new CommandLineError("File: " + file + " passed to " + flag + " does not exist");
+        }
       }
     }
   }

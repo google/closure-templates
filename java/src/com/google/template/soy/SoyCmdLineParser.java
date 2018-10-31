@@ -290,11 +290,21 @@ final class SoyCmdLineParser extends CmdLineParser {
           .asSubclass(clazz)
           .getConstructor()
           .newInstance();
-
+    } catch (ClassCastException cce) {
+      throw new CommandLineError(
+          String.format(
+              "%s \"%s\" is not a subclass of %s.  Classes passed to %s should be %ss. "
+                  + "Did you pass it to the wrong flag?\nCaused by:\n%s",
+              objectType,
+              instanceClassName,
+              clazz.getSimpleName(),
+              flagName,
+              clazz.getSimpleName(),
+              cce));
     } catch (ReflectiveOperationException e) {
       throw new CommandLineError(
           String.format(
-              "Cannot instantiate %s \"%s\" registered with flag --%s.  Please make "
+              "Cannot instantiate %s \"%s\" registered with flag %s.  Please make "
                   + "sure that the %s exists and is on the compiler classpath and has a public "
                   + "zero arguments constructor.\nCaused by: %s",
               objectType, instanceClassName, flagName, objectType, e));
