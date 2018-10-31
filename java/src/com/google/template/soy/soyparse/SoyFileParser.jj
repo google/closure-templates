@@ -79,6 +79,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.soytree.AliasDeclaration;
@@ -469,6 +470,8 @@ public class SoyFileParser {
           "Parse error at '':''. If this is a record literal, use the new syntax: "
               + "''record(key1: \"value1\", key2: 2)''. If this is a legacy_object_map literal, "
               + "there is no syntax for that, consider using ''map()'' instead.");
+  private static final SoyErrorKind DYNAMIC_VE_NOT_ALLOWED =
+      SoyErrorKind.of("Dynamic VE features are not available for general use.");
 
   private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
       "foreach loops are no longer supported, please switch to the for loop."
@@ -3721,7 +3724,6 @@ private ExprNode GlobalOrFunctionCallLike() :
   Token openParen = null, closeParen = null, paramName;
   ExprNode key, val;
   List<ExprNode> params = new ArrayList<ExprNode>();
-  ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
   Set<String> paramNames;
   List<Identifier> paramIds;
 }
@@ -3741,30 +3743,16 @@ private ExprNode GlobalOrFunctionCallLike() :
     // the map literals separately.
     (
       LOOKAHEAD( {ident.identifier().equals("map")} )
-      [
-        key = Expr()
-        <COLON>
-        val = Expr()
-        { kvPairs.put(key, val); }
-        (
-          // Disambiguate with a trailing comma
-          LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
-          <COMMA>
-          key = Expr()
-          <COLON>
-          val = Expr()
-          { kvPairs.put(key, val); }
-        )*
-        [ <COMMA> ]  // trailing comma
-      ]
-      closeParen = <RPAREN>
       {
-        // Note: the case where there are no keys or values is ambiguous.
-        // It could be a 0-arg function call to a function called "map".
-        // (Function calls and map literals are usually distinguished by their parameter syntax
-        // (positional vs. named), but that's not helpful when there are no params.)
-        SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
-        return new MapLiteralNode(kvPairs.build(), srcLoc);
+        return MapLiteral(ident);
+      }
+    |
+      LOOKAHEAD( {ident.identifier().equals("ve")} )
+      {
+        if (!experimentalFeatures.contains("dynamic_ve")) {
+          errorReporter.report(ident.location(), DYNAMIC_VE_NOT_ALLOWED);
+        }
+        return VeLiteral(ident);
       }
     |
       [
@@ -3888,6 +3876,56 @@ private ExprNode GlobalOrFunctionCallLike() :
     } else {
       return new FunctionNode(ident, pluginResolver.lookupSoyFunction(name, 0, loc), loc);
     }
+  }
+}
+
+/** Parses a map literal: {@code map('key': 'value', $key: $value)} */
+private ExprNode MapLiteral(Identifier ident) :
+{
+  ExprNode key, val;
+  Token closeParen = null;
+  ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
+}
+{
+  [
+    key = Expr()
+    <COLON>
+    val = Expr()
+    { kvPairs.put(key, val); }
+    (
+      // Disambiguate with a trailing comma
+      LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
+      <COMMA>
+      key = Expr()
+      <COLON>
+      val = Expr()
+      { kvPairs.put(key, val); }
+    )*
+    [ <COMMA> ]  // trailing comma
+  ]
+  closeParen = <RPAREN>
+  {
+    // Note: the case where there are no keys or values is ambiguous.
+    // It could be a 0-arg function call to a function called "map".
+    // (Function calls and map literals are usually distinguished by their parameter syntax
+    // (positional vs. named), but that's not helpful when there are no params.)
+    SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
+    return new MapLiteralNode(kvPairs.build(), srcLoc);
+  }
+}
+
+/** Parses a VE literal: {@code ve(VeName)} */
+private ExprNode VeLiteral(Identifier ident) :
+{
+  Identifier name = null;
+  Token closeParen = null;
+}
+{
+  name = Identifier()
+  closeParen = <RPAREN>
+  {
+    SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
+    return new VeLiteralNode(name, srcLoc);
   }
 }
 
