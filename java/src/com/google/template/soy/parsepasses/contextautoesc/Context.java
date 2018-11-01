@@ -318,6 +318,9 @@ public final class Context {
       case HTML:
         state = HtmlContext.HTML_HTML_ATTR_VALUE;
         break;
+      case META_REFRESH_CONTENT:
+        state = HtmlContext.HTML_META_REFRESH_CONTENT;
+        break;
       case URI:
         state = HtmlContext.URI;
         uriPart = UriPart.START;
@@ -392,6 +395,9 @@ public final class Context {
         switch (uriType) {
           case MEDIA:
             escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
+            break;
+          case REFRESH:
+            escapingMode = EscapingMode.FILTER_NORMALIZE_REFRESH_URI;
             break;
           case TRUSTED_RESOURCE:
             if (hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
@@ -1210,14 +1216,16 @@ public final class Context {
           elType = ElementType.BASE;
           break;
         case "link":
-          elType = ElementType.LINK_EXECUTABLE;
-          HtmlAttributeNode rel = node.getDirectAttributeNamed("rel");
-          if (rel != null) {
-            String value = rel.getStaticContent();
-            if (value != null && REGULAR_LINK_PATTERN.matcher(value).matches()) {
-              elType = ElementType.NORMAL;
-            }
-          }
+          String rel = getStaticAttributeValue(node, "rel");
+          elType =
+              rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
+                  ? ElementType.NORMAL
+                  : ElementType.LINK_EXECUTABLE;
+          break;
+        case "meta":
+          String httpEquiv = getStaticAttributeValue(node, "http-equiv");
+          elType =
+              "refresh".equalsIgnoreCase(httpEquiv) ? ElementType.META_REFRESH : ElementType.NORMAL;
           break;
         case "textarea":
           elType = ElementType.TEXTAREA;
@@ -1237,6 +1245,11 @@ public final class Context {
         .withElType(elType)
         .withTemplateNestDepth(newTemplateNestDepth)
         .build();
+  }
+
+  private String getStaticAttributeValue(HtmlTagNode node, String name) {
+    HtmlAttributeNode attribute = node.getDirectAttributeNamed(name);
+    return attribute == null ? null : attribute.getStaticContent();
   }
 
   /** Returns a new context that is in {@link HtmlContext#HTML_TAG}. */
@@ -1269,6 +1282,7 @@ public final class Context {
       case NORMAL:
       case BASE:
       case LINK_EXECUTABLE:
+      case META_REFRESH:
       case IFRAME:
       case MEDIA:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
@@ -1374,6 +1388,8 @@ public final class Context {
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
       uriType = UriType.NORMAL;
+    } else if (elType == ElementType.META_REFRESH && "content".equals(attrName)) {
+      attr = AttributeType.META_REFRESH_CONTENT;
     } else if (elType == ElementType.IFRAME && "srcdoc".equals(attrName)) {
       attr = Context.AttributeType.HTML;
     } else {
@@ -1431,6 +1447,9 @@ public final class Context {
      */
     LINK_EXECUTABLE,
 
+    /** A {@code <meta http-equiv="refresh">} element. */
+    META_REFRESH,
+
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,
     ;
@@ -1453,6 +1472,9 @@ public final class Context {
 
     /** A URI or URI reference. */
     URI,
+
+    /** The value of content attribute in {@code <meta http-equiv="refresh">}. */
+    META_REFRESH_CONTENT,
 
     /** Other content. Human readable or other non-structured plain text or keyword values. */
     PLAIN_TEXT,
@@ -1617,9 +1639,9 @@ public final class Context {
      * General URI context suitable for most URI types.
      *
      * <p>The biggest use-case here is for anchors, where we want to prevent Javascript URLs that
-     * can cause XSS. However, this grabs other types of URIs such as stylesheets, prefetch, SEO
-     * metadata, and attributes that look like they're supposed to contain URIs but might just be
-     * harmless metadata because they end with "url".
+     * can cause XSS. However, this grabs other types of URIs such as prefetch, SEO metadata, and
+     * attributes that look like they're supposed to contain URIs but might just be harmless
+     * metadata because they end with "url".
      *
      * <p>It's expected that this will be split up over time to address the different safety levels
      * of the different URI types.
@@ -1640,6 +1662,14 @@ public final class Context {
      * the risk of social engineering.
      */
     MEDIA,
+
+    /**
+     * URL used in {@code <meta http-equiv="Refresh" content="0; URL=">}.
+     *
+     * <p>Compared to the normal URL, ';' is escaped because it is a special character in this
+     * context.
+     */
+    REFRESH,
 
     /**
      * A URI which loads resources. This is intended to be used in scripts, stylesheets, etc which

@@ -1320,6 +1320,16 @@ soy.$$filterHtmlAttributes = function(value) {
 
 
 /**
+ * Allows only decimal and floating-point numbers.
+ * @param {?} value
+ * @return {number} The number.
+ */
+soy.$$filterNumber = function(value) {
+  return /^\d*\.?\d+$/.test(value) ? value : 'zSoyz';
+};
+
+
+/**
  * Filters out strings that cannot be a substring of a valid HTML element name.
  *
  * @param {?} value The value to escape. May not be a string, but the value
@@ -1516,6 +1526,16 @@ soy.$$filterNormalizeMediaUri = function(value) {
     return soy.$$normalizeUri(goog.html.TrustedResourceUrl.unwrap(value));
   }
   return soy.esc.$$filterNormalizeMediaUriHelper(value);
+};
+
+
+/**
+ * Like filterNormalizeUri but also escapes ';'.
+ * @param {?} value The value to filter.
+ * @return {string} An escaped version of value.
+ */
+soy.$$filterNormalizeRefreshUri = function(value) {
+  return soy.$$filterNormalizeUri(value).replace(/;/g, '%3B');
 };
 
 
@@ -2433,7 +2453,7 @@ soy.esc.$$FILTER_FOR_FILTER_TEL_URI_ = /^tel:[0-9a-z;=\-+._!~*'\u0020\/():&$#?@,
  * A pattern that vets values produced by the named directives.
  * @private {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
+soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)$/i;
 
 /**
  * A pattern that vets values produced by the named directives.

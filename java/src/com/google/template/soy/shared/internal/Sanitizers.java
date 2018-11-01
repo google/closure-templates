@@ -371,6 +371,19 @@ public final class Sanitizers {
     return EscapingConventions.EscapeHtmlNospace.INSTANCE.escape(value);
   }
 
+  /** Filters decimal and floating-point numbers. */
+  public static String filterNumber(SoyValue value) {
+    return filterNumber(value.coerceToString());
+  }
+
+  /** Filters decimal and floating-point numbers. */
+  public static String filterNumber(String value) {
+    if (!value.matches("\\d*\\.?\\d+")) {
+      return EscapingConventions.INNOCUOUS_OUTPUT;
+    }
+    return value;
+  }
+
   /** Converts the input to the body of a JavaScript string by using {@code \n} style escapes. */
   public static String escapeJsString(SoyValue value) {
     value = normalizeNull(value);
@@ -576,6 +589,19 @@ public final class Sanitizers {
     }
     logger.log(Level.WARNING, "|filterNormalizeMediaUri received bad value ''{0}''", value);
     return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getInnocuousOutput();
+  }
+
+  /**
+   * Like {@link #filterNormalizeUri} but also escapes ';'. It is a special character in content of
+   * {@code <meta http-equiv="Refresh">}.
+   */
+  public static String filterNormalizeRefreshUri(SoyValue value) {
+    return filterNormalizeUri(value).replace(";", "%3B");
+  }
+
+  /** Like {@link #filterNormalizeUri} but also escapes ';'. */
+  public static String filterNormalizeRefreshUri(String value) {
+    return filterNormalizeUri(value).replace(";", "%3B");
   }
 
   /** Makes sure the given input is an instance of either trustedResourceUrl or trustedString. */

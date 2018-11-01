@@ -281,6 +281,19 @@ public abstract class BasicEscapeDirective
     }
   }
 
+  /** Implements the |filterNumber directive. */
+  @SoyPurePrintDirective
+  static final class FilterNumber extends BasicEscapeDirective {
+    FilterNumber() {
+      super("|filterNumber");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.filterNumber(value);
+    }
+  }
+
   /** Implements the |filterHtmlElementName directive. */
   @SoyPurePrintDirective
   static final class FilterHtmlElementName extends BasicEscapeDirective {
@@ -367,6 +380,20 @@ public abstract class BasicEscapeDirective
     @Override
     protected String escape(SoyValue value) {
       return Sanitizers.filterNormalizeMediaUri(value);
+    }
+  }
+
+  /** Implements the |filterNormalizeRefreshUri directive. */
+  @SoyPurePrintDirective
+  static final class FilterNormalizeRefreshUri extends BasicEscapeDirective {
+
+    FilterNormalizeRefreshUri() {
+      super("|filterNormalizeRefreshUri");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.filterNormalizeRefreshUri(value);
     }
   }
 

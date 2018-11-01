@@ -1201,8 +1201,8 @@ public final class EscapingConventions {
                   // Disallow on* and src* attribute names.
                   + "(?!on|src|"
                   // Disallow specific other attribute names.
-                  + "(?:style|action|archive|background|cite|classid|codebase|data|dsync|href"
-                  + "|longdesc|usemap)\\s*$)"
+                  + "(?:action|archive|background|cite|classid|codebase|content|data|dsync|href"
+                  + "|http-equiv|longdesc|style|usemap)\\s*$)"
                   + "(?:"
                   // Must match letters
                   + "[a-z0-9_$:-]*"

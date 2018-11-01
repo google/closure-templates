@@ -217,7 +217,9 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            // "<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<meta http-equiv=refresh content='{$x |filterNumber}'>",
+            "<meta http-equiv=refresh content='"
+                + "{$x |filterNumber}; URL={$x |filterNormalizeRefreshUri |escapeHtmlAttribute}'>",
             "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
             "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
             "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
@@ -240,10 +242,8 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            // TODO(msamuel): Re-enable content since it is often (but often not) used to convey
-            // URLs in place of <link rel> once we can figure out a good way to distinguish the
-            // URL use-cases from others.
-            // "<meta http-equiv=refresh content='{$x}'>\n",
+            "<meta http-equiv=refresh content='{$x}'>",
+            "<meta http-equiv=refresh content='{$x}; URL={$x}'>",
             "<a xml:base='{$x}' href='/foo'>link</a>\n",
             "<button formaction='{$x}'>do</button>\n",
             "<command icon='{$x}'></command>\n",

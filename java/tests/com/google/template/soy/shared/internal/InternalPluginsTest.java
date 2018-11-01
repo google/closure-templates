@@ -117,6 +117,7 @@ public final class InternalPluginsTest {
             // statements.
             "|escapeUri",
             "|formatNum",
+            "|filterNumber",
             // These can't be made streaming because it would require a complex state machine or
             // they require knowing the full content to work.  For example all the filters, which
             // generally validate via a regular expression.
@@ -127,6 +128,7 @@ public final class InternalPluginsTest {
             "|escapeJsValue",
             "|filterNormalizeUri",
             "|filterNormalizeMediaUri",
+            "|filterNormalizeRefreshUri",
             "|filterTrustedResourceUri",
             "|filterImageDataUri",
             "|filterSipUri",

@@ -632,6 +632,22 @@ final class RawTextContextUpdater {
           .put(HtmlContext.HTML_COMMENT, ImmutableList.of(TRANSITION_TO_SELF))
           .put(HtmlContext.HTML_NORMAL_ATTR_VALUE, ImmutableList.of(TRANSITION_TO_SELF))
           .put(
+              HtmlContext.HTML_META_REFRESH_CONTENT,
+              ImmutableList.of(
+                  new Transition(
+                      Pattern.compile("[,;] *(URL *=? *)?['\"]?", Pattern.CASE_INSENSITIVE)) {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior
+                          .toBuilder()
+                          .withState(HtmlContext.URI)
+                          .withUriType(UriType.REFRESH)
+                          .withUriPart(UriPart.START)
+                          .build();
+                    }
+                  },
+                  TRANSITION_TO_SELF))
+          .put(
               HtmlContext.HTML_HTML_ATTR_VALUE,
               ImmutableList.of(
                   new Transition(Pattern.compile(".+")) {

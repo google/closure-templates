@@ -53,6 +53,9 @@ public enum EscapingMode {
    */
   ESCAPE_HTML_ATTRIBUTE_NOSPACE(true, null, /* internalOnly= */ true),
 
+  /** Only allow decimal and floating-point numbers. */
+  FILTER_NUMBER(true, null, /* internalOnly= */ true),
+
   /**
    * Only allow a valid identifier - letters, numbers, dashes, and underscores. Throw a runtime
    * exception otherwise.
@@ -129,6 +132,9 @@ public enum EscapingMode {
    * such a thing.
    */
   FILTER_NORMALIZE_MEDIA_URI(false, SanitizedContentKind.URI, /* internalOnly= */ true),
+
+  /** Like {@link #FILTER_NORMALIZE_URI}, but escapes ';'. */
+  FILTER_NORMALIZE_REFRESH_URI(false, SanitizedContentKind.URI, /* internalOnly= */ true),
 
   /**
    * Makes sure there URIs are trusted and not input variables. Currently used only for script
