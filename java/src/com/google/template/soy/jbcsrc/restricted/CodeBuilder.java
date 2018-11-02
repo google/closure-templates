@@ -60,7 +60,7 @@ public final class CodeBuilder extends MethodVisitor {
   }
 
   public CodeBuilder(MethodVisitor mv, int access, String name, String desc) {
-    super(Opcodes.ASM6, mv);
+    super(Opcodes.ASM7, mv);
     this.adapter = new GeneratorAdapter(mv, access, name, desc);
   }
 
