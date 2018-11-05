@@ -217,7 +217,7 @@ public final class GenPyCodeVisitorTest {
             "def helloWorld(data={}, ijData={}):",
             "  output = []",
             "  if data.get('foo'):",
-            "    iList### = xrange(5)",
+            "    iList### = range(5)",
             "    for iIndex###, iData### in enumerate(iList###):",
             "      output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))",
             "  else:",
@@ -255,7 +255,7 @@ public final class GenPyCodeVisitorTest {
         "{@param boo : list<string>}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     assertThatSoyCode(soyCode)
         .compilesTo(
-            "iList### = xrange(5)",
+            "iList### = range(5)",
             "for iIndex###, iData### in enumerate(iList###):",
             "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
 
@@ -266,7 +266,7 @@ public final class GenPyCodeVisitorTest {
             + "{/for}\n";
     assertThatSoyCode(soyCode)
         .compilesTo(
-            "iList### = xrange(5, 10)",
+            "iList### = range(5, 10)",
             "for iIndex###, iData### in enumerate(iList###):",
             "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
 
@@ -280,7 +280,7 @@ public final class GenPyCodeVisitorTest {
             + "{/for}\n";
     assertThatSoyCode(soyCode)
         .compilesTo(
-            "iList### = xrange(data.get('foo'), data.get('goo'), data.get('hoo'))",
+            "iList### = range(data.get('foo'), data.get('goo'), data.get('hoo'))",
             "for iIndex###, iData### in enumerate(iList###):",
             "  output.append(str(runtime.key_safe_data_access(data.get('boo'), iData###)))\n");
   }
@@ -373,7 +373,7 @@ public final class GenPyCodeVisitorTest {
     String expectedPyCode =
         ""
             + "foo__soy### = []\n"
-            + "numList### = xrange(5)\n"
+            + "numList### = range(5)\n"
             + "for numIndex###, numData### in enumerate(numList###):\n"
             + "  foo__soy###.append(str(numData###))\n"
             + "foo__soy###.extend(['Hello ',str(data.get('boo'))])\n"

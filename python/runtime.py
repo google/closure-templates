@@ -32,6 +32,8 @@ import sys
 from . import environment
 from . import sanitize
 
+import six
+
 try:
   import scandir
 except ImportError:
@@ -49,7 +51,7 @@ except NameError:
 _DELEGATE_REGISTRY = {}
 
 # All number types for use during custom type functions.
-_NUMBER_TYPES = (int, long, float)
+_NUMBER_TYPES = six.integer_types + (float,)
 
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
@@ -358,7 +360,7 @@ def type_safe_add(*args):
   if len(args) == 1:
     return args[0]
 
-  is_string = isinstance(args[0], basestring)
+  is_string = isinstance(args[0], six.string_types)
   result = args[0]
   for arg in args[1:]:
     try:
@@ -406,9 +408,9 @@ def type_safe_eq(first, second):
     if isinstance(second, _NUMBER_TYPES) and not isinstance(second, bool):
       return float(first) == second
 
-    if isinstance(first, basestring):
+    if isinstance(first, six.string_types):
       return first == str(second)
-    if isinstance(second, basestring):
+    if isinstance(second, six.string_types):
       return str(first) == second
   except ValueError:
     # Ignore type coersion failures

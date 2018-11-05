@@ -31,10 +31,12 @@ from __future__ import unicode_literals
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 import functools
-import HTMLParser
 import re
 
 from . import generated_sanitize
+
+import six
+from six.moves import html_parser as HTMLParser
 
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
@@ -259,7 +261,7 @@ def escape_js_value(value):
   # identifiers by accident.
   # We could use parentheses but those might be interpreted as a function call.
   # This matches the JS implementation in javascript/template/soy/soyutils.js.
-  if isinstance(value, (int, long, float, complex)):
+  if isinstance(value, six.integer_types + (float, complex)):
     return ' ' + str(value) + ' '
 
   return "'" + generated_sanitize.escape_js_string_helper(value) + "'"
