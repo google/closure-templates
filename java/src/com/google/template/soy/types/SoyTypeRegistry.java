@@ -139,6 +139,7 @@ public class SoyTypeRegistry {
   private final Interner<LegacyObjectMapType> legacyObjectMapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
+  private final Interner<VeType> veTypes = Interners.newStrongInterner();
 
   @GuardedBy("lock")
   private ImmutableList<String> lazyAllSortedTypeNames;
@@ -304,6 +305,14 @@ public class SoyTypeRegistry {
    */
   public RecordType getOrCreateRecordType(Map<String, SoyType> fields) {
     return recordTypes.intern(RecordType.of(fields));
+  }
+
+  /**
+   * Factory function which creates and returns a {@code ve} type with the given {@code dataType}.
+   * This folds identical ve types together.
+   */
+  public VeType getOrCreateVeType(SoyType dataType) {
+    return veTypes.intern(VeType.of(dataType));
   }
 
   /** Helper class that assists in the construction of SoyTypeProviders. */

@@ -187,6 +187,7 @@ public abstract class SoyRuntimeType {
       case LEGACY_OBJECT_MAP:
       case MAP:
       case RECORD:
+      case VE:
         // no unboxed representation at all.  We could add something for these, but there is
         // currently not much point.
         return null;

@@ -434,6 +434,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           }
         }
         return true;
+      case VE:
+        // TODO(b/71641483): Implement this once we have ve runtime objects.
+        throw new UnsupportedOperationException();
       case ERROR:
         throw new IllegalStateException("Cannot have error type from function signature");
     }

@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Equivalence.Wrapper;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -71,7 +72,9 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.ResolvedSignature;
@@ -119,6 +122,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -219,19 +223,28 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The inferred type of this parameter is the same as the declared type, use the '':='' "
               + "syntax to use the inferred type.");
+  private static final SoyErrorKind VE_UNKNOWN_PROTO =
+      SoyErrorKind.of("Unknown proto type ''{0}'' configured for use with ''{1}'' VE.");
+  private static final SoyErrorKind VE_BAD_DATA_TYPE =
+      SoyErrorKind.of(
+          "Illegal VE metadata type ''{0}'' for ''{1}''. The metadata must be a proto.");
 
   private final ErrorReporter errorReporter;
   /** Type registry. */
   private final SoyTypeRegistry typeRegistry;
+
+  private final VeLogValidator veLogValidator;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
 
-  ResolveExpressionTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolveExpressionTypesPass(
+      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, VeLogValidator veLogValidator) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
+    this.veLogValidator = veLogValidator;
   }
 
   @Override
@@ -1048,6 +1061,37 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       }
     }
 
+    @Override
+    protected void visitVeLiteralNode(VeLiteralNode node) {
+      Optional<ValidatedLoggableElement> config =
+          veLogValidator.getLoggingElement(node.getName().identifier(), node.getName().location());
+      SoyType type;
+      if (config.isPresent()) {
+        if (config.get().getProtoName().isPresent()) {
+          SoyType dataType = typeRegistry.getType(config.get().getProtoName().get());
+          if (dataType == null) {
+            errorReporter.report(
+                node.getName().location(),
+                VE_UNKNOWN_PROTO,
+                config.get().getProtoName().get(),
+                node.getName().identifier());
+            type = ErrorType.getInstance();
+          } else if (dataType.getKind() != Kind.PROTO) {
+            errorReporter.report(
+                node.getName().location(), VE_BAD_DATA_TYPE, dataType, node.getName().identifier());
+            type = ErrorType.getInstance();
+          } else {
+            type = typeRegistry.getOrCreateVeType(dataType);
+          }
+        } else {
+          type = VeType.NO_DATA;
+        }
+      } else {
+        type = ErrorType.getInstance();
+      }
+      node.setType(type);
+    }
+
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       SoyType left = node.getChild(0).getType();
@@ -1221,6 +1265,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         case TRUSTED_RESOURCE_URI:
         case MAP:
         case PROTO_ENUM:
+        case VE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
@@ -1323,6 +1368,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         case RECORD:
         case PROTO:
         case PROTO_ENUM:
+        case VE:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }

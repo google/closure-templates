@@ -122,6 +122,9 @@ public final class TofuTypeChecks {
         return false;
       case URI:
         return isSanitizedofKind(value, ContentKind.URI);
+      case VE:
+        // TODO(b/71641483): Implement this once we have ve runtime objects.
+        throw new UnsupportedOperationException();
       case ERROR:
         // continue
     }

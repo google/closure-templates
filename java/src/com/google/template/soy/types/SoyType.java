@@ -74,6 +74,7 @@ public abstract class SoyType {
    *         <li>PROTO_ENUM: Protobuf enum object.
    *         <li>UNION: Used to indicate a parameter that can accept multiple alternatives, e.g.
    *             a|b.
+   *         <li>VE: A VE ID.
    *       </ul>
    * </ul>
    */
@@ -103,6 +104,7 @@ public abstract class SoyType {
     PROTO,
     PROTO_ENUM,
     UNION,
+    VE,
     ;
 
     private static final ImmutableSet<Kind> STRING_KINDS =

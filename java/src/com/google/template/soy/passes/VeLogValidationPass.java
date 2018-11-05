@@ -19,13 +19,10 @@ import com.google.common.base.Optional;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -55,10 +52,6 @@ import com.google.template.soy.types.SoyType.Kind;
  * </ul>
  */
 final class VeLogValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind NO_CONFIG_FOR_ELEMENT =
-      SoyErrorKind.of(
-          "Could not find logging configuration for this element.{0}",
-          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNEXPECTED_CONFIG =
       SoyErrorKind.of(
           "Unexpected ''data'' attribute for logging element ''{0}'', there is no configured "
@@ -87,13 +80,11 @@ final class VeLogValidationPass extends CompilerFilePass {
               + "directives.");
 
   private final ErrorReporter reporter;
-  private final ValidatedLoggingConfig loggingConfig;
+  private final VeLogValidator veLogValidator;
 
-  VeLogValidationPass(
-      ErrorReporter reporter,
-      ValidatedLoggingConfig loggingConfig) {
+  VeLogValidationPass(ErrorReporter reporter, VeLogValidator veLogValidator) {
     this.reporter = reporter;
-    this.loggingConfig = loggingConfig;
+    this.veLogValidator = veLogValidator;
   }
 
   @Override
@@ -171,19 +162,14 @@ final class VeLogValidationPass extends CompilerFilePass {
 
   /** Type checks both expressions and assigns the {@link VeLogNode#getLoggingId()} field. */
   private void validateNodeAgainstConfig(VeLogNode node) {
-    ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
+    Optional<ValidatedLoggableElement> config =
+        veLogValidator.getLoggingElement(node.getName().identifier(), node.getName().location());
 
-    if (config == null) {
-      reporter.report(
-          node.getName().location(),
-          NO_CONFIG_FOR_ELEMENT,
-          SoyErrors.getDidYouMeanMessage(
-              loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
-    } else {
-      node.setLoggingId(config.getId());
+    if (config.isPresent()) {
+      node.setLoggingId(config.get().getId());
       if (node.getConfigExpression() != null) {
         SoyType type = node.getConfigExpression().getType();
-        Optional<String> protoName = config.getProtoName();
+        Optional<String> protoName = config.get().getProtoName();
         if (!protoName.isPresent()) {
           reporter.report(
               node.getConfigExpression().getSourceLocation(),

@@ -27,6 +27,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.logging.LoggableElement;
+import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -803,6 +806,36 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('legacy_object_map<null,null>', mapToLegacyObjectMap(map()))}",
                     ""))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testVeLiteral() {
+    SoyTypeRegistry typeRegistry =
+        new SoyTypeRegistry.Builder()
+            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
+            .build();
+
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{assertType('ve<example.ExampleExtendable>', ve(VeData))}",
+                    "{assertType('ve<null>', ve(VeNoData))}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
+            .enableExperimentalFeatures(ImmutableList.of("dynamic_ve"))
+            .setLoggingConfig(
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(
+                            LoggableElement.newBuilder()
+                                .setId(1)
+                                .setName("VeData")
+                                .setProtoType("example.ExampleExtendable"))
+                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
+                        .build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);

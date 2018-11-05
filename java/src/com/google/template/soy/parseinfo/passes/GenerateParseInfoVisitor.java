@@ -67,6 +67,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -804,6 +805,14 @@ public final class GenerateParseInfoVisitor
           }
           break;
         }
+      case VE:
+        {
+          VeType veType = (VeType) type;
+          if (veType.getDataType().isPresent()) {
+            protoTypes.add(((SoyProtoType) veType.getDataType().get()).getDescriptorExpression());
+          }
+          break;
+        }
 
       case ANY:
       case UNKNOWN:
@@ -907,7 +916,7 @@ public final class GenerateParseInfoVisitor
 
     StringBuilder resultSb = new StringBuilder();
 
-    if (template.getParent() == currSoyFile && !(template instanceof TemplateDelegateNode)) {
+    if (template.getParent().equals(currSoyFile) && !(template instanceof TemplateDelegateNode)) {
       resultSb.append(template.getPartialTemplateName());
     } else {
       resultSb.append(template.getTemplateNameForUserMsgs());

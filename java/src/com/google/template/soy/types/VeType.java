@@ -1,0 +1,68 @@
+/*
+ * Copyright 2018 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.google.template.soy.types;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import java.util.Objects;
+
+/** Soy's ve type, for tracking VE names and their associated data type. */
+public final class VeType extends SoyType {
+
+  public static final VeType NO_DATA = new VeType(Optional.absent());
+
+  private final Optional<SoyType> dataType;
+
+  private VeType(Optional<SoyType> dataType) {
+    this.dataType = dataType;
+  }
+
+  public static VeType of(SoyType dataType) {
+    Preconditions.checkNotNull(dataType);
+    return new VeType(Optional.of(dataType));
+  }
+
+  public Optional<SoyType> getDataType() {
+    return dataType;
+  }
+
+  @Override
+  public Kind getKind() {
+    return Kind.VE;
+  }
+
+  @Override
+  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    return srcType.getKind() == Kind.VE && this.dataType.equals(((VeType) srcType).dataType);
+  }
+
+  @Override
+  public String toString() {
+    return "ve<" + (dataType.isPresent() ? dataType.get().toString() : "null") + ">";
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other != null
+        && other.getClass() == this.getClass()
+        && ((VeType) other).dataType.equals(this.dataType);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.getClass(), dataType);
+  }
+}

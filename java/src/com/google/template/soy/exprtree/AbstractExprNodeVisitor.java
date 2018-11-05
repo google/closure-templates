@@ -174,6 +174,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitProtoInitNode((ProtoInitNode) node);
         break;
 
+      case VE_LITERAL_NODE:
+        visitVeLiteralNode((VeLiteralNode) node);
+        break;
+
       default:
         throw new UnsupportedOperationException();
     }
@@ -357,6 +361,13 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitProtoInitNode(ProtoInitNode node) {
+    visitExprNode(node);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for VE logging nodes.
+
+  protected void visitVeLiteralNode(VeLiteralNode node) {
     visitExprNode(node);
   }
 

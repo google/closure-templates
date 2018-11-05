@@ -52,7 +52,7 @@ public final class VeLiteralNode extends AbstractExprNode {
 
   @Override
   public Kind getKind() {
-    return Kind.VE_NODE;
+    return Kind.VE_LITERAL_NODE;
   }
 
   @Override
