@@ -93,6 +93,8 @@ public final class PassManager {
     // Single file passes
     // These passes perform tree rewriting and all compiler checks that don't require information
     // about callees.
+    // Note that we try to run all of the single file passes to report as many errors as possible,
+    // meaning that errors reported in earlier passes do not prevent running subsequent passes.
 
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
@@ -153,6 +155,8 @@ public final class PassManager {
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));
     }
+    // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root validation).
+    singleFilePassesBuilder.add(new SoyElementPass(errorReporter));
 
     this.singleFilePasses = singleFilePassesBuilder.build();
 
