@@ -66,6 +66,7 @@ import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
@@ -809,7 +810,10 @@ public final class GenerateParseInfoVisitor
         {
           VeType veType = (VeType) type;
           if (veType.getDataType().isPresent()) {
-            protoTypes.add(((SoyProtoType) veType.getDataType().get()).getDescriptorExpression());
+            // Don't grab the proto type for ve<null>
+            if (veType.getDataType().get().getKind() == Kind.PROTO) {
+              protoTypes.add(((SoyProtoType) veType.getDataType().get()).getDescriptorExpression());
+            }
           }
           break;
         }

@@ -32,6 +32,9 @@ public final class VeType extends SoyType {
 
   public static VeType of(SoyType dataType) {
     Preconditions.checkNotNull(dataType);
+    if (dataType.getKind() == Kind.NULL) {
+      return NO_DATA;
+    }
     return new VeType(Optional.of(dataType));
   }
 

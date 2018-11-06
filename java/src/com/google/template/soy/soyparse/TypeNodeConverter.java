@@ -83,6 +83,13 @@ final class TypeNodeConverter {
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
               return registry.getOrCreateMapType(types.get(0), types.get(1));
             }
+          },
+          "ve",
+          new GenericTypeInfo(1) {
+            @Override
+            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
+              return registry.getOrCreateVeType(types.get(0));
+            }
           });
 
   /** Simple representation of a generic type specification. */

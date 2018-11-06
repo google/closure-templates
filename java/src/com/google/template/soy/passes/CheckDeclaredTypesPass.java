@@ -20,12 +20,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -42,6 +44,9 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  * ResolveExpressionTypesPass} calculates implicit types and determines if they're legal.
  */
 final class CheckDeclaredTypesPass extends CompilerFilePass {
+
+  private static final SoyErrorKind VE_BAD_DATA_TYPE =
+      SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
 
   private final ErrorReporter errorReporter;
 
@@ -88,6 +93,16 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
           for (TypeNode child : node.arguments()) {
             child.accept(this);
           }
+          break;
+        case VE:
+          checkArgument(node.arguments().size() == 1);
+          TypeNode dataType = node.arguments().get(0);
+          if (dataType.getResolvedType().getKind() != Kind.PROTO
+              && dataType.getResolvedType().getKind() != Kind.NULL) {
+            errorReporter.report(
+                dataType.sourceLocation(), VE_BAD_DATA_TYPE, dataType.getResolvedType());
+          }
+          node.arguments().get(0).accept(this);
           break;
         default:
           throw new AssertionError("unexpected generic type: " + node.getResolvedType().getKind());
