@@ -35,12 +35,14 @@ public final class UnknownType extends PrimitiveType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    // Allow assigning from all types except the new map type.
-    // Bracket access on "?"-typed values generates JS bracket access, which works
+    // Allow assigning from all types except the map and ve types.
+    // For maps, bracket access on "?"-typed values generates JS bracket access, which works
     // whether the actual value is a an array or an object. But this doesn't work for ES6 Maps
     // or jspb.Maps. Flag this at compile time so people upgrading from legacy_object_map
     // aren't surprised at runtime.
-    return !(srcType instanceof MapType);
+    // For ve, ve usage is limited to prevent abuse of VEs. The unknown type can't be used as the ve
+    // type, so disallow converting the ve type to unknown as there's no reason to do this.
+    return srcType.getKind() != Kind.MAP && srcType.getKind() != Kind.VE;
   }
 
   @Override

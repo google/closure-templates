@@ -405,7 +405,10 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           // migration tool (e.g. upgrading a callee's param to `map` without inserting
           // `legacyObjectMapToMap` calls in the caller). But it may be useful in order to work with
           // recursive map-like structures such as JSON.
-          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.MAP) {
+          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.MAP
+          // ve usage is limited to prevent abuse, so don't allow the unknown type to be upgraded to
+          // the ve type.
+          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.VE) {
         // Special rules for unknown / any
         //
         // This check disabled: We now allow maps created from protos to be passed
