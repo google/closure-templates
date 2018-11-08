@@ -588,6 +588,7 @@ public final class GenerateParseInfoVisitor
     for (TemplateParam param : node.getParams()) {
       transitiveParamMap.put(param.name(), param);
     }
+    Set<TemplateParam> directParams = Sets.newHashSet(node.getParams());
 
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
@@ -631,13 +632,14 @@ public final class GenerateParseInfoVisitor
     boolean hasSwitchedToIndirectParams = false;
     for (TemplateParam param : transitiveParamMap.values()) {
 
-      if (param.desc() != null) {
-        // Direct param.
+      if (directParams.contains(param)) {
         if (!hasSeenFirstDirectParam) {
           ilb.appendLine();
           hasSeenFirstDirectParam = true;
         }
-        appendJavadoc(ilb, param.desc(), false, false);
+        if (param.desc() != null) {
+          appendJavadoc(ilb, param.desc(), false, false);
+        }
 
       } else {
         // Indirect param.
@@ -659,19 +661,8 @@ public final class GenerateParseInfoVisitor
         }
 
         // Generate the Javadoc.
-        StringBuilder javadocSb = new StringBuilder();
-        javadocSb.append("Listed by ");
-        boolean isFirst = true;
-        for (String javadocCalleeName : sortedJavadocCalleeNames) {
-          if (isFirst) {
-            isFirst = false;
-          } else {
-            javadocSb.append(", ");
-          }
-          javadocSb.append(javadocCalleeName);
-        }
-        javadocSb.append('.');
-        appendJavadoc(ilb, javadocSb.toString(), false, true);
+        String javadoc = "Listed by " + Joiner.on(", ").join(sortedJavadocCalleeNames) + ".";
+        appendJavadoc(ilb, javadoc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
       }
 
       // The actual param field.
