@@ -133,12 +133,13 @@ public abstract class AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> protoFileDescriptors = new ArrayList<>();
 
+  // TODO(b/74256690): move this into SoyConformanceChecker
   @Option(
       name = "--conformanceConfig",
       aliases = "--conformanceConfigs",
       usage = "Location of conformance config protos in binary proto format.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> conformanceConfigs = new ArrayList<>();
+  List<File> conformanceConfigs = new ArrayList<>();
 
   @Option(
       name = "--loggingConfig",
@@ -361,9 +362,7 @@ public abstract class AbstractSoyCompiler {
    * @throws IOException
    */
   @ForOverride
-  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    throw new AbstractMethodError("must override at least one overload of compile()");
-  }
+  protected abstract void compile(SoyFileSet.Builder sfsBuilder) throws IOException;
 
   /**
    * Prints an error message and the usage string, and then exits.

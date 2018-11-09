@@ -720,6 +720,14 @@ public final class SoyFileSet {
     return parseInfo;
   }
 
+  /** A simple tool to perform a full parse with the current configuration. */
+  void parseCheck() {
+    resetErrorReporter();
+    parse();
+    throwIfErrorsPresent();
+    reportWarnings();
+  }
+
   /**
    * Extracts all messages from this Soy file set into a SoyMsgBundle (which can then be turned into
    * an extracted messages file with the help of a SoyMsgBundleHandler).
