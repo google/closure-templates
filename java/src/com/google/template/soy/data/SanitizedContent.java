@@ -22,15 +22,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeHtmls;
+import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeScripts;
+import com.google.common.html.types.SafeStyle;
 import com.google.common.html.types.SafeStyleProto;
 import com.google.common.html.types.SafeStyleSheet;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeStyleSheets;
 import com.google.common.html.types.SafeStyles;
+import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
+import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.html.types.UncheckedConversions;
@@ -248,12 +252,21 @@ public class SanitizedContent extends SoyData {
    *     ContentKind#HTML}.
    */
   public SafeHtmlProto toSafeHtmlProto() {
+    return SafeHtmls.toProto(toSafeHtml());
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind JS into a {@link SafeScript}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
+   *     ContentKind#JS}.
+   */
+  public SafeScript toSafeScript() {
     Preconditions.checkState(
-        getContentKind() == ContentKind.HTML,
-        "toSafeHtmlProto() only valid for SanitizedContent of kind HTML, is: %s",
+        getContentKind() == ContentKind.JS,
+        "toSafeScript() only valid for SanitizedContent of kind JS, is: %s",
         getContentKind());
-    return SafeHtmls.toProto(
-        UncheckedConversions.safeHtmlFromStringKnownToSatisfyTypeContract(getContent()));
+    return UncheckedConversions.safeScriptFromStringKnownToSatisfyTypeContract(getContent());
   }
 
   /**
@@ -263,24 +276,19 @@ public class SanitizedContent extends SoyData {
    *     ContentKind#JS}.
    */
   public SafeScriptProto toSafeScriptProto() {
-    Preconditions.checkState(
-        getContentKind() == ContentKind.JS,
-        "toSafeScriptProto() only valid for SanitizedContent of kind JS, is: %s",
-        getContentKind());
-    return SafeScripts.toProto(
-        UncheckedConversions.safeScriptFromStringKnownToSatisfyTypeContract(getContent()));
+    return SafeScripts.toProto(toSafeScript());
   }
 
   /**
-   * Converts a Soy {@link SanitizedContent} of kind CSS into a {@link SafeStyleProto}.
+   * Converts a Soy {@link SanitizedContent} of kind CSS into a {@link SafeStyle}.
    *
    * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
    *     ContentKind#CSS}.
    */
-  public SafeStyleProto toSafeStyleProto() {
+  public SafeStyle toSafeStyle() {
     Preconditions.checkState(
         getContentKind() == ContentKind.CSS,
-        "toSafeStyleProto() only valid for SanitizedContent of kind CSS, is: %s",
+        "toSafeStyle() only valid for SanitizedContent of kind CSS, is: %s",
         getContentKind());
 
     // Sanity check: Try to prevent accidental misuse when this is a full stylesheet rather than a
@@ -291,11 +299,20 @@ public class SanitizedContent extends SoyData {
     // This is a best-effort attempt to preserve SafeStyle's semantical guarantees.
     Preconditions.checkState(
         !getContent().contains("{"),
-        "Calling toSafeStyleProto() with content that doesn't look like CSS declarations. "
-            + "Consider using toSafeStyleSheetProto().");
+        "Calling toSafeStyle() with content that doesn't look like CSS declarations. "
+            + "Consider using toSafeStyleSheet().");
 
-    return SafeStyles.toProto(
-        UncheckedConversions.safeStyleFromStringKnownToSatisfyTypeContract(getContent()));
+    return UncheckedConversions.safeStyleFromStringKnownToSatisfyTypeContract(getContent());
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind CSS into a {@link SafeStyleProto}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
+   *     ContentKind#CSS}.
+   */
+  public SafeStyleProto toSafeStyleProto() {
+    return SafeStyles.toProto(toSafeStyle());
   }
 
   /**
@@ -338,11 +355,21 @@ public class SanitizedContent extends SoyData {
    *     ContentKind#CSS}.
    */
   public SafeStyleSheetProto toSafeStyleSheetProto() {
-    Preconditions.checkState(
-        getContentKind() == ContentKind.CSS,
-        "toSafeStyleSheetProto() only valid for SanitizedContent of kind CSS, is: %s",
-        getContentKind());
     return SafeStyleSheets.toProto(toSafeStyleSheet());
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind URI into a {@link SafeUrl}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
+   *     ContentKind#URI}.
+   */
+  public SafeUrl toSafeUrl() {
+    Preconditions.checkState(
+        getContentKind() == ContentKind.URI,
+        "toSafeUrl() only valid for SanitizedContent of kind URI, is: %s",
+        getContentKind());
+    return UncheckedConversions.safeUrlFromStringKnownToSatisfyTypeContract(getContent());
   }
 
   /**
@@ -352,12 +379,24 @@ public class SanitizedContent extends SoyData {
    *     ContentKind#URI}.
    */
   public SafeUrlProto toSafeUrlProto() {
+    return SafeUrls.toProto(toSafeUrl());
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind TRUSTED_RESOURCE_URI into a {@link
+   * TrustedResourceUrl}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not {@link
+   *     ContentKind#TRUSTED_RESOURCE_URI}.
+   */
+  public TrustedResourceUrl toTrustedResourceUrl() {
     Preconditions.checkState(
-        getContentKind() == ContentKind.URI,
-        "toSafeUrlProto() only valid for SanitizedContent of kind URI, is: %s",
+        getContentKind() == ContentKind.TRUSTED_RESOURCE_URI,
+        "toTrustedResourceUrl() only valid for SanitizedContent of kind TRUSTED_RESOURCE_URI, "
+            + "is: %s",
         getContentKind());
-    return SafeUrls.toProto(
-        UncheckedConversions.safeUrlFromStringKnownToSatisfyTypeContract(getContent()));
+    return UncheckedConversions.trustedResourceUrlFromStringKnownToSatisfyTypeContract(
+        getContent());
   }
 
   /**
@@ -368,13 +407,7 @@ public class SanitizedContent extends SoyData {
    *     ContentKind#TRUSTED_RESOURCE_URI}.
    */
   public TrustedResourceUrlProto toTrustedResourceUrlProto() {
-    Preconditions.checkState(
-        getContentKind() == ContentKind.TRUSTED_RESOURCE_URI,
-        "toTrustedResourceUrlProto() only valid for SanitizedContent of kind TRUSTED_RESOURCE_URI, "
-            + "is: %s",
-        getContentKind());
-    return TrustedResourceUrls.toProto(
-        UncheckedConversions.trustedResourceUrlFromStringKnownToSatisfyTypeContract(getContent()));
+    return TrustedResourceUrls.toProto(toTrustedResourceUrl());
   }
 
   /** A sanitized content that implements the old semantics of SoyString. */
