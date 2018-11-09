@@ -133,4 +133,9 @@ public final class ValidatedConformanceConfig {
           "unable to construct custom rule class: " + javaClass + ": " + e.getMessage(), e);
     }
   }
+
+  public ValidatedConformanceConfig concat(ValidatedConformanceConfig other) {
+    return new ValidatedConformanceConfig(
+        ImmutableList.<RuleWithWhitelists>builder().addAll(rules).addAll(other.rules).build());
+  }
 }

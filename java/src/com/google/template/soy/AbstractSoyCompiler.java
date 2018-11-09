@@ -15,8 +15,12 @@
  */
 package com.google.template.soy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -25,6 +29,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.conformance.ConformanceConfig;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
@@ -39,8 +44,10 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
@@ -88,18 +95,19 @@ public abstract class AbstractSoyCompiler {
   private List<String> indirectDeps = new ArrayList<>();
 
   @Option(
-    name = "--compileTimeGlobalsFile",
-    usage =
-        "The path to a file containing the mappings for global names to be substituted"
-            + " at compile time. Each line of the file should have the format"
-            + " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy"
-            + " expression literal for a primitive type (null, boolean, integer, float, or"
-            + " string). Empty lines and lines beginning with \"//\" are ignored. The file"
-            + " should be encoded in UTF-8. If you need to generate a file in this format"
-            + " from Java, consider using the utility"
-            + " SoyUtils.generateCompileTimeGlobalsFile()."
-  )
-  private File globalsFile = null;
+      name = "--compileTimeGlobalsFile",
+      aliases = "--compileTimeGlobalsFiles",
+      usage =
+          "The path to a file containing the mappings for global names to be substituted"
+              + " at compile time. Each line of the file should have the format"
+              + " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy"
+              + " expression literal for a primitive type (null, boolean, integer, float, or"
+              + " string). Empty lines and lines beginning with \"//\" are ignored. The file"
+              + " should be encoded in UTF-8. If you need to generate a file in this format"
+              + " from Java, consider using the utility"
+              + " SoyUtils.generateCompileTimeGlobalsFile().",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> globalsFiles = new ArrayList<>();
 
   @Option(
     name = "--pluginModules",
@@ -126,16 +134,18 @@ public abstract class AbstractSoyCompiler {
   private List<File> protoFileDescriptors = new ArrayList<>();
 
   @Option(
-    name = "--conformanceConfig",
-    usage = "Location of conformance config protos in binary proto format."
-  )
-  private File conformanceConfig = null;
+      name = "--conformanceConfig",
+      aliases = "--conformanceConfigs",
+      usage = "Location of conformance config protos in binary proto format.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> conformanceConfigs = new ArrayList<>();
 
   @Option(
-    name = "--loggingConfig",
-    usage = "Location of logging config protos in binary proto format. Optional."
-  )
-  private File loggingConfig = null;
+      name = "--loggingConfig",
+      aliases = "--loggingConfigs",
+      usage = "Location of logging config protos in binary proto format. Optional.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> loggingConfigs = new ArrayList<>();
 
   @Option(
       name = "--enableExperimentalFeatures",
@@ -260,9 +270,7 @@ public abstract class AbstractSoyCompiler {
       }
     }
     addSoyFilesToBuilder(sfsBuilder, ImmutableSet.copyOf(srcs), deps, indirectDeps);
-    if (globalsFile != null) {
-      sfsBuilder.setCompileTimeGlobals(globalsFile);
-    }
+    sfsBuilder.setCompileTimeGlobals(parseGlobals());
     // Disable optimizer if the flag is set to true.
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
@@ -271,9 +279,11 @@ public abstract class AbstractSoyCompiler {
   }
 
   private ValidatedConformanceConfig parseConformanceConfig() {
-    if (conformanceConfig != null) {
+    ValidatedConformanceConfig config = ValidatedConformanceConfig.EMPTY;
+    for (File conformanceConfig : conformanceConfigs) {
       try (InputStream stream = new FileInputStream(conformanceConfig)) {
-        return ValidatedConformanceConfig.create(ConformanceConfig.parseFrom(stream));
+        config =
+            config.concat(ValidatedConformanceConfig.create(ConformanceConfig.parseFrom(stream)));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing conformance proto: " + conformanceConfig + ": " + e.getMessage());
@@ -284,15 +294,15 @@ public abstract class AbstractSoyCompiler {
         throw new CommandLineError(
             "Unable to read conformance proto: " + conformanceConfig + ": " + e.getMessage());
       }
-    } else {
-      return ValidatedConformanceConfig.EMPTY;
     }
+    return config;
   }
 
   private ValidatedLoggingConfig parseLoggingConfig() {
-    if (loggingConfig != null) {
+    LoggingConfig.Builder configBuilder = LoggingConfig.newBuilder();
+    for (File loggingConfig : loggingConfigs) {
       try (InputStream stream = new FileInputStream(loggingConfig)) {
-        return ValidatedLoggingConfig.create(LoggingConfig.parseFrom(stream));
+        configBuilder.mergeFrom(LoggingConfig.parseFrom(stream));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
@@ -303,9 +313,38 @@ public abstract class AbstractSoyCompiler {
         throw new CommandLineError(
             "Unable to read conformance proto: " + loggingConfig + ": " + e.getMessage());
       }
-    } else {
-      return ValidatedLoggingConfig.EMPTY;
     }
+    return ValidatedLoggingConfig.create(configBuilder.build());
+  }
+
+  private Map<String, PrimitiveData> parseGlobals() {
+    Map<String, PrimitiveData> globals = new HashMap<>();
+    Map<String, File> globalsToFilePath = new HashMap<>();
+    for (File globalsFile : globalsFiles) {
+      try {
+        ImmutableMap<String, PrimitiveData> parsedGlobals =
+            SoyUtils.parseCompileTimeGlobals(Files.asCharSource(globalsFile, UTF_8));
+        for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
+          PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
+          if (oldValue != null && !entry.getValue().equals(oldValue)) {
+            throw new CommandLineError(
+                String.format(
+                    "Found 2 values for the global '%s': '%s' was provided in %s and '%s' was "
+                        + "provided in %s",
+                    entry.getKey(),
+                    oldValue,
+                    globalsToFilePath.get(entry.getKey()),
+                    entry.getValue(),
+                    globalsFile));
+          }
+          globalsToFilePath.put(entry.getKey(), globalsFile);
+        }
+      } catch (IOException e) {
+        throw new CommandLineError(
+            "Unable to soy globals file: " + globalsFile + ": " + e.getMessage());
+      }
+    }
+    return globals;
   }
 
   /**
