@@ -39,6 +39,6 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) {
-    sfsBuilder.setAllowExternalCalls(false).build().parseCheck();
+    sfsBuilder.build().checkConformance();
   }
 }

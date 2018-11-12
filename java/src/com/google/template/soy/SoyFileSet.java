@@ -720,10 +720,12 @@ public final class SoyFileSet {
     return parseInfo;
   }
 
-  /** A simple tool to perform a full parse with the current configuration. */
-  void parseCheck() {
+  /** A simple tool to enforce conformance and only conformance. */
+  void checkConformance() {
     resetErrorReporter();
-    parse();
+    // TODO(b/74256690): instead of this boolean, treat conformance like a backend and just has some
+    // 'minimal parse' mode that we can trigger from here.
+    parse(passManagerBuilder().setConformanceOnly(true));
     throwIfErrorsPresent();
     reportWarnings();
   }

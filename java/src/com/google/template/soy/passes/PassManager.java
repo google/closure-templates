@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
@@ -81,6 +82,8 @@ public final class PassManager {
   @Nullable private final ContextualAutoescaper autoescaper;
 
   private PassManager(Builder builder) {
+    checkArgument(!builder.conformanceOnly);
+
     this.registry = checkNotNull(builder.registry);
     this.errorReporter = checkNotNull(builder.errorReporter);
     this.options = checkNotNull(builder.opts);
@@ -212,6 +215,26 @@ public final class PassManager {
     this.afterAutoescapePasses = afterAutoescapePasses.build();
   }
 
+  // This constructor is just used for the conformanceOnly mode, the boolean parameter is just to
+  // make it a unique overload.
+  private PassManager(Builder builder, boolean unused) {
+    checkArgument(builder.conformanceOnly);
+    this.registry = null;
+    this.errorReporter = checkNotNull(builder.errorReporter);
+    this.options = null;
+    this.desugarHtmlNodes = false;
+    this.autoescaper = null;
+    this.singleFilePasses =
+        ImmutableList.<CompilerFilePass>builder()
+            .add(new HtmlRewritePass(errorReporter))
+            // The check conformance pass needs to run on the rewritten html nodes, so it must
+            // run after HtmlRewritePass
+            .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
+            .build();
+    this.crossTemplateCheckingPasses = ImmutableList.of();
+    this.afterAutoescapePasses = ImmutableList.of();
+  }
+
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
     boolean isSourceFile = file.getSoyFileKind() == SoyFileKind.SRC;
     for (CompilerFilePass pass : singleFilePasses) {
@@ -301,6 +324,7 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
     private boolean addHtmlAttributesForDebugging = true;
+    private boolean conformanceOnly = false;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -320,6 +344,11 @@ public final class PassManager {
 
     public Builder setGeneralOptions(SoyGeneralOptions opts) {
       this.opts = opts;
+      return this;
+    }
+
+    public Builder setConformanceOnly(boolean conformanceOnly) {
+      this.conformanceOnly = conformanceOnly;
       return this;
     }
 
@@ -402,7 +431,7 @@ public final class PassManager {
     }
 
     public PassManager build() {
-      return new PassManager(this);
+      return conformanceOnly ? new PassManager(this, /*unused=*/ true) : new PassManager(this);
     }
   }
 }
