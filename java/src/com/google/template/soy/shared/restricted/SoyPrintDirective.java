@@ -24,7 +24,9 @@ import java.util.Set;
  * <p>Important: Implementing this interface by itself does nothing. Your directive implementation
  * class needs to implement some of all of this interface's subinterfaces.
  *
+ * @deprecated Use Soy functions instead
  */
+@Deprecated
 public interface SoyPrintDirective {
 
   /**
