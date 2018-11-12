@@ -69,7 +69,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.VeType;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -308,7 +307,6 @@ public final class GenerateParseInfoVisitor
     // + for any params whose type is a proto, get the proto name and Java class name.
     // + all plugin instances used by any SoyJavaSourceFunctions
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
-    List<String> deltemplates = new ArrayList<>();
     Set<String> allParamKeys = Sets.newHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
     SortedSet<String> protoTypes = Sets.newTreeSet();
@@ -317,9 +315,6 @@ public final class GenerateParseInfoVisitor
       if (template.getVisibility() == Visibility.PUBLIC && template instanceof TemplateBasicNode) {
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
-      }
-      if (template instanceof TemplateDelegateNode) {
-        deltemplates.add("\"" + template.getTemplateName() + "\"");
       }
       for (TemplateParam param : template.getAllParams()) {
         if (!param.isInjected()) {
@@ -535,8 +530,6 @@ public final class GenerateParseInfoVisitor
           "\"" + entry.getKey() + "\"", "CssTagsPrefixPresence." + entry.getValue().name());
     }
     appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", cssTagPrefixes.build());
-    ilb.appendLineEnd(",");
-    appendImmutableList(ilb, "<String>", deltemplates);
     ilb.appendLineEnd(",");
 
     // Plugin Instances

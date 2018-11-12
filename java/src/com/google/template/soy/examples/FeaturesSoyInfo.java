@@ -876,7 +876,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
         ImmutableMap.<String, CssTagsPrefixPresence>of(),
-        ImmutableList.<String>of(),
         ImmutableMap.<String, String>of());
   }
 
