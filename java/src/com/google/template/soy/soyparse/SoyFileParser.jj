@@ -79,6 +79,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeDataLiteralNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
@@ -3755,6 +3756,14 @@ private ExprNode GlobalOrFunctionCallLike() :
         return VeLiteral(ident);
       }
     |
+      LOOKAHEAD( {ident.identifier().equals("ve_data")} )
+      {
+        if (!experimentalFeatures.contains("dynamic_ve")) {
+          errorReporter.report(ident.location(), DYNAMIC_VE_NOT_ALLOWED);
+        }
+        return VeDataLiteral(ident);
+      }
+    |
       [
         // this can be any expr, for a function call; for proto init or record literal, must be a
         // single-ident global
@@ -3926,6 +3935,33 @@ private ExprNode VeLiteral(Identifier ident) :
   {
     SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
     return new VeLiteralNode(name, srcLoc);
+  }
+}
+
+/** Parses a VE data literal: {@code ve_data($ve, $data)}
+ *
+ * <p>TODO(b/71641483): also support the following syntaxes:
+ * <ul>
+ *   <li>{@code ve_data($ve)}
+ *   <li>{@code ve_data(MyVe, $data)}
+ *   <li>{@code ve_data(MyVe)}
+ */
+private ExprNode VeDataLiteral(Identifier ident) :
+{
+  ExprNode veVal, dataVal;
+  Token closeParen;
+}
+{
+  veVal = Expr()
+  <COMMA>
+  dataVal = Expr()
+  closeParen = <RPAREN>
+  {
+    SourceLocation srcLoc = ident.location().extend(createSrcLoc(closeParen));
+    VeDataLiteralNode node = new VeDataLiteralNode(srcLoc);
+    node.addChild(veVal);
+    node.addChild(dataVal);
+    return node;
   }
 }
 
