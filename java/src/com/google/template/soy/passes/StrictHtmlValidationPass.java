@@ -90,9 +90,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
-  private static final SoyErrorKind STATEFUL_TEMPLATE_EXACTLY_ONE_TAG =
+  private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
-          "Stateful templates must contain exactly one top-level HTML element (e.g, span, div).");
+          "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
 
   private final ErrorReporter errorReporter;
 
@@ -397,11 +397,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
 
       if (node instanceof TemplateElementNode) {
-        validateStatefulTemplateHasOneRootTagNode(node);
+        validateSoyElementHasOneRootTagNode(node);
       }
     }
 
-    private void validateStatefulTemplateHasOneRootTagNode(TemplateNode node) {
+    private void validateSoyElementHasOneRootTagNode(TemplateNode node) {
       class HtmlOrControlNode implements Predicate<SoyNode> {
         @Override
         public boolean apply(SoyNode node) {
@@ -418,13 +418,16 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         }
       }
 
+      // Get the first and last nodes that we want to validate are HTML tags that match each other.
+      // Skip e.g. comment, let, and debugger nodes.
       SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
       SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
       if (firstNode == null || lastNode == null) {
-        errorReporter.report(node.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;
       }
 
+      // Get the nodes now as open and close tags, or null if they are not.
       HtmlOpenTagNode firstNodeAsOpenTag =
           (HtmlOpenTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(firstNode, /* openTag= */ true);
       HtmlCloseTagNode lastNodeAsCloseTag =
@@ -436,12 +439,12 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       if (firstTagIsSelfClosing) {
         if (!firstNode.equals(lastNode)) {
           // First node is self-closing, but there is another element after the self-closing node.
-          errorReporter.report(lastNode.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+          errorReporter.report(lastNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         }
       } else if (firstNodeAsOpenTag == null || lastNodeAsCloseTag == null) {
         // Either the first or last node is not an HTML tag.
         SoyNode nodeToReport = firstNodeAsOpenTag == null ? firstNode : lastNode;
-        errorReporter.report(nodeToReport.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        errorReporter.report(nodeToReport.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;
       }
 
@@ -450,8 +453,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         // The last close tag does not match the first open tag, i.e. there are multiple root
         // HTML tag elements.
         errorReporter.report(
-            tagMatches.get(lastNodeAsCloseTag).getSourceLocation(),
-            STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+            tagMatches.get(lastNodeAsCloseTag).getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
       }
     }
 
