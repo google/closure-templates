@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -32,7 +31,6 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Visitor performing escaping sanity checks over all input -- not just input affected by the
@@ -46,7 +44,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * <p>{@link #exec} should be called on a full parse tree.
  *
  */
-final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
+final class CheckEscapingSanityFilePass extends CompilerFilePass {
 
   private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
       SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");
@@ -55,19 +53,15 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
       SoyErrorKind.of(
           "In strict templates, '{'{0}'}'...'{'/{0}'}' blocks require an explicit kind=\"\".");
 
-  private final ErrorReporter errorReporter;
+  private final Visitor visitor;
 
-  CheckEscapingSanityFileSetPass(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
+  CheckEscapingSanityFilePass(ErrorReporter errorReporter) {
+    this.visitor = new Visitor(errorReporter);
   }
 
   @Override
-  public void run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    Visitor visitor = new Visitor(errorReporter);
-    for (SoyFileNode file : sourceFiles) {
-      visitor.exec(file);
-    }
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    visitor.exec(file);
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {

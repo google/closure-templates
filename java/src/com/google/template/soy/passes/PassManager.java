@@ -126,7 +126,9 @@ public final class PassManager {
             .add(new V1ExpressionPass(builder.allowV1Expression, errorReporter))
             .add(new ResolveNamesPass(errorReporter))
             // needs to be after ResolveNames and MsgsPass
-            .add(new MsgWithIdFunctionPass(errorReporter));
+            .add(new MsgWithIdFunctionPass(errorReporter))
+            // can run anywhere
+            .add(new CheckEscapingSanityFilePass(errorReporter));
     if (builder.addHtmlAttributesForDebugging) {
       // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
       // before ResolveExpressionTypesPass (since we insert expressions).
@@ -177,10 +179,7 @@ public final class PassManager {
     }
     beforeAutoescaperFileSetPassBuilder
         .add(new CheckTemplateVisibilityPass(errorReporter))
-        .add(new CheckDelegatesPass(errorReporter))
-        // Could run ~anywhere, needs to be a fileset pass to validate deprecated-noncontextual
-        // calls.  Make this a singlefile pass when deprecated-noncontextual is dead.
-        .add(new CheckEscapingSanityFileSetPass(errorReporter));
+        .add(new CheckDelegatesPass(errorReporter));
     // If disallowing external calls, perform the check.
     if (options.allowExternalCalls() == TriState.DISABLED) {
       beforeAutoescaperFileSetPassBuilder.add(new StrictDepsPass(errorReporter));
