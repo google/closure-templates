@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -111,16 +112,20 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
   private void checkTemplateNode(TemplateNode node) {
     AutoescapeMode autoescapeMode = node.getAutoescapeMode();
-    if (autoescapeMode != AutoescapeMode.STRICT && node.isStrictHtml()) {
-      errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);
-      return;
-    }
+    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
+    // STRICT autoescaping mode. Note that you are allowed to set STRICT autoescaping mode on
+    // a non-strict-HTML node.
+    checkState(
+        !(autoescapeMode != AutoescapeMode.STRICT && node.isStrictHtml()),
+        "Strict HTML template without strict autoescaping.");
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
     SanitizedContentKind contentKind = node.getContentKind();
-    if (contentKind != SanitizedContentKind.HTML && node.isStrictHtml()) {
-      errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITH_NON_HTML);
-      return;
-    }
+    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
+    // STRICT HTML sanitize mode. Note that you are allowed to set STRICT sanitize mode on
+    // a non-strict-HTML node.
+    checkState(
+        !(contentKind != SanitizedContentKind.HTML && node.isStrictHtml()),
+        "Strict HTML in a non-HTML node.");
     if (node.isStrictHtml()) {
       new HtmlTagVisitor(errorReporter).exec(node);
     }
@@ -526,10 +531,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // After we visit all children, we check if deques are empty or not.
       if (inControlBlock) {
         boolean matched = HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
-        if (matched && !openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
-          throw new AssertionError(
-              "This should not happen. At least one of the stack/queue should be empty.");
-        }
+        checkState(
+            !(matched && !openTagStack.isEmpty() && !closeTagQueue.isEmpty()),
+            "This should not happen. At least one of the stack/queue should be empty.");
         // If we are in a control block, we add non-empty deques to the branches.
         if (!openTagStack.isEmpty() && closeTagQueue.isEmpty()) {
           openTagBranches.add(currentCondition, openTagStack);
