@@ -116,9 +116,6 @@ public final class PassManager {
             // Needs to come after any pass that manipulates msg placeholders.
             .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
             .add(new CheckNonEmptyMsgNodesPass(errorReporter))
-            // Needs to run after inserting msg placeholders to ensure that genders="..."
-            // expressions do not introduce extra placeholders for call and print nodes.
-            .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             // needs to happen after rewrite globals
             .add(new XidPass(errorReporter))
@@ -129,6 +126,13 @@ public final class PassManager {
             .add(new MsgWithIdFunctionPass(errorReporter))
             // can run anywhere
             .add(new CheckEscapingSanityFilePass(errorReporter));
+    // The StrictHtmlValidatorPass needs to run after ResolveNames.
+    if (options.getExperimentalFeatures().contains("new_html_matcher")) {
+      singleFilePassesBuilder.add(new StrictHtmlValidationPassNewMatcher(errorReporter));
+    } else {
+      singleFilePassesBuilder.add(new StrictHtmlValidationPass(errorReporter));
+    }
+
     if (builder.addHtmlAttributesForDebugging) {
       // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
       // before ResolveExpressionTypesPass (since we insert expressions).

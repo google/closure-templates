@@ -16,7 +16,12 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -37,7 +42,8 @@ import javax.annotation.Nullable;
  * respectively. For nodes that are not in a control branch, we will store {@code TagName}; for
  * nodes that are in a control branch, a {@code ConditionalBranches} will be created and saved.
  */
-final class HtmlTagEntry {
+@AutoValue
+abstract class HtmlTagEntry {
   private static final SoyErrorKind MISMATCH_DYNAMIC_TAG =
       SoyErrorKind.of("The print commands need to be identical for dynamic tags.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
@@ -50,41 +56,72 @@ final class HtmlTagEntry {
   private static final SoyErrorKind MISMATCH_TAG =
       SoyErrorKind.of("Could not find a match for this HTML tag.");
 
-  // Exactly one of these is non-null.
-  private final HtmlTagNode tagNode;
-  private final ConditionalBranches branches;
-
-  HtmlTagEntry(HtmlTagNode node) {
-    this.tagNode = node;
-    this.branches = null;
+  /** The kind of match that a close tag has with its corresponding open tag. */
+  private enum MatchCloseTagResult {
+    NOT_MATCHED,
+    MATCHED_WITH_ERROR,
+    MATCHED
   }
 
-  HtmlTagEntry(ConditionalBranches branches) {
-    this.tagNode = null;
-    this.branches = new ConditionalBranches(branches);
+  // Exactly one of these is non-null.
+  @Nullable
+  abstract HtmlTagNode getTagNode();
+
+  @Nullable
+  abstract ConditionalBranches getBranches();
+
+  /**
+   * The list of possible balancing tags.
+   *
+   * <p>If this {@code HtmlTagEntry} represents an {@link HtmlOpenTagNode}, this list is empty.
+   * Otherwise, this list holds the {@link HtmlOpenTagNode}s that could balance a close tag. It is
+   * an error if this list is empty when matching to open tags. See, e.g. {@link
+   * #matchOrError(ArrayDeque, ArrayDeque, ErrorReporter)}.
+   */
+  abstract ImmutableList<HtmlTagEntry> getBalancingTags();
+
+  static Builder builder() {
+    return new AutoValue_HtmlTagEntry.Builder().setBalancingTags(ImmutableList.<HtmlTagEntry>of());
+  }
+
+  @AutoValue.Builder
+  abstract static class Builder {
+
+    abstract Builder setTagNode(HtmlTagNode tagNode);
+
+    abstract Builder setBranches(ConditionalBranches branches);
+
+    abstract Builder setBalancingTags(ImmutableList<HtmlTagEntry> balancingTags);
+
+    abstract Optional<ConditionalBranches> getBranches();
+
+    abstract HtmlTagEntry autoBuild();
+
+    public HtmlTagEntry build() {
+      // Need to use the copy ctor for branches, otherwise we get endless recursion when clearing
+      // the tag deque.
+      if (getBranches().isPresent()) {
+        setBranches(new ConditionalBranches(getBranches().get()));
+      }
+      HtmlTagEntry htmlTagEntry = autoBuild();
+      checkState(
+          (htmlTagEntry.getTagNode() == null) != (htmlTagEntry.getBranches() == null),
+          "Only one of tagNode or branches can be null, not both.");
+      return htmlTagEntry;
+    }
   }
 
   boolean hasTagName() {
-    return tagNode != null && tagNode.getTagName() != null;
-  }
-
-  @Nullable
-  HtmlTagNode getTagNode() {
-    return tagNode;
+    return getTagNode() != null && getTagNode().getTagName() != null;
   }
 
   @Nullable
   TagName getTagName() {
-    return tagNode == null ? null : tagNode.getTagName();
-  }
-
-  @Nullable
-  ConditionalBranches getBranches() {
-    return branches;
+    return getTagNode() == null ? null : getTagNode().getTagName();
   }
 
   boolean hasEmptyBranches() {
-    return branches != null && branches.isEmpty();
+    return getBranches() != null && getBranches().isEmpty();
   }
 
   /**
@@ -93,9 +130,9 @@ final class HtmlTagEntry {
    */
   SourceLocation getSourceLocation() {
     if (hasTagName()) {
-      return tagNode.getTagName().getTagLocation();
+      return getTagNode().getTagName().getTagLocation();
     }
-    for (ConditionalBranches.ConditionalBranch branch : branches.getBranches()) {
+    for (ConditionalBranches.ConditionalBranch branch : getBranches().getBranches()) {
       if (!branch.deque().isEmpty()) {
         return branch.deque().peek().getSourceLocation();
       }
@@ -105,7 +142,7 @@ final class HtmlTagEntry {
 
   @Override
   public String toString() {
-    return hasTagName() ? tagNode.getTagName().toString() : branches.toString();
+    return hasTagName() ? getTagNode().getTagName().toString() : getBranches().toString();
   }
 
   /**
@@ -246,8 +283,12 @@ final class HtmlTagEntry {
   /**
    * A helper method that compare two tags and report corresponding error. Note that the order of
    * inputs matters.
+   *
+   * @return {@code true} if there was a successful match, and no error; {@code false} if there was
+   *     an error.
    */
-  static boolean matchOrError(TagName openTag, TagName closeTag, ErrorReporter errorReporter) {
+  private static boolean matchOrError(
+      TagName openTag, TagName closeTag, ErrorReporter errorReporter) {
     if (openTag.isStatic() != closeTag.isStatic()) {
       // We only allow the same kind of nodes for dynamic tag names. We do not want to support
       // runtime validations, so something like <div></{$foo}> is not allowed.
@@ -354,31 +395,41 @@ final class HtmlTagEntry {
     return openTag;
   }
 
-  static @Nullable HtmlTagEntry tryMatchCloseTag(
+  private static MatchCloseTagResult tryMatchCloseTag(
       ArrayDeque<HtmlTagEntry> openStack, TagName closeTag, ErrorReporter errorReporter) {
     // Pop out every optional tags that does not match the current close tag.
     HtmlTagEntry openTag = popOptionalTagInStack(openStack, closeTag);
     if (openTag == null) {
-      return null;
+      return MatchCloseTagResult.NOT_MATCHED;
     } else if (openTag.hasTagName()) {
       // Check if we can find a matching open tag within the current block.
       // Only pop the tag from the open stack if we find a match.
       // This way we do not emit cascade errors for a misplace closed tag.
       if (matchOrError(openTag.getTagName(), closeTag, errorReporter)) {
-        return openStack.pollFirst();
+        return MatchCloseTagResult.MATCHED;
       }
     } else {
       boolean matchCommonPrefix = tryMatchCommonPrefix(openStack.peekFirst(), closeTag);
       if (matchCommonPrefix && openStack.peekFirst().hasEmptyBranches()) {
-        return openStack.pollFirst();
+        return MatchCloseTagResult.MATCHED;
       }
       if (!matchCommonPrefix) {
-        return null;
+        return MatchCloseTagResult.NOT_MATCHED;
       }
     }
-    return openStack.peekFirst();
+    return MatchCloseTagResult.MATCHED_WITH_ERROR;
   }
 
+  private static boolean maybePutMatchingTags(
+      Map<HtmlCloseTagNode, HtmlOpenTagNode> tagMatches,
+      HtmlTagEntry closeTag,
+      @Nullable HtmlTagEntry openTag) {
+    if (openTag != null) {
+      tagMatches.put(
+          (HtmlCloseTagNode) closeTag.getTagNode(), (HtmlOpenTagNode) openTag.getTagNode());
+    }
+    return openTag != null;
+  }
   /**
    * Try to match a close tag with a stack of open tags, and report errors accordingly.
    *
@@ -387,8 +438,6 @@ final class HtmlTagEntry {
    * definitely know there is a mismatch and report an error for that, we still return true. The
    * return value is used by {@code StrictHtmlValidationPass} to decide whether we should add the
    * closeTag to the queue.
-   *
-   * <p>TODO(b/65293620): Change the return results to an enum.
    */
   static boolean tryMatchCloseTag(
       ArrayDeque<HtmlTagEntry> openStack,
@@ -396,12 +445,16 @@ final class HtmlTagEntry {
       Map<HtmlCloseTagNode, HtmlOpenTagNode> tagMatches,
       ErrorReporter errorReporter) {
     if (closeTag.hasTagName()) {
-      HtmlTagEntry entry = tryMatchCloseTag(openStack, closeTag.getTagName(), errorReporter);
-      if (entry != null) {
-        tagMatches.put(
-            (HtmlCloseTagNode) closeTag.getTagNode(), (HtmlOpenTagNode) entry.getTagNode());
+      MatchCloseTagResult closeResult =
+          tryMatchCloseTag(openStack, closeTag.getTagName(), errorReporter);
+      switch (closeResult) {
+        case NOT_MATCHED:
+          return false;
+        case MATCHED_WITH_ERROR:
+          return maybePutMatchingTags(tagMatches, closeTag, openStack.peekFirst());
+        case MATCHED:
+          return maybePutMatchingTags(tagMatches, closeTag, openStack.pollFirst());
       }
-      return entry != null;
     }
     HtmlTagEntry openTag = openStack.peekFirst();
     if (openTag == null) {
@@ -430,7 +483,7 @@ final class HtmlTagEntry {
    * the {@code HtmlTagEntry} (removing optional tags and common prefix).
    */
   static boolean tryMatchCommonPrefix(HtmlTagEntry entry, TagName tagName) {
-    Preconditions.checkArgument(!entry.hasTagName());
+    checkArgument(!entry.hasTagName());
     if (entry.getBranches().hasCommonPrefix(tagName)) {
       entry.getBranches().popAllBranches();
       return true;
@@ -472,7 +525,7 @@ final class HtmlTagEntry {
   /** Tries to find common prefix and report errors accordingly. */
   private static boolean tryMatchCommonPrefix(
       HtmlTagEntry openTag, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
-    Preconditions.checkArgument(openTag.hasTagName() != closeTag.hasTagName());
+    checkArgument(openTag.hasTagName() != closeTag.hasTagName());
     return openTag.hasTagName()
         ? tryMatchCommonPrefix(openTag.getTagName(), closeTag, errorReporter)
         : tryMatchCommonPrefix(openTag, closeTag.getTagName(), errorReporter);

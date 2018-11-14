@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,15 +56,17 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
-import java.util.IdentityHashMap;
-import java.util.Map;
 
-/** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
-final class StrictHtmlValidationPass extends CompilerFilePass {
+/**
+ * A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages.
+ *
+ * <p>TODO(b/118396161): Implement this pass, then replace {@link StrictHtmlValidationPass} with
+ * this one.
+ */
+public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
   private static final SoyErrorKind STRICT_HTML_WITHOUT_AUTOESCAPE =
       SoyErrorKind.of(
           "stricthtml=\"true\" must be used with autoescape=\"strict\".", StyleAllowance.NO_CAPS);
@@ -78,12 +80,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   private static final SoyErrorKind SWITCH_HTML_MODE_IN_BLOCK =
       SoyErrorKind.of("Foreign elements (svg) must be opened and closed within the same block.");
   private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected HTML close tag.");
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_IN_CONTROL =
-      SoyErrorKind.of(
-          "Unexpected HTML close tag. Within an if or switch block, "
-              + "all branches must end with unmatched open tags or unmatched close tags.");
 
   private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
       SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
@@ -92,14 +88,14 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
-  private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
+  private static final SoyErrorKind STATEFUL_TEMPLATE_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
-          "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
+          "Stateful templates must contain exactly one top-level HTML element (e.g, span, div).");
 
   private final ErrorReporter errorReporter;
 
-  StrictHtmlValidationPass(ErrorReporter errorReporter) {
-    this.errorReporter = checkNotNull(errorReporter);
+  StrictHtmlValidationPassNewMatcher(ErrorReporter errorReporter) {
+    this.errorReporter = checkNotNull(errorReporter, "errorReporter must be non-null.");
   }
 
   @Override
@@ -128,32 +124,14 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
   private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<Void> {
 
+
     /** Current condition that will be updated when we visit a control flow node. */
     private Condition currentCondition = Condition.getEmptyCondition();
 
     /**
-     * A {@code ConditionalBranches} that stores all open tags in an {@code IfNode}. The branch will
-     * be pushed to openTagStack once we visit all children of an {@code IfNode}.
+     * The stack used to determine HTML tag balancing when traversing the {@link #tagMatcherGraph}.
      */
-    private final ConditionalBranches openTagBranches = new ConditionalBranches();
-
-    /**
-     * A {@code ConditionalBranches} that stores all close tags in an {@code IfNode}. The branch
-     * will be pushed to closeTagQueue once we visit all children of an {@code IfNode}.
-     */
-    private final ConditionalBranches closeTagBranches = new ConditionalBranches();
-
-    /**
-     * A stack of open tags. After we visit all children of a {@code BlockNode}, the stack will be
-     * added to a {@code ConditionalBranches} (based on currentConditions).
-     */
-    private final ArrayDeque<HtmlTagEntry> openTagStack = new ArrayDeque<>();
-
-    /**
-     * A queue of close tags. After we visit all children of a {@code BlockNode}, the queue will be
-     * added to a {@code ConditionalBranches} (based on currentConditions).
-     */
-    private final ArrayDeque<HtmlTagEntry> closeTagQueue = new ArrayDeque<>();
+    private final ArrayDeque<SoyNode> tagMatcherStack = new ArrayDeque<>();
 
     /**
      * A boolean indicates that the current snippet is in a foreign content (in particular, svg). If
@@ -161,13 +139,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      * closed) until we leave foreign content.
      */
     private boolean inForeignContent = false;
-
-    /**
-     * A map that records the tag matching process. The keys are close tags, and the values are the
-     * open tags that actually match the corresponding close tags.
-     */
-    // TODO(user): Change this to a multimap and use it for improving error messages.
-    private final Map<HtmlCloseTagNode, HtmlOpenTagNode> tagMatches = new IdentityHashMap<>();
 
     private SourceLocation foreignContentStartLocation = SourceLocation.UNKNOWN;
     private SourceLocation foreignContentEndLocation = SourceLocation.UNKNOWN;
@@ -202,10 +173,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
           return;
         }
       }
-      // Push the node into open tag stack.
-      if (!node.isSelfClosing() && !openTag.isDefinitelyVoid()) {
-        openTagStack.addFirst(entry);
-      }
     }
 
     @Override
@@ -223,15 +190,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         foreignContentEndLocation = node.getSourceLocation();
         inForeignContent = false;
       }
-      // If we cannot find a matching open tag in current block, put the current tag into
-      // closeTagQueue and compare everything after we visit the entire template node.
-      if (!HtmlTagEntry.tryMatchCloseTag(openTagStack, entry, tagMatches, errorReporter)) {
-        if (isInControlBlock(node)) {
-          closeTagQueue.addLast(entry);
-        } else {
-          errorReporter.report(closeTag.getTagLocation(), UNEXPECTED_CLOSE_TAG);
-        }
-      }
     }
 
     /**
@@ -248,29 +206,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      */
     @Override
     protected void visitIfNode(IfNode node) {
-      ConditionalBranches outerOpenTagBranches = new ConditionalBranches(openTagBranches);
-      ConditionalBranches outerCloseTagBranches = new ConditionalBranches(closeTagBranches);
-      openTagBranches.clear();
-      closeTagBranches.clear();
       visitChildren(node);
-      if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG_IN_CONTROL);
-        openTagBranches.clear();
-        closeTagBranches.clear();
-      }
-      if (!openTagBranches.isEmpty()) {
-        openTagStack.addFirst(HtmlTagEntry.builder().setBranches(openTagBranches).build());
-        openTagBranches.clear();
-      }
-      if (!closeTagBranches.isEmpty()) {
-        closeTagQueue.addLast(HtmlTagEntry.builder().setBranches(closeTagBranches).build());
-        closeTagBranches.clear();
-      }
-      // At this point we should try to match openTagStack and closeTagQueue and remove anything
-      // that matches.
-      HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
-      openTagBranches.addAll(outerOpenTagBranches);
-      closeTagBranches.addAll(outerCloseTagBranches);
     }
 
     @Override
@@ -295,29 +231,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      */
     @Override
     protected void visitSwitchNode(SwitchNode node) {
-      ConditionalBranches outerOpenTagBranches = new ConditionalBranches(openTagBranches);
-      ConditionalBranches outerCloseTagBranches = new ConditionalBranches(closeTagBranches);
-      openTagBranches.clear();
-      closeTagBranches.clear();
       visitChildren(node);
-      if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG_IN_CONTROL);
-        openTagBranches.clear();
-        closeTagBranches.clear();
-      }
-      if (!openTagBranches.isEmpty()) {
-        openTagStack.addFirst(HtmlTagEntry.builder().setBranches(openTagBranches).build());
-        openTagBranches.clear();
-      }
-      if (!closeTagBranches.isEmpty()) {
-        closeTagQueue.addLast(HtmlTagEntry.builder().setBranches(closeTagBranches).build());
-        closeTagBranches.clear();
-      }
-      // At this point we should try to match openTagStack and closeTagQueue and remove anything
-      // that matches.
-      HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
-      openTagBranches.addAll(outerOpenTagBranches);
-      closeTagBranches.addAll(outerCloseTagBranches);
     }
 
     @Override
@@ -373,16 +287,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // After visiting all the children, we should have already built the map.
       // At this point, we check the map and verify that the first child is actually popped by the
       // last child. Otherwise, report an error.
-      if (lastTag != null) {
-        // If the map does not contain the last tag, other part of this compiler pass should enforce
-        // that there is an error thrown. Don't report another error here since it is a duplicate.
-        // This check make sures that there is exactly one top-level element -- the last tag must
-        // close the first tag within {velog} command.
-        if (tagMatches.get(lastTag) != null && !tagMatches.get(lastTag).equals(firstTag)) {
-          errorReporter.report(
-              tagMatches.get(lastTag).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-        }
-      }
     }
 
     @Override
@@ -394,16 +298,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       if (errorReporter.errorsSince(checkpoint)) {
         return;
       }
-
-      // Match the tags in the deques.
-      HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
-
-      if (node instanceof TemplateElementNode) {
-        validateSoyElementHasOneRootTagNode(node);
-      }
     }
 
-    private void validateSoyElementHasOneRootTagNode(TemplateNode node) {
+    private void validateStatefulTemplateHasOneRootTagNode(TemplateNode node) {
       class HtmlOrControlNode implements Predicate<SoyNode> {
         @Override
         public boolean apply(SoyNode node) {
@@ -425,11 +322,10 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
       SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
       if (firstNode == null || lastNode == null) {
-        errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        errorReporter.report(node.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
         return;
       }
 
-      // Get the nodes now as open and close tags, or null if they are not.
       HtmlOpenTagNode firstNodeAsOpenTag =
           (HtmlOpenTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(firstNode, /* openTag= */ true);
       HtmlCloseTagNode lastNodeAsCloseTag =
@@ -441,21 +337,13 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       if (firstTagIsSelfClosing) {
         if (!firstNode.equals(lastNode)) {
           // First node is self-closing, but there is another element after the self-closing node.
-          errorReporter.report(lastNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+          errorReporter.report(lastNode.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
         }
       } else if (firstNodeAsOpenTag == null || lastNodeAsCloseTag == null) {
         // Either the first or last node is not an HTML tag.
         SoyNode nodeToReport = firstNodeAsOpenTag == null ? firstNode : lastNode;
-        errorReporter.report(nodeToReport.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        errorReporter.report(nodeToReport.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
         return;
-      }
-
-      if (tagMatches.get(lastNodeAsCloseTag) != null
-          && !tagMatches.get(lastNodeAsCloseTag).equals(firstNodeAsOpenTag)) {
-        // The last close tag does not match the first open tag, i.e. there are multiple root
-        // HTML tag elements.
-        errorReporter.report(
-            tagMatches.get(lastNodeAsCloseTag).getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
       }
     }
 
@@ -513,41 +401,8 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     }
 
     private void visitBlockChildren(BlockNode node, boolean inControlBlock) {
-      // Whenever we visit a {@code BlockNode}, we create new deques for this block. Save the
-      // contents that are not introduced by the current block.
-      ArrayDeque<HtmlTagEntry> outerOpenTagStack = new ArrayDeque<>();
-      ArrayDeque<HtmlTagEntry> outerCloseTagQueue = new ArrayDeque<>();
-      outerOpenTagStack.addAll(openTagStack);
-      outerCloseTagQueue.addAll(closeTagQueue);
-      openTagStack.clear();
-      closeTagQueue.clear();
       boolean inForeignContentBeforeBlock = inForeignContent;
       visitChildren(node);
-      // After we visit all children, we check if deques are empty or not.
-      if (inControlBlock) {
-        boolean matched = HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
-        if (matched && !openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
-          throw new AssertionError(
-              "This should not happen. At least one of the stack/queue should be empty.");
-        }
-        // If we are in a control block, we add non-empty deques to the branches.
-        if (!openTagStack.isEmpty() && closeTagQueue.isEmpty()) {
-          openTagBranches.add(currentCondition, openTagStack);
-        }
-        if (openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
-          closeTagBranches.add(currentCondition, closeTagQueue);
-        }
-      } else {
-        // If we are not in a control block, we try to match deques and report an error if we find
-        // nodes that do not match.
-        HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
-      }
-      // No matter what happened in this block, clear everything and continue.
-      openTagStack.clear();
-      closeTagQueue.clear();
-      // Restore the deques.
-      openTagStack.addAll(outerOpenTagStack);
-      closeTagQueue.addAll(outerCloseTagQueue);
       // If inForeignContent has been changed after visiting a block, it means there is a svg tag
       // that has not been closed.
       if (inForeignContent != inForeignContentBeforeBlock) {
