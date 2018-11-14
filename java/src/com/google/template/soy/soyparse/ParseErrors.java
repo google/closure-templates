@@ -208,6 +208,8 @@ final class ParseErrors {
         return null; // want to exclude this from expectation messages
       case SoyFileParserConstants.CMD_BEGIN_PRINT:
         return "{print";
+      case SoyFileParserConstants.CMD_BEGIN_KEY:
+        return "{key";
 
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.IDENT:

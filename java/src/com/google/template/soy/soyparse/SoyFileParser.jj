@@ -98,6 +98,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -309,6 +310,7 @@ import javax.annotation.Nullable;
  *    {log}...{/log}
  *    {debugger}
  *    {velog ...}....{/velog}
+ *    {key ...}
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
@@ -440,6 +442,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Found ''print'' command with empty command text.");
   private static final SoyErrorKind PROP_VARS_NOT_ALLOWED =
       SoyErrorKind.of("@prop declarations are not available for general use.");
+  private static final SoyErrorKind KEY_COMMAND_NOT_ALLOWED =
+      SoyErrorKind.of("The key command is not available for general use.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -1015,8 +1019,10 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_PRINT              : "{print" <WS>    > : EXPR
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > : EXPR
 
-| < CMD_BEGIN_VELOG                : "{velog" <WS>      > : IN_CMD_TAG
-| < CMD_CLOSE_VELOG                : "{/velog}"         >
+| < CMD_BEGIN_KEY                : "{key" <WS>      > : EXPR
+
+| < CMD_BEGIN_VELOG              : "{velog" <WS>    > : IN_CMD_TAG
+| < CMD_CLOSE_VELOG              : "{/velog}"       >
 }
 
 
@@ -2097,7 +2103,7 @@ private StatementNode Stmt() :
 }
 
 /**
- * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt
+ * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt | KeyStmt
  */
 private StatementNode NonPrintableStmt() :
 {
@@ -2109,6 +2115,7 @@ private StatementNode NonPrintableStmt() :
   | stmt = LogStmt()
   | stmt = DebuggerStmt()
   | stmt = VeLogStmt()
+  | stmt = KeyStmt()
   )
 
   { return stmt; }
@@ -2508,7 +2515,6 @@ private PrintNode PrintStmt() :
 {
   Token tagBegin;
   Token tagEnd;
-  Token tok;
   Token directive;
   boolean isImplicit;
   ExprNode expr = null;
@@ -2610,6 +2616,46 @@ private PrintDirectiveNode PrintDirective() :
   }
 }
 
+
+/**
+ * KeyStmt -> CmdBeginKey Expr CmdEnd
+ */
+private KeyNode KeyStmt() :
+{
+  Token tagBegin;
+  Token tagEnd;
+  ExprNode expr = null;
+}
+{
+  (
+    tagBegin = <CMD_BEGIN_KEY>
+  )
+
+  {
+    // TODO(b/114483225): Remove.
+    if (!experimentalFeatures.contains("prop_vars")) {
+      errorReporter.report(createSrcLoc(tagBegin), KEY_COMMAND_NOT_ALLOWED);
+    }
+  }
+
+  try {
+    expr = Expr()
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    if (expr == null) {
+      expr = errorExpr(tagBegin);
+    }
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
+  {
+    KeyNode node = new KeyNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagEnd),
+        expr);
+    return node;
+  }
+}
 
 
 /**

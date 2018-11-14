@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -1236,6 +1237,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
     @Override
     protected void visitLetContentNode(LetContentNode node) {
       visitScopedBlock(node.getContentKind(), node, "let");
+      processNonPrintableNode(node);
+    }
+
+    @Override
+    protected void visitKeyNode(KeyNode node) {
       processNonPrintableNode(node);
     }
 
