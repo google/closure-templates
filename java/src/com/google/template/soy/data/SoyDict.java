@@ -21,7 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * A SoyRecord that also implements the SoyMap interface.
+ * A SoyRecord that also implements the SoyLegacyObjectMap interface.
  *
  * <p>In map usage, the item keys are the record field names in the form of StringData.
  *
