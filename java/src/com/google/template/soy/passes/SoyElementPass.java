@@ -21,6 +21,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -30,9 +31,9 @@ import com.google.template.soy.soytree.TemplateNode;
 /** Validates restrictions specific to Soy elements. */
 final class SoyElementPass extends CompilerFilePass {
 
-  private static final SoyErrorKind ROOT_HAS_KEY_ATTR =
+  private static final SoyErrorKind ROOT_HAS_KEY_NODE =
       SoyErrorKind.of(
-          "The root node of Soy elements must not have a `key` attribute. "
+          "The root node of Soy elements must not have a key. "
               + "Instead, consider wrapping the Soy element in a keyed tag node.");
 
   private static final SoyErrorKind ROOT_IS_DYNAMIC_TAG =
@@ -66,15 +67,17 @@ final class SoyElementPass extends CompilerFilePass {
         continue;
       }
 
-      validateNoKeyAttribute(firstOpenTagNode);
+      validateNoKey(firstOpenTagNode);
       validateNoDynamicTag(firstOpenTagNode);
     }
   }
 
-  // See go/soy-element-keyed-roots for reasoning for why this is disallowed.
-  private void validateNoKeyAttribute(HtmlOpenTagNode firstTagNode) {
-    if (firstTagNode.getDirectAttributeNamed("key") != null) {
-      errorReporter.report(firstTagNode.getSourceLocation(), ROOT_HAS_KEY_ATTR);
+  // See go/soy-element-keyed-roots for reasoning on why this is disallowed.
+  private void validateNoKey(HtmlOpenTagNode firstTagNode) {
+    for (SoyNode child : firstTagNode.getChildren()) {
+      if (child instanceof KeyNode) {
+        errorReporter.report(firstTagNode.getSourceLocation(), ROOT_HAS_KEY_NODE);
+      }
     }
   }
 
