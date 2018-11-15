@@ -397,9 +397,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
    * TODO(b/80336719): We need to run on deps to support the autoescaper. deprecated-contextual
    * autoescaping needs to explore calls to calculate end contexts and so it relies on the
    * datastructures produced by this pass.
-   *
-   * <p>TODO(b/74256690): We need to run on deps to support the conformance pass. Some conformance
-   * checks rely on these datastructures.
    */
   @Override
   public boolean shouldRunOnDepsAndIndirectDeps() {

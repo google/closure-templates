@@ -16,10 +16,28 @@
 
 package com.google.template.soy;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
+import com.google.template.soy.conformance.ConformanceConfig;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import org.kohsuke.args4j.Option;
 
 /** Executable that enforces soy conformance rules against a set of soy source files. */
 public final class SoyConformanceChecker extends AbstractSoyCompiler {
+  @Option(
+      name = "--conformanceConfig",
+      aliases = "--conformanceConfigs",
+      usage = "Location of conformance config protos in text proto format.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> conformanceConfigs = new ArrayList<>();
+
   SoyConformanceChecker(ClassLoader loader) {
     super(loader);
   }
@@ -39,6 +57,29 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) {
-    sfsBuilder.build().checkConformance();
+    ValidatedConformanceConfig conformanceConfig = parseConformanceConfig();
+    sfsBuilder.setConformanceConfig(conformanceConfig).build().checkConformance();
+  }
+
+  private ValidatedConformanceConfig parseConformanceConfig() {
+    ValidatedConformanceConfig config = ValidatedConformanceConfig.EMPTY;
+    for (File conformanceConfig : conformanceConfigs) {
+      try (InputStreamReader stream =
+          new InputStreamReader(new FileInputStream(conformanceConfig), StandardCharsets.UTF_8)) {
+        ConformanceConfig.Builder builder = ConformanceConfig.newBuilder();
+        TextFormat.getParser().merge(stream, builder);
+        config = config.concat(ValidatedConformanceConfig.create(builder.build()));
+      } catch (IllegalArgumentException e) {
+        throw new CommandLineError(
+            "Error parsing conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      } catch (InvalidProtocolBufferException e) {
+        throw new CommandLineError(
+            "Invalid conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      } catch (IOException e) {
+        throw new CommandLineError(
+            "Unable to read conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      }
+    }
+    return config;
   }
 }

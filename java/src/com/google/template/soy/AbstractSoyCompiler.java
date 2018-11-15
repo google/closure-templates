@@ -27,8 +27,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.conformance.ConformanceConfig;
-import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
@@ -133,13 +131,6 @@ public abstract class AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> protoFileDescriptors = new ArrayList<>();
 
-  // TODO(b/74256690): move this into SoyConformanceChecker
-  @Option(
-      name = "--conformanceConfig",
-      aliases = "--conformanceConfigs",
-      usage = "Location of conformance config protos in binary proto format.",
-      handler = SoyCmdLineParser.FileListOptionHandler.class)
-  List<File> conformanceConfigs = new ArrayList<>();
 
   @Option(
       name = "--loggingConfig",
@@ -250,11 +241,9 @@ public abstract class AbstractSoyCompiler {
     } else {
       sfsBuilder = SoyFileSet.builder();
     }
-    ValidatedConformanceConfig conformanceConfig = parseConformanceConfig();
     sfsBuilder
         .addSourceFunctions(sourceFunctions)
         .setWarningSink(err)
-        .setConformanceConfig(conformanceConfig)
         .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures);
@@ -277,26 +266,6 @@ public abstract class AbstractSoyCompiler {
       sfsBuilder.disableOptimizer();
     }
     compile(sfsBuilder);
-  }
-
-  private ValidatedConformanceConfig parseConformanceConfig() {
-    ValidatedConformanceConfig config = ValidatedConformanceConfig.EMPTY;
-    for (File conformanceConfig : conformanceConfigs) {
-      try (InputStream stream = new FileInputStream(conformanceConfig)) {
-        config =
-            config.concat(ValidatedConformanceConfig.create(ConformanceConfig.parseFrom(stream)));
-      } catch (IllegalArgumentException e) {
-        throw new CommandLineError(
-            "Error parsing conformance proto: " + conformanceConfig + ": " + e.getMessage());
-      } catch (InvalidProtocolBufferException e) {
-        throw new CommandLineError(
-            "Invalid conformance proto: " + conformanceConfig + ": " + e.getMessage());
-      } catch (IOException e) {
-        throw new CommandLineError(
-            "Unable to read conformance proto: " + conformanceConfig + ": " + e.getMessage());
-      }
-    }
-    return config;
   }
 
   private ValidatedLoggingConfig parseLoggingConfig() {
