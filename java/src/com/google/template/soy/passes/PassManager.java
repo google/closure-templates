@@ -164,6 +164,8 @@ public final class PassManager {
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));
     }
+    // Needs to run after HtmlRewritePass.
+    singleFilePassesBuilder.add(new KeyCommandPass(errorReporter));
     // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root validation).
     singleFilePassesBuilder.add(new SoyElementPass(errorReporter));
 
