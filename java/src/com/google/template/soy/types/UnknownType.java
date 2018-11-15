@@ -40,9 +40,11 @@ public final class UnknownType extends PrimitiveType {
     // whether the actual value is a an array or an object. But this doesn't work for ES6 Maps
     // or jspb.Maps. Flag this at compile time so people upgrading from legacy_object_map
     // aren't surprised at runtime.
-    // For ve, ve usage is limited to prevent abuse of VEs. The unknown type can't be used as the ve
-    // type, so disallow converting the ve type to unknown as there's no reason to do this.
-    return srcType.getKind() != Kind.MAP && srcType.getKind() != Kind.VE;
+    // For ve and ve_data, usage is limited to prevent abuse of VEs. The unknown type can't be used
+    // as these types, so disallow converting them to unknown as there's no reason to do this.
+    return srcType.getKind() != Kind.MAP
+        && srcType.getKind() != Kind.VE
+        && srcType.getKind() != Kind.VE_DATA;
   }
 
   @Override
