@@ -20,6 +20,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -30,6 +31,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  *
  * <ul>
  *   <li>Rewrites {@code ve_data(MyVe, $data)} to {@code ve_data(ve(MyVe), $data)}
+ *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
  * </ul>
  */
 final class VeRewritePass extends CompilerFilePass {
@@ -52,6 +54,10 @@ final class VeRewritePass extends CompilerFilePass {
               Identifier.create(global.getName(), global.getSourceLocation()),
               global.getSourceLocation());
       node.replaceChild(0, veNode);
+    }
+    if (node.numChildren() < 2) {
+      // For ve_data(MyVe) set the data parameter to null.
+      node.addChild(new NullNode(node.getSourceLocation().getEndLocation()));
     }
   }
 }

@@ -91,14 +91,12 @@ public enum BuiltinFunction implements SoyFunction {
   public Set<Integer> getValidArgsSizes() {
     switch (this) {
       case CSS:
+      case VE_DATA:
         return ImmutableSet.of(1, 2);
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
-      case VE_DATA:
-        // TODO(b/71641483): also support one parameter (the second parameter defaults to null)
-        return ImmutableSet.of(2);
       default:
         return ImmutableSet.of(1);
     }
