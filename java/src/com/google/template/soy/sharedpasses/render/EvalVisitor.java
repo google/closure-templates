@@ -643,6 +643,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitToFloatFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
+        case VE_DATA:
+          // TODO(b/71641483): Implement this once we have ve runtime objects.
+          throw new UnsupportedOperationException();
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

@@ -79,7 +79,6 @@ public interface ExprNode extends Node {
     PROTO_INIT_NODE,
 
     VE_LITERAL_NODE,
-    VE_DATA_LITERAL_NODE,
   }
 
   /**

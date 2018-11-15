@@ -1444,6 +1444,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         case DEBUG_SOY_TEMPLATE_INFO:
           node.setType(BoolType.getInstance());
           break;
+        case VE_DATA:
+          // TODO(b/71641483): add type information
+          break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
         case MSG_WITH_ID: // should have already been removed from the tree

@@ -457,6 +457,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
+      case VE_DATA:
+        // TODO(b/71641483): Implement this once we have ve runtime objects.
+        throw new UnsupportedOperationException();
       case MSG_WITH_ID:
       case REMAINDER:
         // should have been removed earlier in the compiler

@@ -608,6 +608,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case DEBUG_SOY_TEMPLATE_INFO:
           return Expression.dottedIdNoRequire("goog.DEBUG")
               .and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
+        case VE_DATA:
+          // TODO(b/71641483): Implement this once we have ve runtime objects.
+          throw new UnsupportedOperationException();
         case REMAINDER:
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler

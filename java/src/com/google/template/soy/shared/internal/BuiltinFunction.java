@@ -44,6 +44,7 @@ public enum BuiltinFunction implements SoyFunction {
   V1_EXPRESSION("v1Expression"),
   REMAINDER("remainder"),
   MSG_WITH_ID("msgWithId"),
+  VE_DATA("ve_data"),
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
@@ -95,6 +96,9 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
+      case VE_DATA:
+        // TODO(b/71641483): also support one parameter (the second parameter defaults to null)
+        return ImmutableSet.of(2);
       default:
         return ImmutableSet.of(1);
     }
