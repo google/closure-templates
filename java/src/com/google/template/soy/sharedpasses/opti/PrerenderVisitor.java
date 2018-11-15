@@ -27,6 +27,7 @@ import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -112,6 +113,13 @@ final class PrerenderVisitor extends RenderVisitor {
   @Override
   protected void visitLogNode(LogNode node) {
     throw RenderException.create("Cannot prerender LogNode.");
+  }
+
+  @Override
+  protected void visitKeyNode(KeyNode node) {
+    // Key nodes don't render any output outside of incremental dom, so avoid prerendering
+    // them or they'll be optimized away.
+    throw RenderException.create("Cannot prerender KeyNode.");
   }
 
   @Override

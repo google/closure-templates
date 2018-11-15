@@ -19,10 +19,15 @@ package com.google.template.soy.sharedpasses.opti;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -33,9 +38,19 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class PrerenderVisitorTest {
 
+  private Description testDescription;
+
+  @Rule
+  public final TestWatcher testWatcher =
+      new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          testDescription = description;
+        }
+      };
+
   @Test
   public void testPrerenderBasic() throws Exception {
-
     String templateBody =
         "{let $boo: 8 /}\n"
             + "{$boo}\n"
@@ -47,7 +62,6 @@ public class PrerenderVisitorTest {
 
   @Test
   public void testPrerenderWithDirectives() throws Exception {
-
     String printNodesSource =
         "{let $boo: 8 /}\n"
             + "{'aaa+bbb = ccc' |escapeUri}   {sp}\n"
@@ -66,7 +80,6 @@ public class PrerenderVisitorTest {
 
   @Test
   public void testPrerenderWithUnsupportedNode() throws Exception {
-
     // Cannot prerender MsgFallbackGroupNode.
     String templateBody = "{msg desc=\"\"}\n" + "  Hello world.\n" + "{/msg}\n";
     try {
@@ -92,7 +105,6 @@ public class PrerenderVisitorTest {
 
   @Test
   public void testPrerenderWithUndefinedData() throws Exception {
-
     String templateBody =
         "{@param foo : ? }\n" + "{let $boo: 8 /}\n" + "{if $boo > 4}\n" + "  {$foo}\n" + "{/if}\n";
     try {
@@ -115,7 +127,6 @@ public class PrerenderVisitorTest {
 
   @Test
   public void testPrerenderWithDirectiveError() throws Exception {
-
     try {
       prerender("  {'blah' |bidiSpanWrap}\n");
       fail();
@@ -124,6 +135,18 @@ public class PrerenderVisitorTest {
       assertThat(e)
           .hasMessageThat()
           .contains("Cannot prerender a node with some impure print directive.");
+    }
+  }
+
+  @Test
+  @ExperimentalFeatures("prop_vars")
+  public void testPrerenderWithKeyNodeError() throws Exception {
+    try {
+      prerender("<div {key 'foo'}></div>");
+      fail();
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(RenderException.class);
+      assertThat(e).hasMessageThat().contains("Cannot prerender KeyNode.");
     }
   }
 
@@ -138,7 +161,15 @@ public class PrerenderVisitorTest {
    * @throws Exception If there's an error.
    */
   private String prerender(String input) throws Exception {
-    ParseResult result = SoyFileSetParserBuilder.forTemplateContents(input).parse();
+    ExperimentalFeatures experimentalFeatures =
+        testDescription.getAnnotation(ExperimentalFeatures.class);
+    ParseResult result =
+        SoyFileSetParserBuilder.forTemplateContents(input)
+            .enableExperimentalFeatures(
+                experimentalFeatures == null
+                    ? ImmutableList.of()
+                    : ImmutableList.copyOf(experimentalFeatures.value()))
+            .parse();
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =

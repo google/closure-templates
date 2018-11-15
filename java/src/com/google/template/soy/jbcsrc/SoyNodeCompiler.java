@@ -85,6 +85,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -747,6 +748,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return MethodRef.RUNTIME_DEBUGGER.invokeVoid(
         constant(node.getSourceLocation().getFilePath()),
         constant(node.getSourceLocation().getBeginLine()));
+  }
+
+  @Override
+  protected Statement visitKeyNode(KeyNode node) {
+    // Outside of incremental dom, key nodes are a no-op.
+    return Statement.NULL_STATEMENT;
   }
 
   /**

@@ -57,6 +57,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -66,7 +67,10 @@ import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -78,6 +82,17 @@ import org.junit.runners.JUnit4;
 public class RenderVisitorTest {
 
   private static final SoyRecord TEST_DATA;
+
+  private Description testDescription;
+
+  @Rule
+  public final TestWatcher testWatcher =
+      new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          testDescription = description;
+        }
+      };
 
   static {
     SoyList tri = SoyValueConverterUtility.newList(1, 3, 6, 10, 15, 21);
@@ -255,8 +270,14 @@ public class RenderVisitorTest {
       String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle) throws Exception {
 
     ErrorReporter boom = ErrorReporter.exploding();
+    ExperimentalFeatures experimentalFeatures =
+        testDescription.getAnnotation(ExperimentalFeatures.class);
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(templateBody)
+            .enableExperimentalFeatures(
+                experimentalFeatures == null
+                    ? ImmutableList.of()
+                    : ImmutableList.copyOf(experimentalFeatures.value()))
             .errorReporter(boom)
             .parse()
             .fileSet();
@@ -1656,6 +1677,12 @@ public class RenderVisitorTest {
     assertRenderException("{@param boo: string}\n{$boo}\n", "Parameter type mismatch");
     assertRenderException("{@param list1: list<string>}\n{$list1[0]}\n", "Expected value of type");
     assertRenderException("{@inject ijInt: string}\n{$ijInt}\n", "Parameter type mismatch");
+  }
+
+  @Test
+  @ExperimentalFeatures("prop_vars")
+  public void testKeyNodeIsNoOp() throws Exception {
+    assertRender("<div {key 'foo'}></div>", "<div></div>");
   }
 
   private static SoyValue createToStringTestValue() {

@@ -25,6 +25,7 @@ import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -151,6 +152,11 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
 
   @Override
   protected Boolean visitDebuggerNode(DebuggerNode node) {
+    return false;
+  }
+
+  @Override
+  protected Boolean visitKeyNode(KeyNode node) {
     return false;
   }
 

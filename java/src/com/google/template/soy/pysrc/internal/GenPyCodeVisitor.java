@@ -44,6 +44,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -732,6 +733,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     @Override
     protected void visitDebuggerNode(DebuggerNode node) {
       pyCodeBuilder.appendLine("pdb.set_trace()");
+    }
+
+    @Override
+    protected void visitKeyNode(KeyNode node) {
+      // Do nothing. Outside of incremental dom, key nodes are a no-op.
     }
 
     @Override
