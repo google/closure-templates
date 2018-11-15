@@ -48,6 +48,7 @@ import com.google.template.soy.types.VeType;
  * <p>Must run after:
  *
  * <ul>
+ *   <li>VeRewritePass since that rewrites VE syntactic sugar
  *   <li>ResolveTypesPass since we rely on type resolution data
  *   <li>ResolveFunctions pass since we need to validate the use of {@link LoggingFunction}
  *       invocations
@@ -218,21 +219,23 @@ final class VeLogValidationPass extends CompilerFilePass {
     ExprNode veExpr = node.getChild(0);
     ExprNode dataExpr = node.getChild(1);
 
-    if (veExpr.getType().getKind() != Kind.VE) {
-      reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
-    } else if (dataExpr.getType().getKind() != Kind.NULL) {
-      VeType veType = (VeType) veExpr.getType();
-      SoyType dataType = dataExpr.getType();
-      if (!veType.getDataType().isPresent()) {
-        reporter.report(
-            dataExpr.getSourceLocation(),
-            UNEXPECTED_DATA,
-            dataExpr.toSourceString(),
-            veExpr.toSourceString(),
-            veType);
-      } else if (!dataType.equals(veType.getDataType().get())) {
-        reporter.report(
-            dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
+    if (veExpr.getType().getKind() != Kind.ERROR) {
+      if (veExpr.getType().getKind() != Kind.VE) {
+        reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
+      } else if (dataExpr.getType().getKind() != Kind.NULL) {
+        VeType veType = (VeType) veExpr.getType();
+        SoyType dataType = dataExpr.getType();
+        if (!veType.getDataType().isPresent()) {
+          reporter.report(
+              dataExpr.getSourceLocation(),
+              UNEXPECTED_DATA,
+              dataExpr.toSourceString(),
+              veExpr.toSourceString(),
+              veType);
+        } else if (!dataType.equals(veType.getDataType().get())) {
+          reporter.report(
+              dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
+        }
       }
     }
   }

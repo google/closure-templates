@@ -116,6 +116,8 @@ public final class PassManager {
             // Needs to come after any pass that manipulates msg placeholders.
             .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
             .add(new CheckNonEmptyMsgNodesPass(errorReporter))
+            // Run before the RewriteGlobalsPass as is removes some globals.
+            .add(new VeRewritePass())
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             // needs to happen after rewrite globals
             .add(new XidPass(errorReporter))
