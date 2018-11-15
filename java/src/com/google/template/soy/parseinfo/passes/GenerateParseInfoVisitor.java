@@ -816,6 +816,7 @@ public final class GenerateParseInfoVisitor
       case CSS:
       case URI:
       case TRUSTED_RESOURCE_URI:
+      case VE_DATA:
         // continue
     }
   }

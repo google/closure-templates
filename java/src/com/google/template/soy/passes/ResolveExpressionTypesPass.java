@@ -122,6 +122,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.VeDataType;
 import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1266,6 +1267,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         case MAP:
         case PROTO_ENUM:
         case VE:
+        case VE_DATA:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
@@ -1369,6 +1371,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         case PROTO:
         case PROTO_ENUM:
         case VE:
+        case VE_DATA:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
@@ -1445,7 +1448,8 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           node.setType(BoolType.getInstance());
           break;
         case VE_DATA:
-          // TODO(b/71641483): add type information
+          // Arg validation is already handled by the VeLogValidationPass
+          node.setType(VeDataType.getInstance());
           break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:

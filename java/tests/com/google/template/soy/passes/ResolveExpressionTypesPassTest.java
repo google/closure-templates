@@ -842,6 +842,36 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testVeDataLiteral() {
+    SoyTypeRegistry typeRegistry =
+        new SoyTypeRegistry.Builder()
+            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
+            .build();
+
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{assertType('ve_data', ve_data(ve(VeData), example.ExampleExtendable()))}",
+                    "{assertType('ve_data', ve_data(ve(VeNoData), null))}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
+            .enableExperimentalFeatures(ImmutableList.of("dynamic_ve"))
+            .setLoggingConfig(
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(
+                            LoggableElement.newBuilder()
+                                .setId(1)
+                                .setName("VeData")
+                                .setProtoType("example.ExampleExtendable"))
+                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
+                        .build()))
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testErrorMessagesInUnionTypes() {
     assertResolveExpressionTypesFails(
         "Type float does not support bracket access.",

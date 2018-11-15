@@ -453,6 +453,9 @@ public final class JsType {
       case VE:
         // TODO(b/71641483): Implement this once we have ve runtime objects.
         throw new UnsupportedOperationException();
+      case VE_DATA:
+        // TODO(b/71641483): Implement this once we have ve runtime objects.
+        throw new UnsupportedOperationException();
       case ERROR:
         // continue
     }

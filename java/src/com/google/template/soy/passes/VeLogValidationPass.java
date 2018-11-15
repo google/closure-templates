@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -39,9 +40,10 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.VeType;
 
 /**
- * Validates uses of the {@code velog} command.
+ * Validates uses of the {@code velog} command and {@code ve_data} expression.
  *
  * <p>Must run after:
  *
@@ -57,6 +59,11 @@ final class VeLogValidationPass extends CompilerFilePass {
           "Unexpected ''data'' attribute for logging element ''{0}'', there is no configured "
               + "''proto_extension_type'' in the logging configuration for this element. "
               + "Did you forget to configure it?");
+  private static final SoyErrorKind UNEXPECTED_DATA =
+      SoyErrorKind.of(
+          "Unexpected data argument. The data (''{0}'') must match with the VE passed as the "
+              + "first argument (''{1}''). The VE is type ''{2}'' which means there cannot be any "
+              + "data.");
   private static final SoyErrorKind WRONG_TYPE =
       SoyErrorKind.of("Expected an expression of type ''{0}'', instead got ''{1}''.");
   private static final SoyErrorKind LOGONLY_DISALLOWED_IN_MSG =
@@ -95,6 +102,11 @@ final class VeLogValidationPass extends CompilerFilePass {
           validateNodeAgainstConfig(node);
         } else {
           reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
+        }
+      }
+      for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+        if (node.getSoyFunction().equals(BuiltinFunction.VE_DATA)) {
+          validateVeDataFunctionNode(node);
         }
       }
       // We need to validate logging functions.  The rules are
@@ -198,6 +210,29 @@ final class VeLogValidationPass extends CompilerFilePass {
               BoolType.getInstance(),
               type);
         }
+      }
+    }
+  }
+
+  private void validateVeDataFunctionNode(FunctionNode node) {
+    ExprNode veExpr = node.getChild(0);
+    ExprNode dataExpr = node.getChild(1);
+
+    if (veExpr.getType().getKind() != Kind.VE) {
+      reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
+    } else if (dataExpr.getType().getKind() != Kind.NULL) {
+      VeType veType = (VeType) veExpr.getType();
+      SoyType dataType = dataExpr.getType();
+      if (!veType.getDataType().isPresent()) {
+        reporter.report(
+            dataExpr.getSourceLocation(),
+            UNEXPECTED_DATA,
+            dataExpr.toSourceString(),
+            veExpr.toSourceString(),
+            veType);
+      } else if (!dataType.equals(veType.getDataType().get())) {
+        reporter.report(
+            dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
       }
     }
   }

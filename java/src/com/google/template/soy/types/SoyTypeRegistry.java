@@ -102,6 +102,7 @@ public class SoyTypeRegistry {
           .put("uri", UriType.getInstance())
           .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
+          .put("ve_data", VeDataType.getInstance())
           .build();
 
   private static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =

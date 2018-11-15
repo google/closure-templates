@@ -105,6 +105,7 @@ public abstract class SoyType {
     PROTO_ENUM,
     UNION,
     VE,
+    VE_DATA,
     ;
 
     private static final ImmutableSet<Kind> STRING_KINDS =
