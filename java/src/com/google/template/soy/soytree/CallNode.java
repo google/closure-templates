@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -58,6 +57,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   /** The data= expression, or null if the call does not pass data or passes data="all". */
   @Nullable private ExprRootNode dataExpr;
+
+  /** The key= expression, or null if the call does not pass key. */
+  @Nullable private ExprRootNode keyExpr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -106,6 +108,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
             this.dataExpr = new ExprRootNode(dataExpr);
           }
           break;
+        case "key":
+          ExprNode keyExpr = attr.valueAsExpr(reporter);
+          this.keyExpr = new ExprRootNode(keyExpr);
+          break;
         case MessagePlaceholders.PHNAME_ATTR:
           phname =
               MessagePlaceholders.validatePlaceholderName(
@@ -134,6 +140,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     super(orig, copyState);
     this.isPassingAllData = orig.isPassingAllData;
     this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.copy(copyState) : null;
+    this.keyExpr = (orig.keyExpr != null) ? orig.keyExpr.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.escapingDirectives = orig.escapingDirectives;
@@ -215,7 +222,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    return (dataExpr != null) ? ImmutableList.of(dataExpr) : ImmutableList.<ExprRootNode>of();
+    if (dataExpr == null & keyExpr == null) {
+      return ImmutableList.of();
+    } else if (dataExpr != null && keyExpr != null) {
+      return ImmutableList.of(dataExpr, keyExpr);
+    }
+    return (dataExpr != null) ? ImmutableList.of(dataExpr) : ImmutableList.of(keyExpr);
   }
 
   @SuppressWarnings("unchecked")

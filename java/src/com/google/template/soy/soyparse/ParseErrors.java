@@ -218,6 +218,8 @@ final class ParseErrors {
       case SoyFileParserConstants.DATA_ATTR_SQ:
       case SoyFileParserConstants.GENDERS_ATTR_DQ:
       case SoyFileParserConstants.GENDERS_ATTR_SQ:
+      case SoyFileParserConstants.KEY_ATTR_DQ:
+      case SoyFileParserConstants.KEY_ATTR_SQ:
       case SoyFileParserConstants.LOGONLY_ATTR_DQ:
       case SoyFileParserConstants.LOGONLY_ATTR_SQ:
       case SoyFileParserConstants.VARIANT_ATTR_DQ:

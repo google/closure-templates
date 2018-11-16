@@ -137,6 +137,10 @@ public final class CommandTagAttribute {
     return valueLocation;
   }
 
+  public QuoteStyle getQuoteStyle() {
+    return quoteStyle;
+  }
+
   public int valueAsInteger(ErrorReporter errorReporter, int defaultValue) {
     checkState(valueExprList == null);
 

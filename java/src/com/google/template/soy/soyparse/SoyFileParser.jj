@@ -443,6 +443,8 @@ public class SoyFileParser {
       SoyErrorKind.of("@prop declarations are not available for general use.");
   private static final SoyErrorKind KEY_COMMAND_NOT_ALLOWED =
       SoyErrorKind.of("The key command is not available for general use.");
+  private static final SoyErrorKind KEY_ATTR_NOT_ALLOWED =
+      SoyErrorKind.of("Key attributes are not available for general use.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -854,12 +856,14 @@ TOKEN_MGR_DECLS: {
 // SoyFileParser with just the attribute text as input.)
 | < DATA_ATTR_DQ: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
 | < DATA_ATTR_SQ: "data" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
-| < VARIANT_ATTR_DQ: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
-| < VARIANT_ATTR_SQ: "variant" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
 | < GENDERS_ATTR_DQ: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
 | < GENDERS_ATTR_SQ: "genders" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < KEY_ATTR_DQ: "key" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < KEY_ATTR_SQ: "key" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
 | < LOGONLY_ATTR_DQ: "logonly" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
 | < LOGONLY_ATTR_SQ: "logonly" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < VARIANT_ATTR_DQ: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < VARIANT_ATTR_SQ: "variant" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
 }
 
 // exits the attribute value
@@ -1405,15 +1409,25 @@ private CommandTagAttribute Attribute() :
         attrTag = <DATA_ATTR_DQ>
         { attrName = "data"; }
       |
-        attrTag = <VARIANT_ATTR_DQ>
-        { attrName = "variant"; }
-      |
         attrTag = <GENDERS_ATTR_DQ>
         { attrName = "genders"; }
       |
+        attrTag = <KEY_ATTR_DQ>
+        { attrName = "key"; }
+      |
         attrTag = <LOGONLY_ATTR_DQ>
         { attrName = "logonly"; }
+      |
+        attrTag = <VARIANT_ATTR_DQ>
+        { attrName = "variant"; }
       )
+
+      {
+        // TODO(b/114483225): Remove.
+        if (attrName == "key" && !experimentalFeatures.contains("prop_vars")) {
+          errorReporter.report(createSrcLoc(attrTag), KEY_ATTR_NOT_ALLOWED);
+        }
+      }
 
       try {
         // Allow this to be optional to yield a better error message below.  Otherwise we will report
@@ -1432,15 +1446,25 @@ private CommandTagAttribute Attribute() :
         attrTag = <DATA_ATTR_SQ>
         { attrName = "data"; }
       |
-        attrTag = <VARIANT_ATTR_SQ>
-        { attrName = "variant"; }
-      |
         attrTag = <GENDERS_ATTR_SQ>
         { attrName = "genders"; }
       |
+        attrTag = <KEY_ATTR_SQ>
+        { attrName = "key"; }
+      |
         attrTag = <LOGONLY_ATTR_SQ>
         { attrName = "logonly"; }
+      |
+        attrTag = <VARIANT_ATTR_SQ>
+        { attrName = "variant"; }
       )
+
+      {
+        // TODO(b/114483225): Remove.
+        if (attrName == "key" && !experimentalFeatures.contains("prop_vars")) {
+          errorReporter.report(createSrcLoc(attrTag), KEY_ATTR_NOT_ALLOWED);
+        }
+      }
 
       try {
         // Allow this to be optional to yield a better error message below.  Otherwise we will report

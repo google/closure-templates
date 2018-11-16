@@ -80,6 +80,7 @@ public final class CallBasicNode extends CallNode {
 
       switch (name) {
         case "data":
+        case "key":
         case MessagePlaceholders.PHNAME_ATTR:
         case MessagePlaceholders.PHEX_ATTR:
           // Parsed in CallNode.
