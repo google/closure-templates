@@ -19,9 +19,11 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
@@ -36,6 +38,9 @@ final class KeyCommandPass extends CompilerFilePass {
           "The `key` command must be directly nested within an HTML open tag "
               + "(e.g. `<div '{'key 'foo''}'></div>`).");
 
+  private static final SoyErrorKind DUPLICATE_KEY_ATTR =
+      SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
+
   private final ErrorReporter errorReporter;
 
   KeyCommandPass(ErrorReporter errorReporter) {
@@ -46,12 +51,27 @@ final class KeyCommandPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (KeyNode node : SoyTreeUtils.getAllNodesOfType(file, KeyNode.class)) {
       checkNodeIsOpenTagNodeChild(node);
+      checkNoDuplicateKeyAttribute(node);
     }
   }
 
   private void checkNodeIsOpenTagNodeChild(KeyNode node) {
     if (!(node.getParent() instanceof HtmlOpenTagNode)) {
       errorReporter.report(node.getSourceLocation(), KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG);
+    }
+  }
+
+  //  TODO(b/119309461): Remove after migration is complete.
+  private void checkNoDuplicateKeyAttribute(KeyNode node) {
+    SoyNode parentNode = node.getParent();
+    if (!(parentNode instanceof HtmlOpenTagNode)) {
+      // Error thrown before this.
+      return;
+    }
+
+    HtmlAttributeNode keyAttrNode = ((HtmlOpenTagNode) parentNode).getDirectAttributeNamed("key");
+    if (keyAttrNode != null) {
+      errorReporter.report(keyAttrNode.getSourceLocation(), DUPLICATE_KEY_ATTR);
     }
   }
 }
