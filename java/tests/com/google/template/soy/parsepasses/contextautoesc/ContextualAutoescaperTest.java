@@ -110,37 +110,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testRecontextualizeCall() throws Exception {
-    // a template with a call to another template in attribute value context
-    String template =
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "<a href={call .uri data=\"all\" /}>\n",
-            "{/template}\n",
-            "{template .uri autoescape=\"deprecated-contextual\"}\n",
-            "  {@param foo: ?}\n",
-            "'{$foo}'\n",
-            "{/template}");
-
-    // This works in the old autoescaper but fails in the new one
-    // The reason is that the new escaper believes we are about to render an unquoted attribute
-    // containing a uri.  So when it sees the quotation marks it barfs because they aren't part
-    // of a known safe scheme
-    // The old autoescaper allowed this because it delayed deciding on the quoting for the attribute
-    // until later.
-    assertRewriteFails(
-        "Error while re-contextualizing template ns.uri "
-            + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
-            + "- In file no-path:8:2, template ns.uri__C: Soy can't prove this URI has a "
-            + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
-            + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
-            + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
-            + "instead of href=\"foo{$bar}\").",
-        template);
-  }
-
-  @Test
   public void testHtmlHtmlAttributePosition() throws Exception {
     assertRewriteFails(
         "HTML attribute values containing HTML can use dynamic expressions only at the start "
@@ -759,128 +728,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testSameTemplateCalledInDifferentContexts() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "{call .bar data=\"all\" /}",
-            "<script>",
-            "alert('{call ns.bar__C data=\"all\" /}');",
-            "</script>\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "Hello, {$world |escapeHtml}!\n",
-            "{/template}\n\n",
-            "{template .bar__C autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "Hello, {$world |escapeJsString}!\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "  {call .bar data=\"all\" /}\n",
-            "  <script>\n",
-            "  alert('{call .bar data=\"all\" /}');\n",
-            "  </script>\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-contextual\"}\n",
-            "  {@param world: ?}\n",
-            "  Hello, {$world}!\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testRecursiveTemplateGuessWorks() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "<script>",
-            "x = [{call ns.countDown__C data=\"all\" /}]",
-            "</script>\n",
-            "{/template}\n\n",
-            "{template .countDown autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "{if $x > 0}",
-            "{print --$x |escapeHtml},",
-            "{call .countDown}{param x : $x - 1 /}{/call}",
-            "{/if}\n",
-            "{/template}\n\n",
-            "{template .countDown__C autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "{if $x > 0}",
-            "{print --$x |escapeJsValue},",
-            "{call ns.countDown__C}{param x : $x - 1 /}{/call}",
-            "{/if}\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "  <script>\n",
-            "    x = [{call .countDown data=\"all\" /}]\n",
-            "  </script>\n",
-            "{/template}\n\n",
-            "{template .countDown autoescape=\"deprecated-contextual\"}\n",
-            "  {@param x: ?}\n",
-            "  {if $x > 0}{print --$x},{call .countDown}{param x : $x - 1 /}{/call}{/if}\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testTemplateWithUnknownJsSlash() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param declare: ?}\n",
-            "<script>",
-            "{if $declare}var {/if}",
-            "x = {call ns.bar__C /}{\\n}",
-            "y = 2",
-            "  </script>\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? declare: ?}\n",
-            "42",
-            "{if $declare}",
-            " , ",
-            "{/if}\n",
-            "{/template}\n\n",
-            "{template .bar__C autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? declare: ?}\n",
-            "42",
-            "{if $declare}",
-            " , ",
-            "{/if}\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param declare: ?}\n",
-            "  <script>\n",
-            "    {if $declare}var{sp}{/if}\n",
-            "    x = {call .bar /}{\\n}\n",
-            // At this point we don't know whether or not a slash would start
-            // a RegExp or not, but we don't see a slash so it doesn't matter.
-            "    y = 2",
-            "  </script>\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? declare: ?}\n",
-            // A slash following 42 would be a division operator.
-            "  42\n",
-            // But a slash following a comma would be a RegExp.
-            "  {if $declare} , {/if}\n", //
-            "{/template}"));
-  }
-
-  @Test
   public void testTemplateUnknownJsSlashMatters() throws Exception {
     assertRewriteFails(
         "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
@@ -892,19 +739,13 @@ public final class ContextualAutoescaperTest {
             "  {@param? declare : ?}\n",
             "  <script>\n",
             "    {if $declare}var{sp}{/if}\n",
-            "    x = {call .bar /}\n",
+            "    x = 42\n",
+            "        {if $declare} ,{/if}\n",
             // At this point we don't know whether or not a slash would start
             // a RegExp or not, so this constitutes an error.
             "    / 2",
             "  </script>\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-contextual\"}\n",
-            "  {@param? declare : ?}\n",
-            // A slash following 42 would be a division operator.
-            "  42\n",
-            // But a slash following a comma would be a RegExp.
-            "  {if $declare} , {/if}\n", //
-            "{/template}"));
+            "{/template}\n"));
   }
 
   @Test
@@ -1121,27 +962,6 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "<a href=\"javascript:hardcoded()\">Test</a>\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testRecursiveTemplateGuessFails() throws Exception {
-    assertRewriteFails(
-        "Error while re-contextualizing template ns.quot in"
-            + " context (Context JS REGEX):"
-            + "\n- In file no-path:10:27, template ns.quot__C: Error while re-contextualizing"
-            + " template ns.quot in context (Context JS_DQ_STRING):"
-            + "\n- In file no-path:10:5, template ns.quot__C: {if} command without {else} changes"
-            + " context.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  <script>\n",
-            "    {call .quot data=\"all\" /}\n",
-            "  </script>\n",
-            "{/template}\n\n",
-            "{template .quot autoescape=\"deprecated-contextual\"}\n",
-            "  \" {if randomInt(10) < 5}{call .quot data=\"all\" /}{/if}\n",
             "{/template}"));
   }
 

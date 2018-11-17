@@ -26,25 +26,15 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
-import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -228,107 +218,6 @@ final class Inferences {
   @Nullable
   public String getDerivedCalleeNameForCall(CallNode callNode) {
     return callNodeToDerivedCalleeName.get(callNode);
-  }
-
-  /**
-   * Clones a template, changing the name.
-   *
-   * @return A copy of tn, differing semantically only in name and auto-generated IDs. The new
-   *     templates will be available via {@link #lookupTemplates} with the given name.
-   */
-  public List<TemplateNode> cloneTemplates(String baseName, String derivedName, CallNode callNode) {
-    if (!lookupTemplates(derivedName).isEmpty()) {
-      throw new AssertionError(
-          derivedName + " already has templates: " + lookupTemplates(derivedName));
-    }
-
-    ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
-
-    for (TemplateNode tn : lookupTemplates(baseName)) {
-      if (SoyTreeUtils.hasHtmlNodes(tn)) {
-        throw SoyAutoescapeException.createWithNode(
-            "Non-strict template '"
-                + baseName
-                + "' contains HTML nodes but does not specify the kind. "
-                + "This is no longer allowed, please migrate the template to strict and "
-                + "specify a content kind by adding a kind attribute",
-            callNode);
-      }
-      SoyFileHeaderInfo soyFileHeaderInfo = tn.getSoyFileHeaderInfo();
-
-      // We trivially clone the template with new ids, this ensures that all the varrefs have proper
-      // vardefns assigned.  Then we manually recopy to a new template in order to modify the name.
-      // TODO(lukes): we should add direct support for swapping template names to TemplateNode
-      // or just eliminate usecases for this method.
-      TemplateNode trivialClonedTemplate = SoyTreeUtils.cloneWithNewIds(tn, idGen);
-      int cloneId = trivialClonedTemplate.getId();
-
-      // We need to use the unnamespaced name in the command text since we'll be inserting this
-      // template into a file node that already has a namespace declaration.
-      TemplateNode clone;
-
-      if (tn instanceof TemplateBasicNode) {
-        String derivedPartialName =
-            (tn.getPartialTemplateName() != null)
-                ? derivedName.substring(soyFileHeaderInfo.namespace.length())
-                : null;
-        clone =
-            new TemplateBasicNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
-                .setId(cloneId)
-                .setSourceLocation(tn.getSourceLocation())
-                .setCmdTextInfo(
-                    derivedName,
-                    derivedPartialName,
-                    tn.getVisibility(),
-                    tn.getAutoescapeMode(),
-                    tn.getContentKind(),
-                    tn.getRequiredCssNamespaces())
-                .addParams(trivialClonedTemplate.getAllParams())
-                .build();
-
-        if (!(derivedName.equals(clone.getTemplateName())
-            && Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
-          throw new AssertionError();
-        }
-
-      } else if (tn instanceof TemplateDelegateNode) {
-        TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
-        clone =
-            new TemplateDelegateNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
-                .setId(cloneId)
-                .setSourceLocation(tn.getSourceLocation())
-                .setCmdTextInfo(
-                    derivedName,
-                    tdn.getDelTemplateVariant(),
-                    tdn.getDelPriority(),
-                    tn.getAutoescapeMode(),
-                    tn.getContentKind(),
-                    tn.getRequiredCssNamespaces())
-                .addParams(trivialClonedTemplate.getAllParams())
-                .build();
-        if (!derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName())) {
-          throw new AssertionError();
-        }
-
-      } else {
-        throw new AssertionError("Unknown template node type: " + tn.getClass());
-      }
-      clone.addChildren(trivialClonedTemplate.getChildren());
-
-      // Reassign all the local variable data which isn't maintained by the cloning process above.
-      clone.setMaxLocalVariableTableSize(tn.getMaxLocalVariableTableSize());
-      Iterator<TemplateParam> tnIterator = tn.getAllParams().iterator();
-      Iterator<TemplateParam> cloneIterator = clone.getAllParams().iterator();
-      while (tnIterator.hasNext()) {
-        cloneIterator.next().setLocalVariableIndex(tnIterator.next().localVariableIndex());
-      }
-
-      b.add(clone);
-    }
-
-    ImmutableList<TemplateNode> clones = b.build();
-    templatesByName.putAll(derivedName, clones);
-    return clones;
   }
 
   /**

@@ -21,8 +21,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -88,19 +86,6 @@ import java.util.List;
  *
  */
 final class InferenceEngine {
-  // States in which it is illegal to recontextualize a template.
-  // This is because the autoescaper relies on AST nodes produced by the parser for
-  // kind="attributes" and kind="html" templates.  So if we recontextualize a template into an
-  // analagous state escaping will fail since the html nodes will not be present.
-  private static final ImmutableSet<HtmlContext> ILLEGAL_RECONTEXTUALIZATIONS =
-      Sets.immutableEnumSet(
-          HtmlContext.HTML_TAG,
-          HtmlContext.HTML_TAG_NAME,
-          HtmlContext.HTML_PCDATA,
-          HtmlContext.HTML_COMMENT,
-          HtmlContext.HTML_ATTRIBUTE_NAME,
-          HtmlContext.HTML_BEFORE_OPEN_TAG_NAME,
-          HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
 
   /**
    * Infer an end context for the given template and, if requested, choose escaping directives for
@@ -620,7 +605,6 @@ final class InferenceEngine {
       inferences.recordTemplateChecked(templateName);
       List<TemplateNode> targets = inferences.lookupTemplates(templateName);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
-
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.
         if (calleeStrictContentKind != null
@@ -645,6 +629,7 @@ final class InferenceEngine {
           return DerivedNameAndContext.create(
               templateName, startContext.getContextAfterDynamicValue());
         } else if (startContext.state == HtmlContext.TEXT) {
+          // TODO(b/80336719): delete this case
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
           // since TEXT doesn't make any safety guarantees.
           return contextualizeCallee(callNode, startContext, templateName, inferences);
@@ -683,6 +668,8 @@ final class InferenceEngine {
           }
           return DerivedNameAndContext.create(templateName, startContext);
         } else {
+          // TODO(b/80336719): simplify this case and report errors for contextual templates that
+          // have an end context != start context
           // Normal contextual-to-contextual propagation.
           return contextualizeCallee(callNode, startContext, templateName, inferences);
         }
@@ -705,20 +692,15 @@ final class InferenceEngine {
       String baseName = DerivedTemplateUtils.getBaseName(calleeName);
       // The derived template name.
       String newCalleeName = baseName + suffix;
-
-      // Clone the templates for this new context if needed.
       if (inferences.lookupTemplates(newCalleeName).isEmpty()) {
-        if (ILLEGAL_RECONTEXTUALIZATIONS.contains(startContext.state)) {
-          throw SoyAutoescapeException.createWithNode(
-              "Attempting to call non-strict template '"
-                  + baseName
-                  + "' in context '"
-                  + startContext.state
-                  + "'.  This is no longer allowed, please migrate the callee to strict and "
-                  + "specify a content kind by adding a kind attribute to the callee",
-              callNode);
-        }
-        inferences.cloneTemplates(baseName, newCalleeName, callNode);
+        throw SoyAutoescapeException.createWithNode(
+            "Attempting to call non-strict template '"
+                + baseName
+                + "' in context '"
+                + startContext.state
+                + "'. This is no longer supported."
+                + " Please migrate to strict autoescaping.",
+            callNode);
       }
 
       try {

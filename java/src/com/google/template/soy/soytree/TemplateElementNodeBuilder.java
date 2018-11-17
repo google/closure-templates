@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -37,7 +36,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * Builder for TemplateElementNode.
@@ -88,43 +86,6 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
     setTemplateNames(
         soyFileHeaderInfo.namespace + templateName.identifier(),
         templateName.identifier());
-    return this;
-  }
-
-  /**
-   * Alternative to {@code setCmdText()} that sets command text info directly as opposed to having
-   * it parsed from the command text string. The cmdText field will be set to a canonical string
-   * generated from the given info.
-   *
-   * @param templateName This template's name.
-   * @param partialTemplateName This template's partial name. Only applicable for V2; null for V1.
-   * @param requiredCssNamespaces CSS namespaces required to render the template.
-   * @return This builder.
-   */
-  public TemplateElementNodeBuilder setCmdTextInfo(
-      String templateName,
-      @Nullable String partialTemplateName,
-      ImmutableList<String> requiredCssNamespaces) {
-
-    Preconditions.checkState(this.sourceLocation != null);
-    Preconditions.checkState(this.cmdText == null);
-    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(templateName));
-    Preconditions.checkArgument(
-        partialTemplateName == null || BaseUtils.isIdentifierWithLeadingDot(partialTemplateName));
-
-    setTemplateNames(templateName, partialTemplateName);
-    setRequiredCssNamespaces(requiredCssNamespaces);
-
-    StringBuilder cmdTextBuilder = new StringBuilder();
-    cmdTextBuilder.append((partialTemplateName != null) ? partialTemplateName : templateName);
-    if (!requiredCssNamespaces.isEmpty()) {
-      cmdTextBuilder
-          .append(" requirecss=\"")
-          .append(Joiner.on(", ").join(requiredCssNamespaces))
-          .append("\"");
-    }
-    this.cmdText = cmdTextBuilder.toString();
-
     return this;
   }
 
