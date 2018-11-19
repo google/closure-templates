@@ -53,12 +53,12 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
@@ -72,16 +72,14 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -122,21 +120,23 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateElementNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.types.ErrorType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.ErrorType;
-import com.google.template.soy.types.NullType;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -401,7 +401,7 @@ import javax.annotation.Nullable;
  *
  *    11. Function:
  *       + Function name, open parenthesis, optional expression list, close parenthesis.
- *       + The function name is one or more identifiers, seperated by dots.
+ *       + The function name is one or more identifiers, separated by dots.
  *       + See above for the definition of an expression list.
  *       Examples:   foo()   isFirst($item)   my.new.Proto(a: 'str', b: $foo)
  *
@@ -422,13 +422,9 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid callee name ''{0}''.");
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
       SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
-  private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
-      SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
-  private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND =
-      SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
   private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
@@ -437,8 +433,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid number in ''plural case'' command text.");
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
-  private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
-      SoyErrorKind.of("Found ''print'' command with empty command text.");
   private static final SoyErrorKind PROP_VARS_NOT_ALLOWED =
       SoyErrorKind.of("@prop declarations are not available for general use.");
   private static final SoyErrorKind KEY_COMMAND_NOT_ALLOWED =
@@ -463,8 +457,6 @@ public class SoyFileParser {
           "Soy integers are constrained to the range of JavaScript integers: "
               + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind INVALID_FUNCTION_NAME =
-      SoyErrorKind.of("Invalid function name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAME =
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind INVALID_VAR_NAME_IJ =
@@ -632,16 +624,12 @@ public class SoyFileParser {
     return soyFileNode;
   }
 
-  String getFilePath() {
-    return filePath;
-  }
-
   /**
    * Reports the error and skips to the given token.
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
-  private Token reportFileErrorAndSkipTo(ParseException error, int skipTo) {
+  private void reportFileErrorAndSkipTo(ParseException error, int skipTo) {
     ParseErrors.reportSoyFileParseException(
         errorReporter, filePath, error, token_source.curLexState);
     Token t;
@@ -650,7 +638,6 @@ public class SoyFileParser {
     // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
     } while (t.kind != skipTo && t.kind != EOF);
-    return t;
   }
 
   /**
@@ -691,14 +678,9 @@ public class SoyFileParser {
     return VarRefNode.error(createSrcLoc(tok1, rest));
   }
 
-  /** Create an error ExprNode at the given source location. */
-  private VarRefNode errorExpr(SourceLocation location) {
-    return VarRefNode.error(location);
-  }
-
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
-  static final class AbortParsingError extends Error {}
+  private static final class AbortParsingError extends Error {}
 }
 
 PARSER_END(SoyFileParser)
@@ -1287,14 +1269,13 @@ private AliasDeclaration Alias() :
 {
   Token open, close;
   Identifier namespace, alias = null;
-  Token as = null;
 }
 {
   (
     open = <ALIAS_OPEN>
     namespace = Identifier()
     [
-      as = Keyword("as")
+      Keyword("as")
       alias = Identifier()
     ]
     close = <CMD_END>
@@ -1437,7 +1418,7 @@ private CommandTagAttribute Attribute() :
         ]
         qToken = <END_DQ_EXPR_ATTR>
       } catch (ParseException e) {
-        exprList = ImmutableList.<ExprNode>of(errorExpr(e.currentToken));
+        exprList = ImmutableList.of(errorExpr(e.currentToken));
         qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
       }
     |
@@ -1474,14 +1455,14 @@ private CommandTagAttribute Attribute() :
         ]
         qToken = <END_SQ_EXPR_ATTR>
       } catch (ParseException e) {
-        exprList = ImmutableList.<ExprNode>of(errorExpr(e.currentToken));
+        exprList = ImmutableList.of(errorExpr(e.currentToken));
         qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
       }
     )
     {
       if (exprList.isEmpty()) {
         errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "an expression");
-        exprList = ImmutableList.<ExprNode>of(errorExpr(qToken));
+        exprList = ImmutableList.of(errorExpr(qToken));
       }
       return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), quoteStyle, exprList);
     }
@@ -1960,11 +1941,9 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
  */
 private HeaderParam ParamDecl(@Nullable String desc) :
 {
-  Token ws, tagBegin, name, tagEnd;
+  Token tagBegin, name;
   TypeNode paramTypeNode = null;
   SoyType paramType = ErrorType.getInstance();
-  String cmdText;
-  Token blockDocComment;
   boolean optional = false;
   boolean inject = false;
 }
@@ -1989,9 +1968,9 @@ private HeaderParam ParamDecl(@Nullable String desc) :
   try {
     paramTypeNode = TypeExpr()
     { paramType = typeNodeConverter.getOrCreateType(paramTypeNode); }
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException parseException) {
-    tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
 
   {
@@ -2021,7 +2000,7 @@ private HeaderParam ParamDecl(@Nullable String desc) :
  */
 private TemplatePropVar PropVarDecl(@Nullable String desc) :
 {
-  Token propVarBegin, name, propVarEnd;
+  Token propVarBegin, name;
   TypeNode propVarTypeNode = null;
   SoyType propVarType = null;
   ExprNode value = null;
@@ -2045,9 +2024,9 @@ private TemplatePropVar PropVarDecl(@Nullable String desc) :
       <CMD_COLON_EQ>
       value = Expr()
     )
-    propVarEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException parseException) {
-    propVarEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
     return null;
   }
   {
@@ -2538,7 +2517,6 @@ private PrintNode PrintStmt() :
 {
   Token tagBegin;
   Token tagEnd;
-  Token directive;
   boolean isImplicit;
   ExprNode expr = null;
   List<PrintDirectiveNode> directives = ImmutableList.of();
@@ -2886,8 +2864,6 @@ private VeLogNode VeLogStmt() :
 {
   Identifier name = null;
   Token tagBegin, tagEnd;
-  ExprNode protoExpr = null;
-  ExprNode logonlyExpr = null;
   List<CommandTagAttribute> attributes = null;
   List<StandaloneNode> templateBlock;
 }
@@ -3001,7 +2977,7 @@ private SwitchNode SwitchStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagEnd, in, ifemptyTag, nameTok;
+  Token tagBegin, tagEnd, ifemptyTag, nameTok;
   ExprNode expr = null;
   String name = null;
   SourceLocation nameLocation = null;
@@ -3015,7 +2991,7 @@ private ForNode ForStmt() :
         name = nameTok.image;
         nameLocation = createSrcLoc(nameTok);
     }
-    in = Keyword("in")
+    Keyword("in")
     expr = Expr()
 
     tagEnd = <CMD_END>
@@ -3094,7 +3070,7 @@ private LogNode ForeachStmt() : {
  */
 private CallNode CallStmt() :
 {
-  Token tagBegin, tagEnd, callClose;
+  Token tagBegin, tagEnd;
   Identifier calleeName = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -3400,7 +3376,7 @@ private ExprNode Expr() :
 private ExprNode PrecExpr1() :
 {
   ExprNode expr1, expr2;
-  Token op, op2;
+  Token op;
 }
 {
   { ExprNode expr; }
@@ -3957,7 +3933,7 @@ private ExprNode GlobalOrFunctionCallLike() :
 private ExprNode MapLiteral(Identifier ident) :
 {
   ExprNode key, val;
-  Token closeParen = null;
+  Token closeParen;
   ImmutableMap.Builder<ExprNode, ExprNode> kvPairs = ImmutableMap.builder();
 }
 {
@@ -3991,8 +3967,8 @@ private ExprNode MapLiteral(Identifier ident) :
 /** Parses a VE literal: {@code ve(VeName)} */
 private ExprNode VeLiteral(Identifier ident) :
 {
-  Identifier name = null;
-  Token closeParen = null;
+  Identifier name;
+  Token closeParen;
 }
 {
   name = Identifier()
@@ -4056,7 +4032,7 @@ private ExprNode ListLiteral() :
  */
 private PrimitiveNode Primitive() :
 {
-  Token tok, quote;
+  Token tok;
   PrimitiveNode primitive;
 }
 {
@@ -4199,8 +4175,8 @@ private Token Keyword(String keyword) :
  */
 private TypeNode TypeExpr() :
 {
-  TypeNode first = null;
-  TypeNode next = null;
+  TypeNode first;
+  TypeNode next;
   // lazily allocate the list since most of the time this isn't actually a Union
   List<TypeNode> members = null;
 }
@@ -4317,15 +4293,12 @@ private TypeNode NullType() : {
  */
 private TypeNode NamedType() :
 {
-  Token first, open, close;
+  Token open, close;
   Identifier identifier;
-  Token next = null;
-  String ident;
   SourceLocation fullLocation;
 
   TypeNode arg;
   List<TypeNode> genericArgs = ImmutableList.of();
-  StringBuilder sb = null;
 }
 {
 
