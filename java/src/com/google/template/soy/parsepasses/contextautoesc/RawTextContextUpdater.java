@@ -505,7 +505,13 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile(".+")) {
         final Pattern baseUrlPattern =
             Pattern.compile(
-                "^(?:https:)?//[0-9a-z.:\\[\\]-]+/|^/[^/\\\\]", Pattern.CASE_INSENSITIVE);
+                "^((https:)?//[0-9a-z.:\\[\\]-]+/" // Origin.
+                    + "|/[^/\\\\]" // Absolute path.
+                    + "|[^:/\\\\]+/" // Relative path.
+                    + "|[^:/\\\\]*[?#]" // Query string or fragment.
+                    + "|about:blank#" // about:blank with fragment.
+                    + ")",
+                Pattern.CASE_INSENSITIVE);
 
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
@@ -520,7 +526,7 @@ final class RawTextContextUpdater {
               // Most of the work is here.  We expect the match to be one of the following forms:
               // - https://foo/  NOTYPO
               // - //foo/
-              // - /<pathStart>
+              // - Absolute or relative path.
               // This emulates the behavior of goog.html.TrustedResourceUrl.format
               // NOTE: In all cases we require that the fixed portion of the URL ends in path
               // context.

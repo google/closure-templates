@@ -324,6 +324,8 @@ public final class RawTextContextUpdaterTest {
     assertTransition(
         "URI START TRUSTED_RESOURCE", "//[::1]/", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
     assertTransition(
+        "URI START TRUSTED_RESOURCE", "/", "URI TRUSTED_RESOURCE_URI_END TRUSTED_RESOURCE");
+    assertTransition(
         "URI START TRUSTED_RESOURCE", "foo", "URI TRUSTED_RESOURCE_URI_END TRUSTED_RESOURCE");
     assertTransition(
         "URI START TRUSTED_RESOURCE", "/bar", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
@@ -342,6 +344,19 @@ public final class RawTextContextUpdaterTest {
         "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE",
         "/bar/baz/#?foo",
         "URI FRAGMENT TRUSTED_RESOURCE");
+
+    // Relative URLs.
+    assertTransition("URI START TRUSTED_RESOURCE", "a/", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "a/b", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "../", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition(
+        "URI START TRUSTED_RESOURCE", "../a", "URI AUTHORITY_OR_PATH TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "?a", "URI QUERY TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "path?a", "URI QUERY TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "path/?a", "URI QUERY TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "#a", "URI FRAGMENT TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "path#a", "URI FRAGMENT TRUSTED_RESOURCE");
+    assertTransition("URI START TRUSTED_RESOURCE", "path/#a", "URI FRAGMENT TRUSTED_RESOURCE");
   }
 
   @Test
