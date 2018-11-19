@@ -16,11 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.StringData;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -46,33 +41,14 @@ public abstract class SoyData extends SoyAbstractValue {
    */
   @Deprecated
   public static SoyData createFromExistingData(Object obj) {
-
-    // Important: This is frozen for backwards compatibility, For future changes (pun not intended),
-    // use SoyValueConverter, which works with the new interfaces SoyValue and SoyValueProvider.
-
-    if (obj == null) {
-      return NullData.INSTANCE;
-    } else if (obj instanceof SoyData) {
+    if (obj instanceof SoyData) {
       return (SoyData) obj;
-    } else if (obj instanceof String) {
-      return StringData.forValue((String) obj);
-    } else if (obj instanceof Boolean) {
-      return BooleanData.forValue((Boolean) obj);
-    } else if (obj instanceof Integer) {
-      return IntegerData.forValue((Integer) obj);
-    } else if (obj instanceof Long) {
-      return IntegerData.forValue((Long) obj);
     } else if (obj instanceof Map<?, ?>) {
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
       return new SoyMapData(objCast);
     } else if (obj instanceof Iterable<?>) {
       return new SoyListData((Iterable<?>) obj);
-    } else if (obj instanceof Double) {
-      return FloatData.forValue((Double) obj);
-    } else if (obj instanceof Float) {
-      // Automatically convert float to double.
-      return FloatData.forValue((Float) obj);
     } else if (obj instanceof Future<?>) {
       // Note: In the old SoyData, we don't support late-resolution of Futures. We immediately
       // resolve the Future object here. For late-resolution, use SoyValueConverter.convert().
@@ -86,6 +62,10 @@ public abstract class SoyData extends SoyAbstractValue {
             "Encountered ExecutionException when resolving Future object.", e);
       }
     } else {
+      SoyValue soyValue = SoyValueConverter.INSTANCE.convert(obj).resolve();
+      if (soyValue instanceof SoyData) {
+        return (SoyData) soyValue;
+      }
       throw new SoyDataException(
           "Attempting to convert unrecognized object to Soy data (object type "
               + obj.getClass().getName()
