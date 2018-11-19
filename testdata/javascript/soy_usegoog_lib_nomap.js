@@ -7917,6 +7917,21 @@ goog.string.editDistance = function(a, b) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
+ * should not be used outside of goog.labs.userAgent.*.
+ *
+ * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__subpackages__}
+ * @visibility {//javascript/closure/style:__pkg__}
+ * @visibility {//javascript/closure/testing:__pkg__}
+ * @visibility {//javascript/closure/useragent:__subpackages__}
+ * @visibility {//testing/puppet/modules:__pkg__}
+ * @visibility {:util_legacy_users}
+ *
+ * @author nnaze@google.com (Nathan Naze)
+ */
 
 goog.provide('goog.labs.userAgent.util');
 
@@ -8870,7 +8885,8 @@ goog.labs.userAgent.browser.matchEdge_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchFirefox_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Firefox');
+  return goog.labs.userAgent.util.matchUserAgent('Firefox') ||
+      goog.labs.userAgent.util.matchUserAgent('FxiOS');
 };
 
 
@@ -8884,6 +8900,7 @@ goog.labs.userAgent.browser.matchSafari_ = function() {
         goog.labs.userAgent.browser.matchCoast_() ||
         goog.labs.userAgent.browser.matchOpera_() ||
         goog.labs.userAgent.browser.matchEdge_() ||
+        goog.labs.userAgent.browser.matchFirefox_() ||
         goog.labs.userAgent.browser.isSilk() ||
         goog.labs.userAgent.util.matchUserAgent('Android'));
 };
@@ -8911,6 +8928,7 @@ goog.labs.userAgent.browser.matchIosWebview_ = function() {
       !goog.labs.userAgent.browser.matchSafari_() &&
       !goog.labs.userAgent.browser.matchChrome_() &&
       !goog.labs.userAgent.browser.matchCoast_() &&
+      !goog.labs.userAgent.browser.matchFirefox_() &&
       goog.labs.userAgent.util.matchUserAgent('AppleWebKit');
 };
 
