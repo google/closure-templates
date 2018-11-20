@@ -55,6 +55,15 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     return selfClosing;
   }
 
+  public KeyNode getKeyNode() {
+    for (SoyNode child : getChildren()) {
+      if (child instanceof KeyNode) {
+        return ((KeyNode) child);
+      }
+    }
+    return null;
+  }
+
   @Override
   public HtmlOpenTagNode copy(CopyState copyState) {
     return new HtmlOpenTagNode(this, copyState);
