@@ -878,8 +878,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (consumeWhitespace()) {
         // if we consumed whitespace, return and keep going.
         // we don't necessarily expect whitespace, but it is ok if there is extra whitespace here
-        // this can happen in the case of kind="attributes" blocks which start in this state, or
-        // if raw text nodes are split strangely.
+        // this can happen:
+        // in the case of kind="attributes" blocks which start in this state, or
+        // if raw text nodes are split strangely or
+        // we reported an error on an earlier character
         // We have to return in case we hit the end of the raw text.
         return;
       }
@@ -887,6 +889,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (identifier == null) {
         // consumeHtmlIdentifier will have already reported an error
         context.resetAttribute();
+        // resetAtttribute doesn't change our state, and we need to either advance
+        // state or advance a character to not go into an infinite loop.  So we just advance a
+        // single character. This may cause spammy errors.
+        advance();
         return;
       } else {
         validateIdentifier(identifier, ATTRIBUTE_NAME, BAD_ATTRIBUTE_NAME);
