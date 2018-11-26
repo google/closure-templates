@@ -684,9 +684,8 @@ final class RawTextContextUpdater {
                               + "|cursor|list-style|list-style-image)"
                               + "\\s*:\\s*url\\s*\\(\\s*(['\"]?)"),
                       UriType.MEDIA),
-                  makeCssUriTransition(
-                      Pattern.compile("@import\\b(?:\\s+url\\s*\\()?\\s*(['\"]?)"),
-                      UriType.TRUSTED_RESOURCE),
+                  // TODO(gboyer): We should treat @import, @font-face src, etc as trusted
+                  // resources, once trusted URLs are implemented.
                   makeCssUriTransition(
                       Pattern.compile("(?i)\\burl\\s*\\(\\s*(['\"]?)"), UriType.NORMAL),
                   TRANSITION_TO_SELF))
@@ -718,6 +717,8 @@ final class RawTextContextUpdater {
                   makeTransitionToState(Pattern.compile("[\\)\\s]"), HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
                   TRUSTED_RESOURCE_URI_PART_TRANSITION,
                   makeTransitionToError(
                       Pattern.compile("[\"']"), "Quotes not permitted in CSS URIs.")))
@@ -727,6 +728,8 @@ final class RawTextContextUpdater {
                   makeTransitionToStateLiteral("'", HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
                   TRUSTED_RESOURCE_URI_PART_TRANSITION,
                   makeTransitionToSelf(
                       Pattern.compile("\\\\(?:\r\n?|[\n\f'])")), // Line continuation or escape.
@@ -738,6 +741,8 @@ final class RawTextContextUpdater {
                   makeTransitionToStateLiteral("\"", HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
+                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
+                  // this is here for consistency
                   TRUSTED_RESOURCE_URI_PART_TRANSITION,
                   makeTransitionToSelf(
                       Pattern.compile("\\\\(?:\r\n?|[\n\f\"])")), // Line continuation or escape.

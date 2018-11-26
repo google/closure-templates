@@ -135,12 +135,6 @@ public final class RawTextContextUpdaterTest {
     assertTransition("CSS", "not-background:url(/search?q=", "CSS_URI QUERY NORMAL");
     assertTransition("CSS", "{foo;not-background:url(/search?q=", "CSS_URI QUERY NORMAL");
     assertTransition("CSS", "{list-style-zmage:url(/search?q=", "CSS_URI QUERY NORMAL");
-
-    assertTransition("CSS", "@import url(", "CSS_URI START TRUSTED_RESOURCE");
-    assertTransition("CSS", "@import url('", "CSS_SQ_URI START TRUSTED_RESOURCE");
-    assertTransition("CSS", "@import url(\"", "CSS_DQ_URI START TRUSTED_RESOURCE");
-    assertTransition("CSS", "@import '", "CSS_SQ_URI START TRUSTED_RESOURCE");
-    assertTransition("CSS", "@import\"", "CSS_DQ_URI START TRUSTED_RESOURCE");
   }
 
   @Test
