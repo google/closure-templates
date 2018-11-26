@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -56,12 +57,15 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 
 /**
  * A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages.
+ *
+ * <p>Note: This pass requires that the {@link SoyConformancePass} has already been run.
  *
  * <p>TODO(b/118396161): Implement this pass, then replace {@link StrictHtmlValidationPass} with
  * this one.
@@ -88,9 +92,9 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
-  private static final SoyErrorKind STATEFUL_TEMPLATE_EXACTLY_ONE_TAG =
+  private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
-          "Stateful templates must contain exactly one top-level HTML element (e.g, span, div).");
+          "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
 
   private final ErrorReporter errorReporter;
 
@@ -107,16 +111,20 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
   private void checkTemplateNode(TemplateNode node) {
     AutoescapeMode autoescapeMode = node.getAutoescapeMode();
-    if (autoescapeMode != AutoescapeMode.STRICT && node.isStrictHtml()) {
-      errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);
-      return;
-    }
+    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
+    // STRICT autoescaping mode. Note that you are allowed to set STRICT autoescaping mode on
+    // a non-strict-HTML node.
+    checkState(
+        autoescapeMode.equals(AutoescapeMode.STRICT) || !node.isStrictHtml(),
+        "Strict HTML template without strict autoescaping.");
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
     SanitizedContentKind contentKind = node.getContentKind();
-    if (contentKind != SanitizedContentKind.HTML && node.isStrictHtml()) {
-      errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITH_NON_HTML);
-      return;
-    }
+    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
+    // STRICT HTML sanitize mode. Note that you are allowed to set STRICT sanitize mode on
+    // a non-strict-HTML node.
+    checkState(
+        contentKind.equals(SanitizedContentKind.HTML) || !node.isStrictHtml(),
+        "Strict HTML in a non-HTML node.");
     if (node.isStrictHtml()) {
       new HtmlTagVisitor(errorReporter).exec(node);
     }
@@ -287,6 +295,7 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       // After visiting all the children, we should have already built the map.
       // At this point, we check the map and verify that the first child is actually popped by the
       // last child. Otherwise, report an error.
+      // TODO(b/118396161): Implement this logic.
     }
 
     @Override
@@ -298,9 +307,13 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       if (errorReporter.errorsSince(checkpoint)) {
         return;
       }
+
+      if (node instanceof TemplateElementNode) {
+        validateSoyElementHasOneRootTagNode(node);
+      }
     }
 
-    private void validateStatefulTemplateHasOneRootTagNode(TemplateNode node) {
+    private void validateSoyElementHasOneRootTagNode(TemplateNode node) {
       class HtmlOrControlNode implements Predicate<SoyNode> {
         @Override
         public boolean apply(SoyNode node) {
@@ -322,10 +335,11 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
       SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
       if (firstNode == null || lastNode == null) {
-        errorReporter.report(node.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;
       }
 
+      // Get the nodes now as open and close tags, or null if they are not.
       HtmlOpenTagNode firstNodeAsOpenTag =
           (HtmlOpenTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(firstNode, /* openTag= */ true);
       HtmlCloseTagNode lastNodeAsCloseTag =
@@ -337,14 +351,16 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       if (firstTagIsSelfClosing) {
         if (!firstNode.equals(lastNode)) {
           // First node is self-closing, but there is another element after the self-closing node.
-          errorReporter.report(lastNode.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+          errorReporter.report(lastNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         }
       } else if (firstNodeAsOpenTag == null || lastNodeAsCloseTag == null) {
         // Either the first or last node is not an HTML tag.
         SoyNode nodeToReport = firstNodeAsOpenTag == null ? firstNode : lastNode;
-        errorReporter.report(nodeToReport.getSourceLocation(), STATEFUL_TEMPLATE_EXACTLY_ONE_TAG);
+        errorReporter.report(nodeToReport.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;
       }
+
+      // TODO(b/118396161): check for multiple root HTML tags.
     }
 
     @Override
