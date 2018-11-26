@@ -19,12 +19,17 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
 
 /**
  * Validates restrictions on DOM nodes with key commands (e.g. {@code <div {key 'foo'}></div>}).
@@ -41,6 +46,9 @@ final class KeyCommandPass extends CompilerFilePass {
   private static final SoyErrorKind DUPLICATE_KEY_ATTR =
       SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
+  private static final SoyErrorKind UNSUPPORTED_TYPE =
+      SoyErrorKind.of("Unsupported type: keys must be of type string or integer.");
+
   private final ErrorReporter errorReporter;
 
   KeyCommandPass(ErrorReporter errorReporter) {
@@ -52,6 +60,7 @@ final class KeyCommandPass extends CompilerFilePass {
     for (KeyNode node : SoyTreeUtils.getAllNodesOfType(file, KeyNode.class)) {
       checkNodeIsOpenTagNodeChild(node);
       checkNoDuplicateKeyAttribute(node);
+      checkNodeIsSupportedType(node);
     }
   }
 
@@ -72,6 +81,29 @@ final class KeyCommandPass extends CompilerFilePass {
     HtmlAttributeNode keyAttrNode = ((HtmlOpenTagNode) parentNode).getDirectAttributeNamed("key");
     if (keyAttrNode != null) {
       errorReporter.report(keyAttrNode.getSourceLocation(), DUPLICATE_KEY_ATTR);
+    }
+  }
+
+  private void checkNodeIsSupportedType(KeyNode node) {
+    ExprNode expr = node.getExpr().getRoot();
+    switch (expr.getKind()) {
+      case INTEGER_NODE:
+      case STRING_NODE:
+        // Above types are supported.
+        break;
+      case VAR_REF_NODE:
+        SoyType type = ((VarRefNode) expr).getType();
+        if (type.isAssignableFrom(IntType.getInstance())
+            || type.isAssignableFrom(StringType.getInstance())) {
+          // Allow variable types of string, int, or in the case of a union, if any of the union
+          // types are string or int.
+          // The gencode then asserts that a supported type is passed in at runtime.
+          break;
+        }
+        // Fall through.
+      default:
+        // All other types are not supported.
+        errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE);
     }
   }
 }
