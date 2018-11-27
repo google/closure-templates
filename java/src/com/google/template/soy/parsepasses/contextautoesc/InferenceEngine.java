@@ -17,7 +17,7 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -59,7 +59,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -114,18 +113,27 @@ final class InferenceEngine {
   }
 
   /**
-   * Checks that the end context of a strict block is compatible with its start context.
+   * Checks that the end context of a block is compatible with its start context.
    *
    * @throws SoyAutoescapeException if they mismatch.
    */
-  private static void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
-    if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
-      String msg =
-          String.format(
-              "A strict block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
-              node.getContentKind().asAttributeValue(),
-              endContext,
-              endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
+  private static void checkBlockEndContext(RenderUnitNode node, Context endContext) {
+    if (!endContext.isValidEndContextForContentKind(
+        MoreObjects.firstNonNull(node.getContentKind(), SanitizedContentKind.HTML))) {
+      String msg;
+      if (node.getContentKind() == null) {
+        msg =
+            String.format(
+                "A deprecated-contextual block cannot end in context %s. Likely cause is %s.",
+                endContext, endContext.getLikelyEndContextMismatchCause(SanitizedContentKind.HTML));
+      } else {
+        msg =
+            String.format(
+                "A strict block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
+                node.getContentKind().asAttributeValue(),
+                endContext,
+                endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
+      }
       throw SoyAutoescapeException.createWithNode(msg, node);
     }
   }
@@ -156,7 +164,7 @@ final class InferenceEngine {
         inferenceEngine.inferChildren(
             node, Context.getStartContextForContentKind(node.getContentKind()));
     // Checking that start and end context is same.
-    checkStrictBlockEndContext(node, endContext);
+    checkBlockEndContext(node, endContext);
   }
 
   /** The autoescaping mode in this current context. */
@@ -237,9 +245,7 @@ final class InferenceEngine {
         context = Context.getStartContextForContentKind(templateNode.getContentKind());
       }
       visitChildren(templateNode);
-      if (autoescapeMode == AutoescapeMode.STRICT) {
-        checkStrictBlockEndContext(templateNode, context);
-      }
+      checkBlockEndContext(templateNode, context);
     }
 
     /** Propagates context across raw chunks of HTML text. */
@@ -303,13 +309,7 @@ final class InferenceEngine {
         calleeName = ((CallDelegateNode) callNode).getDelCalleeName();
       }
 
-      DerivedNameAndContext derivedNameAndContext =
-          inferCallSite(callNode, context, calleeName, inferences);
-      String derivedCalleeName = derivedNameAndContext.derivedName();
-      if (!calleeName.equals(derivedCalleeName)) {
-        inferences.retargetCall(callNode, derivedCalleeName);
-      }
-      context = derivedNameAndContext.context();
+      context = inferCallSite(callNode, context, calleeName, inferences);
 
       visitChildren(callNode);
     }
@@ -597,12 +597,9 @@ final class InferenceEngine {
      * @param inferences Contains a mapping of templates visible to the call site, prior typing
      *     decisions, and derived templates. Will receive any templates successfully derived as a
      *     side-effect of this call.
-     * @return The name of the template to call (possibly derived from templateName) and the context
-     *     after the call ends.
      */
-    private DerivedNameAndContext inferCallSite(
+    private Context inferCallSite(
         CallNode callNode, Context startContext, String templateName, Inferences inferences) {
-      inferences.recordTemplateChecked(templateName);
       List<TemplateNode> targets = inferences.lookupTemplates(templateName);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       if (autoescapeMode == AutoescapeMode.STRICT) {
@@ -612,8 +609,7 @@ final class InferenceEngine {
           // As an optimization, don't escape the call site if the callee has the right content
           // kind. Since all deltemplates with the same name must be of the same kind (checked
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
-          return DerivedNameAndContext.create(
-              templateName, startContext.getContextAfterDynamicValue());
+          return startContext.getContextAfterDynamicValue();
         } else if (calleeStrictContentKind != null || targets.isEmpty()) {
           // If a strict template calls another strict template (or an unknown extern), the result
           // will be escaped, so the call statement behaves effectively like a print statement.
@@ -626,21 +622,11 @@ final class InferenceEngine {
               callNode,
               startContext,
               startContext.getEscapingModes(callNode, ImmutableList.<PrintDirectiveNode>of()));
-          return DerivedNameAndContext.create(
-              templateName, startContext.getContextAfterDynamicValue());
-        } else if (startContext.state == HtmlContext.TEXT) {
-          // TODO(b/80336719): delete this case
-          // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
-          // since TEXT doesn't make any safety guarantees.
-          return contextualizeCallee(callNode, startContext, templateName, inferences);
+          return startContext.getContextAfterDynamicValue();
         } else {
-          // TODO: We could easily allow this in a future release. We can contextualize the callee
-          // and re-escape its output. There are two options. TEXT is nicer because there's no
-          // re-escaping in most cases. Markup won't be preserved, but at least there will be zero
-          // double-escaping. HTML is more consistent because externs behave the same as interns.
           throw SoyAutoescapeException.createWithNode(
-              "Soy strict autoescaping currently forbids calls to non-strict templates, unless "
-                  + "the context is kind=\"text\", since there's no guarantee the callee is safe.",
+              "Soy strict autoescaping currently forbids calls to non-strict templates. "
+                  + "Please migrate the callee to strict.",
               callNode);
         }
 
@@ -649,7 +635,8 @@ final class InferenceEngine {
         if (targets.isEmpty()) {
           // External template not visible to compiler -- let's pray for the best! We might end up
           // calling a Javascript-escaping template from HTML or vice versa.
-          return DerivedNameAndContext.create(templateName, startContext);
+          // TODO(lukes): this should be getContextAfterDynamicValue
+          return startContext;
         } else if (calleeStrictContentKind != null) {
           // Non-strict templates may call strict templates, but only if the context is a match.
           // NOTE: While contextual templates *might* do escaping like strict in this context, it
@@ -666,152 +653,28 @@ final class InferenceEngine {
                     templateName, calleeStrictContentKind.asAttributeValue(), startContext);
             throw SoyAutoescapeException.createWithNode(msg, callNode);
           }
-          return DerivedNameAndContext.create(templateName, startContext);
+          // TODO(lukes): this should be getContextAfterDynamicValue
+          return startContext;
         } else {
-          // TODO(b/80336719): simplify this case and report errors for contextual templates that
-          // have an end context != start context
-          // Normal contextual-to-contextual propagation.
-          return contextualizeCallee(callNode, startContext, templateName, inferences);
+          if (!startContext.equals(Context.HTML_PCDATA)) {
+            throw SoyAutoescapeException.createWithNode(
+                "Attempting to call non-strict template '"
+                    + templateName
+                    + "' from a non-strict template in context '"
+                    + startContext.state
+                    + "'. This is no longer supported."
+                    + " Please migrate to strict autoescaping.",
+                callNode);
+          }
+          // This is the correct answer because
+          // 1. we are starting in HTML_PCDATA, per the previous check
+          // 2. the only valid end-context for HTML_PCDATA is HTML_PCDATA
+          // 3. All deprecated-contextual templates are required to start and end in this context
+          //    due to the checks in visitTemplateNode above.
+          // So we don't actually have to look at the callees
+          return Context.HTML_PCDATA;
         }
       }
-    }
-
-    /**
-     * Creates a contextual derivative of the specified template and infers the end context.
-     *
-     * @param callNode The call site.
-     * @param startContext The known context to start at.
-     * @param calleeName The non-contextualized callee name.
-     * @param inferences The inferences to write to.
-     * @return A pairing of the new derived name and the end context.
-     */
-    private DerivedNameAndContext contextualizeCallee(
-        CallNode callNode, Context startContext, String calleeName, Inferences inferences) {
-      // Propgate the context into the callee contextual template.
-      String suffix = DerivedTemplateUtils.getSuffix(startContext);
-      String baseName = DerivedTemplateUtils.getBaseName(calleeName);
-      // The derived template name.
-      String newCalleeName = baseName + suffix;
-      if (inferences.lookupTemplates(newCalleeName).isEmpty()) {
-        throw SoyAutoescapeException.createWithNode(
-            "Attempting to call non-strict template '"
-                + baseName
-                + "' in context '"
-                + startContext.state
-                + "'. This is no longer supported."
-                + " Please migrate to strict autoescaping.",
-            callNode);
-      }
-
-      try {
-        Context endContext = determineContextualization(startContext, newCalleeName, inferences);
-        return DerivedNameAndContext.create(newCalleeName, endContext);
-      } catch (SoyAutoescapeException e) {
-        throw SoyAutoescapeException.createCausedWithNode(
-            "Error while re-contextualizing template "
-                + calleeName
-                + " in context "
-                + startContext
-                + ":",
-            e,
-            callNode);
-      }
-    }
-
-    /**
-     * Determines the end context and a set of inferences for a template in a particular context.
-     *
-     * <p>This does not create new cloned templates, but just computes contextualization on existing
-     * ones.
-     *
-     * @param startContext The start context we're calling these templates in.
-     * @param calleeName The callee's name, already modified for context.
-     * @param inferences The inferences to modify.
-     */
-    private Context determineContextualization(
-        Context startContext, String calleeName, Inferences inferences) {
-      Context endContext = inferences.getTemplateEndContext(calleeName);
-      if (endContext != null) {
-        // We've already computed this; return early.
-        return endContext;
-      }
-
-      List<TemplateNode> templateNodes = inferences.lookupTemplates(calleeName);
-      // Optimistically assume the new callee ends with the same context as it starts, and then
-      // verify that's the case.
-      InferencesAndContext hypothesis =
-          hypothesizeContextualization(
-              startContext, startContext, calleeName, templateNodes, inferences);
-      endContext = hypothesis.context();
-      Inferences subInferences = hypothesis.inferences();
-      if (!endContext.equals(startContext) && subInferences.wasTemplateChecked(calleeName)) {
-        // Try assuming endContext as the endContext and see if that is a fixed point. If so, it
-        // is a valid endContext context since its output is the same regardless of whether
-        // recursive calls are properly typed. This allows us to gloss over minor differences in
-        // startContexts, e.g. JsFollowingSlash.
-        InferencesAndContext secondHypothesis =
-            hypothesizeContextualization(
-                startContext, endContext, calleeName, templateNodes, inferences);
-        Optional<Context> combined = Context.union(secondHypothesis.context(), endContext);
-        // See if the first and second hypothesis result in a compatible end context.
-        if (!combined.isPresent()) {
-          // Cannot identify an end context. Bail.
-          throw SoyAutoescapeException.createWithNode(
-              "Cannot determine end context for recursive template " + calleeName,
-              templateNodes.get(0));
-        }
-        endContext = combined.get();
-      }
-      subInferences.recordTemplateEndContext(calleeName, endContext);
-      subInferences.foldIntoParent();
-      return endContext;
-    }
-
-    /**
-     * Hypothesizes a particular end context and determines a potential end context, if any.
-     *
-     * <p>This returns the *actual* end context determined from this hypothesis. Hypotheses are
-     * needed to handle recursive templates, where the output context is needed to compute the
-     * context within the template.
-     *
-     * @param startContext The known context to start at.
-     * @param hypotheticalEndContext The end context to test.
-     * @param calleeName Name of the callee.
-     * @param templateNodes The templates and deltemplates of the same name.
-     * @param parentInferences The inferences to work from.
-     * @return A combination of the end context determined and the inferences that go along with
-     *     them.
-     */
-    private InferencesAndContext hypothesizeContextualization(
-        Context startContext,
-        Context hypotheticalEndContext,
-        String calleeName,
-        List<TemplateNode> templateNodes,
-        Inferences parentInferences) {
-      // Create a hypothetical world of inferences based on this hypothesis. It is up to the caller
-      // to fold these into the parent inferences if it chooses to use these.
-      Inferences inferences = new Inferences(parentInferences);
-      List<Context> endContexts = new ArrayList<Context>();
-      inferences.recordTemplateEndContext(calleeName, hypotheticalEndContext);
-      for (TemplateNode templateNode : templateNodes) {
-        endContexts.add(
-            inferTemplateEndContext(
-                templateNode,
-                startContext,
-                inferences,
-                errorReporter));
-      }
-      Optional<Context> combined = Context.union(endContexts);
-      if (!combined.isPresent()) {
-        throw SoyAutoescapeException.createWithNode(
-            "Deltemplates diverge when used with deprecated-contextual autoescaping."
-                + " Based on the call site, assuming these templates all start in "
-                + startContext
-                + ", the different deltemplates end in incompatible contexts: "
-                + Joiner.on(", ").join(endContexts),
-            templateNodes.get(0));
-      }
-      return InferencesAndContext.create(inferences, combined.get());
     }
 
     /** Consider the various branches separately and compute a union context for each branch. */

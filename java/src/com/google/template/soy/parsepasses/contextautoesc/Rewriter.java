@@ -16,18 +16,16 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -38,9 +36,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
@@ -51,51 +46,32 @@ final class Rewriter {
   /** The changes to make. */
   private final Inferences inferences;
 
-  /**
-   * The names of templates visited. Used to distinguish derived templates from templates in the
-   * input Soy files.
-   */
-  private final Set<String> visitedTemplateNames = Sets.newHashSet();
+  private final IdGenerator idGen;
 
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   Rewriter(
-      Inferences inferences, ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      Inferences inferences,
+      IdGenerator idGen,
+      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.inferences = inferences;
+    this.idGen = idGen;
     this.printDirectives = printDirectives;
   }
 
   /** @return Derived templates that should be added to the parse tree. */
-  public List<TemplateNode> rewrite(SoyFileSetNode files) {
+  public void rewrite(SoyFileSetNode files) {
     RewriterVisitor mutator = new RewriterVisitor();
     // First walk the input files that the caller already knows about.
     for (SoyFileNode file : files.getChildren()) {
-      mutator.exec(file);
-    }
-
-    // Now walk over anything not reachable from the input files to make sure we get all the derived
-    // templates.
-    ImmutableList.Builder<TemplateNode> extraTemplates = ImmutableList.builder();
-    for (TemplateNode template : inferences.getAllTemplates()) {
-      String name = template.getTemplateName();
-      if (!visitedTemplateNames.contains(name)) {
-        extraTemplates.add(template);
-        mutator.exec(template);
+      if (file.getSoyFileKind() == SoyFileKind.SRC) {
+        mutator.exec(file);
       }
     }
-    return extraTemplates.build();
   }
 
   /** A visitor that applies the changes in Inferences to a Soy tree. */
   private final class RewriterVisitor extends AbstractSoyNodeVisitor<Void> {
-
-    /** Keep track of template nodes so we know which are derived and which aren't. */
-    @Override
-    protected void visitTemplateNode(TemplateNode templateNode) {
-      boolean firstTime = visitedTemplateNames.add(templateNode.getTemplateName());
-      Preconditions.checkState(firstTime, "already visited: %s", templateNode.getTemplateName());
-      visitChildren(templateNode);
-    }
 
     /** Add any escaping directives. */
     @Override
@@ -104,7 +80,7 @@ final class Rewriter {
       for (EscapingMode escapingMode : escapingModes) {
         PrintDirectiveNode newPrintDirective =
             new PrintDirectiveNode(
-                inferences.getIdGenerator().genId(),
+                idGen.genId(),
                 Identifier.create(escapingMode.directiveName, printNode.getSourceLocation()),
                 printNode.getSourceLocation(),
                 ImmutableList.<ExprNode>of(),
@@ -160,17 +136,6 @@ final class Rewriter {
     /** Rewrite call targets. */
     @Override
     protected void visitCallNode(CallNode node) {
-      String derivedCalleeName = inferences.getDerivedCalleeNameForCall(node);
-      if (derivedCalleeName != null) {
-        if (node instanceof CallBasicNode) {
-          CallBasicNode cast = (CallBasicNode) node;
-          cast.setNewCalleeName(derivedCalleeName);
-        } else {
-          ((CallDelegateNode) node).setDelCalleeName(derivedCalleeName);
-        }
-      }
-
-      // For strict templates, set any necessary escaping directives.
       node.setEscapingDirectives(getDirectivesForNode(node));
 
       visitChildren(node);

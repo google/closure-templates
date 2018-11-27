@@ -1611,8 +1611,8 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
@@ -1625,8 +1625,8 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
 
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
@@ -1755,8 +1755,8 @@ public final class ContextualAutoescaperTest {
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .caller}\n",
@@ -1845,8 +1845,8 @@ public final class ContextualAutoescaperTest {
 
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
@@ -2022,8 +2022,8 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testStrictModeRejectsNonStrictCalls() {
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .main stricthtml=\"false\"}\n",
@@ -2032,8 +2032,8 @@ public final class ContextualAutoescaperTest {
             "Hello World\n",
             "{/template}"));
     assertRewriteFails(
-        "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
@@ -2125,6 +2125,17 @@ public final class ContextualAutoescaperTest {
         "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
             + "Likely cause is an unterminated string literal.",
         join("{namespace ns}\n\n", "{template .main kind=\"js\"}\nvar x='\n{/template}\n"));
+  }
+
+  @Test
+  public void testDeprecatedContextualModeRequiresStartAndEndToBeCompatible() {
+    assertRewriteFails(
+        "A deprecated-contextual block cannot end in context "
+            + "(Context HTML_PCDATA templateNestDepth=1). Likely cause is an unterminated "
+            + "<template> element.",
+        join(
+            "{namespace ns}\n\n",
+            "{template .main autoescape=\"deprecated-contextual\"}<template>{/template}"));
   }
 
   @Test

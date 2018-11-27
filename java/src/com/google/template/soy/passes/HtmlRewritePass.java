@@ -393,16 +393,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     this.errorReporter = errorReporter;
   }
 
-  /**
-   * TODO(b/80336719): We need to run on deps to support the autoescaper. deprecated-contextual
-   * autoescaping needs to explore calls to calculate end contexts and so it relies on the
-   * datastructures produced by this pass.
-   */
-  @Override
-  public boolean shouldRunOnDepsAndIndirectDeps() {
-    return true;
-  }
-
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);

@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -319,9 +318,7 @@ public final class InferenceEngineTest {
             .getChild(0)
             .getChild(0);
 
-    Inferences inferences =
-        new Inferences(
-            new IncrementingIdGenerator(), ImmutableListMultimap.<String, TemplateNode>of());
+    Inferences inferences = new Inferences(ImmutableListMultimap.<String, TemplateNode>of());
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),

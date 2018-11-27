@@ -17,29 +17,21 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Inserts directives into print commands by looking at the context in which a print appears, and
@@ -90,60 +82,41 @@ public final class ContextualAutoescaper {
    *     compiled with fileSet to produce a correct output. See {@link DerivedTemplateUtils} for an
    *     explanation of these.
    */
-  public List<TemplateNode> rewrite(SoyFileSetNode fileSet, ErrorReporter errorReporter) {
-    // Defensively copy so our loops below hold.
-    List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
+  public void rewrite(SoyFileSetNode fileSet, ErrorReporter errorReporter) {
+    ImmutableListMultimap<String, TemplateNode> templatesByName =
+        findTemplates(fileSet.getChildren());
 
-    ImmutableListMultimap<String, TemplateNode> templatesByName = findTemplates(files);
+    // Inferences collects all the typing decisions we make and escaping modes we choose.
+    Inferences inferences = new Inferences(templatesByName);
 
-    // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
-    // we choose.
-    Inferences inferences = new Inferences(fileSet.getNodeIdGenerator(), templatesByName);
-
-    Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
-    TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
-    // Generate a call graph, creating a dummy root that calls all non-private template in
-    // Context.PCDATA, and then type the minimal ancestor set needed to reach all contextual
-    // templates whether private or not.
-    // This should have the effect of being a NOP when there are no contextual templates, will type
-    // all contextual templates, and will not barf on private templates that might be declared
-    // autoescape="false" because they do funky things that are provably safe by human reason but
-    // not by this algorithm.
-    Collection<TemplateNode> thatRequireInference =
-        Collections2.filter(allTemplates, REQUIRES_INFERENCE);
-    Set<TemplateNode> templateNodesToType = callGraph.callersOf(thatRequireInference);
-    templateNodesToType.addAll(thatRequireInference);
-
-    Set<SourceLocation> errorLocations = new HashSet<>();
-    for (TemplateNode templateNode : templateNodesToType) {
-      try {
-        // In strict mode, the author specifies the kind of SanitizedContent to produce, and thus
-        // the context in which to escape.
-        Context startContext =
-            (templateNode.getContentKind() != null)
-                ? Context.getStartContextForContentKind(templateNode.getContentKind())
-                : Context.HTML_PCDATA;
-        InferenceEngine.inferTemplateEndContext(
-            templateNode, startContext, inferences, errorReporter);
-      } catch (SoyAutoescapeException e) {
-        reportError(errorReporter, errorLocations, e);
+    for (SoyFileNode file : fileSet.getChildren()) {
+      if (file.getSoyFileKind() != SoyFileKind.SRC) {
+        continue; // we don't need to inspect non SRC files
+      }
+      for (TemplateNode templateNode : file.getChildren()) {
+        try {
+          // In strict mode, the author specifies the kind of SanitizedContent to produce, and
+          // thus the context in which to escape.  In deprecated-contextual, it is always HTML.
+          Context startContext =
+              Context.getStartContextForContentKind(
+                  MoreObjects.firstNonNull(
+                      templateNode.getContentKind(), SanitizedContentKind.HTML));
+          InferenceEngine.inferTemplateEndContext(
+              templateNode, startContext, inferences, errorReporter);
+        } catch (SoyAutoescapeException e) {
+          reportError(errorReporter, e);
+        }
       }
     }
-
-    if (!errorLocations.isEmpty()) {
-      // Bail out early, since future passes won't succeed and may throw precondition errors.
-      return ImmutableList.<TemplateNode>of();
+    if (errorReporter.hasErrors()) {
+      return;
     }
-
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    List<TemplateNode> extraTemplates = new Rewriter(inferences, printDirectives).rewrite(fileSet);
-
-    return extraTemplates;
+    new Rewriter(inferences, fileSet.getNodeIdGenerator(), printDirectives).rewrite(fileSet);
   }
 
   /** Reports an autoescape exception. */
-  private void reportError(
-      ErrorReporter errorReporter, Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
+  private void reportError(ErrorReporter errorReporter, SoyAutoescapeException e) {
     // First, get to the root cause of the exception, and assemble an error message indicating
     // the full call stack that led to the failure.
     String message = "- " + e.getOriginalMessage();
@@ -151,16 +124,7 @@ public final class ContextualAutoescaper {
       e = (SoyAutoescapeException) e.getCause();
       message += "\n- " + e.getMessage();
     }
-
-    // Now that we've gotten to the leaf, let's use its source location as the canonical one for
-    // reporting and de-duping. (We might otherwise end up reporting a single error multiple times
-    // because a single template was called by multiple other contextual templates.)
-    // TODO(gboyer): Delete this logic once deprecated-contextual is removed.
-    SourceLocation location = Preconditions.checkNotNull(e.getSourceLocation());
-    if (!errorLocations.add(location)) {
-      return;
-    }
-    errorReporter.report(location, AUTOESCAPE_ERROR, message);
+    errorReporter.report(e.getSourceLocation(), AUTOESCAPE_ERROR, message);
   }
 
   /**
@@ -172,6 +136,12 @@ public final class ContextualAutoescaper {
       Iterable<? extends SoyFileNode> files) {
     ImmutableListMultimap.Builder<String, TemplateNode> builder = ImmutableListMultimap.builder();
     for (SoyFileNode file : files) {
+      // skip indirect deps.  An earlier compiler pass will have already reported an error if a
+      // source template calls an indirect dep template directly. So we should never need to look up
+      // an indirect template (since we only examine source templates).
+      if (file.getSoyFileKind() == SoyFileKind.INDIRECT_DEP) {
+        continue;
+      }
       for (TemplateNode template : file.getChildren()) {
         String templateName;
         if (template instanceof TemplateBasicNode || template instanceof TemplateElementNode) {
@@ -184,21 +154,4 @@ public final class ContextualAutoescaper {
     }
     return builder.build();
   }
-
-  private static final Predicate<TemplateNode> REQUIRES_INFERENCE =
-      new Predicate<TemplateNode>() {
-        @Override
-        public boolean apply(TemplateNode templateNode) {
-          // All strict and contextual. With strict, every template establishes its own context.
-          // With contextual, even if we don't see any callers in the call graph, it still might be
-          // called from another file.  This used to skip private templates, but private supposedly
-          // only means the template can only be called by other templates, and even then, it is
-          // not really enforced strongly by the Closure JS Compiler. (Prior to changing this,
-          // there were a few templates that weren't contextually autoescaped because they were
-          // private, but were still being called directly from JS.)
-          return templateNode.getParent().getSoyFileKind() == SoyFileKind.SRC
-              && (templateNode.getAutoescapeMode() == AutoescapeMode.STRICT
-                  || templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL);
-        }
-      };
 }

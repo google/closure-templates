@@ -748,7 +748,7 @@ public final class Context {
       //
       // Good Example 1: {$urlWithQuery}{if $a}&a={$a}{/if}{if $b}&b={$b}{/if}
       // In this example, the first "if" statement has two branches:
-      // - "true": {$urlWithQuey}&a={$a} looks like a QUERY due to hueristics
+      // - "true": {$urlWithQuery}&a={$a} looks like a QUERY due to hueristics
       // - "false": {$urlWithQuery} only, which Soy doesn't know at compile-time to actually
       // have a query, and it remains in MAYBE_VARIABLE_SCHEME.
       // Instead of yielding UNKNOWN, this yields MAYBE_VARIABLE_SCHEME, which the second

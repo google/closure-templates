@@ -28,18 +28,12 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
-import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -245,8 +239,8 @@ public final class PassManager {
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
     boolean isSourceFile = file.getSoyFileKind() == SoyFileKind.SRC;
     for (CompilerFilePass pass : singleFilePasses) {
-      // All passes run on source files, but only some passes should run on deps.
-      if (isSourceFile || pass.shouldRunOnDepsAndIndirectDeps()) {
+      // All single file passes only run on source files
+      if (isSourceFile) {
         pass.run(file, nodeIdGen);
       }
     }
@@ -269,51 +263,17 @@ public final class PassManager {
       return templateRegistry;
     }
     if (autoescaper != null) {
-      boolean newTemplatesAdded = doContextualEscaping(soyTree);
+      // TODO(lukes): turn this into a normal crossTemplateCheckingPass.  Then we can get rid
+      // of the idea of afterAutoescapePasses
+      autoescaper.rewrite(soyTree, errorReporter);
       if (errorReporter.hasErrors()) {
         return templateRegistry;
-      }
-
-      // contextual autoescaping may actually add new templates to the tree so check if we need to
-      // reconstruct the registry.  Note. constructing the registry is kind of expensive so we
-      // should avoid doing it if possible
-      if (newTemplatesAdded) {
-        templateRegistry = new TemplateRegistry(soyTree, errorReporter);
       }
     }
     for (CompilerFileSetPass pass : afterAutoescapePasses) {
       pass.run(sourceFiles, idGenerator, templateRegistry);
     }
     return templateRegistry;
-  }
-
-  /** Runs the autoescaper and returns whether or not new contextual templates have been added. */
-  private boolean doContextualEscaping(SoyFileSetNode soyTree) {
-    List<TemplateNode> extraTemplates = autoescaper.rewrite(soyTree, errorReporter);
-    // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
-    if (!extraTemplates.isEmpty()) {
-      // TODO: pull out somewhere else.  Ideally do the merge as part of the redundant template
-      // removal.
-      Map<String, SoyFileNode> containingFile = new HashMap<>();
-      for (SoyFileNode fileNode : soyTree.getChildren()) {
-        for (TemplateNode templateNode : fileNode.getChildren()) {
-          String name =
-              templateNode instanceof TemplateDelegateNode
-                  ? ((TemplateDelegateNode) templateNode).getDelTemplateName()
-                  : templateNode.getTemplateName();
-          containingFile.put(DerivedTemplateUtils.getBaseName(name), fileNode);
-        }
-      }
-      for (TemplateNode extraTemplate : extraTemplates) {
-        String name =
-            extraTemplate instanceof TemplateDelegateNode
-                ? ((TemplateDelegateNode) extraTemplate).getDelTemplateName()
-                : extraTemplate.getTemplateName();
-        containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
-      }
-      return true;
-    }
-    return false;
   }
 
   /** A builder for configuring the pass manager. */
