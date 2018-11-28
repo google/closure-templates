@@ -387,7 +387,7 @@ public final class FindTransitiveDepTemplatesVisitor
     // Don't forget to visit content within CallParamContentNodes.
     visitChildren(node);
 
-    TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
+    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
 
     // If the callee is null (i.e. not within the Soy file set), then this is an external call.
     if (callee == null) {

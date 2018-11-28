@@ -310,7 +310,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
       return;
     }
 
-    TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
+    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
 
     // Note the template may be null because we allow calls to external templates not within this
     // Soy file set.

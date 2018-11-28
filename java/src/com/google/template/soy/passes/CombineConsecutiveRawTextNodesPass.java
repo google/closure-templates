@@ -38,13 +38,14 @@ import java.util.List;
 public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPass {
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode template : file.getChildren()) {
         run(template);
       }
     }
+    return Result.CONTINUE;
   }
 
   /** Run the pass on a single node. */

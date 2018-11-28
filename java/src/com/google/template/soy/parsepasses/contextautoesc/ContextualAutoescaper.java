@@ -18,20 +18,17 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Inserts directives into print commands by looking at the context in which a print appears, and
@@ -56,6 +53,7 @@ public final class ContextualAutoescaper {
   private static final SoyErrorKind AUTOESCAPE_ERROR =
       SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}", StyleAllowance.NO_PUNCTUATION);
 
+  private final ErrorReporter errorReporter;
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /**
@@ -68,7 +66,9 @@ public final class ContextualAutoescaper {
    *     soyDirectivesMap.keySet()}.
    */
   public ContextualAutoescaper(
+      final ErrorReporter errorReporter,
       final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
+    this.errorReporter = errorReporter;
     // Compute the set of directives that are escaping directives.
     this.printDirectives = soyDirectivesMap;
   }
@@ -82,17 +82,16 @@ public final class ContextualAutoescaper {
    *     compiled with fileSet to produce a correct output. See {@link DerivedTemplateUtils} for an
    *     explanation of these.
    */
-  public void rewrite(SoyFileSetNode fileSet, ErrorReporter errorReporter) {
-    ImmutableListMultimap<String, TemplateNode> templatesByName =
-        findTemplates(fileSet.getChildren());
+  public void rewrite(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
 
     // Inferences collects all the typing decisions we make and escaping modes we choose.
-    Inferences inferences = new Inferences(templatesByName);
+    Inferences inferences = new Inferences(registry);
 
-    for (SoyFileNode file : fileSet.getChildren()) {
-      if (file.getSoyFileKind() != SoyFileKind.SRC) {
-        continue; // we don't need to inspect non SRC files
-      }
+    // TODO(lukes): having a separation of inference and rewriting was important when we did
+    // template cloning and derivation.  Now that that is deleted we could combine these into a
+    // single pass over the tree and delete the Inferences class which may simplify things.
+    for (SoyFileNode file : sourceFiles) {
       for (TemplateNode templateNode : file.getChildren()) {
         try {
           // In strict mode, the author specifies the kind of SanitizedContent to produce, and
@@ -112,7 +111,10 @@ public final class ContextualAutoescaper {
       return;
     }
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    new Rewriter(inferences, fileSet.getNodeIdGenerator(), printDirectives).rewrite(fileSet);
+    Rewriter rewriter = new Rewriter(inferences, idGenerator, printDirectives);
+    for (SoyFileNode file : sourceFiles) {
+      rewriter.rewrite(file);
+    }
   }
 
   /** Reports an autoescape exception. */
@@ -125,33 +127,5 @@ public final class ContextualAutoescaper {
       message += "\n- " + e.getMessage();
     }
     errorReporter.report(e.getSourceLocation(), AUTOESCAPE_ERROR, message);
-  }
-
-  /**
-   * Fills in the {@link Inferences} template name to node map.
-   *
-   * @param files Modified in place.
-   */
-  private static ImmutableListMultimap<String, TemplateNode> findTemplates(
-      Iterable<? extends SoyFileNode> files) {
-    ImmutableListMultimap.Builder<String, TemplateNode> builder = ImmutableListMultimap.builder();
-    for (SoyFileNode file : files) {
-      // skip indirect deps.  An earlier compiler pass will have already reported an error if a
-      // source template calls an indirect dep template directly. So we should never need to look up
-      // an indirect template (since we only examine source templates).
-      if (file.getSoyFileKind() == SoyFileKind.INDIRECT_DEP) {
-        continue;
-      }
-      for (TemplateNode template : file.getChildren()) {
-        String templateName;
-        if (template instanceof TemplateBasicNode || template instanceof TemplateElementNode) {
-          templateName = template.getTemplateName();
-        } else {
-          templateName = ((TemplateDelegateNode) template).getDelTemplateName();
-        }
-        builder.put(templateName, template);
-      }
-    }
-    return builder.build();
   }
 }

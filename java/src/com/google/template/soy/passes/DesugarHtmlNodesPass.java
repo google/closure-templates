@@ -58,11 +58,12 @@ import java.util.List;
 public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
       run(fileNode, idGenerator);
     }
+    return Result.CONTINUE;
   }
 
   @VisibleForTesting

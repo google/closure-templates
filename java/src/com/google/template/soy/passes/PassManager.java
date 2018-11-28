@@ -27,7 +27,6 @@ import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -35,7 +34,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 
 /**
  * Configures all compiler passes.
@@ -68,24 +66,16 @@ import javax.annotation.Nullable;
 public final class PassManager {
   private final ImmutableList<CompilerFilePass> singleFilePasses;
   private final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
-  private final ImmutableList<CompilerFileSetPass> afterAutoescapePasses;
-  private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
-  private final SoyGeneralOptions options;
-  private final boolean desugarHtmlNodes;
-  @Nullable private final ContextualAutoescaper autoescaper;
 
   private PassManager(Builder builder) {
     checkArgument(!builder.conformanceOnly);
 
-    this.registry = checkNotNull(builder.registry);
+    SoyTypeRegistry registry = checkNotNull(builder.registry);
     this.errorReporter = checkNotNull(builder.errorReporter);
-    this.options = checkNotNull(builder.opts);
+    SoyGeneralOptions options = checkNotNull(builder.opts);
     boolean allowUnknownGlobals = builder.allowUnknownGlobals;
     boolean disableAllTypeChecking = builder.disableAllTypeChecking;
-    this.desugarHtmlNodes = builder.desugarHtmlNodes;
-    this.autoescaper =
-        builder.autoescaperEnabled ? new ContextualAutoescaper(builder.soyPrintDirectives) : null;
 
     // Single file passes
     // These passes perform tree rewriting and all compiler checks that don't require information
@@ -163,62 +153,64 @@ public final class PassManager {
 
     // Cross template checking passes
 
-    // Fileset passes run on the whole tree and should be reserved for checks that need transitive
-    // call information (or full delegate sets).
+    // Fileset passes run on all sources files and have access to a template registry so they can
+    // examine information about dependencies. These are naturally more expensive and should be
+    // reserved for checks that require transitive call information (or full delegate sets).
     // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
     // use.
-    ImmutableList.Builder<CompilerFileSetPass> beforeAutoescaperFileSetPassBuilder =
+    ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
         ImmutableList.<CompilerFileSetPass>builder()
             .add(new CheckTemplateHeaderVarsPass(errorReporter));
     if (!disableAllTypeChecking) {
-      beforeAutoescaperFileSetPassBuilder.add(new CheckTemplateCallsPass(errorReporter));
+      crossTemplateCheckingPassesBuilder.add(new CheckTemplateCallsPass(errorReporter));
     }
-    beforeAutoescaperFileSetPassBuilder
+    crossTemplateCheckingPassesBuilder
         .add(new CheckTemplateVisibilityPass(errorReporter))
         .add(new CheckDelegatesPass(errorReporter));
     // If disallowing external calls, perform the check.
     if (options.allowExternalCalls() == TriState.DISABLED) {
-      beforeAutoescaperFileSetPassBuilder.add(new StrictDepsPass(errorReporter));
+      crossTemplateCheckingPassesBuilder.add(new StrictDepsPass(errorReporter));
     }
     // if htmlrewriting is enabled, don't desugar because later passes want the nodes
     // we need to run this here, before the autoescaper because the autoescaper may choke on lots
     // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
-    beforeAutoescaperFileSetPassBuilder.add(new CombineConsecutiveRawTextNodesPass());
+    crossTemplateCheckingPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
 
-    this.crossTemplateCheckingPasses = beforeAutoescaperFileSetPassBuilder.build();
-
-    // Simplification passes
-
-    ImmutableList.Builder<CompilerFileSetPass> afterAutoescapePasses = ImmutableList.builder();
-    if (!disableAllTypeChecking && autoescaper != null) {
-      afterAutoescapePasses.add(new CheckBadContextualUsagePass(errorReporter));
+    if (builder.autoescaperEnabled) {
+      crossTemplateCheckingPassesBuilder.add(
+          new AutoescaperPass(errorReporter, builder.soyPrintDirectives));
+      // Relies on information from the autoescaper and valid type information
+      if (!disableAllTypeChecking) {
+        crossTemplateCheckingPassesBuilder.add(new CheckBadContextualUsagePass(errorReporter));
+      }
     }
-    if (desugarHtmlNodes) {
+
+    // Simplification Passes.
+    // These tend to simplify or canonicalize the tree in order to simplify the task of code
+    // generation.
+
+    if (builder.desugarHtmlNodes) {
       // always desugar before the end since the backends (besides incremental dom) cannot handle
       // the nodes.
-      afterAutoescapePasses.add(new DesugarHtmlNodesPass());
+      crossTemplateCheckingPassesBuilder.add(new DesugarHtmlNodesPass());
     }
     // TODO(lukes): there should only be one way to disable the optimizer, not 2
     if (builder.optimize && options.isOptimizerEnabled()) {
-      afterAutoescapePasses.add(new OptimizationPass());
+      crossTemplateCheckingPassesBuilder.add(new OptimizationPass());
     }
-    // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes in ways
-    // that can be later stitched together.  Do that here.  This also drops empty RawTextNodes,
-    // which some of the backends don't like (incremental dom can generate bad code in some cases).
-    afterAutoescapePasses.add(new CombineConsecutiveRawTextNodesPass());
-    this.afterAutoescapePasses = afterAutoescapePasses.build();
+    // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes, and the
+    // Optimizer may produce additional RawTextNodes.
+    // Stich them back together here.
+    crossTemplateCheckingPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
+    this.crossTemplateCheckingPasses = crossTemplateCheckingPassesBuilder.build();
   }
 
   // This constructor is just used for the conformanceOnly mode, the boolean parameter is just to
   // make it a unique overload.
   private PassManager(Builder builder, boolean unused) {
     checkArgument(builder.conformanceOnly);
-    this.registry = null;
-    this.errorReporter = checkNotNull(builder.errorReporter);
-    this.options = null;
-    this.desugarHtmlNodes = false;
-    this.autoescaper = null;
+    this.errorReporter = builder.errorReporter;
     this.singleFilePasses =
         ImmutableList.<CompilerFilePass>builder()
             .add(new HtmlRewritePass(errorReporter))
@@ -227,14 +219,12 @@ public final class PassManager {
             .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
             .build();
     this.crossTemplateCheckingPasses = ImmutableList.of();
-    this.afterAutoescapePasses = ImmutableList.of();
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
-    boolean isSourceFile = file.getSoyFileKind() == SoyFileKind.SRC;
-    for (CompilerFilePass pass : singleFilePasses) {
-      // All single file passes only run on source files
-      if (isSourceFile) {
+    // All single file passes only run on source files
+    if (file.getSoyFileKind() == SoyFileKind.SRC) {
+      for (CompilerFilePass pass : singleFilePasses) {
         pass.run(file, nodeIdGen);
       }
     }
@@ -251,21 +241,10 @@ public final class PassManager {
     ImmutableList<SoyFileNode> sourceFiles = soyTree.getSourceFiles();
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
-      pass.run(sourceFiles, idGenerator, templateRegistry);
-    }
-    if (errorReporter.hasErrors()) {
-      return templateRegistry;
-    }
-    if (autoescaper != null) {
-      // TODO(lukes): turn this into a normal crossTemplateCheckingPass.  Then we can get rid
-      // of the idea of afterAutoescapePasses
-      autoescaper.rewrite(soyTree, errorReporter);
-      if (errorReporter.hasErrors()) {
-        return templateRegistry;
+      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
+      if (result == CompilerFileSetPass.Result.STOP) {
+        break;
       }
-    }
-    for (CompilerFileSetPass pass : afterAutoescapePasses) {
-      pass.run(sourceFiles, idGenerator, templateRegistry);
     }
     return templateRegistry;
   }

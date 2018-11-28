@@ -44,12 +44,12 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
       for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
         String calleeName = node.getCalleeName();
-        TemplateNode definition = registry.getTemplateOrElement(calleeName);
+        TemplateNode definition = registry.getBasicTemplateOrElement(calleeName);
         if (definition != null && !isVisible(file, definition)) {
           errorReporter.report(
               node.getSourceLocation(),
@@ -60,6 +60,8 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
         }
       }
     }
+
+    return Result.CONTINUE;
   }
 
   private static boolean isVisible(SoyFileNode calledFrom, TemplateNode callee) {

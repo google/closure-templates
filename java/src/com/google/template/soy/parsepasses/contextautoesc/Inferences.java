@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.soytree.CallNode;
@@ -29,6 +28,7 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 import java.util.Map;
 
@@ -51,10 +51,7 @@ import java.util.Map;
 final class Inferences {
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
-  private final ImmutableListMultimap<String, TemplateNode> templatesByName;
-
-  /** The types of templates. */
-  private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
+  private final TemplateRegistry templates;
 
   /** Maps print, msg and call commands to the inferred escaping modes. */
   private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
@@ -62,23 +59,10 @@ final class Inferences {
 
   /** Maps print, msg and call commands to the context. */
   private final Map<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
-  /**
-   * An instance that does not inherit from a parent.
-   *
-   * @param idGen Used to generate unique IDs for cloned templates.
-   * @param templatesByName Map of template names to instances used to type <code>{call}</code>
-   *     commands.
-   */
-  public Inferences(ImmutableListMultimap<String, TemplateNode> templatesByName) {
-    this.templatesByName = templatesByName;
-  }
 
-  /**
-   * Stores a type conclusion.  This may be speculative.
-   * @param templateName A qualified template name.
-   */
-  public void recordTemplateEndContext(String templateName, Context context) {
-    templateNameToEndContext.put(templateName, context);
+  /** An instance that does not inherit from a parent. */
+  public Inferences(TemplateRegistry templates) {
+    this.templates = templates;
   }
 
   /**
@@ -86,19 +70,8 @@ final class Inferences {
    *
    * @param templateName A qualified template name.
    */
-  List<TemplateNode> lookupTemplates(String templateName) {
-    return templatesByName.get(templateName);
-  }
-
-  /**
-   * Null if no typing has been done for the named template, or otherwise the context after a call
-   * to the named template.  Since we derive templates by start context at the call site, there
-   * is no start context parameter.
-   *
-   * @param templateName A qualified template name.
-   */
-  public Context getTemplateEndContext(String templateName) {
-    return templateNameToEndContext.get(templateName);
+  ImmutableList<? extends TemplateNode> lookupTemplates(CallNode call) {
+    return templates.getTemplates(call);
   }
 
   /**
@@ -158,12 +131,4 @@ final class Inferences {
   Context getContextForNode(SoyNode node) {
     return nodeToContext.get(node);
   }
-
-  /**
-   * All known templates.
-   */
-  public List<TemplateNode> getAllTemplates() {
-    return ImmutableList.copyOf(templatesByName.values());
-  }
-
 }

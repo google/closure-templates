@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -300,7 +300,7 @@ public final class InferenceEngineTest {
   }
 
   private static void assertTransitions(SanitizedContentKind kind, String src) {
-    TemplateNode template =
+    ParseResult result =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n{template .foo"
                     + (kind == SanitizedContentKind.HTML
@@ -313,12 +313,9 @@ public final class InferenceEngineTest {
             // typically the default is what we want but in this case disable desugaring so the
             // html nodes are preserved and the autoescaper can see them
             .desugarHtmlNodes(false)
-            .parse()
-            .fileSet()
-            .getChild(0)
-            .getChild(0);
-
-    Inferences inferences = new Inferences(ImmutableListMultimap.<String, TemplateNode>of());
+            .parse();
+    Inferences inferences = new Inferences(result.registry());
+    TemplateNode template = result.fileSet().getChild(0).getChild(0);
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),

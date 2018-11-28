@@ -101,15 +101,12 @@ final class InferenceEngine {
       Context startContext,
       Inferences inferences,
       ErrorReporter errorReporter) {
-    Context endContext;
     AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
     InferenceEngine inferenceEngine =
         new InferenceEngine(autoescapeMode, autoescapeMode, inferences, errorReporter);
     // Context started off as startContext and we have propagated context through all of
-    // template's children, so now context is the template's end context.
-    endContext = inferenceEngine.infer(templateNode, startContext);
-    inferences.recordTemplateEndContext(templateNode.getTemplateName(), endContext);
-    return endContext;
+    // template's children, so now return the template's end context.
+    return inferenceEngine.infer(templateNode, startContext);
   }
 
   /**
@@ -576,7 +573,8 @@ final class InferenceEngine {
      * <p>This relies on CheckDelegatesPass to print friendly messages if the deltemplates differ in
      * content kind.
      */
-    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
+    private SanitizedContentKind getCommonContentKindIfStrict(
+        List<? extends TemplateNode> templates) {
       if (templates.isEmpty()) {
         return null;
       }
@@ -600,7 +598,7 @@ final class InferenceEngine {
      */
     private Context inferCallSite(
         CallNode callNode, Context startContext, String templateName, Inferences inferences) {
-      List<TemplateNode> targets = inferences.lookupTemplates(templateName);
+      List<? extends TemplateNode> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.

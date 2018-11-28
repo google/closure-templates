@@ -64,13 +64,14 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode templateNode : fileNode.getChildren()) {
         checkTemplate(templateNode, registry);
       }
     }
+    return Result.CONTINUE;
   }
 
   // -----------------------------------------------------------------------------------------------

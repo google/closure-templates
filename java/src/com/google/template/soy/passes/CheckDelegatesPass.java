@@ -73,7 +73,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
     checkTemplates(registry);
@@ -92,6 +92,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
         }
       }
     }
+    return Result.CONTINUE;
   }
 
   /** Performs checks that only involve templates (uses templateRegistry only). */
@@ -203,7 +204,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
-    TemplateNode callee = templateRegistry.getTemplateOrElement(calleeName);
+    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
@@ -233,7 +234,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     String delCalleeName = node.getDelCalleeName();
 
     // Check that the callee name is not a basic template name.
-    if (templateRegistry.getTemplateOrElement(delCalleeName) != null) {
+    if (templateRegistry.getBasicTemplateOrElement(delCalleeName) != null) {
       errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
     }
   }

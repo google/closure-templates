@@ -30,7 +30,6 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
@@ -388,8 +387,8 @@ public final class TemplateTester {
         // intermediate data structures.
         TemplateRegistry registry = new TemplateRegistry(fileSet, ErrorReporter.exploding());
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-        String templateName =
-            Iterables.getOnlyElement(registry.getTemplatesOrElementsMap().keySet());
+
+        String templateName = fileSet.getChild(0).getChild(0).getTemplateName();
         classData =
             new TemplateCompiler(
                     compilerRegistry,

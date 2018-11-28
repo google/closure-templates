@@ -76,7 +76,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getChildren()) {
@@ -90,6 +90,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
         }
       }
     }
+    return Result.CONTINUE;
   }
 
   private static final ImmutableMultimap<SanitizedContentKind, HtmlContext> ALLOWED_CONTEXTS =

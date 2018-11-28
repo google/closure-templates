@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -33,7 +32,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
@@ -49,6 +47,7 @@ final class Rewriter {
   private final IdGenerator idGen;
 
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
+  private final RewriterVisitor mutator = new RewriterVisitor();
 
   Rewriter(
       Inferences inferences,
@@ -60,14 +59,8 @@ final class Rewriter {
   }
 
   /** @return Derived templates that should be added to the parse tree. */
-  public void rewrite(SoyFileSetNode files) {
-    RewriterVisitor mutator = new RewriterVisitor();
-    // First walk the input files that the caller already knows about.
-    for (SoyFileNode file : files.getChildren()) {
-      if (file.getSoyFileKind() == SoyFileKind.SRC) {
-        mutator.exec(file);
-      }
-    }
+  public void rewrite(SoyFileNode file) {
+    mutator.exec(file);
   }
 
   /** A visitor that applies the changes in Inferences to a Soy tree. */

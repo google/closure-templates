@@ -28,10 +28,16 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * passes that need to access transitive callee information.
  */
 abstract class CompilerFileSetPass {
-  public abstract void run(
+  enum Result {
+    CONTINUE,
+    STOP;
+  }
+
+  /** Runs the pass and returns whether or not compilation should abort. */
+  abstract Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
 
-  public String name() {
+  String name() {
     String simpleName = getClass().getSimpleName();
     if (simpleName.endsWith("Pass")) {
       return simpleName.substring(0, simpleName.length() - "Pass".length());

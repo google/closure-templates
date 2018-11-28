@@ -118,7 +118,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
   }
 
   @Override
-  public void run(
+  public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     CheckCallsHelper helper = new CheckCallsHelper(registry);
     for (SoyFileNode file : sourceFiles) {
@@ -133,6 +133,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         }
       }
     }
+
+    return Result.CONTINUE;
   }
 
   private final class CheckCallsHelper {
@@ -148,7 +150,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     }
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
-      TemplateNode callee = templateRegistry.getTemplateOrElement(node.getCalleeName());
+      TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
       if (callee != null) {
         Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(callerTemplate, node, callee);
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);

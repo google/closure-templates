@@ -193,7 +193,7 @@ public final class BaseTofu implements SoyTofu {
       boolean debugSoyTemplateInfo,
       ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
-    TemplateNode template = templateRegistry.getTemplateOrElement(templateName);
+    TemplateNode template = templateRegistry.getBasicTemplateOrElement(templateName);
     if (template == null) {
       throw new SoyTofuException("Attempting to render undefined template '" + templateName + "'.");
     } else if (template.getVisibility() == Visibility.PRIVATE) {
