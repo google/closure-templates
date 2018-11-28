@@ -223,7 +223,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
     // Output a file now that we know generation hasn't failed.
     try {
-      Files.write(sb, output.file, Charsets.UTF_8);
+      Files.asCharSink(output.file, Charsets.UTF_8).write(sb);
     } catch (IOException ex) {
       // Make sure an abortive write does not leave a file w
       output.file.delete();
