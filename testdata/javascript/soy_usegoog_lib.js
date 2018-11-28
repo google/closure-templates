@@ -508,7 +508,7 @@ goog.ModuleType = {
  * @private {?{
  *   moduleName: (string|undefined),
  *   declareLegacyNamespace:boolean,
- *   type: goog.ModuleType
+ *   type: ?goog.ModuleType
  * }}
  */
 goog.moduleLoaderState_ = null;
@@ -11893,7 +11893,7 @@ goog.require('goog.asserts');
  */
 goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
   /**
-   * @protected {Array<number>}
+   * @protected {?Array<number>}
    */
   this.rangeArray = null;
 
@@ -23728,7 +23728,7 @@ goog.Uri.QueryData = function(opt_query, opt_uri, opt_ignoreCase) {
    * We need to use a Map because we cannot guarantee that the key names will
    * not be problematic for IE.
    *
-   * @private {goog.structs.Map<string, !Array<*>>}
+   * @private {?goog.structs.Map<string, !Array<*>>}
    */
   this.keyMap_ = null;
 

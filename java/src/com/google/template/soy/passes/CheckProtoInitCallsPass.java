@@ -95,26 +95,26 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
 
     ImmutableSet<String> fields = soyType.getFieldNames();
     for (int i = 0; i < node.numChildren(); i++) {
-      String fieldName = node.getParamNames().get(i).identifier();
+      Identifier fieldName = node.getParamNames().get(i);
       ExprNode expr = node.getChild(i);
 
       // Check that each arg exists in the proto.
-      if (!fields.contains(fieldName)) {
+      if (!fields.contains(fieldName.identifier())) {
         String extraErrorMessage =
             SoyErrors.getDidYouMeanMessageForProtoFields(
-                fields, soyType.getDescriptor(), fieldName);
+                fields, soyType.getDescriptor(), fieldName.identifier());
         errorReporter.report(
-            expr.getSourceLocation(), FIELD_DOES_NOT_EXIST, fieldName, extraErrorMessage);
+            fieldName.location(), FIELD_DOES_NOT_EXIST, fieldName.identifier(), extraErrorMessage);
         continue;
       }
 
       // Check that the arg type is not null and that it matches the expected field type.
       SoyType argType = expr.getType();
       if (argType.equals(NullType.getInstance())) {
-        errorReporter.report(expr.getSourceLocation(), NULL_ARG_TYPE, fieldName);
+        errorReporter.report(expr.getSourceLocation(), NULL_ARG_TYPE, fieldName.identifier());
       }
 
-      SoyType fieldType = soyType.getFieldType(fieldName);
+      SoyType fieldType = soyType.getFieldType(fieldName.identifier());
 
       // Let args with unknown or error types pass
       if (argType.equals(UnknownType.getInstance()) || argType.equals(ErrorType.getInstance())) {
@@ -132,7 +132,11 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
       SoyType expectedType = SoyTypes.makeNullable(fieldType);
       if (!expectedType.isAssignableFrom(argType)) {
         errorReporter.report(
-            expr.getSourceLocation(), ARGUMENT_TYPE_MISMATCH, fieldName, expectedType, argType);
+            expr.getSourceLocation(),
+            ARGUMENT_TYPE_MISMATCH,
+            fieldName.identifier(),
+            expectedType,
+            argType);
       }
     }
   }
