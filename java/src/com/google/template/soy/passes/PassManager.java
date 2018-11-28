@@ -110,7 +110,7 @@ public final class PassManager {
             // Needs to come after any pass that manipulates msg placeholders.
             .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
             .add(new CheckNonEmptyMsgNodesPass(errorReporter))
-            // Run before the RewriteGlobalsPass as is removes some globals.
+            // Run before the RewriteGlobalsPass as it removes some globals.
             .add(new VeRewritePass())
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             // needs to happen after rewrite globals
@@ -150,12 +150,6 @@ public final class PassManager {
       singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
     singleFilePassesBuilder.add(new ValidateAliasesPass(registry, errorReporter, options));
-    if (!disableAllTypeChecking) {
-      // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
-      // TODO(lukes): both of these are really about type checking, they should be part of
-      // ResolveExpressionTypesPass
-      singleFilePassesBuilder.add(new CheckProtoInitCallsPass(errorReporter));
-    }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));

@@ -761,7 +761,7 @@ final class ProtoUtils {
 
       // Convert the soy value to java type
 
-      // CheckProtoInitCallsPass already enforces that the value is not nullable. If the value is
+      // ResolveExpressionTypesPass already enforces that the value is not nullable. If the value is
       // null, it reports a type mismatch error.
       SoyExpression mapValue =
           SoyExpression.forSoyValue(valueType, getAndResolveMapValue).asNonNullable();

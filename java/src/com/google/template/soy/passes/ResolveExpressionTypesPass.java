@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Optional;
@@ -24,8 +25,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -195,6 +198,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
       SoyErrorKind.of("Unknown proto type ''{0}''.");
+  private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
+      SoyErrorKind.of("Proto field ''{0}'' does not exist.{1}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
+      SoyErrorKind.of("Missing required proto field ''{0}''.");
+  private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
+      SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
   private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
@@ -1053,12 +1062,79 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       if (type == null) {
         errorReporter.report(node.getSourceLocation(), UNKNOWN_PROTO_TYPE, protoName);
         node.setType(ErrorType.getInstance());
-      } else if (!(type.getKind() == SoyType.Kind.PROTO
-          || type.getKind() == SoyType.Kind.PROTO_ENUM)) {
+      } else if (type.getKind() != SoyType.Kind.PROTO) {
         errorReporter.report(node.getSourceLocation(), NOT_A_PROTO_TYPE, protoName, type);
         node.setType(ErrorType.getInstance());
       } else {
         node.setType(type);
+
+        // Check that all proto required fields are present.
+        SoyProtoType protoType = (SoyProtoType) type;
+        // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
+        Set<String> givenParams = new HashSet<>();
+        for (Identifier id : node.getParamNames()) {
+          givenParams.add(id.identifier());
+        }
+        for (FieldDescriptor field : protoType.getDescriptor().getFields()) {
+          if (field.isRequired() && !givenParams.contains(field.getName())) {
+            errorReporter.report(
+                node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field.getName());
+          }
+        }
+
+        ImmutableSet<String> fields = protoType.getFieldNames();
+        for (int i = 0; i < node.numChildren(); i++) {
+          Identifier fieldName = node.getParamNames().get(i);
+          ExprNode expr = node.getChild(i);
+
+          // Check that each arg exists in the proto.
+          if (!fields.contains(fieldName.identifier())) {
+            String extraErrorMessage =
+                SoyErrors.getDidYouMeanMessageForProtoFields(
+                    fields, protoType.getDescriptor(), fieldName.identifier());
+            errorReporter.report(
+                fieldName.location(),
+                PROTO_FIELD_DOES_NOT_EXIST,
+                fieldName.identifier(),
+                extraErrorMessage);
+            continue;
+          }
+
+          // Check that the arg type is not null and that it matches the expected field type.
+          SoyType argType = expr.getType();
+          if (argType.equals(NullType.getInstance())) {
+            errorReporter.report(
+                expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
+          }
+
+          SoyType fieldType = protoType.getFieldType(fieldName.identifier());
+
+          // Let args with unknown or error types pass
+          if (argType.equals(UnknownType.getInstance())
+              || argType.equals(ErrorType.getInstance())) {
+            // TODO(b/120138046): This should continue checking the remaining fields.
+            return;
+          }
+
+          // Same for List<?>, for repeated fields
+          if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
+            SoyType argElementType = ((ListType) argType).getElementType();
+            if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
+              // TODO(b/120138046): This should continue checking the remaining fields.
+              return;
+            }
+          }
+
+          SoyType expectedType = SoyTypes.makeNullable(fieldType);
+          if (!expectedType.isAssignableFrom(argType)) {
+            errorReporter.report(
+                expr.getSourceLocation(),
+                ARGUMENT_TYPE_MISMATCH,
+                fieldName.identifier(),
+                expectedType,
+                argType);
+          }
+        }
       }
     }
 
