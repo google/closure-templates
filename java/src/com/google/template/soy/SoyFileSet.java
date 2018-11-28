@@ -1127,7 +1127,8 @@ public final class SoyFileSet {
   }
 
   // Parse the current file set.
-  private ParseResult parse() {
+  @VisibleForTesting
+  ParseResult parse() {
     return parse(passManagerBuilder());
   }
 
@@ -1171,7 +1172,8 @@ public final class SoyFileSet {
    *
    * <p>This method should be called at the beginning of every entry point into SoyFileSet.
    */
-  private void resetErrorReporter() {
+  @VisibleForTesting
+  void resetErrorReporter() {
     errorReporter = ErrorReporter.create(soyFileSuppliers);
   }
 
