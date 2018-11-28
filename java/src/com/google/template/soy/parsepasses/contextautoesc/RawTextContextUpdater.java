@@ -501,88 +501,89 @@ final class RawTextContextUpdater {
    *       means PATH
    * </ul>
    */
-  private static final Transition TRUSTED_RESOURCE_URI_PART_TRANSITION =
-      new Transition(Pattern.compile(".+")) {
-        final Pattern baseUrlPattern =
-            Pattern.compile(
-                "^((https:)?//[0-9a-z.:\\[\\]-]+/" // Origin.
-                    + "|/[^/\\\\]" // Absolute path.
-                    + "|[^:/\\\\]+/" // Relative path.
-                    + "|[^:/\\\\]*[?#]" // Query string or fragment.
-                    + "|about:blank#" // about:blank with fragment.
-                    + ")",
-                Pattern.CASE_INSENSITIVE);
+  private static class TrustedResourceUriPartTransition extends Transition {
+    private static final Pattern BASE_URL_PATTERN =
+        Pattern.compile(
+            "^((https:)?//[0-9a-z.:\\[\\]-]+/" // Origin.
+                + "|/[^/\\\\]" // Absolute path.
+                + "|[^:/\\\\]+/" // Relative path.
+                + "|[^:/\\\\]*[?#]" // Query string or fragment.
+                + "|about:blank#" // about:blank with fragment.
+                + ")",
+            Pattern.CASE_INSENSITIVE);
 
-        @Override
-        boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriType == UriType.TRUSTED_RESOURCE;
-        }
+    TrustedResourceUriPartTransition(Pattern pattern) {
+      super(pattern);
+    }
 
-        @Override
-        Context computeNextContext(RawTextNode node, int offset, Context context, Matcher matcher) {
-          String match = matcher.group();
-          switch (context.uriPart) {
-            case START:
-              // Most of the work is here.  We expect the match to be one of the following forms:
-              // - https://foo/  NOTYPO
-              // - //foo/
-              // - Absolute or relative path.
-              // This emulates the behavior of goog.html.TrustedResourceUrl.format
-              // NOTE: In all cases we require that the fixed portion of the URL ends in path
-              // context.
-              // This is important to make sure that neither scheme nor host are potentially
-              // attacker controlled.
-              // Additionally, we will escapeUri all dynamic parts of the URL after this point
-              // which allows some things like query parameters to be set using untrusted
-              // content.
-              if (!baseUrlPattern.matcher(match).find()) {
-                // If the prefix is not allowed then we switch to UriPart.END meaning that we don't
-                // allow anything after this node (the whole URI must be fixed).
-                context = context.derive(UriPart.TRUSTED_RESOURCE_URI_END);
-                break;
-              } else {
-                context = context.derive(UriPart.AUTHORITY_OR_PATH);
-              }
-              // and fall-through
-            case AUTHORITY_OR_PATH:
-              int queryIndex = match.indexOf('?');
-              if (queryIndex == -1) {
-                // this might occur if a dynamic node ended with some query parameters
-                queryIndex = match.indexOf('&');
-              }
-              if (queryIndex != -1) {
-                context = context.derive(UriPart.QUERY);
-              }
-              // fall-through
-            case QUERY:
-              if (match.indexOf('#') == -1) {
-                // still in the query
-                return context;
-              }
-              context = context.derive(UriPart.FRAGMENT);
-              break;
-            case FRAGMENT:
-              // fragment is the end
-              return context;
-            case TRUSTED_RESOURCE_URI_END:
-              return context;
-            case DANGEROUS_SCHEME:
-            case MAYBE_SCHEME:
-            case MAYBE_VARIABLE_SCHEME:
-            case UNKNOWN:
-            case UNKNOWN_PRE_FRAGMENT:
-              throw SoyAutoescapeException.createWithNode(
-                  "Cannot safely process this TrustedResourceUri at compile time. "
-                      + "TrustedResourceUris must have a statically identifiable scheme and host. "
-                      + "Either use a hard-coded scheme, or move the calculation of this URL "
-                      + "outside of the template and use an ordaining API.",
-                  node.substring(/* newId= */ Integer.MAX_VALUE, offset));
-            case NONE:
-              throw new AssertionError("impossible");
+    @Override
+    boolean isApplicableTo(Context prior, Matcher matcher) {
+      return prior.uriType == UriType.TRUSTED_RESOURCE;
+    }
+
+    @Override
+    Context computeNextContext(RawTextNode node, int offset, Context context, Matcher matcher) {
+      String match = matcher.group();
+      switch (context.uriPart) {
+        case START:
+          // Most of the work is here.  We expect the match to be one of the following forms:
+          // - https://foo/  NOTYPO
+          // - //foo/
+          // - Absolute or relative path.
+          // This emulates the behavior of goog.html.TrustedResourceUrl.format
+          // NOTE: In all cases we require that the fixed portion of the URL ends in path context.
+          // This is important to make sure that neither scheme nor host are potentially attacker
+          // controlled.
+          // Additionally, we will escapeUri all dynamic parts of the URL after this point which
+          // allows some things like query parameters to be set using untrusted content.
+          if (!BASE_URL_PATTERN.matcher(match).find()) {
+            // If the prefix is not allowed then we switch to UriPart.END meaning that we don't
+            // allow anything after this node (the whole URI must be fixed).
+            context = context.derive(UriPart.TRUSTED_RESOURCE_URI_END);
+            break;
+          } else {
+            context = context.derive(UriPart.AUTHORITY_OR_PATH);
           }
+          // and fall-through
+        case AUTHORITY_OR_PATH:
+          int queryIndex = match.indexOf('?');
+          if (queryIndex == -1) {
+            // this might occur if a dynamic node ended with some query parameters
+            queryIndex = match.indexOf('&');
+          }
+          if (queryIndex != -1) {
+            context = context.derive(UriPart.QUERY);
+          }
+          // fall-through
+        case QUERY:
+          if (match.indexOf('#') == -1) {
+            // still in the query
+            return context;
+          }
+          context = context.derive(UriPart.FRAGMENT);
+          break;
+        case FRAGMENT:
+          // fragment is the end
           return context;
-        }
-      };
+        case TRUSTED_RESOURCE_URI_END:
+          return context;
+        case DANGEROUS_SCHEME:
+        case MAYBE_SCHEME:
+        case MAYBE_VARIABLE_SCHEME:
+        case UNKNOWN:
+        case UNKNOWN_PRE_FRAGMENT:
+          throw SoyAutoescapeException.createWithNode(
+              "Cannot safely process this TrustedResourceUri at compile time. "
+                  + "TrustedResourceUris must have a statically identifiable scheme and host. "
+                  + "Either use a hard-coded scheme, or move the calculation of this URL outside "
+                  + "of the template and use an ordaining API.",
+              node.substring(/* newId= */ Integer.MAX_VALUE, offset));
+        case NONE:
+          throw new AssertionError("impossible");
+      }
+      return context;
+    }
+  }
 
   /** Matches the beginning of a CSS URI with the delimiter, if any, in group 1. */
   private static Transition makeCssUriTransition(Pattern regex, final UriType uriType) {
@@ -684,8 +685,9 @@ final class RawTextContextUpdater {
                               + "|cursor|list-style|list-style-image)"
                               + "\\s*:\\s*url\\s*\\(\\s*(['\"]?)"),
                       UriType.MEDIA),
-                  // TODO(gboyer): We should treat @import, @font-face src, etc as trusted
-                  // resources, once trusted URLs are implemented.
+                  makeCssUriTransition(
+                      Pattern.compile("@import\\b(?:\\s+url\\s*\\()?\\s*(['\"]?)"),
+                      UriType.TRUSTED_RESOURCE),
                   makeCssUriTransition(
                       Pattern.compile("(?i)\\burl\\s*\\(\\s*(['\"]?)"), UriType.NORMAL),
                   TRANSITION_TO_SELF))
@@ -717,9 +719,7 @@ final class RawTextContextUpdater {
                   makeTransitionToState(Pattern.compile("[\\)\\s]"), HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
-                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
-                  // this is here for consistency
-                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  new TrustedResourceUriPartTransition(Pattern.compile("[^);\n\r\f]+")),
                   makeTransitionToError(
                       Pattern.compile("[\"']"), "Quotes not permitted in CSS URIs.")))
           .put(
@@ -728,9 +728,7 @@ final class RawTextContextUpdater {
                   makeTransitionToStateLiteral("'", HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
-                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
-                  // this is here for consistency
-                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  new TrustedResourceUriPartTransition(Pattern.compile("[^'\n\r\f]+")),
                   makeTransitionToSelf(
                       Pattern.compile("\\\\(?:\r\n?|[\n\f'])")), // Line continuation or escape.
                   makeTransitionToError(
@@ -741,9 +739,7 @@ final class RawTextContextUpdater {
                   makeTransitionToStateLiteral("\"", HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
-                  // There is currently no transition to trusted_resource_uri, from CSS_*_URI but
-                  // this is here for consistency
-                  TRUSTED_RESOURCE_URI_PART_TRANSITION,
+                  new TrustedResourceUriPartTransition(Pattern.compile("[^\n\r\f\"]+")),
                   makeTransitionToSelf(
                       Pattern.compile("\\\\(?:\r\n?|[\n\f\"])")), // Line continuation or escape.
                   makeTransitionToError(
@@ -930,7 +926,9 @@ final class RawTextContextUpdater {
           .put(
               HtmlContext.URI,
               ImmutableList.of(
-                  URI_PART_TRANSITION, URI_START_TRANSITION, TRUSTED_RESOURCE_URI_PART_TRANSITION))
+                  URI_PART_TRANSITION,
+                  URI_START_TRANSITION,
+                  new TrustedResourceUriPartTransition(Pattern.compile(".+"))))
           // All edges out of rcdata are triggered by tags which are handled in the InferenceEngine
           .put(HtmlContext.HTML_RCDATA, ImmutableList.of(TRANSITION_TO_SELF))
           // Text context has no edges except to itself.
