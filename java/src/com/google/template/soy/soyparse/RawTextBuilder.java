@@ -84,7 +84,7 @@ final class RawTextBuilder {
     }
     switch (token.kind) {
       case SoyFileParserConstants.TOKEN_WS:
-        if (token.image.equals("\r\n") || token.image.equals("\r") || token.image.equals("\n")) {
+        if (token.image.indexOf('\r') != -1 || token.image.indexOf('\n') != -1) {
           basicHasNewline = true;
         }
         if (basicStartOfWhitespace == -1) {

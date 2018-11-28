@@ -761,10 +761,12 @@ TOKEN_MGR_DECLS: {
 
 // Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT are only interpreted as such
 // if there is preceding whitespace.
-// Other lexical states don't have this requirement.  The fact that comments swallow a leading
-// whitespace character doesn't affect output because of how line joining works.
+// Other lexical states don't have this requirement.  The fact that comments swallow leading
+// whitespace characters doesn't affect output because of how line joining works.
 <TEMPLATE_DEFAULT> SKIP: {
-  < <WS> <LINE_COMMENT> >
+  // In theory we only require a single whitespace character, but this rule will consume all
+  // preceeding whitespace. This is necessary to make this unambiguous with the TOKEN_WS definition.
+  < (<WS>)+ <LINE_COMMENT> >
 }
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
@@ -1050,13 +1052,13 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Text.
 
-// TODO(b/63212073): Each of these tokens comprises of 1 character, so there end up being an awful
-// lot of them.  Each character of input source turns into a Token which is probably the slowest
-// part of the parser.  consider consuming sequences of raw text in single tokens.  e.g. ~["{"]
-// might work, but it would require assistence from other parts of the parser and thus measurement.
+// Tokens for supporting raw text and whitespace matching
 <TEMPLATE_DEFAULT> TOKEN: {
-  < TOKEN_WS: <WS> >
-| < TOKEN_NOT_WS: <NOT_WS> >
+  < TOKEN_WS: ( <WS> )+ >
+  // This complex token is any sequence of non whitespace non '/' non "{" or a single '/' character
+  // This ensures that it isn't ambiguous with other tokens in TEMPLATE_DEFAULT like comments,
+  // TOKEN_WS or any of the command tokens.
+| < TOKEN_NOT_WS: (~[" ", "\t", "\n", "\r", "/", "{", "}"])+ | "/" >
 }
 
 
@@ -1187,7 +1189,6 @@ TOKEN_MGR_DECLS: {
 
 <*> TOKEN: {
   < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
-| < #NOT_WS: ~[" ","\t","\n","\r"] >
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
