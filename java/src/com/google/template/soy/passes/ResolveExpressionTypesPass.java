@@ -1112,16 +1112,14 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           // Let args with unknown or error types pass
           if (argType.equals(UnknownType.getInstance())
               || argType.equals(ErrorType.getInstance())) {
-            // TODO(b/120138046): This should continue checking the remaining fields.
-            return;
+            continue;
           }
 
           // Same for List<?>, for repeated fields
           if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
             SoyType argElementType = ((ListType) argType).getElementType();
             if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
-              // TODO(b/120138046): This should continue checking the remaining fields.
-              return;
+              continue;
             }
           }
 
