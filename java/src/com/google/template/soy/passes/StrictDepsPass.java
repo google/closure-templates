@@ -26,7 +26,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
@@ -64,7 +64,7 @@ public final class StrictDepsPass extends CompilerFileSetPass {
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
   private void checkBasicCall(CallBasicNode node, TemplateRegistry registry) {
-    TemplateNode callee = registry.getBasicTemplateOrElement(node.getCalleeName());
+    TemplateMetadata callee = registry.getBasicTemplateOrElement(node.getCalleeName());
 
     if (callee == null) {
       String extraErrorMessage =
@@ -76,7 +76,7 @@ public final class StrictDepsPass extends CompilerFileSetPass {
           node.getCalleeName(),
           extraErrorMessage);
     } else {
-      SoyFileKind calleeKind = callee.getParent().getSoyFileKind();
+      SoyFileKind calleeKind = callee.getSoyFileKind();
       String callerFilePath = node.getSourceLocation().getFilePath();
       String calleeFilePath = callee.getSourceLocation().getFilePath();
       if (calleeKind == SoyFileKind.INDIRECT_DEP) {

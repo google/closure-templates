@@ -53,10 +53,10 @@ public final class TemplateRegistry {
           StyleAllowance.NO_PUNCTUATION);
 
   /** Map from basic template or element name to node. */
-  private final ImmutableMap<String, TemplateNode> basicTemplatesOrElementsMap;
+  private final ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap;
 
-  private final DelTemplateSelector<TemplateDelegateNode> delTemplateSelector;
-  private final ImmutableList<TemplateNode> allTemplates;
+  private final DelTemplateSelector<TemplateMetadata> delTemplateSelector;
+  private final ImmutableList<TemplateMetadata> allTemplates;
 
   /**
    * Constructor.
@@ -66,61 +66,67 @@ public final class TemplateRegistry {
   public TemplateRegistry(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
 
     // ------ Iterate through all templates to collect data. ------
-    ImmutableList.Builder<TemplateNode> allTemplatesBuilder = ImmutableList.builder();
-    DelTemplateSelector.Builder<TemplateDelegateNode> delTemplateSelectorBuilder =
+    ImmutableList.Builder<TemplateMetadata> allTemplatesBuilder = ImmutableList.builder();
+    DelTemplateSelector.Builder<TemplateMetadata> delTemplateSelectorBuilder =
         new DelTemplateSelector.Builder<>();
-    Map<String, TemplateNode> basicTemplatesOrElementsMap = new LinkedHashMap<>();
-    Multimap<String, TemplateDelegateNode> delegateTemplates = HashMultimap.create();
+    Map<String, TemplateMetadata> basicTemplatesOrElementsMap = new LinkedHashMap<>();
+    Multimap<String, TemplateMetadata> delegateTemplates = HashMultimap.create();
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       for (TemplateNode template : soyFile.getChildren()) {
-        allTemplatesBuilder.add(template);
-        if (template instanceof TemplateBasicNode || template instanceof TemplateElementNode) {
-          // Case 1: Basic Template or Element node
-          TemplateNode prev = basicTemplatesOrElementsMap.put(template.getTemplateName(), template);
-          if (prev != null) {
-            errorReporter.report(
-                template.getSourceLocation(),
-                DUPLICATE_TEMPLATES,
-                template.getTemplateName(),
-                prev.getSourceLocation());
-          }
-        } else {
-          // Case 2: Delegate template.
-          TemplateDelegateNode delTemplate = (TemplateDelegateNode) template;
-          String delTemplateName = delTemplate.getDelTemplateName();
-          String delPackageName = delTemplate.getDelPackageName();
-          String variant = delTemplate.getDelTemplateVariant();
-          TemplateDelegateNode previous;
-          if (delPackageName == null) {
-            // default delegate
-            previous = delTemplateSelectorBuilder.addDefault(delTemplateName, variant, delTemplate);
-            if (previous != null) {
+        TemplateMetadata templateObject = TemplateMetadata.fromTemplate(template);
+        allTemplatesBuilder.add(templateObject);
+        switch (templateObject.getTemplateKind()) {
+          case BASIC:
+          case ELEMENT:
+            // Case 1: Basic Template or Element node
+            TemplateMetadata prev =
+                basicTemplatesOrElementsMap.put(templateObject.getTemplateName(), templateObject);
+            if (prev != null) {
               errorReporter.report(
-                  delTemplate.getSourceLocation(),
-                  DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
-                  delTemplateName,
-                  previous.getSourceLocation());
+                  template.getSourceLocation(),
+                  DUPLICATE_TEMPLATES,
+                  template.getTemplateName(),
+                  prev.getSourceLocation());
+            }
+            break;
+          case DELTEMPLATE:
+            // Case 2: Delegate template.
+            String delTemplateName = templateObject.getDelTemplateName();
+            String delPackageName = templateObject.getDelPackageName();
+            String variant = templateObject.getDelTemplateVariant();
+            TemplateMetadata previous;
+          if (delPackageName == null) {
+              // default delegate
+              previous =
+                  delTemplateSelectorBuilder.addDefault(delTemplateName, variant, templateObject);
+            if (previous != null) {
+                errorReporter.report(
+                    templateObject.getSourceLocation(),
+                    DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
+                    delTemplateName,
+                    previous.getSourceLocation());
             }
           } else {
-            previous =
-                delTemplateSelectorBuilder.add(
-                    delTemplateName, delPackageName, variant, delTemplate);
+              previous =
+                  delTemplateSelectorBuilder.add(
+                      delTemplateName, delPackageName, variant, templateObject);
             if (previous != null) {
-              errorReporter.report(
-                  delTemplate.getSourceLocation(),
-                  DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
-                  delTemplateName,
-                  delPackageName,
-                  previous.getSourceLocation());
+                errorReporter.report(
+                    templateObject.getSourceLocation(),
+                    DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
+                    delTemplateName,
+                    delPackageName,
+                    previous.getSourceLocation());
             }
           }
-          delegateTemplates.put(delTemplateName, delTemplate);
+            delegateTemplates.put(delTemplateName, templateObject);
+            break;
         }
       }
     }
     // make sure no basic nodes conflict with deltemplates
-    for (Map.Entry<String, TemplateDelegateNode> entry : delegateTemplates.entries()) {
-      TemplateNode node = basicTemplatesOrElementsMap.get(entry.getKey());
+    for (Map.Entry<String, TemplateMetadata> entry : delegateTemplates.entries()) {
+      TemplateMetadata node = basicTemplatesOrElementsMap.get(entry.getKey());
       if (node != null) {
         errorReporter.report(
             entry.getValue().getSourceLocation(),
@@ -143,10 +149,10 @@ public final class TemplateRegistry {
   }
 
   /** Look up possible targets for a call. */
-  public ImmutableList<? extends TemplateNode> getTemplates(CallNode node) {
+  public ImmutableList<TemplateMetadata> getTemplates(CallNode node) {
     if (node instanceof CallBasicNode) {
       String calleeName = ((CallBasicNode) node).getCalleeName();
-      TemplateNode template = basicTemplatesOrElementsMap.get(calleeName);
+      TemplateMetadata template = basicTemplatesOrElementsMap.get(calleeName);
       return template == null ? ImmutableList.of() : ImmutableList.of(template);
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
@@ -161,12 +167,12 @@ public final class TemplateRegistry {
    * @return The corresponding template/element, or null if the name is not defined.
    */
   @Nullable
-  public TemplateNode getBasicTemplateOrElement(String templateName) {
+  public TemplateMetadata getBasicTemplateOrElement(String templateName) {
     return basicTemplatesOrElementsMap.get(templateName);
   }
 
   /** Returns a multimap from delegate template name to set of keys. */
-  public DelTemplateSelector<TemplateDelegateNode> getDelTemplateSelector() {
+  public DelTemplateSelector<TemplateMetadata> getDelTemplateSelector() {
     return delTemplateSelector;
   }
 
@@ -174,7 +180,7 @@ public final class TemplateRegistry {
    * Returns all registered templates ({@link TemplateBasicNode basic} and {@link
    * TemplateDelegateNode delegate} nodes), in no particular order.
    */
-  public ImmutableList<TemplateNode> getAllTemplates() {
+  public ImmutableList<TemplateMetadata> getAllTemplates() {
     return allTemplates;
   }
 
@@ -191,7 +197,7 @@ public final class TemplateRegistry {
    *     priority (unable to select one over the other).
    */
   @Nullable
-  public TemplateDelegateNode selectDelTemplate(
+  public TemplateMetadata selectDelTemplate(
       DelTemplateKey delTemplateKey, Predicate<String> activeDelPackageNameSelector) {
     // TODO(lukes): eliminate this method and DelTemplateKey
     return delTemplateSelector.selectTemplate(
@@ -207,26 +213,26 @@ public final class TemplateRegistry {
    * @return The kind of content that the call results in.
    */
   public Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
-    TemplateNode templateNode = null;
+    TemplateMetadata templateObject = null;
 
     if (node instanceof CallBasicNode) {
       String calleeName = ((CallBasicNode) node).getCalleeName();
-      templateNode = getBasicTemplateOrElement(calleeName);
+      templateObject = getBasicTemplateOrElement(calleeName);
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
-      ImmutableList<TemplateDelegateNode> templateNodes =
+      ImmutableList<TemplateMetadata> templateNodes =
           getDelTemplateSelector().delTemplateNameToValues().get(calleeName);
       // For per-file compilation, we may not have any of the delegate templates in the compilation
       // unit.
       if (!templateNodes.isEmpty()) {
-        templateNode = templateNodes.get(0);
+        templateObject = templateNodes.get(0);
       }
     }
     // The template node may be null if the template is being compiled in isolation.
-    if (templateNode == null) {
+    if (templateObject == null) {
       return Optional.absent();
     }
 
-    return Optional.fromNullable(templateNode.getContentKind());
+    return Optional.fromNullable(templateObject.getContentKind());
   }
 }

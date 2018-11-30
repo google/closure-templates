@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -98,19 +98,19 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   /** Performs checks that only involve templates (uses templateRegistry only). */
   private void checkTemplates(TemplateRegistry templateRegistry) {
 
-    DelTemplateSelector<TemplateDelegateNode> selector = templateRegistry.getDelTemplateSelector();
+    DelTemplateSelector<TemplateMetadata> selector = templateRegistry.getDelTemplateSelector();
 
     // Check that all delegate templates with the same name have the same declared params,
     // content kind, and strict html mode.
-    for (Collection<TemplateDelegateNode> delTemplateGroup :
+    for (Collection<TemplateMetadata> delTemplateGroup :
         selector.delTemplateNameToValues().asMap().values()) {
-      TemplateDelegateNode firstDelTemplate = null;
+      TemplateMetadata firstDelTemplate = null;
       Set<Equivalence.Wrapper<TemplateParam>> firstRequiredParamSet = null;
       SanitizedContentKind firstContentKind = null;
       boolean firstStrictHtml = false;
 
       // loop over all members of the deltemplate group.
-      for (TemplateDelegateNode delTemplate : delTemplateGroup) {
+      for (TemplateMetadata delTemplate : delTemplateGroup) {
         if (firstDelTemplate == null) {
           // First template encountered.
           firstDelTemplate = delTemplate;
@@ -180,9 +180,10 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   }
 
   private static Set<Equivalence.Wrapper<TemplateParam>> getRequiredParamSet(
-      TemplateDelegateNode delTemplate) {
+      TemplateMetadata delTemplate) {
+    TemplateNode node = delTemplate.getTemplateNodeForTemporaryCompatibility();
     Set<Equivalence.Wrapper<TemplateParam>> paramSet = new HashSet<>();
-    for (TemplateParam param : delTemplate.getParams()) {
+    for (TemplateParam param : node.getParams()) {
       if (param.isRequired()) {
         paramSet.add(ParamEquivalence.INSTANCE.wrap(param));
       }
@@ -204,7 +205,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
 
     // Check that the callee is either not in a delegate package or in the same delegate package.
-    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(calleeName);
+    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
       if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {

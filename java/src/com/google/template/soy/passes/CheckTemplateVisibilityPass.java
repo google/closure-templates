@@ -23,7 +23,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 
@@ -49,14 +49,14 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
     for (SoyFileNode file : sourceFiles) {
       for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
         String calleeName = node.getCalleeName();
-        TemplateNode definition = registry.getBasicTemplateOrElement(calleeName);
+        TemplateMetadata definition = registry.getBasicTemplateOrElement(calleeName);
         if (definition != null && !isVisible(file, definition)) {
           errorReporter.report(
               node.getSourceLocation(),
               CALLEE_NOT_VISIBLE,
               calleeName,
               definition.getVisibility().getAttributeValue(),
-              definition.getParent().getFilePath());
+              definition.getSourceLocation().getFilePath());
         }
       }
     }
@@ -64,9 +64,10 @@ final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
     return Result.CONTINUE;
   }
 
-  private static boolean isVisible(SoyFileNode calledFrom, TemplateNode callee) {
+  private static boolean isVisible(SoyFileNode calledFrom, TemplateMetadata callee) {
     // The only visibility level that this pass currently cares about is PRIVATE.
     // Templates are visible if they are not private or are defined in the same file.
-    return callee.getVisibility() != Visibility.PRIVATE || callee.getParent().equals(calledFrom);
+    return callee.getVisibility() != Visibility.PRIVATE
+        || callee.getSourceLocation().getFilePath().equals(calledFrom.getFilePath());
   }
 }

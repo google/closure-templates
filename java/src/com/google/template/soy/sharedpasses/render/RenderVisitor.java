@@ -82,8 +82,8 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
@@ -475,7 +475,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
 
-    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
+    TemplateNode callee =
+        templateRegistry.getBasicTemplateOrElement(node.getCalleeName()).getTemplateNode();
     if (callee == null) {
       throw RenderException.createWithSource(
           "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);
@@ -515,7 +516,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
     DelTemplateKey delegateKey = DelTemplateKey.create(node.getDelCalleeName(), variant);
 
-    TemplateDelegateNode callee;
+    TemplateMetadata callee;
     try {
       callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageSelector);
     } catch (IllegalArgumentException e) {
@@ -523,7 +524,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     if (callee != null) {
-      visitCallNodeHelper(node, callee);
+      visitCallNodeHelper(node, callee.getTemplateNode());
 
     } else if (node.allowEmptyDefault()) {
       return; // no active delegate implementation, so the call output is empty string

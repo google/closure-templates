@@ -21,8 +21,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,18 +41,17 @@ final class CompiledTemplateRegistry {
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
         ImmutableBiMap.builder();
     ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
-    for (TemplateNode template : registry.getAllTemplates()) {
+    for (TemplateMetadata template : registry.getAllTemplates()) {
       CompiledTemplateMetadata metadata =
-          CompiledTemplateMetadata.create(template.getTemplateName(), template);
+          CompiledTemplateMetadata.create(template.getTemplateName(), template.getTemplateNode());
       templateToMetadata.put(template.getTemplateName(), metadata);
       classToMetadata.put(metadata.typeInfo().className(), metadata);
-      if (template instanceof TemplateDelegateNode) {
+      if (template.getTemplateKind() == TemplateMetadata.Kind.DELTEMPLATE) {
         delegateTemplateNames.add(template.getTemplateName());
         // all delegates are guaranteed to have the same content kind by the
         // checkdelegatesvisitor
         deltemplateNameToContentKind.put(
-            ((TemplateDelegateNode) template).getDelTemplateName(),
-            Optional.fromNullable(template.getContentKind()));
+            template.getDelTemplateName(), Optional.fromNullable(template.getContentKind()));
       }
     }
     this.templateNameToMetadata = templateToMetadata.build();

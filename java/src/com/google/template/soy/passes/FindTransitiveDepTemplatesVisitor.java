@@ -34,7 +34,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayDeque;
@@ -387,7 +387,7 @@ public final class FindTransitiveDepTemplatesVisitor
     // Don't forget to visit content within CallParamContentNodes.
     visitChildren(node);
 
-    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
+    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
 
     // If the callee is null (i.e. not within the Soy file set), then this is an external call.
     if (callee == null) {
@@ -405,50 +405,51 @@ public final class FindTransitiveDepTemplatesVisitor
     visitChildren(node);
 
     // Visit all the possible callee templates.
-    ImmutableList<TemplateDelegateNode> potentialCallees =
+    ImmutableList<TemplateMetadata> potentialCallees =
         templateRegistry
             .getDelTemplateSelector()
             .delTemplateNameToValues()
             .get(node.getDelCalleeName());
-    for (TemplateDelegateNode delCallee : potentialCallees) {
+    for (TemplateMetadata delCallee : potentialCallees) {
       processCalleeHelper(delCallee);
     }
   }
 
   /** Private helper for visitCallBasicNode() and visitCallDelegateNode(). */
-  private void processCalleeHelper(TemplateNode callee) {
-
-    if (templateToFinishedInfoMap.containsKey(callee)) {
+  private void processCalleeHelper(TemplateMetadata callee) {
+    TemplateNode calleeNode = callee.getTemplateNodeForTemporaryCompatibility();
+    if (templateToFinishedInfoMap.containsKey(calleeNode)) {
       // Case 1: The callee was already finished in a previous pass (previous call to exec).
-      currTemplateVisitInfo.incorporateCalleeFinishedInfo(templateToFinishedInfoMap.get(callee));
+      currTemplateVisitInfo.incorporateCalleeFinishedInfo(
+          templateToFinishedInfoMap.get(calleeNode));
 
-    } else if (Objects.equals(callee, currTemplateVisitInfo.rootTemplate)) {
+    } else if (Objects.equals(calleeNode, currTemplateVisitInfo.rootTemplate)) {
       // Case 2: The callee is the current template (direct recursive call). Nothing to do here.
 
-    } else if (activeTemplateSet.contains(callee)) {
+    } else if (activeTemplateSet.contains(calleeNode)) {
       // Case 3: The callee is an ancestor in our depth-first visit tree. The callee (i.e.
       // ancestor) is "equivalent" to the current template because either template can reach the
       // the other via calls. In this case, we may change the field visitInfoOfEarliestEquivalent
       // (unless we had previously already found an earlier equivalent).
-      currTemplateVisitInfo.maybeUpdateEarliestEquivalent(visitedTemplateToInfoMap.get(callee));
+      currTemplateVisitInfo.maybeUpdateEarliestEquivalent(visitedTemplateToInfoMap.get(calleeNode));
 
-    } else if (visitedTemplateToInfoMap.containsKey(callee)) {
+    } else if (visitedTemplateToInfoMap.containsKey(calleeNode)) {
       // Case 4: The callee was visited sometime earlier in the current pass, and that visit has
       // already ended since the callee is not in the activeTemplateSet (case 3 above).
       currTemplateVisitInfo.incorporateCalleeVisitInfo(
-          visitedTemplateToInfoMap.get(callee), activeTemplateSet);
+          visitedTemplateToInfoMap.get(calleeNode), activeTemplateSet);
 
     } else {
       // Case 5: The callee is a new template we've never visited.
 
       activeTemplateVisitInfoStack.push(currTemplateVisitInfo);
       activeTemplateSet.add(currTemplateVisitInfo.rootTemplate);
-      visit(callee);
+      visit(calleeNode);
       currTemplateVisitInfo = activeTemplateVisitInfoStack.pop();
       activeTemplateSet.remove(currTemplateVisitInfo.rootTemplate);
 
       currTemplateVisitInfo.incorporateCalleeVisitInfo(
-          visitedTemplateToInfoMap.get(callee), activeTemplateSet);
+          visitedTemplateToInfoMap.get(calleeNode), activeTemplateSet);
     }
   }
 

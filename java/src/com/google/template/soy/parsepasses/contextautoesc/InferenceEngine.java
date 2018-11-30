@@ -58,6 +58,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.Iterator;
 import java.util.List;
@@ -573,13 +574,12 @@ final class InferenceEngine {
      * <p>This relies on CheckDelegatesPass to print friendly messages if the deltemplates differ in
      * content kind.
      */
-    private SanitizedContentKind getCommonContentKindIfStrict(
-        List<? extends TemplateNode> templates) {
+    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateMetadata> templates) {
       if (templates.isEmpty()) {
         return null;
       }
       SanitizedContentKind contentKind = templates.get(0).getContentKind();
-      for (TemplateNode template : templates) {
+      for (TemplateMetadata template : templates) {
         Preconditions.checkArgument(template.getContentKind() == contentKind);
       }
       return contentKind;
@@ -598,7 +598,7 @@ final class InferenceEngine {
      */
     private Context inferCallSite(
         CallNode callNode, Context startContext, String templateName, Inferences inferences) {
-      List<? extends TemplateNode> targets = inferences.lookupTemplates(callNode);
+      List<TemplateMetadata> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
@@ -43,28 +45,30 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   }
 
   TemplateBasicNodeSubject containsBasicTemplate(String name) {
-    TemplateBasicNode templateBasicNode =
-        (TemplateBasicNode) actual().getBasicTemplateOrElement(name);
+    TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
     if (templateBasicNode == null) {
       fail("The registry doesn't contain a template named", name);
     }
-    return Truth.assertAbout(TemplateBasicNodeSubject.TEMPLATE_BASIC_NODE).that(templateBasicNode);
+    return Truth.assertAbout(TemplateBasicNodeSubject.TEMPLATE_BASIC_NODE)
+        .that((TemplateBasicNode) templateBasicNode.getTemplateNode());
   }
 
   void doesNotContainBasicTemplate(String name) {
-    TemplateBasicNode templateBasicNode =
-        (TemplateBasicNode) actual().getBasicTemplateOrElement(name);
+    TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
     if (templateBasicNode != null) {
       fail("The registry does contain a template named", name);
     }
   }
 
   TemplateDelegateNodesSubject containsDelTemplate(String name) {
-    ImmutableList<TemplateDelegateNode> delTemplates =
+    ImmutableList<TemplateMetadata> delTemplates =
         actual().getDelTemplateSelector().delTemplateNameToValues().get(name);
     Truth.assertThat(delTemplates).isNotEmpty();
     return Truth.assertAbout(TemplateDelegateNodesSubject.TEMPLATE_DELEGATE_NODES)
-        .that(delTemplates);
+        .that(
+            delTemplates.stream()
+                .map(to -> (TemplateDelegateNode) to.getTemplateNode())
+                .collect(toImmutableList()));
   }
 
   void doesNotContainDelTemplate(String name) {

@@ -48,6 +48,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.HeaderParam;
@@ -150,28 +151,35 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     }
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
-      TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
+      TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
       if (callee != null) {
-        Set<TemplateParam> paramsToRuntimeCheck = checkCallParamTypes(callerTemplate, node, callee);
+        Set<TemplateParam> paramsToRuntimeCheck =
+            checkCallParamTypes(
+                callerTemplate, node, callee.getTemplateNodeForTemporaryCompatibility());
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
-        checkCallParamNames(node, callee);
-        checkPassesUnusedParams(node, callee);
+        checkCallParamNames(node, callee.getTemplateNodeForTemporaryCompatibility());
+        checkPassesUnusedParams(node, callee.getTemplateNodeForTemporaryCompatibility());
       }
-      checkStrictHtml(callerTemplate, node, callee);
+      checkStrictHtml(
+          callerTemplate,
+          node,
+          callee == null ? null : callee.getTemplateNodeForTemporaryCompatibility());
     }
 
     void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
       ImmutableMap.Builder<TemplateDelegateNode, ImmutableList<TemplateParam>>
           paramsToCheckByTemplate = ImmutableMap.builder();
-      ImmutableList<TemplateDelegateNode> potentialCallees =
+      ImmutableList<TemplateMetadata> potentialCallees =
           templateRegistry
               .getDelTemplateSelector()
               .delTemplateNameToValues()
               .get(node.getDelCalleeName());
-      for (TemplateDelegateNode delTemplate : potentialCallees) {
-        Set<TemplateParam> params = checkCallParamTypes(callerTemplate, node, delTemplate);
-        paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
-        checkCallParamNames(node, delTemplate);
+      for (TemplateMetadata delTemplate : potentialCallees) {
+        TemplateDelegateNode delTemplateNode =
+            (TemplateDelegateNode) delTemplate.getTemplateNodeForTemporaryCompatibility();
+        Set<TemplateParam> params = checkCallParamTypes(callerTemplate, node, delTemplateNode);
+        paramsToCheckByTemplate.put(delTemplateNode, ImmutableList.copyOf(params));
+        checkCallParamNames(node, delTemplateNode);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
@@ -179,7 +187,10 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
       // as an error independently.
       if (!potentialCallees.isEmpty()) {
-        checkStrictHtml(callerTemplate, node, potentialCallees.get(0));
+        checkStrictHtml(
+            callerTemplate,
+            node,
+            potentialCallees.get(0).getTemplateNodeForTemporaryCompatibility());
       }
     }
 

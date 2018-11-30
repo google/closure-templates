@@ -38,6 +38,7 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -193,7 +194,9 @@ public final class BaseTofu implements SoyTofu {
       boolean debugSoyTemplateInfo,
       ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
-    TemplateNode template = templateRegistry.getBasicTemplateOrElement(templateName);
+    // templateNode is always guaranteed to be non-null because for a tofu compile all templates are
+    // considered source files
+    TemplateMetadata template = templateRegistry.getBasicTemplateOrElement(templateName);
     if (template == null) {
       throw new SoyTofuException("Attempting to render undefined template '" + templateName + "'.");
     } else if (template.getVisibility() == Visibility.PRIVATE) {
@@ -221,13 +224,13 @@ public final class BaseTofu implements SoyTofu {
               cssRenamingMap,
               debugSoyTemplateInfo,
               pluginInstances);
-      rv.exec(template);
+      rv.exec(template.getTemplateNode());
 
     } catch (RenderException re) {
       throw new SoyTofuException(re);
     }
 
-    return template;
+    return template.getTemplateNode();
   }
 
   // -----------------------------------------------------------------------------------------------

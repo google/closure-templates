@@ -37,13 +37,12 @@ import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -217,13 +216,11 @@ public final class BytecodeCompiler {
    * @param sink The source to write the jar file
    */
   public static void writeSrcJar(
-      TemplateRegistry registry, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
+      SoyFileSetNode soyFileSet, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
       throws IOException {
-    Set<SoyFileNode> seenFiles = new HashSet<>();
     try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
-      for (TemplateNode template : registry.getAllTemplates()) {
-        SoyFileNode file = template.getParent();
-        if (file.getSoyFileKind() == SoyFileKind.SRC && seenFiles.add(file)) {
+      for (SoyFileNode file : soyFileSet.getChildren()) {
+        if (file.getSoyFileKind() == SoyFileKind.SRC) {
           String namespace = file.getNamespace();
           String fileName = file.getFileName();
           writer.writeEntry(
@@ -264,7 +261,7 @@ public final class BytecodeCompiler {
       CompilerListener<T> listener) {
     for (String name : registry.getTemplateNames()) {
       CompiledTemplateMetadata classInfo = registry.getTemplateInfoByTemplateName(name);
-      if (classInfo.node().getParent().getSoyFileKind() != SoyFileKind.SRC) {
+      if (classInfo.node() == null) {
         continue; // only generate classes for sources
       }
       try {

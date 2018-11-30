@@ -346,7 +346,8 @@ public class RenderVisitorTest {
             cssRenamingMap,
             false,
             /* pluginInstances= */ ImmutableMap.of());
-    TemplateNode templateNode = templateRegistry.getBasicTemplateOrElement(templateName);
+    TemplateNode templateNode =
+        templateRegistry.getBasicTemplateOrElement(templateName).getTemplateNode();
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -1053,7 +1054,7 @@ public class RenderVisitorTest {
             cssRenamingMap,
             false,
             /* pluginInstances= */ ImmutableMap.of());
-    rv.exec(templateRegistry.getBasicTemplateOrElement("ns.callerTemplate"));
+    rv.exec(templateRegistry.getBasicTemplateOrElement("ns.callerTemplate").getTemplateNode());
 
     String expectedOutput =
         "booij 1 2 3\n"

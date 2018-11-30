@@ -36,7 +36,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -310,7 +310,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
       return;
     }
 
-    TemplateNode callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
+    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
 
     // Note the template may be null because we allow calls to external templates not within this
     // Soy file set.
@@ -320,7 +320,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     }
 
     // Visit the callee template.
-    visitCalleeHelper(node, callee);
+    visitCalleeHelper(node, callee.getTemplateNodeForTemporaryCompatibility());
   }
 
   @Override
@@ -339,13 +339,13 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     mayHaveIndirectParamsInExternalDelCalls = true;
 
     // Visit all the possible callee templates.
-    ImmutableList<TemplateDelegateNode> potentialCallees =
+    ImmutableList<TemplateMetadata> potentialCallees =
         templateRegistry
             .getDelTemplateSelector()
             .delTemplateNameToValues()
             .get(node.getDelCalleeName());
-    for (TemplateDelegateNode delCallee : potentialCallees) {
-      visitCalleeHelper(node, delCallee);
+    for (TemplateMetadata delCallee : potentialCallees) {
+      visitCalleeHelper(node, delCallee.getTemplateNodeForTemporaryCompatibility());
     }
   }
 
