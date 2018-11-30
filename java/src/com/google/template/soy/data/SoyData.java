@@ -40,7 +40,7 @@ public abstract class SoyData extends SoyAbstractValue {
    *     runtime and need SoyValue objects, use SoyValueConverter instead.
    */
   @Deprecated
-  public static SoyData createFromExistingData(Object obj) {
+  protected static SoyData createFromExistingData(Object obj) {
     if (obj instanceof SoyData) {
       return (SoyData) obj;
     } else if (obj instanceof Map<?, ?>) {
