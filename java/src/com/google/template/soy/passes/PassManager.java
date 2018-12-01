@@ -16,11 +16,15 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TriState;
@@ -33,6 +37,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Map;
 import javax.annotation.CheckReturnValue;
 
 /**
@@ -64,13 +69,69 @@ import javax.annotation.CheckReturnValue;
  * dependency system in place.
  */
 public final class PassManager {
+
+  /**
+   * Pass continuation rules.
+   *
+   * <p>These rules are used when running compile passes. You can stop compilation either before or
+   * after a pass. By default, compilation continues after each pass without stopping.
+   */
+  public enum PassContinuationRule {
+    CONTINUE,
+    STOP_BEFORE_PASS,
+    STOP_AFTER_PASS,
+  };
+
   private final ImmutableList<CompilerFilePass> singleFilePasses;
   private final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
   private final ErrorReporter errorReporter;
+  private final ImmutableMap<String, PassContinuationRule> passContinuationRegistry;
+  private boolean isPassManagerStopped = false;
+
+  /**
+   * Transform all the STOP_AFTER rules into STOP_BEFORE_PASS.
+   *
+   * <p>This greatly simplifies the logic inside {@link #runSingleFilePasses(SoyFileNode,
+   * IdGenerator)} and {@link #runWholeFilesetPasses(SoyFileSetNode)}.
+   */
+  @VisibleForTesting
+  static ImmutableMap<String, PassContinuationRule> remapPassContinuationRegistry(
+      Map<String, PassContinuationRule> passContinuationRegistry,
+      ImmutableList<CompilerFilePass> passList) {
+    ImmutableMap.Builder<String, PassContinuationRule> remappedRegistry = ImmutableMap.builder();
+    for (ImmutableMap.Entry<String, PassContinuationRule> entry :
+        passContinuationRegistry.entrySet()) {
+      switch (entry.getValue()) {
+        case STOP_AFTER_PASS:
+          final String passName = entry.getKey();
+          int passIndex =
+              Iterables.indexOf(
+                  passList,
+                  new Predicate<CompilerFilePass>() {
+                    @Override
+                    public boolean apply(CompilerFilePass input) {
+                      return input.name().equals(passName);
+                    }
+                  });
+          checkState(passIndex != -1);
+          // Remap STOP_AFTER to STOP_BEFORE only if the STOP_AFTER rule is not on the last pass.
+          if (passIndex < passList.size() - 1) {
+            remappedRegistry.put(
+                passList.get(passIndex + 1).name(), PassContinuationRule.STOP_BEFORE_PASS);
+          }
+          break;
+        case STOP_BEFORE_PASS:
+          remappedRegistry.put(entry);
+          break;
+        case CONTINUE:
+          // The CONTINUE rule is a no-op.
+          break;
+      }
+    }
+    return remappedRegistry.build();
+  }
 
   private PassManager(Builder builder) {
-    checkArgument(!builder.conformanceOnly);
-
     SoyTypeRegistry registry = checkNotNull(builder.registry);
     this.errorReporter = checkNotNull(builder.errorReporter);
     SoyGeneralOptions options = checkNotNull(builder.opts);
@@ -95,7 +156,7 @@ public final class PassManager {
             // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use to
             // create placeholders.
             .add(new InsertMsgPlaceholderNodesPass(errorReporter))
-            .add(new RewriteRemaindersPass((errorReporter)))
+            .add(new RewriteRemaindersPass(errorReporter))
             .add(new RewriteGenderMsgsPass(errorReporter))
             // Needs to come after any pass that manipulates msg placeholders.
             .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
@@ -150,6 +211,8 @@ public final class PassManager {
     singleFilePassesBuilder.add(new SoyElementPass(errorReporter));
 
     this.singleFilePasses = singleFilePassesBuilder.build();
+    this.passContinuationRegistry =
+        remapPassContinuationRegistry(builder.passContinuationRegistry, this.singleFilePasses);
 
     // Cross template checking passes
 
@@ -199,32 +262,30 @@ public final class PassManager {
     if (builder.optimize && options.isOptimizerEnabled()) {
       crossTemplateCheckingPassesBuilder.add(new OptimizationPass());
     }
-    // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes, and the
+    // A number of the passes above (desugar, htmlrewrite), may chop up raw text nodes, and the
     // Optimizer may produce additional RawTextNodes.
     // Stich them back together here.
     crossTemplateCheckingPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
     this.crossTemplateCheckingPasses = crossTemplateCheckingPassesBuilder.build();
   }
 
-  // This constructor is just used for the conformanceOnly mode, the boolean parameter is just to
-  // make it a unique overload.
-  private PassManager(Builder builder, boolean unused) {
-    checkArgument(builder.conformanceOnly);
-    this.errorReporter = builder.errorReporter;
-    this.singleFilePasses =
-        ImmutableList.<CompilerFilePass>builder()
-            .add(new HtmlRewritePass(errorReporter))
-            // The check conformance pass needs to run on the rewritten html nodes, so it must
-            // run after HtmlRewritePass
-            .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
-            .build();
-    this.crossTemplateCheckingPasses = ImmutableList.of();
-  }
-
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
-    // All single file passes only run on source files
-    if (file.getSoyFileKind() == SoyFileKind.SRC) {
-      for (CompilerFilePass pass : singleFilePasses) {
+    if (isPassManagerStopped) {
+      return;
+    }
+    for (CompilerFilePass pass : singleFilePasses) {
+      // All single file passes only run on source files
+      if (file.getSoyFileKind() != SoyFileKind.SRC) {
+        continue;
+      }
+      PassContinuationRule rule =
+          passContinuationRegistry.getOrDefault(pass.name(), PassContinuationRule.CONTINUE);
+      // At this point, all the pass continuation rules have either been remapped to
+      // STOP_BEFORE_PASS or removed as no-ops.
+      if (rule == PassContinuationRule.STOP_BEFORE_PASS) {
+        isPassManagerStopped = true;
+        break;
+      } else {
         pass.run(file, nodeIdGen);
       }
     }
@@ -236,13 +297,27 @@ public final class PassManager {
    * @return a fully populated TemplateRegistry
    */
   @CheckReturnValue
-  public TemplateRegistry runWholeFilesetPasses(SoyFileSetNode soyTree) {
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, errorReporter);
+  public TemplateRegistry runWholeFilesetPasses(final SoyFileSetNode soyTree) {
+    final TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, errorReporter);
+
+    if (isPassManagerStopped) {
+      return templateRegistry;
+    }
+
     ImmutableList<SoyFileNode> sourceFiles = soyTree.getSourceFiles();
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
-      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
-      if (result == CompilerFileSetPass.Result.STOP) {
+      PassContinuationRule rule =
+          passContinuationRegistry.getOrDefault(pass.name(), PassContinuationRule.CONTINUE);
+      // At this point, all the pass continuation rules have either been remapped to
+      // STOP_BEFORE_PASS or removed as no-ops.
+      if (rule == PassContinuationRule.STOP_BEFORE_PASS) {
+        isPassManagerStopped = true;
+      } else {
+        isPassManagerStopped =
+            pass.run(sourceFiles, idGenerator, templateRegistry) == CompilerFileSetPass.Result.STOP;
+      }
+      if (isPassManagerStopped) {
         break;
       }
     }
@@ -264,7 +339,7 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
     private boolean addHtmlAttributesForDebugging = true;
-    private boolean conformanceOnly = false;
+    private final Map<String, PassContinuationRule> passContinuationRegistry = Maps.newHashMap();
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -287,9 +362,14 @@ public final class PassManager {
       return this;
     }
 
-    public Builder setConformanceOnly(boolean conformanceOnly) {
-      this.conformanceOnly = conformanceOnly;
-      return this;
+    /**
+     * Configures the {@link PassManager} to run conformance passes only.
+     *
+     * <p>The conformance passes are {@link HtmlRewritePass} and {@link SoyConformancePass}.
+     */
+    public Builder forceConformanceOnly() {
+      // Conformance tests only operate on single files.
+      return addPassContinuationRule("SoyConformance", PassContinuationRule.STOP_AFTER_PASS);
     }
 
     /**
@@ -370,8 +450,25 @@ public final class PassManager {
       return this;
     }
 
+    /**
+     * Registers a pass continuation rule.
+     *
+     * <p>By default, compilation continues after each pass. You can stop compilation before or
+     * after any pass. This is useful for testing, or for running certain kinds of passes, such as
+     * conformance-only compilations.
+     *
+     * <p>This method overwrites any previously registered rule.
+     *
+     * @param passName the pass name is derived from the pass class name. For example, the {@link
+     *     ResolveNamesPass} is named "ResolveNames". See {@link CompilerFilePass#name()}.
+     */
+    public Builder addPassContinuationRule(String passName, PassContinuationRule rule) {
+      passContinuationRegistry.put(passName, rule);
+      return this;
+    }
+
     public PassManager build() {
-      return conformanceOnly ? new PassManager(this, /*unused=*/ true) : new PassManager(this);
+      return new PassManager(this);
     }
   }
 }

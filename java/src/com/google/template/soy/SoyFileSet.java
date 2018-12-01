@@ -723,9 +723,7 @@ public final class SoyFileSet {
   /** A simple tool to enforce conformance and only conformance. */
   void checkConformance() {
     resetErrorReporter();
-    // TODO(b/74256690): instead of this boolean, treat conformance like a backend and just has some
-    // 'minimal parse' mode that we can trigger from here.
-    parse(passManagerBuilder().setConformanceOnly(true));
+    parse(passManagerBuilder().forceConformanceOnly());
     throwIfErrorsPresent();
     reportWarnings();
   }
