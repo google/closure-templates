@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -243,7 +244,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
    * type checking when this node is being rendered.
    */
-  public abstract ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee);
+  public abstract Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee);
 
   /**
    * Returns the escaping directives, applied from left to right.

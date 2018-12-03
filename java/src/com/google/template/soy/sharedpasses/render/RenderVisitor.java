@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -82,7 +83,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -262,8 +262,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /** A private helper to render templates with optimized type checking. */
-  private void renderTemplate(
-      TemplateNode template, ImmutableList<TemplateParam> paramsToTypeCheck) {
+  private void renderTemplate(TemplateNode template, Predicate<String> paramsToTypeCheck) {
     env = Environment.create(template, data, ijData);
     checkStrictParamTypes(template, paramsToTypeCheck);
     visitChildren(template);
@@ -278,7 +277,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     // check all params of the node. This callpath should only be called in the case of external
     // calls into soy (e.g. RenderVisitor.exec(node)).  For calls to templates from soy, the
     // renderTemplate() method is called directly.
-    renderTemplate(node, node.getParams());
+    renderTemplate(node, /*paramsToTypeCheck=*/ Predicates.alwaysTrue());
   }
 
   @Override
@@ -475,8 +474,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
 
-    TemplateNode callee =
-        templateRegistry.getBasicTemplateOrElement(node.getCalleeName()).getTemplateNode();
+    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
     if (callee == null) {
       throw RenderException.createWithSource(
           "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);
@@ -514,17 +512,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             node);
       }
     }
-    DelTemplateKey delegateKey = DelTemplateKey.create(node.getDelCalleeName(), variant);
-
     TemplateMetadata callee;
     try {
-      callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageSelector);
+      callee =
+          templateRegistry
+              .getDelTemplateSelector()
+              .selectTemplate(node.getDelCalleeName(), variant, activeDelPackageSelector);
     } catch (IllegalArgumentException e) {
       throw RenderException.createWithSource(e.getMessage(), e, node);
     }
 
     if (callee != null) {
-      visitCallNodeHelper(node, callee.getTemplateNode());
+      visitCallNodeHelper(node, callee);
 
     } else if (node.allowEmptyDefault()) {
       return; // no active delegate implementation, so the call output is empty string
@@ -540,7 +539,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @SuppressWarnings("ConstantConditions") // for IntelliJ
-  private void visitCallNodeHelper(CallNode node, TemplateNode callee) {
+  private void visitCallNodeHelper(CallNode node, TemplateMetadata callee) {
 
     // ------ Build the call data. ------
     SoyRecord dataToPass;
@@ -609,7 +608,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // No escaping at the call site -- render directly into the output buffer.
       RenderVisitor rv = this.createHelperInstance(currOutputBuf, callData);
       try {
-        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
+        rv.renderTemplate(callee.getTemplateNode(), node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -624,7 +623,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       StringBuilder calleeBuilder = new StringBuilder();
       RenderVisitor rv = this.createHelperInstance(calleeBuilder, callData);
       try {
-        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee));
+        rv.renderTemplate(callee.getTemplateNode(), node.getParamsToRuntimeCheck(callee));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -869,9 +868,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void checkStrictParamTypes(TemplateNode node, ImmutableList<TemplateParam> params) {
-    for (TemplateParam param : params) {
-      checkStrictParamType(node, param, env.getVarProvider(param));
+  private void checkStrictParamTypes(TemplateNode node, Predicate<String> paramsToTypeCheck) {
+    for (TemplateParam param : node.getParams()) {
+      if (paramsToTypeCheck.apply(param.name())) {
+        checkStrictParamType(node, param, env.getVarProvider(param));
+      }
     }
     for (TemplateParam param : node.getInjectedParams()) {
       checkStrictParamType(node, param, env.getVarProvider(param));

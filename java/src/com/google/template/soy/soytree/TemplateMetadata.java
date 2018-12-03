@@ -18,9 +18,16 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnknownType;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -37,7 +44,6 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class TemplateMetadata {
-  // TODO(lukes): add support for representing template parameters
   // TODO(lukes): add a serialized form of this object
 
   /** Builds a Template from a parsed TemplateNode. */
@@ -51,6 +57,7 @@ public abstract class TemplateMetadata {
             .setStrictHtml(template.isStrictHtml())
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
+            .setParameters(Parameter.directParametersFromTemplate(template))
             .setTemplateNodeForTemporaryCompatibility(template)
             .setTemplateNode(
                 template.getParent().getSoyFileKind() == SoyFileKind.SRC ? template : null);
@@ -71,6 +78,69 @@ public abstract class TemplateMetadata {
         throw new AssertionError("unexpected template kind: " + template.getKind());
     }
     return builder.build();
+  }
+
+  /** Represents minimal information about a template parameter. */
+  @AutoValue
+  public abstract static class Parameter {
+
+    static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
+      ImmutableList.Builder<Parameter> params = ImmutableList.builder();
+      for (TemplateParam param : node.getAllParams()) {
+        params.add(
+            builder()
+                .setName(param.name())
+                .setType(param.type())
+                .setInjected(param.isInjected())
+                .setRequired(param.isRequired())
+                .build());
+      }
+      Set<String> dollarSignIjParams = new HashSet<>();
+      for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
+        // N.B. we don't rely on the defnDecl because if this is a dependency template (which it
+        // will be during the migration to use TemplateHeaders), then the ResolveNamesPass will not
+        // have run.
+        if (varRef.isDollarSignIjParameter() && dollarSignIjParams.add(varRef.getName())) {
+          params.add(
+              builder()
+                  // TODO(lukes): do we need to mark it as $ij.name?  these parameters technically
+                  // live in a slightly different namespace
+                  .setName(varRef.getName())
+                  .setType(UnknownType.getInstance())
+                  .setRequired(false) // $ij params are never required to be present
+                  .setInjected(true)
+                  .build());
+        }
+      }
+      return params.build();
+    }
+
+    private static Builder builder() {
+      return new AutoValue_TemplateMetadata_Parameter.Builder();
+    }
+
+    public abstract String getName();
+
+    // TODO(lukes): this will likely not work once we start compiling templates separately,
+    // especially if we want to start pruning the proto descriptors required by the compiler.
+    public abstract SoyType getType();
+
+    public abstract boolean isInjected();
+
+    public abstract boolean isRequired();
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setName(String name);
+
+      abstract Builder setType(SoyType type);
+
+      abstract Builder setInjected(boolean isInjected);
+
+      abstract Builder setRequired(boolean isRequired);
+
+      abstract Parameter build();
+    }
   }
 
   /** The kind of template. */
@@ -120,6 +190,9 @@ public abstract class TemplateMetadata {
    */
   public abstract TemplateNode getTemplateNodeForTemporaryCompatibility();
 
+  /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
+  public abstract ImmutableList<Parameter> getParameters();
+
   @AutoValue.Builder
   abstract static class Builder {
     abstract Builder setSoyFileKind(SoyFileKind location);
@@ -145,6 +218,8 @@ public abstract class TemplateMetadata {
     abstract Builder setDelPackageName(@Nullable String delPackageName);
 
     abstract Builder setVisibility(Visibility visibility);
+
+    abstract Builder setParameters(ImmutableList<Parameter> parameters);
 
     final TemplateMetadata build() {
       TemplateMetadata built = autobuild();

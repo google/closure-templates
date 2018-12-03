@@ -20,7 +20,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
-import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
@@ -33,7 +34,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -51,14 +51,9 @@ public final class CallDelegateNode extends CallNode {
               + " (variant expression must evaluate to an identifier).");
 
   private final Identifier sourceDelCalleeName;
-  /**
-   * The name of the delegate template being called.
-   *
-   * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
-   * template is called into from two different contexts, and the autoescaper needs to clone a
-   * template and retarget the call.
-   */
-  private String delCalleeName;
+
+  /** The name of the delegate template being called. */
+  private final String delCalleeName;
 
   /** The variant expression for the delegate being called, or null. */
   @Nullable private final ExprRootNode variantExpr;
@@ -79,8 +74,7 @@ public final class CallDelegateNode extends CallNode {
    * passed from this caller.
    */
   @Nullable
-  private ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>>
-      paramsToRuntimeCheckByDelegate = null;
+  private ImmutableMap<TemplateMetadata, Predicate<String>> paramsToRuntimeCheckByDelegate = null;
 
   public CallDelegateNode(
       int id,
@@ -170,34 +164,32 @@ public final class CallDelegateNode extends CallNode {
     return sourceDelCalleeName.location();
   }
 
-  /** Do not call this method outside the contextual autoescaper. */
-  public void setDelCalleeName(String delCalleeName) {
-    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
-    this.delCalleeName = delCalleeName;
-  }
-
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
   @Nullable
   public ExprRootNode getDelCalleeVariantExpr() {
     return variantExpr;
   }
 
-  /** Sets the params that require runtime type checking for each possible delegate target. */
+  /**
+   * Sets the params that require runtime type checking for each possible delegate target.
+   *
+   * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
+   */
   public void setParamsToRuntimeCheck(
-      ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>> paramsToRuntimeCheck) {
+      ImmutableMap<TemplateMetadata, Predicate<String>> paramsToRuntimeCheck) {
     checkState(this.paramsToRuntimeCheckByDelegate == null);
     this.paramsToRuntimeCheckByDelegate = checkNotNull(paramsToRuntimeCheck);
   }
 
   @Override
-  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  public Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee) {
     if (paramsToRuntimeCheckByDelegate == null) {
-      return callee.getParams();
+      return Predicates.alwaysTrue();
     }
-    ImmutableList<TemplateParam> params = paramsToRuntimeCheckByDelegate.get(callee);
+    Predicate<String> params = paramsToRuntimeCheckByDelegate.get(callee);
     if (params == null) {
       // The callee was not known when we performed static type checking.  Check all params.
-      return callee.getParams();
+      return Predicates.alwaysTrue();
     }
     return params;
   }

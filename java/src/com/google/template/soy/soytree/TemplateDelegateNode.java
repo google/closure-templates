@@ -39,23 +39,17 @@ import javax.annotation.Nullable;
  */
 public final class TemplateDelegateNode extends TemplateNode implements ExprHolderNode {
 
-  /**
-   * Value class for a delegate template key (name and variant).
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
+  /** Value class for a delegate template key (name and variant). */
   @AutoValue
-  public abstract static class DelTemplateKey {
+  abstract static class DelTemplateKey {
 
-    public static DelTemplateKey create(String name, String variant) {
+    static DelTemplateKey create(String name, String variant) {
       return new AutoValue_TemplateDelegateNode_DelTemplateKey(name, variant);
     }
 
-    DelTemplateKey() {}
+    abstract String name();
 
-    public abstract String name();
-
-    public abstract String variant();
+    abstract String variant();
 
     @Override
     public final String toString() {

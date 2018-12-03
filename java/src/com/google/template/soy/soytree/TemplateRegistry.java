@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,7 +27,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
-import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -185,26 +183,6 @@ public final class TemplateRegistry {
   }
 
   /**
-   * Selects a delegate template based on the rendering rules, given the delegate template key (name
-   * and variant) and the set of active delegate package names.
-   *
-   * @param delTemplateKey The delegate template key (name and variant) to select an implementation
-   *     for.
-   * @param activeDelPackageNameSelector The predicate for testing whether a given delpackage is
-   *     active.
-   * @return The selected delegate template, or null if there are no active implementations.
-   * @throws IllegalArgumentException If there are two or more active implementations with equal
-   *     priority (unable to select one over the other).
-   */
-  @Nullable
-  public TemplateMetadata selectDelTemplate(
-      DelTemplateKey delTemplateKey, Predicate<String> activeDelPackageNameSelector) {
-    // TODO(lukes): eliminate this method and DelTemplateKey
-    return delTemplateSelector.selectTemplate(
-        delTemplateKey.name(), delTemplateKey.variant(), activeDelPackageNameSelector);
-  }
-
-  /**
    * Gets the content kind that a call results in. If used with delegate calls, the delegate
    * templates must use strict autoescaping. This relies on the fact that all delegate calls must
    * have the same kind when using strict autoescaping. This is enforced by CheckDelegatesPass.
@@ -213,26 +191,13 @@ public final class TemplateRegistry {
    * @return The kind of content that the call results in.
    */
   public Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
-    TemplateMetadata templateObject = null;
-
-    if (node instanceof CallBasicNode) {
-      String calleeName = ((CallBasicNode) node).getCalleeName();
-      templateObject = getBasicTemplateOrElement(calleeName);
-    } else {
-      String calleeName = ((CallDelegateNode) node).getDelCalleeName();
-      ImmutableList<TemplateMetadata> templateNodes =
-          getDelTemplateSelector().delTemplateNameToValues().get(calleeName);
-      // For per-file compilation, we may not have any of the delegate templates in the compilation
-      // unit.
-      if (!templateNodes.isEmpty()) {
-        templateObject = templateNodes.get(0);
-      }
+    ImmutableList<TemplateMetadata> templateNodes = getTemplates(node);
+    // For per-file compilation, we may not have any of the delegate templates in the compilation
+    // unit.
+    if (!templateNodes.isEmpty()) {
+      return Optional.fromNullable(templateNodes.get(0).getContentKind());
     }
     // The template node may be null if the template is being compiled in isolation.
-    if (templateObject == null) {
-      return Optional.absent();
-    }
-
-    return Optional.fromNullable(templateObject.getContentKind());
+    return Optional.absent();
   }
 }

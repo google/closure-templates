@@ -17,17 +17,18 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -39,17 +40,11 @@ import javax.annotation.Nullable;
  */
 public final class CallBasicNode extends CallNode {
 
-  /**
-   * The full name of the template being called, after namespace / alias resolution.
-   *
-   * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
-   * template is called into from two different contexts, and the autoescaper needs to clone a
-   * template and retarget the call.
-   */
-  private String fullCalleeName;
+  /** The full name of the template being called, after namespace / alias resolution. */
+  private final String fullCalleeName;
 
   /** The callee name string as it appears in the source code. */
-  private Identifier sourceCalleeName;
+  private final Identifier sourceCalleeName;
 
   /**
    * The list of params that need to be type checked when this node is run. All the params that
@@ -60,7 +55,7 @@ public final class CallBasicNode extends CallNode {
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
    */
-  @Nullable private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck = null;
+  @Nullable private Predicate<String> paramsToRuntimeTypeCheck = null;
 
   public CallBasicNode(
       int id,
@@ -129,22 +124,19 @@ public final class CallBasicNode extends CallNode {
     return fullCalleeName;
   }
 
-  /** Do not call this method outside the contextual autoescaper. */
-  public void setNewCalleeName(String name) {
-    checkArgument(BaseUtils.isDottedIdentifier(name));
-    this.sourceCalleeName = Identifier.create(name, this.sourceCalleeName.location());
-    this.fullCalleeName = name;
-  }
-
-  /** Sets the names of the params that require runtime type checking against callee's types. */
-  public void setParamsToRuntimeCheck(Collection<TemplateParam> paramNames) {
+  /**
+   * Sets the names of the params that require runtime type checking against callee's types.
+   *
+   * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
+   */
+  public void setParamsToRuntimeCheck(Predicate<String> paramNames) {
     checkState(this.paramsToRuntimeTypeCheck == null);
-    this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
+    this.paramsToRuntimeTypeCheck = checkNotNull(paramNames);
   }
 
   @Override
-  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
-    return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
+  public Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee) {
+    return paramsToRuntimeTypeCheck == null ? Predicates.alwaysTrue() : paramsToRuntimeTypeCheck;
   }
 
   @Override

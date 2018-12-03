@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -31,10 +30,8 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -105,7 +102,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     for (Collection<TemplateMetadata> delTemplateGroup :
         selector.delTemplateNameToValues().asMap().values()) {
       TemplateMetadata firstDelTemplate = null;
-      Set<Equivalence.Wrapper<TemplateParam>> firstRequiredParamSet = null;
+      Set<TemplateMetadata.Parameter> firstRequiredParamSet = null;
       SanitizedContentKind firstContentKind = null;
       boolean firstStrictHtml = false;
 
@@ -120,8 +117,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
               delTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
         } else {
           // Not first template encountered.
-          Set<Equivalence.Wrapper<TemplateParam>> currRequiredParamSet =
-              getRequiredParamSet(delTemplate);
+          Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
           if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
             errorReporter.report(
                 delTemplate.getSourceLocation(),
@@ -160,32 +156,11 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
   }
 
-  // A specific equivalence relation for seeing if the params of 2 difference templates are
-  // effectively the same.
-  private static final class ParamEquivalence extends Equivalence<TemplateParam> {
-    static final ParamEquivalence INSTANCE = new ParamEquivalence();
-
-    @Override
-    protected boolean doEquivalent(TemplateParam a, TemplateParam b) {
-      return a.name().equals(b.name())
-          && a.isRequired() == b.isRequired()
-          && a.isInjected() == b.isInjected()
-          && a.type().equals(b.type());
-    }
-
-    @Override
-    protected int doHash(TemplateParam t) {
-      return Objects.hash(t.name(), t.isInjected(), t.isRequired(), t.type());
-    }
-  }
-
-  private static Set<Equivalence.Wrapper<TemplateParam>> getRequiredParamSet(
-      TemplateMetadata delTemplate) {
-    TemplateNode node = delTemplate.getTemplateNodeForTemporaryCompatibility();
-    Set<Equivalence.Wrapper<TemplateParam>> paramSet = new HashSet<>();
-    for (TemplateParam param : node.getParams()) {
-      if (param.isRequired()) {
-        paramSet.add(ParamEquivalence.INSTANCE.wrap(param));
+  private static Set<TemplateMetadata.Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
+    Set<TemplateMetadata.Parameter> paramSet = new HashSet<>();
+    for (TemplateMetadata.Parameter param : delTemplate.getParameters()) {
+      if (param.isRequired() && !param.isInjected()) {
+        paramSet.add(param);
       }
     }
     return paramSet;
