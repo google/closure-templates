@@ -58,9 +58,8 @@ import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
-import com.google.template.soy.passes.FindIjParamsVisitor;
-import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.TransitiveIjParamsCalculator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -74,7 +73,8 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateMetadata.Kind;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
@@ -820,7 +820,7 @@ public final class SoyFileSet {
     return new BaseTofu(
         scopedData.enterable(),
         primitives.registry,
-        getTransitiveIjs(primitives.soyTree, primitives.registry),
+        getTransitiveIjs(primitives.registry),
         pluginInstances);
   }
 
@@ -936,14 +936,18 @@ public final class SoyFileSet {
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
-      SoyFileSetNode soyTree, TemplateRegistry registry) {
-    ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
-        new FindIjParamsVisitor(registry).execOnAllTemplates(soyTree);
+      TemplateRegistry registry) {
+    TransitiveIjParamsCalculator transitiveIjParamsCalculator =
+        new TransitiveIjParamsCalculator(registry);
     ImmutableMap.Builder<String, ImmutableSortedSet<String>> templateToTransitiveIjParams =
         ImmutableMap.builder();
-    for (Map.Entry<TemplateNode, IjParamsInfo> entry : templateToIjParamsInfoMap.entrySet()) {
-      templateToTransitiveIjParams.put(
-          entry.getKey().getTemplateName(), entry.getValue().ijParamSet);
+    for (TemplateMetadata entry : registry.getAllTemplates()) {
+      // We don't need a transitive set for deltemplates because they cannot be called from the top
+      // level.
+      if (entry.getTemplateKind() != Kind.DELTEMPLATE) {
+        templateToTransitiveIjParams.put(
+            entry.getTemplateName(), transitiveIjParamsCalculator.calculateIjs(entry).ijParamSet);
+      }
     }
     return templateToTransitiveIjParams.build();
   }

@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -58,6 +59,7 @@ public abstract class TemplateMetadata {
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
             .setParameters(Parameter.directParametersFromTemplate(template))
+            .setCallSituations(CallSituation.templateCallSituations(template))
             .setTemplateNodeForTemporaryCompatibility(template)
             .setTemplateNode(
                 template.getParent().getSoyFileKind() == SoyFileKind.SRC ? template : null);
@@ -143,6 +145,77 @@ public abstract class TemplateMetadata {
     }
   }
 
+  /**
+   * Represents information about a templates called by a given template.
+   *
+   * <p>This doesn't necessarily represent a single call site since if a template is called multiple
+   * times in ways that aren't different according to this data structure we only record it once.
+   */
+  @AutoValue
+  public abstract static class CallSituation {
+    static ImmutableList<CallSituation> templateCallSituations(TemplateNode node) {
+      ImmutableSet.Builder<CallSituation> calls = ImmutableSet.builder();
+      for (CallNode call : SoyTreeUtils.getAllNodesOfType(node, CallNode.class)) {
+        CallSituation.Builder builder = builder().setDataAllCall(call.isPassingAllData());
+        if (call.isPassingAllData()) {
+          ImmutableList.Builder<String> explicitlyPassedParams = ImmutableList.builder();
+          for (CallParamNode param : call.getChildren()) {
+            explicitlyPassedParams.add(param.getKey().identifier());
+          }
+          builder.setExplicitlyPassedParametersForDataAllCalls(explicitlyPassedParams.build());
+        } else {
+          builder.setExplicitlyPassedParametersForDataAllCalls(ImmutableList.of());
+        }
+        switch (call.getKind()) {
+          case CALL_BASIC_NODE:
+            builder.setDelCall(false).setTemplateName(((CallBasicNode) call).getCalleeName());
+            break;
+          case CALL_DELEGATE_NODE:
+            builder.setDelCall(true).setTemplateName(((CallDelegateNode) call).getDelCalleeName());
+            break;
+          default:
+            throw new AssertionError("unexpected call kind: " + call.getKind());
+        }
+        calls.add(builder.build());
+      }
+      return calls.build().asList();
+    }
+
+    /** The fully qualified name of the called template. */
+    public abstract String getTemplateName();
+
+    /** Whether this is a delcall or not. */
+    public abstract boolean isDelCall();
+
+    /** Whether this is a data="all" call site */
+    public abstract boolean isDataAllCall();
+
+    /**
+     * Records the names of the parameters that were explicitly passed for data="all" calls.
+     *
+     * <p>This is necessary to calculate indirect parameters.
+     */
+    public abstract ImmutableList<String> getExplicitlyPassedParametersForDataAllCalls();
+
+    private static Builder builder() {
+      return new AutoValue_TemplateMetadata_CallSituation.Builder();
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setTemplateName(String templateName);
+
+      abstract Builder setDelCall(boolean isDelCall);
+
+      abstract Builder setDataAllCall(boolean isDataAllCall);
+
+      abstract Builder setExplicitlyPassedParametersForDataAllCalls(
+          ImmutableList<String> parameters);
+
+      abstract CallSituation build();
+    }
+  }
+
   /** The kind of template. */
   public enum Kind {
     BASIC,
@@ -193,6 +266,13 @@ public abstract class TemplateMetadata {
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
 
+  /**
+   * The unique template calls that are performed by this template.
+   *
+   * <p>This is needed to calculate information about transitive parameters.
+   */
+  public abstract ImmutableList<CallSituation> getCallSituations();
+
   @AutoValue.Builder
   abstract static class Builder {
     abstract Builder setSoyFileKind(SoyFileKind location);
@@ -220,6 +300,8 @@ public abstract class TemplateMetadata {
     abstract Builder setVisibility(Visibility visibility);
 
     abstract Builder setParameters(ImmutableList<Parameter> parameters);
+
+    abstract Builder setCallSituations(ImmutableList<CallSituation> callSituations);
 
     final TemplateMetadata build() {
       TemplateMetadata built = autobuild();

@@ -41,10 +41,10 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
-import com.google.template.soy.passes.FindIjParamsVisitor;
-import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.TransitiveIjParamsCalculator;
+import com.google.template.soy.passes.TransitiveIjParamsCalculator.IjParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -218,6 +218,8 @@ public final class GenerateParseInfoVisitor
   /** Builder for the generated code. */
   private IndentedLinesBuilder ilb;
 
+  private final TransitiveIjParamsCalculator transitiveIjParamsCalculator;
+
   /**
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
@@ -227,7 +229,7 @@ public final class GenerateParseInfoVisitor
       String javaPackage, String javaClassNameSource, TemplateRegistry registry) {
     this.javaPackage = javaPackage;
     this.templateRegistry = registry;
-
+    this.transitiveIjParamsCalculator = new TransitiveIjParamsCalculator(templateRegistry);
     switch (javaClassNameSource) {
       case "filename":
         this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
@@ -595,7 +597,8 @@ public final class GenerateParseInfoVisitor
     }
 
     // Get info on injected params.
-    IjParamsInfo ijParamsInfo = new FindIjParamsVisitor(templateRegistry).exec(node);
+    IjParamsInfo ijParamsInfo =
+        transitiveIjParamsCalculator.calculateIjs(templateRegistry.getMetadata(node));
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
     String upperUnderscoreName =
