@@ -48,33 +48,31 @@ final class XidPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      if (fn.getSoyFunction() == BuiltinFunction.XID) {
-        if (fn.numChildren() != 1) {
-          // if it isn't == 1, then an error has already been reported, move along.
-          continue;
-        }
-        ExprNode child = fn.getChild(0);
-        switch (child.getKind()) {
-          case GLOBAL_NODE:
-            GlobalNode global = (GlobalNode) child;
-            if (global.isResolved()) {
-              // This doesn't have to be an error. but it is confusing if it is is since it is
-              // unclear if the user intended to xid the identifier or the value.
-              reporter.report(
-                  global.getSourceLocation(),
-                  GLOBAL_XID_ARG_IS_RESOLVED,
-                  global.getType().toString(),
-                  global.getValue().toSourceString());
-            }
-            fn.replaceChild(
-                0, new StringNode(global.getName(), QuoteStyle.SINGLE, global.getSourceLocation()));
-            break;
-          case STRING_NODE:
-            break;
-          default:
-            reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
-        }
+    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.XID)) {
+      if (fn.numChildren() != 1) {
+        // if it isn't == 1, then an error has already been reported, move along.
+        continue;
+      }
+      ExprNode child = fn.getChild(0);
+      switch (child.getKind()) {
+        case GLOBAL_NODE:
+          GlobalNode global = (GlobalNode) child;
+          if (global.isResolved()) {
+            // This doesn't have to be an error. but it is confusing if it is is since it is
+            // unclear if the user intended to xid the identifier or the value.
+            reporter.report(
+                global.getSourceLocation(),
+                GLOBAL_XID_ARG_IS_RESOLVED,
+                global.getType().toString(),
+                global.getValue().toSourceString());
+          }
+          fn.replaceChild(
+              0, new StringNode(global.getName(), QuoteStyle.SINGLE, global.getSourceLocation()));
+          break;
+        case STRING_NODE:
+          break;
+        default:
+          reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
       }
     }
   }

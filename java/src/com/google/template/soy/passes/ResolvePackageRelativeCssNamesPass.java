@@ -69,7 +69,8 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
       if (template.getCssBaseNamespace() != null) {
         packagePrefix = toCamelCase(template.getCssBaseNamespace());
       }
-      for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+      for (FunctionNode fn :
+          SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.CSS)) {
         resolveSelector(template, fn, packagePrefix);
       }
     }
@@ -77,10 +78,6 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
 
   private void resolveSelector(
       TemplateNode template, FunctionNode node, @Nullable String packagePrefix) {
-    if (node.getSoyFunction() != BuiltinFunction.CSS) {
-      return;
-    }
-
     ExprNode lastChild = Iterables.getLast(node.getChildren());
     if (!(lastChild instanceof StringNode)) {
       // this will generate an error in CheckFunctionCallsVisitor

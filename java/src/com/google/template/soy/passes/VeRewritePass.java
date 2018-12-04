@@ -38,10 +38,9 @@ final class VeRewritePass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      if (node.getSoyFunction().equals(BuiltinFunction.VE_DATA)) {
-        maybeRewriteNode(node);
-      }
+    for (FunctionNode node :
+        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.VE_DATA)) {
+      maybeRewriteNode(node);
     }
   }
 

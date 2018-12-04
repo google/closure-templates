@@ -18,6 +18,8 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -29,6 +31,7 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -136,6 +139,15 @@ public final class SoyTreeUtils {
    */
   public static <T extends Node> ImmutableList<T> getAllNodesOfType(
       Node rootSoyNode, final Class<T> classObject) {
+    return getAllMatchingNodesOfType(rootSoyNode, classObject, Predicates.alwaysTrue());
+  }
+
+  /**
+   * Retrieves all nodes in a tree that are an instance of a particular class and match the given
+   * predicate.
+   */
+  private static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
+      Node rootSoyNode, final Class<T> classObject, final Predicate<T> filter) {
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
     // optimization to avoid navigating into expr trees if we can't possibly match anything
     final boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
@@ -145,7 +157,10 @@ public final class SoyTreeUtils {
           @Override
           public VisitDirective exec(Node node) {
             if (classObject.isInstance(node)) {
-              matchedNodesBuilder.add(classObject.cast(node));
+              T typedNode = classObject.cast(node);
+              if (filter.apply(typedNode)) {
+                matchedNodesBuilder.add(typedNode);
+              }
             }
             if (!exploreExpressions && node instanceof ExprNode) {
               return VisitDirective.SKIP_CHILDREN;
@@ -154,6 +169,22 @@ public final class SoyTreeUtils {
           }
         });
     return matchedNodesBuilder.build();
+  }
+
+  /**
+   * Returns all {@link FunctionNode}s in a tree that are calls of the given {@link SoyFunction}.
+   */
+  public static ImmutableList<FunctionNode> getAllFunctionInvocations(
+      Node rootSoyNode, final SoyFunction functionToMatch) {
+    return getAllMatchingNodesOfType(
+        rootSoyNode,
+        FunctionNode.class,
+        new Predicate<FunctionNode>() {
+          @Override
+          public boolean apply(FunctionNode function) {
+            return functionToMatch.equals(function.getSoyFunction());
+          }
+        });
   }
 
   /**

@@ -93,10 +93,9 @@ public final class InsertMsgsVisitor {
         SoyTreeUtils.getAllNodesOfType(node, MsgFallbackGroupNode.class)) {
       replaceMsgNode(msgNode);
     }
-    for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
-      if (fnNode.getSoyFunction() == BuiltinFunction.IS_PRIMARY_MSG_IN_USE) {
-        replaceIsPrimaryMsgInUseFunction(fnNode);
-      }
+    for (FunctionNode fnNode :
+        SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.IS_PRIMARY_MSG_IN_USE)) {
+      replaceIsPrimaryMsgInUseFunction(fnNode);
     }
   }
 

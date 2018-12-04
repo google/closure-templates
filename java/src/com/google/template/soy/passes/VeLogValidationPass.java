@@ -105,10 +105,9 @@ final class VeLogValidationPass extends CompilerFilePass {
           reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
         }
       }
-      for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-        if (node.getSoyFunction().equals(BuiltinFunction.VE_DATA)) {
-          validateVeDataFunctionNode(node);
-        }
+      for (FunctionNode node :
+          SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
+        validateVeDataFunctionNode(node);
       }
       // We need to validate logging functions.  The rules are
       // 1. logging functions can only be the direct children of PrintNodes

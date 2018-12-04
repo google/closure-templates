@@ -57,10 +57,8 @@ final class V1ExpressionPass extends CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      if (fn.getSoyFunction() != BuiltinFunction.V1_EXPRESSION) {
-        continue;
-      }
+    for (FunctionNode fn :
+        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.V1_EXPRESSION)) {
       if (!allowV1Expression) {
         errorReporter.report(fn.getSourceLocation(), INCORRECT_V1_EXPRESSION_USE);
       }

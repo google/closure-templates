@@ -91,10 +91,7 @@ final class RewriteRemaindersPass extends CompilerFilePass {
       currPluralNode = prev;
     }
 
-    private void maybeRewriteRemainder(FunctionNode functionNode) {
-      if (functionNode.getSoyFunction() != BuiltinFunction.REMAINDER) {
-        return;
-      }
+    private void rewriteRemainder(FunctionNode functionNode) {
       if (currPluralNode == null) {
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_OUTSIDE_PLURAL);
         removeBadRemainder(functionNode);
@@ -150,8 +147,8 @@ final class RewriteRemaindersPass extends CompilerFilePass {
       if (node instanceof ExprHolderNode) {
         for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {
           for (FunctionNode functionNode :
-              SoyTreeUtils.getAllNodesOfType(expr, FunctionNode.class)) {
-            maybeRewriteRemainder(functionNode);
+              SoyTreeUtils.getAllFunctionInvocations(expr, BuiltinFunction.REMAINDER)) {
+            rewriteRemainder(functionNode);
           }
         }
       }

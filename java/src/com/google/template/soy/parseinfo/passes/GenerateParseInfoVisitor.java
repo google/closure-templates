@@ -1020,12 +1020,7 @@ public final class GenerateParseInfoVisitor
 
     @Override
     public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
-      List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
-      for (FunctionNode fn : fnNodes) {
-        if (fn.getSoyFunction() != BuiltinFunction.CSS) {
-          continue;
-        }
-
+      for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.CSS)) {
         String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
         collectSelector(selector, fn.numChildren() > 1);
       }

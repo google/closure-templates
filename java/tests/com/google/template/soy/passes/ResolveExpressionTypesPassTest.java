@@ -975,14 +975,12 @@ public final class ResolveExpressionTypesPassTest {
 
   /** Traverses the tree and checks all the calls to {@code assertType} */
   private void assertTypes(SoyNode node) {
-    for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
-      if (fn.getFunctionName().equals("assertType")) {
-        StringNode expected = (StringNode) fn.getChild(0);
-        SoyType actualType = fn.getChild(1).getType();
-        assertWithMessage("assertion @ " + fn.getSourceLocation())
-            .that(actualType.toString())
-            .isEqualTo(expected.getValue());
-      }
+    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, ASSERT_TYPE_FUNCTION)) {
+      StringNode expected = (StringNode) fn.getChild(0);
+      SoyType actualType = fn.getChild(1).getType();
+      assertWithMessage("assertion @ " + fn.getSourceLocation())
+          .that(actualType.toString())
+          .isEqualTo(expected.getValue());
     }
   }
 }
