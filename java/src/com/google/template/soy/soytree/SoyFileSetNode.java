@@ -16,22 +16,21 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
 /**
- * Node representing a Soy file set (the root of the Soy parse tree).
+ * Node representing a set of Soy files.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>TODO(lukes): consider replacing this with just passing a {@code List<SoyFileNode>} around
  *
  */
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {
-
 
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
@@ -63,11 +62,6 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /** Returns the node id generator for this parse tree. */
   public IdGenerator getNodeIdGenerator() {
     return nodeIdGen;
-  }
-
-  /** Returns all child {@link SoyFileNode} that have {@link SoyFileKind#SRC}. */
-  public ImmutableList<SoyFileNode> getSourceFiles() {
-    return ImmutableList.copyOf(Iterables.filter(getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
   }
 
   @Deprecated

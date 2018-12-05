@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.template.soy.error.ErrorReporter;
@@ -99,9 +98,7 @@ public final class PySrcMain {
       ErrorReporter errorReporter)
       throws IOException {
 
-    ImmutableList<SoyFileNode> srcsToCompile =
-        ImmutableList.copyOf(
-            Iterables.filter(soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
+    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(soyTree.getChildren());
 
     // Determine the output paths.
     List<String> soyNamespaces = getSoyNamespaces(soyTree);

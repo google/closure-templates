@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
@@ -31,10 +32,14 @@ import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -118,6 +123,8 @@ public abstract class SoyFileSetParser {
     IdGenerator nodeIdGen =
         (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    // TODO(b/63212073): devise a way for the metadata objects to be passed at the top level.
+    List<TemplateMetadata> templateMetadatas = new ArrayList<>(soyFileSuppliers().size());
     boolean filesWereSkipped = false;
     // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
     // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
@@ -136,24 +143,29 @@ public abstract class SoyFileSetParser {
             filesWereSkipped = true;
             continue;
           }
-          // Run passes that are considered part of initial parsing.
-          passManager().runSingleFilePasses(node, nodeIdGen);
-          // Run passes that check the tree.
-          if (cache() != null) {
-            cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
+          if (fileSupplier.getSoyFileKind() == SoyFileKind.SRC) {
+            // Run passes that are considered part of initial parsing.
+            passManager().runSingleFilePasses(node, nodeIdGen);
+            // Run passes that check the tree.
+            if (cache() != null) {
+              cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
+            }
           }
         } else {
           node = cachedFile.file();
         }
-        soyTree.addChild(node);
+        for (TemplateNode template : node.getChildren()) {
+          templateMetadatas.add(TemplateMetadata.fromTemplate(template));
+        }
+        if (fileSupplier.getSoyFileKind() == SoyFileKind.SRC) {
+          soyTree.addChild(node);
+        }
       }
 
-      TemplateRegistry registry;
+      TemplateRegistry registry = new TemplateRegistry(templateMetadatas, errorReporter());
       // Run passes that check the tree iff we successfully parsed every file.
       if (!filesWereSkipped) {
-        registry = passManager().runWholeFilesetPasses(soyTree);
-      } else {
-        registry = new TemplateRegistry(soyTree, errorReporter());
+        passManager().runWholeFilesetPasses(soyTree, registry);
       }
       return ParseResult.create(soyTree, registry);
     }

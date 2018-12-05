@@ -76,7 +76,7 @@ public final class TemplateRegistry {
    *
    * @param soyTree The Soy tree from which to build a template registry.
    */
-  public TemplateRegistry(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
+  public TemplateRegistry(List<TemplateMetadata> templates, ErrorReporter errorReporter) {
 
     // ------ Iterate through all templates to collect data. ------
     Map<String, TemplateMetadata> allTemplatesBuilder = new LinkedHashMap<>();
@@ -84,57 +84,52 @@ public final class TemplateRegistry {
         new DelTemplateSelector.Builder<>();
     Map<String, TemplateMetadata> basicTemplatesOrElementsMap = new LinkedHashMap<>();
     Multimap<String, TemplateMetadata> delegateTemplates = HashMultimap.create();
-    for (SoyFileNode soyFile : soyTree.getChildren()) {
-      for (TemplateNode template : soyFile.getChildren()) {
-        TemplateMetadata templateObject = TemplateMetadata.fromTemplate(template);
-        allTemplatesBuilder.put(template.getTemplateName(), templateObject);
-        switch (templateObject.getTemplateKind()) {
-          case BASIC:
-          case ELEMENT:
-            // Case 1: Basic Template or Element node
-            TemplateMetadata prev =
-                basicTemplatesOrElementsMap.put(templateObject.getTemplateName(), templateObject);
-            if (prev != null) {
+    for (TemplateMetadata template : templates) {
+      allTemplatesBuilder.put(template.getTemplateName(), template);
+      switch (template.getTemplateKind()) {
+        case BASIC:
+        case ELEMENT:
+          // Case 1: Basic Template or Element node
+          TemplateMetadata prev =
+              basicTemplatesOrElementsMap.put(template.getTemplateName(), template);
+          if (prev != null) {
+            errorReporter.report(
+                template.getSourceLocation(),
+                DUPLICATE_TEMPLATES,
+                template.getTemplateName(),
+                prev.getSourceLocation());
+          }
+          break;
+        case DELTEMPLATE:
+          // Case 2: Delegate template.
+          String delTemplateName = template.getDelTemplateName();
+          String delPackageName = template.getDelPackageName();
+          String variant = template.getDelTemplateVariant();
+          TemplateMetadata previous;
+          if (delPackageName == null) {
+            // default delegate
+            previous = delTemplateSelectorBuilder.addDefault(delTemplateName, variant, template);
+            if (previous != null) {
               errorReporter.report(
                   template.getSourceLocation(),
-                  DUPLICATE_TEMPLATES,
-                  template.getTemplateName(),
-                  prev.getSourceLocation());
-            }
-            break;
-          case DELTEMPLATE:
-            // Case 2: Delegate template.
-            String delTemplateName = templateObject.getDelTemplateName();
-            String delPackageName = templateObject.getDelPackageName();
-            String variant = templateObject.getDelTemplateVariant();
-            TemplateMetadata previous;
-          if (delPackageName == null) {
-              // default delegate
-              previous =
-                  delTemplateSelectorBuilder.addDefault(delTemplateName, variant, templateObject);
-            if (previous != null) {
-                errorReporter.report(
-                    templateObject.getSourceLocation(),
-                    DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
-                    delTemplateName,
-                    previous.getSourceLocation());
+                  DUPLICATE_DEFAULT_DELEGATE_TEMPLATES,
+                  delTemplateName,
+                  previous.getSourceLocation());
             }
           } else {
-              previous =
-                  delTemplateSelectorBuilder.add(
-                      delTemplateName, delPackageName, variant, templateObject);
+            previous =
+                delTemplateSelectorBuilder.add(delTemplateName, delPackageName, variant, template);
             if (previous != null) {
-                errorReporter.report(
-                    templateObject.getSourceLocation(),
-                    DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
-                    delTemplateName,
-                    delPackageName,
-                    previous.getSourceLocation());
+              errorReporter.report(
+                  template.getSourceLocation(),
+                  DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE,
+                  delTemplateName,
+                  delPackageName,
+                  previous.getSourceLocation());
             }
           }
-            delegateTemplates.put(delTemplateName, templateObject);
-            break;
-        }
+          delegateTemplates.put(delTemplateName, template);
+          break;
       }
     }
     // make sure no basic nodes conflict with deltemplates

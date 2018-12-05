@@ -64,7 +64,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Retrieve the node id generator.
     nodeIdGen = node.getNodeIdGenerator();
-    ImmutableList<SoyFileNode> sourceFiles = node.getSourceFiles();
+    ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(node.getChildren());
     for (SoyFileNode fileNode : sourceFiles) {
       visitSoyFileNode(fileNode);
     }

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -32,14 +31,6 @@ import javax.annotation.Nullable;
  */
 public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
-
-  public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE =
-      new Predicate<SoyFileNode>() {
-        @Override
-        public boolean apply(SoyFileNode input) {
-          return input.getSoyFileKind() == SoyFileKind.SRC;
-        }
-      };
 
   /** The kind of this Soy file */
   private final SoyFileKind soyFileKind;

@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.template.soy.error.ErrorReporter;
@@ -136,9 +135,7 @@ public class JsSrcMain {
     List<String> jsFileContents =
         genJsSrc(soyTree, templateRegistry, jsSrcOptions, msgBundle, errorReporter);
 
-    ImmutableList<SoyFileNode> srcsToCompile =
-        ImmutableList.copyOf(
-            Iterables.filter(soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
+    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(soyTree.getChildren());
 
     if (srcsToCompile.size() != jsFileContents.size()) {
       throw new AssertionError(

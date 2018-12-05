@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -38,7 +39,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Map;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Configures all compiler passes.
@@ -270,14 +270,12 @@ public final class PassManager {
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
+    // All single file passes only run on source files
+    checkArgument(file.getSoyFileKind() == SoyFileKind.SRC);
     if (isPassManagerStopped) {
       return;
     }
     for (CompilerFilePass pass : singleFilePasses) {
-      // All single file passes only run on source files
-      if (file.getSoyFileKind() != SoyFileKind.SRC) {
-        continue;
-      }
       PassContinuationRule rule =
           passContinuationRegistry.getOrDefault(pass.name(), PassContinuationRule.CONTINUE);
       // At this point, all the pass continuation rules have either been remapped to
@@ -293,18 +291,14 @@ public final class PassManager {
 
   /**
    * Runs all the fileset passes including the autoescaper and optimization passes if configured.
-   *
-   * @return a fully populated TemplateRegistry
    */
-  @CheckReturnValue
-  public TemplateRegistry runWholeFilesetPasses(final SoyFileSetNode soyTree) {
-    final TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, errorReporter);
-
+  public void runWholeFilesetPasses(
+      final SoyFileSetNode soyTree, final TemplateRegistry templateRegistry) {
     if (isPassManagerStopped) {
-      return templateRegistry;
+      return;
     }
 
-    ImmutableList<SoyFileNode> sourceFiles = soyTree.getSourceFiles();
+    ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
       PassContinuationRule rule =
@@ -321,7 +315,6 @@ public final class PassManager {
         break;
       }
     }
-    return templateRegistry;
   }
 
   /** A builder for configuring the pass manager. */
