@@ -2,102 +2,101 @@
  * @fileoverview Provides Soy runtime checks for safe types.
  */
 
-goog.module('soy.checks');
-goog.module.declareLegacyNamespace();
+goog.provide('soy.checks');
 
-var SanitizedContentKind = goog.require('goog.soy.data.SanitizedContentKind');
-var SanitizedCss = goog.require('goog.soy.data.SanitizedCss');
-var SanitizedHtml = goog.require('goog.soy.data.SanitizedHtml');
-var SanitizedHtmlAttribute = goog.require('goog.soy.data.SanitizedHtmlAttribute');
-var SanitizedJs = goog.require('goog.soy.data.SanitizedJs');
-var SanitizedTrustedResourceUri = goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-var SanitizedUri = goog.require('goog.soy.data.SanitizedUri');
-var UnsanitizedText = goog.require('goog.soy.data.UnsanitizedText');
-var asserts = goog.require('goog.asserts');
-
+goog.require('goog.asserts');
+goog.require('goog.soy.data.SanitizedContentKind');
+goog.require('goog.soy.data.SanitizedCss');
+goog.require('goog.soy.data.SanitizedHtml');
+goog.require('goog.soy.data.SanitizedHtmlAttribute');
+goog.require('goog.soy.data.SanitizedJs');
+goog.require('goog.soy.data.SanitizedTrustedResourceUri');
+goog.require('goog.soy.data.SanitizedUri');
+goog.require('goog.soy.data.UnsanitizedText');
 
 /**
  * Checks whether a given value is of a given content kind.
  *
  * @param {?} value The value to be examined.
- * @param {!SanitizedContentKind} contentKind The desired content
+ * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
  *     kind.
  * @param {!Object} constructor
  * @return {boolean} Whether the given value is of the given kind.
+ * @private
  */
-function isContentKind(value, contentKind, constructor) {
+soy.checks.isContentKind_ = function(value, contentKind, constructor) {
   var ret = value != null && value.contentKind === contentKind;
   if (ret) {
-    asserts.assert(value.constructor === constructor);
+    goog.asserts.assert(value.constructor === constructor);
   }
   return ret;
-}
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isHtml(value) {
-  return isContentKind(value, SanitizedContentKind.HTML, SanitizedHtml);
-}
+soy.checks.isHtml = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.HTML,
+      goog.soy.data.SanitizedHtml);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isCss(value) {
-  return isContentKind(value, SanitizedContentKind.CSS, SanitizedCss);
-}
+soy.checks.isCss = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.CSS,
+      goog.soy.data.SanitizedCss);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isAttribute(value) {
-  return isContentKind(
-      value, SanitizedContentKind.ATTRIBUTES, SanitizedHtmlAttribute);
-}
+soy.checks.isAttribute = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
+      goog.soy.data.SanitizedHtmlAttribute);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isJS(value) {
-  return isContentKind(value, SanitizedContentKind.JS, SanitizedJs);
-}
+soy.checks.isJS = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isTrustedResourceURI(value) {
-  return isContentKind(
-      value, SanitizedContentKind.TRUSTED_RESOURCE_URI,
-      SanitizedTrustedResourceUri);
-}
+soy.checks.isTrustedResourceURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      goog.soy.data.SanitizedTrustedResourceUri);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isURI(value) {
-  return isContentKind(value, SanitizedContentKind.URI, SanitizedUri);
-}
+soy.checks.isURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.URI,
+      goog.soy.data.SanitizedUri);
+};
 
 /**
  * @param {?} value
  * @return {boolean}
  */
-function isText(value) {
-  return isContentKind(value, SanitizedContentKind.TEXT, UnsanitizedText);
-}
-
-exports = {
-  isHtml: isHtml,
-  isCss: isCss,
-  isAttribute: isAttribute,
-  isJS: isJS,
-  isTrustedResourceURI: isTrustedResourceURI,
-  isURI: isURI,
-  isText: isText,
+soy.checks.isText = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.TEXT,
+      goog.soy.data.UnsanitizedText);
 };
