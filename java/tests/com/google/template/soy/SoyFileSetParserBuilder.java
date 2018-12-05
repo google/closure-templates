@@ -27,7 +27,9 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.passes.CompilerFilePass;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
@@ -67,13 +69,14 @@ public final class SoyFileSetParserBuilder {
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private boolean desugarHtmlNodes = true;
-  // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
+  // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
-  // for incrementaldomsrc, not tests
+  // for incrementaldomsrc, not tests.
   private boolean runAutoescaper = false;
   // By default, do not modify the AST to add the HTML comments, since many unit tests depend on
   // the order of the nodes in the AST.
   private boolean addHtmlAttributesForDebugging = false;
+  private final PassManager.Builder passManager = new PassManager.Builder();
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -252,6 +255,21 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
+   * Tells the compiler to stop either before or after the named pass.
+   *
+   * <p>Tests can use this to build a parse tree using up to a certain pass. See, for example {@link
+   * com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphTest}.
+   *
+   * <p>Pass names are derived from their class names. See {@link CompilerFilePass#name()} for more
+   * info.
+   */
+  public SoyFileSetParserBuilder addPassContinuationRule(
+      String passName, PassContinuationRule rule) {
+    passManager.addPassContinuationRule(passName, rule);
+    return this;
+  }
+
+  /**
    * Constructs a parse tree from the builder's state, returning the root of the tree.
    *
    * <p>Note: since {@link SoyFileSetParserBuilder} can only be used in tests, this method will
@@ -265,17 +283,17 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParser build() {
-    PassManager.Builder passManager =
-        new PassManager.Builder()
-            .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
-            .setErrorReporter(errorReporter)
-            .setTypeRegistry(typeRegistry)
-            .desugarHtmlNodes(desugarHtmlNodes)
-            .setGeneralOptions(options)
-            .setConformanceConfig(conformanceConfig)
-            .setAutoescaperEnabled(runAutoescaper)
-            .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
-            .setLoggingConfig(loggingConfig);
+    // Add the remaining PassManager configuration bits.
+    passManager
+        .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
+        .setErrorReporter(errorReporter)
+        .setTypeRegistry(typeRegistry)
+        .desugarHtmlNodes(desugarHtmlNodes)
+        .setGeneralOptions(options)
+        .setConformanceConfig(conformanceConfig)
+        .setAutoescaperEnabled(runAutoescaper)
+        .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
+        .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }

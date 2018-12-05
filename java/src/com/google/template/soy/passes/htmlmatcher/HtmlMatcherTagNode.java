@@ -43,7 +43,14 @@ import javax.annotation.Nullable;
  */
 public abstract class HtmlMatcherTagNode implements HtmlMatcherGraphNode {
 
-  enum TagKind {
+  /**
+   * The kind of this HTML tag node.
+   *
+   * <p>All HTML tag nodes are either open tags (e.g, {@code <span>}) or close tags (e.g. {@code
+   * </span>}). Void or self-closing tags (e.g. {@code <img>}) are represented as an {@link
+   * TagKind#OPEN_TAG}.
+   */
+  public enum TagKind {
     OPEN_TAG,
     CLOSE_TAG
   }
