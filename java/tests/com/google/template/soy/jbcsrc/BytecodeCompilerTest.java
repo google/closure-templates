@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -148,8 +149,7 @@ public class BytecodeCompilerTest {
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .build();
-    SoyFileSetNode soyTree = parser.parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
+    TemplateRegistry templateRegistry = parser.parse().registry();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,
@@ -199,8 +199,8 @@ public class BytecodeCompilerTest {
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .addHtmlAttributesForDebugging(true)
             .build();
-    SoyFileSetNode soyTree = parser.parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
+    ParseResult parseResult = parser.parse();
+    TemplateRegistry templateRegistry = parseResult.registry();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,
@@ -950,12 +950,13 @@ public class BytecodeCompilerTest {
                 "{/template}",
                 "");
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContent1).build();
-    SoyFileSetNode soyTree = parser.parse().fileSet();
+    ParseResult parseResult = parser.parse();
+    SoyFileSetNode soyTree = parseResult.fileSet();
+    TemplateRegistry templateRegistry = parseResult.registry();
     // apply an escaping directive to the callsite, just like the autoescaper would
     CallDelegateNode cdn =
         SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
     cdn.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,
@@ -1156,8 +1157,7 @@ public class BytecodeCompilerTest {
 
   private CompiledTemplates compileFiles(String... soyFileContents) {
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContents).build();
-    SoyFileSetNode soyTree = parser.parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
+    TemplateRegistry templateRegistry = parser.parse().registry();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,

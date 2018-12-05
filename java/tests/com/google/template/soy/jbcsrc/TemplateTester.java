@@ -39,7 +39,6 @@ import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
@@ -360,18 +359,14 @@ public final class TemplateTester {
           builder.addSoyFunction(function);
         }
         builder.addSoySourceFunctions(soySourceFunctions);
-        SoyFileSetNode fileSet =
+        ParseResult parseResult =
             builder
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
                 .errorReporter(ErrorReporter.exploding())
                 .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
-                .parse()
-                .fileSet();
-        // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
-        // up until development time when we do a lot of AST cloning, so clone here to try to flush
-        // them out.
-        fileSet = fileSet.copy(new CopyState());
+                .parse();
+        SoyFileSetNode fileSet = parseResult.fileSet();
 
         Map<String, Supplier<Object>> pluginInstances = new LinkedHashMap<>();
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
@@ -385,7 +380,7 @@ public final class TemplateTester {
 
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
-        TemplateRegistry registry = new TemplateRegistry(fileSet, ErrorReporter.exploding());
+        TemplateRegistry registry = parseResult.registry();
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
         String templateName = fileSet.getChild(0).getChild(0).getTemplateName();

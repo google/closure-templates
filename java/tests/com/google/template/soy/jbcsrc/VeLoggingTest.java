@@ -38,7 +38,6 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
@@ -261,8 +260,7 @@ public final class VeLoggingTest {
             .addSoySourceFunction(new DepthFunction())
             .runAutoescaper(true)
             .build();
-    SoyFileSetNode soyTree = parser.parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
+    TemplateRegistry templateRegistry = parser.parse().registry();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,
