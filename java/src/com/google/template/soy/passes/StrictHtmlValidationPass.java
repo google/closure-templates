@@ -27,7 +27,6 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -66,9 +65,6 @@ import java.util.Map;
 
 /** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
 final class StrictHtmlValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind STRICT_HTML_WITH_NON_HTML =
-      SoyErrorKind.of(
-          "stricthtml=\"true\" can only be used with kind=\"html\".", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
       SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind INVALID_CLOSE_TAG =
@@ -413,6 +409,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
               ImmutableList.of(
                   Kind.HTML_COMMENT_NODE,
                   Kind.LET_CONTENT_NODE,
+                  Kind.VE_LOG_NODE,
                   Kind.LET_VALUE_NODE,
                   Kind.DEBUGGER_NODE);
           return !validKinds.contains(node.getKind())
@@ -430,16 +427,17 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
 
       VeLogNode maybeVelogNode = (VeLogNode) node.firstChildThatMatches(new VeLogMatcher());
-      SoyNode firstNode;
-      SoyNode lastNode;
+      SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
+      SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      if (maybeVelogNode != null && firstNode != null && lastNode != null) {
+        errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        return;
+      }
       // Get the first and last nodes that we want to validate are HTML tags that match each other.
       // Skip e.g. comment, let, and debugger nodes.
       if (maybeVelogNode != null) {
         firstNode = maybeVelogNode.firstChildThatMatches(new HtmlOrControlNode());
         lastNode = maybeVelogNode.lastChildThatMatches(new HtmlOrControlNode());
-      } else {
-        firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
-        lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
       }
 
       if (firstNode == null || lastNode == null) {
