@@ -63,8 +63,8 @@ import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.passes.FindIndirectParamsVisitor;
-import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.IndirectParamsCalculator;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
@@ -1401,7 +1401,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // inferred from the indirect params, then the explicit type wins.
     // Also note that indirect param types may not be inferrable if the target
     // is not in the current compilation file set.
-    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(templateRegistry)
+            .calculateIndirectParams(templateRegistry.getMetadata(node));
     // If there are any calls outside of the file set, then we can't know
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record

@@ -60,7 +60,6 @@ public abstract class TemplateMetadata {
             .setVisibility(template.getVisibility())
             .setParameters(Parameter.directParametersFromTemplate(template))
             .setCallSituations(CallSituation.templateCallSituations(template))
-            .setTemplateNodeForTemporaryCompatibility(template)
             .setTemplateNode(
                 template.getParent().getSoyFileKind() == SoyFileKind.SRC ? template : null);
     switch (template.getKind()) {
@@ -95,6 +94,7 @@ public abstract class TemplateMetadata {
                 .setType(param.type())
                 .setInjected(param.isInjected())
                 .setRequired(param.isRequired())
+                .setDeclaredInSoyDoc(param.declLoc() == TemplateParam.DeclLoc.SOY_DOC)
                 .build());
       }
       Set<String> dollarSignIjParams = new HashSet<>();
@@ -111,6 +111,7 @@ public abstract class TemplateMetadata {
                   .setType(UnknownType.getInstance())
                   .setRequired(false) // $ij params are never required to be present
                   .setInjected(true)
+                  .setDeclaredInSoyDoc(false)
                   .build());
         }
       }
@@ -120,6 +121,9 @@ public abstract class TemplateMetadata {
     private static Builder builder() {
       return new AutoValue_TemplateMetadata_Parameter.Builder();
     }
+
+    // explicitly excluded from equals/hashCode
+    private boolean isDeclaredInSoyDoc;
 
     public abstract String getName();
 
@@ -131,8 +135,21 @@ public abstract class TemplateMetadata {
 
     public abstract boolean isRequired();
 
+    /**
+     * True if this parameter was declared in a soydoc comment instead of using the {@code {@param
+     * ....}} syntax. Some compiler passes use this to mark templates as non-'strictly' typed.
+     *
+     * <p>TODO(lukes): instead all such passes should probably just rely on the parameters being
+     * typed as {@code ?}.
+     */
+    public boolean isDeclaredInSoyDoc() {
+      return isDeclaredInSoyDoc;
+    }
+
     @AutoValue.Builder
     abstract static class Builder {
+      private boolean isDeclaredInSoyDoc;
+
       abstract Builder setName(String name);
 
       abstract Builder setType(SoyType type);
@@ -141,7 +158,18 @@ public abstract class TemplateMetadata {
 
       abstract Builder setRequired(boolean isRequired);
 
-      abstract Parameter build();
+      Builder setDeclaredInSoyDoc(boolean declaredInSoyDoc) {
+        this.isDeclaredInSoyDoc = declaredInSoyDoc;
+        return this;
+      }
+
+      Parameter build() {
+        Parameter built = autoBuild();
+        built.isDeclaredInSoyDoc = isDeclaredInSoyDoc;
+        return built;
+      }
+
+      abstract Parameter autoBuild();
     }
   }
 
@@ -158,13 +186,13 @@ public abstract class TemplateMetadata {
       for (CallNode call : SoyTreeUtils.getAllNodesOfType(node, CallNode.class)) {
         CallSituation.Builder builder = builder().setDataAllCall(call.isPassingAllData());
         if (call.isPassingAllData()) {
-          ImmutableList.Builder<String> explicitlyPassedParams = ImmutableList.builder();
+          ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
           for (CallParamNode param : call.getChildren()) {
             explicitlyPassedParams.add(param.getKey().identifier());
           }
           builder.setExplicitlyPassedParametersForDataAllCalls(explicitlyPassedParams.build());
         } else {
-          builder.setExplicitlyPassedParametersForDataAllCalls(ImmutableList.of());
+          builder.setExplicitlyPassedParametersForDataAllCalls(ImmutableSet.of());
         }
         switch (call.getKind()) {
           case CALL_BASIC_NODE:
@@ -195,7 +223,7 @@ public abstract class TemplateMetadata {
      *
      * <p>This is necessary to calculate indirect parameters.
      */
-    public abstract ImmutableList<String> getExplicitlyPassedParametersForDataAllCalls();
+    public abstract ImmutableSet<String> getExplicitlyPassedParametersForDataAllCalls();
 
     private static Builder builder() {
       return new AutoValue_TemplateMetadata_CallSituation.Builder();
@@ -210,7 +238,7 @@ public abstract class TemplateMetadata {
       abstract Builder setDataAllCall(boolean isDataAllCall);
 
       abstract Builder setExplicitlyPassedParametersForDataAllCalls(
-          ImmutableList<String> parameters);
+          ImmutableSet<String> parameters);
 
       abstract CallSituation build();
     }
@@ -251,17 +279,12 @@ public abstract class TemplateMetadata {
   /**
    * The actual parsed template. Will only be non-null for templates with {@link #getSoyFileKind} of
    * {@link SoyFileKind#SRC}
+   *
+   * <p>TODO(user): eliminate this method. If someone clones the tree this will pin a copy of an
+   * old node.
    */
   @Nullable
   public abstract TemplateNode getTemplateNode();
-
-  /**
-   * Same as {@link #getTemplateNode} but is available for non {@link SoyFileKind#SRC} templates.
-   * This is provided for temporary compatibility while we fill out this API.
-   *
-   * <p>TODO(b/63212073): migrate all callers off of this API
-   */
-  public abstract TemplateNode getTemplateNodeForTemporaryCompatibility();
 
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
@@ -290,8 +313,6 @@ public abstract class TemplateMetadata {
     abstract Builder setContentKind(@Nullable SanitizedContentKind contentKind);
 
     abstract Builder setTemplateNode(@Nullable TemplateNode template);
-
-    abstract Builder setTemplateNodeForTemporaryCompatibility(TemplateNode template);
 
     abstract Builder setStrictHtml(boolean strictHtml);
 

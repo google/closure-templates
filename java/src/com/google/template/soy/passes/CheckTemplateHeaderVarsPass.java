@@ -26,7 +26,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -86,7 +86,9 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       }
     }
 
-    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(templateRegistry)
+            .calculateIndirectParams(templateRegistry.getMetadata(node));
 
     Set<String> allHeaderVarNames = new HashSet<>();
     List<TemplateHeaderVarDefn> unusedParams = new ArrayList<>();

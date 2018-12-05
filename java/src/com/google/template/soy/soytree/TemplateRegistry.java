@@ -66,7 +66,7 @@ public final class TemplateRegistry {
   private final ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap;
 
   private final DelTemplateSelector<TemplateMetadata> delTemplateSelector;
-  private final ImmutableMap<TemplateNode, TemplateMetadata> allTemplates;
+  private final ImmutableMap<String, TemplateMetadata> allTemplates;
 
   /** Lazily allocated. */
   private final Map<TemplateMetadata, CallGraphNode> callGraphs = new HashMap<>();
@@ -79,8 +79,7 @@ public final class TemplateRegistry {
   public TemplateRegistry(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
 
     // ------ Iterate through all templates to collect data. ------
-    ImmutableMap.Builder<TemplateNode, TemplateMetadata> allTemplatesBuilder =
-        ImmutableMap.builder();
+    Map<String, TemplateMetadata> allTemplatesBuilder = new LinkedHashMap<>();
     DelTemplateSelector.Builder<TemplateMetadata> delTemplateSelectorBuilder =
         new DelTemplateSelector.Builder<>();
     Map<String, TemplateMetadata> basicTemplatesOrElementsMap = new LinkedHashMap<>();
@@ -88,7 +87,7 @@ public final class TemplateRegistry {
     for (SoyFileNode soyFile : soyTree.getChildren()) {
       for (TemplateNode template : soyFile.getChildren()) {
         TemplateMetadata templateObject = TemplateMetadata.fromTemplate(template);
-        allTemplatesBuilder.put(template, templateObject);
+        allTemplatesBuilder.put(template.getTemplateName(), templateObject);
         switch (templateObject.getTemplateKind()) {
           case BASIC:
           case ELEMENT:
@@ -154,7 +153,7 @@ public final class TemplateRegistry {
 
     this.basicTemplatesOrElementsMap = ImmutableMap.copyOf(basicTemplatesOrElementsMap);
     this.delTemplateSelector = delTemplateSelectorBuilder.build();
-    this.allTemplates = allTemplatesBuilder.build();
+    this.allTemplates = ImmutableMap.copyOf(allTemplatesBuilder);
   }
 
   /** Returns all basic template names. */
@@ -191,7 +190,11 @@ public final class TemplateRegistry {
   }
 
   public TemplateMetadata getMetadata(TemplateNode node) {
-    return allTemplates.get(checkNotNull(node));
+    return checkNotNull(
+        allTemplates.get(checkNotNull(node.getTemplateName())),
+        "couldn't find metadata for %s in %s",
+        node,
+        allTemplates);
   }
 
   /**
@@ -260,19 +263,19 @@ public final class TemplateRegistry {
     // We can't make this object immutable because the graph may have cycles.
     // So instead we use this field to force that all mutations happen before any queries occur.
     private boolean frozen = false;
-    private final TemplateMetadata caller;
+    private final TemplateMetadata template;
     private final Map<CallSituation, CallGraphNode> basicCallees = new LinkedHashMap<>();
     private final ListMultimap<CallSituation, CallGraphNode> delCallees =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
     // lazily caches the set of transitive callees.
     private Set<TemplateMetadata> transiveCallees;
 
-    private CallGraphNode(TemplateMetadata caller) {
-      this.caller = checkNotNull(caller);
+    private CallGraphNode(TemplateMetadata template) {
+      this.template = checkNotNull(template);
     }
 
-    public TemplateMetadata caller() {
-      return caller;
+    public TemplateMetadata template() {
+      return template;
     }
 
     private void addDelCallee(CallSituation call, CallGraphNode callee) {
@@ -313,7 +316,7 @@ public final class TemplateRegistry {
     }
 
     private void collectTransitiveCallees(Set<TemplateMetadata> callees) {
-      if (callees.add(caller)) {
+      if (callees.add(template)) {
         if (transiveCallees != null) {
           callees.addAll(transiveCallees);
         } else {

@@ -41,8 +41,8 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
-import com.google.template.soy.passes.FindIndirectParamsVisitor;
-import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.IndirectParamsCalculator;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.passes.TransitiveIjParamsCalculator;
 import com.google.template.soy.passes.TransitiveIjParamsCalculator.IjParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
@@ -55,6 +55,8 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -70,6 +72,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.VeType;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -491,7 +494,7 @@ public final class GenerateParseInfoVisitor
         } else {
           javadocSb.append(", ");
         }
-        javadocSb.append(buildTemplateNameForJavadoc(node, template));
+        javadocSb.append(buildTemplateNameForJavadoc(node, templateRegistry.getMetadata(template)));
       }
       javadocSb.append('.');
       appendJavadoc(ilb, javadocSb.toString(), false, true);
@@ -578,27 +581,19 @@ public final class GenerateParseInfoVisitor
     }
 
     // First build list of all transitive params (direct and indirect).
-    LinkedHashMap<String, TemplateParam> transitiveParamMap = Maps.newLinkedHashMap();
+    Set<String> directParamNames = new HashSet<>();
     // Direct params.
     for (TemplateParam param : node.getParams()) {
-      transitiveParamMap.put(param.name(), param);
+      directParamNames.add(param.name());
     }
-    Set<TemplateParam> directParams = Sets.newHashSet(node.getParams());
 
+    TemplateMetadata nodeMetadata = templateRegistry.getMetadata(node);
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
-        new FindIndirectParamsVisitor(templateRegistry).exec(node);
-    for (TemplateParam param : indirectParamsInfo.indirectParams.values()) {
-      TemplateParam existingParam = transitiveParamMap.get(param.name());
-      if (existingParam == null) {
-        // Note: We don't list the description for indirect params.
-        transitiveParamMap.put(param.name(), param.copyEssential());
-      }
-    }
+        new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(nodeMetadata);
 
     // Get info on injected params.
-    IjParamsInfo ijParamsInfo =
-        transitiveIjParamsCalculator.calculateIjs(templateRegistry.getMetadata(node));
+    IjParamsInfo ijParamsInfo = transitiveIjParamsCalculator.calculateIjs(nodeMetadata);
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
     String upperUnderscoreName =
@@ -626,47 +621,55 @@ public final class GenerateParseInfoVisitor
     // ------ Param constants. ------
     boolean hasSeenFirstDirectParam = false;
     boolean hasSwitchedToIndirectParams = false;
-    for (TemplateParam param : transitiveParamMap.values()) {
-
-      if (directParams.contains(param)) {
-        if (!hasSeenFirstDirectParam) {
-          ilb.appendLine();
-          hasSeenFirstDirectParam = true;
-        }
-        if (param.desc() != null) {
-          appendJavadoc(ilb, param.desc(), false, false);
-        }
-
-      } else {
-        // Indirect param.
-        if (!hasSwitchedToIndirectParams) {
-          ilb.appendLine();
-          ilb.appendLine("// Indirect params.");
-          hasSwitchedToIndirectParams = true;
-        }
-
-        // Get the list of all transitive callee names as they will appear in the generated
-        // Javadoc (possibly containing both partial and full names) and sort them before
-        // generating the Javadoc.
-        SortedSet<String> sortedJavadocCalleeNames = Sets.newTreeSet();
-        for (TemplateNode transitiveCallee :
-            indirectParamsInfo.paramKeyToCalleesMultimap.get(param.name())) {
-          String javadocCalleeName =
-              buildTemplateNameForJavadoc(node.getParent(), transitiveCallee);
-          sortedJavadocCalleeNames.add(javadocCalleeName);
-        }
-
-        // Generate the Javadoc.
-        String javadoc = "Listed by " + Joiner.on(", ").join(sortedJavadocCalleeNames) + ".";
-        appendJavadoc(ilb, javadoc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
+    // Direct params.
+    for (TemplateParam param : node.getParams()) {
+      if (!hasSeenFirstDirectParam) {
+        ilb.appendLine();
+        hasSeenFirstDirectParam = true;
       }
-
+      if (param.desc() != null) {
+        appendJavadoc(ilb, param.desc(), false, false);
+      }
       // The actual param field.
       ilb.appendLine(
           "public static final String ",
           convertToUpperUnderscore(param.name()),
           " = \"",
           param.name(),
+          "\";");
+    }
+    for (Parameter param : indirectParamsInfo.indirectParams.values()) {
+      if (directParamNames.contains(param.getName())) {
+        continue;
+      }
+
+      // Indirect param.
+      if (!hasSwitchedToIndirectParams) {
+        ilb.appendLine();
+        ilb.appendLine("// Indirect params.");
+        hasSwitchedToIndirectParams = true;
+      }
+
+      // Get the list of all transitive callee names as they will appear in the generated
+      // Javadoc (possibly containing both partial and full names) and sort them before
+      // generating the Javadoc.
+      SortedSet<String> sortedJavadocCalleeNames = Sets.newTreeSet();
+      for (TemplateMetadata transitiveCallee :
+          indirectParamsInfo.paramKeyToCalleesMultimap.get(param.getName())) {
+        String javadocCalleeName = buildTemplateNameForJavadoc(node.getParent(), transitiveCallee);
+        sortedJavadocCalleeNames.add(javadocCalleeName);
+      }
+
+      // Generate the Javadoc.
+      String javadoc = "Listed by " + Joiner.on(", ").join(sortedJavadocCalleeNames) + ".";
+      appendJavadoc(ilb, javadoc, /* forceMultiline= */ false, /* wrapAt100Chars= */ true);
+
+      // The actual param field.
+      ilb.appendLine(
+          "public static final String ",
+          convertToUpperUnderscore(param.getName()),
+          " = \"",
+          param.getName(),
           "\";");
     }
 
@@ -679,12 +682,17 @@ public final class GenerateParseInfoVisitor
     ilb.increaseIndent(2);
     ilb.appendLine("\"", node.getTemplateName(), "\",");
 
-    if (!transitiveParamMap.isEmpty()) {
+    if (!nodeMetadata.getParameters().isEmpty() || !indirectParamsInfo.indirectParams.isEmpty()) {
       ImmutableMap.Builder<String, String> entrySnippetPairs = ImmutableMap.builder();
-      for (TemplateParam param : transitiveParamMap.values()) {
-        entrySnippetPairs.put(
-            "\"" + param.name() + "\"",
-            param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
+      Set<String> seenParams = new HashSet<>();
+      for (Parameter param :
+          Iterables.concat(
+              nodeMetadata.getParameters(), indirectParamsInfo.indirectParams.values())) {
+        if (!param.isInjected() && seenParams.add(param.getName())) {
+          entrySnippetPairs.put(
+              "\"" + param.getName() + "\"",
+              param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
+        }
       }
       appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs.build());
       ilb.appendLineEnd(",");
@@ -904,20 +912,34 @@ public final class GenerateParseInfoVisitor
    *     javadoc.
    */
   private static String buildTemplateNameForJavadoc(
-      SoyFileNode currSoyFile, TemplateNode template) {
+      SoyFileNode currSoyFile, TemplateMetadata template) {
 
     StringBuilder resultSb = new StringBuilder();
 
-    if (template.getParent().equals(currSoyFile) && !(template instanceof TemplateDelegateNode)) {
-      resultSb.append(template.getPartialTemplateName());
+    if (template.getTemplateNode() != null
+        && template.getTemplateNode().getParent().equals(currSoyFile)
+        && template.getTemplateKind() != TemplateMetadata.Kind.DELTEMPLATE) {
+      resultSb.append(template.getTemplateNode().getPartialTemplateName());
     } else {
-      resultSb.append(template.getTemplateNameForUserMsgs());
+      switch (template.getTemplateKind()) {
+        case BASIC:
+        case ELEMENT:
+          resultSb.append(template.getTemplateName());
+          break;
+        case DELTEMPLATE:
+          resultSb.append(template.getDelTemplateName());
+          if (!template.getDelTemplateVariant().isEmpty()) {
+            resultSb.append(':');
+            resultSb.append(template.getDelTemplateVariant());
+          }
+          break;
+      }
     }
 
     if (template.getVisibility() != Visibility.PUBLIC) {
       resultSb.append(" (private)");
     }
-    if (template instanceof TemplateDelegateNode) {
+    if (template.getTemplateKind() == TemplateMetadata.Kind.DELTEMPLATE) {
       resultSb.append(" (delegate)");
     }
 

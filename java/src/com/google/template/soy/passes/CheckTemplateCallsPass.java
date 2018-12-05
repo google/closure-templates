@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
@@ -38,7 +37,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -55,7 +54,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SanitizedType;
@@ -146,7 +144,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     private final TemplateRegistry templateRegistry;
 
     /** Map of all template parameters, both explicit and implicit, organized by template. */
-    private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = new HashMap<>();
+    private final Map<TemplateMetadata, TemplateParamTypes> paramTypesMap = new HashMap<>();
 
     CheckCallsHelper(TemplateRegistry registry) {
       this.templateRegistry = registry;
@@ -192,8 +190,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
      */
     private Predicate<String> checkCallParamTypes(
         TemplateNode callerTemplate, CallNode call, TemplateMetadata callee) {
-      TemplateParamTypes calleeParamTypes =
-          getTemplateParamTypes(callee.getTemplateNodeForTemporaryCompatibility());
+      TemplateParamTypes calleeParamTypes = getTemplateParamTypes(callee);
       // Explicit params being passed by the CallNode
       Set<String> explicitParams = new HashSet<>();
       // The set of params that need runtime type checking at template call time. We start this with
@@ -429,28 +426,28 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     /**
      * Get the parameter types for a callee.
      *
-     * @param node The template being called.
+     * @param callee The template being called.
      * @return The set of template parameters, both explicit and implicit.
      */
-    private TemplateParamTypes getTemplateParamTypes(TemplateNode node) {
-      TemplateParamTypes paramTypes = paramTypesMap.get(node);
+    private TemplateParamTypes getTemplateParamTypes(TemplateMetadata callee) {
+      TemplateParamTypes paramTypes = paramTypesMap.get(callee);
       if (paramTypes == null) {
         paramTypes = new TemplateParamTypes();
 
         // Store all of the explicitly declared param types
-        for (TemplateParam param : node.getParams()) {
-          if (param.declLoc() == DeclLoc.SOY_DOC) {
+        for (Parameter param : callee.getParameters()) {
+          if (param.isDeclaredInSoyDoc()) {
             paramTypes.isStrictlyTyped = false;
           }
-          Preconditions.checkNotNull(param.type());
-          paramTypes.params.put(param.name(), param.type());
+          paramTypes.params.put(param.getName(), param.getType());
         }
 
         // Store indirect params where there's no conflict with explicit params.
         // Note that we don't check here whether the explicit type and the implicit
         // types are in agreement - that will be done when it's this template's
         // turn to be analyzed as a caller.
-        IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
+        IndirectParamsInfo ipi =
+            new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(callee);
         for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
           if (paramTypes.params.containsKey(indirectParamName)) {
             continue;
@@ -461,7 +458,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         }
 
         // Save the param types map
-        paramTypesMap.put(node, paramTypes);
+        paramTypesMap.put(callee, paramTypes);
       }
       return paramTypes;
     }
@@ -546,9 +543,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           continue;
         }
         if (ipi == null) {
-          ipi =
-              new FindIndirectParamsVisitor(templateRegistry)
-                  .exec(callee.getTemplateNodeForTemporaryCompatibility());
+          ipi = new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(callee);
           // If the callee has unknown indirect params then we can't validate that this isn't one
           // of them. So just give up.
           if (ipi.mayHaveIndirectParamsInExternalCalls

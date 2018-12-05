@@ -18,40 +18,33 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for FindIndirectParamsVisitor.
+ * Unit tests for IndirectParamsCalculator.
  *
  */
 @RunWith(JUnit4.class)
-public final class FindIndirectParamsVisitorTest {
+public final class IndirectParamsCalculatorTest {
 
   @Test
   public void testFindIndirectParams() {
 
-    String fileContent1 =
+    String alpha =
         "{namespace alpha}\n"
             + "\n"
-            + "/** @param? a0 @param? b3 */\n"
-            + // 'b3' listed by alpha.zero
-            "{template .zero}\n"
+            + "/** @param? a0 @param? b3 */\n" // 'b3' listed by alpha.zero
+            + "{template .zero}\n"
             + "  {call .zero data=\"all\" /}\n"
-            + // recursive call should not cause 'a0' to be added
-            "  {call .one data=\"all\" /}\n"
+            + "  {call .one data=\"all\" /}\n" // recursive call should not cause 'a0' to be added
             + "  {call .two /}\n"
             + "  {call beta.zero /}\n"
             + "  {call .five data=\"all\"}\n"
@@ -84,9 +77,8 @@ public final class FindIndirectParamsVisitorTest {
             + "  {$a4}\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param? a5 @param? b4 */\n"
-            + // 'b4' listed by alpha.five
-            "{template .five}\n"
+            + "/** @param? a5 @param? b4 */\n" // 'b4' listed by alpha.five
+            + "{template .five}\n"
             + "  {call beta.two data=\"all\" /}\n"
             + "  {call beta.three data=\"all\" /}\n"
             + "  {call beta.four data=\"all\" /}\n"
@@ -99,7 +91,7 @@ public final class FindIndirectParamsVisitorTest {
             + "  {$a6}\n"
             + "{/template}\n";
 
-    String fileContent2 =
+    String beta =
         "{namespace beta}\n"
             + "\n"
             + "/** @param? b0 */\n"
@@ -128,36 +120,27 @@ public final class FindIndirectParamsVisitorTest {
             + "  {$b4}\n"
             + "{/template}\n";
 
-    ErrorReporter boom = ErrorReporter.exploding();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forFileContents(alpha, beta).parse().registry();
 
-    TemplateRegistry registry = new TemplateRegistry(soyTree, boom);
+    TemplateMetadata a0 = registry.getBasicTemplateOrElement("alpha.zero");
+    TemplateMetadata a1 = registry.getBasicTemplateOrElement("alpha.one");
+    // TemplateMetadata a2 = registry.getBasicTemplateOrElement("alpha.two");
+    TemplateMetadata a3 = registry.getBasicTemplateOrElement("alpha.three");
+    // TemplateMetadata a4 = registry.getBasicTemplateOrElement("alpha.four");
+    TemplateMetadata a5 = registry.getBasicTemplateOrElement("alpha.five");
+    TemplateMetadata a6 = registry.getBasicTemplateOrElement("alpha.six");
+    // TemplateMetadata b0 = registry.getBasicTemplateOrElement("beta.zero");
+    TemplateMetadata b1 = registry.getBasicTemplateOrElement("beta.one");
+    // TemplateMetadata b2 = registry.getBasicTemplateOrElement("beta.two");
+    TemplateMetadata b3 = registry.getBasicTemplateOrElement("beta.three");
+    TemplateMetadata b4 = registry.getBasicTemplateOrElement("beta.four");
 
-    SoyFileNode a = soyTree.getChild(0);
-    TemplateNode a0 = a.getChild(0);
-    TemplateNode a1 = a.getChild(1);
-    //TemplateNode a2 = a.getChild(2);
-    TemplateNode a3 = a.getChild(3);
-    //TemplateNode a4 = a.getChild(4);
-    TemplateNode a5 = a.getChild(5);
-    TemplateNode a6 = a.getChild(6);
-    SoyFileNode b = soyTree.getChild(1);
-    //TemplateNode b0 = b.getChild(0);
-    TemplateNode b1 = b.getChild(1);
-    //TemplateNode b2 = b.getChild(2);
-    TemplateNode b3 = b.getChild(3);
-    TemplateNode b4 = b.getChild(4);
-
-    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(registry).exec(a0);
+    IndirectParamsInfo ipi = new IndirectParamsCalculator(registry).calculateIndirectParams(a0);
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 
-    Map<String, TemplateParam> ipMap = ipi.indirectParams;
-    assertThat(ipMap).hasSize(6);
+    Map<String, TemplateMetadata.Parameter> ipMap = ipi.indirectParams;
     assertThat(ipMap).doesNotContainKey("a0");
     assertThat(ipMap).containsKey("a1");
     assertThat(ipMap).doesNotContainKey("a2");
@@ -170,14 +153,15 @@ public final class FindIndirectParamsVisitorTest {
     assertThat(ipMap).doesNotContainKey("b2");
     assertThat(ipMap).containsKey("b3");
     assertThat(ipMap).containsKey("b4");
+    assertThat(ipMap).hasSize(6);
 
-    Multimap<String, TemplateNode> pktcm = ipi.paramKeyToCalleesMultimap;
-    assertThat(pktcm).valuesForKey("a1").isEqualTo(ImmutableSet.of(a1));
-    assertThat(pktcm).valuesForKey("a3").isEqualTo(ImmutableSet.of(a3));
-    assertThat(pktcm).valuesForKey("a6").isEqualTo(ImmutableSet.of(a6));
-    assertThat(pktcm).valuesForKey("b1").isEqualTo(ImmutableSet.of(b1));
-    assertThat(pktcm).valuesForKey("b3").isEqualTo(ImmutableSet.of(b3));
+    Multimap<String, TemplateMetadata> pktcm = ipi.paramKeyToCalleesMultimap;
+    assertThat(pktcm).valuesForKey("a1").containsExactly(a1);
+    assertThat(pktcm).valuesForKey("a3").containsExactly(a3);
+    assertThat(pktcm).valuesForKey("a6").containsExactly(a6);
+    assertThat(pktcm).valuesForKey("b1").containsExactly(b1);
+    assertThat(pktcm).valuesForKey("b3").containsExactly(b3);
     // 'b4' listed by alpha.five
-    assertThat(pktcm).valuesForKey("b4").isEqualTo(ImmutableSet.of(a5, b4));
+    assertThat(pktcm).valuesForKey("b4").containsExactly(a5, b4);
   }
 }
