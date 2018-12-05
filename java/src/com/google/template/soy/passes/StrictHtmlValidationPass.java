@@ -66,9 +66,6 @@ import java.util.Map;
 
 /** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
 final class StrictHtmlValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind STRICT_HTML_WITHOUT_AUTOESCAPE =
-      SoyErrorKind.of(
-          "stricthtml=\"true\" must be used with autoescape=\"strict\".", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind STRICT_HTML_WITH_NON_HTML =
       SoyErrorKind.of(
           "stricthtml=\"true\" can only be used with kind=\"html\".", StyleAllowance.NO_CAPS);
@@ -425,10 +422,26 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         }
       }
 
+      class VeLogMatcher implements Predicate<SoyNode> {
+        @Override
+        public boolean apply(SoyNode node) {
+          return node instanceof VeLogNode;
+        }
+      }
+
+      VeLogNode maybeVelogNode = (VeLogNode) node.firstChildThatMatches(new VeLogMatcher());
+      SoyNode firstNode;
+      SoyNode lastNode;
       // Get the first and last nodes that we want to validate are HTML tags that match each other.
       // Skip e.g. comment, let, and debugger nodes.
-      SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
-      SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      if (maybeVelogNode != null) {
+        firstNode = maybeVelogNode.firstChildThatMatches(new HtmlOrControlNode());
+        lastNode = maybeVelogNode.lastChildThatMatches(new HtmlOrControlNode());
+      } else {
+        firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
+        lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      }
+
       if (firstNode == null || lastNode == null) {
         errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;

@@ -16,12 +16,14 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Predicate;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Abstract implementation of a ParentNode and CommandNode.
@@ -132,5 +134,31 @@ abstract class AbstractParentCommandNode<N extends SoyNode> extends AbstractComm
   @Override
   public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
+  }
+
+  /** Returns the template's first child node that matches the given condition. */
+  @Nullable
+  public SoyNode firstChildThatMatches(Predicate<SoyNode> condition) {
+    int firstChildIndex = 0;
+    while (firstChildIndex < numChildren() && !condition.apply(getChild(firstChildIndex))) {
+      firstChildIndex++;
+    }
+    if (firstChildIndex < numChildren()) {
+      return getChild(firstChildIndex);
+    }
+    return null;
+  }
+
+  /** Returns the template's last child node that matches the given condition. */
+  @Nullable
+  public SoyNode lastChildThatMatches(Predicate<SoyNode> condition) {
+    int lastChildIndex = numChildren() - 1;
+    while (lastChildIndex >= 0 && !condition.apply(getChild(lastChildIndex))) {
+      lastChildIndex--;
+    }
+    if (lastChildIndex >= 0) {
+      return getChild(lastChildIndex);
+    }
+    return null;
   }
 }

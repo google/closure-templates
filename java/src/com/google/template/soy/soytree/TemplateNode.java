@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -548,31 +547,5 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     // Note: If there are only injected params, don't use strong typing for
     // the function signature, because what it will produce is an empty struct.
     return false;
-  }
-
-  /** Returns the template's first child node that matches the given condition. */
-  @Nullable
-  public SoyNode firstChildThatMatches(Predicate<SoyNode> condition) {
-    int firstChildIndex = 0;
-    while (firstChildIndex < numChildren() && !condition.apply(getChild(firstChildIndex))) {
-      firstChildIndex++;
-    }
-    if (firstChildIndex < numChildren()) {
-      return getChild(firstChildIndex);
-    }
-    return null;
-  }
-
-  /** Returns the template's last child node that matches the given condition. */
-  @Nullable
-  public SoyNode lastChildThatMatches(Predicate<SoyNode> condition) {
-    int lastChildIndex = numChildren() - 1;
-    while (lastChildIndex >= 0 && !condition.apply(getChild(lastChildIndex))) {
-      lastChildIndex--;
-    }
-    if (lastChildIndex >= 0) {
-      return getChild(lastChildIndex);
-    }
-    return null;
   }
 }

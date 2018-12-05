@@ -330,10 +330,26 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
         }
       }
 
+      class VeLogMatcher implements Predicate<SoyNode> {
+        @Override
+        public boolean apply(SoyNode node) {
+          return node instanceof VeLogNode;
+        }
+      }
+
+      VeLogNode maybeVelogNode = (VeLogNode) node.firstChildThatMatches(new VeLogMatcher());
+      SoyNode firstNode;
+      SoyNode lastNode;
       // Get the first and last nodes that we want to validate are HTML tags that match each other.
       // Skip e.g. comment, let, and debugger nodes.
-      SoyNode firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
-      SoyNode lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      if (maybeVelogNode != null) {
+        firstNode = maybeVelogNode.firstChildThatMatches(new HtmlOrControlNode());
+        lastNode = maybeVelogNode.lastChildThatMatches(new HtmlOrControlNode());
+      } else {
+        firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
+        lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
+      }
+
       if (firstNode == null || lastNode == null) {
         errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         return;
