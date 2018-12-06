@@ -24756,6 +24756,110 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
           value);
 };
 
+//javascript/template/soy/checks.js
+/**
+ * @fileoverview Provides Soy runtime checks for safe types.
+ */
+
+goog.provide('soy.checks');
+
+goog.require('goog.asserts');
+goog.require('goog.soy.data.SanitizedContentKind');
+goog.require('goog.soy.data.SanitizedCss');
+goog.require('goog.soy.data.SanitizedHtml');
+goog.require('goog.soy.data.SanitizedHtmlAttribute');
+goog.require('goog.soy.data.SanitizedJs');
+goog.require('goog.soy.data.SanitizedTrustedResourceUri');
+goog.require('goog.soy.data.SanitizedUri');
+goog.require('goog.soy.data.UnsanitizedText');
+
+/**
+ * Checks whether a given value is of a given content kind.
+ *
+ * @param {?} value The value to be examined.
+ * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
+ *     kind.
+ * @param {!Object} constructor
+ * @return {boolean} Whether the given value is of the given kind.
+ * @private
+ */
+soy.checks.isContentKind_ = function(value, contentKind, constructor) {
+  var ret = value != null && value.contentKind === contentKind;
+  if (ret) {
+    goog.asserts.assert(value.constructor === constructor);
+  }
+  return ret;
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isHtml = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.HTML,
+      goog.soy.data.SanitizedHtml);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isCss = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.CSS,
+      goog.soy.data.SanitizedCss);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isAttribute = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
+      goog.soy.data.SanitizedHtmlAttribute);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isJS = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isTrustedResourceURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      goog.soy.data.SanitizedTrustedResourceUri);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.URI,
+      goog.soy.data.SanitizedUri);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isText = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.TEXT,
+      goog.soy.data.UnsanitizedText);
+};
+
 //javascript/template/soy/soyutils_usegoog.js
 /*
  * Copyright 2008 Google Inc.
@@ -24823,6 +24927,9 @@ goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
+goog.require('soy.checks');
+
+
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
@@ -24846,7 +24953,6 @@ soydata.isContentKind_ = function(value, contentKind) {
   // altogether and only at the constructor.
   return value != null && value.contentKind === contentKind;
 };
-
 
 /**
  * Returns a given value's contentDir property, constrained to a
@@ -24900,9 +25006,7 @@ goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
  */
 soydata.SanitizedHtml.from = function(value) {
   // The check is soydata.isContentKind_() inlined for performance.
-  if (value != null &&
-      value.contentKind === goog.soy.data.SanitizedContentKind.HTML) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+  if (soy.checks.isHtml(value)) {
     return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
   }
   if (value instanceof goog.html.SafeHtml) {
@@ -25702,8 +25806,7 @@ soy.$$escapeHtml = function(value) {
  *     value.
  */
 soy.$$cleanHtml = function(value, opt_safeTags) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+  if (soy.checks.isHtml(value)) {
     return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
   }
   var tagWhitelist;
@@ -25834,8 +25937,7 @@ soy.$$normalizeHtml = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeHtmlRcdata = function(value) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+  if (soy.checks.isHtml(value)) {
     return soy.esc.$$normalizeHtmlHelper(value.getContent());
   }
   return soy.esc.$$escapeHtmlHelper(value);
@@ -26010,10 +26112,9 @@ soy.$$balanceTags_ = function(tags) {
 soy.$$escapeHtmlAttribute = function(value) {
   // NOTE: We don't accept ATTRIBUTES here because ATTRIBUTES is actually not
   // the attribute value context, but instead k/v pairs.
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
+  if (soy.checks.isHtml(value)) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
     return soy.esc.$$normalizeHtmlHelper(
         soy.$$stripHtmlTags(value.getContent()));
   }
@@ -26043,8 +26144,7 @@ soy.$$escapeHtmlHtmlAttribute = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$escapeHtmlAttributeNospace = function(value) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+  if (soy.checks.isHtml(value)) {
     return soy.esc.$$normalizeHtmlNospaceHelper(
         soy.$$stripHtmlTags(value.getContent()));
   }
@@ -26065,10 +26165,7 @@ soy.$$escapeHtmlAttributeNospace = function(value) {
 soy.$$filterHtmlAttributes = function(value) {
   // NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   // meaningless in this context, which is generally *between* html attributes.
-  if (soydata.isContentKind_(
-    value, goog.soy.data.SanitizedContentKind.ATTRIBUTES)) {
-    goog.asserts.assert(
-        value.constructor === goog.soy.data.SanitizedHtmlAttribute);
+  if (soy.checks.isAttribute(value)) {
     // Add a space at the end to ensure this won't get merged into following
     // attributes, unless the interpretation is unambiguous (ending with quotes
     // or a space).
@@ -26142,8 +26239,7 @@ soy.$$escapeJsValue = function(value) {
     // distinct undefined value.
     return ' null ';
   }
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.JS)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedJs);
+  if (soy.checks.isJS(value)) {
     return value.getContent();
   }
   if (value instanceof goog.html.SafeScript) {
@@ -26241,14 +26337,10 @@ soy.$$normalizeUri = function(value) {
  * @return {string} An escaped version of value.
  */
 soy.$$filterNormalizeUri = function(value) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.URI)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedUri);
+  if (soy.checks.isURI(value)) {
     return soy.$$normalizeUri(value);
   }
-  if (soydata.isContentKind_(value,
-      goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
-    goog.asserts.assert(
-        value.constructor === goog.soy.data.SanitizedTrustedResourceUri);
+  if (soy.checks.isTrustedResourceURI(value)) {
     return soy.$$normalizeUri(value);
   }
   if (value instanceof goog.html.SafeUrl) {
@@ -26272,14 +26364,10 @@ soy.$$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
   // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
   // tests for filterTrustedResourceUri.
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.URI)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedUri);
+  if (soy.checks.isURI(value)) {
     return soy.$$normalizeUri(value);
   }
-  if (soydata.isContentKind_(value,
-      goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
-    goog.asserts.assert(
-        value.constructor === goog.soy.data.SanitizedTrustedResourceUri);
+  if (soy.checks.isTrustedResourceURI(value)) {
     return soy.$$normalizeUri(value);
   }
   if (value instanceof goog.html.SafeUrl) {
@@ -26310,10 +26398,7 @@ soy.$$filterNormalizeRefreshUri = function(value) {
  * @return {string} The value content.
  */
 soy.$$filterTrustedResourceUri = function(value) {
-  if (soydata.isContentKind_(value,
-      goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
-    goog.asserts.assert(
-        value.constructor === goog.soy.data.SanitizedTrustedResourceUri);
+  if (soy.checks.isTrustedResourceURI(value)) {
     return value.getContent();
   }
   if (value instanceof goog.html.TrustedResourceUrl) {
@@ -26411,8 +26496,7 @@ soy.$$escapeCssString = function(value) {
  * @return {string} A safe CSS identifier part, keyword, or quanitity.
  */
 soy.$$filterCssValue = function(value) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.CSS)) {
-    goog.asserts.assertInstanceof(value, goog.soy.data.SanitizedCss);
+  if (soy.checks.isCss(value)) {
     return soy.$$embedCssIntoHtml_(value.getContent());
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
