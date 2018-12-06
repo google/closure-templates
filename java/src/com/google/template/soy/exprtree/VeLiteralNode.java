@@ -19,11 +19,13 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /** A node representing the {@code ve(VeName)} expression, to create a VE for VE logging. */
 public final class VeLiteralNode extends AbstractExprNode {
 
   private final Identifier name;
+  @Nullable private Long id;
   private SoyType type;
 
   public VeLiteralNode(Identifier name, SourceLocation srcLoc) {
@@ -40,7 +42,15 @@ public final class VeLiteralNode extends AbstractExprNode {
     return name;
   }
 
-  // TODO(b/71641483): Set the type from ResolveExpressionTypesPass
+  public void setId(long id) {
+    this.id = id;
+  }
+
+  @Nullable
+  public Long getId() {
+    return id;
+  }
+
   public void setType(SoyType type) {
     this.type = type;
   }

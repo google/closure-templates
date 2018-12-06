@@ -27,6 +27,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
@@ -49,6 +50,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.VeType;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -839,6 +841,18 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
+
+    List<VeLiteralNode> veNodes = SoyTreeUtils.getAllNodesOfType(soyTree, VeLiteralNode.class);
+    assertThat(veNodes).hasSize(2);
+
+    assertThat(veNodes.get(0).getId()).isEqualTo(1);
+    assertThat(veNodes.get(0).getName().identifier()).isEqualTo("VeData");
+    assertThat(veNodes.get(0).getType())
+        .isEqualTo(VeType.of(typeRegistry.getType("example.ExampleExtendable")));
+
+    assertThat(veNodes.get(1).getId()).isEqualTo(2);
+    assertThat(veNodes.get(1).getName().identifier()).isEqualTo("VeNoData");
+    assertThat(veNodes.get(1).getType()).isEqualTo(VeType.of(NullType.getInstance()));
   }
 
   @Test

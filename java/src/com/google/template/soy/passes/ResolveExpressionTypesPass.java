@@ -1161,6 +1161,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         } else {
           type = VeType.NO_DATA;
         }
+        node.setId(config.get().getId());
       } else {
         type = ErrorType.getInstance();
       }
