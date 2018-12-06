@@ -1,0 +1,117 @@
+// This file is a serialized dual of c.g.template.soy.soytree.TemplateMetadata
+//
+// This represents just enough information to accurately reconstruct those
+// objects for dependency templates.
+//
+// This represents a non-stable compiler internal interface.  Users should not
+// rely on these objects to be stable between compiler releases.
+syntax = "proto3";
+
+package soy.compiler;
+
+option java_package = "com.google.template.soy.soytree";
+option java_outer_classname = "TemplateMetadataProto";
+option java_multiple_files = true;
+
+// Represents a set of files
+message CompilationUnit {
+  repeated SoyFileP file = 1;
+}
+
+// Represents a soy file
+// File global information should be represented here to avoid duplicating data
+// across each template.
+message SoyFileP {
+  string file_path = 1;
+  string delpackage = 2;
+  string namespace = 3;
+  repeated TemplateMetadataP template = 4;
+}
+
+// The source location of a template within a file.
+// TODO(lukes): we probably don't really need end location information.
+message SourceLocationP {
+  int32 start_column = 1;
+  int32 start_line = 2;
+  int32 end_column = 3;
+  int32 end_line = 4;
+}
+
+// A single declared template parameter
+message ParameterP {
+  // The parameter name
+  string name = 1;
+  // The type, in soy type syntax
+  // TODO(lukes): consider representing the type tree structure (i.e. a parallel
+  // of TypeNode) explicitly, this may make parsing faster.
+  string type = 2;
+  // Whether this parameter is injected.  This covers both $ij and {@inject...}
+  // syntax.
+  bool injected = 3;
+  // Whether or not the parameter is required.
+  bool required = 4;
+  // Whether or not the parameter is declared in soydoc.
+  bool declared_in_soy_doc = 5;
+}
+
+// Represents a call within a template.
+message CallSituationP {
+  // The template name.
+  // if this is a delcall or a call to a template in another file, this will be
+  // fully qualified.  If it is a call to a template in the current namespace
+  // it will be prefixed with a single dot.
+  string template_name = 1;
+  // Whether this is a delcall
+  bool del_call = 2;
+  // Whether this is a data="all" call.
+  bool data_all_call = 3;
+  // If this is a data="all" call, this will contain the names of the explicitly
+  // passed parameters.
+  repeated string explicitly_passed_parameters_for_data_all_calls = 4;
+}
+
+// A duplicate of SanitizedContentKind
+enum SanitizedContentKindP {
+  UNKNOWN_SANITIZED_CONTENT_KIND = 0;
+  HTML = 1;
+  JS = 2;
+  URI = 3;
+  TRUSTED_RESOURCE_URI = 4;
+  ATTRIBUTES = 5;
+  CSS = 6;
+  TEXT = 7;
+  NONE = 8;
+}
+// The kind of the template.
+enum TemplateKindP {
+  UNKNOWN_TEMPLATE_KIND = 0;
+  BASIC = 1;
+  ELEMENT = 2;
+  DELTEMPLATE = 3;
+}
+
+// The visibility of the template.
+enum VisibilityP {
+  UNKNOWN_VISIBILITY = 0;
+  PUBLIC = 1;
+  PRIVATE = 2;
+}
+
+// Represents a soy template.
+message TemplateMetadataP {
+  TemplateKindP template_kind = 1;
+  SourceLocationP source_location = 2;
+  // The template name.
+  // For basic templates or elements this will be a partial name
+  // For deltemplates it will be the fully qualified deltemplate name.
+  string template_name = 3;
+
+  // The variant string.  Will be empty for basic templates or deltemplates with
+  // no variant.
+  string del_template_variant = 4;
+  SanitizedContentKindP content_kind = 5;
+  bool strict_html = 6;
+  VisibilityP visibility = 7;
+  repeated ParameterP parameter = 8;
+  repeated CallSituationP call_situation = 9;
+}

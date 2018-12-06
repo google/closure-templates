@@ -45,12 +45,11 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class TemplateMetadata {
-  // TODO(lukes): add a serialized form of this object
 
   /** Builds a Template from a parsed TemplateNode. */
   public static TemplateMetadata fromTemplate(TemplateNode template) {
     TemplateMetadata.Builder builder =
-        new AutoValue_TemplateMetadata.Builder()
+        builder()
             .setTemplateName(template.getTemplateName())
             .setSourceLocation(template.getSourceLocation())
             .setSoyFileKind(template.getParent().getSoyFileKind())
@@ -77,6 +76,10 @@ public abstract class TemplateMetadata {
         throw new AssertionError("unexpected template kind: " + template.getKind());
     }
     return builder.build();
+  }
+
+  public static TemplateMetadata.Builder builder() {
+    return new AutoValue_TemplateMetadata.Builder();
   }
 
   /** Represents minimal information about a template parameter. */
@@ -116,7 +119,7 @@ public abstract class TemplateMetadata {
       return params.build();
     }
 
-    private static Builder builder() {
+    public static Builder builder() {
       return new AutoValue_TemplateMetadata_Parameter.Builder();
     }
 
@@ -144,24 +147,25 @@ public abstract class TemplateMetadata {
       return isDeclaredInSoyDoc;
     }
 
+    /** Builder for {@link Parameter} */
     @AutoValue.Builder
-    abstract static class Builder {
+    public abstract static class Builder {
       private boolean isDeclaredInSoyDoc;
 
-      abstract Builder setName(String name);
+      public abstract Builder setName(String name);
 
-      abstract Builder setType(SoyType type);
+      public abstract Builder setType(SoyType type);
 
-      abstract Builder setInjected(boolean isInjected);
+      public abstract Builder setInjected(boolean isInjected);
 
-      abstract Builder setRequired(boolean isRequired);
+      public abstract Builder setRequired(boolean isRequired);
 
-      Builder setDeclaredInSoyDoc(boolean declaredInSoyDoc) {
+      public Builder setDeclaredInSoyDoc(boolean declaredInSoyDoc) {
         this.isDeclaredInSoyDoc = declaredInSoyDoc;
         return this;
       }
 
-      Parameter build() {
+      public Parameter build() {
         Parameter built = autoBuild();
         built.isDeclaredInSoyDoc = isDeclaredInSoyDoc;
         return built;
@@ -172,7 +176,7 @@ public abstract class TemplateMetadata {
   }
 
   /**
-   * Represents information about a template called by a given template.
+   * Represents information about a templates called by a given template.
    *
    * <p>This doesn't necessarily represent a single call site since if a template is called multiple
    * times in ways that aren't different according to this data structure we only record it once.
@@ -207,6 +211,10 @@ public abstract class TemplateMetadata {
       return calls.build().asList();
     }
 
+    public static Builder builder() {
+      return new AutoValue_TemplateMetadata_CallSituation.Builder();
+    }
+
     /** The fully qualified name of the called template. */
     public abstract String getTemplateName();
 
@@ -223,22 +231,19 @@ public abstract class TemplateMetadata {
      */
     public abstract ImmutableSet<String> getExplicitlyPassedParametersForDataAllCalls();
 
-    private static Builder builder() {
-      return new AutoValue_TemplateMetadata_CallSituation.Builder();
-    }
-
+    /** Builder for {@link CallSituation} */
     @AutoValue.Builder
-    abstract static class Builder {
-      abstract Builder setTemplateName(String templateName);
+    public abstract static class Builder {
+      public abstract Builder setTemplateName(String templateName);
 
-      abstract Builder setDelCall(boolean isDelCall);
+      public abstract Builder setDelCall(boolean isDelCall);
 
-      abstract Builder setDataAllCall(boolean isDataAllCall);
+      public abstract Builder setDataAllCall(boolean isDataAllCall);
 
-      abstract Builder setExplicitlyPassedParametersForDataAllCalls(
+      public abstract Builder setExplicitlyPassedParametersForDataAllCalls(
           ImmutableSet<String> parameters);
 
-      abstract CallSituation build();
+      public abstract CallSituation build();
     }
   }
 
@@ -274,6 +279,16 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelPackageName();
 
+  /**
+   * The actual parsed template. Will only be non-null for templates with {@link #getSoyFileKind} of
+   * {@link SoyFileKind#SRC}
+   *
+   * <p>TODO(user): eliminate this method. If someone clones the tree this will pin a copy of an
+   * old node.
+   */
+  @Nullable
+  public abstract TemplateNode getTemplateNode();
+
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
 
@@ -284,36 +299,41 @@ public abstract class TemplateMetadata {
    */
   public abstract ImmutableList<CallSituation> getCallSituations();
 
+  /** Builder for {@link TemplateMetadata} */
   @AutoValue.Builder
-  abstract static class Builder {
-    abstract Builder setSoyFileKind(SoyFileKind location);
+  public abstract static class Builder {
+    public abstract Builder setSoyFileKind(SoyFileKind location);
 
-    abstract Builder setSourceLocation(SourceLocation location);
+    public abstract Builder setSourceLocation(SourceLocation location);
 
-    abstract Builder setTemplateKind(Kind kind);
+    public abstract Builder setTemplateKind(Kind kind);
 
-    abstract Builder setTemplateName(String templateName);
+    public abstract Builder setTemplateName(String templateName);
 
-    abstract Builder setDelTemplateName(String delTemplateName);
+    public abstract Builder setDelTemplateName(String delTemplateName);
 
-    abstract Builder setDelTemplateVariant(String delTemplateVariant);
+    public abstract Builder setDelTemplateVariant(String delTemplateVariant);
 
-    abstract Builder setContentKind(@Nullable SanitizedContentKind contentKind);
+    public abstract Builder setContentKind(@Nullable SanitizedContentKind contentKind);
 
-    abstract Builder setStrictHtml(boolean strictHtml);
+    public abstract Builder setTemplateNode(@Nullable TemplateNode template);
 
-    abstract Builder setDelPackageName(@Nullable String delPackageName);
+    public abstract Builder setStrictHtml(boolean strictHtml);
 
-    abstract Builder setVisibility(Visibility visibility);
+    public abstract Builder setDelPackageName(@Nullable String delPackageName);
 
-    abstract Builder setParameters(ImmutableList<Parameter> parameters);
+    public abstract Builder setVisibility(Visibility visibility);
 
-    abstract Builder setCallSituations(ImmutableList<CallSituation> callSituations);
+    public abstract Builder setParameters(ImmutableList<Parameter> parameters);
 
-    final TemplateMetadata build() {
+    public abstract Builder setCallSituations(ImmutableList<CallSituation> callSituations);
+
+    public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
       if (built.getTemplateKind() == Kind.DELTEMPLATE) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
+        checkState(
+            built.getDelTemplateVariant() != null, "Deltemplates must have a deltemplateName");
       } else {
         checkState(
             built.getDelTemplateVariant() == null, "non-Deltemplates must not have a variant");

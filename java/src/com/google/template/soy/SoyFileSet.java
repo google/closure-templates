@@ -673,6 +673,11 @@ public final class SoyFileSet {
     return soyFileSuppliers;
   }
 
+  @VisibleForTesting
+  SoyTypeRegistry getTypeRegistryForTesting() {
+    return typeRegistry;
+  }
+
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.

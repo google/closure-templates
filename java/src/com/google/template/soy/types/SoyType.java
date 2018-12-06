@@ -178,4 +178,8 @@ public abstract class SoyType {
    */
   @ForOverride
   abstract boolean doIsAssignableFromNonUnionType(SoyType type);
+
+  /** The type represented in a fully parseable format. */
+  @Override
+  public abstract String toString();
 }

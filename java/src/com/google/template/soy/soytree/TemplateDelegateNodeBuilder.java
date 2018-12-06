@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Builder for TemplateDelegateNode.
@@ -165,17 +166,24 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
         variant = expr.toSourceString();
       }
     }
+    String generatedPartialTemplateName =
+        partialDeltemplateTemplateName(delTemplateName, soyFileHeaderInfo.delPackageName, variant);
+    String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
+    setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
+  }
+
+  /** Returns the inferred 'partial' name for a deltemplate. */
+  public static String partialDeltemplateTemplateName(
+      String delTemplateName, @Nullable String delPackageName, String variant) {
     String delPackageTemplateAndVariantStr =
-        (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName)
+        (delPackageName == null ? "" : delPackageName)
             + "_"
             + delTemplateName.replace('.', '_')
             + "_"
             + variant;
     delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
-    String generatedPartialTemplateName = ".__deltemplate_" + delPackageTemplateAndVariantStr;
-    String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
-    setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
+    return ".__deltemplate_" + delPackageTemplateAndVariantStr;
   }
 
   @Override
