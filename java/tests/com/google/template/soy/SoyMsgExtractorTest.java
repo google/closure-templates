@@ -32,7 +32,6 @@ import org.junit.runners.JUnit4;
 public class SoyMsgExtractorTest {
   @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
-
   @Test
   public void testOutputFileFlag() throws Exception {
     File soyFile1 = temp.newFile("temp.soy");

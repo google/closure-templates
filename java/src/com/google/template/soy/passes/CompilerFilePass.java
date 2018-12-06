@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
 
@@ -30,14 +31,20 @@ import com.google.template.soy.soytree.SoyFileNode;
  * 'freeze/unfreeze' API.
  */
 public abstract class CompilerFilePass {
+  @LazyInit private String name;
+
   public abstract void run(SoyFileNode file, IdGenerator nodeIdGen);
 
   public String name() {
-    String simpleName = getClass().getSimpleName();
-    if (simpleName.endsWith("Pass")) {
-      return simpleName.substring(0, simpleName.length() - "Pass".length());
+    String localName = this.name;
+    if (localName == null) {
+      localName = getClass().getSimpleName();
+      if (localName.endsWith("Pass")) {
+        localName = localName.substring(0, localName.length() - "Pass".length());
+      }
+      this.name = localName;
     }
-    return simpleName;
+    return localName;
   }
 
   @Override

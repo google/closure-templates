@@ -113,7 +113,7 @@ public final class PassManager {
                       return input.name().equals(passName);
                     }
                   });
-          checkState(passIndex != -1);
+          checkState(passIndex != -1, "Couldn't find a pass named %s", passName);
           // Remap STOP_AFTER to STOP_BEFORE only if the STOP_AFTER rule is not on the last pass.
           if (passIndex < passList.size() - 1) {
             remappedRegistry.put(
@@ -353,16 +353,6 @@ public final class PassManager {
     public Builder setGeneralOptions(SoyGeneralOptions opts) {
       this.opts = opts;
       return this;
-    }
-
-    /**
-     * Configures the {@link PassManager} to run conformance passes only.
-     *
-     * <p>The conformance passes are {@link HtmlRewritePass} and {@link SoyConformancePass}.
-     */
-    public Builder forceConformanceOnly() {
-      // Conformance tests only operate on single files.
-      return addPassContinuationRule("SoyConformance", PassContinuationRule.STOP_AFTER_PASS);
     }
 
     /**

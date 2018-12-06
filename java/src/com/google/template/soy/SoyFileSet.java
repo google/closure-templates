@@ -59,6 +59,7 @@ import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.TransitiveIjParamsCalculator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -728,7 +729,11 @@ public final class SoyFileSet {
   /** A simple tool to enforce conformance and only conformance. */
   void checkConformance() {
     resetErrorReporter();
-    parse(passManagerBuilder().forceConformanceOnly());
+    // to check conformance we only need to run as much as it takes to execute the SoyConformance
+    // pass.
+    parse(
+        passManagerBuilder()
+            .addPassContinuationRule("SoyConformance", PassContinuationRule.STOP_AFTER_PASS));
     throwIfErrorsPresent();
     reportWarnings();
   }
@@ -1121,6 +1126,24 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
     reportWarnings();
+  }
+
+  /**
+   * Performs the minimal amount of work needed to calculate TemplateMetadata objects for header
+   * compilation.
+   */
+  ParseResult compileMinimallyForHeaders() {
+    resetErrorReporter();
+    ParseResult result =
+        parse(
+            passManagerBuilder()
+                // HtmlRewrite is the first pass.  So if we stop before it means we don't run
+                // any passes.  This is kind of weird.  Alternatively we could configure the
+                // SoyFileSetParser with a null passmanger, since that is what we want.
+                .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS));
+    throwIfErrorsPresent();
+    reportWarnings();
+    return result;
   }
 
   ImmutableMap<String, SoyFunction> getSoyFunctions() {
