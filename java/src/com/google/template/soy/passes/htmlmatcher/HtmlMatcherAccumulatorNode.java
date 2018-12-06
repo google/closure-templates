@@ -19,6 +19,7 @@ package com.google.template.soy.passes.htmlmatcher;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.soytree.SoyNode;
 import javax.annotation.Nullable;
 
@@ -51,5 +52,32 @@ public final class HtmlMatcherAccumulatorNode extends HtmlMatcherGraphNode {
   public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
     checkState(!this.equals(node), "Can't link a node to itsself.");
     nextNode = node;
+  }
+
+  /**
+   * Links the all the given active edges to this node.
+   *
+   * <p>This produces a many-to-one linkage in the HTML matcher graph.
+   *
+   * <p>Note that a {@link HtmlMatcherGraphNode} may occur in the list more than once, each time
+   * with a different active edge. For example, this Soy template body:
+   *
+   * <pre>
+   *   &lt;span&gt;
+   *     {if $cond1}Content1{/if}  // No HTML tags in the If-block.
+   *   &lt;/span&gt;
+   * </pre>
+   *
+   * will add two occurences of an {@link HtmlMatcherIfConditionNode} to the {@code activeEdges}
+   * list, one with a {@code TRUE} active edge, and one with a {@code FALSE} active edge.
+   *
+   * @param activeEdges the list of all active edges that will point to this {@link
+   *     HtmlMatcherAccumulatorNode}. Note that a {@link HtmlMatcherGraphNode} may occur in the list
+   *     more than once.
+   */
+  public void accumulateActiveEdges(ImmutableList<ActiveEdge> activeEdges) {
+    for (ActiveEdge accEdge : activeEdges) {
+      accEdge.getGraphNode().linkEdgeToNode(accEdge.getActiveEdge(), this);
+    }
   }
 }
