@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  * <p>This is similar to the phi function described in <a
  * href="https://en.wikipedia.org/wiki/Static_single_assignment_form">Static_single_assignment_form</a>
  */
-public final class HtmlMatcherAccumulatorNode implements HtmlMatcherGraphNode {
+public final class HtmlMatcherAccumulatorNode extends HtmlMatcherGraphNode {
 
   @Nullable private HtmlMatcherGraphNode nextNode = null;
 
@@ -37,16 +37,9 @@ public final class HtmlMatcherAccumulatorNode implements HtmlMatcherGraphNode {
     return Optional.absent();
   }
 
-  @Nullable
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
-    switch (edgeKind) {
-      case TRUE_EDGE:
-        return Optional.fromNullable(nextNode);
-      case FALSE_EDGE:
-        throw new IllegalArgumentException("Accumulator nodes do not have a FALSE_EDGE.");
-    }
-    return Optional.absent();
+    return Optional.fromNullable(nextNode);
   }
 
   @Override
@@ -55,8 +48,8 @@ public final class HtmlMatcherAccumulatorNode implements HtmlMatcherGraphNode {
   }
 
   @Override
-  public void linkActiveEdgeToNode(HtmlMatcherGraphNode node) {
-    checkState(!this.equals(node), "Can't link a node to self.");
+  public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
+    checkState(!this.equals(node), "Can't link a node to itsself.");
     nextNode = node;
   }
 }

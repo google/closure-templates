@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
  *     };
  * </pre>
  */
-public abstract class HtmlMatcherTagNode implements HtmlMatcherGraphNode {
+public abstract class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
 
   /**
    * The kind of this HTML tag node.
@@ -91,8 +91,8 @@ public abstract class HtmlMatcherTagNode implements HtmlMatcherGraphNode {
   }
 
   @Override
-  public void linkActiveEdgeToNode(HtmlMatcherGraphNode node) {
-    checkState(!this.equals(node), "Can't link to self");
+  public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
+    checkState(!this.equals(node), "Can't link a node to itsself.");
     nextNode = node;
   }
 }

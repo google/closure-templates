@@ -23,15 +23,13 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.SoyNode;
 import javax.annotation.Nullable;
 
-public final class HtmlMatcherIfConditionNode implements HtmlMatcherGraphNode {
+public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
 
   private final IfCondNode conditionNode;
 
   @Nullable private HtmlMatcherGraphNode trueBranchNode = null;
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
-
-  private EdgeKind activeEdgeKind = EdgeKind.TRUE_EDGE;
 
   public HtmlMatcherIfConditionNode(SoyNode conditionNode) {
     checkState(
@@ -57,14 +55,9 @@ public final class HtmlMatcherIfConditionNode implements HtmlMatcherGraphNode {
   }
 
   @Override
-  public void setActiveEdgeKind(EdgeKind edgeKind) {
-    activeEdgeKind = edgeKind;
-  }
-
-  @Override
-  public void linkActiveEdgeToNode(HtmlMatcherGraphNode node) {
-    checkState(!this.equals(node), "Cannot link to self.");
-    switch (activeEdgeKind) {
+  public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
+    checkState(!this.equals(node), "Cannot link a node to itself.");
+    switch (edgeKind) {
       case TRUE_EDGE:
         trueBranchNode = node;
         break;

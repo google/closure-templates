@@ -29,31 +29,41 @@ import com.google.template.soy.soytree.SoyNode;
  * is an HTML tag, then there is at most one edge - the true edge. Otherwise, if the associated Soy
  * node is a condition branch, there can be up to two edges.
  */
-public interface HtmlMatcherGraphNode {
+public abstract class HtmlMatcherGraphNode {
 
   /**
    * The edge kinds for edges leading from this node.
    *
    * <p>The node has at most one of each kind of edge.
    */
-  enum EdgeKind {
+  public enum EdgeKind {
     TRUE_EDGE,
     FALSE_EDGE
   }
 
+  private EdgeKind activeEdgeKind = EdgeKind.TRUE_EDGE;
+
   /** Returns the associated {@link SoyNode} */
-  Optional<SoyNode> getSoyNode();
+  public abstract Optional<SoyNode> getSoyNode();
 
   /** Returns the {@link HtmlMatcherGraphNode} linked by {@link EdgeKind} */
-  Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind);
+  public abstract Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind);
+
+  /** Links this node to the given node along the specified edge. */
+  public abstract void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node);
+
+  /** Returns the active edge kind. */
+  public EdgeKind getActiveEdgeKind() {
+    return activeEdgeKind;
+  }
 
   /** Sets the edge kind for future calls to {@link #linkActiveEdgeToNode(HtmlMatcherGraphNode)} */
-  void setActiveEdgeKind(EdgeKind edgeKind);
+  public void setActiveEdgeKind(EdgeKind edgeKind) {
+    activeEdgeKind = edgeKind;
+  }
 
-  /**
-   * Links the given node to this one along the active edge.
-   *
-   * @see {@link #setActiveEdgeKind(EdgeKind)}
-   */
-  void linkActiveEdgeToNode(HtmlMatcherGraphNode node);
+  /** Links this node to the given node along this node's active edge. */
+  public void linkActiveEdgeToNode(HtmlMatcherGraphNode node) {
+    linkEdgeToNode(getActiveEdgeKind(), node);
+  }
 }
