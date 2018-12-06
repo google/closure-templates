@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParser;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -38,7 +39,6 @@ import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.util.Map;
@@ -260,10 +260,11 @@ public final class VeLoggingTest {
             .addSoySourceFunction(new DepthFunction())
             .runAutoescaper(true)
             .build();
-    TemplateRegistry templateRegistry = parser.parse().registry();
+    ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry,
+                parseResult.registry(),
+                parseResult.fileSet(),
                 false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),

@@ -100,6 +100,7 @@ final class TemplateCompiler {
   private final UniqueNameGenerator fieldNames = JbcSrcNameGenerators.forFieldNames();
   private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
+  private final TemplateNode templateNode;
   private final InnerClasses innerClasses;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry soyTypeRegistry;
@@ -108,10 +109,12 @@ final class TemplateCompiler {
   TemplateCompiler(
       CompiledTemplateRegistry registry,
       CompiledTemplateMetadata template,
+      TemplateNode templateNode,
       ErrorReporter reporter,
       SoyTypeRegistry soyTypeRegistry) {
     this.registry = registry;
     this.template = template;
+    this.templateNode = templateNode;
     TypeInfo ownerType = template.typeInfo();
     this.paramsField = createFinalField(ownerType, PARAMS_FIELD, SoyRecord.class).asNonNull();
     this.ijField = createFinalField(ownerType, IJ_FIELD, SoyRecord.class).asNonNull();
@@ -121,7 +124,7 @@ final class TemplateCompiler {
     fieldNames.claimName(IJ_FIELD);
     fieldNames.claimName(STATE_FIELD);
     ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
-    for (TemplateParam param : template.node().getAllParams()) {
+    for (TemplateParam param : templateNode.getAllParams()) {
       String name = param.name();
       fieldNames.claimName(name);
       builder.put(name, createFinalField(ownerType, name, SoyValueProvider.class).asNonNull());
@@ -153,18 +156,18 @@ final class TemplateCompiler {
     List<ClassData> classes = new ArrayList<>();
 
     // first generate the factory
-    if (template.node().getVisibility() != Visibility.PRIVATE) {
+    if (templateNode.getVisibility() != Visibility.PRIVATE) {
       // Don't generate factory if the template is private.  The factories are only
       // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke
       // constructors directly.
-      new TemplateFactoryCompiler(template, innerClasses).compile();
+      new TemplateFactoryCompiler(template, templateNode, innerClasses).compile();
     }
 
     writer =
         SoyClassWriter.builder(template.typeInfo())
             .setAccess(Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL)
             .implementing(TEMPLATE_TYPE)
-            .sourceFileName(template.node().getSourceLocation().getFileName())
+            .sourceFileName(templateNode.getSourceLocation().getFileName())
             .build();
     generateTemplateMetadata();
     generateKindMethod();
@@ -190,37 +193,37 @@ final class TemplateCompiler {
 
   private void generateKindMethod() {
     Statement.returnExpression(
-            constantSanitizedContentKindAsContentKind(template.node().getContentKind()))
+            constantSanitizedContentKindAsContentKind(templateNode.getContentKind()))
         .writeMethod(
             Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, template.kindMethod().method(), writer);
   }
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    SanitizedContentKind contentKind = template.node().getContentKind();
+    SanitizedContentKind contentKind = templateNode.getContentKind();
     String kind = contentKind == null ? "" : contentKind.name();
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs = new LinkedHashSet<>();
-    for (VarRefNode var : getAllNodesOfType(template.node(), VarRefNode.class)) {
+    for (VarRefNode var : getAllNodesOfType(templateNode, VarRefNode.class)) {
       if (var.isInjected()) {
         uniqueIjs.add(var.getName());
       }
     }
 
     Set<String> callees = new LinkedHashSet<>();
-    for (CallBasicNode call : getAllNodesOfType(template.node(), CallBasicNode.class)) {
+    for (CallBasicNode call : getAllNodesOfType(templateNode, CallBasicNode.class)) {
       callees.add(call.getCalleeName());
     }
 
     Set<String> delCallees = new LinkedHashSet<>();
-    for (CallDelegateNode call : getAllNodesOfType(template.node(), CallDelegateNode.class)) {
+    for (CallDelegateNode call : getAllNodesOfType(templateNode, CallDelegateNode.class)) {
       delCallees.add(call.getDelCalleeName());
     }
 
     TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
-    if (template.node().getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
-      TemplateDelegateNode delegateNode = (TemplateDelegateNode) template.node();
+    if (templateNode.getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
+      TemplateDelegateNode delegateNode = (TemplateDelegateNode) templateNode;
       deltemplateMetadata =
           createDelTemplateMetadata(
               delegateNode.getDelPackageName() == null ? "" : delegateNode.getDelPackageName(),
@@ -267,17 +270,16 @@ final class TemplateCompiler {
     final TemplateVariableManager variableSet =
         new TemplateVariableManager(
             fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
-    TemplateNode node = template.node();
     ImmutableMap<TemplatePropVar, SoyExpression> propInitializers = ImmutableMap.of();
-    if (node instanceof TemplateElementNode) {
-      propInitializers = generatePropInitializers((TemplateElementNode) node, variableSet);
+    if (templateNode instanceof TemplateElementNode) {
+      propInitializers = generatePropInitializers((TemplateElementNode) templateNode, variableSet);
     }
     TemplateVariables variables =
         new TemplateVariables(
             variableSet, thisVar, propInitializers, new RenderContextExpression(contextVar));
     List<TemplatePropVar> propVars = ImmutableList.of();
-    if (node instanceof TemplateElementNode) {
-      propVars = ((TemplateElementNode) node).getPropVars();
+    if (templateNode instanceof TemplateElementNode) {
+      propVars = ((TemplateElementNode) templateNode).getPropVars();
     }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
@@ -291,7 +293,7 @@ final class TemplateCompiler {
                 reporter,
                 soyTypeRegistry,
                 propVars)
-            .compile(node);
+            .compile(templateNode);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
@@ -357,7 +359,7 @@ final class TemplateCompiler {
     assignments.add(fieldInitializers); // for other fields needed by the compiler.
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
-    for (TemplateParam param : template.node().getAllParams()) {
+    for (TemplateParam param : templateNode.getAllParams()) {
       Expression paramProvider = getParam(paramsVar, ijVar, param);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }

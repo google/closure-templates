@@ -149,11 +149,13 @@ public class BytecodeCompilerTest {
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .build();
-    TemplateRegistry templateRegistry = parser.parse().registry();
+    ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry,
-                false,
+                parseResult.registry(),
+                parseResult.fileSet(),
+
+                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -200,11 +202,12 @@ public class BytecodeCompilerTest {
             .addHtmlAttributesForDebugging(true)
             .build();
     ParseResult parseResult = parser.parse();
-    TemplateRegistry templateRegistry = parseResult.registry();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry,
-                false,
+                parseResult.registry(),
+                parseResult.fileSet(),
+
+                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -960,7 +963,9 @@ public class BytecodeCompilerTest {
     CompiledTemplates templates =
         BytecodeCompiler.compile(
                 templateRegistry,
-                false,
+                soyTree,
+
+                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -1157,11 +1162,12 @@ public class BytecodeCompilerTest {
 
   private CompiledTemplates compileFiles(String... soyFileContents) {
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContents).build();
-    TemplateRegistry templateRegistry = parser.parse().registry();
+    ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
-                templateRegistry,
-                false,
+                parseResult.registry(),
+                parseResult.fileSet(),
+                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())

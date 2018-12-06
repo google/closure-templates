@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.opti;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
@@ -62,7 +63,8 @@ public class SimplifyVisitorTest {
     assertThat(forNode.numChildren()).isEqualTo(5);
 
     SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(soyTree.getNodeIdGenerator(), parseResult.registry());
+        SimplifyVisitor.create(
+            soyTree.getNodeIdGenerator(), ImmutableList.copyOf(soyTree.getChildren()));
     simplifyVisitor.simplify(soyTree.getChild(0));
 
     assertThat(template.numChildren()).isEqualTo(4);
@@ -245,20 +247,23 @@ public class SimplifyVisitorTest {
   }
 
   private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
-    ParseResult parse = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
     SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(parse.fileSet().getNodeIdGenerator(), parse.registry());
-    simplifyVisitor.simplify(parse.fileSet().getChild(0));
-    return parse.fileSet().getChild(0).getChild(0).getChildren();
+        SimplifyVisitor.create(
+            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+    simplifyVisitor.simplify(fileSet.getChild(0));
+    return fileSet.getChild(0).getChild(0).getChildren();
   }
 
   private SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
-    ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
+    SoyFileSetNode fileSet =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
     SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(parse.fileSet().getNodeIdGenerator(), parse.registry());
-    for (SoyFileNode file : parse.fileSet().getChildren()) {
+        SimplifyVisitor.create(
+            fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
+    for (SoyFileNode file : fileSet.getChildren()) {
       simplifyVisitor.simplify(file);
     }
-    return parse.fileSet();
+    return fileSet;
   }
 }

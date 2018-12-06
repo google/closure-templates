@@ -19,6 +19,7 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
@@ -33,8 +34,8 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateRegistry;
-import javax.annotation.Nullable;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 
 /**
  * Visitor for prerendering the template subtree rooted at a given SoyNode. This is possible when
@@ -55,11 +56,12 @@ final class PrerenderVisitor extends RenderVisitor {
   PrerenderVisitor(
       PreevalVisitorFactory preevalVisitorFactory,
       Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry) {
+      ImmutableMap<String, TemplateNode> basicTemplates) {
     super(
         preevalVisitorFactory,
         outputBuf,
-        templateRegistry,
+        basicTemplates,
+        /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
         SoyValueConverter.EMPTY_DICT,
         /* ijData= */ null,
         /* activeDelPackageSelector= */ null,
@@ -74,9 +76,7 @@ final class PrerenderVisitor extends RenderVisitor {
   protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new PrerenderVisitor(
-        (PreevalVisitorFactory) evalVisitorFactory,
-        outputBuf,
-        templateRegistry);
+        (PreevalVisitorFactory) evalVisitorFactory, outputBuf, basicTemplates);
   }
 
   @Override

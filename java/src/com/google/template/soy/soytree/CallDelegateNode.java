@@ -73,8 +73,7 @@ public final class CallDelegateNode extends CallNode {
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
    */
-  @Nullable
-  private ImmutableMap<TemplateMetadata, Predicate<String>> paramsToRuntimeCheckByDelegate = null;
+  @Nullable private ImmutableMap<String, Predicate<String>> paramsToRuntimeCheckByDelegate = null;
 
   public CallDelegateNode(
       int id,
@@ -176,17 +175,17 @@ public final class CallDelegateNode extends CallNode {
    * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
    */
   public void setParamsToRuntimeCheck(
-      ImmutableMap<TemplateMetadata, Predicate<String>> paramsToRuntimeCheck) {
+      ImmutableMap<String, Predicate<String>> paramsToRuntimeCheck) {
     checkState(this.paramsToRuntimeCheckByDelegate == null);
     this.paramsToRuntimeCheckByDelegate = checkNotNull(paramsToRuntimeCheck);
   }
 
   @Override
-  public Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee) {
+  public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
     if (paramsToRuntimeCheckByDelegate == null) {
       return Predicates.alwaysTrue();
     }
-    Predicate<String> params = paramsToRuntimeCheckByDelegate.get(callee);
+    Predicate<String> params = paramsToRuntimeCheckByDelegate.get(calleeTemplateName);
     if (params == null) {
       // The callee was not known when we performed static type checking.  Check all params.
       return Predicates.alwaysTrue();

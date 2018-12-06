@@ -244,7 +244,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
    * type checking when this node is being rendered.
    */
-  public abstract Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee);
+  public abstract Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName);
 
   /**
    * Returns the escaping directives, applied from left to right.

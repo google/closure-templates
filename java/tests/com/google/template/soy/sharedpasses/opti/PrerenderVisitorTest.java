@@ -20,9 +20,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
 import org.junit.Rule;
 import org.junit.Test;
@@ -171,10 +173,14 @@ public class PrerenderVisitorTest {
                     : ImmutableList.copyOf(experimentalFeatures.value()))
             .parse();
 
+    TemplateNode template = result.fileSet().getChild(0).getChild(0);
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        new PrerenderVisitor(new PreevalVisitorFactory(), outputSb, result.registry());
-    prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
+        new PrerenderVisitor(
+            new PreevalVisitorFactory(),
+            outputSb,
+            ImmutableMap.of(template.getTemplateName(), template));
+    prerenderVisitor.exec(template);
     return outputSb.toString();
   }
 }

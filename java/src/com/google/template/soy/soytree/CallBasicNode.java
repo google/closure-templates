@@ -135,7 +135,7 @@ public final class CallBasicNode extends CallNode {
   }
 
   @Override
-  public Predicate<String> getParamsToRuntimeCheck(TemplateMetadata callee) {
+  public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
     return paramsToRuntimeTypeCheck == null ? Predicates.alwaysTrue() : paramsToRuntimeTypeCheck;
   }
 

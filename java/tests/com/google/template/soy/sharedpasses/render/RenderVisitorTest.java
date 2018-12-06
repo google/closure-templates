@@ -50,13 +50,14 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.TestAnnotations.ExperimentalFeatures;
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -288,7 +289,8 @@ public class RenderVisitorTest {
         new RenderVisitor(
             new EvalVisitorFactoryImpl(),
             outputSb,
-            null,
+            ImmutableMap.<String, TemplateNode>of(),
+            new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
             data,
             TEST_IJ_DATA,
             Predicates.<String>alwaysFalse(),
@@ -332,12 +334,13 @@ public class RenderVisitorTest {
       SoyRecord ijData,
       Predicate<String> activeDelPackageNames,
       StringBuilder outputSb) {
-    TemplateRegistry templateRegistry = parseResult.registry();
+    ImmutableMap<String, TemplateNode> basicTemplates = getBasicTemplates(parseResult.fileSet());
     RenderVisitor rv =
         new RenderVisitor(
             new EvalVisitorFactoryImpl(),
             outputSb,
-            templateRegistry,
+            basicTemplates,
+            getDeltemplateSelector(parseResult.fileSet()),
             data,
             ijData,
             activeDelPackageNames,
@@ -346,8 +349,7 @@ public class RenderVisitorTest {
             cssRenamingMap,
             false,
             /* pluginInstances= */ ImmutableMap.of());
-    TemplateNode templateNode =
-        templateRegistry.getBasicTemplateOrElement(templateName).getTemplateNode();
+    TemplateNode templateNode = basicTemplates.get(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -1015,11 +1017,11 @@ public class RenderVisitorTest {
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
 
-    TemplateRegistry templateRegistry =
+    SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .errorReporter(FAIL)
             .parse()
-            .registry();
+            .fileSet();
 
     SoyDict foo =
         SoyValueConverterUtility.newDict(
@@ -1041,11 +1043,13 @@ public class RenderVisitorTest {
     StringBuilder outputSb = new StringBuilder();
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);
 
+    ImmutableMap<String, TemplateNode> basicTemplates = getBasicTemplates(fileSet);
     RenderVisitor rv =
         new RenderVisitor(
             new EvalVisitorFactoryImpl(),
             output,
-            templateRegistry,
+            basicTemplates,
+            getDeltemplateSelector(fileSet),
             data,
             testIj,
             Predicates.<String>alwaysFalse(),
@@ -1054,7 +1058,7 @@ public class RenderVisitorTest {
             cssRenamingMap,
             false,
             /* pluginInstances= */ ImmutableMap.of());
-    rv.exec(templateRegistry.getBasicTemplateOrElement("ns.callerTemplate").getTemplateNode());
+    rv.exec(basicTemplates.get("ns.callerTemplate"));
 
     String expectedOutput =
         "booij 1 2 3\n"
@@ -1722,5 +1726,39 @@ public class RenderVisitorTest {
         return this.getClass().hashCode();
       }
     };
+  }
+
+  static ImmutableMap<String, TemplateNode> getBasicTemplates(SoyFileSetNode fileSet) {
+    ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
+    for (SoyFileNode fileNode : fileSet.getChildren()) {
+      for (TemplateNode template : fileNode.getChildren()) {
+        if (!(template instanceof TemplateDelegateNode)) {
+          basicTemplates.put(template.getTemplateName(), template);
+        }
+      }
+    }
+    return basicTemplates.build();
+  }
+
+  static DelTemplateSelector<TemplateDelegateNode> getDeltemplateSelector(SoyFileSetNode fileSet) {
+
+    DelTemplateSelector.Builder<TemplateDelegateNode> deltemplates =
+        new DelTemplateSelector.Builder<>();
+    for (SoyFileNode fileNode : fileSet.getChildren()) {
+      for (TemplateNode template : fileNode.getChildren()) {
+        if (template instanceof TemplateDelegateNode) {
+          TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
+          String delTemplateName = delegateNode.getDelTemplateName();
+          String delPackageName = delegateNode.getDelPackageName();
+          String variant = delegateNode.getDelTemplateVariant();
+          if (delPackageName == null) {
+            deltemplates.addDefault(delTemplateName, variant, delegateNode);
+          } else {
+            deltemplates.add(delTemplateName, delPackageName, variant, delegateNode);
+          }
+        }
+      }
+    }
+    return deltemplates.build();
   }
 }

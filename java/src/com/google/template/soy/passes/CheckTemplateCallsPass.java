@@ -162,7 +162,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     }
 
     void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
-      ImmutableMap.Builder<TemplateMetadata, Predicate<String>> paramsToCheckByTemplate =
+      ImmutableMap.Builder<String, Predicate<String>> paramsToCheckByTemplate =
           ImmutableMap.builder();
       ImmutableList<TemplateMetadata> potentialCallees =
           templateRegistry
@@ -171,7 +171,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
               .get(node.getDelCalleeName());
       for (TemplateMetadata delTemplate : potentialCallees) {
         Predicate<String> params = checkCallParamTypes(callerTemplate, node, delTemplate);
-        paramsToCheckByTemplate.put(delTemplate, params);
+        paramsToCheckByTemplate.put(delTemplate.getTemplateName(), params);
         checkCallParamNames(node, delTemplate);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }

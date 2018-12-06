@@ -32,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.soytree.TemplateNode;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -71,10 +72,13 @@ final class TemplateFactoryCompiler {
   }
 
   private final CompiledTemplateMetadata template;
+  private final TemplateNode templateNode;
   private final InnerClasses innerClasses;
 
-  TemplateFactoryCompiler(CompiledTemplateMetadata currentClass, InnerClasses innerClasses) {
+  TemplateFactoryCompiler(
+      CompiledTemplateMetadata currentClass, TemplateNode templateNode, InnerClasses innerClasses) {
     this.template = currentClass;
+    this.templateNode = templateNode;
     this.innerClasses = innerClasses;
   }
 
@@ -85,7 +89,7 @@ final class TemplateFactoryCompiler {
         SoyClassWriter.builder(factoryType)
             .implementing(FACTORY_TYPE)
             .setAccess(FACTORY_ACCESS)
-            .sourceFileName(template.node().getSourceLocation().getFileName())
+            .sourceFileName(templateNode.getSourceLocation().getFileName())
             .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
 

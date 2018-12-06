@@ -26,7 +26,7 @@ final class OptimizationPass extends CompilerFileSetPass {
   @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    SimplifyVisitor visitor = SimplifyVisitor.create(idGenerator, registry);
+    SimplifyVisitor visitor = SimplifyVisitor.create(idGenerator, sourceFiles);
     for (SoyFileNode file : sourceFiles) {
       visitor.simplify(file);
     }

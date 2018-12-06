@@ -916,10 +916,10 @@ public final class GenerateParseInfoVisitor
 
     StringBuilder resultSb = new StringBuilder();
 
-    if (template.getTemplateNode() != null
-        && template.getTemplateNode().getParent().equals(currSoyFile)
+    if (template.getSourceLocation().getFilePath().equals(currSoyFile.getFilePath())
         && template.getTemplateKind() != TemplateMetadata.Kind.DELTEMPLATE) {
-      resultSb.append(template.getTemplateNode().getPartialTemplateName());
+      resultSb.append(
+          template.getTemplateName().substring(template.getTemplateName().lastIndexOf('.')));
     } else {
       switch (template.getTemplateKind()) {
         case BASIC:

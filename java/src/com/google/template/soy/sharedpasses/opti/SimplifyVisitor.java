@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyValue;
@@ -39,7 +41,8 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -52,9 +55,10 @@ import javax.annotation.Nullable;
 public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
-  public static SimplifyVisitor create(IdGenerator idGenerator, TemplateRegistry registry) {
+  public static SimplifyVisitor create(
+      IdGenerator idGenerator, ImmutableList<SoyFileNode> sourceFiles) {
     return new SimplifyVisitor(
-        idGenerator, registry, new SimplifyExprVisitor(), new PreevalVisitorFactory());
+        idGenerator, sourceFiles, new SimplifyExprVisitor(), new PreevalVisitorFactory());
   }
 
   private final Impl impl;
@@ -63,10 +67,10 @@ public final class SimplifyVisitor {
 
   private SimplifyVisitor(
       IdGenerator idGenerator,
-      TemplateRegistry registry,
+      ImmutableList<SoyFileNode> sourceFiles,
       SimplifyExprVisitor simplifyExprVisitor,
       PreevalVisitorFactory preevalVisitorFactory) {
-    this.impl = new Impl(registry, idGenerator);
+    this.impl = new Impl(sourceFiles, idGenerator);
     this.simplifyExprVisitor = simplifyExprVisitor;
     this.preevalVisitorFactory = preevalVisitorFactory;
   }
@@ -77,12 +81,21 @@ public final class SimplifyVisitor {
   }
 
   private final class Impl extends AbstractSoyNodeVisitor<Void> {
-    final TemplateRegistry templateRegistry;
+    final ImmutableMap<String, TemplateNode> basicTemplates;
     final IdGenerator nodeIdGen;
 
-    Impl(TemplateRegistry templateRegistry, IdGenerator idGenerator) {
-      this.templateRegistry = templateRegistry;
+    Impl(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
       this.nodeIdGen = idGenerator;
+      ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
+      for (SoyFileNode fileNode : sourceFiles) {
+        for (TemplateNode template : fileNode.getChildren()) {
+          // we can't simplify deltemplates
+          if (!(template instanceof TemplateDelegateNode)) {
+            basicTemplates.put(template.getTemplateName(), template);
+          }
+        }
+      }
+      this.basicTemplates = basicTemplates.build();
     }
 
     @Override
@@ -130,7 +143,7 @@ public final class SimplifyVisitor {
       StringBuilder prerenderOutputSb = new StringBuilder();
       try {
         PrerenderVisitor prerenderer =
-            new PrerenderVisitor(preevalVisitorFactory, prerenderOutputSb, templateRegistry);
+            new PrerenderVisitor(preevalVisitorFactory, prerenderOutputSb, basicTemplates);
         prerenderer.exec(node);
       } catch (RenderException pe) {
         return; // cannot prerender for some other reason not checked above

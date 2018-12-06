@@ -51,6 +51,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
+import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -83,9 +84,8 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -110,9 +110,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Factory for creating an instance of EvalVisitor. */
   protected final EvalVisitorFactory evalVisitorFactory;
 
-  /** The bundle containing all the templates that may be rendered. */
-  protected final TemplateRegistry templateRegistry;
-
+  protected final ImmutableMap<String, TemplateNode> basicTemplates;
+  protected final DelTemplateSelector<TemplateDelegateNode> deltemplates;
   /** The current template data. */
   protected final SoyRecord data;
 
@@ -179,7 +178,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   public RenderVisitor(
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
-      @Nullable TemplateRegistry templateRegistry,
+      ImmutableMap<String, TemplateNode> basicTemplates,
+      DelTemplateSelector<TemplateDelegateNode> deltemplates,
       SoyRecord data,
       @Nullable SoyRecord ijData,
       @Nullable Predicate<String> activeDelPackageSelector,
@@ -191,7 +191,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     checkNotNull(data);
 
     this.evalVisitorFactory = evalVisitorFactory;
-    this.templateRegistry = templateRegistry;
+    this.basicTemplates = checkNotNull(basicTemplates);
+    this.deltemplates = checkNotNull(deltemplates);
     this.data = data;
     this.ijData = ijData;
     this.activeDelPackageSelector = activeDelPackageSelector;
@@ -242,7 +243,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return new RenderVisitor(
         evalVisitorFactory,
         outputBuf,
-        templateRegistry,
+        basicTemplates,
+        deltemplates,
         data,
         ijData,
         activeDelPackageSelector,
@@ -474,7 +476,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
 
-    TemplateMetadata callee = templateRegistry.getBasicTemplateOrElement(node.getCalleeName());
+    TemplateNode callee = basicTemplates.get(node.getCalleeName());
     if (callee == null) {
       throw RenderException.createWithSource(
           "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);
@@ -512,12 +514,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             node);
       }
     }
-    TemplateMetadata callee;
+    TemplateDelegateNode callee;
     try {
       callee =
-          templateRegistry
-              .getDelTemplateSelector()
-              .selectTemplate(node.getDelCalleeName(), variant, activeDelPackageSelector);
+          deltemplates.selectTemplate(node.getDelCalleeName(), variant, activeDelPackageSelector);
     } catch (IllegalArgumentException e) {
       throw RenderException.createWithSource(e.getMessage(), e, node);
     }
@@ -539,7 +539,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @SuppressWarnings("ConstantConditions") // for IntelliJ
-  private void visitCallNodeHelper(CallNode node, TemplateMetadata callee) {
+  private void visitCallNodeHelper(CallNode node, TemplateNode callee) {
 
     // ------ Build the call data. ------
     SoyRecord dataToPass;
@@ -608,7 +608,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // No escaping at the call site -- render directly into the output buffer.
       RenderVisitor rv = this.createHelperInstance(currOutputBuf, callData);
       try {
-        rv.renderTemplate(callee.getTemplateNode(), node.getParamsToRuntimeCheck(callee));
+        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee.getTemplateName()));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -623,7 +623,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       StringBuilder calleeBuilder = new StringBuilder();
       RenderVisitor rv = this.createHelperInstance(calleeBuilder, callData);
       try {
-        rv.renderTemplate(callee.getTemplateNode(), node.getParamsToRuntimeCheck(callee));
+        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee.getTemplateName()));
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.

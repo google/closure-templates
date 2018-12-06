@@ -24,6 +24,9 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,13 +46,24 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   private final CompiledTemplateRegistry registry;
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<String, TemplateNode> classNameToTemplateNode;
   private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
       CompiledTemplateRegistry registry,
+      SoyFileSetNode fileSet,
       ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
     this.registry = registry;
+    ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();
+    for (SoyFileNode file : fileSet.getChildren()) {
+      for (TemplateNode template : file.getChildren()) {
+        CompiledTemplateMetadata meta =
+            registry.getTemplateInfoByTemplateName(template.getTemplateName());
+        classNameToTemplateNode.put(meta.typeInfo().className(), template);
+      }
+    }
+    this.classNameToTemplateNode = classNameToTemplateNode.build();
     this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
@@ -76,7 +90,14 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     }
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
-    for (ClassData clazz : new TemplateCompiler(registry, meta, reporter, typeRegistry).compile()) {
+    for (ClassData clazz :
+        new TemplateCompiler(
+                registry,
+                meta,
+                classNameToTemplateNode.get(compiledTemplateName),
+                reporter,
+                typeRegistry)
+            .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {
         clazzToLoad = clazz;

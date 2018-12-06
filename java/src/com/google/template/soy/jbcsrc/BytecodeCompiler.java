@@ -39,6 +39,7 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
@@ -77,6 +78,7 @@ public final class BytecodeCompiler {
    */
   public static Optional<CompiledTemplates> compile(
       final TemplateRegistry registry,
+      final SoyFileSetNode fileSet,
       boolean developmentMode,
       ErrorReporter reporter,
       ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
@@ -91,7 +93,8 @@ public final class BytecodeCompiler {
       CompiledTemplates templates =
           new CompiledTemplates(
               compilerRegistry.getDelegateTemplateNames(),
-              new CompilingClassLoader(compilerRegistry, filePathsToSuppliers, typeRegistry));
+              new CompilingClassLoader(
+                  compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
       if (reporter.errorsSince(checkpoint)) {
         return Optional.absent();
       }
@@ -104,6 +107,7 @@ public final class BytecodeCompiler {
     List<ClassData> classes =
         compileTemplates(
             compilerRegistry,
+            fileSet,
             reporter,
             typeRegistry,
             new CompilerListener<List<ClassData>>() {
@@ -166,6 +170,7 @@ public final class BytecodeCompiler {
    */
   public static void compileToJar(
       TemplateRegistry registry,
+      SoyFileSetNode fileSet,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry,
       ByteSink sink)
@@ -182,6 +187,7 @@ public final class BytecodeCompiler {
       final Set<String> delTemplates = new TreeSet<>();
       compileTemplates(
           compilerRegistry,
+          fileSet,
           reporter,
           typeRegistry,
           new CompilerListener<Void>() {
@@ -256,42 +262,43 @@ public final class BytecodeCompiler {
 
   private static <T> T compileTemplates(
       CompiledTemplateRegistry registry,
+      SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
       CompilerListener<T> listener) {
-    for (String name : registry.getTemplateNames()) {
-      CompiledTemplateMetadata classInfo = registry.getTemplateInfoByTemplateName(name);
-      if (classInfo.node() == null) {
-        continue; // only generate classes for sources
-      }
-      try {
-        TemplateCompiler templateCompiler =
-            new TemplateCompiler(registry, classInfo, errorReporter, typeRegistry);
-        for (ClassData clazz : templateCompiler.compile()) {
-          if (Flags.DEBUG) {
-            clazz.checkClass();
+    for (SoyFileNode file : fileSet.getChildren()) {
+      for (TemplateNode template : file.getChildren()) {
+        CompiledTemplateMetadata classInfo =
+            registry.getTemplateInfoByTemplateName(template.getTemplateName());
+        try {
+          TemplateCompiler templateCompiler =
+              new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);
+          for (ClassData clazz : templateCompiler.compile()) {
+            if (Flags.DEBUG) {
+              clazz.checkClass();
+            }
+            listener.onCompile(clazz);
           }
-          listener.onCompile(clazz);
+          if (template instanceof TemplateDelegateNode) {
+            listener.onCompileDelTemplate(template.getTemplateName());
+          } else {
+            listener.onCompileTemplate(template.getTemplateName());
+          }
+          // Report unexpected errors and keep going to try to collect more.
+        } catch (UnexpectedCompilerFailureException e) {
+          errorReporter.report(
+              e.getOriginalLocation(),
+              UNEXPECTED_COMPILER_FAILURE,
+              template.getTemplateNameForUserMsgs(),
+              e.printSoyStack(),
+              Throwables.getStackTraceAsString(e));
+        } catch (Throwable t) {
+          errorReporter.report(
+              template.getSourceLocation(),
+              UNEXPECTED_ERROR,
+              template.getTemplateNameForUserMsgs(),
+              Throwables.getStackTraceAsString(t));
         }
-        if (classInfo.node() instanceof TemplateDelegateNode) {
-          listener.onCompileDelTemplate(classInfo.node().getTemplateName());
-        } else {
-          listener.onCompileTemplate(classInfo.node().getTemplateName());
-        }
-        // Report unexpected errors and keep going to try to collect more.
-      } catch (UnexpectedCompilerFailureException e) {
-        errorReporter.report(
-            e.getOriginalLocation(),
-            UNEXPECTED_COMPILER_FAILURE,
-            name,
-            e.printSoyStack(),
-            Throwables.getStackTraceAsString(e));
-      } catch (Throwable t) {
-        errorReporter.report(
-            classInfo.node().getSourceLocation(),
-            UNEXPECTED_ERROR,
-            name,
-            Throwables.getStackTraceAsString(t));
       }
     }
     return listener.getResult();

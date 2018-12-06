@@ -59,9 +59,7 @@ public abstract class TemplateMetadata {
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
             .setParameters(Parameter.directParametersFromTemplate(template))
-            .setCallSituations(CallSituation.templateCallSituations(template))
-            .setTemplateNode(
-                template.getParent().getSoyFileKind() == SoyFileKind.SRC ? template : null);
+            .setCallSituations(CallSituation.templateCallSituations(template));
     switch (template.getKind()) {
       case TEMPLATE_BASIC_NODE:
         builder.setTemplateKind(Kind.BASIC);
@@ -174,7 +172,7 @@ public abstract class TemplateMetadata {
   }
 
   /**
-   * Represents information about a templates called by a given template.
+   * Represents information about a template called by a given template.
    *
    * <p>This doesn't necessarily represent a single call site since if a template is called multiple
    * times in ways that aren't different according to this data structure we only record it once.
@@ -276,16 +274,6 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelPackageName();
 
-  /**
-   * The actual parsed template. Will only be non-null for templates with {@link #getSoyFileKind} of
-   * {@link SoyFileKind#SRC}
-   *
-   * <p>TODO(user): eliminate this method. If someone clones the tree this will pin a copy of an
-   * old node.
-   */
-  @Nullable
-  public abstract TemplateNode getTemplateNode();
-
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
 
@@ -312,8 +300,6 @@ public abstract class TemplateMetadata {
 
     abstract Builder setContentKind(@Nullable SanitizedContentKind contentKind);
 
-    abstract Builder setTemplateNode(@Nullable TemplateNode template);
-
     abstract Builder setStrictHtml(boolean strictHtml);
 
     abstract Builder setDelPackageName(@Nullable String delPackageName);
@@ -326,12 +312,6 @@ public abstract class TemplateMetadata {
 
     final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
-      if (built.getSoyFileKind() == SoyFileKind.SRC) {
-        checkState(built.getTemplateNode() != null, "source templates must have a templatenode");
-      } else {
-        checkState(
-            built.getTemplateNode() == null, "non-source templates must not have a templatenode");
-      }
       if (built.getTemplateKind() == Kind.DELTEMPLATE) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
       } else {

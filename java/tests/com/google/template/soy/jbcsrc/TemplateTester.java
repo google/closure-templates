@@ -65,6 +65,7 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.ByteArrayOutputStream;
@@ -292,6 +293,7 @@ public final class TemplateTester {
       Optional<CompiledTemplates> template =
           BytecodeCompiler.compile(
               parseResult.registry(),
+              parseResult.fileSet(),
               /* developmentMode= */ false,
               errors,
               parser.soyFileSuppliers(),
@@ -383,11 +385,13 @@ public final class TemplateTester {
         TemplateRegistry registry = parseResult.registry();
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
-        String templateName = fileSet.getChild(0).getChild(0).getTemplateName();
+        TemplateNode template = fileSet.getChild(0).getChild(0);
+        String templateName = template.getTemplateName();
         classData =
             new TemplateCompiler(
                     compilerRegistry,
                     compilerRegistry.getTemplateInfoByTemplateName(templateName),
+                    template,
                     ErrorReporter.exploding(),
                     typeRegistry)
                 .compile();
@@ -487,9 +491,11 @@ public final class TemplateTester {
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
+    ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
-            parser.parse().registry(),
-            false,
+            parseResult.registry(),
+            parseResult.fileSet(),
+            /*developmentMode=*/ false,
             ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())

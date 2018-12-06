@@ -75,7 +75,7 @@ public final class TofuExceptionsTest {
     tofu =
         new BaseTofu(
             new NoOpScopedData(),
-            SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
+            SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().fileSet(),
             ImmutableMap.<String, ImmutableSortedSet<String>>of(),
             ImmutableMap.<String, Supplier<Object>>of());
   }

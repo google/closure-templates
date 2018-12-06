@@ -819,7 +819,7 @@ public final class SoyFileSet {
       ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
     return new BaseTofu(
         scopedData.enterable(),
-        primitives.registry,
+        primitives.soyTree,
         getTransitiveIjs(primitives.registry),
         pluginInstances);
   }
@@ -874,7 +874,8 @@ public final class SoyFileSet {
     resetErrorReporter();
     disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
-    BytecodeCompiler.compileToJar(primitives.registry, errorReporter, typeRegistry, jarTarget);
+    BytecodeCompiler.compileToJar(
+        primitives.registry, primitives.soyTree, errorReporter, typeRegistry, jarTarget);
     if (srcJarTarget.isPresent()) {
       BytecodeCompiler.writeSrcJar(primitives.soyTree, soyFileSuppliers, srcJarTarget.get());
     }
@@ -888,6 +889,7 @@ public final class SoyFileSet {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
             primitives.registry,
+            primitives.soyTree,
             // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
             cache != null,
             errorReporter,

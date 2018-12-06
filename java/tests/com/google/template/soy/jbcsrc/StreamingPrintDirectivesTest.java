@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.SoyFileSetParser;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
@@ -330,9 +331,11 @@ public final class StreamingPrintDirectivesTest {
             .addPrintDirective(new StreamingCloseableDirective())
             .runAutoescaper(true)
             .build();
+    ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
-            parser.parse().registry(),
-            false,
+            parseResult.registry(),
+            parseResult.fileSet(),
+            /*developmentMode=*/ false,
             ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())

@@ -43,7 +43,7 @@ final class CompiledTemplateRegistry {
     ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
     for (TemplateMetadata template : registry.getAllTemplates()) {
       CompiledTemplateMetadata metadata =
-          CompiledTemplateMetadata.create(template.getTemplateName(), template.getTemplateNode());
+          CompiledTemplateMetadata.create(template.getTemplateName());
       templateToMetadata.put(template.getTemplateName(), metadata);
       classToMetadata.put(metadata.typeInfo().className(), metadata);
       if (template.getTemplateKind() == TemplateMetadata.Kind.DELTEMPLATE) {
