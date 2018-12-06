@@ -17,19 +17,53 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
-import javax.annotation.Nullable;
+import java.util.ArrayDeque;
 
 public final class HtmlMatcherGraph {
 
-  @Nullable private HtmlMatcherGraphNode rootNode = null;
+  private Optional<HtmlMatcherGraphNode> rootNode = Optional.absent();
 
   /** Pointer to where all new nodes are added in the graph. */
-  @Nullable private HtmlMatcherGraphNode graphCursorNode = null;
+  private Optional<HtmlMatcherGraphNode> graphCursor = Optional.absent();
 
+  private final ArrayDeque<Optional<HtmlMatcherGraphNode>> cursorStack = new ArrayDeque<>();
+
+  /** Returns the root node of the graph. */
   public Optional<HtmlMatcherGraphNode> getRootNode() {
-    return Optional.fromNullable(rootNode);
+    return rootNode;
+  }
+
+  /**
+   * Returns the {@link com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode} at the
+   * cursor.
+   */
+  public Optional<HtmlMatcherGraphNode> getNodeAtCursor() {
+    return graphCursor;
+  }
+
+  /**
+   * Saves the current cursor.
+   *
+   * <p>Does not change the value of the cursor. The matching call to {@link #restoreCursor()} will
+   * move the cursor back to this position in the graph.
+   */
+  public void saveCursor() {
+    cursorStack.addFirst(graphCursor);
+  }
+
+  /**
+   * Pops the cursor stack and moves the cursor to that value.
+   *
+   * <p>Must be paired with a call to {@link #saveCursor()}.
+   */
+  public void restoreCursor() {
+    checkState(
+        !cursorStack.isEmpty(),
+        "Cursor stack underflow: restoreCursor() without matching saveCursor() call.");
+    graphCursor = cursorStack.removeFirst();
   }
 
   /**
@@ -39,16 +73,16 @@ public final class HtmlMatcherGraph {
    */
   public void addNode(HtmlMatcherGraphNode node) {
     checkNotNull(node);
-    if (graphCursorNode != null) {
-      graphCursorNode.linkActiveEdgeToNode(node);
+    if (graphCursor.isPresent()) {
+      graphCursor.get().linkActiveEdgeToNode(node);
     }
     setGraphCursorNode(node);
   }
 
   private void setGraphCursorNode(HtmlMatcherGraphNode node) {
-    graphCursorNode = node;
-    if (rootNode == null) {
-      rootNode = graphCursorNode;
+    graphCursor = Optional.of(node);
+    if (!rootNode.isPresent()) {
+      rootNode = graphCursor;
     }
   }
 }
