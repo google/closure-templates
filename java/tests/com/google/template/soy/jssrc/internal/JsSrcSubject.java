@@ -40,6 +40,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -67,6 +68,8 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   private final SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
+  private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();
   private final List<SoyFunction> soyFunctions = new ArrayList<>();
 
@@ -140,6 +143,16 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     return typedThis();
   }
 
+  T withLoggingConfig(ValidatedLoggingConfig loggingConfig) {
+    this.loggingConfig = loggingConfig;
+    return typedThis();
+  }
+
+  T withExperimentalFeatures(ImmutableList<String> experimetalFeatures) {
+    this.experimentalFeatures = experimetalFeatures;
+    return typedThis();
+  }
+
   @ForOverride
   abstract T typedThis();
 
@@ -152,7 +165,9 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
             .allowUnboundGlobals(true)
             .allowV1Expression(true)
             .typeRegistry(typeRegistry)
-            .options(generalOptions);
+            .options(generalOptions)
+            .setLoggingConfig(loggingConfig)
+            .enableExperimentalFeatures(experimentalFeatures);
     for (SoyFunction soyFunction : soyFunctions) {
       builder.addSoyFunction(soyFunction);
     }
