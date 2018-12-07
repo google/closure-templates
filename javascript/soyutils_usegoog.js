@@ -371,7 +371,6 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         goog.soy.data.SanitizedCss);
 
-
 // -----------------------------------------------------------------------------
 // Soy-generated utilities in the soy namespace.  Contains implementations for
 // common soyfunctions (e.g. keys()) and escaping/print directives.
