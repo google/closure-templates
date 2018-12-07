@@ -27,6 +27,8 @@ public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
 
   private final IfCondNode conditionNode;
 
+  private EdgeKind activeEdge = EdgeKind.TRUE_EDGE;
+
   @Nullable private HtmlMatcherGraphNode trueBranchNode = null;
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
@@ -44,14 +46,13 @@ public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
   }
 
   @Override
-  public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
-    switch (edgeKind) {
-      case TRUE_EDGE:
-        return Optional.fromNullable(trueBranchNode);
-      case FALSE_EDGE:
-        return Optional.fromNullable(falseBranchNode);
-    }
-    return Optional.absent();
+  public EdgeKind getActiveEdgeKind() {
+    return activeEdge;
+  }
+
+  @Override
+  public void setActiveEdgeKind(EdgeKind edgeKind) {
+    activeEdge = edgeKind;
   }
 
   @Override
@@ -65,5 +66,16 @@ public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
         falseBranchNode = node;
         break;
     }
+  }
+
+  @Override
+  public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
+    switch (edgeKind) {
+      case TRUE_EDGE:
+        return Optional.fromNullable(trueBranchNode);
+      case FALSE_EDGE:
+        return Optional.fromNullable(falseBranchNode);
+    }
+    return Optional.absent();
   }
 }

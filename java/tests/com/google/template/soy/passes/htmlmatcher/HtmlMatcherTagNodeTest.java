@@ -17,26 +17,17 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode.TagKind;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class HtmlMatcherTagNodeTest {
-
-  /**
-   * The default exception policy: no exceptions thrown.
-   *
-   * <p>Note: in junit 4.13, this has been replaced with assertThrows(). Our opensource bundle still
-   * uses junit 4.11.
-   */
-  @Rule public final ExpectedException exceptionPolicy = ExpectedException.none();
 
   @Test
   public void testGetSoyNode() {
@@ -63,24 +54,38 @@ public final class HtmlMatcherTagNodeTest {
   public void testSetActiveEdgeKindThrows_trueEdge() {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
-    exceptionPolicy.expect(UnsupportedOperationException.class);
-    testMatcherTagNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
+
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> testMatcherTagNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE));
   }
 
   @Test
   public void testSetActiveEdgeKindThrows_falseEdge() {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
-    exceptionPolicy.expect(UnsupportedOperationException.class);
-    testMatcherTagNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
+
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> testMatcherTagNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE));
   }
 
   @Test
   public void testGetNodeForEdgeKind_defaultIsNull() {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
+
     assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
-    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+  }
+
+  @Test
+  public void testGetNodeForEdgeKThrows_falseEdge() {
+    HtmlMatcherTagNode testMatcherTagNode =
+        TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE));
   }
 
   @Test
@@ -89,23 +94,53 @@ public final class HtmlMatcherTagNodeTest {
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
     HtmlMatcherTagNode testCloseTagNode =
         TestUtils.htmlMatcherCloseTagNode(TestUtils.soyHtmlCloseTagNode());
+
     testOpenTagNode.linkActiveEdgeToNode(testCloseTagNode);
+
     assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(testCloseTagNode);
+  }
+
+  @Test
+  public void testLinkEdgeToNode_trueBranch() {
+    HtmlMatcherTagNode testOpenTagNode =
+        TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
+    HtmlMatcherTagNode testCloseTagNode =
+        TestUtils.htmlMatcherCloseTagNode(TestUtils.soyHtmlCloseTagNode());
+
+    testOpenTagNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testCloseTagNode);
+
+    assertThat(testOpenTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(testCloseTagNode);
+  }
+
+  @Test
+  public void testLinkEdgeToNode_falseBranchThrows() {
+    HtmlMatcherTagNode testOpenTagNode =
+        TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
+    HtmlMatcherTagNode testCloseTagNode =
+        TestUtils.htmlMatcherCloseTagNode(TestUtils.soyHtmlCloseTagNode());
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> testOpenTagNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, testCloseTagNode));
   }
 
   @Test
   public void testLinkEdgeToNode_cantLinkToSelfTrueEdge() {
     HtmlMatcherTagNode testOpenTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
-    exceptionPolicy.expect(IllegalStateException.class);
-    testOpenTagNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testOpenTagNode);
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> testOpenTagNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testOpenTagNode));
   }
 
   @Test
   public void testLinkEdgeToNode_cantLinkToSelfFalseEdge() {
     HtmlMatcherTagNode testOpenTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
-    exceptionPolicy.expect(IllegalStateException.class);
-    testOpenTagNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, testOpenTagNode);
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> testOpenTagNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, testOpenTagNode));
   }
 }

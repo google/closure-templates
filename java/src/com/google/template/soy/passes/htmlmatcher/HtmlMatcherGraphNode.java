@@ -41,8 +41,6 @@ public abstract class HtmlMatcherGraphNode {
     FALSE_EDGE
   }
 
-  private EdgeKind activeEdgeKind = EdgeKind.TRUE_EDGE;
-
   /** Returns the associated {@link SoyNode} */
   public abstract Optional<SoyNode> getSoyNode();
 
@@ -52,14 +50,12 @@ public abstract class HtmlMatcherGraphNode {
   /** Links this node to the given node along the specified edge. */
   public abstract void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node);
 
+  /** Sets the edge kind for future calls to {@link #linkActiveEdgeToNode(HtmlMatcherGraphNode)} */
+  public abstract void setActiveEdgeKind(EdgeKind edgeKind);
+
   /** Returns the active edge kind. */
   public EdgeKind getActiveEdgeKind() {
-    return activeEdgeKind;
-  }
-
-  /** Sets the edge kind for future calls to {@link #linkActiveEdgeToNode(HtmlMatcherGraphNode)} */
-  public void setActiveEdgeKind(EdgeKind edgeKind) {
-    activeEdgeKind = edgeKind;
+    return EdgeKind.TRUE_EDGE;
   }
 
   /** Links this node to the given node along this node's active edge. */

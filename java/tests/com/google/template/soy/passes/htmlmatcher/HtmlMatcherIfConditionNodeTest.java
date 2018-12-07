@@ -17,25 +17,16 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.IfCondNode;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class HtmlMatcherIfConditionNodeTest {
-
-  /**
-   * The default exception policy: no exceptions thrown.
-   *
-   * <p>Note: in junit 4.13, this has been replaced with assertThrows(). Our opensource bundle still
-   * uses junit 4.11.
-   */
-  @Rule public final ExpectedException exceptionPolicy = ExpectedException.none();
 
   @Test
   public void testGetSoyNode() {
@@ -90,8 +81,9 @@ public final class HtmlMatcherIfConditionNodeTest {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
     HtmlMatcherIfConditionNode testConditionNode = new HtmlMatcherIfConditionNode(soyNode);
 
-    exceptionPolicy.expect(IllegalStateException.class);
-    testConditionNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testConditionNode);
+    assertThrows(
+        IllegalStateException.class,
+        () -> testConditionNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, testConditionNode));
   }
 
   @Test
@@ -99,8 +91,9 @@ public final class HtmlMatcherIfConditionNodeTest {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
     HtmlMatcherIfConditionNode testConditionNode = new HtmlMatcherIfConditionNode(soyNode);
 
-    exceptionPolicy.expect(IllegalStateException.class);
-    testConditionNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, testConditionNode);
+    assertThrows(
+        IllegalStateException.class,
+        () -> testConditionNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, testConditionNode));
   }
 
   @Test

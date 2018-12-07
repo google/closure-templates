@@ -82,6 +82,7 @@ public abstract class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
 
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
+    checkState(edgeKind == EdgeKind.TRUE_EDGE, "HTML Tag nodes only have a true branch.");
     return Optional.fromNullable(nextNode);
   }
 
@@ -92,6 +93,7 @@ public abstract class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
 
   @Override
   public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
+    checkState(edgeKind == EdgeKind.TRUE_EDGE, "HTML Tag nodes only have a true branch.");
     checkState(!this.equals(node), "Can't link a node to itsself.");
     nextNode = node;
   }
