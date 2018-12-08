@@ -95,6 +95,8 @@ public final class PluginResolver {
      * historically has not had proper build dependencies and thus often references unknown plugins.
      */
     ALLOW_UNDEFINED,
+    /** Same as above, but issues warnings. */
+    ALLOW_UNDEFINED_AND_WARN,
     /** This is the normal thing, it is an error for the plugin to not exist. */
     REQUIRE_DEFINITIONS;
   }
@@ -177,14 +179,7 @@ public final class PluginResolver {
   public SoyPrintDirective lookupPrintDirective(String name, int numArgs, SourceLocation location) {
     SoyPrintDirective soyPrintDirective = printDirectives.get(name);
     if (soyPrintDirective == null) {
-      if (mode == Mode.REQUIRE_DEFINITIONS) {
-        reporter.report(
-            location,
-            UNKNOWN_PLUGIN,
-            "print directive",
-            name,
-            SoyErrors.getDidYouMeanMessage(printDirectives.keySet(), name));
-      }
+      reportMissing(location, "print directive", name, printDirectives.keySet());
       soyPrintDirective = createPlaceholderPrintDirective(name, numArgs);
     }
     checkNumArgs("print directive", soyPrintDirective.getValidArgsSizes(), numArgs, location);
@@ -201,14 +196,7 @@ public final class PluginResolver {
   public Object lookupSoyFunction(String name, int numArgs, SourceLocation location) {
     Object soyFunction = functions.get(name);
     if (soyFunction == null) {
-      if (mode == Mode.REQUIRE_DEFINITIONS) {
-        reporter.report(
-            location,
-            UNKNOWN_PLUGIN,
-            "function",
-            name,
-            SoyErrors.getDidYouMeanMessage(functions.keySet(), name));
-      }
+      reportMissing(location, "function", name, functions.keySet());
       return ERROR_PLACEHOLDER_FUNCTION;
     }
     Set<Integer> validArgsSize;
@@ -222,6 +210,22 @@ public final class PluginResolver {
     checkNumArgs("function", validArgsSize, numArgs, location);
     warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
+  }
+
+  private void reportMissing(
+      SourceLocation location, String type, String name, Set<String> alternatives) {
+    String didYouMean = SoyErrors.getDidYouMeanMessage(alternatives, name);
+    switch (mode) {
+      case REQUIRE_DEFINITIONS:
+        reporter.report(location, UNKNOWN_PLUGIN, type, name, didYouMean);
+        break;
+      case ALLOW_UNDEFINED_AND_WARN:
+        reporter.warn(location, UNKNOWN_PLUGIN, type, name, didYouMean);
+        break;
+      case ALLOW_UNDEFINED:
+        // do nothing :(
+        break;
+    }
   }
 
   private static Set<Integer> getValidArgsSizes(Signature[] signatures) {

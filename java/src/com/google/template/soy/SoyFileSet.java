@@ -707,8 +707,9 @@ public final class SoyFileSet {
             passManagerBuilder().allowUnknownGlobals().optimize(false),
             typeRegistry,
             new PluginResolver(
+                // TODO(lukes): make it required, for now, warn
                 // we allow undefined plugins since they typically aren't provided :(
-                PluginResolver.Mode.ALLOW_UNDEFINED,
+                PluginResolver.Mode.ALLOW_UNDEFINED_AND_WARN,
                 printDirectives,
                 soyFunctionMap,
                 soySourceFunctionMap,
@@ -1140,7 +1141,26 @@ public final class SoyFileSet {
                 // HtmlRewrite is the first pass.  So if we stop before it means we don't run
                 // any passes.  This is kind of weird.  Alternatively we could configure the
                 // SoyFileSetParser with a null passmanger, since that is what we want.
-                .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS));
+                .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS),
+            typeRegistry,
+            // we allow undefined plugins so we don't need to provide them to the header
+            // compiler.  We do this for 2 reasons.
+            // 1. information about plugins is not required to produce template headers, so we can
+            // simply get away without it.
+            // 2. generateParseInfo doesn't require plugins to be provided. So if we want to speed
+            // up generateParseInfo by having it use template headers, then we need to be able to
+            // produce headers without requiring plugins.  Of course it would be better to fix
+            // generateParseInfo.
+            // TODO(b/63212073): It would be better to delay plugin resolution so that it happens
+            // after the parser runs.  Then we would naturally skip resolution due to the pass
+            // continuation rule above.
+            new PluginResolver(
+                PluginResolver.Mode.ALLOW_UNDEFINED,
+                printDirectives,
+                soyFunctionMap,
+                soySourceFunctionMap,
+                errorReporter));
+
     throwIfErrorsPresent();
     reportWarnings();
     return result;
