@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -99,8 +98,10 @@ interface ExpressionDetacher {
       return soyValueProviderMap;
     }
   }
+
   /**
-   * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from {@link
+   * An {@link ExpressionDetacher} that simply returns the {@link
+   * com.google.template.soy.jbcsrc.api.RenderResult.RenderResult} returned from {@link
    * SoyValueProvider#status()} if it isn't done.
    *
    * <p>Generates code that looks like:

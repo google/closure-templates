@@ -28,7 +28,6 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -40,7 +39,10 @@ import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
-/** An expression for an {@link AdvisingAppendable}. */
+/**
+ * An expression for an {@link
+ * com.google.template.soy.jbcsrc.api.AdvisingAppendable.AdvisingAppendable}.
+ */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
       MethodRef.create(LoggingAdvisingAppendable.class, "append", CharSequence.class)
@@ -224,7 +226,8 @@ final class AppendableExpression extends Expression {
 
   /**
    * Returns {@code true} if this expression requires detach logic to be generated based on runtime
-   * calls to {@link AdvisingAppendable#softLimitReached()}.
+   * calls to {@link
+   * com.google.template.soy.jbcsrc.api.AdvisingAppendableAdvisingAppendable#softLimitReached()}.
    */
   boolean supportsSoftLimiting() {
     return supportsSoftLimiting;
