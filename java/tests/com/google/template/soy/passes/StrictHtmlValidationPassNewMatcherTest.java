@@ -263,7 +263,7 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     assertThat(ifConditionNode1).isInstanceOf(HtmlMatcherIfConditionNode.class);
     assertThatIfExpressionEqualTo((HtmlMatcherIfConditionNode) ifConditionNode1, "$cond1");
 
-    // Follow the true branch.
+    // Follow the true branch of {if $cond1}.
     HtmlMatcherGraphNode nextNode = ifConditionNode1.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
     TestUtils.assertNodeIsOpenTagWithName(nextNode, "li");
 
@@ -273,7 +273,7 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     // Follow the false branch. This should lead to the {if $cond2} node.
     HtmlMatcherGraphNode ifConditionNode2 =
         ifConditionNode1.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    assertThat(ifConditionNode1).isInstanceOf(HtmlMatcherIfConditionNode.class);
+    assertThat(ifConditionNode2).isInstanceOf(HtmlMatcherIfConditionNode.class);
     assertThatIfExpressionEqualTo((HtmlMatcherIfConditionNode) ifConditionNode2, "$cond2");
 
     // Follow the true branch of {if $cond2}.
@@ -308,7 +308,148 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
   }
 
-  private void assertThatIfExpressionEqualTo(
+  @Test
+  public void testIfElse() {
+    // Arrange: set up the template under test.
+    SoyFileNode template =
+        parseTemplateBody(
+            Joiner.on("\n")
+                .join(
+                    "{@param cond1: bool}",
+                    "{if $cond1}<div>Content 1</div>",
+                    "{else}<div>Content 2</div>",
+                    "{/if}",
+                    "<span>non-conditional content</span>"));
+    StrictHtmlValidationPassNewMatcher matcherPass =
+        new StrictHtmlValidationPassNewMatcher(ErrorReporter.exploding());
+
+    // Act: execute the graph builder.
+    matcherPass.run(template, new IncrementingIdGenerator());
+    Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
+
+    // Assert: follow the graph and validate its structure.
+
+    // The root node should be {if $cond1}.
+    HtmlMatcherGraphNode ifConditionNode = matcherGraph.get().getRootNode().get();
+    assertThat(ifConditionNode).isInstanceOf(HtmlMatcherIfConditionNode.class);
+    assertThatIfExpressionEqualTo((HtmlMatcherIfConditionNode) ifConditionNode, "$cond1");
+
+    // Follow the true branch of {if $cond1}.
+    HtmlMatcherGraphNode nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
+
+    // Reaching the accumulator node means you have reached the end of the true branch.
+    HtmlMatcherGraphNode accNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(accNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
+
+    // Follow the false edge of {if $cond1}; this is the template code in the {else} block.
+    nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
+
+    // The false branch should also end with the accumulator node.
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(nextNode).isEqualTo(accNode);
+
+    // There should be an open and close HTML tag, then the end of the graph.
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
+
+    // Verify that the graph ends here.
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+  }
+
+  @Test
+  public void testIfNestedIfElse() {
+    // Arrange: set up the template under test.
+    SoyFileNode template =
+        parseTemplateBody(
+            Joiner.on("\n")
+                .join(
+                    "{@param cond1: bool}",
+                    "{@param nestedCond: bool}",
+                    "{if $cond1}<div>Content 1</div>",
+                    "  {if $nestedCond}<span>blah</span>{/if}",
+                    "{else}<div>Content 2</div>",
+                    "{/if}",
+                    "<span>non-conditional content</span>"));
+    StrictHtmlValidationPassNewMatcher matcherPass =
+        new StrictHtmlValidationPassNewMatcher(ErrorReporter.exploding());
+
+    // Act: execute the graph builder.
+    matcherPass.run(template, new IncrementingIdGenerator());
+    Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
+
+    // Assert: follow the graph and validate its structure.
+
+    // The root node should be {if $cond1}.
+    HtmlMatcherGraphNode ifConditionNode = matcherGraph.get().getRootNode().get();
+    assertThat(ifConditionNode).isInstanceOf(HtmlMatcherIfConditionNode.class);
+    assertThatIfExpressionEqualTo((HtmlMatcherIfConditionNode) ifConditionNode, "$cond1");
+
+    // Follow the true branch of {if $cond1}; this should lead to {if $nestedCond}.
+    HtmlMatcherGraphNode nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
+
+    HtmlMatcherGraphNode nestedIfConditionNode =
+        nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(nestedIfConditionNode).isInstanceOf(HtmlMatcherIfConditionNode.class);
+    assertThatIfExpressionEqualTo(
+        (HtmlMatcherIfConditionNode) nestedIfConditionNode, "$nestedCond");
+
+    // Follow the true branch of {if $nestedCond}.
+    nextNode = nestedIfConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
+
+    // The true branch of the nested if node terminates in a nested accumulator node.
+    HtmlMatcherGraphNode nestedAccNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(nestedAccNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
+
+    // The false branch of the nested if node should terminate at the nested accumulator node.
+    nextNode = nestedIfConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
+    assertThat(nextNode).isEqualTo(nestedAccNode);
+
+    // Follow the false branch of the outer if node.
+    nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
+
+    // The true branch of the nested if node terminates in an outer accumulator node.
+    HtmlMatcherGraphNode outerAccNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(outerAccNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
+
+    // The nested accumulator node should link to the outer accumulator node.
+    nextNode = nestedAccNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(nextNode).isEqualTo(outerAccNode);
+
+    // There should be an open and close HTML tag, then the end of the graph.
+    nextNode = outerAccNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
+
+    // Verify that the graph ends here.
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+  }
+
+  private static void assertThatIfExpressionEqualTo(
       HtmlMatcherIfConditionNode ifConditionNode, String exprString) {
     assertThat(((IfCondNode) ifConditionNode.getSoyNode().get()).getExpr().toSourceString())
         .isEqualTo(exprString);

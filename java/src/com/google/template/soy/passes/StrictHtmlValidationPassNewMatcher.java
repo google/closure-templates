@@ -41,7 +41,6 @@ import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -219,12 +218,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       }
       ifCondNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
       htmlMatcherGraph.restoreCursor();
-    }
-
-    @Override
-    protected void visitIfElseNode(IfElseNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("elseif nodes are not yet implemented.");
     }
 
     @Override
