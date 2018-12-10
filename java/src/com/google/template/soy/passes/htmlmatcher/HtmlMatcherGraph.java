@@ -51,7 +51,7 @@ public final class HtmlMatcherGraph {
    * move the cursor back to this position in the graph.
    */
   public void saveCursor() {
-    cursorStack.addFirst(graphCursor);
+    cursorStack.push(graphCursor);
   }
 
   /**
@@ -63,7 +63,7 @@ public final class HtmlMatcherGraph {
     checkState(
         !cursorStack.isEmpty(),
         "Cursor stack underflow: restoreCursor() without matching saveCursor() call.");
-    graphCursor = cursorStack.removeFirst();
+    graphCursor = cursorStack.pop();
   }
 
   /**

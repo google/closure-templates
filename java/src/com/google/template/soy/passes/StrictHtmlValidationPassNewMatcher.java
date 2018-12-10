@@ -29,7 +29,12 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraph;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherIfConditionNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -50,6 +55,9 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -60,7 +68,7 @@ import javax.annotation.Nullable;
  * <p>TODO(b/118396161): Implement this pass, then replace {@link StrictHtmlValidationPass} with
  * this one.
  */
-public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
+public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
   private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
       SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
   private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
@@ -126,6 +134,21 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     private final HtmlMatcherGraph htmlMatcherGraph = new HtmlMatcherGraph();
 
+    /**
+     * A stack of active edge lists.
+     *
+     * <p>The active edges belong to the syntactically last HTML tags in a condition block. Note
+     * that the syntactically last node might be the condition node itself, if there are no HTML
+     * tags in its block. For example {@code {if $cond1}Content{/if}}.
+     *
+     * <p>At the end of each {@link IfNode}, all active edges are accumulated into a synthetic
+     * {@link HtmlMatcherAccumulatorNode}. These synthetic nodes act as a pass-through node when
+     * traversing the {@link HtmlMatcherGraph} in order to match HTML tags.
+     *
+     * <p>The stack is pushed on entry to an {@link IfNode} and popped at the end.
+     */
+    private final ArrayDeque<List<ActiveEdge>> activeEdgeStack = new ArrayDeque<>();
+
     private final ErrorReporter errorReporter;
 
     /** Callback executed when finished visiting the parse tree. */
@@ -167,14 +190,35 @@ public class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitIfNode(IfNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("if nodes are not yet implemented.");
+      activeEdgeStack.push(new ArrayList<>());
+      visitChildren(node);
+      // Add the syntactically last AST node of the else branch. If there is no else branch, then
+      // add the syntactically last if branch. Note that the active edge of the syntactically last
+      // if branch is the FALSE edge.
+      List<ActiveEdge> activeEdges = activeEdgeStack.pop();
+      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
+        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
+        activeEdges.add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
+      }
+      HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
+      accNode.accumulateActiveEdges(ImmutableList.copyOf(activeEdges));
+      htmlMatcherGraph.addNode(accNode);
     }
 
     @Override
     protected void visitIfCondNode(IfCondNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("if nodes are not yet implemented.");
+      HtmlMatcherIfConditionNode ifCondNode = new HtmlMatcherIfConditionNode(node);
+      htmlMatcherGraph.addNode(ifCondNode);
+      htmlMatcherGraph.saveCursor();
+      ifCondNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
+      visitChildren(node);
+      // The graph cursor points to the syntactically last HTML tag in the if block.
+      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
+        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
+        activeEdgeStack.peek().add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
+      }
+      ifCondNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
+      htmlMatcherGraph.restoreCursor();
     }
 
     @Override
