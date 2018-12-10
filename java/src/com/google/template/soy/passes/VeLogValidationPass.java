@@ -17,15 +17,12 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.MsgNode;
@@ -89,36 +86,28 @@ final class VeLogValidationPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The logging function ''{0}'' can only be evaluated in a print command with no print "
               + "directives.");
-  private static final SoyErrorKind DUPLICATE_DATA =
-      SoyErrorKind.of(
-          "VE data was already specified using a ''ve_data'' parameter, you cannot override with "
-              + "a ''data'' attribute.");
-  private static final SoyErrorKind INVALID_VE =
-      SoyErrorKind.of(
-          "The velog command requires a VE identifier, a call to ''ve(..)'' or a call to "
-              + "''ve_data(...)'', found an expression of type ''{0}''.");
 
   private final ErrorReporter reporter;
-  private final ValidatedLoggingConfig loggingConfig;
+  private final VeLogValidator veLogValidator;
 
-  VeLogValidationPass(ErrorReporter reporter, ValidatedLoggingConfig loggingConfig) {
+  VeLogValidationPass(ErrorReporter reporter, VeLogValidator veLogValidator) {
     this.reporter = reporter;
-    this.loggingConfig = loggingConfig;
+    this.veLogValidator = veLogValidator;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
+      for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
+        if (template.isStrictHtml()) {
+          validateNodeAgainstConfig(node);
+        } else {
+          reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
+        }
+      }
       for (FunctionNode node :
           SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
         validateVeDataFunctionNode(node);
-      }
-      for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
-        if (template.isStrictHtml()) {
-          validateVeLogNode(node);
-        } else {
-          reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
-        }
       }
       // We need to validate logging functions.  The rules are
       // 1. logging functions can only be the direct children of PrintNodes
@@ -184,51 +173,20 @@ final class VeLogValidationPass extends CompilerFilePass {
   }
 
   /** Type checks both expressions and assigns the {@link VeLogNode#getLoggingId()} field. */
-  private void validateVeLogNode(VeLogNode node) {
-    Identifier veName = null;
-    if (node.getVeDataExpression().getRoot().getKind() == ExprNode.Kind.FUNCTION_NODE) {
-      FunctionNode fn = (FunctionNode) node.getVeDataExpression().getRoot();
-      Object soyFunction = fn.getSoyFunction();
-      if (soyFunction.equals(BuiltinFunction.VE_DATA)) {
-        if (node.getConfigExpression() != null
-            // Allow ve_data(MyVe, null) with a "data" attribute because VeRewritePass rewrites
-            // ve_data(MyVe) to ve_data(MyVe, null) to simplify backend logic, so we can't tell
-            // if someone explicitly wrote the null parameter or not, and need to allow it for the
-            // rewrite case.
-            && fn.getChild(1).getKind() != ExprNode.Kind.NULL_NODE) {
-          // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
-          reporter.report(node.getConfigExpression().getSourceLocation(), DUPLICATE_DATA);
-        }
-        if (fn.getChild(0).getKind() == ExprNode.Kind.VE_LITERAL_NODE) {
-          // TODO(b/71641483): remove this once we have runtime support for dynamic VEs.
-          VeLiteralNode ve = (VeLiteralNode) fn.getChild(0);
-          veName = ve.getName();
-        }
-      }
-    }
+  private void validateNodeAgainstConfig(VeLogNode node) {
+    Optional<ValidatedLoggableElement> config =
+        veLogValidator.getLoggingElement(node.getName().identifier(), node.getName().location());
 
-    if (veName == null) {
-      reporter.report(
-          node.getVeDataExpression().getSourceLocation(),
-          INVALID_VE,
-          node.getVeDataExpression().getRoot().getType());
-      return;
-    }
-
-    ValidatedLoggableElement config = loggingConfig.getElement(veName.identifier());
-
-    if (config != null) {
-      // A null config means this velog statement has an unknown VE name. This error will have
-      // already been reported by validateVeDataFunctionNode, so continue on the best we can.
-      node.setLoggingId(config.getId());
+    if (config.isPresent()) {
+      node.setLoggingId(config.get().getId());
       if (node.getConfigExpression() != null) {
         SoyType type = node.getConfigExpression().getType();
-        Optional<String> protoName = config.getProtoName();
+        Optional<String> protoName = config.get().getProtoName();
         if (!protoName.isPresent()) {
           reporter.report(
               node.getConfigExpression().getSourceLocation(),
               UNEXPECTED_CONFIG,
-              veName.identifier());
+              node.getName().identifier());
         } else if (type.getKind() != Kind.ERROR
             && (type.getKind() != Kind.PROTO
                 || !((SoyProtoType) type).getDescriptor().getFullName().equals(protoName.get()))) {
@@ -236,21 +194,22 @@ final class VeLogValidationPass extends CompilerFilePass {
               node.getConfigExpression().getSourceLocation(), WRONG_TYPE, protoName.get(), type);
         }
       }
-    }
 
-    if (node.getLogonlyExpression() != null) {
-      // check to see if it is in a msg node.  logonly is disallowed in msg nodes because we don't
-      // have an implementation strategy.
-      if (isInMsgNode(node)) {
-        reporter.report(node.getLogonlyExpression().getSourceLocation(), LOGONLY_DISALLOWED_IN_MSG);
-      }
-      SoyType type = node.getLogonlyExpression().getType();
-      if (type.getKind() != Kind.BOOL) {
-        reporter.report(
-            node.getLogonlyExpression().getSourceLocation(),
-            WRONG_TYPE,
-            BoolType.getInstance(),
-            type);
+      if (node.getLogonlyExpression() != null) {
+        // check to see if it is in a msg node.  logonly is disallowed in msg nodes because we don't
+        // have an implementation strategy.
+        if (isInMsgNode(node)) {
+          reporter.report(
+              node.getLogonlyExpression().getSourceLocation(), LOGONLY_DISALLOWED_IN_MSG);
+        }
+        SoyType type = node.getLogonlyExpression().getType();
+        if (type.getKind() != Kind.BOOL) {
+          reporter.report(
+              node.getLogonlyExpression().getSourceLocation(),
+              WRONG_TYPE,
+              BoolType.getInstance(),
+              type);
+        }
       }
     }
   }

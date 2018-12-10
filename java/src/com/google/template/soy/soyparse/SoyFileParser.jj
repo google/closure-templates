@@ -482,9 +482,6 @@ public class SoyFileParser {
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 
-  /** Names of attributes whose values should be parsed as expressions. */
-  private static final ImmutableSet<String> EXPR_ATTR_NAMES =
-      ImmutableSet.of("data", "genders", "key", "logonly", "variant");
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
@@ -832,16 +829,33 @@ TOKEN_MGR_DECLS: {
 // Tag attributes.
 
 <IN_CMD_TAG> TOKEN: {
-  < CMD_DOUBLE_QUOTE: "\"" >
-| < CMD_SINGLE_QUOTE: "'" >
+  < CMD_DOUBLE_QUOTE: "\"" > { pushState(IN_DQ_ATTRIBUTE_VALUE); }
+| < CMD_SINGLE_QUOTE: "'" > { pushState(IN_SQ_ATTRIBUTE_VALUE); }
+
+
+// While most Soy tag attributes are parsed as one big text blob in the IN_(SQ_DQ) ATTRIBUTE_VALUE
+// state, the attributes below need to be parsed as Soy expressions. Since javacc parsers do not
+// backtrack, we want to switch the parser in the EXPR_NO_DOUBLE_QUOTE state, and parse the
+// expression directly from the input stream. (Otherwise we would need to create a whole new
+// SoyFileParser with just the attribute text as input.)
+| < DATA_ATTR_DQ: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < DATA_ATTR_SQ: "data" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < GENDERS_ATTR_DQ: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < GENDERS_ATTR_SQ: "genders" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < KEY_ATTR_DQ: "key" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < KEY_ATTR_SQ: "key" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < LOGONLY_ATTR_DQ: "logonly" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < LOGONLY_ATTR_SQ: "logonly" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
+| < VARIANT_ATTR_DQ: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR_NO_DOUBLE_QUOTE
+| < VARIANT_ATTR_SQ: "variant" ( <WS> )* "=" ( <WS> )* "'" > : EXPR_NO_SINGLE_QUOTE
 }
 
 // exits the attribute value
 <EXPR_NO_DOUBLE_QUOTE> TOKEN: {
-  < END_DQ_EXPR_ATTR: "\"" >
+  < END_DQ_EXPR_ATTR: "\"" >: IN_CMD_TAG
 }
 <EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < END_SQ_EXPR_ATTR: "'" >
+  < END_SQ_EXPR_ATTR: "'" >: IN_CMD_TAG
 }
 
 
@@ -994,7 +1008,7 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_KEY                : "{key" <WS>      > : EXPR
 
-| < CMD_BEGIN_VELOG              : "{velog" <WS>    > : EXPR
+| < CMD_BEGIN_VELOG              : "{velog" <WS>    > : IN_CMD_TAG
 | < CMD_CLOSE_VELOG              : "{/velog}"       >
 }
 
@@ -1076,10 +1090,10 @@ TOKEN_MGR_DECLS: {
 //
 
 <EXPR, EXPR_NO_DOUBLE_QUOTE> TOKEN: {
-  < SINGLE_QUOTE: "'" >
+  < SINGLE_QUOTE: "'" > { pushState(IN_SQ_STRING); }
 }
 <EXPR, EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < DOUBLE_QUOTE: "\"" >
+  < DOUBLE_QUOTE: "\"" > { pushState(IN_DQ_STRING); }
 }
 
 <IN_SQ_STRING> TOKEN: {
@@ -1333,7 +1347,6 @@ private List<CommandTagAttribute> Attributes() :
 }
 
 
-// TODO(spishak): This is very similar to ExprAttribute() below. Can we merge the two?
 /**
  * Matches an attribute in IN_CMD_TAG lexical state. Uses special tokens to parse attributes that
  * require an expression as the attribute value, e.g. data=""
@@ -1343,68 +1356,106 @@ private List<CommandTagAttribute> Attributes() :
  */
 private CommandTagAttribute Attribute() :
 {
-  Identifier name;
-  Token nameToken, value;
+  Token name, value, attrTag;
+  String attrName;
   ImmutableList<ExprNode> exprList = ImmutableList.of();
   Token qToken;
   QuoteStyle quoteStyle;
 }
 {
-  nameToken = <NAME>
-  { name = Identifier.create(nameToken.image, createSrcLoc(nameToken)); }
-  <CMD_EQ>
   (
-    // Expression attributes
-    LOOKAHEAD( { EXPR_ATTR_NAMES.contains(name.identifier()) } )
+    // Non-expression attributes
+    name = <NAME>
+    <CMD_EQ>
     (
       <CMD_DOUBLE_QUOTE>
+      value = <DQ_ATTRIBUTE_VALUE>
+      { quoteStyle = QuoteStyle.DOUBLE; }
+    |
+      <CMD_SINGLE_QUOTE>
+      value = <SQ_ATTRIBUTE_VALUE>
+      { quoteStyle = QuoteStyle.SINGLE; }
+    )
+    {
+      return new CommandTagAttribute(
+          Identifier.create(name.image, createSrcLoc(name)),
+          quoteStyle,
+          value.image,
+          createSrcLoc(value));
+    }
+  |
+    // Expression attributes
+    (
+      { quoteStyle = QuoteStyle.DOUBLE; }
+      (
+        attrTag = <DATA_ATTR_DQ>
+        { attrName = "data"; }
+      |
+        attrTag = <GENDERS_ATTR_DQ>
+        { attrName = "genders"; }
+      |
+        attrTag = <KEY_ATTR_DQ>
+        { attrName = "key"; }
+      |
+        attrTag = <LOGONLY_ATTR_DQ>
+        { attrName = "logonly"; }
+      |
+        attrTag = <VARIANT_ATTR_DQ>
+        { attrName = "variant"; }
+      )
+
       {
-        quoteStyle = QuoteStyle.DOUBLE;
-        token_source.SwitchTo(EXPR_NO_DOUBLE_QUOTE);
         // TODO(b/114483225): Remove.
-        if (name.identifier().equals("key") && !experimentalFeatures.contains("prop_vars")) {
-          errorReporter.report(name.location(), KEY_ATTR_NOT_ALLOWED);
+        if (attrName == "key" && !experimentalFeatures.contains("prop_vars")) {
+          errorReporter.report(createSrcLoc(attrTag), KEY_ATTR_NOT_ALLOWED);
         }
       }
 
       try {
-        // Allow this to be optional to yield a better error message below. Otherwise we will report
+        // Allow this to be optional to yield a better error message below.  Otherwise we will report
         // that double quotes aren't usable as soy strings.
         [
           exprList = ExprList()
         ]
         qToken = <END_DQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
       } catch (ParseException e) {
-        token_source.SwitchTo(IN_CMD_TAG);
         exprList = ImmutableList.of(errorExpr(e.currentToken));
         qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
       }
     |
-      <CMD_SINGLE_QUOTE>
+      { quoteStyle = QuoteStyle.SINGLE; }
+      (
+        attrTag = <DATA_ATTR_SQ>
+        { attrName = "data"; }
+      |
+        attrTag = <GENDERS_ATTR_SQ>
+        { attrName = "genders"; }
+      |
+        attrTag = <KEY_ATTR_SQ>
+        { attrName = "key"; }
+      |
+        attrTag = <LOGONLY_ATTR_SQ>
+        { attrName = "logonly"; }
+      |
+        attrTag = <VARIANT_ATTR_SQ>
+        { attrName = "variant"; }
+      )
+
       {
-        quoteStyle = QuoteStyle.SINGLE;
-        token_source.SwitchTo(EXPR_NO_SINGLE_QUOTE);
         // TODO(b/114483225): Remove.
-        if (name.identifier().equals("key") && !experimentalFeatures.contains("prop_vars")) {
-          errorReporter.report(name.location(), KEY_ATTR_NOT_ALLOWED);
+        if (attrName == "key" && !experimentalFeatures.contains("prop_vars")) {
+          errorReporter.report(createSrcLoc(attrTag), KEY_ATTR_NOT_ALLOWED);
         }
       }
 
       try {
-        // Allow this to be optional to yield a better error message below. Otherwise we will report
+        // Allow this to be optional to yield a better error message below.  Otherwise we will report
         // that double quotes aren't usable as soy strings.
         [
           exprList = ExprList()
         ]
         qToken = <END_SQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
       } catch (ParseException e) {
-        token_source.SwitchTo(IN_CMD_TAG);
         exprList = ImmutableList.of(errorExpr(e.currentToken));
         qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
       }
@@ -1414,26 +1465,7 @@ private CommandTagAttribute Attribute() :
         errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "an expression");
         exprList = ImmutableList.of(errorExpr(qToken));
       }
-      return new CommandTagAttribute(
-          Identifier.create(name.identifier(), name.location()),
-          quoteStyle,
-          exprList);
-    }
-  |
-    // Non-expression attributes
-    (
-      <CMD_DOUBLE_QUOTE>
-      { token_source.pushState(IN_DQ_ATTRIBUTE_VALUE); }
-      value = <DQ_ATTRIBUTE_VALUE>
-      { quoteStyle = QuoteStyle.DOUBLE; }
-    |
-      <CMD_SINGLE_QUOTE>
-      { token_source.pushState(IN_SQ_ATTRIBUTE_VALUE); }
-      value = <SQ_ATTRIBUTE_VALUE>
-      { quoteStyle = QuoteStyle.SINGLE; }
-    )
-    {
-      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(value));
+      return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), quoteStyle, exprList);
     }
   )
 }
@@ -1446,80 +1478,26 @@ private CommandTagAttribute Attribute() :
  */
 private CommandTagAttribute ExprAttribute() :
 {
-  Identifier name;
+  Token name;
   StringNode value;
-  ExprNode expr = null;
-  Token nameToken, qToken;
-  QuoteStyle quoteStyle;
 }
 {
-  nameToken = <IDENT>
-  { name = Identifier.create(nameToken.image, createSrcLoc(nameToken)); }
+  name = <IDENT>
   <EQ>
-  (
-    LOOKAHEAD( { EXPR_ATTR_NAMES.contains(name.identifier()) } )
-    (
-      <DOUBLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.DOUBLE;
-        token_source.SwitchTo(EXPR_NO_DOUBLE_QUOTE);
-      }
-      try {
-        [
-          expr = Expr()
-        ]
-        qToken = <END_DQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(EXPR);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(EXPR);
-        expr = errorExpr(e.currentToken);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
-      }
-    |
-      <SINGLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.SINGLE;
-        token_source.SwitchTo(EXPR_NO_SINGLE_QUOTE);
-      }
-      try {
-        [
-          expr = Expr()
-        ]
-        qToken = <END_SQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(EXPR);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(EXPR);
-        expr = errorExpr(e.currentToken);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
-      }
-    )
-    {
-      if (expr == null) {
-        errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "an expression");
-        expr = errorExpr(qToken);
-      }
-      return new CommandTagAttribute(name, quoteStyle, ImmutableList.of(expr));
-    }
-  |
-    // This is slightly inconsistent with other attribute values in Soy.  For things like msg.desc,
-    // we allow newlines and don't support unicode and hex escapes, but for string literals we do
-    // support those escapes and don't support internal newlines (you have to escape them with \n).
-    // For most, ExprAttributes this is fine since they are simple values (number, identifier), but
-    // for phex this could be confusing.
-    value = StringLiteral()
-    {
-      return new CommandTagAttribute(
-          name,
-          value.getQuoteStyle(),
-          value.getValue(),
-          // offset so the value location points at the body of the string, not the quotation marks
-          value.getSourceLocation().offsetEndCol(-1).offsetStartCol(1));
-    }
-  )
+  // This is slightly inconsistent with other attribute values in Soy.  For things like msg.desc, we
+  // allow newlines and don't support unicode and hex escapes, but for string literals we do support
+  // those escapes and don't support internal newlines (you have to escape them with \n).  For most,
+  // ExprAttributes this is fine since they are simple values (number, identifier), but for phex
+  // this could be confusing.
+  value = StringLiteral()
+  {
+    return new CommandTagAttribute(
+        Identifier.create(name.image, createSrcLoc(name)),
+        value.getQuoteStyle(),
+        value.getValue(),
+        // offset so the value location points at the body of the string, not the quotation marks
+        value.getSourceLocation().offsetEndCol(-1).offsetStartCol(1));
+  }
 }
 
 
@@ -2885,34 +2863,23 @@ private IfNode IfStmt() :
  */
 private VeLogNode VeLogStmt() :
 {
-  ExprNode veDataExpr = null;
+  Identifier name = null;
   Token tagBegin, tagEnd;
-  CommandTagAttribute attr = null;
-  List<CommandTagAttribute> attributes = ImmutableList.of();
+  List<CommandTagAttribute> attributes = null;
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_VELOG>
   try {
-    veDataExpr = Expr()
-    // TODO(b/71641483): Once the data attribute is replaced by the new ve_data syntax, logonly will
-    // be the only attribute here so we can remove support for multiple attributes.
-    (
-      attr = ExprAttribute()
-      {
-        if (attributes.isEmpty()) {
-          attributes = new ArrayList<CommandTagAttribute>();
-        }
-        attributes.add(attr);
-      }
-    )*
-    {
-      CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
-    }
+    name = DottedIdent()
+    attributes = Attributes()
     tagEnd = <CMD_END>
   } catch (ParseException e) {
-    if (veDataExpr == null) {
-      veDataExpr = errorExpr(tagBegin);
+    if (name == null) {
+      name = Identifier.create("error", createSrcLoc(tagBegin));
+    }
+    if (attributes == null) {
+      attributes = ImmutableList.of();
     }
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
@@ -2926,7 +2893,7 @@ private VeLogNode VeLogStmt() :
     VeLogNode node = new VeLogNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagEnd),
-        veDataExpr,
+        name,
         attributes,
         errorReporter);
     node.addChildren(templateBlock);
@@ -4119,12 +4086,10 @@ private StringNode StringLiteral() :
 {
   (
     quote = <SINGLE_QUOTE>
-    { token_source.pushState(IN_SQ_STRING); }
     value = <SQ_STRING>
     { quoteStyle = QuoteStyle.SINGLE; }
   |
     quote = <DOUBLE_QUOTE>
-    { token_source.pushState(IN_DQ_STRING); }
     value = <DQ_STRING>
     { quoteStyle = QuoteStyle.DOUBLE; }
   )
