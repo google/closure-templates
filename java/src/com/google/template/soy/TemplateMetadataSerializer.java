@@ -20,12 +20,12 @@ import static com.google.common.base.Strings.emptyToNull;
 import com.google.common.base.Converter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CallSituationP;
 import com.google.template.soy.soytree.CompilationUnit;
@@ -56,15 +56,8 @@ import javax.annotation.Nullable;
 
 /** Utilities to transform TemplateMetadata objects to and From CompilationUnit protos */
 public final class TemplateMetadataSerializer {
-  /** A simple interface to abstract type parsing to avoid a package cycle. */
-  public interface TypeResolver {
-    /**
-     * Returns a soy type for the given string.
-     *
-     * @throws IllegalArgumentException with a syntax error if appropriate.
-     */
-    SoyType parseType(String typeString);
-  }
+  private static final SoyErrorKind UNABLE_TO_PARSE_TEMPLATE_HEADER =
+      SoyErrorKind.of("Unable to parse template header for {0} from Soy file {1}: {2}.");
 
   private static final Converter<VisibilityP, Visibility> VISIBILITY_CONVERTER =
       createEnumConverter(VisibilityP.class, Visibility.class);
@@ -95,21 +88,25 @@ public final class TemplateMetadataSerializer {
   }
 
   public static ImmutableList<TemplateMetadata> templatesFromCompilationUnit(
-      CompilationUnit compilationUnit, SoyFileKind fileKind, SoyTypeRegistry typeRegistry) {
+      CompilationUnit compilationUnit,
+      SoyFileKind fileKind,
+      SoyTypeRegistry typeRegistry,
+      String filePath,
+      ErrorReporter errorReporter) {
     ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
     for (SoyFileP fileProto : compilationUnit.getFileList()) {
       for (TemplateMetadataP templateProto : fileProto.getTemplateList()) {
         try {
-          templates.add(metadataFromProto(fileProto, templateProto, fileKind, typeRegistry));
+          templates.add(
+              metadataFromProto(
+                  fileProto, templateProto, fileKind, typeRegistry, filePath, errorReporter));
         } catch (IllegalArgumentException iae) {
-          throw new IllegalArgumentException(
-              "Unable to parse template: "
-                  + templateProto.getTemplateName()
-                  + " from file: "
-                  + fileProto.getFilePath()
-                  + ": "
-                  + iae.getMessage(),
-              iae);
+          errorReporter.report(
+              new SourceLocation(filePath),
+              UNABLE_TO_PARSE_TEMPLATE_HEADER,
+              templateProto.getTemplateName(),
+              fileProto.getFilePath(),
+              iae.getMessage());
         }
       }
     }
@@ -140,7 +137,9 @@ public final class TemplateMetadataSerializer {
       SoyFileP fileProto,
       TemplateMetadataP templateProto,
       SoyFileKind fileKind,
-      SoyTypeRegistry typeRegistry) {
+      SoyTypeRegistry typeRegistry,
+      String filePath,
+      ErrorReporter errorReporter) {
     TemplateMetadata.Builder builder = TemplateMetadata.builder();
     TemplateMetadata.Kind templateKind =
         TEMPLATE_KIND_CONVERTER.convert(templateProto.getTemplateKind());
@@ -176,35 +175,31 @@ public final class TemplateMetadataSerializer {
                 : CONTENT_KIND_CONVERTER.convert(templateProto.getContentKind()))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
         .setCallSituations(callSituationsFromProto(templateProto.getCallSituationList(), fileProto))
-        .setParameters(parametersFromProto(templateProto.getParameterList(), typeRegistry))
+        .setParameters(
+            parametersFromProto(
+                templateProto.getParameterList(), typeRegistry, filePath, errorReporter))
         .build();
   }
 
   private static ImmutableList<Parameter> parametersFromProto(
-      List<ParameterP> parameterList, SoyTypeRegistry typeRegistry) {
+      List<ParameterP> parameterList,
+      SoyTypeRegistry typeRegistry,
+      String filePath,
+      ErrorReporter errorReporter) {
     ImmutableList.Builder<Parameter> builder =
         ImmutableList.builderWithExpectedSize(parameterList.size());
     for (ParameterP parameter : parameterList) {
-      ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
       SoyType type =
-          SoyFileParser.parseType(
-              parameter.getType(), typeRegistry, /*filePath=*/ "---", errorReporter);
-      if (type == null) {
-        throw new IllegalArgumentException(
-            "Unable to parse the type for parameter: "
-                + parameter.getName()
-                + ": "
-                + parameter.getType()
-                + ": "
-                + errorReporter.getErrors().asList().get(0).message());
+          SoyFileParser.parseType(parameter.getType(), typeRegistry, filePath, errorReporter);
+      if (type != null) {
+        builder.add(
+            Parameter.builder()
+                .setName(parameter.getName())
+                .setType(type)
+                .setInjected(parameter.getInjected())
+                .setRequired(parameter.getRequired())
+                .build());
       }
-      builder.add(
-          Parameter.builder()
-              .setName(parameter.getName())
-              .setType(type)
-              .setInjected(parameter.getInjected())
-              .setRequired(parameter.getRequired())
-              .build());
     }
     return builder.build();
   }

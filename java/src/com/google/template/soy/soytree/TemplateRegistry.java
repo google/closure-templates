@@ -74,7 +74,8 @@ public final class TemplateRegistry {
   /**
    * Constructor.
    *
-   * @param soyTree The Soy tree from which to build a template registry.
+   * @param templates All the TemplateMetadata objects
+   * @param errorReporter the error reporter
    */
   public TemplateRegistry(List<TemplateMetadata> templates, ErrorReporter errorReporter) {
 

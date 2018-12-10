@@ -32,6 +32,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -47,6 +48,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -86,11 +88,27 @@ public abstract class AbstractSoyCompiler {
   private List<String> deps = new ArrayList<>();
 
   @Option(
+      name = "--depHeaders",
+      usage =
+          "The list of dependency Soy header files (if applicable). The compiler needs deps for"
+              + " analysis/checking..",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> depHeaders = new ArrayList<>();
+
+  @Option(
     name = "--indirectDeps",
     usage = "Soy files required by deps, but which may not be used by srcs.",
     handler = SoyCmdLineParser.StringListOptionHandler.class
   )
   private List<String> indirectDeps = new ArrayList<>();
+
+  @Option(
+      name = "--indirectDepHeaders",
+      usage =
+          "Soy file headers required by deps, but which may not be used by srcs.  "
+              + "Used by the compiler for typechecking and call analysis.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> indirectDepHeaders = new ArrayList<>();
 
   @Option(
       name = "--compileTimeGlobalsFile",
@@ -229,6 +247,20 @@ public abstract class AbstractSoyCompiler {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
+    if (!depHeaders.isEmpty() || !indirectDepHeaders.isEmpty()) {
+      if (!deps.isEmpty()) {
+        exitWithError(
+            "Cannot pass --deps when also passing --depHeaders or --indirectDepHeaders, "
+                + "use one style for passing information about dependencies");
+      }
+      if (!indirectDeps.isEmpty()) {
+        exitWithError(
+            "Cannot pass --indirectDeps when also passing --depHeaders or "
+                + "--indirectDepHeaders, use one style for passing information about "
+                + "dependencies");
+      }
+    }
+
     SoyFileSet.Builder sfsBuilder;
     if (!pluginModules.isEmpty()) {
       // Only create the Builder through an Injector if the user passed pluginModules.
@@ -260,12 +292,38 @@ public abstract class AbstractSoyCompiler {
       }
     }
     addSoyFilesToBuilder(sfsBuilder, ImmutableSet.copyOf(srcs), deps, indirectDeps);
+    addCompilationUnitsToBuilder(sfsBuilder);
     sfsBuilder.setCompileTimeGlobals(parseGlobals());
     // Disable optimizer if the flag is set to true.
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
     }
     compile(sfsBuilder);
+  }
+
+  private void addCompilationUnitsToBuilder(SoyFileSet.Builder sfsBuilder) {
+    // it isn't unusual for a file to be listed in both deps and indirect deps.  just ignore
+    // duplicates
+    Set<File> soFar = new HashSet<>();
+    for (File depHeader : depHeaders) {
+      addCompilationUnitToBuilder(sfsBuilder, depHeader, SoyFileKind.DEP, soFar);
+    }
+    for (File indirectDep : indirectDepHeaders) {
+      addCompilationUnitToBuilder(sfsBuilder, indirectDep, SoyFileKind.INDIRECT_DEP, soFar);
+    }
+  }
+
+  private void addCompilationUnitToBuilder(
+      SoyFileSet.Builder sfsBuilder, File depFile, SoyFileKind depKind, Set<File> soFar) {
+    if (soFar.add(depFile)) {
+      try (InputStream is =
+          new GZIPInputStream(new FileInputStream(depFile), /* bufferSize */ 32 * 1024)) {
+        sfsBuilder.addCompilationUnit(depKind, depFile.getPath(), CompilationUnit.parseFrom(is));
+      } catch (IOException e) {
+        throw new CommandLineError(
+            "Unable to read header file: " + depFile + ": " + e.getMessage());
+      }
+    }
   }
 
   private ValidatedLoggingConfig parseLoggingConfig() {

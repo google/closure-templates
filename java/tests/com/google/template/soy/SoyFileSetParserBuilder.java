@@ -303,6 +303,7 @@ public final class SoyFileSetParserBuilder {
     return SoyFileSetParser.newBuilder()
         .setCache(astCache)
         .setSoyFileSuppliers(soyFileSuppliers)
+        .setCompilationUnits(ImmutableList.of())
         .setTypeRegistry(typeRegistry)
         .setPluginResolver(
             new PluginResolver(

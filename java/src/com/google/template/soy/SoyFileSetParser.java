@@ -16,7 +16,10 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -30,6 +33,7 @@ import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -50,6 +54,27 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class SoyFileSetParser {
+  /**
+   * Simple tuple of un an-evaluatied compilation unit containing information about dependencies.
+   */
+  @AutoValue
+  abstract static class CompilationUnitAndKind {
+    static CompilationUnitAndKind create(
+        SoyFileKind fileKind, String filePath, CompilationUnit compilationUni) {
+      // sanity check
+      checkArgument(
+          fileKind != SoyFileKind.SRC, "compilation units should only represent dependencies");
+      return new AutoValue_SoyFileSetParser_CompilationUnitAndKind(
+          fileKind, filePath, compilationUni);
+    }
+
+    abstract SoyFileKind fileKind();
+
+    abstract String filePath();
+
+    abstract CompilationUnit compilationUnit();
+  }
+
   /** A simple tuple for the result of a parse operation. */
   @AutoValue
   public abstract static class ParseResult {
@@ -72,6 +97,8 @@ public abstract class SoyFileSetParser {
   /** Files to parse. Each must have a unique file name. */
   public abstract ImmutableMap<String, SoyFileSupplier> soyFileSuppliers();
 
+  abstract ImmutableList<CompilationUnitAndKind> compilationUnits();
+
   abstract PassManager passManager();
 
   abstract ErrorReporter errorReporter();
@@ -90,6 +117,9 @@ public abstract class SoyFileSetParser {
 
     public abstract Builder setSoyFileSuppliers(
         ImmutableMap<String, SoyFileSupplier> soyFileSuppliers);
+
+    public abstract Builder setCompilationUnits(
+        ImmutableList<CompilationUnitAndKind> compilationUnits);
 
     public abstract Builder setPassManager(PassManager passManager);
 
@@ -120,11 +150,19 @@ public abstract class SoyFileSetParser {
    * registry.
    */
   private ParseResult parseWithVersions() throws IOException {
+    List<TemplateMetadata> templateMetadatas = new ArrayList<>();
+    for (CompilationUnitAndKind unit : compilationUnits()) {
+      templateMetadatas.addAll(
+          TemplateMetadataSerializer.templatesFromCompilationUnit(
+              unit.compilationUnit(),
+              unit.fileKind(),
+              typeRegistry(),
+              unit.filePath(),
+              errorReporter()));
+    }
     IdGenerator nodeIdGen =
         (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    // TODO(b/63212073): devise a way for the metadata objects to be passed at the top level.
-    List<TemplateMetadata> templateMetadatas = new ArrayList<>(soyFileSuppliers().size());
     boolean filesWereSkipped = false;
     // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
     // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
@@ -188,6 +226,11 @@ public abstract class SoyFileSetParser {
         // This is a resource in a JAR file. Only keep everything after the bang.
         filePath = filePath.substring(lastBangIndex + 1);
       }
+      // TODO(lukes): Don't pass the pluginResolver and typeRegistry to the parser.  It is
+      // convenient to parse types and resolve plugins during parsing, but if we delayed those
+      // operations to later passes (like we do globals), then it would be easier to configure the
+      // parser and various modes in PluginResolver could be eliminated and replaced with
+      // PassManager configuration.
       return new SoyFileParser(
               typeRegistry,
               pluginResolver(),

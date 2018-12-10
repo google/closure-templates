@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -73,6 +74,7 @@ import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
+import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.Kind;
@@ -137,7 +139,11 @@ public final class SoyFileSet {
    */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
-    private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder;
+    private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder =
+        ImmutableMap.builder();
+
+    private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
+        ImmutableList.builder();
 
     /** Optional AST cache. */
     private SoyAstCache cache;
@@ -164,7 +170,6 @@ public final class SoyFileSet {
 
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
-      this.filesBuilder = ImmutableMap.builder();
       this.cache = null;
       this.lazyGeneralOptions = null;
     }
@@ -220,6 +225,7 @@ public final class SoyFileSet {
               .putAll(InternalPlugins.fromFunctions(extraSourceFunctions.build()))
               .build(),
           filesBuilder.build(),
+          compilationUnitsBuilder.build(),
           getGeneralOptions(),
           cache,
           conformanceConfig,
@@ -584,6 +590,13 @@ public final class SoyFileSet {
       return this;
     }
 
+    Builder addCompilationUnit(
+        SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
+      compilationUnitsBuilder.add(
+          CompilationUnitAndKind.create(fileKind, filePath, compilationUnit));
+      return this;
+    }
+
     private Builder addFile(SoyFileSupplier supplier) {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
@@ -622,6 +635,7 @@ public final class SoyFileSet {
 
   private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableList<CompilationUnitAndKind> compilationUnits;
 
   /** Optional soy tree cache for faster recompile times. */
   @Nullable private final SoyAstCache cache;
@@ -647,6 +661,7 @@ public final class SoyFileSet {
       ImmutableMap<String, SoyPrintDirective> printDirectives,
       ImmutableMap<String, SoySourceFunction> soySourceFunctionMap,
       ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
+      ImmutableList<CompilationUnitAndKind> compilationUnits,
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       ValidatedConformanceConfig conformanceConfig,
@@ -658,6 +673,7 @@ public final class SoyFileSet {
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
+    this.compilationUnits = compilationUnits;
     this.cache = cache;
     this.generalOptions = generalOptions.clone();
     this.soyFunctionMap = soyFunctionMap;
@@ -1201,6 +1217,7 @@ public final class SoyFileSet {
     return SoyFileSetParser.newBuilder()
         .setCache(cache)
         .setSoyFileSuppliers(soyFileSuppliers)
+        .setCompilationUnits(compilationUnits)
         .setTypeRegistry(typeRegistry)
         .setPluginResolver(resolver)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
