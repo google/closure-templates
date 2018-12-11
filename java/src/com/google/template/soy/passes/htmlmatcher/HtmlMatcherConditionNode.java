@@ -21,11 +21,12 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Optional;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SwitchCaseNode;
 import javax.annotation.Nullable;
 
-public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
+public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
-  private final IfCondNode conditionNode;
+  private final SoyNode conditionNode;
 
   private EdgeKind activeEdge = EdgeKind.TRUE_EDGE;
 
@@ -33,11 +34,12 @@ public final class HtmlMatcherIfConditionNode extends HtmlMatcherGraphNode {
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
 
-  public HtmlMatcherIfConditionNode(SoyNode conditionNode) {
+  public HtmlMatcherConditionNode(SoyNode conditionNode) {
     checkState(
-        conditionNode instanceof IfCondNode,
-        "HtmlMatcherCondition nodes must be constructed with an IfCondNode.");
-    this.conditionNode = (IfCondNode) conditionNode;
+        conditionNode instanceof IfCondNode || conditionNode instanceof SwitchCaseNode,
+        "HtmlMatcherCondition nodes must be constructed with either an "
+            + "IfCondNode or a SwitchCaseNode.");
+    this.conditionNode = conditionNode;
   }
 
   @Override

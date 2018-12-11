@@ -136,8 +136,8 @@ public final class HtmlMatcherAccumulatorNodeTest {
   @Test
   public void testAccumulateNodes_conditionalNodes() {
     HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
-    HtmlMatcherIfConditionNode ifCondNode =
-        new HtmlMatcherIfConditionNode(TestUtils.soyIfCondNode("$condVar"));
+    HtmlMatcherConditionNode ifCondNode =
+        new HtmlMatcherConditionNode(TestUtils.soyIfCondNode("$condVar"));
     ImmutableList<ActiveEdge> activeEdges =
         ImmutableList.of(
             ActiveEdge.create(ifCondNode, EdgeKind.TRUE_EDGE),

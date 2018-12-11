@@ -18,6 +18,7 @@ package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -33,6 +34,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.TagName;
 
 /** Utility functions for HTML Matcher Graph tests. */
@@ -92,6 +94,15 @@ public final class TestUtils {
     IfCondNode soyNode =
         new IfCondNode(
             idGenerator.genId(), SourceLocation.UNKNOWN, "elseif", soyExprNode(exprText));
+    IfNode parentIfNode = new IfNode(idGenerator.genId(), SourceLocation.UNKNOWN);
+    parentIfNode.addChild(soyNode);
+    return soyNode;
+  }
+
+  public static SwitchCaseNode soySwitchCaseNode(String exprText) {
+    SwitchCaseNode soyNode =
+        new SwitchCaseNode(
+            idGenerator.genId(), SourceLocation.UNKNOWN, ImmutableList.of(soyExprNode(exprText)));
     IfNode parentIfNode = new IfNode(idGenerator.genId(), SourceLocation.UNKNOWN);
     parentIfNode.addChild(soyNode);
     return soyNode;

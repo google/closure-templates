@@ -31,10 +31,10 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherConditionNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraph;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
-import com.google.template.soy.passes.htmlmatcher.HtmlMatcherIfConditionNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
-import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -189,53 +188,30 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitIfNode(IfNode node) {
-      activeEdgeStack.push(new ArrayList<>());
+      enterConditionalContext();
       visitChildren(node);
-      // Add the syntactically last AST node of the else branch. If there is no else branch, then
-      // add the syntactically last if branch. Note that the active edge of the syntactically last
-      // if branch is the FALSE edge.
-      List<ActiveEdge> activeEdges = activeEdgeStack.pop();
-      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
-        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
-        activeEdges.add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
-      }
-      HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
-      accNode.accumulateActiveEdges(ImmutableList.copyOf(activeEdges));
-      htmlMatcherGraph.addNode(accNode);
+      exitConditionalContext();
     }
 
     @Override
     protected void visitIfCondNode(IfCondNode node) {
-      HtmlMatcherIfConditionNode ifCondNode = new HtmlMatcherIfConditionNode(node);
-      htmlMatcherGraph.addNode(ifCondNode);
-      htmlMatcherGraph.saveCursor();
-      ifCondNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
+      HtmlMatcherConditionNode conditionNode = enterConditionBranch(node);
       visitChildren(node);
-      // The graph cursor points to the syntactically last HTML tag in the if block.
-      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
-        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
-        activeEdgeStack.peek().add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
-      }
-      ifCondNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
-      htmlMatcherGraph.restoreCursor();
+      exitConditionBranch(conditionNode);
     }
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("switch nodes are not yet implemented.");
+      enterConditionalContext();
+      visitChildren(node);
+      exitConditionalContext();
     }
 
     @Override
     protected void visitSwitchCaseNode(SwitchCaseNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("switch case nodes are not yet implemented.");
-    }
-
-    @Override
-    protected void visitSwitchDefaultNode(SwitchDefaultNode node) {
-      // TODO(b/120430802): Implement this.
-      throw new UnsupportedOperationException("switch default nodes are not yet implemented.");
+      HtmlMatcherConditionNode conditionNode = enterConditionBranch(node);
+      visitChildren(node);
+      exitConditionBranch(conditionNode);
     }
 
     @Override
@@ -288,6 +264,43 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       if (node instanceof TemplateElementNode) {
         validateSoyElementHasOneRootTagNode(node);
       }
+    }
+
+    private void enterConditionalContext() {
+      activeEdgeStack.push(new ArrayList<>());
+    }
+
+    private void exitConditionalContext() {
+      // Add the syntactically last AST node of the else branch. If there is no else branch, then
+      // add the syntactically last if branch. Note that the active edge of the syntactically last
+      // if branch is the FALSE edge.
+      List<ActiveEdge> activeEdges = activeEdgeStack.pop();
+      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
+        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
+        activeEdges.add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
+      }
+      HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
+      accNode.accumulateActiveEdges(ImmutableList.copyOf(activeEdges));
+      htmlMatcherGraph.addNode(accNode);
+    }
+
+    private HtmlMatcherConditionNode enterConditionBranch(SoyNode node) {
+      HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(node);
+      htmlMatcherGraph.addNode(conditionNode);
+      htmlMatcherGraph.saveCursor();
+      conditionNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
+      return conditionNode;
+    }
+
+    private void exitConditionBranch(HtmlMatcherConditionNode ifConditionNode) {
+      // The graph cursor points to the syntactically last HTML tag in the if block. Note that this
+      // could be the originating HtmlMatcherConditionNode.
+      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
+        HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
+        activeEdgeStack.peek().add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
+      }
+      ifConditionNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
+      htmlMatcherGraph.restoreCursor();
     }
 
     private void validateSoyElementHasOneRootTagNode(TemplateNode node) {
