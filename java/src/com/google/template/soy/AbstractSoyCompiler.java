@@ -18,6 +18,7 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -227,6 +228,8 @@ public abstract class AbstractSoyCompiler {
   }
 
   private void doMain(String[] args, PrintStream err) throws IOException {
+    Stopwatch timer = Stopwatch.createStarted();
+    Stopwatch guiceTimer = Stopwatch.createUnstarted();
     SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginClassLoader);
     try {
       cmdLineParser.parseArgument(args);
@@ -263,6 +266,7 @@ public abstract class AbstractSoyCompiler {
 
     SoyFileSet.Builder sfsBuilder;
     if (!pluginModules.isEmpty()) {
+      guiceTimer.start();
       // Only create the Builder through an Injector if the user passed pluginModules.
       // Otherwise, we don't need to go through Guice at all.
       List<Module> modules = new ArrayList<>();
@@ -270,6 +274,7 @@ public abstract class AbstractSoyCompiler {
       modules.addAll(pluginModules);
       Injector injector = Guice.createInjector(modules);
       sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+      guiceTimer.stop();
     } else {
       sfsBuilder = SoyFileSet.builder();
     }
@@ -299,6 +304,22 @@ public abstract class AbstractSoyCompiler {
       sfsBuilder.disableOptimizer();
     }
     compile(sfsBuilder);
+    timer.stop();
+    double guiceRatio = ((double) guiceTimer.elapsed().toNanos()) / timer.elapsed().toNanos();
+    // Unless the build is faster than 1 second, issue a warning if more than half of the build is
+    // constructing the guice injector.  This often happens just because the modules install too
+    // much and also due to general overhead of constructing the injector.
+    if (guiceRatio > 0.5 && timer.elapsed().getSeconds() > 1) {
+      err.println(
+          "WARNING: This compile took "
+              + timer
+              + " but more than 50% of that ("
+              + guiceTimer
+              + ") was creating a guice injector for plugins.  "
+              + "Please migrate to passing plugins via the --pluginFunctions flag to improve "
+              + "compiler performance."
+          );
+    }
   }
 
   private void addCompilationUnitsToBuilder(SoyFileSet.Builder sfsBuilder) {
