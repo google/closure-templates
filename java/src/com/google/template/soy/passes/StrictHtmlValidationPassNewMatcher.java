@@ -166,24 +166,12 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      htmlMatcherGraph.addNode(
-          new HtmlMatcherTagNode(node) {
-            @Override
-            public TagKind getTagKind() {
-              return TagKind.OPEN_TAG;
-            }
-          });
+      htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      htmlMatcherGraph.addNode(
-          new HtmlMatcherTagNode(node) {
-            @Override
-            public TagKind getTagKind() {
-              return TagKind.CLOSE_TAG;
-            }
-          });
+      htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
     @Override

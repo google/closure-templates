@@ -19,6 +19,8 @@ package com.google.template.soy.passes.htmlmatcher;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyNode;
 import javax.annotation.Nullable;
@@ -28,31 +30,18 @@ import javax.annotation.Nullable;
  *
  * <p>An HTML tag node represents either an open tag (such as {@code <div>} or {@code <span>}), or a
  * close tag (such as {@code </div>} or {@code </span>}).
- *
- * <p>Instances denote tag type by overriding {@link #getTagKind()}. Example usage:
- *
- * <pre>
- *    HtmlOpenTagNode soyNode = new HtmlOpenTagNode( ... );
- *    HtmlMatcherTagNode openTagNode = new HtmlMatcherTagNode(soyNode) {
- *       &#64;Override
- *       public TagKind getTagKind() {
- *         return TagKind.OPEN_TAG;
- *       }
- *     };
- * </pre>
  */
-public abstract class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
+public class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
 
   /**
    * The kind of this HTML tag node.
    *
    * <p>All HTML tag nodes are either open tags (e.g, {@code <span>}) or close tags (e.g. {@code
-   * </span>}). Void or self-closing tags (e.g. {@code <img>}) are represented as an {@link
-   * TagKind#OPEN_TAG}.
+   * </span>}), or void/self-closing tags (e.g. {@code <img>}).
    */
   public enum TagKind {
     OPEN_TAG,
-    CLOSE_TAG
+    CLOSE_TAG,
   }
 
   private final HtmlTagNode htmlTagNode;
@@ -66,12 +55,14 @@ public abstract class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
     this.htmlTagNode = (HtmlTagNode) htmlTagNode;
   }
 
-  /**
-   * Returns the tag kind.
-   *
-   * <p>Override this when making concrete instances of open and close tags.
-   */
-  public abstract TagKind getTagKind();
+  /** Returns the tag kind. */
+  public TagKind getTagKind() {
+    if (htmlTagNode instanceof HtmlOpenTagNode) {
+      return TagKind.OPEN_TAG;
+    } else {
+      return TagKind.CLOSE_TAG;
+    }
+  }
 
   // ------ HtmlMatcherGraphNode implementation ------
 

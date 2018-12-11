@@ -58,21 +58,11 @@ public final class TestUtils {
   }
 
   public static HtmlMatcherTagNode htmlMatcherOpenTagNode(HtmlOpenTagNode soyNode) {
-    return new HtmlMatcherTagNode(soyNode) {
-      @Override
-      public TagKind getTagKind() {
-        return TagKind.OPEN_TAG;
-      }
-    };
+    return new HtmlMatcherTagNode(soyNode);
   }
 
   public static HtmlMatcherTagNode htmlMatcherCloseTagNode(HtmlCloseTagNode soyNode) {
-    return new HtmlMatcherTagNode(soyNode) {
-      @Override
-      public TagKind getTagKind() {
-        return TagKind.CLOSE_TAG;
-      }
-    };
+    return new HtmlMatcherTagNode(soyNode);
   }
 
   public static ExprNode soyExprNode(String exprText) {
