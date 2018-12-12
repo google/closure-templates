@@ -43,8 +43,6 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.passes.TransitiveIjParamsCalculator;
-import com.google.template.soy.passes.TransitiveIjParamsCalculator.IjParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -224,8 +222,6 @@ public final class GenerateParseInfoVisitor
   /** Builder for the generated code. */
   private IndentedLinesBuilder ilb;
 
-  private final TransitiveIjParamsCalculator transitiveIjParamsCalculator;
-
   /**
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
@@ -239,7 +235,6 @@ public final class GenerateParseInfoVisitor
     this.javaPackage = javaPackage;
     this.templateRegistry = registry;
     this.typeRegistry = typeRegistry;
-    this.transitiveIjParamsCalculator = new TransitiveIjParamsCalculator(templateRegistry);
     switch (javaClassNameSource) {
       case "filename":
         this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
@@ -599,9 +594,6 @@ public final class GenerateParseInfoVisitor
     IndirectParamsInfo indirectParamsInfo =
         new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(nodeMetadata);
 
-    // Get info on injected params.
-    IjParamsInfo ijParamsInfo = transitiveIjParamsCalculator.calculateIjs(nodeMetadata);
-
     @SuppressWarnings("ConstantConditions") // for IntelliJ
     String upperUnderscoreName =
         convertToUpperUnderscore(node.getPartialTemplateName().substring(1));
@@ -707,9 +699,6 @@ public final class GenerateParseInfoVisitor
       ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of(),");
     }
 
-    appendIjParamSet(ilb, ijParamsInfo);
-
-    ilb.appendLineEnd(",");
     ilb.appendLine("\"", node.getAutoescapeMode().getAttributeValue(), "\");");
     ilb.decreaseIndent(2);
 
@@ -892,19 +881,6 @@ public final class GenerateParseInfoVisitor
     }
   }
 
-  /**
-   * Private helper for visitTemplateNode() to append the set of injected params.
-   *
-   * @param ilb The builder for the code.
-   * @param ijParamsInfo Info on injected params for the template being processed.
-   */
-  private void appendIjParamSet(IndentedLinesBuilder ilb, IjParamsInfo ijParamsInfo) {
-    List<String> itemSnippets = Lists.newArrayList();
-    for (String paramKey : ijParamsInfo.ijParamSet) {
-      itemSnippets.add("\"" + paramKey + "\"");
-    }
-    appendImmutableSortedSet(ilb, "<String>", itemSnippets);
-  }
 
   // -----------------------------------------------------------------------------------------------
   // General helpers.
@@ -964,18 +940,6 @@ public final class GenerateParseInfoVisitor
   private static void appendImmutableList(
       IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
     appendListOrSetHelper(ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
-  }
-
-  /**
-   * Private helper to append an ImmutableSortedSet to the code.
-   *
-   * @param ilb The builder for the code.
-   * @param typeParamSnippet The type parameter for the ImmutableSortedSet.
-   * @param itemSnippets Code snippets for the items to put into the ImmutableSortedSet.
-   */
-  private static void appendImmutableSortedSet(
-      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
-    appendListOrSetHelper(ilb, "ImmutableSortedSet." + typeParamSnippet + "of", itemSnippets);
   }
 
   /**

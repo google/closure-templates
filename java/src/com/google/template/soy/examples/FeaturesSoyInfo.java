@@ -5,7 +5,6 @@ package com.google.template.soy.examples;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 
@@ -142,7 +141,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoComments",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -173,7 +171,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoLineJoining",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -204,7 +201,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoRawTextCommands",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -242,7 +238,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("boo", ParamRequisiteness.REQUIRED)
               .put("two", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -277,7 +272,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("italicHtml", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -312,7 +306,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -347,7 +340,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("pi", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -382,7 +374,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -417,7 +408,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("persons", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -452,7 +442,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("numLines", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -495,7 +484,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("tripInfo", ParamRequisiteness.REQUIRED)
               .put("destination", ParamRequisiteness.OPTIONAL)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -526,7 +514,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.demoCallOtherFile",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -570,7 +557,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("companionName", ParamRequisiteness.REQUIRED)
               .put("destinations", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -605,7 +591,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
           ImmutableMap.<String, ParamRequisiteness>builder()
               .put("name", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -643,7 +628,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("message", ParamRequisiteness.REQUIRED)
               .put("list", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -681,7 +665,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("students", ParamRequisiteness.REQUIRED)
               .put("currentYear", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -719,7 +702,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("setName", ParamRequisiteness.REQUIRED)
               .put("setMembers", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -763,7 +745,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("year", ParamRequisiteness.REQUIRED)
               .put("keywords", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -795,7 +776,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
       super(
           "soy.examples.features.bidiGlobalDir",
           ImmutableMap.<String, ParamRequisiteness>of(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 
@@ -833,7 +813,6 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("exampleNum", ParamRequisiteness.REQUIRED)
               .put("exampleName", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of(),
           "strict");
     }
 

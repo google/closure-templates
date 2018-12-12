@@ -86,11 +86,6 @@ public interface SoyTofu {
   /**
    * Gets the set of injected param keys used by a template (and its transitive callees).
    *
-   * <p>Note: The {@code SoyTemplateInfo} object already has a method {@code getUsedIjParams()}.
-   * That method should produce the same results as this method, unless the bundle of Soy files
-   * included when running the SoyParseInfoGenerator is different from the bundle of Soy files
-   * included when creating this SoyTofu object.
-   *
    * @param templateInfo Info for the template to get injected params of.
    * @return The set of injected param keys used by the given template.
    */
