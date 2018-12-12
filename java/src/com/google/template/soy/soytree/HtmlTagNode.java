@@ -20,7 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -33,6 +36,14 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     implements StandaloneNode {
 
   private final TagName tagName;
+
+  /**
+   * Represents a list of tags that this HtmlTagNode might be paired with. For example, if we have
+   * an element `<div></div>`, the HTMLOpenTagNode would have the HTMLCloseTagNode in its
+   * taggedPairs (and vice versa). This is a list because an open tag node might have multiple close
+   * tag nodes (and vice versa) depending on control flow.
+   */
+  private final List<HtmlTagNode> taggedPairs = new ArrayList<>();
 
   protected HtmlTagNode(int id, TagName tagName, SourceLocation sourceLocation) {
     super(id, sourceLocation);
@@ -52,6 +63,14 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
 
   public final TagName getTagName() {
     return tagName;
+  }
+
+  public List<HtmlTagNode> getTaggedPairs() {
+    return this.taggedPairs;
+  }
+
+  public void addTagPair(HtmlTagNode node) {
+    this.taggedPairs.add(node);
   }
 
   /** Returns an attribute with the given static name if it is a direct child. */
