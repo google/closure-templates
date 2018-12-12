@@ -716,20 +716,7 @@ public final class SoyFileSet {
     //    doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For example,
     //    trivial print nodes are evaluated, which can remove globals from the tree, but the
-    //    generator requires data about globals to generate accurate proto descriptors.  Also, the
-    //    ChangeCallsToPassAllData pass will change the params of templates.
-    ParseResult result =
-        parse(
-            passManagerBuilder().allowUnknownGlobals().optimize(false),
-            typeRegistry,
-            new PluginResolver(
-                // TODO(lukes): make it required, for now, warn
-                // we allow undefined plugins since they typically aren't provided :(
-                PluginResolver.Mode.ALLOW_UNDEFINED_AND_WARN,
-                printDirectives,
-                soyFunctionMap,
-                soySourceFunctionMap,
-                errorReporter));
+    ParseResult result = parse(passManagerBuilder().allowUnknownGlobals().optimize(false));
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
