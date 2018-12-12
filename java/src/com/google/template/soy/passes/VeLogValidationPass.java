@@ -40,6 +40,7 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.VeType;
 
 /**
@@ -87,12 +88,21 @@ final class VeLogValidationPass extends CompilerFilePass {
           "The logging function ''{0}'' can only be evaluated in a print command with no print "
               + "directives.");
 
+  private static final SoyErrorKind UNKNOWN_PROTO =
+      SoyErrorKind.of("Unknown proto type ''{0}'' configured for use with this VE.");
+  private static final SoyErrorKind BAD_DATA_TYPE =
+      SoyErrorKind.of(
+          "Illegal VE metadata type ''{0}'' for this VE. The metadata must be a proto.");
+
   private final ErrorReporter reporter;
   private final VeLogValidator veLogValidator;
+  private final SoyTypeRegistry typeRegistry;
 
-  VeLogValidationPass(ErrorReporter reporter, VeLogValidator veLogValidator) {
+  VeLogValidationPass(
+      ErrorReporter reporter, VeLogValidator veLogValidator, SoyTypeRegistry typeRegistry) {
     this.reporter = reporter;
     this.veLogValidator = veLogValidator;
+    this.typeRegistry = typeRegistry;
   }
 
   @Override
@@ -231,9 +241,16 @@ final class VeLogValidationPass extends CompilerFilePass {
               dataExpr.toSourceString(),
               veExpr.toSourceString(),
               veType);
-        } else if (!dataType.equals(veType.getDataType().get())) {
-          reporter.report(
-              dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
+        } else {
+          SoyType veDataType = typeRegistry.getType(veType.getDataType().get());
+          if (veDataType == null) {
+            reporter.report(veExpr.getSourceLocation(), UNKNOWN_PROTO, veType.getDataType().get());
+          } else if (veDataType.getKind() != Kind.PROTO) {
+            reporter.report(veExpr.getSourceLocation(), BAD_DATA_TYPE, veDataType);
+          } else if (!dataType.equals(veDataType)) {
+            reporter.report(
+                dataExpr.getSourceLocation(), WRONG_TYPE, veType.getDataType().get(), dataType);
+          }
         }
       }
     }

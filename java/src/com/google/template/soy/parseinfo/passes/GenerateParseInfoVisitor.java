@@ -69,6 +69,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.VeType;
 import java.util.Collection;
@@ -212,6 +213,8 @@ public final class GenerateParseInfoVisitor
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
 
+  private final SoyTypeRegistry typeRegistry;
+
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
   private final Map<String, String> convertedIdents = Maps.newHashMap();
 
@@ -229,9 +232,13 @@ public final class GenerateParseInfoVisitor
    *     "namespace", or "generic".
    */
   public GenerateParseInfoVisitor(
-      String javaPackage, String javaClassNameSource, TemplateRegistry registry) {
+      String javaPackage,
+      String javaClassNameSource,
+      TemplateRegistry registry,
+      SoyTypeRegistry typeRegistry) {
     this.javaPackage = javaPackage;
     this.templateRegistry = registry;
+    this.typeRegistry = typeRegistry;
     this.transitiveIjParamsCalculator = new TransitiveIjParamsCalculator(templateRegistry);
     switch (javaClassNameSource) {
       case "filename":
@@ -761,7 +768,7 @@ public final class GenerateParseInfoVisitor
    * @param type The type to search.
    * @param protoTypes Output set.
    */
-  private static void findProtoTypesRecurse(SoyType type, SortedSet<String> protoTypes) {
+  private void findProtoTypesRecurse(SoyType type, SortedSet<String> protoTypes) {
     switch (type.getKind()) {
       case PROTO:
         protoTypes.add(((SoyProtoType) type).getDescriptorExpression());
@@ -806,8 +813,9 @@ public final class GenerateParseInfoVisitor
           VeType veType = (VeType) type;
           if (veType.getDataType().isPresent()) {
             // Don't grab the proto type for ve<null>
-            if (veType.getDataType().get().getKind() == Kind.PROTO) {
-              protoTypes.add(((SoyProtoType) veType.getDataType().get()).getDescriptorExpression());
+            SoyType soyType = typeRegistry.getType(veType.getDataType().get());
+            if (soyType.getKind() == Kind.PROTO) {
+              protoTypes.add(((SoyProtoType) soyType).getDescriptorExpression());
             }
           }
           break;

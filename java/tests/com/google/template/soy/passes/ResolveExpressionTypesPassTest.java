@@ -847,12 +847,11 @@ public final class ResolveExpressionTypesPassTest {
 
     assertThat(veNodes.get(0).getId()).isEqualTo(1);
     assertThat(veNodes.get(0).getName().identifier()).isEqualTo("VeData");
-    assertThat(veNodes.get(0).getType())
-        .isEqualTo(VeType.of(typeRegistry.getType("example.ExampleExtendable")));
+    assertThat(veNodes.get(0).getType()).isEqualTo(VeType.of("example.ExampleExtendable"));
 
     assertThat(veNodes.get(1).getId()).isEqualTo(2);
     assertThat(veNodes.get(1).getName().identifier()).isEqualTo("VeNoData");
-    assertThat(veNodes.get(1).getType()).isEqualTo(VeType.of(NullType.getInstance()));
+    assertThat(veNodes.get(1).getType()).isEqualTo(VeType.of("null"));
   }
 
   @Test

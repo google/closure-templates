@@ -312,7 +312,7 @@ public class SoyTypeRegistry {
    * Factory function which creates and returns a {@code ve} type with the given {@code dataType}.
    * This folds identical ve types together.
    */
-  public VeType getOrCreateVeType(SoyType dataType) {
+  public VeType getOrCreateVeType(String dataType) {
     return veTypes.intern(VeType.of(dataType));
   }
 

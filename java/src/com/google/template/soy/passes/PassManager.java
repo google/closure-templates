@@ -191,7 +191,7 @@ public final class PassManager {
       singleFilePassesBuilder.add(
           new ResolveExpressionTypesPass(registry, errorReporter, veLogValidator));
       // needs to run after both resolve types and htmlrewrite pass
-      singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, veLogValidator));
+      singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, veLogValidator, registry));
     }
     singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass(errorReporter));
     if (!allowUnknownGlobals) {

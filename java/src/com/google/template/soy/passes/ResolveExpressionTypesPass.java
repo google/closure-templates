@@ -233,11 +233,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The inferred type of this parameter is the same as the declared type, use the '':='' "
               + "syntax to use the inferred type.");
-  private static final SoyErrorKind VE_UNKNOWN_PROTO =
-      SoyErrorKind.of("Unknown proto type ''{0}'' configured for use with ''{1}'' VE.");
-  private static final SoyErrorKind VE_BAD_DATA_TYPE =
-      SoyErrorKind.of(
-          "Illegal VE metadata type ''{0}'' for ''{1}''. The metadata must be a proto.");
 
   private final ErrorReporter errorReporter;
   /** Type registry. */
@@ -1143,21 +1138,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyType type;
       if (config.isPresent()) {
         if (config.get().getProtoName().isPresent()) {
-          SoyType dataType = typeRegistry.getType(config.get().getProtoName().get());
-          if (dataType == null) {
-            errorReporter.report(
-                node.getName().location(),
-                VE_UNKNOWN_PROTO,
-                config.get().getProtoName().get(),
-                node.getName().identifier());
-            type = ErrorType.getInstance();
-          } else if (dataType.getKind() != Kind.PROTO) {
-            errorReporter.report(
-                node.getName().location(), VE_BAD_DATA_TYPE, dataType, node.getName().identifier());
-            type = ErrorType.getInstance();
-          } else {
-            type = typeRegistry.getOrCreateVeType(dataType);
-          }
+          type = typeRegistry.getOrCreateVeType(config.get().getProtoName().get());
         } else {
           type = VeType.NO_DATA;
         }

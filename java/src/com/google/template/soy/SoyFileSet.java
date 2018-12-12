@@ -724,7 +724,8 @@ public final class SoyFileSet {
 
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
-        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry).exec(soyTree);
+        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry, typeRegistry)
+            .exec(soyTree);
     throwIfErrorsPresent();
     reportWarnings();
     return parseInfo;

@@ -88,7 +88,7 @@ final class TypeNodeConverter {
           new GenericTypeInfo(1) {
             @Override
             SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateVeType(types.get(0));
+              return registry.getOrCreateVeType(types.get(0).toString());
             }
           });
 

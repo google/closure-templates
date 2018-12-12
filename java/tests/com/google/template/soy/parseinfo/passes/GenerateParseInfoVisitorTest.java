@@ -181,6 +181,15 @@ public final class GenerateParseInfoVisitorTest {
         .contains("com.google.template.soy.testing.Foo.InnerEnum.getDescriptor()");
   }
 
+  @Test
+  public void testFindsVe() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
+
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+  }
+
   private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
     return new SoyFileNode(
         0,
@@ -207,7 +216,7 @@ public final class GenerateParseInfoVisitorTest {
     TemplateRegistry registry = parseResult.registry();
 
     ImmutableMap<String, String> parseInfos =
-        new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry)
+        new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry, typeRegistry)
             .exec(parseResult.fileSet());
 
     assertThat(parseInfos).containsKey("NoPathSoyInfo.java");
