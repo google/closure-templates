@@ -18,7 +18,6 @@ package com.google.template.soy.parseinfo;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.Immutable;
 
 /**
@@ -62,16 +61,6 @@ public class SoyTemplateInfo {
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
     this.autoescapeMode = autoescapeMode;
-  }
-
-  /** @deprecated Invoke the other constructor instead. */
-  @Deprecated
-  protected SoyTemplateInfo(
-      String name,
-      ImmutableMap<String, ParamRequisiteness> paramMap,
-      ImmutableSortedSet<String> ignoredIjParams,
-      String autoescapeMode) {
-    this(name, paramMap, autoescapeMode);
   }
 
   /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
