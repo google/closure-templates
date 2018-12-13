@@ -50,6 +50,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
@@ -67,6 +68,8 @@ import javax.annotation.Nullable;
  * this one.
  */
 public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
+  private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
+      SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
       SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
   private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
@@ -166,7 +169,23 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
+      TagName openTag = node.getTagName();
+      // For static tag, check if it is a valid self-closing tag.
+      if (openTag.isStatic()) {
+        // Report errors for non-void tags that are self-closing.
+        // For void tags, we don't care if they are self-closing or not. But when we visit
+        // a HtmlCloseTagNode we will throw an error if it is a void tag.
+        // Ignore this check if we are currently in a foreign content (svg).
+        if (!openTag.isDefinitelyVoid() && node.isSelfClosing()) {
+          errorReporter.report(
+              node.getSourceLocation(), INVALID_SELF_CLOSING_TAG, openTag.getStaticTagName());
+          return;
+        }
+      }
+      // Push the node into open tag stack.
+      if (!node.isSelfClosing() && !openTag.isDefinitelyVoid()) {
+        htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
+      }
     }
 
     @Override

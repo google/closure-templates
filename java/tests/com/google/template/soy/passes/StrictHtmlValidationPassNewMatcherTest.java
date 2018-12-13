@@ -77,6 +77,39 @@ public final class StrictHtmlValidationPassNewMatcherTest {
   }
 
   @Test
+  public void testErrorForSelfClosingTag() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    SoyFileNode template = parseTemplateBody("<div/>\n");
+    StrictHtmlValidationPassNewMatcher matcherPass =
+        new StrictHtmlValidationPassNewMatcher(errorReporter);
+
+    matcherPass.run(template, new IncrementingIdGenerator());
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message())
+        .isEqualTo("'div' tag is not allowed to be self-closing.");
+  }
+
+  @Test
+  public void testSelfClosingTagNotInGraph() {
+    // Arrange: set up a simple template.
+    SoyFileNode template = parseTemplateBody(Joiner.on("\n").join("<div>", "</div>", "<input />"));
+    StrictHtmlValidationPassNewMatcher matcherPass =
+        new StrictHtmlValidationPassNewMatcher(ErrorReporter.exploding());
+
+    // Act: execute the graph builder
+    matcherPass.run(template, new IncrementingIdGenerator());
+    Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
+
+    // Assert.
+    HtmlMatcherGraphNode node = matcherGraph.get().getRootNode().get();
+    assertThat(
+            node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)
+                .get()
+                .getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
+        .isAbsent();
+  }
+
+  @Test
   public void testTextOnlyIfBranch() {
     // Arrange: set up a template with a text-only {if $cond1} branch.
     SoyFileNode template =
