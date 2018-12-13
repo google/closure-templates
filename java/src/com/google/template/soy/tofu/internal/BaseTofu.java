@@ -25,11 +25,14 @@ import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -39,14 +42,23 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -71,7 +83,6 @@ public final class BaseTofu implements SoyTofu {
   public BaseTofu(
       SoyScopedData.Enterable apiCallScope,
       SoyFileSetNode fileSet,
-      ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap,
       Map<String, Supplier<Object>> pluginInstances) {
     this.apiCallScope = apiCallScope;
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
@@ -96,8 +107,74 @@ public final class BaseTofu implements SoyTofu {
     }
     this.basicTemplates = basicTemplates.build();
     this.delTemplates = delTemplates.build();
-    this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
+    this.templateToIjParamsInfoMap =
+        buildTemplateToIjParamsInfoMap(this.basicTemplates, this.delTemplates);
     this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
+  }
+
+  private ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
+      ImmutableMap<String, TemplateNode> basicTemplates,
+      DelTemplateSelector<TemplateDelegateNode> delTemplates) {
+    Map<String, ImmutableSortedSet<String>> templateNameToIjs = new LinkedHashMap<>();
+    Set<TemplateNode> soFar = Sets.newIdentityHashSet();
+    ArrayDeque<TemplateNode> toVisit = new ArrayDeque<>();
+    Set<String> ijsForTemplate = new HashSet<>();
+    // this loop will be faster if we execute in a reverse topological order. But it probably
+    // doesn't mattter too much.
+    for (TemplateNode initialTemplate :
+        Iterables.concat(
+            basicTemplates.values(), delTemplates.delTemplateNameToValues().values())) {
+      toVisit.add(initialTemplate);
+      TemplateNode currentTemplate;
+      while ((currentTemplate = toVisit.poll()) != null) {
+        if (!soFar.add(currentTemplate)) {
+          continue; // avoid revisiting recursion
+        }
+        ImmutableSortedSet<String> alreadyCalculated =
+            templateNameToIjs.get(currentTemplate.getTemplateName());
+        if (alreadyCalculated != null) {
+          ijsForTemplate.addAll(alreadyCalculated);
+          continue;
+        }
+        // otherwise we need to add these ijs and then push all if its direct callees
+        collectIjParams(currentTemplate, ijsForTemplate);
+        for (CallNode call : SoyTreeUtils.getAllNodesOfType(currentTemplate, CallNode.class)) {
+          if (call instanceof CallBasicNode) {
+            TemplateNode callee = basicTemplates.get(((CallBasicNode) call).getCalleeName());
+            if (callee != null) {
+              toVisit.add(callee);
+            }
+          } else if (call instanceof CallDelegateNode) {
+            toVisit.addAll(
+                delTemplates
+                    .delTemplateNameToValues()
+                    .get(((CallDelegateNode) call).getDelCalleeName()));
+          } else {
+            throw new AssertionError("Unexpected CallNode: " + call);
+          }
+        }
+      }
+      // when we exit the loop we have calculated everything for this template.
+      templateNameToIjs.put(
+          initialTemplate.getTemplateName(), ImmutableSortedSet.copyOf(ijsForTemplate));
+      // reset datastructures for next iteration
+      ijsForTemplate.clear();
+      toVisit.clear();
+      soFar.clear();
+    }
+
+    return ImmutableMap.copyOf(templateNameToIjs);
+  }
+
+  private static void collectIjParams(TemplateNode template, Set<String> into) {
+    for (TemplateParam param : template.getInjectedParams()) {
+      into.add(param.name());
+    }
+    for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
+      if (varRef.isDollarSignIjParameter()) {
+        into.add(varRef.getName());
+      }
+    }
   }
 
   /**
