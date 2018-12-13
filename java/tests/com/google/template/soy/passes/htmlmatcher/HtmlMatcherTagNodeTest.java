@@ -71,7 +71,7 @@ public final class HtmlMatcherTagNodeTest {
   }
 
   @Test
-  public void testGetNodeForEdgeKind_defaultIsNull() {
+  public void testGetNodeForEdgeKind_defaultIsAbsent() {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
@@ -79,13 +79,11 @@ public final class HtmlMatcherTagNodeTest {
   }
 
   @Test
-  public void testGetNodeForEdgeKThrows_falseEdge() {
+  public void testGetNodeForEdgeKind_falseEdgeAbsent() {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
-    assertThrows(
-        IllegalStateException.class,
-        () -> testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE));
+    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
   }
 
   @Test

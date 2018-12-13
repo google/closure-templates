@@ -52,10 +52,20 @@ public final class HtmlMatcherAccumulatorNodeTest {
   }
 
   @Test
-  public void testGetNodeForEdgeKindDefaultDoesNotExist() {
+  public void testGetNodeForEdgeKind_defaultIsAbsent() {
     HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
 
     assertThat(accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+  }
+
+  @Test
+  public void testGetNodeForEdgeKind_falseEdgeAbsent() {
+    HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
+    HtmlMatcherAccumulatorNode nextNode = new HtmlMatcherAccumulatorNode();
+
+    accNode.linkActiveEdgeToNode(nextNode);
+
+    assertThat(accNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
   }
 
   @Test

@@ -40,8 +40,10 @@ public final class HtmlMatcherAccumulatorNode extends HtmlMatcherGraphNode {
 
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
-    checkState(edgeKind == EdgeKind.TRUE_EDGE, "Accumulator nodes only have a true branch.");
-    return Optional.fromNullable(nextNode);
+    if (edgeKind == EdgeKind.TRUE_EDGE) {
+      return Optional.fromNullable(nextNode);
+    }
+    return Optional.absent();
   }
 
   @Override

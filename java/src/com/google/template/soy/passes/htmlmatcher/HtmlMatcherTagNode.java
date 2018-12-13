@@ -73,8 +73,10 @@ public class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
 
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
-    checkState(edgeKind == EdgeKind.TRUE_EDGE, "HTML Tag nodes only have a true branch.");
-    return Optional.fromNullable(nextNode);
+    if (edgeKind == EdgeKind.TRUE_EDGE) {
+      return Optional.fromNullable(nextNode);
+    }
+    return Optional.absent();
   }
 
   @Override
