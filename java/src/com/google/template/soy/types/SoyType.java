@@ -19,6 +19,8 @@ package com.google.template.soy.types;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Interface for all classes that describe a data type in Soy. These types are used to determine
@@ -139,6 +141,11 @@ public abstract class SoyType {
     }
   }
 
+  // memoize the proto version.  SoyTypes are immutable so this is safe/correct and types are likely
+  // to be serialized many times (think, 'string'), so we can save some work by not calculating it
+  // repeatedly.
+  @LazyInit private SoyTypeP protoDual;
+
   // restrict subtypes to this package
   SoyType() {}
 
@@ -182,4 +189,19 @@ public abstract class SoyType {
   /** The type represented in a fully parseable format. */
   @Override
   public abstract String toString();
+
+  /** The type represented in proto format. For template metadata protos. */
+  public final SoyTypeP toProto() {
+    SoyTypeP local = protoDual;
+    if (local == null) {
+      SoyTypeP.Builder builder = SoyTypeP.newBuilder();
+      doToProto(builder);
+      local = builder.build();
+      protoDual = local;
+    }
+    return local;
+  }
+
+  @ForOverride
+  abstract void doToProto(SoyTypeP.Builder builder);
 }

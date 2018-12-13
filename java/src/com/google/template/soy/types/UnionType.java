@@ -24,6 +24,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -84,13 +85,24 @@ public final class UnionType extends SoyType {
    *     not be a UnionType.
    */
   public static SoyType of(Collection<SoyType> members) {
-    ImmutableSet<SoyType> flattenedMembers = flatten(members);
+    // sort and flatten the set of types
+    ImmutableSortedSet.Builder<SoyType> builder = ImmutableSortedSet.orderedBy(MEMBER_ORDER);
+    for (SoyType type : members) {
+      // simplify unions containing these types
+      if (type.getKind() == Kind.UNKNOWN
+          || type.getKind() == Kind.ERROR
+          || type.getKind() == Kind.ANY) {
+        return type;
+      }
+      if (type.getKind() == Kind.UNION) {
+        builder.addAll(((UnionType) type).members);
+      } else {
+        builder.add(type);
+      }
+    }
+    ImmutableSet<SoyType> flattenedMembers = builder.build();
     if (flattenedMembers.size() == 1) {
       return Iterables.getOnlyElement(flattenedMembers);
-    }
-    // unions with the error type should just resolve to the error type to simplify analysis.
-    if (flattenedMembers.contains(ErrorType.getInstance())) {
-      return ErrorType.getInstance();
     }
     return new UnionType(flattenedMembers);
   }
@@ -136,6 +148,14 @@ public final class UnionType extends SoyType {
   }
 
   @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    SoyTypeP.UnionTypeP.Builder unionBuilder = builder.getUnionBuilder();
+    for (SoyType member : members) {
+      unionBuilder.addMember(member.toProto());
+    }
+  }
+
+  @Override
   public boolean equals(Object other) {
     return other != null
         && other.getClass() == this.getClass()
@@ -145,28 +165,5 @@ public final class UnionType extends SoyType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), members);
-  }
-
-  /**
-   * Create a set containing all of the types contained in the input collection. If any of the
-   * members of the input collection are unions, add the individual members to the result union,
-   * thus "flattening" the union.
-   *
-   * @param members The input types.
-   * @return The set of all types in the input collection.
-   */
-  private static ImmutableSet<SoyType> flatten(Collection<SoyType> members) {
-    ImmutableSet.Builder<SoyType> builder = ImmutableSet.builder();
-    for (SoyType type : members) {
-      if (type.getKind() == Kind.UNKNOWN) {
-        return ImmutableSet.of(type);
-      }
-      if (type.getKind() == Kind.UNION) {
-        builder.addAll(((UnionType) type).members);
-      } else {
-        builder.add(type);
-      }
-    }
-    return builder.build();
   }
 }

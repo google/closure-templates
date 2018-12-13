@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.soytree.SoyTypeP;
+
 /** A placeholder for errors during parsing. */
 public final class ErrorType extends SoyType {
 
@@ -40,5 +42,10 @@ public final class ErrorType extends SoyType {
   @Override
   public String toString() {
     return "$error$";
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    throw new UnsupportedOperationException();
   }
 }

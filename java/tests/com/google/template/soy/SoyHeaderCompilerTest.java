@@ -25,6 +25,7 @@ import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SanitizedContentKindP;
 import com.google.template.soy.soytree.SoyFileP;
+import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadataP;
 import java.io.File;
@@ -74,7 +75,11 @@ public class SoyHeaderCompilerTest {
     assertThat(template.getContentKind()).isEqualTo(SanitizedContentKindP.HTML);
     assertThat(template.getParameterList())
         .containsExactly(
-            ParameterP.newBuilder().setName("p").setType("string").setRequired(true).build());
+            ParameterP.newBuilder()
+                .setName("p")
+                .setType(SoyTypeP.newBuilder().setPrimitive(SoyTypeP.PrimitiveTypeP.STRING))
+                .setRequired(true)
+                .build());
     assertThat(template.getDataAllCallSituationList())
         .containsExactly(DataAllCallSituationP.newBuilder().setTemplateName(".a").build());
   }

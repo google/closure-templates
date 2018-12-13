@@ -16,12 +16,13 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.soytree.SoyTypeP;
+
 /**
  * Soy boolean type.
  *
  */
 public final class BoolType extends PrimitiveType {
-
   private static final BoolType INSTANCE = new BoolType();
 
   // Not constructible - use getInstance().
@@ -35,6 +36,11 @@ public final class BoolType extends PrimitiveType {
   @Override
   public String toString() {
     return "bool";
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.BOOL);
   }
 
   /** Return the single instance of this type. */

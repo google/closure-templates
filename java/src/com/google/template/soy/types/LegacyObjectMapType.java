@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Objects;
 
 /**
@@ -88,6 +89,11 @@ public final class LegacyObjectMapType extends AbstractMapType {
   @Override
   public String toString() {
     return "legacy_object_map<" + keyType + "," + valueType + ">";
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.getLegacyObjectMapBuilder().setKey(keyType.toProto()).setValue(valueType.toProto());
   }
 
   @Override

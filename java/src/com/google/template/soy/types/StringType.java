@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.soytree.SoyTypeP;
+
 /**
  * Soy string type.
  *
@@ -35,6 +37,11 @@ public final class StringType extends PrimitiveType {
   @Override
   public String toString() {
     return "string";
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.STRING);
   }
 
   /** Return the single instance of this type. */

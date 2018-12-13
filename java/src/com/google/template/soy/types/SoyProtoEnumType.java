@@ -21,6 +21,7 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.soytree.SoyTypeP;
 
 /** A {@link SoyType} implementation which describes a protocol buffer enum type. */
 public final class SoyProtoEnumType extends SoyType {
@@ -76,5 +77,10 @@ public final class SoyProtoEnumType extends SoyType {
   @Override
   public String toString() {
     return getName();
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.setProtoEnum(getName());
   }
 }
