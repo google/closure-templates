@@ -37,60 +37,14 @@ message SourceLocationP {
   int32 end_line = 4;
 }
 
-// A soy type
-message SoyTypeP {
-  // a simple type
-  enum PrimitiveTypeP {
-    UNKNOWN_PRIMITIVE_TYPE = 0;
-    ANY = 1;
-    UNKNOWN = 2;
-    NULL = 3;
-    BOOL = 4;
-    INT = 5;
-    FLOAT = 6;
-    STRING = 7;
-    HTML = 8;
-    ATTRIBUTES = 9;
-    JS = 10;
-    CSS = 11;
-    URI = 12;
-    TRUSTED_RESOURCE_URI = 13;
-    VE_DATA = 14;
-  }
-  message RecordTypeP {
-    map<string, SoyTypeP> field = 1;
-  }
-  message LegacyObjectMapTypeP {
-    SoyTypeP key = 1;
-    SoyTypeP value = 2;
-  }
-  message MapTypeP {
-    SoyTypeP key = 1;
-    SoyTypeP value = 2;
-  }
-  message UnionTypeP {
-    repeated SoyTypeP member = 1;
-  }
-  // discriminated union of the different type categories
-  oneof TypeKind {
-    PrimitiveTypeP primitive = 1;
-    SoyTypeP list_element = 2;
-    RecordTypeP record = 3;
-    LegacyObjectMapTypeP legacy_object_map = 4;
-    MapTypeP map = 5;
-    string proto = 6;
-    string proto_enum = 7;
-    UnionTypeP union = 8;
-    string ve = 9;
-  }
-}
-
 // A single declared template parameter
 message ParameterP {
   // The parameter name
   string name = 1;
-  // The type of the parameter.
-  SoyTypeP type = 2;
+  // The type, in soy type syntax
+  // TODO(lukes): consider representing the type tree structure (i.e. a parallel
+  // of TypeNode) explicitly, this may make parsing faster.
+  string type = 2;
   // Whether or not the parameter is required.
   bool required = 3;
 }

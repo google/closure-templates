@@ -26,7 +26,6 @@ import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -281,11 +280,6 @@ public final class SoyProtoType extends SoyType {
   @Override
   public String toString() {
     return typeDescriptor.getFullName();
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setProto(typeDescriptor.getFullName());
   }
 
   /**

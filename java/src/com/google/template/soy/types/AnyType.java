@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
 /**
  * The "any" type is the supertype of all other types. The only operations allowed on this type are
  * explicit coercions to other types (i.e. downcasting), or operations that implicitly coerce to
@@ -44,11 +42,6 @@ public final class AnyType extends PrimitiveType {
   @Override
   public String toString() {
     return "any";
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.ANY);
   }
 
   /** Return the single instance of this type. */

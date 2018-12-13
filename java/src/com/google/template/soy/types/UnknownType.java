@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
 /**
  * The "unknown" type is used to indicate that the type was unspecified or could not be inferred.
  * Variables with unknown type are considered to be dynamically-typed, and all operations are
@@ -54,10 +52,6 @@ public final class UnknownType extends PrimitiveType {
     return "?";
   }
 
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.UNKNOWN);
-  }
   /** Return the single instance of this type. */
   public static UnknownType getInstance() {
     return INSTANCE;

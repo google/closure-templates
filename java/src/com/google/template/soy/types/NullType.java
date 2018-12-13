@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
 /**
  * The "null" type.
  *
@@ -37,11 +35,6 @@ public final class NullType extends PrimitiveType {
   @Override
   public String toString() {
     return "null";
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.NULL);
   }
 
   /** Return the single instance of this type. */

@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
 /**
  * Soy floating-point type.
  *
@@ -37,11 +35,6 @@ public final class FloatType extends PrimitiveType {
   @Override
   public String toString() {
     return "float";
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.FLOAT);
   }
 
   /** Return the single instance of this type. */

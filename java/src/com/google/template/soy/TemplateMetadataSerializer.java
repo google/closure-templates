@@ -21,12 +21,12 @@ import com.google.common.base.Converter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.SourceLocationP;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -47,26 +46,8 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.VisibilityP;
-import com.google.template.soy.types.AnyType;
-import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ErrorType;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.NullType;
-import com.google.template.soy.types.SanitizedType.AttributesType;
-import com.google.template.soy.types.SanitizedType.HtmlType;
-import com.google.template.soy.types.SanitizedType.JsType;
-import com.google.template.soy.types.SanitizedType.StyleType;
-import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
-import com.google.template.soy.types.SanitizedType.UriType;
-import com.google.template.soy.types.SoyProtoEnumType;
-import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.VeDataType;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -212,130 +193,18 @@ public final class TemplateMetadataSerializer {
     ImmutableList.Builder<Parameter> builder =
         ImmutableList.builderWithExpectedSize(parameterList.size());
     for (ParameterP parameter : parameterList) {
-      builder.add(
-          Parameter.builder()
-              .setName(parameter.getName())
-              .setType(fromProto(parameter.getType(), typeRegistry, filePath, errorReporter))
-              .setRequired(parameter.getRequired())
-              .build());
+      SoyType type =
+          SoyFileParser.parseType(parameter.getType(), typeRegistry, filePath, errorReporter);
+      if (type != null) {
+        builder.add(
+            Parameter.builder()
+                .setName(parameter.getName())
+                .setType(type)
+                .setRequired(parameter.getRequired())
+                .build());
+      }
     }
     return builder.build();
-  }
-
-  private static SoyType fromProto(
-      SoyTypeP proto, SoyTypeRegistry typeRegistry, String filePath, ErrorReporter errorReporter) {
-    switch (proto.getTypeKindCase()) {
-      case PRIMITIVE:
-        switch (proto.getPrimitive()) {
-          case ANY:
-            return AnyType.getInstance();
-          case UNKNOWN:
-            return UnknownType.getInstance();
-          case INT:
-            return IntType.getInstance();
-          case NULL:
-            return NullType.getInstance();
-          case BOOL:
-            return BoolType.getInstance();
-          case FLOAT:
-            return FloatType.getInstance();
-          case STRING:
-            return StringType.getInstance();
-          case HTML:
-            return HtmlType.getInstance();
-          case ATTRIBUTES:
-            return AttributesType.getInstance();
-          case JS:
-            return JsType.getInstance();
-          case CSS:
-            return StyleType.getInstance();
-          case URI:
-            return UriType.getInstance();
-          case TRUSTED_RESOURCE_URI:
-            return TrustedResourceUriType.getInstance();
-          case VE_DATA:
-            return VeDataType.getInstance();
-          case UNRECOGNIZED:
-          case UNKNOWN_PRIMITIVE_TYPE:
-            // fall-through
-        }
-        throw new AssertionError("Unknown primitive: " + proto.getPrimitive());
-      case LIST_ELEMENT:
-        return typeRegistry.getOrCreateListType(
-            fromProto(proto.getListElement(), typeRegistry, filePath, errorReporter));
-
-      case LEGACY_OBJECT_MAP:
-        return typeRegistry.getOrCreateLegacyObjectMapType(
-            fromProto(proto.getLegacyObjectMap().getKey(), typeRegistry, filePath, errorReporter),
-            fromProto(
-                proto.getLegacyObjectMap().getValue(), typeRegistry, filePath, errorReporter));
-      case MAP:
-        return typeRegistry.getOrCreateMapType(
-            fromProto(proto.getMap().getKey(), typeRegistry, filePath, errorReporter),
-            fromProto(proto.getMap().getValue(), typeRegistry, filePath, errorReporter));
-      case PROTO:
-        {
-          SoyType type = typeRegistry.getType(proto.getProto());
-          if (type == null) {
-            errorReporter.report(
-                new SourceLocation(filePath),
-                SoyErrorKind.of("Unable to find proto: {0} referenced by dependency"),
-                proto.getProto());
-            return ErrorType.getInstance();
-          }
-          if (type instanceof SoyProtoType) {
-            return type;
-          }
-          errorReporter.report(
-              new SourceLocation(filePath),
-              SoyErrorKind.of("Expected {0} to be a proto but it was a {1}"),
-              proto.getProto(),
-              type.getKind());
-          return ErrorType.getInstance();
-        }
-      case PROTO_ENUM:
-        {
-          SoyType type = typeRegistry.getType(proto.getProtoEnum());
-          if (type == null) {
-            errorReporter.report(
-                new SourceLocation(filePath),
-                SoyErrorKind.of("Unable to find proto enum: {0} referenced by dependency"),
-                proto.getProtoEnum());
-            return ErrorType.getInstance();
-          }
-          if (type instanceof SoyProtoEnumType) {
-            return type;
-          }
-          errorReporter.report(
-              new SourceLocation(filePath),
-              SoyErrorKind.of("Expected {0} to be a proto but it was a {1}"),
-              proto.getProtoEnum(),
-              type.getKind());
-          return ErrorType.getInstance();
-        }
-      case RECORD:
-        {
-          ImmutableSortedMap.Builder<String, SoyType> members = ImmutableSortedMap.naturalOrder();
-          for (Map.Entry<String, SoyTypeP> entry : proto.getRecord().getFieldMap().entrySet()) {
-            members.put(
-                entry.getKey(), fromProto(entry.getValue(), typeRegistry, filePath, errorReporter));
-          }
-          return typeRegistry.getOrCreateRecordType(members.build());
-        }
-      case UNION:
-        {
-          List<SoyType> members = new ArrayList<>(proto.getUnion().getMemberCount());
-          for (SoyTypeP member : proto.getUnion().getMemberList()) {
-            members.add(fromProto(member, typeRegistry, filePath, errorReporter));
-          }
-          return typeRegistry.getOrCreateUnionType(members);
-        }
-      case VE:
-        return typeRegistry.getOrCreateVeType(proto.getVe());
-      case TYPEKIND_NOT_SET:
-        // fall-through
-    }
-    throw new AssertionError("unhandled typeKind: " + proto.getTypeKindCase());
   }
 
   private static ImmutableList<ParameterP> protosFromParameters(List<Parameter> parameterList) {
@@ -345,7 +214,7 @@ public final class TemplateMetadataSerializer {
       builder.add(
           ParameterP.newBuilder()
               .setName(parameter.getName())
-              .setType(parameter.getType().toProto())
+              .setType(parameter.getType().toString())
               .setRequired(parameter.isRequired())
               .build());
     }

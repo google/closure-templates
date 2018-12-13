@@ -15,8 +15,6 @@
  */
 package com.google.template.soy.types;
 
-import com.google.template.soy.soytree.SoyTypeP;
-
 /** Soy's ve_data type, for holding a ve and its associated data. */
 public final class VeDataType extends PrimitiveType {
 
@@ -36,10 +34,5 @@ public final class VeDataType extends PrimitiveType {
   @Override
   public String toString() {
     return "ve_data";
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.VE_DATA);
   }
 }

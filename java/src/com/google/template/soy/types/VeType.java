@@ -17,7 +17,6 @@ package com.google.template.soy.types;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Objects;
 
 /** Soy's ve type, for tracking VE names and their associated data type. */
@@ -58,11 +57,6 @@ public final class VeType extends SoyType {
     return "ve<"
         + (dataType.isPresent() ? dataType.get() : NullType.getInstance().toString())
         + ">";
-  }
-
-  @Override
-  void doToProto(SoyTypeP.Builder builder) {
-    builder.setVe(dataType.or("null"));
   }
 
   @Override
