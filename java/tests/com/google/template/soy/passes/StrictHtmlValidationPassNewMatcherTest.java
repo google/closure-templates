@@ -545,6 +545,52 @@ public final class StrictHtmlValidationPassNewMatcherTest {
   }
 
   @Test
+  public void testSwitchCaseWithMultipleExpressions() {
+    // Arrange: set up the template under test.
+    SoyFileNode template =
+        parseTemplateBody(
+            Joiner.on("\n")
+                .join(
+                    "{@param listCond: int}",
+                    "{switch $listCond}",
+                    "  {case 1, 2}<li>List 1",
+                    "{/switch}",
+                    "</li>"));
+    StrictHtmlValidationPassNewMatcher matcherPass =
+        new StrictHtmlValidationPassNewMatcher(ErrorReporter.exploding());
+
+    // Act: execute the graph builder.
+    matcherPass.run(template, new IncrementingIdGenerator());
+    Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
+
+    // Assert: follow the graph and validate its structure.
+
+    // The root node should be {case 1}.
+    HtmlMatcherGraphNode switchCaseNode1 = matcherGraph.get().getRootNode().get();
+    assertThatSwitchCaseCommandEqualTo(switchCaseNode1, "1, 2");
+
+    // Follow the true branch of {case 1}.
+    HtmlMatcherGraphNode nextNode = switchCaseNode1.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "li");
+
+    // The next code should be the accumulator node. This terminates the {case 1} branch.
+    HtmlMatcherGraphNode accNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(accNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
+
+    // Follow the false branch. This should lead to the {case 2} node.
+    HtmlMatcherGraphNode switchCaseNode2 =
+        switchCaseNode1.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
+    assertThatSwitchCaseCommandEqualTo(switchCaseNode2, "1, 2");
+
+    // Follow the true branch of {case 2}.
+    nextNode = switchCaseNode2.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    TestUtils.assertNodeIsOpenTagWithName(nextNode, "li");
+
+    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    assertThat(nextNode).isEqualTo(accNode);
+  }
+
+  @Test
   public void testSwitchCaseDefault() {
     // Arrange: set up the template under test.
     SoyFileNode template =

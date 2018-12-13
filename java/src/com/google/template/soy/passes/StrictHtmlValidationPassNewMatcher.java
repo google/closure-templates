@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherConditionNode;
@@ -202,7 +203,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitIfCondNode(IfCondNode node) {
-      HtmlMatcherConditionNode conditionNode = enterConditionBranch(node);
+      HtmlMatcherConditionNode conditionNode = enterConditionBranch(node.getExpr(), node);
       visitChildren(node);
       exitConditionBranch(conditionNode);
     }
@@ -216,9 +217,11 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitSwitchCaseNode(SwitchCaseNode node) {
-      HtmlMatcherConditionNode conditionNode = enterConditionBranch(node);
-      visitChildren(node);
-      exitConditionBranch(conditionNode);
+      for (ExprNode expr : node.getExprList()) {
+        HtmlMatcherConditionNode conditionNode = enterConditionBranch(expr, node);
+        visitChildren(node);
+        exitConditionBranch(conditionNode);
+      }
     }
 
     @Override
@@ -291,8 +294,8 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       htmlMatcherGraph.addNode(accNode);
     }
 
-    private HtmlMatcherConditionNode enterConditionBranch(SoyNode node) {
-      HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(node);
+    private HtmlMatcherConditionNode enterConditionBranch(ExprNode expr, SoyNode node) {
+      HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(node, expr);
       htmlMatcherGraph.addNode(conditionNode);
       htmlMatcherGraph.saveCursor();
       conditionNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);

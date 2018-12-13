@@ -19,14 +19,14 @@ package com.google.template.soy.passes.htmlmatcher;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
-import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SwitchCaseNode;
 import javax.annotation.Nullable;
 
 public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
-  private final SoyNode conditionNode;
+  private final SoyNode soyNode;
 
   private EdgeKind activeEdge = EdgeKind.TRUE_EDGE;
 
@@ -34,17 +34,17 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
 
-  public HtmlMatcherConditionNode(SoyNode conditionNode) {
-    checkState(
-        conditionNode instanceof IfCondNode || conditionNode instanceof SwitchCaseNode,
-        "HtmlMatcherCondition nodes must be constructed with either an "
-            + "IfCondNode or a SwitchCaseNode.");
-    this.conditionNode = conditionNode;
+  public HtmlMatcherConditionNode(SoyNode soyNode, ExprNode expression) {
+    this.soyNode = soyNode;
+  }
+
+  public HtmlMatcherConditionNode(SoyNode soyNode) {
+    this.soyNode = soyNode;
   }
 
   @Override
   public Optional<SoyNode> getSoyNode() {
-    return Optional.of(conditionNode);
+    return Optional.of(soyNode);
   }
 
   @Override
