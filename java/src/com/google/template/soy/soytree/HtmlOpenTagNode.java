@@ -36,8 +36,12 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   private final boolean selfClosing;
 
   public HtmlOpenTagNode(
-      int id, TagName tagName, SourceLocation sourceLocation, boolean selfClosing) {
-    super(id, tagName, sourceLocation);
+      int id,
+      TagName tagName,
+      SourceLocation sourceLocation,
+      boolean selfClosing,
+      TagExistence tagExistence) {
+    super(id, tagName, sourceLocation, tagExistence);
     this.selfClosing = selfClosing;
   }
 

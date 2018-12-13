@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
@@ -2354,9 +2355,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
           errorReporter.report(
               endPoint.asLocation(filePath).offsetStartCol(-1), SELF_CLOSING_CLOSE_TAG);
         }
-        replacement = new HtmlCloseTagNode(nodeIdGen.genId(), tagName, sourceLocation);
+        replacement =
+            new HtmlCloseTagNode(
+                nodeIdGen.genId(), tagName, sourceLocation, TagExistence.IN_TEMPLATE);
       } else {
-        replacement = new HtmlOpenTagNode(nodeIdGen.genId(), tagName, sourceLocation, selfClosing);
+        replacement =
+            new HtmlOpenTagNode(
+                nodeIdGen.genId(), tagName, sourceLocation, selfClosing, TagExistence.IN_TEMPLATE);
       }
       // Depending on the tag name, we may need to enter a special state after the tag.
       State nextState = getNextState(tagName);

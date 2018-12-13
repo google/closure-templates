@@ -29,6 +29,7 @@ import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -47,14 +48,16 @@ public final class TestUtils {
         new TagName(new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN)),
         SourceLocation.UNKNOWN,
         /** selfClosing */
-        false);
+        false,
+        TagExistence.IN_TEMPLATE);
   }
 
   public static HtmlCloseTagNode soyHtmlCloseTagNode() {
     return new HtmlCloseTagNode(
         idGenerator.genId(),
         new TagName(new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN)),
-        SourceLocation.UNKNOWN);
+        SourceLocation.UNKNOWN,
+        TagExistence.IN_TEMPLATE);
   }
 
   public static HtmlMatcherTagNode htmlMatcherOpenTagNode(HtmlOpenTagNode soyNode) {

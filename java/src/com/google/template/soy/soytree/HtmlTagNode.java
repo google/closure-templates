@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,27 @@ import javax.annotation.Nullable;
 public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     implements StandaloneNode {
 
+  /**
+   * Indicates whether this tag was created organically from the template source, or if it is a a
+   * synthetic tag node, created by injecting it into the AST during a validation phase, such as
+   * {@link StrictHtmlValidationPass}
+   *
+   * <p>Some backends do not render synthetic tags, others (like iDOM) do special processing on
+   * synthetic tags.
+   *
+   * <ul>
+   *   <li>{@code IN_TEMPLATE} tags come from parsing the original template.
+   *   <li>{@code SYNTHETIC} tags are injected during an AST rewrite.
+   * </ul>
+   */
+  public enum TagExistence {
+    IN_TEMPLATE,
+    SYNTHETIC
+  }
+
   private final TagName tagName;
+
+  private final TagExistence tagExistence;
 
   /**
    * Represents a list of tags that this HtmlTagNode might be paired with. For example, if we have
@@ -45,14 +64,17 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
    */
   private final List<HtmlTagNode> taggedPairs = new ArrayList<>();
 
-  protected HtmlTagNode(int id, TagName tagName, SourceLocation sourceLocation) {
+  protected HtmlTagNode(
+      int id, TagName tagName, SourceLocation sourceLocation, TagExistence tagExistence) {
     super(id, sourceLocation);
     this.tagName = checkNotNull(tagName);
+    this.tagExistence = tagExistence;
   }
 
   protected HtmlTagNode(HtmlTagNode orig, CopyState copyState) {
     super(orig, copyState);
     this.tagName = orig.tagName;
+    this.tagExistence = orig.tagExistence;
   }
 
   @SuppressWarnings("unchecked")
@@ -71,6 +93,11 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
 
   public void addTagPair(HtmlTagNode node) {
     this.taggedPairs.add(node);
+  }
+
+  /** Returns true if this node was inserted by the {@code StrictHtmlValidationPass}. */
+  public boolean isSynthetic() {
+    return tagExistence == TagExistence.SYNTHETIC;
   }
 
   /** Returns an attribute with the given static name if it is a direct child. */
