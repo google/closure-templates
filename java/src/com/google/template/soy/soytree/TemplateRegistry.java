@@ -16,31 +16,22 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
-import com.google.template.soy.soytree.TemplateMetadata.CallSituation;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -67,9 +58,6 @@ public final class TemplateRegistry {
 
   private final DelTemplateSelector<TemplateMetadata> delTemplateSelector;
   private final ImmutableMap<String, TemplateMetadata> allTemplates;
-
-  /** Lazily allocated. */
-  private final Map<TemplateMetadata, CallGraphNode> callGraphs = new HashMap<>();
 
   /**
    * Constructor.
@@ -218,132 +206,5 @@ public final class TemplateRegistry {
     }
     // The template node may be null if the template is being compiled in isolation.
     return Optional.absent();
-  }
-
-  /** Returns the callgraph for a template. */
-  public CallGraphNode getCallGraph(TemplateMetadata template) {
-    checkNotNull(template);
-    CallGraphNode callGraph = callGraphs.get(template);
-    if (callGraph != null) {
-      return callGraph;
-    }
-    callGraph = new CallGraphNode(template);
-    // Place the partially constructed callgraph into the map to short circuit following recursive
-    // template calls.
-    callGraphs.put(template, callGraph);
-    for (CallSituation call : template.getCallSituations()) {
-
-      if (call.isDelCall()) {
-        for (TemplateMetadata callee :
-            delTemplateSelector.delTemplateNameToValues().get(call.getTemplateName())) {
-          callGraph.addDelCallee(call, getCallGraph(callee));
-        }
-      } else {
-        TemplateMetadata callee = getBasicTemplateOrElement(call.getTemplateName());
-        if (callee != null) {
-          callGraph.putBasicCallee(call, getCallGraph(callee));
-        }
-      }
-    }
-    callGraph.finishConstruction();
-    return callGraph;
-  }
-
-  /**
-   * Represents a call graph of templates.
-   *
-   * <p>Note that callgraphs are directed but not acyclic. Self edges are possible. So code
-   * traversing this data structure should protect against reentrancy.
-   */
-  public static final class CallGraphNode {
-    // We can't make this object immutable because the graph may have cycles.
-    // So instead we use this field to force that all mutations happen before any queries occur.
-    private boolean frozen = false;
-    private final TemplateMetadata template;
-    private final Map<CallSituation, CallGraphNode> basicCallees = new LinkedHashMap<>();
-    private final ListMultimap<CallSituation, CallGraphNode> delCallees =
-        MultimapBuilder.linkedHashKeys().arrayListValues().build();
-    // lazily caches the set of transitive callees.
-    private Set<TemplateMetadata> transiveCallees;
-
-    private CallGraphNode(TemplateMetadata template) {
-      this.template = checkNotNull(template);
-    }
-
-    public TemplateMetadata template() {
-      return template;
-    }
-
-    private void addDelCallee(CallSituation call, CallGraphNode callee) {
-      checkState(!frozen);
-      checkArgument(call.isDelCall());
-      boolean changed = delCallees.put(call, checkNotNull(callee));
-      if (!changed) {
-        throw new IllegalArgumentException(
-            "a callgraph mapping was already assigned for: " + call + " -> " + callee);
-      }
-    }
-
-    private void putBasicCallee(CallSituation call, CallGraphNode callee) {
-      checkState(!frozen);
-      checkArgument(!call.isDelCall());
-      CallGraphNode prev = basicCallees.put(call, checkNotNull(callee));
-      if (prev != null) {
-        throw new IllegalArgumentException("a callgraph was already assigned for: " + call);
-      }
-    }
-
-    private void finishConstruction() {
-      checkState(!frozen);
-      frozen = true;
-    }
-
-    public Set<TemplateMetadata> transitiveCallees() {
-      checkState(frozen);
-      Set<TemplateMetadata> callees = transiveCallees;
-      if (callees != null) {
-        return callees;
-      }
-      callees = new LinkedHashSet<>();
-      collectTransitiveCallees(callees);
-      // only return unmodifiable views
-      transiveCallees = Collections.unmodifiableSet(callees);
-      return transiveCallees;
-    }
-
-    private void collectTransitiveCallees(Set<TemplateMetadata> callees) {
-      if (callees.add(template)) {
-        if (transiveCallees != null) {
-          callees.addAll(transiveCallees);
-        } else {
-          for (CallGraphNode callee : basicCallees.values()) {
-            callee.collectTransitiveCallees(callees);
-          }
-          for (CallGraphNode callee : delCallees.values()) {
-            callee.collectTransitiveCallees(callees);
-          }
-        }
-      }
-    }
-
-    /**
-     * Returns the call graph for the callee, or nuill. if null is returned, then it means we could
-     * not resolve the target. This can happen for delcalls or regular calls when allowExternalCalls
-     * is enabled. (or temporarily while building).
-     */
-    public CallGraphNode getBasicCallee(CallSituation call) {
-      checkArgument(!call.isDelCall());
-      return basicCallees.get(checkNotNull(call));
-    }
-
-    /**
-     * Returns the call graph for the potential callees, or an empty collection. if null is
-     * returned, then it means we could not resolve the target. This can happen for delcalls or
-     * regular calls when allowExternalCalls is enabled. (or temporarily while building).
-     */
-    public List<CallGraphNode> getDelCallees(CallSituation call) {
-      checkArgument(call.isDelCall());
-      return delCallees.get(checkNotNull(call));
-    }
   }
 }

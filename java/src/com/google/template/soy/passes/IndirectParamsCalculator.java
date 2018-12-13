@@ -26,10 +26,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.CallSituation;
+import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.CallGraphNode;
 import com.google.template.soy.types.SoyType;
 import java.util.HashSet;
 import java.util.Map;
@@ -185,7 +184,6 @@ public final class IndirectParamsCalculator {
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateMetadata template) {
-    CallGraphNode currentCallGraph = templateRegistry.getCallGraph(template);
 
     visitedCallSituations = Sets.newHashSet();
     indirectParams = Maps.newHashMap();
@@ -193,7 +191,7 @@ public final class IndirectParamsCalculator {
     indirectParamTypes = LinkedHashMultimap.create();
     mayHaveIndirectParamsInExternalCalls = false;
     mayHaveIndirectParamsInExternalDelCalls = false;
-    visit(currentCallGraph, new HashSet<>(), new HashSet<>());
+    visit(template, new HashSet<>(), new HashSet<>());
 
     return new IndirectParamsInfo(
         ImmutableSortedMap.copyOf(indirectParams),
@@ -204,34 +202,35 @@ public final class IndirectParamsCalculator {
   }
 
   private void visit(
-      CallGraphNode callGraph, Set<String> allCallParamKeys, Set<TemplateMetadata> allCallers) {
-    TemplateMetadata template = callGraph.template();
+      TemplateMetadata template, Set<String> allCallParamKeys, Set<TemplateMetadata> allCallers) {
     if (!allCallers.add(template)) {
       return;
     }
-    for (CallSituation call : template.getCallSituations()) {
-      // we only need to examine data="all" callsites
-      if (!call.isDataAllCall()) {
-        continue;
-      }
+    for (DataAllCallSituation call : template.getDataAllCallSituations()) {
       // only construct a new set if we are adding more parameters.
       // ideally we would use some kind of persistent datastructure, but this is probably fine since
       // the sets are small.
       Set<String> newAllCallParamKeys = allCallParamKeys;
-      if (!allCallParamKeys.containsAll(call.getExplicitlyPassedParametersForDataAllCalls())) {
+      if (!allCallParamKeys.containsAll(call.getExplicitlyPassedParameters())) {
         newAllCallParamKeys = new HashSet<>();
         newAllCallParamKeys.addAll(allCallParamKeys);
-        newAllCallParamKeys.addAll(call.getExplicitlyPassedParametersForDataAllCalls());
+        newAllCallParamKeys.addAll(call.getExplicitlyPassedParameters());
       }
       if (call.isDelCall()) {
         // There is no guarantee that we can see all delcall targets, so always assume that
         // there may be some unknown ones.
         mayHaveIndirectParamsInExternalDelCalls = true;
-        for (CallGraphNode delCallee : callGraph.getDelCallees(call)) {
+        // TODO(lukes): this should probably take variants into account if they are present
+        for (TemplateMetadata delCallee :
+            templateRegistry
+                .getDelTemplateSelector()
+                .delTemplateNameToValues()
+                .get(call.getTemplateName())) {
           processCall(template, delCallee, newAllCallParamKeys, allCallers);
         }
       } else {
-        CallGraphNode basicCallee = callGraph.getBasicCallee(call);
+        TemplateMetadata basicCallee =
+            templateRegistry.getBasicTemplateOrElement(call.getTemplateName());
         if (basicCallee == null) {
           mayHaveIndirectParamsInExternalCalls = true;
         } else {
@@ -244,25 +243,25 @@ public final class IndirectParamsCalculator {
 
   private void processCall(
       TemplateMetadata caller,
-      CallGraphNode callee,
+      TemplateMetadata callee,
       Set<String> allCallParamKeys,
       Set<TemplateMetadata> allCallers) {
-    if (caller.equals(callee.template()) || allCallers.contains(callee.template())) {
+    if (caller.equals(callee) || allCallers.contains(callee)) {
       // We never recursive calls to bring in an indirect param.
       return;
     }
-    for (Parameter p : callee.template().getParameters()) {
-      if (!p.isInjected() && !allCallParamKeys.contains(p.getName())) {
+    for (Parameter p : callee.getParameters()) {
+      if (!allCallParamKeys.contains(p.getName())) {
         // For some reason we only record the first one.
         if (!indirectParams.containsKey(p.getName())) {
           indirectParams.put(p.getName(), p);
         }
         indirectParamTypes.put(p.getName(), p.getType());
-        paramKeyToCalleesMultimap.put(p.getName(), callee.template());
+        paramKeyToCalleesMultimap.put(p.getName(), callee);
       }
     }
     TransitiveCallSituation transitiveCallSituation =
-        new TransitiveCallSituation(callee.template(), allCallParamKeys);
+        new TransitiveCallSituation(callee, allCallParamKeys);
     // we have already seen this exact call.
     if (!visitedCallSituations.add(transitiveCallSituation)) {
       return;

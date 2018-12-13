@@ -435,10 +435,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         paramTypes = new TemplateParamTypes();
 
         // Store all of the explicitly declared param types
+        paramTypes.isStrictlyTyped = !callee.getHasSoyDocParams();
         for (Parameter param : callee.getParameters()) {
-          if (param.isDeclaredInSoyDoc()) {
-            paramTypes.isStrictlyTyped = false;
-          }
           paramTypes.params.put(param.getName(), param.getType());
         }
 
@@ -509,9 +507,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           // Check param keys required by callee.
           List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
           for (Parameter calleeParam : callee.getParameters()) {
-            if (!calleeParam.isInjected()
-                && calleeParam.isRequired()
-                && !callerParamKeys.contains(calleeParam.getName())) {
+            if (calleeParam.isRequired() && !callerParamKeys.contains(calleeParam.getName())) {
               missingParamKeys.add(calleeParam.getName());
             }
           }

@@ -45,17 +45,12 @@ message ParameterP {
   // TODO(lukes): consider representing the type tree structure (i.e. a parallel
   // of TypeNode) explicitly, this may make parsing faster.
   string type = 2;
-  // Whether this parameter is injected.  This covers both $ij and {@inject...}
-  // syntax.
-  bool injected = 3;
   // Whether or not the parameter is required.
-  bool required = 4;
-  // Whether or not the parameter is declared in soydoc.
-  bool declared_in_soy_doc = 5;
+  bool required = 3;
 }
 
 // Represents a call within a template.
-message CallSituationP {
+message DataAllCallSituationP {
   // The template name.
   // if this is a delcall or a call to a template in another file, this will be
   // fully qualified.  If it is a call to a template in the current namespace
@@ -63,11 +58,8 @@ message CallSituationP {
   string template_name = 1;
   // Whether this is a delcall
   bool del_call = 2;
-  // Whether this is a data="all" call.
-  bool data_all_call = 3;
-  // If this is a data="all" call, this will contain the names of the explicitly
-  // passed parameters.
-  repeated string explicitly_passed_parameters_for_data_all_calls = 4;
+  // The names of the explicitly passed parameters.
+  repeated string explicitly_passed_parameters = 3;
 }
 
 // A duplicate of SanitizedContentKind
@@ -113,5 +105,6 @@ message TemplateMetadataP {
   bool strict_html = 6;
   VisibilityP visibility = 7;
   repeated ParameterP parameter = 8;
-  repeated CallSituationP call_situation = 9;
+  repeated DataAllCallSituationP data_all_call_situation = 9;
+  bool has_soy_doc_params = 10;
 }

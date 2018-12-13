@@ -27,8 +27,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.soytree.CallSituationP;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SanitizedContentKindP;
 import com.google.template.soy.soytree.SourceLocationP;
@@ -38,7 +38,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.CallSituation;
+import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
 import com.google.template.soy.soytree.TemplateMetadata.Kind;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateMetadataP;
@@ -128,8 +128,10 @@ public final class TemplateMetadataSerializer {
         .setSourceLocation(protoFromSourceLocation(meta.getSourceLocation()))
         .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
         .setStrictHtml(meta.isStrictHtml())
-        .addAllCallSituation(protosFromCallSitatuations(meta.getCallSituations(), fileNode))
+        .addAllDataAllCallSituation(
+            protosFromCallSitatuations(meta.getDataAllCallSituations(), fileNode))
         .addAllParameter(protosFromParameters(meta.getParameters()))
+        .setHasSoyDocParams(meta.getHasSoyDocParams())
         .build();
   }
 
@@ -174,10 +176,12 @@ public final class TemplateMetadataSerializer {
                 ? null
                 : CONTENT_KIND_CONVERTER.convert(templateProto.getContentKind()))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
-        .setCallSituations(callSituationsFromProto(templateProto.getCallSituationList(), fileProto))
+        .setDataAllCallSituations(
+            callSituationsFromProto(templateProto.getDataAllCallSituationList(), fileProto))
         .setParameters(
             parametersFromProto(
                 templateProto.getParameterList(), typeRegistry, filePath, errorReporter))
+        .setHasSoyDocParams(templateProto.getHasSoyDocParams())
         .build();
   }
 
@@ -196,7 +200,6 @@ public final class TemplateMetadataSerializer {
             Parameter.builder()
                 .setName(parameter.getName())
                 .setType(type)
-                .setInjected(parameter.getInjected())
                 .setRequired(parameter.getRequired())
                 .build());
       }
@@ -212,49 +215,45 @@ public final class TemplateMetadataSerializer {
           ParameterP.newBuilder()
               .setName(parameter.getName())
               .setType(parameter.getType().toString())
-              .setInjected(parameter.isInjected())
               .setRequired(parameter.isRequired())
               .build());
     }
     return builder.build();
   }
 
-  private static ImmutableList<CallSituation> callSituationsFromProto(
-      List<CallSituationP> callSituationList, SoyFileP fileProto) {
-    ImmutableList.Builder<CallSituation> builder =
+  private static ImmutableList<DataAllCallSituation> callSituationsFromProto(
+      List<DataAllCallSituationP> callSituationList, SoyFileP fileProto) {
+    ImmutableList.Builder<DataAllCallSituation> builder =
         ImmutableList.builderWithExpectedSize(callSituationList.size());
-    for (CallSituationP call : callSituationList) {
+    for (DataAllCallSituationP call : callSituationList) {
       String templateName = call.getTemplateName();
       if (templateName.startsWith(".")) {
         templateName = fileProto.getNamespace() + templateName;
       }
       builder.add(
-          CallSituation.builder()
+          DataAllCallSituation.builder()
               .setTemplateName(templateName)
               .setDelCall(call.getDelCall())
-              .setDataAllCall(call.getDataAllCall())
-              .setExplicitlyPassedParametersForDataAllCalls(
-                  ImmutableSet.copyOf(call.getExplicitlyPassedParametersForDataAllCallsList()))
+              .setExplicitlyPassedParameters(
+                  ImmutableSet.copyOf(call.getExplicitlyPassedParametersList()))
               .build());
     }
     return builder.build();
   }
 
-  private static ImmutableList<CallSituationP> protosFromCallSitatuations(
-      ImmutableList<CallSituation> callSituationList, SoyFileNode fileNode) {
-    ImmutableList.Builder<CallSituationP> builder =
+  private static ImmutableList<DataAllCallSituationP> protosFromCallSitatuations(
+      ImmutableList<DataAllCallSituation> callSituationList, SoyFileNode fileNode) {
+    ImmutableList.Builder<DataAllCallSituationP> builder =
         ImmutableList.builderWithExpectedSize(callSituationList.size());
-    for (CallSituation call : callSituationList) {
+    for (DataAllCallSituation call : callSituationList) {
       builder.add(
-          CallSituationP.newBuilder()
+          DataAllCallSituationP.newBuilder()
               .setTemplateName(
                   call.isDelCall()
                       ? call.getTemplateName()
                       : maybeShortenTemplateName(fileNode.getNamespace(), call.getTemplateName()))
               .setDelCall(call.isDelCall())
-              .setDataAllCall(call.isDataAllCall())
-              .addAllExplicitlyPassedParametersForDataAllCalls(
-                  call.getExplicitlyPassedParametersForDataAllCalls())
+              .addAllExplicitlyPassedParameters(call.getExplicitlyPassedParameters())
               .build());
     }
     return builder.build();

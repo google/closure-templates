@@ -159,7 +159,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
   private static Set<TemplateMetadata.Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
     Set<TemplateMetadata.Parameter> paramSet = new HashSet<>();
     for (TemplateMetadata.Parameter param : delTemplate.getParameters()) {
-      if (param.isRequired() && !param.isInjected()) {
+      if (param.isRequired()) {
         paramSet.add(param);
       }
     }

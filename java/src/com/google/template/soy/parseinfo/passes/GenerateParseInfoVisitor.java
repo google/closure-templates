@@ -687,7 +687,7 @@ public final class GenerateParseInfoVisitor
       for (Parameter param :
           Iterables.concat(
               nodeMetadata.getParameters(), indirectParamsInfo.indirectParams.values())) {
-        if (!param.isInjected() && seenParams.add(param.getName())) {
+        if (seenParams.add(param.getName())) {
           entrySnippetPairs.put(
               "\"" + param.getName() + "\"",
               param.isRequired() ? "ParamRequisiteness.REQUIRED" : "ParamRequisiteness.OPTIONAL");
