@@ -37,6 +37,7 @@ import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraph;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
+import com.google.template.soy.passes.htmlmatcher.HtmlTagMatchingPass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -77,7 +78,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
-
   private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
@@ -124,6 +124,11 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
         "Strict HTML in a non-HTML node.");
     if (node.isStrictHtml()) {
       new HtmlTagVisitor(errorReporter, saveHtmlMatcherGraph).exec(node);
+      // Contains no HTML nodes
+      if (htmlMatcherGraph.getRootNode().isPresent()) {
+        HtmlTagMatchingPass.checkForErrors(
+            new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get()), errorReporter);
+      }
     }
   }
 

@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
+import com.google.template.soy.soytree.IfCondNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -146,8 +147,8 @@ public final class HtmlMatcherAccumulatorNodeTest {
   @Test
   public void testAccumulateNodes_conditionalNodes() {
     HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
-    HtmlMatcherConditionNode ifCondNode =
-        new HtmlMatcherConditionNode(TestUtils.soyIfCondNode("$condVar"));
+    IfCondNode node = TestUtils.soyIfCondNode("$condVar");
+    HtmlMatcherConditionNode ifCondNode = new HtmlMatcherConditionNode(node, node.getExpr());
     ImmutableList<ActiveEdge> activeEdges =
         ImmutableList.of(
             ActiveEdge.create(ifCondNode, EdgeKind.TRUE_EDGE),

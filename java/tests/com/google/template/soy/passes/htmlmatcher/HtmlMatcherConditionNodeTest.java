@@ -33,7 +33,8 @@ public final class HtmlMatcherConditionNodeTest {
   public void testGetSoyNode_ifCondNode() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
 
-    HtmlMatcherConditionNode testConditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode testConditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
 
     assertThat(testConditionNode.getSoyNode()).hasValue(soyNode);
   }
@@ -42,7 +43,8 @@ public final class HtmlMatcherConditionNodeTest {
   public void testGetSoyNode_switchCaseNode() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$switchCase");
 
-    HtmlMatcherConditionNode testConditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode testConditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
 
     assertThat(testConditionNode.getSoyNode()).hasValue(soyNode);
   }
@@ -50,9 +52,12 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_ifTrueEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode testIfConditionNode = new HtmlMatcherConditionNode(soyNode);
+    IfCondNode soyNodeTwo = TestUtils.soyIfElseCondNode("$cond2Var");
+    HtmlMatcherConditionNode testIfConditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
     HtmlMatcherConditionNode testIfElseConditionNode =
-        new HtmlMatcherConditionNode(TestUtils.soyIfElseCondNode("$cond2Var"));
+        new HtmlMatcherConditionNode(
+            TestUtils.soyIfElseCondNode("$cond2Var"), soyNodeTwo.getExpr());
 
     testIfConditionNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
     testIfConditionNode.linkActiveEdgeToNode(testIfElseConditionNode);
@@ -65,9 +70,11 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_switchTrueEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode switchCase1Node = new HtmlMatcherConditionNode(soyNode);
+    SwitchCaseNode soyNodeTwo = TestUtils.soySwitchCaseNode("$case2");
+    HtmlMatcherConditionNode switchCase1Node =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
     HtmlMatcherConditionNode switchCase2Node =
-        new HtmlMatcherConditionNode(TestUtils.soySwitchCaseNode("$case2"));
+        new HtmlMatcherConditionNode(soyNodeTwo, soyNodeTwo.getExprList().get(0));
 
     switchCase1Node.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
     switchCase1Node.linkActiveEdgeToNode(switchCase2Node);
@@ -80,9 +87,11 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_ifFalseEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode testIfConditionNode = new HtmlMatcherConditionNode(soyNode);
+    IfCondNode soyNodeTwo = TestUtils.soyIfElseCondNode("$cond2Var");
+    HtmlMatcherConditionNode testIfConditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
     HtmlMatcherConditionNode testIfElseConditionNode =
-        new HtmlMatcherConditionNode(TestUtils.soyIfElseCondNode("$cond2Var"));
+        new HtmlMatcherConditionNode(soyNodeTwo, soyNodeTwo.getExpr());
 
     testIfConditionNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
     testIfConditionNode.linkActiveEdgeToNode(testIfElseConditionNode);
@@ -95,9 +104,11 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_switchFalseEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode switchCase1Node = new HtmlMatcherConditionNode(soyNode);
+    SwitchCaseNode soyNodeTwo = TestUtils.soySwitchCaseNode("$case2");
+    HtmlMatcherConditionNode switchCase1Node =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
     HtmlMatcherConditionNode switchCase2Node =
-        new HtmlMatcherConditionNode(TestUtils.soySwitchCaseNode("$case2"));
+        new HtmlMatcherConditionNode(soyNodeTwo, soyNodeTwo.getExprList().get(0));
 
     switchCase1Node.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
     switchCase1Node.linkActiveEdgeToNode(switchCase2Node);
@@ -110,7 +121,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testGetNodeForEdgeKind_ifNodeDefaultIsNull() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
 
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
@@ -119,7 +131,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testGetNodeForEdgeKind_switchNodeDefaultIsNull() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
 
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
@@ -128,7 +141,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_ifNodeCantLinkToSelfTrueEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
 
     assertThrows(
         IllegalStateException.class,
@@ -138,7 +152,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_switchNodeCantLinkToSelfTrueEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
 
     assertThrows(
         IllegalStateException.class,
@@ -148,7 +163,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_ifNodeCantLinkToSelfFalseEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
 
     assertThrows(
         IllegalStateException.class,
@@ -158,7 +174,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkActiveEdgeToNode_switchNodeCantLinkToSelfFalseEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
 
     assertThrows(
         IllegalStateException.class,
@@ -168,7 +185,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkEdgeToNode_ifNodeTrueEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
@@ -181,7 +199,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkEdgeToNode_switchNodeTrueEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
@@ -194,7 +213,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkEdgeToNode_ifNodeFalseEdge() {
     IfCondNode soyNode = TestUtils.soyIfCondNode("$condVar");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
@@ -207,7 +227,8 @@ public final class HtmlMatcherConditionNodeTest {
   @Test
   public void testLinkEdgeToNode_switchNodeFalseEdge() {
     SwitchCaseNode soyNode = TestUtils.soySwitchCaseNode("$case1");
-    HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(soyNode);
+    HtmlMatcherConditionNode conditionNode =
+        new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 

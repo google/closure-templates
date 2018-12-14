@@ -30,16 +30,19 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
   private EdgeKind activeEdge = EdgeKind.TRUE_EDGE;
 
+  private final ExprNode expression;
+
   @Nullable private HtmlMatcherGraphNode trueBranchNode = null;
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
 
   public HtmlMatcherConditionNode(SoyNode soyNode, ExprNode expression) {
     this.soyNode = soyNode;
+    this.expression = expression;
   }
 
-  public HtmlMatcherConditionNode(SoyNode soyNode) {
-    this.soyNode = soyNode;
+  public ExprNode getExpression() {
+    return this.expression;
   }
 
   @Override
