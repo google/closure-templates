@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -30,6 +31,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
+import java.util.Objects;
 
 /**
  * Validates restrictions on DOM nodes with key commands (e.g. {@code <div {key 'foo'}></div>}).
@@ -49,6 +51,10 @@ final class KeyCommandPass extends CompilerFilePass {
   private static final SoyErrorKind UNSUPPORTED_TYPE =
       SoyErrorKind.of("Unsupported type: keys must be of type string or integer.");
 
+  private static final SoyErrorKind KEY_ELEMENT_AMBIGUOUS =
+      SoyErrorKind.of(
+          "Key elements must have open tags that map to a single HTML close tag and vice versa.");
+
   private final ErrorReporter errorReporter;
 
   KeyCommandPass(ErrorReporter errorReporter) {
@@ -58,15 +64,37 @@ final class KeyCommandPass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (KeyNode node : SoyTreeUtils.getAllNodesOfType(file, KeyNode.class)) {
-      checkNodeIsOpenTagNodeChild(node);
+      checkNodeIsValidOpenTagNodeChild(node);
       checkNoDuplicateKeyAttribute(node);
       checkNodeIsSupportedType(node);
     }
   }
 
-  private void checkNodeIsOpenTagNodeChild(KeyNode node) {
+  private void checkNodeIsValidOpenTagNodeChild(KeyNode node) {
     if (!(node.getParent() instanceof HtmlOpenTagNode)) {
       errorReporter.report(node.getSourceLocation(), KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG);
+      return;
+    }
+    HtmlOpenTagNode tagNode = (HtmlOpenTagNode) node.getParent();
+    if (tagNode.getTaggedPairs().size() > 1) {
+      errorReporter.report(node.getSourceLocation(), KEY_ELEMENT_AMBIGUOUS);
+      return;
+    }
+    // TODO: Remove when pass is turned on.
+    if (tagNode.getTaggedPairs().size() != 0) {
+      checkOneOpenTagNodeMappedToOneCloseTag(tagNode);
+    }
+  }
+
+  private void checkOneOpenTagNodeMappedToOneCloseTag(HtmlOpenTagNode tagNode) {
+    if (tagNode.getTaggedPairs().size() != 1) {
+      errorReporter.report(tagNode.getSourceLocation(), KEY_ELEMENT_AMBIGUOUS);
+      return;
+    }
+    HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
+    if (closeTag.getTaggedPairs().size() != 1
+        || !Objects.equals(closeTag.getTaggedPairs().get(0), tagNode)) {
+      errorReporter.report(tagNode.getSourceLocation(), KEY_ELEMENT_AMBIGUOUS);
     }
   }
 
