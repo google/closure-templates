@@ -75,6 +75,20 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     super(orig, copyState);
     this.tagName = orig.tagName;
     this.tagExistence = orig.tagExistence;
+    // The taggedPairs field contains references to other tag nodes.
+    // We need to register ourselves so that people who reference us get updated and we need to
+    // listen to updates
+    copyState.updateRefs(orig, this);
+    for (HtmlTagNode matchingNode : orig.taggedPairs) {
+      copyState.registerRefListener(
+          matchingNode,
+          new CopyState.Listener<HtmlTagNode>() {
+            @Override
+            public void newVersion(HtmlTagNode newMatchingNode) {
+              taggedPairs.add(newMatchingNode);
+            }
+          });
+    }
   }
 
   @SuppressWarnings("unchecked")
