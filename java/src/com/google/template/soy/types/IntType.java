@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import com.google.template.soy.soytree.SoyTypeP;
+
 /**
  * Soy integer type.
  *
@@ -45,6 +47,10 @@ public final class IntType extends PrimitiveType {
     return "int";
   }
 
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    builder.setPrimitive(SoyTypeP.PrimitiveTypeP.INT);
+  }
   /** Return the single instance of this type. */
   public static IntType getInstance() {
     return INSTANCE;

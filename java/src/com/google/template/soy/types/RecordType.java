@@ -19,6 +19,7 @@ package com.google.template.soy.types;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Map;
 import java.util.Objects;
 
@@ -94,6 +95,14 @@ public final class RecordType extends SoyType {
     }
     sb.append("]");
     return sb.toString();
+  }
+
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    SoyTypeP.RecordTypeP.Builder recordBuilder = builder.getRecordBuilder();
+    for (Map.Entry<String, SoyType> entry : members.entrySet()) {
+      recordBuilder.putField(entry.getKey(), entry.getValue().toProto());
+    }
   }
 
   @Override

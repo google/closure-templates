@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import com.google.common.base.Ascii;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.soytree.SoyTypeP;
 
 /**
  * Implementation of types for sanitized strings, that is strings that are produced by templates
@@ -89,6 +90,11 @@ public abstract class SanitizedType extends PrimitiveType {
       return SanitizedContentKind.HTML;
     }
 
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML);
+    }
+
     /** Return the single instance of this type. */
     public static HtmlType getInstance() {
       return INSTANCE;
@@ -111,6 +117,11 @@ public abstract class SanitizedType extends PrimitiveType {
     @Override
     public SanitizedContentKind getContentKind() {
       return SanitizedContentKind.ATTRIBUTES;
+    }
+
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.ATTRIBUTES);
     }
 
     /** Return the single instance of this type. */
@@ -137,6 +148,11 @@ public abstract class SanitizedType extends PrimitiveType {
       return SanitizedContentKind.URI;
     }
 
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.URI);
+    }
+
     /** Return the single instance of this type. */
     public static UriType getInstance() {
       return INSTANCE;
@@ -159,6 +175,11 @@ public abstract class SanitizedType extends PrimitiveType {
     @Override
     public SanitizedContentKind getContentKind() {
       return SanitizedContentKind.TRUSTED_RESOURCE_URI;
+    }
+
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.TRUSTED_RESOURCE_URI);
     }
 
     /** Return the single instance of this type. */
@@ -185,6 +206,11 @@ public abstract class SanitizedType extends PrimitiveType {
       return SanitizedContentKind.CSS;
     }
 
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.CSS);
+    }
+
     /** Return the single instance of this type. */
     public static StyleType getInstance() {
       return INSTANCE;
@@ -207,6 +233,11 @@ public abstract class SanitizedType extends PrimitiveType {
     @Override
     public SanitizedContentKind getContentKind() {
       return SanitizedContentKind.JS;
+    }
+
+    @Override
+    void doToProto(SoyTypeP.Builder builder) {
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.JS);
     }
 
     /** Return the single instance of this type. */
