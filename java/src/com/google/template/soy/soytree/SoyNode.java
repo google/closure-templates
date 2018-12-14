@@ -53,9 +53,6 @@ public interface SoyNode extends Node {
 
     RAW_TEXT_NODE,
 
-    GOOG_MSG_DEF_NODE,
-    GOOG_MSG_REF_NODE,
-
     MSG_FALLBACK_GROUP_NODE,
     MSG_NODE,
     MSG_PLURAL_NODE,
