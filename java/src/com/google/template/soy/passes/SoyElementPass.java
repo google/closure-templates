@@ -27,6 +27,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 
 /** Validates restrictions specific to Soy elements. */
 final class SoyElementPass extends CompilerFilePass {
@@ -38,6 +39,13 @@ final class SoyElementPass extends CompilerFilePass {
 
   private static final SoyErrorKind ROOT_IS_DYNAMIC_TAG =
       SoyErrorKind.of("The root node of Soy elements must not be a dynamic HTML tag.");
+
+  private static final SoyErrorKind SOY_ELEMENT_OPEN_TAG_NOT_AMBIGUOUS =
+      SoyErrorKind.of("Soy element open tags must map to exactly one close tag.");
+
+  private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
+      SoyErrorKind.of(
+          "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
 
   private final ErrorReporter errorReporter;
 
@@ -52,6 +60,21 @@ final class SoyElementPass extends CompilerFilePass {
         continue;
       }
 
+      VeLogNode firstVeLog =
+          (VeLogNode)
+              template.firstChildThatMatches(
+                  new Predicate<SoyNode>() {
+                    @Override
+                    public boolean apply(SoyNode node) {
+                      return node.getKind() == Kind.VE_LOG_NODE;
+                    }
+                  });
+      if (firstVeLog != null) {
+        if (template.getChildren().size() == 1) {
+          errorReporter.report(firstVeLog.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        }
+        continue;
+      }
       HtmlOpenTagNode firstOpenTagNode =
           (HtmlOpenTagNode)
               template.firstChildThatMatches(
@@ -61,14 +84,23 @@ final class SoyElementPass extends CompilerFilePass {
                       return node.getKind() == Kind.HTML_OPEN_TAG_NODE;
                     }
                   });
+
       if (firstOpenTagNode == null) {
         // A prior pass will report an error if the Soy element has no open tag node,
         // so just skip in this case.
+        // TODO: Put this check in when we switch the HTML validator, as it won't do that
+        // there.
         continue;
       }
-
+      validateTagNodeHasOneChild(firstOpenTagNode);
       validateNoKey(firstOpenTagNode);
       validateNoDynamicTag(firstOpenTagNode);
+    }
+  }
+
+  private void validateTagNodeHasOneChild(HtmlOpenTagNode firstTagNode) {
+    if (firstTagNode.getTaggedPairs().size() > 1) {
+      errorReporter.report(firstTagNode.getSourceLocation(), SOY_ELEMENT_OPEN_TAG_NOT_AMBIGUOUS);
     }
   }
 

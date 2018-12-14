@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -44,16 +43,12 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
-import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
@@ -78,10 +73,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
-  private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
-      SoyErrorKind.of(
-          "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
-
   private final ErrorReporter errorReporter;
 
   @Nullable private HtmlMatcherGraph htmlMatcherGraph = null;
@@ -275,10 +266,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       if (errorReporter.errorsSince(checkpoint)) {
         return;
       }
-
-      if (node instanceof TemplateElementNode) {
-        validateSoyElementHasOneRootTagNode(node);
-      }
     }
 
     private void enterConditionalContext() {
@@ -316,72 +303,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       }
       ifConditionNode.setActiveEdgeKind(EdgeKind.FALSE_EDGE);
       htmlMatcherGraph.restoreCursor();
-    }
-
-    private void validateSoyElementHasOneRootTagNode(TemplateNode node) {
-      class HtmlOrControlNode implements Predicate<SoyNode> {
-        @Override
-        public boolean apply(SoyNode node) {
-          ImmutableList<Kind> validKinds =
-              ImmutableList.of(
-                  Kind.HTML_COMMENT_NODE,
-                  Kind.LET_CONTENT_NODE,
-                  Kind.LET_VALUE_NODE,
-                  Kind.DEBUGGER_NODE);
-          return !validKinds.contains(node.getKind())
-              // Skip empty raw text nodes. They will be later be stripped out as part
-              // of {@link CombineConsecutiveRawTextNodesPass}.
-              && !(node instanceof RawTextNode && ((RawTextNode) node).isEmpty());
-        }
-      }
-
-      class VeLogMatcher implements Predicate<SoyNode> {
-        @Override
-        public boolean apply(SoyNode node) {
-          return node instanceof VeLogNode;
-        }
-      }
-
-      VeLogNode maybeVelogNode = (VeLogNode) node.firstChildThatMatches(new VeLogMatcher());
-      SoyNode firstNode;
-      SoyNode lastNode;
-      // Get the first and last nodes that we want to validate are HTML tags that match each other.
-      // Skip e.g. comment, let, and debugger nodes.
-      if (maybeVelogNode != null) {
-        firstNode = maybeVelogNode.firstChildThatMatches(new HtmlOrControlNode());
-        lastNode = maybeVelogNode.lastChildThatMatches(new HtmlOrControlNode());
-      } else {
-        firstNode = node.firstChildThatMatches(new HtmlOrControlNode());
-        lastNode = node.lastChildThatMatches(new HtmlOrControlNode());
-      }
-
-      if (firstNode == null || lastNode == null) {
-        errorReporter.report(node.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
-        return;
-      }
-
-      // Get the nodes now as open and close tags, or null if they are not.
-      HtmlOpenTagNode firstNodeAsOpenTag =
-          (HtmlOpenTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(firstNode, /* openTag= */ true);
-      HtmlCloseTagNode lastNodeAsCloseTag =
-          (HtmlCloseTagNode) SoyTreeUtils.getNodeAsHtmlTagNode(lastNode, /* openTag= */ false);
-      boolean firstTagIsSelfClosing =
-          firstNodeAsOpenTag != null
-              && firstNodeAsOpenTag.isSelfClosing()
-              && firstNodeAsOpenTag.getTagName().isDefinitelyVoid();
-      if (firstTagIsSelfClosing) {
-        if (!firstNode.equals(lastNode)) {
-          // First node is self-closing, but there is another element after the self-closing node.
-          errorReporter.report(lastNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
-        }
-      } else if (firstNodeAsOpenTag == null || lastNodeAsCloseTag == null) {
-        // Either the first or last node is not an HTML tag.
-        SoyNode nodeToReport = firstNodeAsOpenTag == null ? firstNode : lastNode;
-        errorReporter.report(nodeToReport.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
-        return;
-      }
-
-      // TODO(b/118396161): check for multiple root HTML tags.
     }
 
     @Override

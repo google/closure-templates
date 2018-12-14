@@ -149,6 +149,8 @@ public final class HtmlTagMatchingPass {
       for (Optional<HtmlTagNode> node : openMap.get(openTag)) {
         if (node.isPresent()) {
           counter++;
+          openTag.addTagPair(node.get());
+          node.get().addTagPair(openTag);
         }
       }
       if (counter == 0) {
