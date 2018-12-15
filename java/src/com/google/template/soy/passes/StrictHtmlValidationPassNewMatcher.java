@@ -46,6 +46,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
@@ -54,6 +55,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -73,6 +75,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
   private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
       SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
+
   private final ErrorReporter errorReporter;
 
   @Nullable private HtmlMatcherGraph htmlMatcherGraph = null;
@@ -120,12 +123,53 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
         HtmlTagMatchingPass.checkForErrors(
             new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get()), errorReporter);
       }
+      for (VeLogNode veNode : SoyTreeUtils.getAllNodesOfType(node, VeLogNode.class)) {
+        checkVeLogNode(veNode);
+      }
     }
   }
 
   @VisibleForTesting
   public Optional<HtmlMatcherGraph> getHtmlMatcherGraph() {
     return Optional.fromNullable(htmlMatcherGraph);
+  }
+
+  private void checkVeLogNode(VeLogNode node) {
+    // {velog} cannot be empty.
+    if (node.numChildren() == 0) {
+      errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      return;
+    }
+    HtmlOpenTagNode firstTag = node.getOpenTagNode();
+    // The first child of {velog} must be an open tag.
+    if (firstTag == null) {
+      errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
+      return;
+    }
+
+    // If the first child is self-closing or is a void tag, reports an error if we see anything
+    // after it. If it is the only thing, the velog is valid.
+    if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
+      if (node.numChildren() > 1) {
+        errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      }
+      return;
+    }
+
+    SoyNode lastChild = node.getChild(node.numChildren() - 1);
+    HtmlCloseTagNode lastTag = null;
+    lastTag = node.getCloseTagNode();
+    // The last child must be a close tag.
+    if (lastTag == null) {
+      errorReporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
+      return;
+    }
+    // This check make sures that there is exactly one top-level element -- the last tag must
+    // close the first tag within {velog} command.
+    if (lastTag.getTaggedPairs().size() != 1
+        || !Objects.equals(lastTag.getTaggedPairs().get(0), firstTag)) {
+      errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+    }
   }
 
   private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -218,43 +262,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
         visitChildren(node);
         exitConditionBranch(conditionNode);
       }
-    }
-
-    @Override
-    protected void visitVeLogNode(VeLogNode node) {
-      // {velog} must contain at least one child.
-      if (node.numChildren() == 0) {
-        errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-        return;
-      }
-      HtmlOpenTagNode firstTag = node.getOpenTagNode();
-      // The first child of {velog} must be an open tag.
-      if (firstTag == null) {
-        errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
-        return;
-      }
-      // If the first child is self-closing or is a void tag, reports an error if we see anything
-      // after it.
-      if (node.numChildren() > 1
-          && (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid())) {
-        errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-        return;
-      }
-      SoyNode lastChild = node.getChild(node.numChildren() - 1);
-      HtmlCloseTagNode lastTag = null;
-      if (node.numChildren() > 1) {
-        lastTag = node.getCloseTagNode();
-        // The last child (if it is not the same with the first child) must be a close tag.
-        if (lastTag == null) {
-          errorReporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
-          return;
-        }
-      }
-      visitChildren(node);
-      // After visiting all the children, we should have already built the map.
-      // At this point, we check the map and verify that the first child is actually popped by the
-      // last child. Otherwise, report an error.
-      // TODO(b/120437376): Implement this logic.
     }
 
     @Override
