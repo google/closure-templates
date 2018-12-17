@@ -25,7 +25,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
@@ -226,13 +225,11 @@ public final class BytecodeCompiler {
       throws IOException {
     try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       for (SoyFileNode file : soyFileSet.getChildren()) {
-        if (file.getSoyFileKind() == SoyFileKind.SRC) {
-          String namespace = file.getNamespace();
-          String fileName = file.getFileName();
-          writer.writeEntry(
-              Names.javaFileName(namespace, fileName),
-              files.get(file.getFilePath()).asCharSource().asByteSource(UTF_8));
-        }
+        String namespace = file.getNamespace();
+        String fileName = file.getFileName();
+        writer.writeEntry(
+            Names.javaFileName(namespace, fileName),
+            files.get(file.getFilePath()).asCharSource().asByteSource(UTF_8));
       }
     }
   }

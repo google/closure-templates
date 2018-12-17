@@ -27,7 +27,6 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
@@ -118,7 +117,6 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
             "{namespace test}\n" + "{template .foo}\n" + actual() + "\n" + "{/template}",
-            SoyFileKind.SRC,
             "example.soy");
     ErrorReporter errorReporter =
         ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));

@@ -48,7 +48,7 @@ public abstract class TemplateMetadata {
         builder()
             .setTemplateName(template.getTemplateName())
             .setSourceLocation(template.getSourceLocation())
-            .setSoyFileKind(template.getParent().getSoyFileKind())
+            .setSoyFileKind(SoyFileKind.SRC)
             .setContentKind(template.getContentKind())
             .setStrictHtml(template.isStrictHtml())
             .setDelPackageName(template.getDelPackageName())

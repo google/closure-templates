@@ -181,13 +181,11 @@ public abstract class SoyFileSetParser {
             filesWereSkipped = true;
             continue;
           }
-          if (fileSupplier.getSoyFileKind() == SoyFileKind.SRC) {
-            // Run passes that are considered part of initial parsing.
-            passManager().runSingleFilePasses(node, nodeIdGen);
-            // Run passes that check the tree.
-            if (cache() != null) {
-              cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
-            }
+          // Run passes that are considered part of initial parsing.
+          passManager().runSingleFilePasses(node, nodeIdGen);
+          // Run passes that check the tree.
+          if (cache() != null) {
+            cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
           }
         } else {
           node = cachedFile.file();
@@ -195,9 +193,7 @@ public abstract class SoyFileSetParser {
         for (TemplateNode template : node.getChildren()) {
           templateMetadatas.add(TemplateMetadata.fromTemplate(template));
         }
-        if (fileSupplier.getSoyFileKind() == SoyFileKind.SRC) {
-          soyTree.addChild(node);
-        }
+        soyTree.addChild(node);
       }
 
       TemplateRegistry registry = new TemplateRegistry(templateMetadatas, errorReporter());
@@ -236,7 +232,6 @@ public abstract class SoyFileSetParser {
               pluginResolver(),
               nodeIdGen,
               soyFileReader,
-              soyFileSupplier.getSoyFileKind(),
               filePath,
               errorReporter(),
               generalOptions() == null

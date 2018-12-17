@@ -175,12 +175,13 @@ public final class SoyFileSet {
      *
      * <p>This must be called before any other setters.
      */
-    public void setGeneralOptions(SoyGeneralOptions generalOptions) {
+    public Builder setGeneralOptions(SoyGeneralOptions generalOptions) {
       Preconditions.checkState(
           lazyGeneralOptions == null,
           "Call SoyFileSet#setGeneralOptions before any other setters.");
       Preconditions.checkNotNull(generalOptions, "Non-null argument expected.");
       lazyGeneralOptions = generalOptions.clone();
+      return this;
     }
 
     /**
@@ -265,71 +266,6 @@ public final class SoyFileSet {
       return this;
     }
 
-    /**
-     * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
-     * desired file path for messages.
-     *
-     * @param contentSource Source for the Soy file content.
-     * @param soyFileKind The kind of this input Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder addWithKind(CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(contentSource, soyFileKind, filePath));
-    }
-
-    /**
-     * Adds an input Soy file, given a {@code File}.
-     *
-     * @param inputFile The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @return This builder.
-     */
-    public Builder addWithKind(File inputFile, SoyFileKind soyFileKind) {
-      return addFile(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}, as well as the desired file path for
-     * messages.
-     *
-     * @param inputFileUrl The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
-    }
-
-    /**
-     * Adds an input Soy file, given a resource {@code URL}.
-     *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
-     * inputFileUrl.toString()}. If this is not the case, please use {@link #addWithKind(URL,
-     * SoyFileKind, String)} instead.
-     *
-     * @see #addWithKind(URL, SoyFileKind, String)
-     * @param inputFileUrl The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @return This builder.
-     */
-    public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
-    }
-
-    /**
-     * Adds an input Soy file, given the file content provided as a string, as well as the desired
-     * file path for messages.
-     *
-     * @param content The Soy file content.
-     * @param soyFileKind The kind of this input Soy file.
-     * @param filePath The path to the Soy file (used for messages only).
-     * @return This builder.
-     */
-    public Builder addWithKind(CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
-    }
 
     /**
      * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
@@ -340,7 +276,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSource contentSource, String filePath) {
-      return addWithKind(contentSource, SoyFileKind.SRC, filePath);
+      return addFile(SoyFileSupplier.Factory.create(contentSource, filePath));
     }
 
     /**
@@ -352,7 +288,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl, String filePath) {
-      return addWithKind(inputFileUrl, SoyFileKind.SRC, filePath);
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, filePath));
     }
 
     /**
@@ -367,7 +303,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl) {
-      return addWithKind(inputFileUrl, SoyFileKind.SRC);
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl));
     }
 
     /**
@@ -379,7 +315,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSequence content, String filePath) {
-      return addWithKind(content, SoyFileKind.SRC, filePath);
+      return addFile(SoyFileSupplier.Factory.create(content, filePath));
     }
 
     /**
@@ -389,22 +325,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(File inputFile) {
-      return addWithKind(inputFile, SoyFileKind.SRC);
-    }
-
-    /**
-     * Adds an input Soy file that supports checking for modifications, given a {@code File}.
-     *
-     * <p>Note: This does nothing by itself. It should be used in conjunction with a feature that
-     * actually checks for volatile files. Currently, that feature is {@link
-     * #setSoyAstCache(SoyAstCache)}.
-     *
-     * @param inputFile The Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     * @return This builder.
-     */
-    public Builder addVolatileWithKind(File inputFile, SoyFileKind soyFileKind) {
-      return addFile(new VolatileSoyFileSupplier(inputFile, soyFileKind));
+      return addFile(SoyFileSupplier.Factory.create(inputFile));
     }
 
     /**
@@ -418,7 +339,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addVolatile(File inputFile) {
-      return addVolatileWithKind(inputFile, SoyFileKind.SRC);
+      return addFile(new VolatileSoyFileSupplier(inputFile));
     }
 
     /**

@@ -25,7 +25,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import org.junit.Test;
@@ -55,7 +54,6 @@ public final class TemplateRegistryTest {
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz}\n"
                         + "{/deltemplate}",
-                    SoyFileKind.SRC,
                     "example.soy"))
             .parse()
             .registry();
@@ -78,14 +76,12 @@ public final class TemplateRegistryTest {
                         + "/** Template. */\n"
                         + "{template .foo}\n"
                         + "{/template}\n",
-                    SoyFileKind.SRC,
                     "bar.soy"),
                 SoyFileSupplier.Factory.create(
                     "{namespace ns2}\n"
                         + "/** Template. */\n"
                         + "{template .foo}\n"
                         + "{/template}\n",
-                    SoyFileKind.SRC,
                     "baz.soy"))
             .parse()
             .registry();
@@ -107,7 +103,6 @@ public final class TemplateRegistryTest {
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
                         + "{/deltemplate}",
-                    SoyFileKind.SRC,
                     "foo.soy"),
                 SoyFileSupplier.Factory.create(
                     "{delpackage foo}\n"
@@ -115,7 +110,6 @@ public final class TemplateRegistryTest {
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
                         + "{/deltemplate}",
-                    SoyFileKind.SRC,
                     "bar.soy"))
             .parse()
             .registry();
@@ -189,7 +183,6 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{template .foo kind=\"attributes\"}\n"
                         + "{/template}\n",
-                    SoyFileKind.SRC,
                     "example.soy"))
             .parse()
             .registry();
@@ -214,7 +207,6 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{template .foo kind=\"attributes\"}\n"
                         + "{/template}\n",
-                    SoyFileKind.SRC,
                     "example.soy"))
             .parse()
             .registry();
@@ -238,7 +230,6 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{deltemplate ns.foo kind=\"attributes\"}\n"
                         + "{/deltemplate}\n",
-                    SoyFileKind.SRC,
                     "example.soy"))
             .parse()
             .registry();
@@ -261,7 +252,6 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{deltemplate ns.foo kind=\"attributes\"}\n"
                         + "{/deltemplate}\n",
-                    SoyFileKind.SRC,
                     "example.soy"))
             .parse()
             .registry();

@@ -24,7 +24,6 @@ import com.google.common.io.CharSource;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -182,7 +181,6 @@ public class SoyConformanceTest {
                     + "{template .foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SoyFileKind.SRC,
             "foo/bar/baz.soy"));
   }
 
@@ -202,7 +200,6 @@ public class SoyConformanceTest {
                     + "{template .foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SoyFileKind.SRC,
             "a/b/c/foo/bar/baz.soy"));
   }
 
@@ -222,7 +219,6 @@ public class SoyConformanceTest {
                     + "{template .foo}\n"
                     + "{checkNotNull(['xxx', 'bar', 'yyy', 'baz'])}\n"
                     + "{/template}"),
-            SoyFileKind.SRC,
             "a/b/c/foo/bar/baz.soy"));
   }
 
@@ -421,7 +417,6 @@ public class SoyConformanceTest {
                     + "{template .foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SoyFileKind.SRC,
             "foo/bar/baz.soy"));
   }
 
@@ -443,11 +438,9 @@ public class SoyConformanceTest {
                     + "{template .foo}\n"
                     + "<script onload='foo();'></script>\n"
                     + "{/template}"),
-            SoyFileKind.SRC,
             "foo/bar/baz.soy"),
         new StableSoyFileSupplier(
             CharSource.wrap("{namespace ns}\n" + "{template .noViolation}{/template}"),
-            SoyFileKind.SRC,
             "foo/bar/quux.soy"));
   }
 

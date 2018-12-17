@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -27,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
@@ -270,8 +268,6 @@ public final class PassManager {
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
-    // All single file passes only run on source files
-    checkArgument(file.getSoyFileKind() == SoyFileKind.SRC);
     if (isPassManagerStopped) {
       return;
     }

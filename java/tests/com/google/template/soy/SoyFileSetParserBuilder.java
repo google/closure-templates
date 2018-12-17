@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
@@ -248,8 +247,7 @@ public final class SoyFileSetParserBuilder {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.
       String filePath = (i == 0) ? "no-path" : ("no-path-" + (i + 1));
-      soyFileSuppliers.add(
-          SoyFileSupplier.Factory.create(soyFileContent, SoyFileKind.SRC, filePath));
+      soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, filePath));
     }
     return soyFileSuppliers;
   }

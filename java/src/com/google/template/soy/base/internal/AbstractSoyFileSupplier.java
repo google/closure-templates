@@ -30,9 +30,6 @@ import java.util.Objects;
  */
 public abstract class AbstractSoyFileSupplier extends CharSource implements SoyFileSupplier {
 
-  /** Whether this input file is only included because it's a dependency. */
-  protected final SoyFileKind soyFileKind;
-
   /** Returns the file path (used for messages only). */
   protected final String filePath;
 
@@ -40,8 +37,7 @@ public abstract class AbstractSoyFileSupplier extends CharSource implements SoyF
    * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public AbstractSoyFileSupplier(SoyFileKind soyFileKind, String filePath) {
-    this.soyFileKind = soyFileKind;
+  public AbstractSoyFileSupplier(String filePath) {
     Preconditions.checkState(
         filePath != null && !filePath.isEmpty(), "Soy file path must be non-null and non-empty.");
     this.filePath = filePath;
@@ -55,11 +51,6 @@ public abstract class AbstractSoyFileSupplier extends CharSource implements SoyF
   @Override
   public final Reader openStream() throws IOException {
     return open();
-  }
-
-  @Override
-  public SoyFileKind getSoyFileKind() {
-    return soyFileKind;
   }
 
   @Override
@@ -80,7 +71,7 @@ public abstract class AbstractSoyFileSupplier extends CharSource implements SoyF
   public boolean equals(Object other) {
     if (other instanceof AbstractSoyFileSupplier && other.getClass() == this.getClass()) {
       AbstractSoyFileSupplier otherSupplier = (AbstractSoyFileSupplier) other;
-      return filePath.equals(otherSupplier.filePath) && soyFileKind == otherSupplier.soyFileKind;
+      return filePath.equals(otherSupplier.filePath);
     }
     return false;
   }
@@ -88,6 +79,6 @@ public abstract class AbstractSoyFileSupplier extends CharSource implements SoyF
   /** Hashes based on the file path. */
   @Override
   public int hashCode() {
-    return Objects.hash(filePath, soyFileKind, this.getClass());
+    return Objects.hash(filePath, this.getClass());
   }
 }

@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -88,14 +87,6 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
-
-  @Override
-  protected void visitSoyFileNode(SoyFileNode node) {
-    // only extract from source files
-    if (node.getSoyFileKind() == SoyFileKind.SRC) {
-      visitChildren(node);
-    }
-  }
 
   @Override
   protected void visitMsgNode(MsgNode node) {

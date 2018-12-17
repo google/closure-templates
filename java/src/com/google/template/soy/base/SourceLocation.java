@@ -226,8 +226,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       if (line == -1 && column == -1) {
         return UNKNOWN_POINT;
       }
-      checkArgument(line > 0);
-      checkArgument(column > 0);
+      checkArgument(line > 0, "line must be positive: %s", line);
+      checkArgument(column > 0, "column must be positive: %s", column);
       return new AutoValue_SourceLocation_Point(line, column);
     }
 

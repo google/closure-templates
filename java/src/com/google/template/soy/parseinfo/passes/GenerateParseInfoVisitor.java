@@ -33,7 +33,6 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -271,10 +270,8 @@ public final class GenerateParseInfoVisitor
     // to resolve collisions, and then adding the common suffix "SoyInfo".
     Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = HashMultimap.create();
     for (SoyFileNode soyFile : node.getChildren()) {
-      if (soyFile.getSoyFileKind() == SoyFileKind.SRC) {
-        baseGeneratedClassNameToSoyFilesMap.put(
-            javaClassNameSource.generateBaseClassName(soyFile), soyFile);
-      }
+      baseGeneratedClassNameToSoyFilesMap.put(
+          javaClassNameSource.generateBaseClassName(soyFile), soyFile);
     }
     soyFileToJavaClassNameMap = Maps.newHashMap();
     for (String baseClassName : baseGeneratedClassNameToSoyFilesMap.keySet()) {
@@ -300,10 +297,6 @@ public final class GenerateParseInfoVisitor
 
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
-    if (node.getSoyFileKind() != SoyFileKind.SRC) {
-      return; // don't generate code for deps
-    }
-
     String javaClassName = soyFileToJavaClassNameMap.get(node);
 
     // Collect the following:

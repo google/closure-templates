@@ -41,10 +41,9 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
    * without warning.
    *
    * @param file The underlying file to read.
-   * @param soyFileKind The kind of this input Soy file.
    */
-  public VolatileSoyFileSupplier(File file, SoyFileKind soyFileKind) {
-    super(soyFileKind, file.getPath());
+  public VolatileSoyFileSupplier(File file) {
+    super(file.getPath());
     this.file = file;
   }
 

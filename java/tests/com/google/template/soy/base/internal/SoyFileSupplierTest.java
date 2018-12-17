@@ -30,7 +30,7 @@ public final class SoyFileSupplierTest {
   @Test
   public void testPercentEncodingInFileUrl() throws Exception {
     URL url = new URL("file:///foo/bar%20baz");
-    SoyFileSupplier sfs = SoyFileSupplier.Factory.create(url, SoyFileKind.SRC, "/test/path");
+    SoyFileSupplier sfs = SoyFileSupplier.Factory.create(url, "/test/path");
     Truth.assertThat(sfs.getFilePath()).isEqualTo("/foo/bar baz");
   }
 
@@ -38,7 +38,7 @@ public final class SoyFileSupplierTest {
   public void testMalformedFileURL() throws Exception {
     URL url = new URL("file:///foo/bar|baz");
     try {
-      SoyFileSupplier.Factory.create(url, SoyFileKind.SRC, "/test/path");
+      SoyFileSupplier.Factory.create(url, "/test/path");
       fail();
     } catch (RuntimeException expected) {
     }

@@ -56,7 +56,6 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -537,9 +536,6 @@ public class SoyFileParser {
   /** Node id generator for the tree being built. */
   private IdGenerator nodeIdGen;
 
-  /** The kind of this Soy file. */
-  private SoyFileKind soyFileKind;
-
   /** Path of source being parsed. This is descriptive, not a means to refetch source. */
   private String filePath;
 
@@ -562,7 +558,6 @@ public class SoyFileParser {
    * @param typeRegistry The type registry for resolving type names.
    * @param nodeIdGen The node id generator for the tree being built.
    * @param input The input to parse.
-   * @param soyFileKind The kind of this Soy file.
    * @param filePath The path of the source being parsed. Used for reporting.
    * @param errorReporter For reporting parse errors.
    */
@@ -571,7 +566,6 @@ public class SoyFileParser {
       PluginResolver pluginResolver,
       IdGenerator nodeIdGen,
       Reader input,
-      SoyFileKind soyFileKind,
       String filePath,
       ErrorReporter errorReporter,
       ImmutableSet<String> experimentalFeatures) {
@@ -579,7 +573,6 @@ public class SoyFileParser {
     this.typeRegistry = checkNotNull(typeRegistry);
     this.pluginResolver = checkNotNull(pluginResolver);
     this.nodeIdGen = checkNotNull(nodeIdGen);
-    this.soyFileKind = checkNotNull(soyFileKind);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
     this.experimentalFeatures = checkNotNull(experimentalFeatures);
@@ -1241,8 +1234,7 @@ private SoyFileNode SoyFile() :
 
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
-    SoyFileNode sfn =
-        new SoyFileNode(nodeIdGen.genId(), filePath, soyFileKind, namespace, headerInfo);
+    SoyFileNode sfn = new SoyFileNode(nodeIdGen.genId(), filePath, namespace, headerInfo);
   }
 
   (

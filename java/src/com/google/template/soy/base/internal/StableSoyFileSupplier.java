@@ -37,11 +37,10 @@ public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
    * as the desired file path for messages.
    *
    * @param contentSource Source for the Soy file content.
-   * @param soyFileKind The kind of this input Soy file.
    * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
    */
-  public StableSoyFileSupplier(CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
-    super(soyFileKind, filePath);
+  public StableSoyFileSupplier(CharSource contentSource, String filePath) {
+    super(filePath);
     this.contentSource = contentSource;
   }
 

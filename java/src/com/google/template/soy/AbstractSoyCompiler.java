@@ -20,7 +20,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
@@ -43,7 +42,6 @@ import java.io.PrintStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,28 +78,12 @@ public abstract class AbstractSoyCompiler {
   private List<String> srcs = new ArrayList<>();
 
   @Option(
-    name = "--deps",
-    usage =
-        "The list of dependency Soy files (if applicable). The compiler needs deps for"
-            + " analysis/checking, but will not generate code for dep files.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
-  private List<String> deps = new ArrayList<>();
-
-  @Option(
       name = "--depHeaders",
       usage =
           "The list of dependency Soy header files (if applicable). The compiler needs deps for"
               + " analysis/checking..",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> depHeaders = new ArrayList<>();
-
-  @Option(
-    name = "--indirectDeps",
-    usage = "Soy files required by deps, but which may not be used by srcs.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
-  private List<String> indirectDeps = new ArrayList<>();
 
   @Option(
       name = "--indirectDepHeaders",
@@ -250,20 +232,6 @@ public abstract class AbstractSoyCompiler {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
-    if (!depHeaders.isEmpty() || !indirectDepHeaders.isEmpty()) {
-      if (!deps.isEmpty()) {
-        exitWithError(
-            "Cannot pass --deps when also passing --depHeaders or --indirectDepHeaders, "
-                + "use one style for passing information about dependencies");
-      }
-      if (!indirectDeps.isEmpty()) {
-        exitWithError(
-            "Cannot pass --indirectDeps when also passing --depHeaders or "
-                + "--indirectDepHeaders, use one style for passing information about "
-                + "dependencies");
-      }
-    }
-
     SoyFileSet.Builder sfsBuilder;
     if (!pluginModules.isEmpty()) {
       guiceTimer.start();
@@ -296,7 +264,14 @@ public abstract class AbstractSoyCompiler {
                 + ioe.getMessage());
       }
     }
-    addSoyFilesToBuilder(sfsBuilder, ImmutableSet.copyOf(srcs), deps, indirectDeps);
+    // add sources
+    for (String src : srcs) {
+      try {
+        sfsBuilder.add(soyCompilerFileReader.read(src).asCharSource(StandardCharsets.UTF_8), src);
+      } catch (FileNotFoundException fnfe) {
+        throw new CommandLineError("File: " + src + " passed to --srcs does not exist");
+      }
+    }
     addCompilationUnitsToBuilder(sfsBuilder);
     sfsBuilder.setCompileTimeGlobals(parseGlobals());
     // Disable optimizer if the flag is set to true.
@@ -419,47 +394,5 @@ public abstract class AbstractSoyCompiler {
    */
   static final RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError("Error: " + errorMsg);
-  }
-
-  /**
-   * Helper to add srcs and deps Soy files to a SoyFileSet builder. Also does sanity checks.
-   *
-   * @param sfsBuilder The SoyFileSet builder to add to.
-   * @param srcs The srcs from the --srcs flag. Exactly one of 'srcs' and 'args' must be nonempty.
-   * @param deps The deps from the --deps flag, or empty list if not applicable.
-   * @param indirectDeps The deps from the --indirectDeps flag, or empty list if not applicable.
-   */
-  private void addSoyFilesToBuilder(
-      SoyFileSet.Builder sfsBuilder,
-      Collection<String> srcs,
-      Collection<String> deps,
-      Collection<String> indirectDeps) {
-    // TODO(lukes): make it an error for there to be duplicates within any collection or between
-    // srcs and deps/indirect deps.  It is ok for a file to be both a dep and an indirect dep
-    // Use set of all the files seen so far, so we don't add the same file multiple times (which is
-    // an error in SoyFileSet).  Do it in this order, so that the if a file is both a src and a dep
-    // we will treat it as a src.
-    Set<String> soFar = new HashSet<>();
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.SRC, "--srcs", srcs, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.DEP, "--deps", deps, soFar);
-    addAllIfNotPresent(sfsBuilder, SoyFileKind.INDIRECT_DEP, "--indirectDeps", indirectDeps, soFar);
-  }
-
-  private void addAllIfNotPresent(
-      SoyFileSet.Builder builder,
-      SoyFileKind kind,
-      String flag,
-      Collection<String> files,
-      Set<String> soFar) {
-    for (String file : files) {
-      if (soFar.add(file)) {
-        try {
-          builder.addWithKind(
-              soyCompilerFileReader.read(file).asCharSource(StandardCharsets.UTF_8), kind, file);
-        } catch (FileNotFoundException fnfe) {
-          throw new CommandLineError("File: " + file + " passed to " + flag + " does not exist");
-        }
-      }
-    }
   }
 }

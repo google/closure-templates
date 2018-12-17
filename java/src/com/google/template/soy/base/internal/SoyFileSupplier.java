@@ -72,9 +72,6 @@ public interface SoyFileSupplier {
   /** True if the underlying resource has changed since the given version. */
   boolean hasChangedSince(Version version);
 
-  /** Returns the kind of this input Soy file. */
-  SoyFileKind getSoyFileKind();
-
   /** Returns the path to the Soy file, used for as a unique map/set key and for messages. */
   String getFilePath();
 
@@ -96,9 +93,8 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(
-        CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
-      return new StableSoyFileSupplier(contentSource, soyFileKind, filePath);
+    public static SoyFileSupplier create(CharSource contentSource, String filePath) {
+      return new StableSoyFileSupplier(contentSource, filePath);
     }
 
     /**
@@ -107,8 +103,8 @@ public interface SoyFileSupplier {
      * @param inputFile The Soy file.
      * @param soyFileKind The kind of this input Soy file.
      */
-    public static SoyFileSupplier create(File inputFile, SoyFileKind soyFileKind) {
-      return create(Files.asCharSource(inputFile, UTF_8), soyFileKind, inputFile.getPath());
+    public static SoyFileSupplier create(File inputFile) {
+      return create(Files.asCharSource(inputFile, UTF_8), inputFile.getPath());
     }
 
     /**
@@ -119,8 +115,7 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(
-        URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
+    public static SoyFileSupplier create(URL inputFileUrl, String filePath) {
       if (inputFileUrl.getProtocol().equals("file")) {
         // If the URL corresponds to a local file (such as a resource during local development),
         // open it up as a volatile file, so we can account for changes to the file.
@@ -130,9 +125,9 @@ public interface SoyFileSupplier {
         } catch (URISyntaxException ex) {
           throw new RuntimeException(ex);
         }
-        return new VolatileSoyFileSupplier(new File(inputFileUri), soyFileKind);
+        return new VolatileSoyFileSupplier(new File(inputFileUri));
       } else {
-        return create(Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
+        return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
       }
     }
 
@@ -147,8 +142,8 @@ public interface SoyFileSupplier {
      * @param inputFileUrl The URL of the Soy file.
      * @param soyFileKind The kind of this input Soy file.
      */
-    public static SoyFileSupplier create(URL inputFileUrl, SoyFileKind soyFileKind) {
-      return create(inputFileUrl, soyFileKind, inputFileUrl.toString());
+    public static SoyFileSupplier create(URL inputFileUrl) {
+      return create(inputFileUrl, inputFileUrl.toString());
     }
 
     /**
@@ -159,9 +154,8 @@ public interface SoyFileSupplier {
      * @param soyFileKind The kind of this input Soy file.
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
-    public static SoyFileSupplier create(
-        CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      return create(CharSource.wrap(content), soyFileKind, filePath);
+    public static SoyFileSupplier create(CharSequence content, String filePath) {
+      return create(CharSource.wrap(content), filePath);
     }
 
     private Factory() {
