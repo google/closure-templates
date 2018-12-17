@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * <p>Prefer implementing {@link CompilerFilePass} whenever possible. This should only be used for
  * passes that need to access transitive callee information.
  */
-abstract class CompilerFileSetPass {
+abstract class CompilerFileSetPass extends CompilerPass {
   enum Result {
     CONTINUE,
     STOP;
@@ -36,17 +36,4 @@ abstract class CompilerFileSetPass {
   /** Runs the pass and returns whether or not compilation should abort. */
   abstract Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
-
-  String name() {
-    String simpleName = getClass().getSimpleName();
-    if (simpleName.endsWith("Pass")) {
-      return simpleName.substring(0, simpleName.length() - "Pass".length());
-    }
-    return simpleName;
-  }
-
-  @Override
-  public String toString() {
-    return name();
-  }
 }

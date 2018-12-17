@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
 
@@ -30,25 +29,7 @@ import com.google.template.soy.soytree.SoyFileNode;
  * not. Making the ASTs immutable probably isn't worth it, but we could consider adding a
  * 'freeze/unfreeze' API.
  */
-public abstract class CompilerFilePass {
-  @LazyInit private String name;
+public abstract class CompilerFilePass extends CompilerPass {
 
   public abstract void run(SoyFileNode file, IdGenerator nodeIdGen);
-
-  public String name() {
-    String localName = this.name;
-    if (localName == null) {
-      localName = getClass().getSimpleName();
-      if (localName.endsWith("Pass")) {
-        localName = localName.substring(0, localName.length() - "Pass".length());
-      }
-      this.name = localName;
-    }
-    return localName;
-  }
-
-  @Override
-  public String toString() {
-    return name();
-  }
 }

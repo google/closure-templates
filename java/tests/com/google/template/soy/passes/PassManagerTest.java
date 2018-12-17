@@ -16,73 +16,67 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
-import com.google.template.soy.soytree.SoyFileNode;
-import java.util.HashMap;
+import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.types.SoyTypeRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class PassManagerTest {
-
-  private static class TestFirstPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode unusedSoyNode, IdGenerator unusedIdGenerator) {}
-  }
-
-  private static class TestSecondPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode unusedSoyNode, IdGenerator unusedIdGenerator) {}
-  }
-
-  private final ImmutableList<CompilerFilePass> compilerPasses =
-      ImmutableList.of(new TestFirstPass(), new TestSecondPass());
-
-  @Test
-  public void testRemapPassContinuationRegistry_remapsStopAfter() throws Exception {
-    HashMap<String, PassContinuationRule> passRules = Maps.newHashMap();
-    passRules.put("TestFirst", PassContinuationRule.STOP_AFTER_PASS);
-
-    ImmutableMap<String, PassContinuationRule> remappedRules =
-        PassManager.remapPassContinuationRegistry(passRules, compilerPasses);
-    assertThat(remappedRules).containsExactly("TestSecond", PassContinuationRule.STOP_BEFORE_PASS);
+  private static PassManager.Builder builder() {
+    return new PassManager.Builder()
+        .setGeneralOptions(new SoyGeneralOptions())
+        .setSoyPrintDirectiveMap(ImmutableMap.of())
+        .setTypeRegistry(new SoyTypeRegistry())
+        .setErrorReporter(ErrorReporter.exploding());
   }
 
   @Test
-  public void testRemapPassContinuationRegistry_removesStopAfterLastPass() throws Exception {
-    HashMap<String, PassContinuationRule> passRules = Maps.newHashMap();
-    passRules.put("TestSecond", PassContinuationRule.STOP_AFTER_PASS);
-
-    ImmutableMap<String, PassContinuationRule> remappedRules =
-        PassManager.remapPassContinuationRegistry(passRules, compilerPasses);
-    assertThat(remappedRules).isEmpty();
+  public void testInvalidRule() {
+    try {
+      builder().addPassContinuationRule("NoSuchPass", PassContinuationRule.STOP_AFTER_PASS).build();
+      fail();
+    } catch (IllegalStateException expected) {
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo(
+              "The following continuation rules don't match any pass: "
+                  + "{NoSuchPass=STOP_AFTER_PASS}");
+    }
   }
 
   @Test
-  public void testRemapPassContinuationRegistry_keepsStopBefore() throws Exception {
-    HashMap<String, PassContinuationRule> passRules = Maps.newHashMap();
-    passRules.put("TestSecond", PassContinuationRule.STOP_BEFORE_PASS);
+  public void testContinuationRule_stopAfter() throws Exception {
+    PassManager manager =
+        builder()
+            .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_AFTER_PASS)
+            .build();
 
-    ImmutableMap<String, PassContinuationRule> remappedRules =
-        PassManager.remapPassContinuationRegistry(passRules, compilerPasses);
-    assertThat(remappedRules).containsExactly("TestSecond", PassContinuationRule.STOP_BEFORE_PASS);
+    assertThat(names(manager.singleFilePasses)).containsExactly("HtmlRewrite");
+    assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
   @Test
-  public void testRemapPassContinuationRegistry_removesContinuee() throws Exception {
-    HashMap<String, PassContinuationRule> passRules = Maps.newHashMap();
-    passRules.put("TestFirst", PassContinuationRule.CONTINUE);
-    passRules.put("TestSecond", PassContinuationRule.STOP_BEFORE_PASS);
+  public void testContinuationRule_stopBefore() throws Exception {
+    PassManager manager =
+        builder()
+            .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS)
+            .build();
 
-    ImmutableMap<String, PassContinuationRule> remappedRules =
-        PassManager.remapPassContinuationRegistry(passRules, compilerPasses);
-    assertThat(remappedRules).containsExactly("TestSecond", PassContinuationRule.STOP_BEFORE_PASS);
+    assertThat(names(manager.singleFilePasses)).isEmpty();
+    assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
+  }
+
+  private static <T extends CompilerPass> ImmutableList<String> names(ImmutableList<T> passes) {
+    return passes.stream().map(CompilerPass::name).collect(toImmutableList());
   }
 }

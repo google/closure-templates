@@ -17,13 +17,10 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
@@ -75,240 +72,35 @@ public final class PassManager {
    * after a pass. By default, compilation continues after each pass without stopping.
    */
   public enum PassContinuationRule {
-    CONTINUE,
     STOP_BEFORE_PASS,
     STOP_AFTER_PASS,
-  };
-
-  private final ImmutableList<CompilerFilePass> singleFilePasses;
-  private final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
-  private final ErrorReporter errorReporter;
-  private final ImmutableMap<String, PassContinuationRule> passContinuationRegistry;
-  private boolean isPassManagerStopped = false;
-
-  /**
-   * Transform all the STOP_AFTER rules into STOP_BEFORE_PASS.
-   *
-   * <p>This greatly simplifies the logic inside {@link #runSingleFilePasses(SoyFileNode,
-   * IdGenerator)} and {@link #runWholeFilesetPasses(SoyFileSetNode)}.
-   */
-  @VisibleForTesting
-  static ImmutableMap<String, PassContinuationRule> remapPassContinuationRegistry(
-      Map<String, PassContinuationRule> passContinuationRegistry,
-      ImmutableList<CompilerFilePass> passList) {
-    ImmutableMap.Builder<String, PassContinuationRule> remappedRegistry = ImmutableMap.builder();
-    for (ImmutableMap.Entry<String, PassContinuationRule> entry :
-        passContinuationRegistry.entrySet()) {
-      switch (entry.getValue()) {
-        case STOP_AFTER_PASS:
-          final String passName = entry.getKey();
-          int passIndex =
-              Iterables.indexOf(
-                  passList,
-                  new Predicate<CompilerFilePass>() {
-                    @Override
-                    public boolean apply(CompilerFilePass input) {
-                      return input.name().equals(passName);
-                    }
-                  });
-          checkState(passIndex != -1, "Couldn't find a pass named %s", passName);
-          // Remap STOP_AFTER to STOP_BEFORE only if the STOP_AFTER rule is not on the last pass.
-          if (passIndex < passList.size() - 1) {
-            remappedRegistry.put(
-                passList.get(passIndex + 1).name(), PassContinuationRule.STOP_BEFORE_PASS);
-          }
-          break;
-        case STOP_BEFORE_PASS:
-          remappedRegistry.put(entry);
-          break;
-        case CONTINUE:
-          // The CONTINUE rule is a no-op.
-          break;
-      }
-    }
-    return remappedRegistry.build();
   }
 
-  private PassManager(Builder builder) {
-    SoyTypeRegistry registry = checkNotNull(builder.registry);
-    this.errorReporter = checkNotNull(builder.errorReporter);
-    SoyGeneralOptions options = checkNotNull(builder.opts);
-    boolean allowUnknownGlobals = builder.allowUnknownGlobals;
-    boolean disableAllTypeChecking = builder.disableAllTypeChecking;
+  @VisibleForTesting final ImmutableList<CompilerFilePass> singleFilePasses;
+  @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
 
-    // Single file passes
-    // These passes perform tree rewriting and all compiler checks that don't require information
-    // about callees.
-    // Note that we try to run all of the single file passes to report as many errors as possible,
-    // meaning that errors reported in earlier passes do not prevent running subsequent passes.
-
-    ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
-        ImmutableList.<CompilerFilePass>builder()
-            .add(new HtmlRewritePass(errorReporter))
-            .add(new BasicHtmlValidationPass(errorReporter))
-            // The check conformance pass needs to run on the rewritten html nodes, so it must
-            // run after HtmlRewritePass
-            .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
-            // needs to run after htmlrewriting, before resolvenames and autoescaping
-            .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
-            // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use to
-            // create placeholders.
-            .add(new InsertMsgPlaceholderNodesPass(errorReporter))
-            .add(new RewriteRemaindersPass(errorReporter))
-            .add(new RewriteGenderMsgsPass(errorReporter))
-            // Needs to come after any pass that manipulates msg placeholders.
-            .add(new CalculateMsgSubstitutionInfoPass(errorReporter))
-            .add(new CheckNonEmptyMsgNodesPass(errorReporter))
-            // Run before the RewriteGlobalsPass as it removes some globals.
-            .add(new VeRewritePass())
-            .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            // needs to happen after rewrite globals
-            .add(new XidPass(errorReporter))
-            // Needs to be before ResolveNamesPass.
-            .add(new V1ExpressionPass(builder.allowV1Expression, errorReporter))
-            .add(new ResolveNamesPass(errorReporter))
-            // needs to be after ResolveNames and MsgsPass
-            .add(new MsgWithIdFunctionPass(errorReporter))
-            // can run anywhere
-            .add(new CheckEscapingSanityFilePass(errorReporter));
-    // The StrictHtmlValidatorPass needs to run after ResolveNames.
-    if (options.getExperimentalFeatures().contains("new_html_matcher")) {
-      singleFilePassesBuilder.add(new StrictHtmlValidationPassNewMatcher(errorReporter));
-    } else {
-      singleFilePassesBuilder.add(new StrictHtmlValidationPass(errorReporter));
-    }
-
-    if (builder.addHtmlAttributesForDebugging) {
-      // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm) and
-      // before ResolveExpressionTypesPass (since we insert expressions).
-      singleFilePassesBuilder.add(new AddDebugAttributesPass());
-    }
-    if (!disableAllTypeChecking) {
-      singleFilePassesBuilder.add(new CheckDeclaredTypesPass(errorReporter));
-      VeLogValidator veLogValidator = new VeLogValidator(builder.loggingConfig, errorReporter);
-      singleFilePassesBuilder.add(
-          new ResolveExpressionTypesPass(registry, errorReporter, veLogValidator));
-      // needs to run after both resolve types and htmlrewrite pass
-      singleFilePassesBuilder.add(new VeLogValidationPass(errorReporter, veLogValidator, registry));
-    }
-    singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass(errorReporter));
-    if (!allowUnknownGlobals) {
-      // Must come after RewriteGlobalsPass since that is when values are substituted.
-      // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
-      // may issue better error messages.
-      singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
-    }
-    singleFilePassesBuilder.add(
-        new ValidateAliasesPass(registry, errorReporter, options, builder.loggingConfig));
-    // If requiring strict autoescaping, check and enforce it.
-    if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
-      singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));
-    }
-    // Needs to run after HtmlRewritePass.
-    singleFilePassesBuilder.add(new KeyCommandPass(errorReporter));
-    // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root validation).
-    singleFilePassesBuilder.add(new SoyElementPass(errorReporter));
-
-    this.singleFilePasses = singleFilePassesBuilder.build();
-    this.passContinuationRegistry =
-        remapPassContinuationRegistry(builder.passContinuationRegistry, this.singleFilePasses);
-
-    // Cross template checking passes
-
-    // Fileset passes run on all sources files and have access to a template registry so they can
-    // examine information about dependencies. These are naturally more expensive and should be
-    // reserved for checks that require transitive call information (or full delegate sets).
-    // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
-    // use.
-    ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
-        ImmutableList.<CompilerFileSetPass>builder()
-            .add(new CheckTemplateHeaderVarsPass(errorReporter));
-    if (!disableAllTypeChecking) {
-      crossTemplateCheckingPassesBuilder.add(new CheckTemplateCallsPass(errorReporter));
-    }
-    crossTemplateCheckingPassesBuilder
-        .add(new CheckTemplateVisibilityPass(errorReporter))
-        .add(new CheckDelegatesPass(errorReporter));
-    // If disallowing external calls, perform the check.
-    if (options.allowExternalCalls() == TriState.DISABLED) {
-      crossTemplateCheckingPassesBuilder.add(new StrictDepsPass(errorReporter));
-    }
-    // if htmlrewriting is enabled, don't desugar because later passes want the nodes
-    // we need to run this here, before the autoescaper because the autoescaper may choke on lots
-    // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
-    // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
-    crossTemplateCheckingPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
-
-    if (builder.autoescaperEnabled) {
-      crossTemplateCheckingPassesBuilder.add(
-          new AutoescaperPass(errorReporter, builder.soyPrintDirectives));
-      // Relies on information from the autoescaper and valid type information
-      if (!disableAllTypeChecking) {
-        crossTemplateCheckingPassesBuilder.add(new CheckBadContextualUsagePass(errorReporter));
-      }
-    }
-
-    // Simplification Passes.
-    // These tend to simplify or canonicalize the tree in order to simplify the task of code
-    // generation.
-
-    if (builder.desugarHtmlNodes) {
-      // always desugar before the end since the backends (besides incremental dom) cannot handle
-      // the nodes.
-      crossTemplateCheckingPassesBuilder.add(new DesugarHtmlNodesPass());
-    }
-    // TODO(lukes): there should only be one way to disable the optimizer, not 2
-    if (builder.optimize && options.isOptimizerEnabled()) {
-      crossTemplateCheckingPassesBuilder.add(new OptimizationPass());
-    }
-    // A number of the passes above (desugar, htmlrewrite), may chop up raw text nodes, and the
-    // Optimizer may produce additional RawTextNodes.
-    // Stich them back together here.
-    crossTemplateCheckingPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
-    this.crossTemplateCheckingPasses = crossTemplateCheckingPassesBuilder.build();
+  private PassManager(
+      ImmutableList<CompilerFilePass> singleFilePasses,
+      ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses) {
+    this.singleFilePasses = singleFilePasses;
+    this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
-    if (isPassManagerStopped) {
-      return;
-    }
     for (CompilerFilePass pass : singleFilePasses) {
-      PassContinuationRule rule =
-          passContinuationRegistry.getOrDefault(pass.name(), PassContinuationRule.CONTINUE);
-      // At this point, all the pass continuation rules have either been remapped to
-      // STOP_BEFORE_PASS or removed as no-ops.
-      if (rule == PassContinuationRule.STOP_BEFORE_PASS) {
-        isPassManagerStopped = true;
-        break;
-      } else {
-        pass.run(file, nodeIdGen);
-      }
+      pass.run(file, nodeIdGen);
     }
   }
 
   /**
    * Runs all the fileset passes including the autoescaper and optimization passes if configured.
    */
-  public void runWholeFilesetPasses(
-      final SoyFileSetNode soyTree, final TemplateRegistry templateRegistry) {
-    if (isPassManagerStopped) {
-      return;
-    }
-
+  public void runWholeFilesetPasses(SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : crossTemplateCheckingPasses) {
-      PassContinuationRule rule =
-          passContinuationRegistry.getOrDefault(pass.name(), PassContinuationRule.CONTINUE);
-      // At this point, all the pass continuation rules have either been remapped to
-      // STOP_BEFORE_PASS or removed as no-ops.
-      if (rule == PassContinuationRule.STOP_BEFORE_PASS) {
-        isPassManagerStopped = true;
-      } else {
-        isPassManagerStopped =
-            pass.run(sourceFiles, idGenerator, templateRegistry) == CompilerFileSetPass.Result.STOP;
-      }
-      if (isPassManagerStopped) {
+      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
+      if (result == CompilerFileSetPass.Result.STOP) {
         break;
       }
     }
@@ -319,7 +111,7 @@ public final class PassManager {
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
-    private SoyGeneralOptions opts;
+    private SoyGeneralOptions options;
     private boolean allowUnknownGlobals;
     private boolean allowV1Expression;
     private boolean disableAllTypeChecking;
@@ -330,6 +122,7 @@ public final class PassManager {
     private boolean autoescaperEnabled = true;
     private boolean addHtmlAttributesForDebugging = true;
     private final Map<String, PassContinuationRule> passContinuationRegistry = Maps.newHashMap();
+    private boolean building;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -347,8 +140,8 @@ public final class PassManager {
       return this;
     }
 
-    public Builder setGeneralOptions(SoyGeneralOptions opts) {
-      this.opts = opts;
+    public Builder setGeneralOptions(SoyGeneralOptions options) {
+      this.options = options;
       return this;
     }
 
@@ -443,12 +236,172 @@ public final class PassManager {
      *     ResolveNamesPass} is named "ResolveNames". See {@link CompilerFilePass#name()}.
      */
     public Builder addPassContinuationRule(String passName, PassContinuationRule rule) {
+      checkNotNull(rule);
       passContinuationRegistry.put(passName, rule);
       return this;
     }
 
     public PassManager build() {
-      return new PassManager(this);
+      // Single file passes
+      // These passes perform tree rewriting and all compiler checks that don't require information
+      // about callees.
+      // Note that we try to run all of the single file passes to report as many errors as possible,
+      // meaning that errors reported in earlier passes do not prevent running subsequent passes.
+      building = true;
+      ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
+          ImmutableList.<CompilerFilePass>builder();
+      addPass(new HtmlRewritePass(errorReporter), singleFilePassesBuilder);
+      addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
+      // The check conformance pass needs to run on the rewritten html nodes, so it must
+      // run after HtmlRewritePass
+      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
+      // needs to run after htmlrewriting, before resolvenames and autoescaping
+      addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
+      // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
+      // to create placeholders.
+      addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
+      addPass(new RewriteRemaindersPass(errorReporter), singleFilePassesBuilder);
+      addPass(new RewriteGenderMsgsPass(errorReporter), singleFilePassesBuilder);
+      // Needs to come after any pass that manipulates msg placeholders.
+      addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
+      addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
+      // Run before the RewriteGlobalsPass as it removes some globals.
+      addPass(new VeRewritePass(), singleFilePassesBuilder);
+      addPass(
+          new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter),
+          singleFilePassesBuilder);
+      // needs to happen after rewrite globals
+      addPass(new XidPass(errorReporter), singleFilePassesBuilder);
+      // Needs to be before ResolveNamesPass.
+      addPass(new V1ExpressionPass(allowV1Expression, errorReporter), singleFilePassesBuilder);
+      addPass(new ResolveNamesPass(errorReporter), singleFilePassesBuilder);
+      // needs to be after ResolveNames and MsgsPass
+      addPass(new MsgWithIdFunctionPass(errorReporter), singleFilePassesBuilder);
+      // can run anywhere
+      addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
+      // The StrictHtmlValidatorPass needs to run after ResolveNames.
+      if (options.getExperimentalFeatures().contains("new_html_matcher")) {
+        addPass(new StrictHtmlValidationPassNewMatcher(errorReporter), singleFilePassesBuilder);
+      } else {
+        addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
+      }
+
+      if (addHtmlAttributesForDebugging) {
+        // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
+        // and before ResolveExpressionTypesPass (since we insert expressions).
+        addPass(new AddDebugAttributesPass(), singleFilePassesBuilder);
+      }
+      if (!disableAllTypeChecking) {
+        addPass(new CheckDeclaredTypesPass(errorReporter), singleFilePassesBuilder);
+        VeLogValidator veLogValidator = new VeLogValidator(loggingConfig, errorReporter);
+        addPass(
+            new ResolveExpressionTypesPass(registry, errorReporter, veLogValidator),
+            singleFilePassesBuilder);
+        // needs to run after both resolve types and htmlrewrite pass
+        addPass(
+            new VeLogValidationPass(errorReporter, veLogValidator, registry),
+            singleFilePassesBuilder);
+      }
+      addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);
+      if (!allowUnknownGlobals) {
+        // Must come after RewriteGlobalsPass since that is when values are substituted.
+        // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
+        // may issue better error messages.
+        addPass(new CheckGlobalsPass(errorReporter), singleFilePassesBuilder);
+      }
+      addPass(
+          new ValidateAliasesPass(registry, errorReporter, options, loggingConfig),
+          singleFilePassesBuilder);
+      // If requiring strict autoescaping, check and enforce it.
+      if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
+        addPass(new AssertStrictAutoescapingPass(errorReporter), singleFilePassesBuilder);
+      }
+      // Needs to run after HtmlRewritePass.
+      addPass(new KeyCommandPass(errorReporter), singleFilePassesBuilder);
+      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
+      // validation).
+      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
+
+      // Cross template checking passes
+
+      // Fileset passes run on all sources files and have access to a template registry so they can
+      // examine information about dependencies. These are naturally more expensive and should be
+      // reserved for checks that require transitive call information (or full delegate sets).
+      // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
+      // use.
+      ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
+          ImmutableList.<CompilerFileSetPass>builder();
+      addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      if (!disableAllTypeChecking) {
+        addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      }
+      addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      addPass(new CheckDelegatesPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      // If disallowing external calls, perform the check.
+      if (options.allowExternalCalls() == TriState.DISABLED) {
+        addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      }
+      // if htmlrewriting is enabled, don't desugar because later passes want the nodes
+      // we need to run this here, before the autoescaper because the autoescaper may choke on lots
+      // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
+      // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
+      addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
+
+      if (autoescaperEnabled) {
+        addPass(
+            new AutoescaperPass(errorReporter, soyPrintDirectives),
+            crossTemplateCheckingPassesBuilder);
+        // Relies on information from the autoescaper and valid type information
+        if (!disableAllTypeChecking) {
+          addPass(
+              new CheckBadContextualUsagePass(errorReporter), crossTemplateCheckingPassesBuilder);
+        }
+      }
+
+      // Simplification Passes.
+      // These tend to simplify or canonicalize the tree in order to simplify the task of code
+      // generation.
+
+      if (desugarHtmlNodes) {
+        // always desugar before the end since the backends (besides incremental dom) cannot handle
+        // the nodes.
+        addPass(new DesugarHtmlNodesPass(), crossTemplateCheckingPassesBuilder);
+      }
+      // TODO(lukes): there should only be one way to disable the optimizer, not 2
+      if (optimize && options.isOptimizerEnabled()) {
+        addPass(new OptimizationPass(), crossTemplateCheckingPassesBuilder);
+      }
+      // A number of the passes above (desugar, htmlrewrite), may chop up raw text nodes, and the
+      // Optimizer may produce additional RawTextNodes.
+      // Stich them back together here.
+      addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
+      building = false;
+      if (!passContinuationRegistry.isEmpty()) {
+        throw new IllegalStateException(
+            "The following continuation rules don't match any pass: " + passContinuationRegistry);
+      }
+      return new PassManager(
+          singleFilePassesBuilder.build(), crossTemplateCheckingPassesBuilder.build());
+    }
+
+    <T extends CompilerPass> void addPass(T pass, ImmutableList.Builder<T> builder) {
+      PassContinuationRule rule = passContinuationRegistry.remove(pass.name());
+      if (!building) {
+        return;
+      }
+      if (rule == null) {
+        builder.add(pass);
+        return;
+      }
+      switch (rule) {
+        case STOP_AFTER_PASS:
+          builder.add(pass);
+          // fall-through
+        case STOP_BEFORE_PASS:
+          building = false;
+          return;
+      }
+      throw new AssertionError("unhandled rule: " + rule);
     }
   }
 }

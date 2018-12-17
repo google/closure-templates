@@ -662,8 +662,7 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     String soyFile =
         Joiner.on('\n').join("{namespace ns}", "", "{template .test}", templateBody, "{/template}");
     return SoyFileSetParserBuilder.forFileContents(soyFile)
-        // Tests in this suite run the Strict HTML Validation passes manually.
-        .addPassContinuationRule("StrictHtmlValidation", PassContinuationRule.STOP_BEFORE_PASS)
+        // Tests in this suite run the new Strict HTML Validation passes manually.
         .addPassContinuationRule(
             "StrictHtmlValidationPassNewMatcher", PassContinuationRule.STOP_BEFORE_PASS)
         // TODO(b/113531978): Remove the "new_html_matcher" flag when the new HTML matcher
