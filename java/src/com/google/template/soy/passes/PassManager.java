@@ -198,7 +198,8 @@ public final class PassManager {
       // may issue better error messages.
       singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
-    singleFilePassesBuilder.add(new ValidateAliasesPass(registry, errorReporter, options));
+    singleFilePassesBuilder.add(
+        new ValidateAliasesPass(registry, errorReporter, options, builder.loggingConfig));
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new AssertStrictAutoescapingPass(errorReporter));

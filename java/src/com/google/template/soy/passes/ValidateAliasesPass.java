@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -39,15 +40,23 @@ final class ValidateAliasesPass extends CompilerFilePass {
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_PREFIX =
       SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for type ''{1}''.");
 
+  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_VE =
+      SoyErrorKind.of("Alias ''{0}'' conflicts with a VE of the same name.");
+
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
   private final SoyGeneralOptions options;
+  private final ValidatedLoggingConfig loggingConfig;
 
   ValidateAliasesPass(
-      SoyTypeRegistry registry, ErrorReporter errorReporter, SoyGeneralOptions options) {
+      SoyTypeRegistry registry,
+      ErrorReporter errorReporter,
+      SoyGeneralOptions options,
+      ValidatedLoggingConfig loggingConfig) {
     this.registry = registry;
     this.errorReporter = errorReporter;
     this.options = options;
+    this.loggingConfig = loggingConfig;
   }
 
   @Override
@@ -77,6 +86,9 @@ final class ValidateAliasesPass extends CompilerFilePass {
           errorReporter.report(
               alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX, alias.alias(), global);
         }
+      }
+      if (loggingConfig.getElement(alias.alias().identifier()) != null) {
+        errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_VE, alias.alias());
       }
     }
   }
