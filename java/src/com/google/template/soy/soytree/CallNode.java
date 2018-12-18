@@ -175,6 +175,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return dataExpr;
   }
 
+  @Nullable
+  public ExprRootNode getKeyExpr() {
+    return keyExpr;
+  }
+
   public boolean getIsPcData() {
     return isPcData;
   }

@@ -258,6 +258,10 @@ public final class PassManager {
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
           ImmutableList.<CompilerFilePass>builder();
       addPass(new HtmlRewritePass(errorReporter), singleFilePassesBuilder);
+      // needs to come early so that it is consistently enforced
+      addPass(
+          new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
+          singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(new ResolveHeaderParamTypesPass(registry, errorReporter), singleFilePassesBuilder);

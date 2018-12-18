@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -30,7 +29,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -104,9 +102,6 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
-  @Nullable
-  abstract SoyGeneralOptions generalOptions();
-
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
   public abstract static class Builder {
@@ -123,8 +118,6 @@ public abstract class SoyFileSetParser {
     public abstract Builder setErrorReporter(ErrorReporter errorReporter);
 
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
-
-    public abstract Builder setGeneralOptions(SoyGeneralOptions generalOptions);
 
     public abstract SoyFileSetParser build();
   }
@@ -216,21 +209,10 @@ public abstract class SoyFileSetParser {
         // This is a resource in a JAR file. Only keep everything after the bang.
         filePath = filePath.substring(lastBangIndex + 1);
       }
-      // TODO(lukes): Don't pass the experiment flags to the parser.  It is
-      // convenient to pass this configuration into the parser, but if we delayed those
-      // operations to later passes (like we do globals), then it would be easier to configure the
-      // parser (duh), and we probably wouldn't need things like SoyTypeRegistry.defaultUknown() and
-      // most importantly it would be easier to cache the result of parsing since it would only
-      // depend on the file contents.
-      return new SoyFileParser(
-              nodeIdGen,
-              soyFileReader,
-              filePath,
-              errorReporter(),
-              generalOptions() == null
-                  ? ImmutableSet.of()
-                  : generalOptions().getExperimentalFeatures())
-          .parseSoyFile();
+      // Think carefully before adding new parameters to the parser.
+      // Currently the only parameters are the id generator, the file, and the errorReporter.  This
+      // ensures that the file be cached without worrying about other compiler inputs.
+      return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter()).parseSoyFile();
     }
   }
 }

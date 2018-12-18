@@ -1085,7 +1085,6 @@ public final class SoyFileSet {
         .setTypeRegistry(typeRegistry)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
-        .setGeneralOptions(generalOptions)
         .build()
         .parse();
   }

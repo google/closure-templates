@@ -430,12 +430,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid number in ''plural case'' command text.");
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
       SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
-  private static final SoyErrorKind PROP_VARS_NOT_ALLOWED =
-      SoyErrorKind.of("@prop declarations are not available for general use.");
-  private static final SoyErrorKind KEY_COMMAND_NOT_ALLOWED =
-      SoyErrorKind.of("The key command is not available for general use.");
-  private static final SoyErrorKind KEY_ATTR_NOT_ALLOWED =
-      SoyErrorKind.of("Key attributes are not available for general use.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -465,8 +459,6 @@ public class SoyFileParser {
           "Parse error at '':''. If this is a record literal, use the new syntax: "
               + "''record(key1: \"value1\", key2: 2)''. If this is a legacy_object_map literal, "
               + "there is no syntax for that, consider using ''map()'' instead.");
-  private static final SoyErrorKind DYNAMIC_VE_NOT_ALLOWED =
-      SoyErrorKind.of("Dynamic VE features are not available for general use.");
 
   private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
       "foreach loops are no longer supported, please switch to the for loop."
@@ -531,9 +523,6 @@ public class SoyFileParser {
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
-  /** Experimental features for this compilation, if any. */
-  private ImmutableSet<String> experimentalFeatures;
-
   /**
    * Constructor that takes a reader object providing the input.
    *
@@ -546,13 +535,11 @@ public class SoyFileParser {
       IdGenerator nodeIdGen,
       Reader input,
       String filePath,
-      ErrorReporter errorReporter,
-      ImmutableSet<String> experimentalFeatures) {
+      ErrorReporter errorReporter) {
     this(input);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
-    this.experimentalFeatures = checkNotNull(experimentalFeatures);
   }
 
   /** Constructor for use by parseExpression() and parseType() only. */
@@ -1342,10 +1329,6 @@ private CommandTagAttribute Attribute() :
       {
         quoteStyle = QuoteStyle.DOUBLE;
         token_source.SwitchTo(EXPR_NO_DOUBLE_QUOTE);
-        // TODO(b/114483225): Remove.
-        if (name.identifier().equals("key") && !experimentalFeatures.contains("prop_vars")) {
-          errorReporter.report(name.location(), KEY_ATTR_NOT_ALLOWED);
-        }
       }
 
       try {
@@ -1368,10 +1351,6 @@ private CommandTagAttribute Attribute() :
       {
         quoteStyle = QuoteStyle.SINGLE;
         token_source.SwitchTo(EXPR_NO_SINGLE_QUOTE);
-        // TODO(b/114483225): Remove.
-        if (name.identifier().equals("key") && !experimentalFeatures.contains("prop_vars")) {
-          errorReporter.report(name.location(), KEY_ATTR_NOT_ALLOWED);
-        }
       }
 
       try {
@@ -1833,14 +1812,10 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
       {
         // it will be null if there is a parse error
         if (propVar != null) {
-          if (!experimentalFeatures.contains("prop_vars")) {
-           errorReporter.report(propVar.nameLocation(), PROP_VARS_NOT_ALLOWED);
-          } else {
-            // We just parsed a prop var, preceding whitespace/doc comments are not important.
-            whitespace = null;
-            soyDoc = null;
-            propVars.add(propVar);
-          }
+          // We just parsed a prop var, preceding whitespace/doc comments are not important.
+          whitespace = null;
+          soyDoc = null;
+          propVars.add(propVar);
         }
       }
     )
@@ -2558,13 +2533,6 @@ private KeyNode KeyStmt() :
   (
     tagBegin = <CMD_BEGIN_KEY>
   )
-
-  {
-    // TODO(b/114483225): Remove.
-    if (!experimentalFeatures.contains("prop_vars")) {
-      errorReporter.report(createSrcLoc(tagBegin), KEY_COMMAND_NOT_ALLOWED);
-    }
-  }
 
   try {
     expr = Expr()
@@ -3719,9 +3687,6 @@ private ExprNode GlobalOrFunctionCallLike() :
     |
       LOOKAHEAD( {ident.identifier().equals("ve")} )
       {
-        if (!experimentalFeatures.contains("dynamic_ve")) {
-          errorReporter.report(ident.location(), DYNAMIC_VE_NOT_ALLOWED);
-        }
         return VeLiteral(ident);
       }
     |
@@ -3813,10 +3778,6 @@ private ExprNode GlobalOrFunctionCallLike() :
 
           {
             SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
-            if ("ve_data".equals(ident.identifier())
-                && !experimentalFeatures.contains("dynamic_ve")) {
-              errorReporter.report(ident.location(), DYNAMIC_VE_NOT_ALLOWED);
-            }
             FunctionNode fnNode = new FunctionNode(ident, loc);
             fnNode.addChildren(params);
             return fnNode;

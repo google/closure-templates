@@ -312,7 +312,6 @@ public final class SoyFileSetParserBuilder {
         .setTypeRegistry(typeRegistry)
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
-        .setGeneralOptions(options)
         .build();
   }
 }
