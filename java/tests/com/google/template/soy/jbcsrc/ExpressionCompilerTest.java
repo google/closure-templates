@@ -44,11 +44,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -59,8 +55,8 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -78,7 +74,6 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
@@ -644,8 +639,14 @@ public class ExpressionCompilerTest {
   }
 
   private SoyExpression compileExpression(String soyExpr) {
+    ImmutableMap.Builder<String, SoyType> types = ImmutableMap.builder();
+    for (Map.Entry<String, SoyExpression> variable : variables.entrySet()) {
+      types.put(variable.getKey(), variable.getValue().soyType());
+    }
     // The fake function allows us to work around the 'can't print bool' restrictions
-    String createTemplateBody = createTemplateBody("fakeFunction(" + soyExpr + ")");
+    String createTemplateBody =
+        SharedTestUtils.createTemplateBodyForExpression(
+            "fakeFunction(" + soyExpr + ")", types.build());
     PrintNode code =
         (PrintNode)
             SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
@@ -668,40 +669,6 @@ public class ExpressionCompilerTest {
                 .getChild(0)
                 .getChild(0);
     return testExpressionCompiler.compile(((FunctionNode) code.getExpr().getChild(0)).getChild(0));
-  }
-
-  private String createTemplateBody(String soyExpr) {
-    // collect all varrefs and apply them as template parameters.  This way all varrefs have a valid
-    // vardef
-    // TODO(lukes): this logic would be useful in a lot of tests and potentially unblock efforts to
-    // eliminate UNDECLARED vars
-    ExprNode expr = SoyFileParser.parseExpression(soyExpr, ErrorReporter.exploding());
-    final StringBuilder templateBody = new StringBuilder();
-    new AbstractExprNodeVisitor<Void>() {
-      final Set<String> names = new HashSet<>();
-
-      @Override
-      protected void visitVarRefNode(VarRefNode node) {
-        if (names.add(node.getName())) {
-          SoyType type = variables.get(node.getName()).soyType();
-          templateBody
-              .append("{@param ")
-              .append(node.getName())
-              .append(": ")
-              .append(type)
-              .append("}\n");
-        }
-      }
-
-      @Override
-      protected void visitExprNode(ExprNode node) {
-        if (node instanceof ParentExprNode) {
-          visitChildren((ParentExprNode) node);
-        }
-      }
-    }.exec(expr);
-    templateBody.append("{" + soyExpr + "}\n");
-    return templateBody.toString();
   }
 
   /**
