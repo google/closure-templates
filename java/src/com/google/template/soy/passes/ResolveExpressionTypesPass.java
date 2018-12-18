@@ -127,6 +127,8 @@ import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import com.google.template.soy.types.VeType;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -239,6 +241,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
   private final SoyTypeRegistry typeRegistry;
 
   private final VeLogValidator veLogValidator;
+  private final TypeNodeConverter typeNodeConverter;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
@@ -250,6 +253,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
     this.veLogValidator = veLogValidator;
+    this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
   @Override
@@ -268,9 +272,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
         TemplateElementNode el = (TemplateElementNode) node;
         visitExpressions(el);
         for (TemplatePropVar prop : el.getPropVars()) {
-          SoyType declaredType = prop.type();
           SoyType actualType = prop.initialValue().getType();
-          if (declaredType != null) {
+          if (prop.getTypeNode() != null) {
+            SoyType declaredType = prop.type();
             if (declaredType.equals(NullType.getInstance())) {
               errorReporter.report(prop.nameLocation(), EXPLICIT_NULL);
             }
@@ -901,19 +905,20 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       }
       ImmutableList.Builder<SoyType> paramTypes = ImmutableList.builder();
       for (String paramTypeString : signature.parameterTypes()) {
-        SoyType paramType =
-            SoyFileParser.parseType(paramTypeString, typeRegistry, className, errorReporter);
+        TypeNode paramType = SoyFileParser.parseType(paramTypeString, className, errorReporter);
         if (paramType == null) {
           return null;
         }
-        paramTypes.add(paramType);
+        paramTypes.add(typeNodeConverter.getOrCreateType(paramType));
       }
-      SoyType returnType =
-          SoyFileParser.parseType(signature.returnType(), typeRegistry, className, errorReporter);
+      TypeNode returnType =
+          SoyFileParser.parseType(signature.returnType(), className, errorReporter);
       if (returnType == null) {
         return null;
       }
-      resolvedSignature = ResolvedSignature.create(paramTypes.build(), returnType);
+      resolvedSignature =
+          ResolvedSignature.create(
+              paramTypes.build(), typeNodeConverter.getOrCreateType(returnType));
       signatureMap.put(signature, resolvedSignature);
       return resolvedSignature;
     }

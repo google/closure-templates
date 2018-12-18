@@ -16,7 +16,9 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
@@ -36,13 +38,11 @@ public final class HeaderParam extends TemplateParam {
   public HeaderParam(
       String name,
       SourceLocation nameLocation,
-      SoyType type,
-      TypeNode typeNode,
+      @Nullable TypeNode typeNode,
       boolean isRequired,
       boolean isInjected,
       @Nullable String desc) {
-    super(name, type, isRequired, isInjected, desc, nameLocation);
-    Preconditions.checkArgument(type != null);
+    super(name, /*type=*/ null, isRequired, isInjected, desc, nameLocation);
     this.typeNode = typeNode;
   }
 
@@ -61,12 +61,24 @@ public final class HeaderParam extends TemplateParam {
     return typeNode;
   }
 
+  public void setType(SoyType type) {
+    checkState(this.type == null, "type has already been assigned");
+    this.type = checkNotNull(type);
+  }
+
   @Override
   public HeaderParam copyEssential() {
     // Note: 'desc', nameLocation is nonessential.
     HeaderParam headerParam =
-        new HeaderParam(name(), null, type, null, isRequired(), isInjected(), null);
+        new HeaderParam(
+            name(),
+            /*nameLocation=*/ null,
+            /*typeNode=*/ null,
+            isRequired(),
+            isInjected(),
+            /*desc=*/ null);
     headerParam.setLocalVariableIndex(localVariableIndex());
+    headerParam.type = type;
     return headerParam;
   }
 }

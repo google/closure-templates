@@ -1044,10 +1044,10 @@ public final class SoyFileSet {
     ParseResult result =
         parse(
             passManagerBuilder()
-                // HtmlRewrite is the first pass.  So if we stop before it means we don't run
-                // any passes.  This is kind of weird.  Alternatively we could configure the
-                // SoyFileSetParser with a null passmanger, since that is what we want.
-                .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS),
+                // ResolveHeaderParamTypesPass resolve types which is necessary for template
+                // metadatas
+                .addPassContinuationRule(
+                    "ResolveHeaderParamTypes", PassContinuationRule.STOP_AFTER_PASS),
             typeRegistry);
 
     throwIfErrorsPresent();

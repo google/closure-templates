@@ -74,6 +74,10 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
 
     @Override
     public Void visit(GenericTypeNode node) {
+      if (!node.isTypeResolved()) {
+        // this means an error was already reported
+        return null;
+      }
       switch (node.getResolvedType().getKind()) {
         case MAP:
           checkArgument(node.arguments().size() == 2);

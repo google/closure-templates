@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.VarDefn;
@@ -35,7 +36,7 @@ abstract class AbstractVarDefn implements VarDefn {
   @Nullable private final SourceLocation nameLocation;
 
   /** The data type of the value. */
-  protected SoyType type;
+  @Nullable SoyType type;
 
   private int localVariableIndex = -1;
 
@@ -43,7 +44,8 @@ abstract class AbstractVarDefn implements VarDefn {
    * @param name The name of the value.
    * @param type The data type of the value.
    */
-  public AbstractVarDefn(String name, @Nullable SourceLocation nameLocation, SoyType type) {
+  public AbstractVarDefn(
+      String name, @Nullable SourceLocation nameLocation, @Nullable SoyType type) {
     this.name = checkNotNull(name);
     this.nameLocation = nameLocation;
     this.type = type;
@@ -68,6 +70,7 @@ abstract class AbstractVarDefn implements VarDefn {
 
   @Override
   public SoyType type() {
+    checkState(type != null, "type of %s is null @%s", name(), nameLocation());
     return type;
   }
 

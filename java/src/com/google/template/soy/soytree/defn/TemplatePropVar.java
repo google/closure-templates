@@ -37,12 +37,11 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
 
   public TemplatePropVar(
       String name,
-      @Nullable SoyType type,
       @Nullable TypeNode typeNode,
       ExprNode initialValue,
       @Nullable String desc,
       @Nullable SourceLocation nameLocation) {
-    super(name, nameLocation, type);
+    super(name, nameLocation, /*type=*/ null);
     this.typeNode = typeNode;
     this.desc = desc;
     this.initialValue = new ExprRootNode(initialValue);
@@ -55,7 +54,8 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     this.initialValue = propVar.initialValue;
   }
 
-  public TypeNode typeNode() {
+  @Nullable
+  public TypeNode getTypeNode() {
     return typeNode;
   }
 

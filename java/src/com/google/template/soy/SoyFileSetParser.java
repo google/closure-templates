@@ -104,7 +104,6 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
-
   @Nullable
   abstract SoyGeneralOptions generalOptions();
 
@@ -169,7 +168,7 @@ public abstract class SoyFileSetParser {
             cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
         SoyFileNode node;
         if (cachedFile == null) {
-          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry());
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen);
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
@@ -208,8 +207,7 @@ public abstract class SoyFileSetParser {
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    */
-  private SoyFileNode parseSoyFileHelper(
-      SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
+  private SoyFileNode parseSoyFileHelper(SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
       throws IOException {
     try (Reader soyFileReader = soyFileSupplier.open()) {
       String filePath = soyFileSupplier.getFilePath();
@@ -218,14 +216,13 @@ public abstract class SoyFileSetParser {
         // This is a resource in a JAR file. Only keep everything after the bang.
         filePath = filePath.substring(lastBangIndex + 1);
       }
-      // TODO(lukes): Don't pass the typeRegistry or experiment flags to the parser.  It is
+      // TODO(lukes): Don't pass the experiment flags to the parser.  It is
       // convenient to pass this configuration into the parser, but if we delayed those
       // operations to later passes (like we do globals), then it would be easier to configure the
       // parser (duh), and we probably wouldn't need things like SoyTypeRegistry.defaultUknown() and
       // most importantly it would be easier to cache the result of parsing since it would only
       // depend on the file contents.
       return new SoyFileParser(
-              typeRegistry,
               nodeIdGen,
               soyFileReader,
               filePath,

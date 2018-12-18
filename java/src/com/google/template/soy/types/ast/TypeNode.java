@@ -44,6 +44,10 @@ public abstract class TypeNode {
     return resolvedType;
   }
 
+  public boolean isTypeResolved() {
+    return resolvedType != null;
+  }
+
   /** Returns round-trippable (through the parser) source code for this node. */
   @Override
   public abstract String toString();

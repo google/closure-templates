@@ -51,6 +51,8 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
@@ -929,8 +931,9 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
-    return SoyFileParser.parseType(
-        type, TYPE_REGISTRY, "com.google.foo.bar.FakeSoyFunction", errorReporter);
+    TypeNode parsed =
+        SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter);
+    return new TypeNodeConverter(errorReporter, TYPE_REGISTRY).getOrCreateType(parsed);
   }
 
   /**

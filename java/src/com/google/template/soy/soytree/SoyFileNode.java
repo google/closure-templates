@@ -39,6 +39,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
+  private final TemplateNode.SoyFileHeaderInfo headerInfo;
+
   /**
    * @param id The id for this node.
    * @param filePath The path to the Soy source file.
@@ -53,6 +55,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       NamespaceDeclaration namespaceDeclaration,
       TemplateNode.SoyFileHeaderInfo headerInfo) {
     super(id, new SourceLocation(filePath));
+    this.headerInfo = headerInfo;
     this.delPackageName = headerInfo.delPackageName;
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.aliasDeclarations; // immutable
@@ -68,6 +71,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.delPackageName = orig.delPackageName;
     this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
+    this.headerInfo = orig.headerInfo; // immutable
   }
 
   @Override
@@ -116,6 +120,11 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   @Nullable
   public String getFileName() {
     return getSourceLocation().getFileName();
+  }
+
+  /** Resolves a qualified name against the aliases for this file. */
+  public String resolveAlias(String fullName) {
+    return headerInfo.resolveAlias(fullName);
   }
 
   /** @deprecated SoyFileNodes don't have source locations. */

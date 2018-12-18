@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.types.ast;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -28,19 +29,12 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.UnknownType;
-import com.google.template.soy.types.ast.GenericTypeNode;
-import com.google.template.soy.types.ast.NamedTypeNode;
-import com.google.template.soy.types.ast.RecordTypeNode;
-import com.google.template.soy.types.ast.TypeNode;
-import com.google.template.soy.types.ast.TypeNodeVisitor;
-import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /** Resolves {@link TypeNode}s into {@link SoyType}s. */
-final class TypeNodeConverter {
+public final class TypeNodeConverter
+    implements TypeNodeVisitor<SoyType>, Function<TypeNode, SoyType> {
 
   private static final SoyErrorKind UNKNOWN_TYPE =
       SoyErrorKind.of("Unknown type ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
@@ -113,7 +107,7 @@ final class TypeNodeConverter {
   private final ErrorReporter errorReporter;
   private final SoyTypeRegistry typeRegistry;
 
-  TypeNodeConverter(ErrorReporter errorReporter, SoyTypeRegistry typeRegistry) {
+  public TypeNodeConverter(ErrorReporter errorReporter, SoyTypeRegistry typeRegistry) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
   }
@@ -123,105 +117,100 @@ final class TypeNodeConverter {
    *
    * <p>If any errors are encountered they are reported to the error reporter.
    */
-  SoyType getOrCreateType(@Nullable TypeNode node) {
-    if (node == null) {
-      return UnknownType.getInstance();
-    }
-    return node.accept(new ConverterVisitor());
+  public SoyType getOrCreateType(TypeNode node) {
+    return node.accept(this);
   }
 
-  private final class ConverterVisitor
-      implements TypeNodeVisitor<SoyType>, Function<TypeNode, SoyType> {
-    @Override
-    public SoyType visit(NamedTypeNode node) {
-      String name = node.name();
-      SoyType type = typeRegistry.getType(name);
-      if (type == null) {
-        GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-        if (genericType != null) {
-          errorReporter.report(
-              node.sourceLocation(),
-              MISSING_GENERIC_TYPE_PARAMETERS,
-              name,
-              genericType.formatNumTypeParams());
-        } else {
-          errorReporter.report(
-              node.sourceLocation(),
-              UNKNOWN_TYPE,
-              name,
-              SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
-        }
-        type = ErrorType.getInstance();
-      }
-      node.setResolvedType(type);
-      return type;
-    }
-
-    @Override
-    public SoyType visit(GenericTypeNode node) {
-      ImmutableList<TypeNode> args = node.arguments();
-      String name = node.name();
+  @Override
+  public SoyType visit(NamedTypeNode node) {
+    String name = node.name();
+    SoyType type = typeRegistry.getType(name);
+    if (type == null) {
       GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-      if (genericType == null) {
-        errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
-        return ErrorType.getInstance();
-      }
-      if (args.size() < genericType.numParams) {
+      if (genericType != null) {
         errorReporter.report(
-            // blame the '>'
-            node.sourceLocation().getEndLocation(),
-            EXPECTED_TYPE_PARAM,
+            node.sourceLocation(),
+            MISSING_GENERIC_TYPE_PARAMETERS,
             name,
             genericType.formatNumTypeParams());
-        return ErrorType.getInstance();
-      } else if (args.size() > genericType.numParams) {
+      } else {
         errorReporter.report(
-            // blame the first unexpected argument
-            args.get(genericType.numParams).sourceLocation(),
-            UNEXPECTED_TYPE_PARAM,
+            node.sourceLocation(),
+            UNKNOWN_TYPE,
             name,
-            genericType.formatNumTypeParams());
-        return ErrorType.getInstance();
+            SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
       }
+      type = ErrorType.getInstance();
+    }
+    node.setResolvedType(type);
+    return type;
+  }
 
-      SoyType type = genericType.create(Lists.transform(args, this), typeRegistry);
-      node.setResolvedType(type);
-      return type;
+  @Override
+  public SoyType visit(GenericTypeNode node) {
+    ImmutableList<TypeNode> args = node.arguments();
+    String name = node.name();
+    GenericTypeInfo genericType = GENERIC_TYPES.get(name);
+    if (genericType == null) {
+      errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
+      return ErrorType.getInstance();
+    }
+    if (args.size() < genericType.numParams) {
+      errorReporter.report(
+          // blame the '>'
+          node.sourceLocation().getEndLocation(),
+          EXPECTED_TYPE_PARAM,
+          name,
+          genericType.formatNumTypeParams());
+      return ErrorType.getInstance();
+    } else if (args.size() > genericType.numParams) {
+      errorReporter.report(
+          // blame the first unexpected argument
+          args.get(genericType.numParams).sourceLocation(),
+          UNEXPECTED_TYPE_PARAM,
+          name,
+          genericType.formatNumTypeParams());
+      return ErrorType.getInstance();
     }
 
-    @Override
-    public SoyType visit(UnionTypeNode node) {
-      // Copy the result of the transform because transform is lazy. The union evaluation code short
-      // circuits if it sees a ? type so for types like ?|list<?> the union evaluation would get
-      // short circuited and the lazy transform would never visit list<?>. By copying the transform
-      // result (which the transform documentation recommends to avoid lazy evaluation), we ensure
-      // that all type nodes are visited.
-      SoyType type =
-          typeRegistry.getOrCreateUnionType(
-              ImmutableList.copyOf(Lists.transform(node.candidates(), this)));
-      node.setResolvedType(type);
-      return type;
-    }
+    SoyType type = genericType.create(Lists.transform(args, this), typeRegistry);
+    node.setResolvedType(type);
+    return type;
+  }
 
-    @Override
-    public SoyType visit(RecordTypeNode node) {
-      Map<String, SoyType> map = Maps.newLinkedHashMap();
-      for (RecordTypeNode.Property property : node.properties()) {
-        SoyType oldType = map.put(property.name(), property.type().accept(this));
-        if (oldType != null) {
-          errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
-          // restore old mapping and keep going
-          map.put(property.name(), oldType);
-        }
+  @Override
+  public SoyType visit(UnionTypeNode node) {
+    // Copy the result of the transform because transform is lazy. The union evaluation code short
+    // circuits if it sees a ? type so for types like ?|list<?> the union evaluation would get
+    // short circuited and the lazy transform would never visit list<?>. By copying the transform
+    // result (which the transform documentation recommends to avoid lazy evaluation), we ensure
+    // that all type nodes are visited.
+    SoyType type =
+        typeRegistry.getOrCreateUnionType(
+            ImmutableList.copyOf(Lists.transform(node.candidates(), this)));
+    node.setResolvedType(type);
+    return type;
+  }
+
+  @Override
+  public SoyType visit(RecordTypeNode node) {
+    Map<String, SoyType> map = Maps.newLinkedHashMap();
+    for (RecordTypeNode.Property property : node.properties()) {
+      SoyType oldType = map.put(property.name(), property.type().accept(this));
+      if (oldType != null) {
+        errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
+        // restore old mapping and keep going
+        map.put(property.name(), oldType);
       }
-      SoyType type = typeRegistry.getOrCreateRecordType(map);
-      node.setResolvedType(type);
-      return type;
     }
+    SoyType type = typeRegistry.getOrCreateRecordType(map);
+    node.setResolvedType(type);
+    return type;
+  }
 
-    @Override
-    public SoyType apply(TypeNode node) {
-      return node.accept(this);
-    }
+  @DoNotCall
+  @Override
+  public SoyType apply(TypeNode node) {
+    return node.accept(this);
   }
 }

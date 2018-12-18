@@ -126,11 +126,8 @@ import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -504,23 +501,19 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a type node. Returns null if parsing fails. */
   @Nullable
-  public static SoyType parseType(
+  public static TypeNode parseType(
       String typeText,
-      SoyTypeRegistry typeRegistry,
       String filePath,
       ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(typeText, filePath, errorReporter);
     try {
-      return new TypeNodeConverter(errorReporter, typeRegistry).getOrCreateType(parser.TypeExpr());
+      return parser.TypeExpr();
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(
           errorReporter, filePath, e, parser.token_source.curLexState);
       return null;
     }
   }
-
-  /** Type registry for resolving type names. */
-  private SoyTypeRegistry typeRegistry;
 
   /** Node id generator for the tree being built. */
   private IdGenerator nodeIdGen;
@@ -537,31 +530,25 @@ public class SoyFileParser {
   /** Experimental features for this compilation, if any. */
   private ImmutableSet<String> experimentalFeatures;
 
-  private TypeNodeConverter typeNodeConverter;
-
   /**
    * Constructor that takes a reader object providing the input.
    *
-   * @param typeRegistry The type registry for resolving type names.
    * @param nodeIdGen The node id generator for the tree being built.
    * @param input The input to parse.
    * @param filePath The path of the source being parsed. Used for reporting.
    * @param errorReporter For reporting parse errors.
    */
   public SoyFileParser(
-      SoyTypeRegistry typeRegistry,
       IdGenerator nodeIdGen,
       Reader input,
       String filePath,
       ErrorReporter errorReporter,
       ImmutableSet<String> experimentalFeatures) {
     this(input);
-    this.typeRegistry = checkNotNull(typeRegistry);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
     this.experimentalFeatures = checkNotNull(experimentalFeatures);
-    this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
   /** Constructor for use by parseExpression() and parseType() only. */
@@ -581,7 +568,6 @@ public class SoyFileParser {
   /** Attempts to parse the given input as a Soy file. Returns null if parsing fails. */
   @Nullable
   public SoyFileNode parseSoyFile() {
-    checkNotNull(typeRegistry);
     checkNotNull(nodeIdGen);
     Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileNode soyFileNode = null;
@@ -1919,7 +1905,6 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 {
   Token tagBegin, name;
   TypeNode paramTypeNode = null;
-  SoyType paramType = ErrorType.getInstance();
   boolean optional = false;
   boolean inject = false;
 }
@@ -1943,7 +1928,6 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 
   try {
     paramTypeNode = TypeExpr()
-    { paramType = typeNodeConverter.getOrCreateType(paramTypeNode); }
     <CMD_END>
   } catch (ParseException parseException) {
     reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
@@ -1954,14 +1938,35 @@ private HeaderParam ParamDecl(@Nullable String desc) :
       // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
       desc = desc.substring(3, desc.length() - 2).trim();
     }
+    boolean isNullable = false;
+    if (paramTypeNode instanceof UnionTypeNode) {
+      UnionTypeNode utn = (UnionTypeNode) paramTypeNode;
+      for (TypeNode tn : utn.candidates()) {
+        if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().equals("null")) {
+          isNullable = true;
+          break;
+        }
+      }
+    } else if (paramTypeNode instanceof NamedTypeNode && ((NamedTypeNode) paramTypeNode).name().equals("null")) {
+      isNullable = true;
+    }
+    // Optional params become nullable
+    if (optional && !isNullable) {
+      NamedTypeNode nullType = NamedTypeNode.create(createSrcLoc(tagBegin), "null");
+      paramTypeNode = paramTypeNode instanceof UnionTypeNode
+          ? UnionTypeNode.create(
+              ImmutableList.<TypeNode>builder()
+                  .addAll(((UnionTypeNode) paramTypeNode).candidates())
+                  .add(nullType)
+                  .build())
+          : UnionTypeNode.create(ImmutableList.of(paramTypeNode, nullType));
+    }
     return new HeaderParam(
         name.image,
         createSrcLoc(name),
-        // Optional params become nullable
-        optional ? typeRegistry.getOrCreateUnionType(paramType, NullType.getInstance()) : paramType,
         paramTypeNode,
         // the param is required if it isn't optional and the parsed type isn't nullable.
-        !optional && !SoyTypes.isNullable(paramType),
+        !optional && !isNullable,
         inject,
         desc);
   }
@@ -1993,7 +1998,6 @@ private TemplatePropVar PropVarDecl(@Nullable String desc) :
       <CMD_COLON>
 
       propVarTypeNode = TypeExpr()
-      { propVarType = typeNodeConverter.getOrCreateType(propVarTypeNode); }
       <EQ>
       value = Expr()
     |
@@ -2008,7 +2012,6 @@ private TemplatePropVar PropVarDecl(@Nullable String desc) :
   {
     return new TemplatePropVar(
         name.image,
-        propVarType,
         propVarTypeNode,
         value,
         desc,
@@ -3884,14 +3887,7 @@ private ExprNode GlobalOrFunctionCallLike() :
     if (isRecord) {
       return new RecordLiteralNode(ImmutableList.of(), loc);
     }
-    String name = ident.identifier();
-    String resolvedName = headerInfo.resolveAlias(name);
-    SoyType type = (typeRegistry == null) ? null : typeRegistry.getType(resolvedName);
-    if (type != null && type.getKind() == SoyType.Kind.PROTO) {
-      return new ProtoInitNode(resolvedName, ImmutableList.of(), loc);
-    } else {
-      return new FunctionNode(ident, loc);
-    }
+    return new FunctionNode(ident, loc);
   }
 }
 

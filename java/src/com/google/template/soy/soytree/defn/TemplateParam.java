@@ -49,7 +49,7 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
 
   public TemplateParam(
       String name,
-      SoyType type,
+      @Nullable SoyType type,
       boolean isRequired,
       boolean isInjected,
       @Nullable String desc,

@@ -89,6 +89,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
    * are not in a delegate package are given priority 0 (lowest). Delegate templates in a delegate
    * package are given priority 1. There is currently no syntax for the user to override these
    * default priority values.
+   *
+   * <p>TODO(lukes): merge this object with SoyFileNode. The track nearly identical information.
    */
   @Immutable
   public static class SoyFileHeaderInfo {

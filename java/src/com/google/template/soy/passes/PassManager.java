@@ -258,10 +258,12 @@ public final class PassManager {
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
           ImmutableList.<CompilerFilePass>builder();
       addPass(new HtmlRewritePass(errorReporter), singleFilePassesBuilder);
+      // needs to come early since it is necessary to create template metadata objects for
+      // header compilation
+      addPass(new ResolveHeaderParamTypesPass(registry, errorReporter), singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-
       // needs to come before SoyConformancePass
-      addPass(new ResolvePluginsPass(pluginResolver), singleFilePassesBuilder);
+      addPass(new ResolvePluginsPass(pluginResolver, registry), singleFilePassesBuilder);
       // The check conformance pass needs to run on the rewritten html nodes, so it must
       // run after HtmlRewritePass
       addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
