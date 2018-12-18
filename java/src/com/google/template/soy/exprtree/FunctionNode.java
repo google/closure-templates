@@ -17,6 +17,7 @@
 package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
@@ -43,28 +44,24 @@ public final class FunctionNode extends AbstractParentExprNode {
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
    * SoySourceFunction everywhere.
    */
-  private final Object soyFunction;
+  private Object soyFunction;
 
   /** The parameter types this function allows. */
   @Nullable private ImmutableList<SoyType> allowedParamTypes;
 
-  /** Convenience constructor for SoyFunctions. */
-  public FunctionNode(Identifier name, SoyFunction soyFunction, SourceLocation sourceLocation) {
-    this(name, (Object) soyFunction, sourceLocation);
+  /** Convenience constructor for when the function is available. */
+  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
+    this(name, sourceLocation);
+    setSoyFunction(soyFunction);
   }
 
   /**
    * @param soyFunction The SoyFunction.
    * @param sourceLocation The node's source location.
    */
-  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
+  public FunctionNode(Identifier name, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.name = name;
-    checkState(soyFunction instanceof SoyFunction || soyFunction instanceof SoySourceFunction);
-    this.soyFunction = soyFunction;
-    if (soyFunction instanceof SoyFunction) {
-      checkArgument(name.identifier().equals(((SoyFunction) soyFunction).getName()));
-    }
   }
 
   /**
@@ -95,7 +92,18 @@ public final class FunctionNode extends AbstractParentExprNode {
   }
 
   public Object getSoyFunction() {
+    checkState(this.soyFunction != null, "setSoyFunction() hasn't been called yet");
     return soyFunction;
+  }
+
+  public void setSoyFunction(Object soyFunction) {
+    checkNotNull(soyFunction);
+    checkState(soyFunction instanceof SoyFunction || soyFunction instanceof SoySourceFunction);
+    checkState(this.soyFunction == null, "setSoyFunction() was already called");
+    if (soyFunction instanceof SoyFunction) {
+      checkArgument(name.identifier().equals(((SoyFunction) soyFunction).getName()));
+    }
+    this.soyFunction = soyFunction;
   }
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {

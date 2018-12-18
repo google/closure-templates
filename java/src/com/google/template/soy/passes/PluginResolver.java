@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soyparse;
+package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -48,9 +49,6 @@ public final class PluginResolver {
     return new PluginResolver(
         mode, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(), reporter);
   }
-
-  /** Names of Soy constructs that can't be used as plugin names. */
-  public static final ImmutableSet<String> ILLEGAL_PLUGIN_NAMES = ImmutableSet.of("map", "record");
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
       SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
@@ -115,7 +113,7 @@ public final class PluginResolver {
     this.mode = checkNotNull(mode);
     this.printDirectives = checkNotNull(soyPrintDirectives);
     this.reporter = checkNotNull(reporter);
-    for (String illegalName : ILLEGAL_PLUGIN_NAMES) {
+    for (String illegalName : BaseUtils.ILLEGAL_PLUGIN_NAMES) {
       if (soyFunctions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
         reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
       }

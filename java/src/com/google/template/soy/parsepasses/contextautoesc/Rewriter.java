@@ -22,7 +22,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -72,13 +71,11 @@ final class Rewriter {
       ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForNode(printNode);
       for (EscapingMode escapingMode : escapingModes) {
         PrintDirectiveNode newPrintDirective =
-            new PrintDirectiveNode(
+            PrintDirectiveNode.createSyntheticNode(
                 idGen.genId(),
                 Identifier.create(escapingMode.directiveName, printNode.getSourceLocation()),
                 printNode.getSourceLocation(),
-                ImmutableList.<ExprNode>of(),
-                printDirectives.get(escapingMode.directiveName),
-                /* isSynthetic= */ true);
+                printDirectives.get(escapingMode.directiveName));
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
         // but if there are SanitizedContentOperators at the end, then make sure that their input

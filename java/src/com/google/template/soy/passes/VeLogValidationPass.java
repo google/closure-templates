@@ -225,6 +225,9 @@ final class VeLogValidationPass extends CompilerFilePass {
   }
 
   private void validateVeDataFunctionNode(FunctionNode node) {
+    if (node.numChildren() < 1 || node.numChildren() > 2) {
+      return; // an error has already been reported
+    }
     ExprNode veExpr = node.getChild(0);
     ExprNode dataExpr = node.getChild(1);
 

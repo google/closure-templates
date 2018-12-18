@@ -26,7 +26,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soyparse.PluginResolver.Mode;
 
 /**
  * Custom Truth subject for testing expression parsing.
@@ -143,7 +142,6 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   private ExprNode parseExpression() {
-    return SoyFileParser.parseExpression(
-        actual(), PluginResolver.nullResolver(Mode.ALLOW_UNDEFINED, errorReporter), errorReporter);
+    return SoyFileParser.parseExpression(actual(), errorReporter);
   }
 }

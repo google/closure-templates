@@ -484,20 +484,15 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
-    return parseExpression(
-        exprText,
-        PluginResolver.nullResolver(
-            PluginResolver.Mode.REQUIRE_DEFINITIONS,
-            ErrorReporter.exploding()),
-        ErrorReporter.exploding());
+    return parseExpression(exprText, ErrorReporter.exploding());
   }
 
   /** Attempts to parse the given input as a Soy expression. Returns null if parsing fails. */
   @Nullable
   public static ExprNode parseExpression(
-      String exprText, PluginResolver resolver, ErrorReporter errorReporter) {
+      String exprText, ErrorReporter errorReporter) {
     String filePath = "expression parser";
-    SoyFileParser parser = new SoyFileParser(exprText, resolver, filePath, errorReporter);
+    SoyFileParser parser = new SoyFileParser(exprText, filePath, errorReporter);
     try {
       return parser.ExprInput();
     } catch (ParseException e) {
@@ -514,13 +509,7 @@ public class SoyFileParser {
       SoyTypeRegistry typeRegistry,
       String filePath,
       ErrorReporter errorReporter) {
-    SoyFileParser parser = new SoyFileParser(
-        typeText,
-        PluginResolver.nullResolver(
-            PluginResolver.Mode.REQUIRE_DEFINITIONS,
-            errorReporter),
-        filePath,
-        errorReporter);
+    SoyFileParser parser = new SoyFileParser(typeText, filePath, errorReporter);
     try {
       return new TypeNodeConverter(errorReporter, typeRegistry).getOrCreateType(parser.TypeExpr());
     } catch (ParseException e) {
@@ -542,8 +531,6 @@ public class SoyFileParser {
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
 
-  private PluginResolver pluginResolver;
-
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
@@ -563,7 +550,6 @@ public class SoyFileParser {
    */
   public SoyFileParser(
       SoyTypeRegistry typeRegistry,
-      PluginResolver pluginResolver,
       IdGenerator nodeIdGen,
       Reader input,
       String filePath,
@@ -571,7 +557,6 @@ public class SoyFileParser {
       ImmutableSet<String> experimentalFeatures) {
     this(input);
     this.typeRegistry = checkNotNull(typeRegistry);
-    this.pluginResolver = checkNotNull(pluginResolver);
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
@@ -582,14 +567,12 @@ public class SoyFileParser {
   /** Constructor for use by parseExpression() and parseType() only. */
   private SoyFileParser(
       String input,
-      PluginResolver pluginResolver,
       String filePath,
       ErrorReporter errorReporter) {
     // this starts the lexer in a particular state instead of DEFAULT
     this(new SoyFileParserTokenManager(
         new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
     this.filePath = filePath;
-    this.pluginResolver = checkNotNull(pluginResolver);
     this.errorReporter = checkNotNull(errorReporter);
     // Some part of the parser assume that header info is not null.
     this.headerInfo = SoyFileHeaderInfo.EMPTY;
@@ -2600,13 +2583,7 @@ private PrintDirectiveNode PrintDirective() :
     if (!args.isEmpty()) {
       loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
-    return new PrintDirectiveNode(
-        nodeIdGen.genId(),
-        /* name= */ ident,
-        /* location= */ loc,
-        args,
-        pluginResolver.lookupPrintDirective(ident.identifier(), args.size(), loc),
-        /* isSynthetic= */ false);
+    return new PrintDirectiveNode(nodeIdGen.genId(), /* name= */ ident, /* location= */ loc, args);
   }
 }
 
@@ -3886,11 +3863,7 @@ private ExprNode GlobalOrFunctionCallLike() :
                 && !experimentalFeatures.contains("dynamic_ve")) {
               errorReporter.report(ident.location(), DYNAMIC_VE_NOT_ALLOWED);
             }
-            FunctionNode fnNode =
-                new FunctionNode(
-                    ident,
-                    pluginResolver.lookupSoyFunction(ident.identifier(), params.size(), loc),
-                    loc);
+            FunctionNode fnNode = new FunctionNode(ident, loc);
             fnNode.addChildren(params);
             return fnNode;
           }
@@ -3917,7 +3890,7 @@ private ExprNode GlobalOrFunctionCallLike() :
     if (type != null && type.getKind() == SoyType.Kind.PROTO) {
       return new ProtoInitNode(resolvedName, ImmutableList.of(), loc);
     } else {
-      return new FunctionNode(ident, pluginResolver.lookupSoyFunction(name, 0, loc), loc);
+      return new FunctionNode(ident, loc);
     }
   }
 }

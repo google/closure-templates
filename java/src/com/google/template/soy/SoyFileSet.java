@@ -60,6 +60,7 @@ import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
+import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -71,7 +72,6 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -695,23 +695,26 @@ public final class SoyFileSet {
   /** Performs the parsing and extraction logic. */
   private SoyMsgBundle doExtractMsgs() {
     // extractMsgs disables a bunch of passes since it is typically not configured with things
-    // like global definitions, type definitions, etc.
+    // like global definitions, type definitions, plugins, etc.
     SoyFileSetNode soyTree =
         parse(
                 passManagerBuilder()
                     .allowUnknownGlobals()
                     .allowV1Expression()
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
+                    // TODO(lukes): consider changing this to pass a null resolver instead of the
+                    // ALLOW_UNDEFINED mode
+                    .setPluginResolver(
+                        new PluginResolver(
+                            PluginResolver.Mode.ALLOW_UNDEFINED,
+                            printDirectives,
+                            soyFunctionMap,
+                            soySourceFunctionMap,
+                            errorReporter))
                     .disableAllTypeChecking(),
                 // override the type registry so that the parser doesn't report errors when it
                 // can't resolve strict types
-                SoyTypeRegistry.DEFAULT_UNKNOWN,
-                new PluginResolver(
-                    PluginResolver.Mode.ALLOW_UNDEFINED,
-                    printDirectives,
-                    soyFunctionMap,
-                    soySourceFunctionMap,
-                    errorReporter))
+                SoyTypeRegistry.DEFAULT_UNKNOWN)
             .fileSet();
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
@@ -1045,24 +1048,7 @@ public final class SoyFileSet {
                 // any passes.  This is kind of weird.  Alternatively we could configure the
                 // SoyFileSetParser with a null passmanger, since that is what we want.
                 .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS),
-            typeRegistry,
-            // we allow undefined plugins so we don't need to provide them to the header
-            // compiler.  We do this for 2 reasons.
-            // 1. information about plugins is not required to produce template headers, so we can
-            // simply get away without it.
-            // 2. generateParseInfo doesn't require plugins to be provided. So if we want to speed
-            // up generateParseInfo by having it use template headers, then we need to be able to
-            // produce headers without requiring plugins.  Of course it would be better to fix
-            // generateParseInfo.
-            // TODO(b/63212073): It would be better to delay plugin resolution so that it happens
-            // after the parser runs.  Then we would naturally skip resolution due to the pass
-            // continuation rule above.
-            new PluginResolver(
-                PluginResolver.Mode.ALLOW_UNDEFINED,
-                printDirectives,
-                soyFunctionMap,
-                soySourceFunctionMap,
-                errorReporter));
+            typeRegistry);
 
     throwIfErrorsPresent();
     reportWarnings();
@@ -1088,25 +1074,15 @@ public final class SoyFileSet {
   }
 
   private ParseResult parse(PassManager.Builder builder) {
-    return parse(
-        builder,
-        typeRegistry,
-        new PluginResolver(
-            PluginResolver.Mode.REQUIRE_DEFINITIONS,
-            printDirectives,
-            soyFunctionMap,
-            soySourceFunctionMap,
-            errorReporter));
+    return parse(builder, typeRegistry);
   }
 
-  private ParseResult parse(
-      PassManager.Builder builder, SoyTypeRegistry typeRegistry, PluginResolver resolver) {
+  private ParseResult parse(PassManager.Builder builder, SoyTypeRegistry typeRegistry) {
     return SoyFileSetParser.newBuilder()
         .setCache(cache)
         .setSoyFileSuppliers(soyFileSuppliers)
         .setCompilationUnits(compilationUnits)
         .setTypeRegistry(typeRegistry)
-        .setPluginResolver(resolver)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
         .setGeneralOptions(generalOptions)
@@ -1120,7 +1096,14 @@ public final class SoyFileSet {
         .setSoyPrintDirectiveMap(printDirectives)
         .setErrorReporter(errorReporter)
         .setConformanceConfig(conformanceConfig)
-        .setLoggingConfig(loggingConfig);
+        .setLoggingConfig(loggingConfig)
+        .setPluginResolver(
+            new PluginResolver(
+                PluginResolver.Mode.REQUIRE_DEFINITIONS,
+                printDirectives,
+                soyFunctionMap,
+                soySourceFunctionMap,
+                errorReporter));
   }
 
   /**

@@ -109,6 +109,8 @@ public final class PassManager {
   /** A builder for configuring the pass manager. */
   public static final class Builder {
     private SoyTypeRegistry registry;
+    // TODO(lukes): combine with the print directive map
+    private PluginResolver pluginResolver;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
@@ -137,6 +139,11 @@ public final class PassManager {
 
     public Builder setTypeRegistry(SoyTypeRegistry registry) {
       this.registry = checkNotNull(registry);
+      return this;
+    }
+
+    public Builder setPluginResolver(PluginResolver pluginResolver) {
+      this.pluginResolver = pluginResolver;
       return this;
     }
 
@@ -252,6 +259,9 @@ public final class PassManager {
           ImmutableList.<CompilerFilePass>builder();
       addPass(new HtmlRewritePass(errorReporter), singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
+
+      // needs to come before SoyConformancePass
+      addPass(new ResolvePluginsPass(pluginResolver), singleFilePassesBuilder);
       // The check conformance pass needs to run on the rewritten html nodes, so it must
       // run after HtmlRewritePass
       addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);

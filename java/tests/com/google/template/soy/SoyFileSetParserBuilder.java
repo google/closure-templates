@@ -29,6 +29,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerFilePass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
+import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
@@ -38,7 +39,6 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -289,6 +289,13 @@ public final class SoyFileSetParserBuilder {
         .desugarHtmlNodes(desugarHtmlNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)
+        .setPluginResolver(
+            new PluginResolver(
+                PluginResolver.Mode.REQUIRE_DEFINITIONS,
+                ImmutableMap.copyOf(soyPrintDirectiveMap),
+                ImmutableMap.copyOf(soyFunctionMap),
+                sourceFunctionMap,
+                errorReporter))
         .setAutoescaperEnabled(runAutoescaper)
         .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
         .setLoggingConfig(loggingConfig);
@@ -303,13 +310,6 @@ public final class SoyFileSetParserBuilder {
         .setSoyFileSuppliers(soyFileSuppliers)
         .setCompilationUnits(ImmutableList.of())
         .setTypeRegistry(typeRegistry)
-        .setPluginResolver(
-            new PluginResolver(
-                PluginResolver.Mode.REQUIRE_DEFINITIONS,
-                ImmutableMap.copyOf(soyPrintDirectiveMap),
-                ImmutableMap.copyOf(soyFunctionMap),
-                sourceFunctionMap,
-                errorReporter))
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
         .setGeneralOptions(options)

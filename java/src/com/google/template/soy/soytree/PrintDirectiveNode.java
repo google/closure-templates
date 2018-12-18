@@ -17,6 +17,8 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -37,8 +39,16 @@ import java.util.List;
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
+  public static PrintDirectiveNode createSyntheticNode(
+      int id, Identifier name, SourceLocation location, SoyPrintDirective printDirective) {
+    PrintDirectiveNode node =
+        new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+    node.setPrintDirective(printDirective);
+    return node;
+  }
+
   private final Identifier name;
-  private final SoyPrintDirective printDirective;
+  private SoyPrintDirective printDirective;
 
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
@@ -50,17 +60,19 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   private final boolean isSynthetic;
 
   public PrintDirectiveNode(
+      int id, Identifier name, SourceLocation location, ImmutableList<ExprNode> args) {
+    this(id, name, location, args, /* isSynthetic=*/ false);
+  }
+
+  private PrintDirectiveNode(
       int id,
       Identifier name,
       SourceLocation location,
       ImmutableList<ExprNode> args,
-      SoyPrintDirective printDirective,
       boolean isSynthetic) {
     super(id, location);
-    checkArgument(name.identifier().equals(printDirective.getName()));
     this.name = name;
     this.args = ExprRootNode.wrap(args);
-    this.printDirective = printDirective;
     this.isSynthetic = isSynthetic;
   }
 
@@ -88,7 +100,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   /** Returns the directive name (including vertical bar). */
   public String getName() {
-    return printDirective.getName();
+    return name.identifier();
   }
 
   public SourceLocation getNameLocation() {
@@ -122,6 +134,14 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   /** Returns the print directive for this node. */
   public SoyPrintDirective getPrintDirective() {
+    checkState(printDirective != null, "setPrintDirective hasn't been called yet");
     return printDirective;
+  }
+
+  /** Sets the print directive. */
+  public void setPrintDirective(SoyPrintDirective printDirective) {
+    checkState(this.printDirective == null, "setPrintDirective has already been called");
+    checkArgument(name.identifier().equals(printDirective.getName()));
+    this.printDirective = checkNotNull(printDirective);
   }
 }

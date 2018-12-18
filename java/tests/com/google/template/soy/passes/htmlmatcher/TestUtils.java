@@ -24,8 +24,6 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode.TagKind;
-import com.google.template.soy.soyparse.PluginResolver;
-import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -71,7 +69,6 @@ public final class TestUtils {
   public static ExprNode soyExprNode(String exprText) {
     return SoyFileParser.parseExpression(
         exprText,
-        PluginResolver.nullResolver(Mode.ALLOW_UNDEFINED, ErrorReporter.exploding()),
         ErrorReporter.exploding());
   }
 

@@ -45,6 +45,9 @@ final class VeRewritePass extends CompilerFilePass {
   }
 
   private void maybeRewriteNode(FunctionNode node) {
+    if (node.numChildren() < 1 || node.numChildren() > 2) {
+      return; // an error has already been reported
+    }
     if (node.getChild(0).getKind() == Kind.GLOBAL_NODE) {
       // For something like ve_data(MyVe, $data) MyVe will be a global. Rewrite it to ve(MyVe).
       GlobalNode global = (GlobalNode) node.getChild(0);

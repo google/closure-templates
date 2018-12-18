@@ -31,7 +31,6 @@ import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.soyparse.PluginResolver;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -105,7 +104,6 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
-  abstract PluginResolver pluginResolver();
 
   @Nullable
   abstract SoyGeneralOptions generalOptions();
@@ -126,8 +124,6 @@ public abstract class SoyFileSetParser {
     public abstract Builder setErrorReporter(ErrorReporter errorReporter);
 
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
-
-    public abstract Builder setPluginResolver(PluginResolver pluginResolver);
 
     public abstract Builder setGeneralOptions(SoyGeneralOptions generalOptions);
 
@@ -222,14 +218,14 @@ public abstract class SoyFileSetParser {
         // This is a resource in a JAR file. Only keep everything after the bang.
         filePath = filePath.substring(lastBangIndex + 1);
       }
-      // TODO(lukes): Don't pass the pluginResolver and typeRegistry to the parser.  It is
-      // convenient to parse types and resolve plugins during parsing, but if we delayed those
+      // TODO(lukes): Don't pass the typeRegistry or experiment flags to the parser.  It is
+      // convenient to pass this configuration into the parser, but if we delayed those
       // operations to later passes (like we do globals), then it would be easier to configure the
-      // parser and various modes in PluginResolver could be eliminated and replaced with
-      // PassManager configuration.
+      // parser (duh), and we probably wouldn't need things like SoyTypeRegistry.defaultUknown() and
+      // most importantly it would be easier to cache the result of parsing since it would only
+      // depend on the file contents.
       return new SoyFileParser(
               typeRegistry,
-              pluginResolver(),
               nodeIdGen,
               soyFileReader,
               filePath,

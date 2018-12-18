@@ -34,7 +34,7 @@ import com.google.template.soy.types.SoyType;
 public interface ExprNode extends Node {
 
   /**
-   * Enum of specific node kinds (coresponding to specific node types).
+   * Enum of specific node kinds (corresponding to specific node types).
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */

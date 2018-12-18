@@ -22,12 +22,14 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.passes.PluginResolver;
+import com.google.template.soy.passes.PluginResolver.Mode;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
-import com.google.template.soy.soyparse.PluginResolver;
-import com.google.template.soy.soyparse.PluginResolver.Mode;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -166,16 +168,21 @@ public final class SimplifyExprVisitorTest {
     private void simplifiesTo(String expected) {
       SoyScopedData data = new SoySimpleScope();
       ExprRootNode exprRoot =
-          new ExprRootNode(
-              SoyFileParser.parseExpression(
-                  actual(),
-                  new PluginResolver(
-                      Mode.REQUIRE_DEFINITIONS,
-                      ImmutableMap.of(),
-                      InternalPlugins.internalLegacyFunctionMap(),
-                      InternalPlugins.internalFunctionMap(data),
-                      ErrorReporter.exploding()),
-                  ErrorReporter.exploding()));
+          new ExprRootNode(SoyFileParser.parseExpression(actual(), ErrorReporter.exploding()));
+
+      PluginResolver resolver =
+          new PluginResolver(
+              Mode.REQUIRE_DEFINITIONS,
+              /** directives= */
+              ImmutableMap.of(),
+              InternalPlugins.internalLegacyFunctionMap(),
+              InternalPlugins.internalFunctionMap(data),
+              ErrorReporter.exploding());
+      for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(exprRoot, FunctionNode.class)) {
+        function.setSoyFunction(
+            resolver.lookupSoyFunction(
+                function.getFunctionName(), function.numChildren(), function.getSourceLocation()));
+      }
       new SimplifyExprVisitor().exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
     }
