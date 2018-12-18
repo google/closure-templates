@@ -78,7 +78,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     boolean needsSpaceForAttribute;
 
     /**
-     * Tracks whether we need a space character the '/' of a self closing tag. This is only
+     * Tracks whether we need a space character before the '/' of a self closing tag. This is only
      * necessary if there is an unquoted attribute as the final attribute.
      */
     boolean needsSpaceSelfClosingTag;
@@ -98,17 +98,23 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
     private void visitHtmlTagNode(HtmlTagNode tag) {
       needsSpaceForAttribute = true;
-      visitChildren(tag);
-      needsSpaceForAttribute = false;
 
-      replacements.add(createPrefix(tag instanceof HtmlOpenTagNode ? "<" : "</", tag));
-      replacements.addAll(tag.getChildren());
-      replacements.add(
-          createSuffix(
-              tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing()
-                  ? (needsSpaceSelfClosingTag ? " />" : "/>")
-                  : ">",
-              tag));
+      visitChildren(tag);
+
+      // Synthetic tags are not rendered to raw HTML text. They are only rendered in backends that
+      // emit code for HTML tags, like the iDOM backend.
+      if (!tag.isSynthetic()) {
+        replacements.add(createPrefix(tag instanceof HtmlOpenTagNode ? "<" : "</", tag));
+        replacements.addAll(tag.getChildren());
+        replacements.add(
+            createSuffix(
+                tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing()
+                    ? (needsSpaceSelfClosingTag ? " />" : "/>")
+                    : ">",
+                tag));
+      }
+
+      needsSpaceForAttribute = false;
       needsSpaceSelfClosingTag = false;
     }
 
