@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 
 import com.google.common.base.Equivalence.Wrapper;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -77,6 +76,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -235,12 +235,16 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The inferred type of this parameter is the same as the declared type, use the '':='' "
               + "syntax to use the inferred type.");
+  private static final SoyErrorKind VE_NO_CONFIG_FOR_ELEMENT =
+      SoyErrorKind.of(
+          "Could not find logging configuration for this element.{0}",
+          StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
   /** Type registry. */
   private final SoyTypeRegistry typeRegistry;
 
-  private final VeLogValidator veLogValidator;
+  private final ValidatedLoggingConfig loggingConfig;
   private final TypeNodeConverter typeNodeConverter;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
@@ -249,10 +253,12 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
   private TypeSubstitution substitutions;
 
   ResolveExpressionTypesPass(
-      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, VeLogValidator veLogValidator) {
+      SoyTypeRegistry typeRegistry,
+      ErrorReporter errorReporter,
+      ValidatedLoggingConfig loggingConfig) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
-    this.veLogValidator = veLogValidator;
+    this.loggingConfig = loggingConfig;
     this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
@@ -1138,18 +1144,22 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitVeLiteralNode(VeLiteralNode node) {
-      Optional<ValidatedLoggableElement> config =
-          veLogValidator.getLoggingElement(node.getName().identifier(), node.getName().location());
       SoyType type;
-      if (config.isPresent()) {
-        if (config.get().getProtoName().isPresent()) {
-          type = typeRegistry.getOrCreateVeType(config.get().getProtoName().get());
+      ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
+      if (config == null) {
+        errorReporter.report(
+            node.getName().location(),
+            VE_NO_CONFIG_FOR_ELEMENT,
+            SoyErrors.getDidYouMeanMessage(
+                loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
+        type = ErrorType.getInstance();
+      } else {
+        if (config.getProtoName().isPresent()) {
+          type = typeRegistry.getOrCreateVeType(config.getProtoName().get());
         } else {
           type = VeType.NO_DATA;
         }
-        node.setId(config.get().getId());
-      } else {
-        type = ErrorType.getInstance();
+        node.setId(config.getId());
       }
       node.setType(type);
     }

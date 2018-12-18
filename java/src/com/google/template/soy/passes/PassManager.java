@@ -305,9 +305,8 @@ public final class PassManager {
       }
       if (!disableAllTypeChecking) {
         addPass(new CheckDeclaredTypesPass(errorReporter), singleFilePassesBuilder);
-        VeLogValidator veLogValidator = new VeLogValidator(loggingConfig, errorReporter);
         addPass(
-            new ResolveExpressionTypesPass(registry, errorReporter, veLogValidator),
+            new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
         // needs to run after both resolve types and htmlrewrite pass
         addPass(
