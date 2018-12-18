@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SanitizedContentKindP;
-import com.google.template.soy.soytree.SourceLocationP;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -148,7 +147,6 @@ public final class TemplateMetadataSerializer {
             meta.getContentKind() == null
                 ? SanitizedContentKindP.NONE
                 : CONTENT_KIND_CONVERTER.reverse().convert(meta.getContentKind()))
-        .setSourceLocation(protoFromSourceLocation(meta.getSourceLocation()))
         .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
         .setStrictHtml(meta.isStrictHtml())
         .addAllDataAllCallSituation(
@@ -193,7 +191,7 @@ public final class TemplateMetadataSerializer {
         .setDelPackageName(delPackageName)
         .setStrictHtml(templateProto.getStrictHtml())
         .setTemplateKind(templateKind)
-        .setSourceLocation(sourceLocationFromProto(fileProto, templateProto.getSourceLocation()))
+        .setSourceLocation(new SourceLocation(fileProto.getFilePath()))
         .setContentKind(
             templateProto.getContentKind() == SanitizedContentKindP.NONE
                 ? null
@@ -405,25 +403,6 @@ public final class TemplateMetadataSerializer {
       return templateName.substring(namespace.length());
     }
     return templateName;
-  }
-
-  private static SourceLocation sourceLocationFromProto(
-      SoyFileP fileProto, SourceLocationP sourceLocation) {
-    return new SourceLocation(
-        fileProto.getFilePath(),
-        sourceLocation.getStartLine(),
-        sourceLocation.getStartColumn(),
-        sourceLocation.getEndLine(),
-        sourceLocation.getEndColumn());
-  }
-
-  private static SourceLocationP protoFromSourceLocation(SourceLocation location) {
-    return SourceLocationP.newBuilder()
-        .setStartLine(location.getBeginLine())
-        .setStartColumn(location.getBeginColumn())
-        .setEndLine(location.getEndLine())
-        .setEndColumn(location.getEndColumn())
-        .build();
   }
 
   private static <T1 extends Enum<T1>, T2 extends Enum<T2>> Converter<T1, T2> createEnumConverter(

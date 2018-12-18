@@ -28,15 +28,6 @@ message SoyFileP {
   repeated TemplateMetadataP template = 4;
 }
 
-// The source location of a template within a file.
-// TODO(lukes): we probably don't really need end location information.
-message SourceLocationP {
-  int32 start_column = 1;
-  int32 start_line = 2;
-  int32 end_column = 3;
-  int32 end_line = 4;
-}
-
 // A soy type
 message SoyTypeP {
   // a simple type
@@ -138,19 +129,18 @@ enum VisibilityP {
 // Represents a soy template.
 message TemplateMetadataP {
   TemplateKindP template_kind = 1;
-  SourceLocationP source_location = 2;
   // The template name.
   // For basic templates or elements this will be a partial name
   // For deltemplates it will be the fully qualified deltemplate name.
-  string template_name = 3;
+  string template_name = 2;
 
   // The variant string.  Will be empty for basic templates or deltemplates with
   // no variant.
-  string del_template_variant = 4;
-  SanitizedContentKindP content_kind = 5;
-  bool strict_html = 6;
-  VisibilityP visibility = 7;
-  repeated ParameterP parameter = 8;
-  repeated DataAllCallSituationP data_all_call_situation = 9;
-  bool has_soy_doc_params = 10;
+  string del_template_variant = 3;
+  SanitizedContentKindP content_kind = 4;
+  bool strict_html = 5;
+  VisibilityP visibility = 6;
+  repeated ParameterP parameter = 7;
+  repeated DataAllCallSituationP data_all_call_situation = 8;
+  bool has_soy_doc_params = 9;
 }

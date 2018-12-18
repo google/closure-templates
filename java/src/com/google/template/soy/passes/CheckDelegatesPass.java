@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -102,55 +103,64 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     for (Collection<TemplateMetadata> delTemplateGroup :
         selector.delTemplateNameToValues().asMap().values()) {
       TemplateMetadata firstDelTemplate = null;
-      Set<TemplateMetadata.Parameter> firstRequiredParamSet = null;
-      SanitizedContentKind firstContentKind = null;
-      boolean firstStrictHtml = false;
-
-      // loop over all members of the deltemplate group.
+      // loop over all members of the deltemplate group looking for a source template.
       for (TemplateMetadata delTemplate : delTemplateGroup) {
         if (firstDelTemplate == null) {
-          // First template encountered.
           firstDelTemplate = delTemplate;
-          firstRequiredParamSet = getRequiredParamSet(delTemplate);
-          firstContentKind = delTemplate.getContentKind();
-          firstStrictHtml =
-              delTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
-        } else {
-          // Not first template encountered.
-          Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
-          if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
-            errorReporter.report(
-                delTemplate.getSourceLocation(),
-                DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
-                firstDelTemplate.getDelTemplateName(),
-                firstDelTemplate.getSourceLocation().toString());
-          }
-          if (delTemplate.getContentKind() != firstContentKind) {
-            // TODO: This is only *truly* a requirement if the strict mode deltemplates are
-            // being called by contextual templates. For a strict-to-strict call, everything
-            // is escaped at runtime at the call sites. You could imagine delegating between
-            // either a plain-text or rich-html template. However, most developers will write
-            // their deltemplates in a parallel manner, and will want to know when the
-            // templates differ. Plus, requiring them all to be the same early-on will allow
-            // future optimizations to avoid the run-time checks, so it's better to start out
-            // as strict as possible and only open up if needed.
-            errorReporter.report(
-                delTemplate.getSourceLocation(),
-                STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND,
-                String.valueOf(firstContentKind),
-                String.valueOf(delTemplate.getContentKind()),
-                firstDelTemplate.getSourceLocation().toString());
-          }
-          // Check if all del templates have the same settings of strict HTML mode.
-          // We do not need to check {@code ContentKind} again since we already did that earlier
-          // in this pass.
-          if (delTemplate.isStrictHtml() != firstStrictHtml) {
-            errorReporter.report(
-                delTemplate.getSourceLocation(),
-                DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,
-                firstDelTemplate.getDelTemplateName(),
-                firstDelTemplate.getSourceLocation().toString());
-          }
+        }
+        // preferentially use a source template
+        if (delTemplate.getSoyFileKind() == SoyFileKind.SRC) {
+          firstDelTemplate = delTemplate;
+          break;
+        }
+      }
+      if (firstDelTemplate == null) {
+        // group must be empty
+        continue;
+      }
+      Set<TemplateMetadata.Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
+      SanitizedContentKind firstContentKind = firstDelTemplate.getContentKind();
+      boolean firstStrictHtml =
+          firstDelTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
+      // loop over all members of the deltemplate group.
+      for (TemplateMetadata delTemplate : delTemplateGroup) {
+        if (firstDelTemplate == delTemplate) {
+          continue; // skip
+        }
+        // Not first template encountered.
+        Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
+        if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
+          errorReporter.report(
+              firstDelTemplate.getSourceLocation(),
+              DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
+              delTemplate.getDelTemplateName(),
+              delTemplate.getSourceLocation().toString());
+        }
+        if (delTemplate.getContentKind() != firstContentKind) {
+          // TODO: This is only *truly* a requirement if the strict mode deltemplates are
+          // being called by contextual templates. For a strict-to-strict call, everything
+          // is escaped at runtime at the call sites. You could imagine delegating between
+          // either a plain-text or rich-html template. However, most developers will write
+          // their deltemplates in a parallel manner, and will want to know when the
+          // templates differ. Plus, requiring them all to be the same early-on will allow
+          // future optimizations to avoid the run-time checks, so it's better to start out
+          // as strict as possible and only open up if needed.
+          errorReporter.report(
+              firstDelTemplate.getSourceLocation(),
+              STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND,
+              String.valueOf(delTemplate.getContentKind()),
+              String.valueOf(firstContentKind),
+              delTemplate.getSourceLocation().toString());
+        }
+        // Check if all del templates have the same settings of strict HTML mode.
+        // We do not need to check {@code ContentKind} again since we already did that earlier
+        // in this pass.
+        if (delTemplate.isStrictHtml() != firstStrictHtml) {
+          errorReporter.report(
+              firstDelTemplate.getSourceLocation(),
+              DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,
+              delTemplate.getDelTemplateName(),
+              delTemplate.getSourceLocation().toString());
         }
       }
     }

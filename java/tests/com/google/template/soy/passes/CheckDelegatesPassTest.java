@@ -129,7 +129,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
             + "but different param declarations compared to the "
-            + "definition at no-path:9:1.",
+            + "definition at no-path-2:5:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -155,7 +155,7 @@ public final class CheckDelegatesPassTest {
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param "
-            + "declarations compared to the definition at no-path:9:1.",
+            + "declarations compared to the definition at no-path-2:5:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -184,7 +184,7 @@ public final class CheckDelegatesPassTest {
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
-            + "but different param declarations compared to the definition at no-path:4:1.",
+            + "but different param declarations compared to the definition at no-path:8:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -338,8 +338,8 @@ public final class CheckDelegatesPassTest {
     // One is strict and the other is not.
     assertInvalidSoyFiles(
         "If one deltemplate has strict autoescaping, all its peers must also be strictly "
-            + "autoescaped with the same content kind: null != HTML. "
-            + "Conflicting definition at no-path-2:5:1.",
+            + "autoescaped with the same content kind: HTML != null. "
+            + "Conflicting definition at no-path-3:5:1.",
         ""
             + "{namespace ns}\n\n"
             + "/***/\n"
@@ -366,8 +366,8 @@ public final class CheckDelegatesPassTest {
     // Both are strict, but have non-matching kinds.
     assertInvalidSoyFiles(
         "If one deltemplate has strict autoescaping, all its peers must also be strictly "
-            + "autoescaped with the same content kind: HTML != TEXT. "
-            + "Conflicting definition at no-path-2:4:1.",
+            + "autoescaped with the same content kind: TEXT != HTML. "
+            + "Conflicting definition at no-path-3:5:1.",
         ""
             + "{namespace ns}\n\n"
             + "/***/\n"

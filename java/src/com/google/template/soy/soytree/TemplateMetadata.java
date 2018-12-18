@@ -209,6 +209,10 @@ public abstract class TemplateMetadata {
 
   public abstract SoyFileKind getSoyFileKind();
 
+  /**
+   * The source location of the template. For non {@code SOURCE} templates this will merely refer to
+   * the file path, line and column information isn't recorded.
+   */
   public abstract SourceLocation getSourceLocation();
 
   public abstract Kind getTemplateKind();
@@ -260,6 +264,8 @@ public abstract class TemplateMetadata {
    * <p>This is needed to calculate information about transitive parameters.
    */
   public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();
+
+  public abstract Builder toBuilder();
 
   /** Builder for {@link TemplateMetadata} */
   @AutoValue.Builder
