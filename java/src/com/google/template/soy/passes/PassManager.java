@@ -311,7 +311,7 @@ public final class PassManager {
             singleFilePassesBuilder);
         // needs to run after both resolve types and htmlrewrite pass
         addPass(
-            new VeLogValidationPass(errorReporter, veLogValidator, registry),
+            new VeLogValidationPass(errorReporter, loggingConfig, registry),
             singleFilePassesBuilder);
       }
       addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);

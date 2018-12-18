@@ -167,7 +167,7 @@ public class TemplateNodeTest {
                 + "followed by an identifier.");
 
     assertThat(errorReporter.getErrors().get(1).message())
-        .isEqualTo("parse error at '=': expected attribute name, }, identifier, or .");
+        .isEqualTo("parse error at '=': expected }, identifier, or .");
 
     errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .foo autoescape=\"}{/template}", errorReporter);

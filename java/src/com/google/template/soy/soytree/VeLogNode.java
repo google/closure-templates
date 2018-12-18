@@ -20,10 +20,10 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getNodeAsHtmlTagNode;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -57,7 +57,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
         return false;
       }
       SamenessKey otherKey = (SamenessKey) other;
-      return delegate.name.identifier().equals(otherKey.delegate.name.identifier())
+      return ExprEquivalence.get().equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
           && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr)
           && ExprEquivalence.get().equivalent(delegate.dataExpr, otherKey.delegate.dataExpr);
     }
@@ -65,25 +65,25 @@ public final class VeLogNode extends AbstractBlockCommandNode
     @Override
     public int hashCode() {
       return Objects.hash(
-          delegate.name.identifier(),
+          ExprEquivalence.get().wrap(delegate.veDataExpr),
           ExprEquivalence.get().wrap(delegate.logonlyExpr),
           ExprEquivalence.get().wrap(delegate.dataExpr));
     }
   }
 
+  private final ExprRootNode veDataExpr;
   @Nullable private final ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
-  private final Identifier name;
   @Nullable private Long loggingId;
 
   public VeLogNode(
       int id,
       SourceLocation location,
-      Identifier name,
+      ExprNode veDataExpr,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, location, "velog");
-    this.name = checkNotNull(name);
+    this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
     ExprRootNode configExpr = null;
     ExprRootNode logonlyExpr = null;
     for (CommandTagAttribute attr : attributes) {
@@ -110,7 +110,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
 
   private VeLogNode(VeLogNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.name = orig.name;
+    this.veDataExpr = orig.veDataExpr.copy(copyState);
     this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
     this.loggingId = orig.loggingId;
@@ -120,17 +120,17 @@ public final class VeLogNode extends AbstractBlockCommandNode
     return new SamenessKey(this);
   }
 
-  /** Returns the name associated with this log statement. */
-  public Identifier getName() {
-    return name;
-  }
-
   /**
    * Returns the logging id associated with this log statement, or {@code null} if it doesn't exist.
    */
   @Nullable
   public Long getLoggingId() {
     return loggingId;
+  }
+
+  /** Returns a reference to the VE expression. */
+  public ExprRootNode getVeDataExpression() {
+    return veDataExpr;
   }
 
   /** Returns a reference to the config expression, if there is one. */
@@ -171,7 +171,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
 
   @Override
   public String getCommandText() {
-    return name.identifier()
+    return veDataExpr.toSourceString()
         + (dataExpr != null ? " data=\"" + dataExpr.toSourceString() + "\"" : "")
         + (logonlyExpr != null ? " logonly=\"" + logonlyExpr.toSourceString() + "\"" : "");
   }
@@ -189,6 +189,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
+    builder.add(veDataExpr);
     if (dataExpr != null) {
       builder.add(dataExpr);
     }
