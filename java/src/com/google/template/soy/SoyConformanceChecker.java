@@ -38,8 +38,8 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> conformanceConfigs = new ArrayList<>();
 
-  SoyConformanceChecker(ClassLoader loader) {
-    super(loader);
+  SoyConformanceChecker(ClassLoader loader, SoyInputCache cache) {
+    super(loader, cache);
   }
 
   SoyConformanceChecker() {}

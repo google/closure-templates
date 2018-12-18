@@ -15,12 +15,9 @@
  */
 package com.google.template.soy;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -32,12 +29,9 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
-import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -47,7 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -165,19 +158,28 @@ public abstract class AbstractSoyCompiler {
   private final SoyCompilerFileReader soyCompilerFileReader;
 
   final ClassLoader pluginClassLoader;
+  private final SoyInputCache cache;
 
-  protected AbstractSoyCompiler(
-      ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
+  AbstractSoyCompiler(
+      ClassLoader pluginClassLoader,
+      SoyInputCache cache,
+      SoyCompilerFileReader soyCompilerFileReader) {
+    this.cache = cache;
     this.pluginClassLoader = pluginClassLoader;
     this.soyCompilerFileReader = soyCompilerFileReader;
   }
 
-  AbstractSoyCompiler(ClassLoader pluginClassLoader) {
-    this(pluginClassLoader, new FileSystemSoyFileReader());
+  protected AbstractSoyCompiler(
+      ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
+    this(pluginClassLoader, SoyInputCache.DEFAULT, soyCompilerFileReader);
+  }
+
+  AbstractSoyCompiler(ClassLoader pluginClassLoader, SoyInputCache cache) {
+    this(pluginClassLoader, cache, new FileSystemSoyFileReader());
   }
 
   AbstractSoyCompiler() {
-    this(AbstractSoyCompiler.class.getClassLoader());
+    this(AbstractSoyCompiler.class.getClassLoader(), SoyInputCache.DEFAULT);
   }
 
   final void runMain(String... args) {
@@ -255,7 +257,8 @@ public abstract class AbstractSoyCompiler {
 
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
-        sfsBuilder.addProtoDescriptorsFromFile(protoFileDescriptor);
+        sfsBuilder.addProtoDescriptorsFromFileDescriptorProto(
+            cache.read(protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER));
       } catch (IOException ioe) {
         throw new CommandLineError(
             "Error parsing proto file descriptor from "
@@ -312,9 +315,9 @@ public abstract class AbstractSoyCompiler {
   private void addCompilationUnitToBuilder(
       SoyFileSet.Builder sfsBuilder, File depFile, SoyFileKind depKind, Set<File> soFar) {
     if (soFar.add(depFile)) {
-      try (InputStream is =
-          new GZIPInputStream(new FileInputStream(depFile), /* bufferSize */ 32 * 1024)) {
-        sfsBuilder.addCompilationUnit(depKind, depFile.getPath(), CompilationUnit.parseFrom(is));
+      try {
+        sfsBuilder.addCompilationUnit(
+            depKind, depFile.getPath(), cache.read(depFile, Readers.COMPILATION_UNIT_READER));
       } catch (IOException e) {
         throw new CommandLineError(
             "Unable to read header file: " + depFile + ": " + e.getMessage());
@@ -322,20 +325,21 @@ public abstract class AbstractSoyCompiler {
     }
   }
 
+
   private ValidatedLoggingConfig parseLoggingConfig() {
     LoggingConfig.Builder configBuilder = LoggingConfig.newBuilder();
     for (File loggingConfig : loggingConfigs) {
-      try (InputStream stream = new FileInputStream(loggingConfig)) {
-        configBuilder.mergeFrom(LoggingConfig.parseFrom(stream));
+      try {
+        configBuilder.mergeFrom(cache.read(loggingConfig, Readers.LOGGING_CONFIG_READER));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
       } catch (InvalidProtocolBufferException e) {
         throw new CommandLineError(
-            "Invalid conformance proto: " + loggingConfig + ": " + e.getMessage());
+            "Invalid logging config proto: " + loggingConfig + ": " + e.getMessage());
       } catch (IOException e) {
         throw new CommandLineError(
-            "Unable to read conformance proto: " + loggingConfig + ": " + e.getMessage());
+            "Unable to read logging config proto: " + loggingConfig + ": " + e.getMessage());
       }
     }
     return ValidatedLoggingConfig.create(configBuilder.build());
@@ -347,7 +351,7 @@ public abstract class AbstractSoyCompiler {
     for (File globalsFile : globalsFiles) {
       try {
         ImmutableMap<String, PrimitiveData> parsedGlobals =
-            SoyUtils.parseCompileTimeGlobals(Files.asCharSource(globalsFile, UTF_8));
+            cache.read(globalsFile, Readers.GLOBALS_READER);
         for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
           PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
           if (oldValue != null && !entry.getValue().equals(oldValue)) {
@@ -370,6 +374,7 @@ public abstract class AbstractSoyCompiler {
     }
     return globals;
   }
+
 
   /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.

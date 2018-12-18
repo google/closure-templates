@@ -35,10 +35,19 @@ import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.ExtensionRegistry;
 import javax.annotation.Nullable;
 
 /** A collection of protobuf utility methods. */
 public final class ProtoUtils {
+
+  public static final ExtensionRegistry REGISTRY = createRegistry();
+
+  private static final ExtensionRegistry createRegistry() {
+    ExtensionRegistry instance = ExtensionRegistry.newInstance();
+    // Add extensions needed for parsing descriptors here.
+    return instance;
+  }
 
   private ProtoUtils() {
     // Static only.

@@ -86,8 +86,8 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   )
   private String javaClassNameSource = "";
 
-  SoyParseInfoGenerator(ClassLoader loader) {
-    super(loader);
+  SoyParseInfoGenerator(ClassLoader loader, SoyInputCache cache) {
+    super(loader, cache);
   }
 
   SoyParseInfoGenerator() {}

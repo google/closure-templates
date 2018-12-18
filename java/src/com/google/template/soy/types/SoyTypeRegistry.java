@@ -44,7 +44,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
-import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
@@ -77,14 +76,6 @@ import javax.annotation.concurrent.GuardedBy;
  *
  */
 public class SoyTypeRegistry {
-
-  private static final ExtensionRegistry REGISTRY = createRegistry();
-
-  private static final ExtensionRegistry createRegistry() {
-    ExtensionRegistry instance = ExtensionRegistry.newInstance();
-    // Add extensions needed for parsing descriptors here.
-    return instance;
-  }
 
   private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
@@ -332,10 +323,15 @@ public class SoyTypeRegistry {
       // performance (slightly, due to less recursion and no need for the nameToProtos map), but
       // more importantly it would improve error locality.
       try (InputStream inputStream = new BufferedInputStream(new FileInputStream(descriptorFile))) {
-        for (FileDescriptorProto file :
-            FileDescriptorSet.parseFrom(inputStream, REGISTRY).getFileList()) {
-          nameToProtos.put(file.getName(), file);
-        }
+        addFileDescriptorSetProto(FileDescriptorSet.parseFrom(inputStream, ProtoUtils.REGISTRY));
+      }
+      return this;
+    }
+
+    /** Adds a file descriptor proto. */
+    public Builder addFileDescriptorSetProto(FileDescriptorSet proto) {
+      for (FileDescriptorProto file : proto.getFileList()) {
+        nameToProtos.put(file.getName(), file);
       }
       return this;
     }

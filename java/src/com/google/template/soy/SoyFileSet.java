@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -480,6 +481,16 @@ public final class SoyFileSet {
      */
     public Builder addProtoDescriptorsFromFile(File descriptorFile) throws IOException {
       typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
+      return this;
+    }
+
+    /**
+     * Add all proto descriptors found in the file descriptor set to the type registry.
+     *
+     * @param proto A FileDescriptorSet proto.
+     */
+    Builder addProtoDescriptorsFromFileDescriptorProto(FileDescriptorSet proto) {
+      typeRegistryBuilder.addFileDescriptorSetProto(proto);
       return this;
     }
 
