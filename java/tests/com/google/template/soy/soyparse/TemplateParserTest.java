@@ -129,7 +129,7 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("{sp ace}")
         .causesError("parse error at '}': expected =");
     TemplateSubject.assertThatTemplateContent("{literal a=b}")
-        .causesError("parse error at 'b': expected string");
+        .causesError("parse error at 'b': expected \\\" or \\'");
 
     assertValidTemplate("{@param blah : ?}\n{if $blah == 'phname = \"foo\"'}{/if}");
     assertInvalidTemplate("{blah phname=\"\"}");
@@ -1236,7 +1236,7 @@ public final class TemplateParserTest {
 
     // Test error case.
     TemplateSubject.assertThatTemplateContent("{let $alpha /}{/let}")
-        .causesError("parse error at '/}': expected }, ':', or identifier")
+        .causesError("parse error at '/}': expected }, identifier, or ':'")
         .at(1, 13);
 
     // Test error case.

@@ -44,6 +44,7 @@ PARSER_BEGIN(SoyFileParser)
 package com.google.template.soy.soyparse;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
 import com.google.common.collect.ImmutableList;
@@ -1265,7 +1266,7 @@ private NamespaceDeclaration Namespace() :
 
 
 /**
- * Matches a sequence of attributes in IN_CMD_TAG lexical state.
+ * Matches a sequence of attributes.
  *
  * Attributes -> ( Attribute )*
  */
@@ -1294,10 +1295,9 @@ private List<CommandTagAttribute> Attributes() :
 }
 
 
-// TODO(spishak): This is very similar to ExprAttribute() below. Can we merge the two?
 /**
- * Matches an attribute in IN_CMD_TAG lexical state. Uses special tokens to parse attributes that
- * require an expression as the attribute value, e.g. data=""
+ * Matches an attribute. Uses special tokens to parse attributes that require an expression as the
+ * attribute value, e.g. data=""
  *
  * Attribute -> ( Name CmdEq CmdQuote AttributeValue
  *              | ( DataAttr | VariantAttr ) Expr DoubleQuote )
@@ -1311,8 +1311,28 @@ private CommandTagAttribute Attribute() :
   QuoteStyle quoteStyle;
 }
 {
-  nameToken = <NAME>
-  { name = Identifier.create(nameToken.image, createSrcLoc(nameToken)); }
+  { checkState(token_source.curLexState == IN_CMD_TAG || token_source.curLexState == EXPR); }
+  // We could be coming from either IN_CMD_TAG or EXPR lexical state, the next token has already
+  // been tokenized (but not consumed) by the parser (to determine if it should take this path) and
+  // the token type has already been set on the token based on the lexical state we're coming from.
+  // So expect either a <NAME> or an <IDENT> here, which are the same thing but from the IN_CMD_TAG
+  // state or the EXPR state.
+  (
+    nameToken = <NAME>
+  |
+    nameToken = <IDENT>
+  )
+  {
+    name = Identifier.create(nameToken.image, createSrcLoc(nameToken));
+    // At this point we have an attribute, so make sure we're in the IN_CMD_TAG lexical state, which
+    // is required to parse the attribute (this will switch EXPR to IN_CMD_TAG, if already in
+    // IN_CMD_TAG this is a no-op). We only want to do this when we're sure we have an attribute
+    // because if there is no attribute, the next token will be a "}", which will switch the lexical
+    // state to TEMPLATE_DEFAULT so we can parse the template contents. At this point, if the next
+    // token is a "}" it will already have been tokenized and the lexical state will have already
+    // switched to TEMPLATE_DEFAULT, so we don't override that here.
+    token_source.SwitchTo(IN_CMD_TAG);
+  }
   <CMD_EQ>
   (
     // Expression attributes
@@ -1395,90 +1415,6 @@ private CommandTagAttribute Attribute() :
     )
     {
       return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(value));
-    }
-  )
-}
-
-
-/**
- * Matches an attribute value pair in the EXPR lexical state.
- *
- * ExprAttribute -> Ident EQ StringLiteral()
- */
-private CommandTagAttribute ExprAttribute() :
-{
-  Identifier name;
-  StringNode value;
-  ExprNode expr = null;
-  Token nameToken, qToken;
-  QuoteStyle quoteStyle;
-}
-{
-  nameToken = <IDENT>
-  { name = Identifier.create(nameToken.image, createSrcLoc(nameToken)); }
-  <EQ>
-  (
-    LOOKAHEAD( { EXPR_ATTR_NAMES.contains(name.identifier()) } )
-    (
-      <DOUBLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.DOUBLE;
-        token_source.SwitchTo(EXPR_NO_DOUBLE_QUOTE);
-      }
-      try {
-        [
-          expr = Expr()
-        ]
-        qToken = <END_DQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(EXPR);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(EXPR);
-        expr = errorExpr(e.currentToken);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
-      }
-    |
-      <SINGLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.SINGLE;
-        token_source.SwitchTo(EXPR_NO_SINGLE_QUOTE);
-      }
-      try {
-        [
-          expr = Expr()
-        ]
-        qToken = <END_SQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(EXPR);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(EXPR);
-        expr = errorExpr(e.currentToken);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
-      }
-    )
-    {
-      if (expr == null) {
-        errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "an expression");
-        expr = errorExpr(qToken);
-      }
-      return new CommandTagAttribute(name, quoteStyle, ImmutableList.of(expr));
-    }
-  |
-    // This is slightly inconsistent with other attribute values in Soy.  For things like msg.desc,
-    // we allow newlines and don't support unicode and hex escapes, but for string literals we do
-    // support those escapes and don't support internal newlines (you have to escape them with \n).
-    // For most, ExprAttributes this is fine since they are simple values (number, identifier), but
-    // for phex this could be confusing.
-    value = StringLiteral()
-    {
-      return new CommandTagAttribute(
-          name,
-          value.getQuoteStyle(),
-          value.getValue(),
-          // offset so the value location points at the body of the string, not the quotation marks
-          value.getSourceLocation().offsetEndCol(-1).offsetStartCol(1));
     }
   )
 }
@@ -2316,7 +2252,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
 
 
 /**
- * MsgPlural -> CmdBeginPlural Expr [ ExprAttribute ] CmdEnd SkipWhitespace
+ * MsgPlural -> CmdBeginPlural Expr [ Attribute ] CmdEnd SkipWhitespace
  *              ( CmdBeginCase Expr CmdEnd TemplateBlockForMsg )*
  *              CmdFullDefault TemplateBlockForMsg CmdClosePlural
  */
@@ -2333,7 +2269,7 @@ private MsgPluralNode MsgPlural() :
   tagBegin = <CMD_BEGIN_PLURAL>
   try {
     pluralExpr = Expr()
-    [ offsetAttr = ExprAttribute() ]
+    [ offsetAttr = Attribute() ]
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     pluralExpr = errorExpr(tagBegin);
@@ -2512,7 +2448,7 @@ private MsgSelectNode MsgSelect() :
 
 /**
  * PrintStmt -> ( CmdBeginPrint | CmdBeginImplicitPrint ) Expr
- *              [ PrintDirectives ] [ ExprAttribute ] CmdEnd
+ *              [ PrintDirectives ] Attributes CmdEnd
  */
 private PrintNode PrintStmt() :
 {
@@ -2522,7 +2458,6 @@ private PrintNode PrintStmt() :
   ExprNode expr = null;
   List<PrintDirectiveNode> directives = ImmutableList.of();
   List<CommandTagAttribute> attributes = ImmutableList.of();
-  CommandTagAttribute attr;
 }
 {
   (
@@ -2533,10 +2468,7 @@ private PrintNode PrintStmt() :
   try {
     expr = Expr()
     directives = PrintDirectives()
-    [
-      attr = ExprAttribute() { attributes = new ArrayList<CommandTagAttribute>(); attributes.add(attr);}
-      [ attr = ExprAttribute() { attributes.add(attr);} ]
-    ]
+    attributes = Attributes()
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     if (expr == null) {
@@ -2712,7 +2644,7 @@ private LogNode CssStmt() :
 
 /**
  * LetStmt -> CmdBeginLet VarRef
- *            ( ":" Expr CmdSelfClose | [ ExprAttribute ] CmdEnd TemplateBlock CmdCloseLet )
+ *            ( ":" Expr CmdSelfClose | [ Attribute ] CmdEnd TemplateBlock CmdCloseLet )
  */
 private LetNode LetStmt() :
 {
@@ -2756,7 +2688,7 @@ private LetNode LetStmt() :
   |
     // Content block
     try {
-      [ attr = ExprAttribute() ]
+      [ attr = Attribute() ]
       tagEnd = <CMD_END>
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
@@ -2859,7 +2791,6 @@ private VeLogNode VeLogStmt() :
 {
   ExprNode veDataExpr = null;
   Token tagBegin, tagEnd;
-  CommandTagAttribute attr = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<StandaloneNode> templateBlock;
 }
@@ -2867,20 +2798,7 @@ private VeLogNode VeLogStmt() :
   tagBegin = <CMD_BEGIN_VELOG>
   try {
     veDataExpr = Expr()
-    // TODO(b/71641483): Once the data attribute is replaced by the new ve_data syntax, logonly will
-    // be the only attribute here so we can remove support for multiple attributes.
-    (
-      attr = ExprAttribute()
-      {
-        if (attributes.isEmpty()) {
-          attributes = new ArrayList<CommandTagAttribute>();
-        }
-        attributes.add(attr);
-      }
-    )*
-    {
-      CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
-    }
+    attributes = Attributes()
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     if (veDataExpr == null) {
@@ -3184,7 +3102,7 @@ private List<CallParamNode> CallParams() :
 
 /**
  * CallParam -> CmdBeginParam Ident
- *              ( ":" Expr CmdSelfClose | [ ExprAttribute ] CmdEnd TemplateBlock CmdCloseParam )
+ *              ( ":" Expr CmdSelfClose | [ Attribute ] CmdEnd TemplateBlock CmdCloseParam )
  */
 private CallParamNode CallParam() :
 {
@@ -3232,7 +3150,7 @@ private CallParamNode CallParam() :
     }
   |
     try {
-      [ attr = ExprAttribute() ]
+      [ attr = Attribute() ]
       tagEnd = <CMD_END>
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);

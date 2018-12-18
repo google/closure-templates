@@ -81,7 +81,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     String placeholderName = null;
     String placeholderExample = null;
-    CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
     for (CommandTagAttribute attribute : attributes) {
       switch (attribute.getName().identifier()) {
         case MessagePlaceholders.PHNAME_ATTR:
