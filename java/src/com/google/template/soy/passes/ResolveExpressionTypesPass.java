@@ -164,6 +164,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
+  private static final SoyErrorKind KEYS_PASSED_MAP =
+      SoyErrorKind.of(
+          "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.");
   private static final SoyErrorKind ILLEGAL_MAP_RESOLVED_KEY_TYPE =
       SoyErrorKind.of(
           "A map''s keys must all be the same type. This map has keys of multiple types "
@@ -993,6 +996,9 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           listArg = ((LegacyObjectMapType) argType).getKeyType(); // pretty much just string
         } else if (argType.getKind() == Kind.LIST) {
           listArg = IntType.getInstance();
+        } else if (argType.getKind() == Kind.MAP) {
+          errorReporter.report(node.getSourceLocation(), KEYS_PASSED_MAP);
+          listArg = ErrorType.getInstance();
         } else {
           listArg = UnknownType.getInstance();
         }

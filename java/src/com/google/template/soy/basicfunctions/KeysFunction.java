@@ -51,8 +51,8 @@ import java.util.List;
  */
 @SoyFunctionSignature(
     name = "keys",
-    // TODO(b/70946095): should take a legacy_object_map, or maybe we should add special support in
-    // the type checker in order to infer the returned list type
+    // TODO(b/70946095): should take a legacy_object_map.
+    // Note: the return type is overridden in ResolveTypeExpressionsPass
     value = @Signature(parameterTypes = "any", returnType = "?"))
 @SoyPureFunction
 public final class KeysFunction extends TypedSoyFunction
