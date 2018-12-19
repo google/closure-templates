@@ -48,15 +48,19 @@ public abstract class RecordTypeNode extends TypeNode {
     public abstract TypeNode type();
 
     @Override
-    public String toString() {
+    public final String toString() {
       return name() + ": " + type();
+    }
+
+    Property copy() {
+      return create(nameLocation(), name(), type().copy());
     }
   }
 
   public abstract ImmutableList<Property> properties();
 
   @Override
-  public String toString() {
+  public final String toString() {
     if (properties().size() < 3) {
       return "[" + Joiner.on(", ").join(properties()) + "]";
     }
@@ -66,5 +70,16 @@ public abstract class RecordTypeNode extends TypeNode {
   @Override
   public <T> T accept(TypeNodeVisitor<T> visitor) {
     return visitor.visit(this);
+  }
+
+  @Override
+  public RecordTypeNode copy() {
+    ImmutableList.Builder<Property> newProperties = ImmutableList.builder();
+    for (Property property : properties()) {
+      newProperties.add(property.copy());
+    }
+    RecordTypeNode copy = create(sourceLocation(), newProperties.build());
+    copy.copyResolvedTypeFrom(this);
+    return copy;
   }
 }

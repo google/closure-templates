@@ -51,4 +51,10 @@ public abstract class TypeNode {
   /** Returns round-trippable (through the parser) source code for this node. */
   @Override
   public abstract String toString();
+
+  public abstract TypeNode copy();
+
+  void copyResolvedTypeFrom(TypeNode old) {
+    this.resolvedType = old.resolvedType;
+  }
 }

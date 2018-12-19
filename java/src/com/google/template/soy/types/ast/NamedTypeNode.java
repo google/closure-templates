@@ -44,4 +44,11 @@ public abstract class NamedTypeNode extends TypeNode {
   public <T> T accept(TypeNodeVisitor<T> visitor) {
     return visitor.visit(this);
   }
+
+  @Override
+  public NamedTypeNode copy() {
+    NamedTypeNode copy = create(sourceLocation(), name());
+    copy.copyResolvedTypeFrom(this);
+    return copy;
+  }
 }

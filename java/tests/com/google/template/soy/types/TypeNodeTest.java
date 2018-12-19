@@ -19,13 +19,10 @@ package com.google.template.soy.types;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -131,6 +128,11 @@ public final class TypeNodeTest {
     // different due to whitespace.
     assertThat(original.toString()).isEqualTo(reparsed.toString());
     assertEquals(original, reparsed);
+
+    // Also assert equality after copying
+    assertEquals(original, reparsed.copy());
+    assertEquals(original.copy(), reparsed.copy());
+    assertEquals(original.copy(), reparsed);
   }
 
   private static void assertEquals(
@@ -179,16 +181,10 @@ public final class TypeNodeTest {
   }
 
   private TypeNode parse(String typeString) {
-    TemplateNode template =
-        SoyFileSetParserBuilder.forTemplateContents(
-                "{@param p : " + typeString + "}\n{$p ? 't' : 'f'}")
-            .typeRegistry(new SoyTypeRegistry())
-            .errorReporter(ErrorReporter.exploding()) // ignore parse errors
-            .parse()
-            .fileSet()
-            .getChild(0)
-            .getChild(0);
-    HeaderParam param = (HeaderParam) Iterables.getOnlyElement(template.getAllParams());
-    return param.getTypeNode();
+    TypeNode typeNode =
+        SoyFileParser.parseType(typeString, "fake-file.soy", ErrorReporter.exploding());
+    // sanity, make sure copies work
+    assertThat(typeNode).isEqualTo(typeNode.copy());
+    return typeNode;
   }
 }

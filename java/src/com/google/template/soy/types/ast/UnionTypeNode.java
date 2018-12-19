@@ -42,12 +42,23 @@ public abstract class UnionTypeNode extends TypeNode {
   public abstract ImmutableList<TypeNode> candidates();
 
   @Override
-  public String toString() {
+  public final String toString() {
     return Joiner.on("|").join(candidates());
   }
 
   @Override
   public <T> T accept(TypeNodeVisitor<T> visitor) {
     return visitor.visit(this);
+  }
+
+  @Override
+  public UnionTypeNode copy() {
+    ImmutableList.Builder<TypeNode> newCandidates = ImmutableList.builder();
+    for (TypeNode candidate : candidates()) {
+      newCandidates.add(candidate.copy());
+    }
+    UnionTypeNode copy = create(newCandidates.build());
+    copy.copyResolvedTypeFrom(this);
+    return copy;
   }
 }
