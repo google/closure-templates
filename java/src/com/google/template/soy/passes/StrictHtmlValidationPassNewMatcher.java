@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherBlockNode;
@@ -44,11 +45,13 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -61,7 +64,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -183,6 +188,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     private final ArrayDeque<List<ActiveEdge>> activeEdgeStack = new ArrayDeque<>();
 
     private final ErrorReporter errorReporter;
+    private final Map<String, LetContentNode> letStatements = new HashMap<>();
 
     HtmlTagVisitor(ErrorReporter errorReporter) {
       this.errorReporter = errorReporter;
@@ -218,6 +224,22 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
+    }
+
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
+      letStatements.put(node.getVarName(), node);
+    }
+
+    @Override
+    protected void visitPrintNode(PrintNode node) {
+      ExprNode root = node.getExpr().getRoot();
+      if (root instanceof VarRefNode) {
+        VarRefNode ref = (VarRefNode) root;
+        if (letStatements.containsKey(ref.getName())) {
+          visitChildren(letStatements.get(ref.getName()));
+        }
+      }
     }
 
     @Override
