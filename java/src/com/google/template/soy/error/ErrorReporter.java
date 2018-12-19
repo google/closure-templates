@@ -69,6 +69,9 @@ public abstract class ErrorReporter {
    */
   public abstract void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
 
+  /** Copies the errors from one error reprorter to another one. */
+  public abstract void copyTo(ErrorReporter other);
+
   /**
    * Returns an opaque token (the checkpoint) that callers can later pass back into {@link
    * #errorsSince} to see if any errors have occurred in the interim.
