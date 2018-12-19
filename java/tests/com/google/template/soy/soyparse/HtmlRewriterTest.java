@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.passes;
+package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
+import com.google.template.soy.passes.DesugarHtmlNodesPass;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -33,12 +34,13 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import java.io.StringReader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public final class HtmlRewritePassTest {
+public final class HtmlRewriterTest {
 
   @Test
   public void testTags() {
@@ -427,8 +429,7 @@ public final class HtmlRewritePassTest {
   // regression test for a bug where we would drop rcdata content.
   @Test
   public void testRcDataTags() {
-    assertThatSourceString(runPass("<script>xxx</script>"))
-        .isEqualTo("<script{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce}\"{/if}>xxx</script>");
+    assertThatSourceString(runPass("<script>xxx</script>")).isEqualTo("<script>xxx</script>");
   }
 
   @Test
@@ -559,13 +560,12 @@ public final class HtmlRewritePassTest {
         Joiner.on('\n')
             .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
-        SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlNodes(false)
-            .errorReporter(errorReporter)
-            .parse()
-            .fileSet()
-            .getChild(0);
+        new SoyFileParser(
+                new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)
+            .parseSoyFile();
     if (node != null) {
+      // remove empty raw text nodes
+      new CombineConsecutiveRawTextNodesPass().run(node);
       return node.getChild(0);
     }
     return null;

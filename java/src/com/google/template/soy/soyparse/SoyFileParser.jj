@@ -574,6 +574,9 @@ public class SoyFileParser {
     if (errorReporter.errorsSince(checkpoint)) {
       return null;
     }
+    // Parse the html tags
+    // See comments on HtmlRewriter for why this isn't deeply integrated into this parser.
+    HtmlRewriter.rewrite(soyFileNode, nodeIdGen, errorReporter);
     return soyFileNode;
   }
 

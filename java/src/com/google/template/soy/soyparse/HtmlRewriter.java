@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.passes;
+package com.google.template.soy.soyparse;
 
 import static com.google.common.base.Ascii.toLowerCase;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Multimaps.asMap;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
@@ -123,10 +122,9 @@ import javax.annotation.Nullable;
  * <p>This class tries to be faithful to the <a
  * href="https://www.w3.org/TR/html5/syntax.html#syntax">Html syntax standard</a>. Though we do not
  * attempt to implement the contextual element model, and matching tags is handled by a different
- * pass, the {@link StrictHtmlValidationPass}.
+ * pass, the {@link com.google.template.soy.passes.StrictHtmlValidationPass}.
  */
-@VisibleForTesting
-public final class HtmlRewritePass extends CompilerFilePass {
+final class HtmlRewriter {
 
   /**
    * If set to true, causes every state transition to be logged to stderr. Useful when debugging.
@@ -387,15 +385,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
   }
 
-  private final ErrorReporter errorReporter;
+  private HtmlRewriter() {}
 
-  /** @param errorReporter The error reporter */
-  public HtmlRewritePass(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
-
-  @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+  /* Rewrites the file to contain html tags*/
+  public static void rewrite(SoyFileNode file, IdGenerator nodeIdGen, ErrorReporter errorReporter) {
     new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
   }
 

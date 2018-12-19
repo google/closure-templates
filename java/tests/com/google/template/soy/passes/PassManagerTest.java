@@ -58,10 +58,11 @@ public final class PassManagerTest {
   public void testContinuationRule_stopAfter() throws Exception {
     PassManager manager =
         builder()
-            .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_AFTER_PASS)
+            .addPassContinuationRule(
+                "EnforceExperimentalFeatures", PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses)).containsExactly("HtmlRewrite");
+    assertThat(names(manager.singleFilePasses)).containsExactly("EnforceExperimentalFeatures");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -69,7 +70,8 @@ public final class PassManagerTest {
   public void testContinuationRule_stopBefore() throws Exception {
     PassManager manager =
         builder()
-            .addPassContinuationRule("HtmlRewrite", PassContinuationRule.STOP_BEFORE_PASS)
+            .addPassContinuationRule(
+                "EnforceExperimentalFeatures", PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses)).isEmpty();

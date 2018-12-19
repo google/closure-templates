@@ -67,7 +67,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
   }
 
   @VisibleForTesting
-  void run(SoyNode node, IdGenerator idGenerator) {
+  public void run(SoyNode node, IdGenerator idGenerator) {
     new RewritingVisitor(idGenerator).exec(node);
   }
 

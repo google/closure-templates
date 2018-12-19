@@ -257,7 +257,6 @@ public final class PassManager {
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
           ImmutableList.<CompilerFilePass>builder();
-      addPass(new HtmlRewritePass(errorReporter), singleFilePassesBuilder);
       // needs to come early so that it is consistently enforced
       addPass(
           new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
