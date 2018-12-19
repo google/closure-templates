@@ -46,6 +46,11 @@ public final class HeaderParam extends TemplateParam {
     this.typeNode = typeNode;
   }
 
+  private HeaderParam(HeaderParam old) {
+    super(old);
+    this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
+  }
+
   @Override
   public DeclLoc declLoc() {
     return DeclLoc.HEADER;
@@ -67,18 +72,7 @@ public final class HeaderParam extends TemplateParam {
   }
 
   @Override
-  public HeaderParam copyEssential() {
-    // Note: 'desc', nameLocation is nonessential.
-    HeaderParam headerParam =
-        new HeaderParam(
-            name(),
-            /*nameLocation=*/ null,
-            /*typeNode=*/ null,
-            isRequired(),
-            isInjected(),
-            /*desc=*/ null);
-    headerParam.setLocalVariableIndex(localVariableIndex());
-    headerParam.type = type;
-    return headerParam;
+  public HeaderParam copy() {
+    return new HeaderParam(this);
   }
 }

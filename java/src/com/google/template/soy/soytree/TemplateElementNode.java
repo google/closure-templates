@@ -66,7 +66,15 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.propVars = orig.propVars;
+    this.propVars = copyProps(orig.propVars);
+  }
+
+  private static ImmutableList<TemplatePropVar> copyProps(ImmutableList<TemplatePropVar> orig) {
+    ImmutableList.Builder<TemplatePropVar> newParams = ImmutableList.builder();
+    for (TemplatePropVar prev : orig) {
+      newParams.add(prev.copy());
+    }
+    return newParams.build();
   }
 
   /** Returns the prop variables from template header. */

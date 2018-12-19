@@ -51,15 +51,7 @@ public final class SoyDocParam extends TemplateParam {
   }
 
   @Override
-  public SoyDocParam copyEssential() {
-    // Note: 'desc', nameLocation are nonessential.
-    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null, null);
-    soyDocParam.setLocalVariableIndex(localVariableIndex());
-    return soyDocParam;
-  }
-
-  @Override
-  public SoyDocParam clone() {
+  public SoyDocParam copy() {
     return new SoyDocParam(this);
   }
 }

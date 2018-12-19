@@ -96,5 +96,6 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
   /** Returns the location of the parameter declaration. */
   public abstract DeclLoc declLoc();
 
-  public abstract TemplateParam copyEssential();
+  @Override
+  public abstract TemplateParam copy();
 }

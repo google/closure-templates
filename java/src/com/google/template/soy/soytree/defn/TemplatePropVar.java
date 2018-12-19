@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.types.SoyType;
@@ -47,11 +48,11 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     this.initialValue = new ExprRootNode(initialValue);
   }
 
-  TemplatePropVar(TemplatePropVar propVar) {
-    super(propVar);
-    this.typeNode = propVar.typeNode;
-    this.desc = propVar.desc;
-    this.initialValue = propVar.initialValue;
+  TemplatePropVar(TemplatePropVar old) {
+    super(old);
+    this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
+    this.desc = old.desc;
+    this.initialValue = old.initialValue.copy(new CopyState());
   }
 
   @Nullable
@@ -98,5 +99,10 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     description.append("{name = ").append(name());
     description.append(", desc = ").append(desc).append("}");
     return description.toString();
+  }
+
+  @Override
+  public TemplatePropVar copy() {
+    return new TemplatePropVar(this);
   }
 }

@@ -45,4 +45,6 @@ public interface TemplateHeaderVarDefn {
    */
   @Nullable
   String desc();
+
+  TemplateHeaderVarDefn copy();
 }

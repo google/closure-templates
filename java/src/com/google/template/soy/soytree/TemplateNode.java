@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -36,7 +35,6 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -226,10 +224,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   private final boolean strictHtml;
 
   /** The params from template header or SoyDoc. */
-  private ImmutableList<TemplateParam> params;
+  private final ImmutableList<TemplateParam> params;
 
   /** The injected params from template header. */
-  private ImmutableList<TemplateParam> injectedParams;
+  private final ImmutableList<TemplateParam> injectedParams;
 
   private int maxLocalVariableTableSize = -1;
 
@@ -298,13 +296,19 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
-    // TODO(lukes): params and injectedParams are not really immutable, just mostly.  Consider
-    // cloning them here and modifying SoyTreeUtils.cloneNode to reassign these as well.
-    this.params = orig.params; // immutable
-    this.injectedParams = orig.injectedParams;
+    this.params = copyParams(orig.params);
+    this.injectedParams = copyParams(orig.injectedParams);
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
+  }
+
+  private static ImmutableList<TemplateParam> copyParams(ImmutableList<TemplateParam> orig) {
+    ImmutableList.Builder<TemplateParam> newParams = ImmutableList.builder();
+    for (TemplateParam prev : orig) {
+      newParams.add(prev.copy());
+    }
+    return newParams.build();
   }
 
   /** Returns info from the containing Soy file's header declarations. */
@@ -410,12 +414,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   public void clearSoyDocStrings() {
     soyDoc = null;
     soyDocDesc = null;
-
-    List<TemplateParam> newParams = Lists.newArrayListWithCapacity(params.size());
-    for (TemplateParam origParam : params) {
-      newParams.add(origParam.copyEssential());
-    }
-    params = ImmutableList.copyOf(newParams);
   }
 
   /** Returns the SoyDoc, or null. */

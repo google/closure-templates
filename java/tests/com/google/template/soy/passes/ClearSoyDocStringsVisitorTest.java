@@ -65,6 +65,6 @@ public final class ClearSoyDocStringsVisitorTest {
 
     assertThat(template.getSoyDoc()).isNull();
     assertThat(template.getSoyDocDesc()).isNull();
-    assertThat(template.getParams().get(0).desc()).isNull();
+    assertThat(template.getParams().get(0).desc()).isEqualTo("blah blah");
   }
 }
