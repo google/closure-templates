@@ -20,17 +20,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
+import com.google.template.soy.passes.htmlmatcher.HtmlMatcherBlockNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherConditionNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraph;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode;
@@ -39,12 +37,21 @@ import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlTagMatchingPass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.ForIfemptyNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPluralCaseNode;
+import com.google.template.soy.soytree.MsgPluralDefaultNode;
+import com.google.template.soy.soytree.MsgSelectCaseNode;
+import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -92,15 +99,6 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
   }
 
   private void checkTemplateNode(TemplateNode node) {
-    final Function<HtmlMatcherGraph, Void> saveHtmlMatcherGraph =
-        new Function<HtmlMatcherGraph, Void>() {
-          @Override
-          public Void apply(HtmlMatcherGraph visitorHtmlMatchingGraph) {
-            htmlMatcherGraph = visitorHtmlMatchingGraph;
-            return null;
-          }
-        };
-
     AutoescapeMode autoescapeMode = node.getAutoescapeMode();
     // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
     // STRICT autoescaping mode. Note that you are allowed to set STRICT autoescaping mode on
@@ -109,20 +107,13 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
         autoescapeMode.equals(AutoescapeMode.STRICT) || !node.isStrictHtml(),
         "Strict HTML template without strict autoescaping.");
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
-    SanitizedContentKind contentKind = node.getContentKind();
-    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
-    // STRICT HTML sanitize mode. Note that you are allowed to set STRICT sanitize mode on
-    // a non-strict-HTML node.
-    checkState(
-        contentKind.equals(SanitizedContentKind.HTML) || !node.isStrictHtml(),
-        "Strict HTML in a non-HTML node.");
     if (node.isStrictHtml()) {
-      new HtmlTagVisitor(errorReporter, saveHtmlMatcherGraph).exec(node);
-      // Contains no HTML nodes
-      if (htmlMatcherGraph.getRootNode().isPresent()) {
-        HtmlTagMatchingPass.checkForErrors(
-            new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get()), errorReporter);
+      htmlMatcherGraph = new HtmlTagVisitor(errorReporter).exec(node);
+      if (!htmlMatcherGraph.getRootNode().isPresent()) {
+        return;
       }
+      HtmlTagMatchingPass.checkForErrors(
+          new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get()), errorReporter);
       for (VeLogNode veNode : SoyTreeUtils.getAllNodesOfType(node, VeLogNode.class)) {
         checkVeLogNode(veNode);
       }
@@ -172,7 +163,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     }
   }
 
-  private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<Void> {
+  private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<HtmlMatcherGraph> {
 
     private final HtmlMatcherGraph htmlMatcherGraph = new HtmlMatcherGraph();
 
@@ -193,19 +184,14 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     private final ErrorReporter errorReporter;
 
-    /** Callback executed when finished visiting the parse tree. */
-    private final Function<HtmlMatcherGraph, Void> didVisitParseTree;
-
-    HtmlTagVisitor(ErrorReporter errorReporter, Function<HtmlMatcherGraph, Void> didVisitSoyGraph) {
+    HtmlTagVisitor(ErrorReporter errorReporter) {
       this.errorReporter = errorReporter;
-      this.didVisitParseTree = didVisitSoyGraph;
     }
 
     @Override
-    public Void exec(SoyNode node) {
-      super.exec(node);
-      didVisitParseTree.apply(htmlMatcherGraph);
-      return null;
+    public HtmlMatcherGraph exec(SoyNode node) {
+      visitChildren((BlockNode) node);
+      return htmlMatcherGraph;
     }
 
     @Override
@@ -264,15 +250,57 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       }
     }
 
+    // These are all the 'block' nodes.
+    //
+    // We require that every one of these blocks is internally balanced, to do that we recursively
+    // call into ourselves to build a new independent graph.
+
     @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      visitChildren(node);
-      // Return if we have already seen some errors. This case we won't generate a whole cascade
-      // of errors for things in the remaining stack/queue.
-      if (errorReporter.errorsSince(checkpoint)) {
-        return;
-      }
+    protected void visitMsgNode(MsgNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitCallParamContentNode(CallParamContentNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitForIfemptyNode(ForIfemptyNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
+    }
+
+    @Override
+    protected void visitForNonemptyNode(ForNonemptyNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(new HtmlTagVisitor(errorReporter).exec(node)));
     }
 
     private void enterConditionalContext() {

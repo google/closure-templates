@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
+
 import com.google.common.base.Equivalence;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMultimap;
@@ -96,14 +97,24 @@ public final class HtmlTagMatchingPass {
    * </pre>
    */
   public static void checkForErrors(
-      ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> paths, ErrorReporter errorReporter) {
+      ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths, ErrorReporter errorReporter) {
     ImmutableMultimap.Builder<HtmlTagNode, Optional<HtmlTagNode>> openToCloseMapBuilder =
         ImmutableMultimap.builder();
     ImmutableMultimap.Builder<HtmlTagNode, ExpectedTagInfo> closeToOpenMapBuilder =
         ImmutableMultimap.builder();
-    for (ArrayDeque<HtmlMatcherTagNode> path : paths) {
+    for (ArrayDeque<HtmlMatcherGraphNode> path : paths) {
       ArrayDeque<HtmlOpenTagNode> stack = new ArrayDeque<>();
-      for (HtmlMatcherTagNode node : path) {
+      for (HtmlMatcherGraphNode graphNode : path) {
+        if (graphNode instanceof HtmlMatcherBlockNode) {
+          HtmlMatcherBlockNode block = (HtmlMatcherBlockNode) graphNode;
+          if (block.getGraph().getRootNode().isPresent()) {
+            HtmlTagMatchingPass.checkForErrors(
+                new HtmlTagMatchingPass().visit(block.getGraph().getRootNode().get()),
+                errorReporter);
+          }
+          continue;
+        }
+        HtmlMatcherTagNode node = (HtmlMatcherTagNode) graphNode;
         switch (node.getTagKind()) {
           case OPEN_TAG:
             // TODO(b/118396161): The top of the stack may be an optional tag. Handle this by
@@ -184,17 +195,39 @@ public final class HtmlTagMatchingPass {
    * the end of the template), then we create a list of paths. From then, we append the current
    * element and move on.
    */
-  private ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> visit(
+  private ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(
       HtmlMatcherTagNode tagNode, Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap) {
     Optional<HtmlMatcherGraphNode> nextNode = tagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> paths;
+    ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths;
     if (nextNode.isPresent()) {
       paths = visit(nextNode.get(), exprValueMap);
     } else {
       paths = new ArrayDeque<>();
-      paths.add(new ArrayDeque<HtmlMatcherTagNode>());
+      paths.add(new ArrayDeque<HtmlMatcherGraphNode>());
     }
-    for (ArrayDeque<HtmlMatcherTagNode> path : paths) {
+    for (ArrayDeque<HtmlMatcherGraphNode> path : paths) {
+      path.addFirst(tagNode);
+    }
+    return paths;
+  }
+
+  /**
+   * Aggregate the state graph starting from a tag node. In general, this algorithm assumes that we
+   * can visit the next node and contain a list of paths. If the next node does not exist (we are at
+   * the end of the template), then we create a list of paths. From then, we append the current
+   * element and move on.
+   */
+  private ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(
+      HtmlMatcherBlockNode tagNode, Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap) {
+    Optional<HtmlMatcherGraphNode> nextNode = tagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
+    ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths;
+    if (nextNode.isPresent()) {
+      paths = visit(nextNode.get(), exprValueMap);
+    } else {
+      paths = new ArrayDeque<>();
+      paths.add(new ArrayDeque<HtmlMatcherGraphNode>());
+    }
+    for (ArrayDeque<HtmlMatcherGraphNode> path : paths) {
       path.addFirst(tagNode);
     }
     return paths;
@@ -204,7 +237,7 @@ public final class HtmlTagMatchingPass {
    * For a conditional node, we have up to two different paths. In this case, we basically add them
    * together and return the result.
    */
-  private ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> visit(
+  private ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(
       HtmlMatcherConditionNode condNode, Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap) {
     Equivalence.Wrapper<ExprNode> condition = ExprEquivalence.get().wrap(condNode.getExpression());
     // In some cases we may encounter a condition we have already made a decision for. Consider
@@ -224,13 +257,13 @@ public final class HtmlTagMatchingPass {
     Optional<HtmlMatcherGraphNode> nextNode = condNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     Optional<HtmlMatcherGraphNode> nextAltNode = condNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE);
 
-    ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> truePath = new ArrayDeque<>();
+    ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> truePath = new ArrayDeque<>();
     if (nextNode.isPresent() && !Boolean.FALSE.equals(originalState)) {
       exprValueMap.put(condition, true);
       truePath = visit(nextNode.get(), exprValueMap);
     }
 
-    ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> falsePath = new ArrayDeque<>();
+    ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> falsePath = new ArrayDeque<>();
     if (nextAltNode.isPresent() && !Boolean.TRUE.equals(originalState)) {
       exprValueMap.put(condition, false);
       falsePath = visit(nextAltNode.get(), exprValueMap);
@@ -242,10 +275,10 @@ public final class HtmlTagMatchingPass {
   }
 
   /** Accumulator nodes mostly work like HTMLMatcherTagNodes, but don't add any elements. */
-  private ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> visit(
+  private ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(
       HtmlMatcherAccumulatorNode accNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap) {
-    ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> paths;
+    ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths;
     Optional<HtmlMatcherGraphNode> nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     if (nextNode.isPresent()) {
       paths = visit(nextNode.get(), exprValueMap);
@@ -256,11 +289,11 @@ public final class HtmlTagMatchingPass {
     return paths;
   }
 
-  public ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> visit(HtmlMatcherGraphNode node) {
+  public ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(HtmlMatcherGraphNode node) {
     return visit(node, new HashMap<Equivalence.Wrapper<ExprNode>, Boolean>());
   }
 
-  private ArrayDeque<ArrayDeque<HtmlMatcherTagNode>> visit(
+  private ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> visit(
       HtmlMatcherGraphNode node, Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap) {
     if (node instanceof HtmlMatcherTagNode) {
       return visit((HtmlMatcherTagNode) node, exprValueMap);
@@ -268,6 +301,8 @@ public final class HtmlTagMatchingPass {
       return visit((HtmlMatcherConditionNode) node, exprValueMap);
     } else if (node instanceof HtmlMatcherAccumulatorNode) {
       return visit((HtmlMatcherAccumulatorNode) node, exprValueMap);
+    } else if (node instanceof HtmlMatcherBlockNode) {
+      return visit((HtmlMatcherBlockNode) node, exprValueMap);
     } else {
       throw new UnsupportedOperationException("No implementation for: " + node);
     }
