@@ -311,6 +311,7 @@ public final class PassManager {
         addPass(
             new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
+        addPass(new VeLogRewritePass(), singleFilePassesBuilder);
         // needs to run after both resolve types and htmlrewrite pass
         addPass(
             new VeLogValidationPass(errorReporter, loggingConfig, registry),

@@ -56,6 +56,7 @@ import com.google.template.soy.types.VeType;
  *   <li>ResolveTypesPass since we rely on type resolution data
  *   <li>ResolveFunctions pass since we need to validate the use of {@link LoggingFunction}
  *       invocations
+ *   <li>VeLogRewritePass since that rewrites more VE syntactic sugar
  * </ul>
  */
 final class VeLogValidationPass extends CompilerFilePass {
