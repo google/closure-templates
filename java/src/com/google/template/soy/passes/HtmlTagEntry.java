@@ -141,7 +141,7 @@ abstract class HtmlTagEntry {
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     return hasTagName() ? getTagNode().getTagName().toString() : getBranches().toString();
   }
 
@@ -179,8 +179,7 @@ abstract class HtmlTagEntry {
         } else {
           // This logic is similar to popOptionalTag(), but there is no good way to extract this.
           if (openTag.hasTagName()
-              && TagName.checkOptionalTagShouldBePopped(
-                  openTag.getTagName(), closeTag.getTagName())) {
+              && TagName.checkCloseTagClosesOptional(closeTag.getTagName(), openTag.getTagName())) {
             openStack.pollFirst();
             continue;
           } else if (!openTag.hasTagName()) {
@@ -239,7 +238,7 @@ abstract class HtmlTagEntry {
         }
         if ((closeTag == null && entry.getTagName().isDefinitelyOptional())
             || (closeTag != null
-                && TagName.checkOptionalTagShouldBePopped(entry.getTagName(), closeTag))) {
+                && TagName.checkCloseTagClosesOptional(closeTag, entry.getTagName()))) {
           deque.pollFirst();
           continue;
         }
@@ -376,7 +375,7 @@ abstract class HtmlTagEntry {
     while (openTag != null) {
       if (openTag.hasTagName()
           && !openTag.getTagName().equals(closeTag)
-          && TagName.checkOptionalTagShouldBePopped(openTag.getTagName(), closeTag)) {
+          && TagName.checkCloseTagClosesOptional(closeTag, openTag.getTagName())) {
         openStack.pollFirst();
         openTag = openStack.peekFirst();
         continue;

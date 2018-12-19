@@ -145,7 +145,7 @@ final class ConditionalBranches {
       // Remove optional tags that do not match the desired tag.
       while (entry.hasTagName()
           && !entry.getTagName().equals(tag)
-          && TagName.checkOptionalTagShouldBePopped(entry.getTagName(), tag)) {
+          && TagName.checkCloseTagClosesOptional(tag, entry.getTagName())) {
         branch.deque().poll();
         entry = branch.deque().peek();
         if (entry == null) {
