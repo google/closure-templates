@@ -42,6 +42,7 @@ public class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
   public enum TagKind {
     OPEN_TAG,
     CLOSE_TAG,
+    VOID_TAG,
   }
 
   private final HtmlTagNode htmlTagNode;
@@ -58,6 +59,10 @@ public class HtmlMatcherTagNode extends HtmlMatcherGraphNode {
   /** Returns the tag kind. */
   public TagKind getTagKind() {
     if (htmlTagNode instanceof HtmlOpenTagNode) {
+      HtmlOpenTagNode openTagNode = (HtmlOpenTagNode) htmlTagNode;
+      if (openTagNode.isSelfClosing() || openTagNode.getTagName().isDefinitelyVoid()) {
+        return TagKind.VOID_TAG;
+      }
       return TagKind.OPEN_TAG;
     } else {
       return TagKind.CLOSE_TAG;

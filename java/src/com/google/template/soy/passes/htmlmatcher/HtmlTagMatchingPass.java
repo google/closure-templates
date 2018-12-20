@@ -51,7 +51,10 @@ import java.util.Map;
  * legitimate and then annotates open tags and close tags with their possible pairs.
  */
 public final class HtmlTagMatchingPass {
-
+  private static final SoyErrorKind INVALID_CLOSE_TAG =
+      SoyErrorKind.of("''{0}'' tag is a void element and must not specify a close tag.");
+  private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
+      SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected HTML close tag.");
 
@@ -63,6 +66,18 @@ public final class HtmlTagMatchingPass {
 
   private static final SoyErrorKind UNEXPECTED_OPEN_TAG_SOMETIMES =
       SoyErrorKind.of("This HTML open tag does not consistently match with a close tag.");
+
+  private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
+
+  private final boolean inForeignContent;
+
+  public HtmlTagMatchingPass(boolean inForeignContent) {
+    this.inForeignContent = inForeignContent;
+  }
+
+  public HtmlTagMatchingPass() {
+    this.inForeignContent = false;
+  }
 
   /**
    * Additional metadata for close tags. During graph traversal it is possible for a close tag to be
@@ -118,13 +133,13 @@ public final class HtmlTagMatchingPass {
    *       the close tags with the list of possible open tags.
    * </ol>
    */
-  public static void run(HtmlMatcherGraph htmlMatcherGraph, ErrorReporter errorReporter) {
+  public void run(HtmlMatcherGraph htmlMatcherGraph, ErrorReporter errorReporter) {
     if (!htmlMatcherGraph.getRootNode().isPresent()) {
       // Empty graph.
       return;
     }
     ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> codePaths =
-        new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get());
+        visit(htmlMatcherGraph.getRootNode().get());
     TagAnnotationState tagAnnotationState = rebalanceCodePaths(codePaths, errorReporter);
     annotateTagsAndCheckForErrors(tagAnnotationState, errorReporter);
   }
@@ -157,7 +172,7 @@ public final class HtmlTagMatchingPass {
    * @return fully rebalanced code paths ready for annotation and error detection by {@link
    *     #annotateTagsAndCheckForErrors(TagAnnotationState, ErrorReporter)}
    */
-  private static TagAnnotationState rebalanceCodePaths(
+  private TagAnnotationState rebalanceCodePaths(
       ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths, ErrorReporter errorReporter) {
     ImmutableMultimap.Builder<HtmlTagNode, Optional<HtmlTagNode>> openToCloseMapBuilder =
         ImmutableMultimap.builder();
@@ -165,21 +180,40 @@ public final class HtmlTagMatchingPass {
         ImmutableMultimap.builder();
     for (ArrayDeque<HtmlMatcherGraphNode> path : paths) {
       ArrayDeque<HtmlOpenTagNode> stack = new ArrayDeque<>();
+      boolean inForeignContent = this.inForeignContent;
       for (HtmlMatcherGraphNode graphNode : path) {
         if (graphNode instanceof HtmlMatcherBlockNode) {
           HtmlMatcherBlockNode block = (HtmlMatcherBlockNode) graphNode;
           if (block.getGraph().getRootNode().isPresent()) {
+            HtmlTagMatchingPass pass = new HtmlTagMatchingPass(inForeignContent);
             TagAnnotationState blockAnnotationState =
-                rebalanceCodePaths(
-                    new HtmlTagMatchingPass().visit(block.getGraph().getRootNode().get()),
-                    errorReporter);
+                pass.rebalanceCodePaths(
+                    pass.visit(block.getGraph().getRootNode().get()), errorReporter);
             openToCloseMapBuilder.putAll(blockAnnotationState.getOpenToCloseMap());
             closeToOpenMapBuilder.putAll(blockAnnotationState.getCloseToOpenMap());
           }
           continue;
         }
         HtmlMatcherTagNode node = (HtmlMatcherTagNode) graphNode;
+        HtmlOpenTagNode openTag;
         switch (node.getTagKind()) {
+          case VOID_TAG:
+            openTag = (HtmlOpenTagNode) node.getSoyNode().get();
+            // For static tag, check if it is a valid self-closing tag.
+            if (openTag.getTagName().isStatic()) {
+              TagName openTagName = openTag.getTagName();
+              // Report errors for non-void tags that are self-closing.
+              // For void tags, we don't care if they are self-closing or not. But when we visit
+              // a HtmlCloseTagNode we will throw an error if it is a void tag.
+              // Ignore this check if we are currently in a foreign content (svg).
+              if (!inForeignContent && !openTagName.isDefinitelyVoid() && openTag.isSelfClosing()) {
+                errorReporter.report(
+                    openTag.getSourceLocation(),
+                    INVALID_SELF_CLOSING_TAG,
+                    openTagName.getStaticTagName());
+              }
+            }
+            break;
           case OPEN_TAG:
             HtmlOpenTagNode soyNode = (HtmlOpenTagNode) node.getSoyNode().get();
             if (!stack.isEmpty()) {
@@ -192,32 +226,54 @@ public final class HtmlTagMatchingPass {
                 }
               }
             }
-            stack.push(soyNode);
+            openTag = (HtmlOpenTagNode) node.getSoyNode().get();
+            TagName openTagName = openTag.getTagName();
+            if (openTagName.isStatic() && openTagName.isForeignContent()) {
+              if (inForeignContent) {
+                errorReporter.report(openTag.getSourceLocation(), NESTED_SVG);
+              }
+              inForeignContent = true;
+            }
+            stack.push(openTag);
             break;
           case CLOSE_TAG:
             HtmlTagNode closeTag = (HtmlTagNode) node.getSoyNode().get();
+            // Report an error if this node is a void tag. Void tag should never be closed.
+            if (closeTag.getTagName().isDefinitelyVoid()) {
+              errorReporter.report(
+                  closeTag.getTagName().getTagLocation(),
+                  INVALID_CLOSE_TAG,
+                  closeTag.getTagName().getStaticTagName());
+              continue;
+            }
             if (stack.isEmpty()) {
               closeToOpenMapBuilder.put(
                   closeTag, ExpectedTagInfo.create(Optional.absent(), Optional.absent()));
               continue;
             }
-            HtmlOpenTagNode openTag = stack.pop();
-            if (openTag.getTagName().equals(closeTag.getTagName())) {
-              // Potentially balanced tags.
-              closeToOpenMapBuilder.put(
-                  closeTag, ExpectedTagInfo.create(Optional.of(openTag), Optional.absent()));
-              openToCloseMapBuilder.put(openTag, Optional.of(closeTag));
-            } else if (openTag.getTagName().isDefinitelyOptional()
-                && TagName.checkCloseTagClosesOptional(
-                    closeTag.getTagName(), openTag.getTagName())) {
-              // TODO(b/120431381): Inject a synthetic closing tag for openTag and add this
-              // synthetic tag to the open-
-              // and close-tag maps.
-            } else {
+            while (!stack.isEmpty()) {
+              openTag = stack.pop();
+              if (openTag.getTagName().equals(closeTag.getTagName())) {
+                // Potentially balanced tags.
+                closeToOpenMapBuilder.put(
+                    closeTag, ExpectedTagInfo.create(Optional.of(openTag), Optional.absent()));
+                openToCloseMapBuilder.put(openTag, Optional.of(closeTag));
+                if (openTag.getTagName().isStatic() && openTag.getTagName().isForeignContent()) {
+                  inForeignContent = false;
+                }
+                break;
+              } else if (openTag.getTagName().isDefinitelyOptional()
+                  && TagName.checkCloseTagClosesOptional(
+                      closeTag.getTagName(), openTag.getTagName())) {
+                // TODO(b/120431381): Inject a synthetic closing tag for openTag and add this
+                // synthetic tag to the open-
+                // and close-tag maps.
+              } else {
               // Potentially unbalanced tags. These will be flagged as errors later.
               openToCloseMapBuilder.put(openTag, Optional.absent());
               closeToOpenMapBuilder.put(
                   closeTag, ExpectedTagInfo.create(Optional.absent(), Optional.of(openTag)));
+              }
             }
             break;
         }
