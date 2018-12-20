@@ -23,6 +23,7 @@ import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
@@ -104,8 +105,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LoopVar;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
@@ -209,8 +209,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
       SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
-  private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
-      SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
   private static final SoyErrorKind TYPE_MISMATCH_PROP =
@@ -233,7 +231,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
   private static final SoyErrorKind INFERRED_NULL =
       SoyErrorKind.of(
           "The inferred type of this parameter is ''null'' which is not a useful type. "
-              + "Use an explicit type declaration to specify a wider type..");
+              + "Use an explicit type declaration to specify a wider type.");
   private static final SoyErrorKind EXPLICIT_TYPE_SAME_AS_INFERRED =
       SoyErrorKind.of(
           "The inferred type of this parameter is the same as the declared type, use the '':='' "
@@ -277,44 +275,71 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
     protected void visitTemplateNode(TemplateNode node) {
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
-      if (node instanceof TemplateElementNode) {
-        TemplateElementNode el = (TemplateElementNode) node;
-        visitExpressions(el);
-        for (TemplatePropVar prop : el.getPropVars()) {
-          SoyType actualType = prop.initialValue().getType();
-          if (prop.getTypeNode() != null) {
-            SoyType declaredType = prop.type();
+      List<TemplateHeaderVarDefn> headerVars = Lists.newArrayList(node.getParams());
+      if (node.getKind() == SoyNode.Kind.TEMPLATE_ELEMENT_NODE) {
+        headerVars.addAll(((TemplateElementNode) node).getPropVars());
+      }
+
+      // If the default value expressions are not constant, they could reference another default
+      // value parameter, which won't work because it's looking up the type of the parameter when it
+      // hasn't been inferred yet. So stop early if we find non-constant default value expressions.
+      Checkpoint cp = errorReporter.checkpoint();
+      for (TemplateHeaderVarDefn headerVar : headerVars) {
+        if (headerVar.defaultValue() != null) {
+          if (!SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
+            errorReporter.report(
+                headerVar.defaultValue().getSourceLocation(),
+                PROP_MUST_BE_CONSTANT,
+                headerVar.name());
+            headerVar.setType(ErrorType.getInstance());
+          }
+        }
+      }
+      if (errorReporter.errorsSince(cp)) {
+        for (TemplateHeaderVarDefn headerVar : headerVars) {
+          if (!headerVar.hasType()) {
+            // Later parts of the compiler require the type to be non-null. Since we're stopping
+            // before inferring types, set the the types that would be inferred to the error type.
+            headerVar.setType(ErrorType.getInstance());
+          }
+        }
+        // TODO(lukes): find a way to keep going.  we will need a way to avoid blowing up when
+        // visitExpressions visits a defaultValue expression that references a var ref.
+        return;
+      }
+
+      visitExpressions(node);
+
+      for (TemplateHeaderVarDefn headerVar : headerVars) {
+        if (headerVar.defaultValue() != null) {
+          SoyType actualType = headerVar.defaultValue().getRoot().getType();
+          if (headerVar.getTypeNode() != null) {
+            SoyType declaredType = headerVar.type();
             if (declaredType.equals(NullType.getInstance())) {
-              errorReporter.report(prop.nameLocation(), EXPLICIT_NULL);
+              errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
             }
             if (!declaredType.isAssignableFrom(actualType)) {
               errorReporter.report(
-                  prop.initialValue().getSourceLocation(),
+                  headerVar.defaultValue().getSourceLocation(),
                   TYPE_MISMATCH_PROP,
-                  prop.name(),
+                  headerVar.name(),
                   actualType,
                   declaredType);
             }
             if (declaredType.equals(actualType)) {
-              errorReporter.report(prop.nameLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
+              errorReporter.report(
+                  headerVar.getTypeNode().sourceLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
             }
           } else {
             // in this case the declaredType is inferred from the initializer expression, so just
             // assign
-            prop.setType(actualType);
+            headerVar.setType(actualType);
             if (actualType.equals(NullType.getInstance())) {
-              errorReporter.report(prop.nameLocation(), INFERRED_NULL);
+              errorReporter.report(headerVar.nameLocation(), INFERRED_NULL);
             }
           }
-          if (!SoyTreeUtils.isConstantExpr(prop.initialValue())) {
-            errorReporter.report(
-                prop.initialValue().getSourceLocation(), PROP_MUST_BE_CONSTANT, prop.name());
-          }
-        }
-      }
-      for (TemplateParam param : node.getAllParams()) {
-        if (param.type().equals(NullType.getInstance())) {
-          errorReporter.report(param.nameLocation(), EXPLICIT_NULL);
+        } else if (headerVar.type().equals(NullType.getInstance())) {
+          errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
       }
 
@@ -658,9 +683,6 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitVarRefNode(VarRefNode varRef) {
-      if (varRef.getType() == null) {
-        errorReporter.report(varRef.getSourceLocation(), VAR_REF_MISSING_SOY_TYPE);
-      }
       SoyType newType = getTypeSubstitution(varRef);
       if (newType != null) {
         varRef.setSubstituteType(newType);

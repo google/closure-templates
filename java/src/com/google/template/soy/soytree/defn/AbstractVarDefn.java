@@ -74,6 +74,10 @@ abstract class AbstractVarDefn implements VarDefn {
     return type;
   }
 
+  public boolean hasType() {
+    return type != null;
+  }
+
   @Override
   public void setLocalVariableIndex(int i) {
     localVariableIndex = i;

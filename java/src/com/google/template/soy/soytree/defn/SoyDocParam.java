@@ -19,6 +19,7 @@ package com.google.template.soy.soytree.defn;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
+import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -33,7 +34,8 @@ public final class SoyDocParam extends TemplateParam {
 
   public SoyDocParam(
       String name, boolean isRequired, @Nullable String desc, @Nullable SourceLocation location) {
-    super(name, UnknownType.getInstance(), isRequired, false, desc, location);
+    super(
+        name, UnknownType.getInstance(), isRequired, false, desc, location, /*defaultValue=*/ null);
   }
 
   private SoyDocParam(SoyDocParam soyDocParam) {
@@ -46,8 +48,14 @@ public final class SoyDocParam extends TemplateParam {
   }
 
   @Override
-  public SoyType type() {
-    return UnknownType.getInstance();
+  public void setType(SoyType type) {
+    throw new IllegalStateException("can't set type on a SoyDoc param");
+  }
+
+  @Nullable
+  @Override
+  public TypeNode getTypeNode() {
+    return null;
   }
 
   @Override

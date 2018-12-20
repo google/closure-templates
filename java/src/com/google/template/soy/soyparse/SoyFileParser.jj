@@ -126,9 +126,9 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.NullType;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -437,6 +437,18 @@ public class SoyFileParser {
   private static final SoyErrorKind CSS_XID_MIGRATION =
       SoyErrorKind.of("The ''{0}'' command is {1}, please switch to using the {0} function."
   );
+  // There's nothing technical preventing us from allowing default values on injected parameters,
+  // but we're not sure if that's something we want in the language, so we're preventing it for now.
+  private static final SoyErrorKind INJECT_DEFAULT_PARAM =
+      SoyErrorKind.of("Default parameters are not supported on injected parameters.");
+  private static final SoyErrorKind OPTIONAL_DEFAULT_PARAM =
+      SoyErrorKind.of(
+          "Default parameters are not supported on optional parameters. Did you mean "
+          + "'''{@param ...}'''?");
+  private static final SoyErrorKind PROP_IN_TEMPLATE =
+      SoyErrorKind.of("@prop declarations are only allowed in elements.");
+  private static final SoyErrorKind PROP_REQUIRES_VALUE =
+      SoyErrorKind.of("@prop declarations require an initial value.");
 
   // Expression errors:
   private static final SoyErrorKind DUPLICATE_KEY_NAME =
@@ -1720,12 +1732,11 @@ private RawTextNode RawText() :
  * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
- * TODO(b/117677765): Remove prop functionality from this function
  */
 private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 {
   Token tok;
-  HeaderParam param;
+  TemplateHeaderVarDefn param;
   List<HeaderParam> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
@@ -1748,13 +1759,24 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
     |
       param = ParamDecl(soyDoc)
       {
-        // we just parsed a param, preceding whitespace/doc comments are not important
-        whitespace = null;
-        soyDoc = null;
-        if (params.isEmpty()) {
-          params = new ArrayList<HeaderParam>();
+        switch (param.kind()) {
+          case PARAM:
+            // we just parsed a param, preceding whitespace/doc comments are not important
+            whitespace = null;
+            soyDoc = null;
+            if (params.isEmpty()) {
+              params = new ArrayList<HeaderParam>();
+            }
+            params.add((HeaderParam) param);
+            break;
+          case PROP:
+            errorReporter.report(param.nameLocation(), PROP_IN_TEMPLATE);
+            break;
+          case IJ_PARAM:
+          case LOCAL_VAR:
+          case UNDECLARED:
+            throw new AssertionError("unexpected var kind: " + param.kind());
         }
-        params.add(param);
       }
     )
   )*
@@ -1777,9 +1799,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
 {
   Token tok;
-  HeaderParam param;
+  TemplateHeaderVarDefn param;
   List<HeaderParam> params = ImmutableList.of();
-  TemplatePropVar propVar;
   ImmutableList.Builder<TemplatePropVar> propVars = ImmutableList.builder();
   RawTextNode whitespace = null;
   String soyDoc = null;
@@ -1802,23 +1823,26 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
     |
       param = ParamDecl(soyDoc)
       {
-        // we just parsed a param, preceding whitespace/doc comments are not important
-        whitespace = null;
-        soyDoc = null;
-        if (params.isEmpty()) {
-          params = new ArrayList<HeaderParam>();
-        }
-        params.add(param);
-      }
-    |
-      propVar = PropVarDecl(soyDoc)
-      {
-        // it will be null if there is a parse error
-        if (propVar != null) {
-          // We just parsed a prop var, preceding whitespace/doc comments are not important.
-          whitespace = null;
-          soyDoc = null;
-          propVars.add(propVar);
+        switch (param.kind()) {
+          case PARAM:
+            // we just parsed a param, preceding whitespace/doc comments are not important
+            whitespace = null;
+            soyDoc = null;
+            if (params.isEmpty()) {
+              params = new ArrayList<HeaderParam>();
+            }
+            params.add((HeaderParam) param);
+            break;
+          case PROP:
+            // We just parsed a prop var, preceding whitespace/doc comments are not important.
+            whitespace = null;
+            soyDoc = null;
+            propVars.add((TemplatePropVar) param);
+            break;
+          case IJ_PARAM:
+          case LOCAL_VAR:
+          case UNDECLARED:
+            throw new AssertionError("unexpected var kind: " + param.kind());
         }
       }
     )
@@ -1837,12 +1861,14 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
  *
  * @param desc The doc comment that was attached to whitespace preceding this param, if any.
  */
-private HeaderParam ParamDecl(@Nullable String desc) :
+private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
 {
   Token tagBegin, name;
   TypeNode paramTypeNode = null;
+  ExprNode value = null;
   boolean optional = false;
   boolean inject = false;
+  boolean propVar = false;
 }
 {
   (
@@ -1850,6 +1876,7 @@ private HeaderParam ParamDecl(@Nullable String desc) :
   | tagBegin = <DECL_BEGIN_OPT_PARAM>  { optional = true; }
   | tagBegin = <DECL_BEGIN_INJECT_PARAM>  { inject = true; }
   | tagBegin = <DECL_BEGIN_OPT_INJECT_PARAM> { inject = true; optional = true; }
+  | tagBegin = <DECL_BEGIN_PROP_VAR> { propVar = true; }
   )
   // If there is a special token directly attached to the {@param, use that instead of whatever
   // was passed to us.
@@ -1860,10 +1887,18 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 
   name = <NAME>
 
-  <CMD_COLON>
-
   try {
-    paramTypeNode = TypeExpr()
+    (
+      <CMD_COLON>
+      paramTypeNode = TypeExpr()
+      [
+        <EQ>
+        value = Expr()
+      ]
+    |
+      <CMD_COLON_EQ>
+      value = Expr()
+    )
     <CMD_END>
   } catch (ParseException parseException) {
     reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
@@ -1874,84 +1909,61 @@ private HeaderParam ParamDecl(@Nullable String desc) :
       // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
       desc = desc.substring(3, desc.length() - 2).trim();
     }
-    boolean isNullable = false;
-    if (paramTypeNode instanceof UnionTypeNode) {
-      UnionTypeNode utn = (UnionTypeNode) paramTypeNode;
-      for (TypeNode tn : utn.candidates()) {
-        if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().equals("null")) {
-          isNullable = true;
-          break;
+    if (propVar) {
+      if (value == null) {
+        errorReporter.report(createSrcLoc(tagBegin), PROP_REQUIRES_VALUE);
+        value = errorExpr(name);
+      }
+      return new TemplatePropVar(
+          name.image,
+          paramTypeNode,
+          value,
+          desc,
+          createSrcLoc(name));
+    } else {
+      boolean isNullable = false;
+      if (paramTypeNode instanceof UnionTypeNode) {
+        UnionTypeNode utn = (UnionTypeNode) paramTypeNode;
+        for (TypeNode tn : utn.candidates()) {
+          if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().equals("null")) {
+            isNullable = true;
+            break;
+          }
+        }
+      } else if (paramTypeNode instanceof NamedTypeNode
+          && ((NamedTypeNode) paramTypeNode).name().equals("null")) {
+        isNullable = true;
+      }
+      // Optional params become nullable
+      if (optional && !isNullable && paramTypeNode != null) {
+        NamedTypeNode nullType = NamedTypeNode.create(createSrcLoc(tagBegin), "null");
+        paramTypeNode = paramTypeNode instanceof UnionTypeNode
+            ? UnionTypeNode.create(
+                ImmutableList.<TypeNode>builder()
+                    .addAll(((UnionTypeNode) paramTypeNode).candidates())
+                    .add(nullType)
+                    .build())
+            : UnionTypeNode.create(ImmutableList.of(paramTypeNode, nullType));
+      }
+      if (value != null) {
+        if (inject) {
+          errorReporter.report(createSrcLoc(tagBegin), INJECT_DEFAULT_PARAM);
+        } else if (optional) {
+          errorReporter.report(createSrcLoc(tagBegin), OPTIONAL_DEFAULT_PARAM);
         }
       }
-    } else if (paramTypeNode instanceof NamedTypeNode && ((NamedTypeNode) paramTypeNode).name().equals("null")) {
-      isNullable = true;
+      return new HeaderParam(
+          name.image,
+          createSrcLoc(name),
+          // Optional params become nullable
+          paramTypeNode,
+          // the param is required if there isn't a default value, it isn't optional and the parsed
+          // type isn't nullable.
+          value == null && !optional && !isNullable,
+          inject,
+          desc,
+          value);
     }
-    // Optional params become nullable
-    if (optional && !isNullable) {
-      NamedTypeNode nullType = NamedTypeNode.create(createSrcLoc(tagBegin), "null");
-      paramTypeNode = paramTypeNode instanceof UnionTypeNode
-          ? UnionTypeNode.create(
-              ImmutableList.<TypeNode>builder()
-                  .addAll(((UnionTypeNode) paramTypeNode).candidates())
-                  .add(nullType)
-                  .build())
-          : UnionTypeNode.create(ImmutableList.of(paramTypeNode, nullType));
-    }
-    return new HeaderParam(
-        name.image,
-        createSrcLoc(name),
-        paramTypeNode,
-        // the param is required if it isn't optional and the parsed type isn't nullable.
-        !optional && !isNullable,
-        inject,
-        desc);
-  }
-}
-
-/**
- * PropVarDecl -> ( DECL_BEGIN_PROP_VAR ) <NAME> <CMD_COLON>
- *                 TypeExpr() <CMD_END>
- *
- * @param desc The doc comment that was attached to whitespace preceding this param, if any.
- *
- */
-private TemplatePropVar PropVarDecl(@Nullable String desc) :
-{
-  Token propVarBegin, name;
-  TypeNode propVarTypeNode = null;
-  SoyType propVarType = null;
-  ExprNode value = null;
-}
-{
-  (
-    propVarBegin = <DECL_BEGIN_PROP_VAR>
-  )
-
-  name = <NAME>
-
-  try {
-    (
-      <CMD_COLON>
-
-      propVarTypeNode = TypeExpr()
-      <EQ>
-      value = Expr()
-    |
-      <CMD_COLON_EQ>
-      value = Expr()
-    )
-    <CMD_END>
-  } catch (ParseException parseException) {
-    reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
-    return null;
-  }
-  {
-    return new TemplatePropVar(
-        name.image,
-        propVarTypeNode,
-        value,
-        desc,
-        createSrcLoc(name));
   }
 }
 

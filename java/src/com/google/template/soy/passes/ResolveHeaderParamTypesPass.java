@@ -40,7 +40,9 @@ final class ResolveHeaderParamTypesPass extends CompilerFilePass {
       for (TemplateParam param : template.getAllParams()) {
         if (param instanceof HeaderParam) {
           HeaderParam hp = (HeaderParam) param;
-          hp.setType(converter.getOrCreateType(hp.getTypeNode()));
+          if (hp.getTypeNode() != null) {
+            hp.setType(converter.getOrCreateType(hp.getTypeNode()));
+          }
         }
       }
       if (template instanceof TemplateElementNode) {

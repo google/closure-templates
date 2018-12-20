@@ -17,6 +17,9 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -47,24 +50,30 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
+  @Nullable private final ExprRootNode defaultValue;
+
   public TemplateParam(
       String name,
       @Nullable SoyType type,
       boolean isRequired,
       boolean isInjected,
       @Nullable String desc,
-      @Nullable SourceLocation nameLocation) {
+      @Nullable SourceLocation nameLocation,
+      @Nullable ExprNode defaultValue) {
     super(name, nameLocation, type);
     this.isRequired = isRequired;
     this.isInjected = isInjected;
     this.desc = desc;
+    this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
   }
 
-  TemplateParam(TemplateParam param) {
+  protected TemplateParam(TemplateParam param) {
     super(param);
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
     this.desc = param.desc;
+    this.defaultValue =
+        param.defaultValue == null ? null : param.defaultValue.copy(new CopyState());
   }
 
   @Override
@@ -86,6 +95,12 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
   @Override
   public @Nullable String desc() {
     return desc;
+  }
+
+  @Override
+  @Nullable
+  public final ExprRootNode defaultValue() {
+    return defaultValue;
   }
 
   @Override

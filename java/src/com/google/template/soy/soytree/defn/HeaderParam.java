@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
@@ -41,8 +42,9 @@ public final class HeaderParam extends TemplateParam {
       @Nullable TypeNode typeNode,
       boolean isRequired,
       boolean isInjected,
-      @Nullable String desc) {
-    super(name, /*type=*/ null, isRequired, isInjected, desc, nameLocation);
+      @Nullable String desc,
+      @Nullable ExprNode defaultValue) {
+    super(name, /*type=*/ null, isRequired, isInjected, desc, nameLocation, defaultValue);
     this.typeNode = typeNode;
   }
 
@@ -66,6 +68,7 @@ public final class HeaderParam extends TemplateParam {
     return typeNode;
   }
 
+  @Override
   public void setType(SoyType type) {
     checkState(this.type == null, "type has already been assigned");
     this.type = checkNotNull(type);

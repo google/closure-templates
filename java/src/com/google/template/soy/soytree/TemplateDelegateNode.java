@@ -154,10 +154,12 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    if (delTemplateVariantExpr == null) {
-      return ImmutableList.of();
+    ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
+    exprs.addAll(super.getExprList());
+    if (delTemplateVariantExpr != null) {
+      exprs.add(delTemplateVariantExpr);
     }
-    return ImmutableList.of(delTemplateVariantExpr);
+    return exprs.build();
   }
 
   /**

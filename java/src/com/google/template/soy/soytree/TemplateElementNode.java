@@ -90,8 +90,9 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
+    builder.addAll(super.getExprList());
     for (TemplatePropVar prop : getPropVars()) {
-      builder.add(prop.initialValue());
+      builder.add(prop.defaultValue());
     }
     return builder.build();
   }

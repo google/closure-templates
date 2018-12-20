@@ -207,7 +207,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   protected PyExpr visitVarRefNode(VarRefNode node) {
     if (node.getDefnDecl().kind() == VarDefn.Kind.PROP) {
       TemplatePropVar prop = (TemplatePropVar) node.getDefnDecl();
-      return visit(prop.initialValue());
+      return visit(prop.defaultValue());
     }
     return visitNullSafeNode(node);
   }
@@ -238,7 +238,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             TemplatePropVar prop = (TemplatePropVar) varRef.getDefnDecl();
             // This means we will generate code for the prop initializer multiple times.  This
             // could be improved but this is not yet important for pysrc
-            return visitNullSafeNodeRecurse(prop.initialValue(), nullSafetyPrefix);
+            return visitNullSafeNodeRecurse(prop.defaultValue(), nullSafetyPrefix);
           } else if (varRef.isInjected()) {
             // Case 1: Injected data reference.
             return genCodeForLiteralKeyAccess("ijData", varRef.getName());

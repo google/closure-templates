@@ -321,14 +321,14 @@ final class TemplateCompiler {
     ImmutableMap.Builder<TemplatePropVar, SoyExpression> builder = ImmutableMap.builder();
     for (TemplatePropVar prop : node.getPropVars()) {
       SoyExpression propValue;
-      if (prop.initialValue().getType() == NullType.getInstance()) {
+      if (prop.defaultValue().getType() == NullType.getInstance()) {
         // a special case for null to avoid poor handling elsewhere in the compiler.
         propValue =
             SoyExpression.forSoyValue(
                 prop.type(),
                 BytecodeUtils.constantNull(SoyRuntimeType.getBoxedType(prop.type()).runtimeType()));
       } else {
-        propValue = constantCompiler.compile(prop.initialValue());
+        propValue = constantCompiler.compile(prop.defaultValue());
       }
       if (!propValue.isCheap()) {
         // these fields are package private so that lazy closures can access them directly.

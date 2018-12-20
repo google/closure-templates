@@ -16,28 +16,29 @@
 
 package com.google.template.soy.soytree.defn;
 
-import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
 
 /**
  * Interface for the definition of a template header variable, i.e. a value that is declared in a
  * template using @param or @prop.
  */
-public interface TemplateHeaderVarDefn {
-
-  /** The variable's name. */
-  String name();
-
-  /** The data type of the value. */
-  SoyType type();
-
-  /** The location of the name in the template source. */
-  @Nullable
-  SourceLocation nameLocation();
+public interface TemplateHeaderVarDefn extends VarDefn {
 
   /** Returns whether the param is required. */
   boolean isRequired();
+
+  ExprRootNode defaultValue();
+
+  boolean hasType();
+
+  void setType(SoyType type);
+
+  @Nullable
+  TypeNode getTypeNode();
 
   /**
    * The variable description, provided via Soy doc comments. {@see

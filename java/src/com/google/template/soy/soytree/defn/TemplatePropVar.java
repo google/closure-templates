@@ -48,7 +48,7 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     this.initialValue = new ExprRootNode(initialValue);
   }
 
-  TemplatePropVar(TemplatePropVar old) {
+  private TemplatePropVar(TemplatePropVar old) {
     super(old);
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
     this.desc = old.desc;
@@ -60,7 +60,8 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     return typeNode;
   }
 
-  public ExprRootNode initialValue() {
+  @Override
+  public ExprRootNode defaultValue() {
     return initialValue;
   }
 

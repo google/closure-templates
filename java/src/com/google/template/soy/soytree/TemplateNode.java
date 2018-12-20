@@ -28,6 +28,8 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
@@ -45,7 +47,8 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class TemplateNode extends AbstractBlockCommandNode implements RenderUnitNode {
+public abstract class TemplateNode extends AbstractBlockCommandNode
+    implements RenderUnitNode, ExprHolderNode {
 
   /** Priority for delegate templates. */
   public enum Priority {
@@ -439,7 +442,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   }
 
   /** Returns all params from template header or SoyDoc, both regular and injected. */
-  @Nullable
   public Iterable<TemplateParam> getAllParams() {
     return Iterables.concat(params, injectedParams);
   }
@@ -452,6 +454,18 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   @Override
   public String getCommandText() {
     return commandText;
+  }
+
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
+    for (TemplateParam param : getParams()) {
+      ExprRootNode defaultValue = param.defaultValue();
+      if (defaultValue != null) {
+        exprs.add(defaultValue);
+      }
+    }
+    return exprs.build();
   }
 
   protected ImmutableList<TemplateHeaderVarDefn> getHeaderParamsForSourceString() {

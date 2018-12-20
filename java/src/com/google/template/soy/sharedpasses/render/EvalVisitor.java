@@ -349,7 +349,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
     } else if (varRef.getDefnDecl().kind() == VarDefn.Kind.PROP) {
       TemplatePropVar prop = (TemplatePropVar) varRef.getDefnDecl();
-      return visit(prop.initialValue());
+      return visit(prop.defaultValue());
     } else {
       return env.getVar(varRef.getDefnDecl());
     }

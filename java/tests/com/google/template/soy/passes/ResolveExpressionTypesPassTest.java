@@ -36,7 +36,9 @@ import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.AnyType;
@@ -103,8 +105,8 @@ public final class ResolveExpressionTypesPassTest {
                 constructElementSource(
                     "{@prop pa:= true}",
                     "{@prop pb:= [1,2,3]}",
-                    "{@prop pc: bool|null = null}",
-                    "{@prop pd: list<int>|null = null}",
+                    "{@param pc: bool|null = null}",
+                    "{@param pd: list<int>|null = null}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
@@ -117,11 +119,36 @@ public final class ResolveExpressionTypesPassTest {
             .fileSet();
     assertTypes(soyTree);
     TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
+
     List<TemplatePropVar> props = node.getPropVars();
-    assertThat(props.get(0).initialValue().getType()).isEqualTo(BoolType.getInstance());
-    assertThat(props.get(1).initialValue().getType()).isEqualTo(ListType.of(IntType.getInstance()));
-    assertThat(props.get(2).initialValue().getType()).isEqualTo(NullType.getInstance());
-    assertThat(props.get(3).initialValue().getType()).isEqualTo(NullType.getInstance());
+    assertThat(props.get(0).defaultValue().getType()).isEqualTo(BoolType.getInstance());
+    assertThat(props.get(1).defaultValue().getType()).isEqualTo(ListType.of(IntType.getInstance()));
+
+    List<TemplateParam> params = node.getParams();
+    assertThat(params.get(0).defaultValue().getType()).isEqualTo(NullType.getInstance());
+    assertThat(params.get(1).defaultValue().getType()).isEqualTo(NullType.getInstance());
+  }
+
+  @Test
+  public void testDefaultParam() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa:= map('cats': true, 'dogs': false)}",
+                    "{@param pb: string|null = null}",
+                    "{assertType('map<string,bool>', $pa)}",
+                    "{assertType('null|string', $pb)}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+
+    assertTypes(soyTree);
+
+    TemplateBasicNode node = (TemplateBasicNode) soyTree.getChild(0).getChild(0);
+    List<TemplateParam> params = node.getParams();
+    assertThat(params.get(0).defaultValue().getType())
+        .isEqualTo(MapType.of(StringType.getInstance(), BoolType.getInstance()));
+    assertThat(params.get(1).defaultValue().getType()).isEqualTo(NullType.getInstance());
   }
 
   @Test

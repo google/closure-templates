@@ -211,7 +211,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @return The code to access the value of that parameter.
    */
   protected Expression genCodeForPropAccess(String paramName, TemplatePropVar propVar) {
-    return visit(propVar.initialValue());
+    return visit(propVar.defaultValue());
   }
 
   @Override

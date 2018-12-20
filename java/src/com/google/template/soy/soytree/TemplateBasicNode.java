@@ -37,7 +37,6 @@ public final class TemplateBasicNode extends TemplateNode {
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param visibility visibility of this template
    * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param propVars the prop variables from the template header
    */
   TemplateBasicNode(
       TemplateBasicNodeBuilder nodeBuilder,
