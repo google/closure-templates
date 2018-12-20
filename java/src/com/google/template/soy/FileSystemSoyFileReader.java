@@ -24,10 +24,9 @@ import java.io.FileNotFoundException;
 /** Reads files from the file system. */
 class FileSystemSoyFileReader implements SoyCompilerFileReader {
   @Override
-  public ByteSource read(String path) throws FileNotFoundException {
-    File f = new File(path);
+  public ByteSource read(File f) throws FileNotFoundException {
     if (!f.exists()) {
-      throw new FileNotFoundException(path);
+      throw new FileNotFoundException(f.getPath());
     }
     return Files.asByteSource(f);
   }

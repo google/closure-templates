@@ -25,14 +25,15 @@ interface SoyInputCache {
   SoyInputCache DEFAULT =
       new SoyInputCache() {
         @Override
-        public <T> T read(File file, Reader<T> reader) throws IOException {
-          return reader.read(file);
+        public <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader)
+            throws IOException {
+          return reader.read(file, fileReader);
         }
       };
 
   /** A Reader can read a file as a structured object. */
   interface Reader<T> {
-    T read(File file) throws IOException;
+    T read(File file, SoyCompilerFileReader fileReader) throws IOException;
   }
 
   /**
@@ -45,5 +46,5 @@ interface SoyInputCache {
    *     pass the same instance.
    * @return the result of reaeding the file, possibly from a cache.
    */
-  <T> T read(File file, Reader<T> reader) throws IOException;
+  <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader) throws IOException;
 }

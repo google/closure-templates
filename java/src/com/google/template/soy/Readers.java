@@ -19,14 +19,12 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
@@ -36,8 +34,8 @@ final class Readers {
   static final SoyInputCache.Reader<LoggingConfig> LOGGING_CONFIG_READER =
       new SoyInputCache.Reader<LoggingConfig>() {
         @Override
-        public LoggingConfig read(File loggingConfig) throws IOException {
-          try (InputStream stream = new FileInputStream(loggingConfig)) {
+        public LoggingConfig read(File file, SoyCompilerFileReader reader) throws IOException {
+          try (InputStream stream = reader.read(file).openStream()) {
             return LoggingConfig.parseFrom(stream);
           }
         }
@@ -46,8 +44,9 @@ final class Readers {
   static final SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>> GLOBALS_READER =
       new SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>>() {
         @Override
-        public ImmutableMap<String, PrimitiveData> read(File globalsFile) throws IOException {
-          return SoyUtils.parseCompileTimeGlobals(Files.asCharSource(globalsFile, UTF_8));
+        public ImmutableMap<String, PrimitiveData> read(File file, SoyCompilerFileReader reader)
+            throws IOException {
+          return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
 
@@ -57,8 +56,8 @@ final class Readers {
   static final SoyInputCache.Reader<FileDescriptorSet> FILE_DESCRIPTOR_SET_READER =
       new SoyInputCache.Reader<FileDescriptorSet>() {
         @Override
-        public FileDescriptorSet read(File file) throws IOException {
-          try (InputStream stream = new FileInputStream(file)) {
+        public FileDescriptorSet read(File file, SoyCompilerFileReader reader) throws IOException {
+          try (InputStream stream = reader.read(file).openStream()) {
             return FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY);
           }
         }
@@ -69,9 +68,9 @@ final class Readers {
   static final SoyInputCache.Reader<CompilationUnit> COMPILATION_UNIT_READER =
       new SoyInputCache.Reader<CompilationUnit>() {
         @Override
-        public CompilationUnit read(File file) throws IOException {
+        public CompilationUnit read(File file, SoyCompilerFileReader reader) throws IOException {
           try (InputStream is =
-              new GZIPInputStream(new FileInputStream(file), /* bufferSize */ 32 * 1024)) {
+              new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
             return CompilationUnit.parseFrom(is);
           }
         }

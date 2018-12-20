@@ -62,13 +62,12 @@ public abstract class AbstractSoyCompiler {
           + "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
 
   @Option(
-    name = "--srcs",
-    usage =
-        "The list of source Soy files. Extra arguments are treated as srcs. Sources"
-            + " are required from either this flag or as extra arguments.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
-  private List<String> srcs = new ArrayList<>();
+      name = "--srcs",
+      usage =
+          "The list of source Soy files. Extra arguments are treated as srcs. Sources"
+              + " are required from either this flag or as extra arguments.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> srcs = new ArrayList<>();
 
   @Option(
       name = "--depHeaders",
@@ -258,7 +257,8 @@ public abstract class AbstractSoyCompiler {
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
         sfsBuilder.addProtoDescriptorsFromFileDescriptorProto(
-            cache.read(protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER));
+            cache.read(
+                protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER, soyCompilerFileReader));
       } catch (IOException ioe) {
         throw new CommandLineError(
             "Error parsing proto file descriptor from "
@@ -268,11 +268,12 @@ public abstract class AbstractSoyCompiler {
       }
     }
     // add sources
-    for (String src : srcs) {
+    for (File src : srcs) {
       try {
-        sfsBuilder.add(soyCompilerFileReader.read(src).asCharSource(StandardCharsets.UTF_8), src);
+        sfsBuilder.add(
+            soyCompilerFileReader.read(src).asCharSource(StandardCharsets.UTF_8), src.getPath());
       } catch (FileNotFoundException fnfe) {
-        throw new CommandLineError("File: " + src + " passed to --srcs does not exist");
+        throw new CommandLineError("File: " + src.getPath() + " passed to --srcs does not exist");
       }
     }
     addCompilationUnitsToBuilder(sfsBuilder);
@@ -317,7 +318,9 @@ public abstract class AbstractSoyCompiler {
     if (soFar.add(depFile)) {
       try {
         sfsBuilder.addCompilationUnit(
-            depKind, depFile.getPath(), cache.read(depFile, Readers.COMPILATION_UNIT_READER));
+            depKind,
+            depFile.getPath(),
+            cache.read(depFile, Readers.COMPILATION_UNIT_READER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(
             "Unable to read header file: " + depFile + ": " + e.getMessage());
@@ -325,12 +328,12 @@ public abstract class AbstractSoyCompiler {
     }
   }
 
-
   private ValidatedLoggingConfig parseLoggingConfig() {
     LoggingConfig.Builder configBuilder = LoggingConfig.newBuilder();
     for (File loggingConfig : loggingConfigs) {
       try {
-        configBuilder.mergeFrom(cache.read(loggingConfig, Readers.LOGGING_CONFIG_READER));
+        configBuilder.mergeFrom(
+            cache.read(loggingConfig, Readers.LOGGING_CONFIG_READER, soyCompilerFileReader));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
@@ -351,7 +354,7 @@ public abstract class AbstractSoyCompiler {
     for (File globalsFile : globalsFiles) {
       try {
         ImmutableMap<String, PrimitiveData> parsedGlobals =
-            cache.read(globalsFile, Readers.GLOBALS_READER);
+            cache.read(globalsFile, Readers.GLOBALS_READER, soyCompilerFileReader);
         for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
           PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
           if (oldValue != null && !entry.getValue().equals(oldValue)) {
