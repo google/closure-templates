@@ -110,11 +110,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
     if (node.isStrictHtml()) {
       htmlMatcherGraph = new HtmlTagVisitor(errorReporter).exec(node);
-      if (!htmlMatcherGraph.getRootNode().isPresent()) {
-        return;
-      }
-      HtmlTagMatchingPass.checkForErrors(
-          new HtmlTagMatchingPass().visit(htmlMatcherGraph.getRootNode().get()), errorReporter);
+      HtmlTagMatchingPass.run(htmlMatcherGraph, errorReporter);
       for (VeLogNode veNode : SoyTreeUtils.getAllNodesOfType(node, VeLogNode.class)) {
         checkVeLogNode(veNode);
       }

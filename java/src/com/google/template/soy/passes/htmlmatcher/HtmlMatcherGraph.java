@@ -45,7 +45,7 @@ public final class HtmlMatcherGraph {
   }
 
   /**
-   * Saves the current cursor.
+   * Saves the current cursor .
    *
    * <p>Does not change the value of the cursor. The matching call to {@link #restoreCursor()} will
    * move the cursor back to this position in the graph.

@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.SoyNode;
 import javax.annotation.Nullable;
 
