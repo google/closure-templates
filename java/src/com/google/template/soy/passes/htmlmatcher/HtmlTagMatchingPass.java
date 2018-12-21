@@ -19,14 +19,20 @@ package com.google.template.soy.passes.htmlmatcher;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TagName;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -101,8 +107,8 @@ public final class HtmlTagMatchingPass {
    * The mappings from open tags to their possible closing tags, and from closing tags to their
    * possible open tags.
    *
-   * <p>This state is created in {@link #rebalanceCodePaths(ArrayDeque, ErrorReporter)}. It's used
-   * to generate errors in {@link #annotateTagsAndCheckForErrors(TagAnnotationState, ErrorReporter)}
+   * <p>This state is created in {@link #rebalanceCodePaths(ArrayDeque, IdGenerator)}. It's used to
+   * generate errors in {@link #annotateTagsAndCheckForErrors(TagAnnotationState, ErrorReporter)}
    */
   @AutoValue
   abstract static class TagAnnotationState {
@@ -120,27 +126,31 @@ public final class HtmlTagMatchingPass {
   /**
    * Runs the HtmlTagMatchingPass.
    *
-   * <p>The pass runs in four phases:
+   * <p>The pass runs in three phases:
    *
    * <ol>
    *   <li>Traverse the HTML matcher graph and generate a list of all the possible code paths.
-   *   <li>Find all the code block paths and rebalance and validate them.
    *   <li>Rebalance the code paths, injecting synthetic close tags to balance optional open tags.
    *       Optional open tags are defined here: <a
    *       href="https://www.w3.org/TR/html5/syntax.html#optional-tags">https://www.w3.org/TR/html5/syntax.html#optional-tags</a>.
+   *       <p>&ndash; <em>Note:</em> Block nodes (such as {@code {msg} or {let}}) are discretely
+   *       rebalanced, annotated and error-checked. By definition, a block node must internally
+   *       balance HTML tags.
    *   <li>Check for tag mismatch errors in the fully balanced code paths.
    *       <p>&ndash; At the same time, annotate the open with the list of possible close tags, and
    *       the close tags with the list of possible open tags.
    * </ol>
    */
-  public void run(HtmlMatcherGraph htmlMatcherGraph, ErrorReporter errorReporter) {
+  public void run(
+      HtmlMatcherGraph htmlMatcherGraph, IdGenerator idGenerator, ErrorReporter errorReporter) {
     if (!htmlMatcherGraph.getRootNode().isPresent()) {
       // Empty graph.
       return;
     }
     ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> codePaths =
         visit(htmlMatcherGraph.getRootNode().get());
-    TagAnnotationState tagAnnotationState = rebalanceCodePaths(codePaths, errorReporter);
+    TagAnnotationState tagAnnotationState =
+        rebalanceCodePaths(codePaths, idGenerator, errorReporter);
     annotateTagsAndCheckForErrors(tagAnnotationState, errorReporter);
   }
 
@@ -168,16 +178,20 @@ public final class HtmlTagMatchingPass {
    * }</pre>
    *
    * @param paths the code paths generated in {@link #visit(HtmlMatcherGraphNode)}
-   * @param errorReporter
+   * @param idGenerator used to generate IDs for the synthetic nodes
+   * @param errorReporter the error reporter
    * @return fully rebalanced code paths ready for annotation and error detection by {@link
    *     #annotateTagsAndCheckForErrors(TagAnnotationState, ErrorReporter)}
    */
   private TagAnnotationState rebalanceCodePaths(
-      ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths, ErrorReporter errorReporter) {
+      ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> paths,
+      IdGenerator idGenerator,
+      ErrorReporter errorReporter) {
     ImmutableMultimap.Builder<HtmlTagNode, Optional<HtmlTagNode>> openToCloseMapBuilder =
         ImmutableMultimap.builder();
     ImmutableMultimap.Builder<HtmlTagNode, ExpectedTagInfo> closeToOpenMapBuilder =
         ImmutableMultimap.builder();
+
     for (ArrayDeque<HtmlMatcherGraphNode> path : paths) {
       ArrayDeque<HtmlOpenTagNode> stack = new ArrayDeque<>();
       boolean inForeignContent = this.inForeignContent;
@@ -188,7 +202,7 @@ public final class HtmlTagMatchingPass {
             HtmlTagMatchingPass pass = new HtmlTagMatchingPass(inForeignContent);
             TagAnnotationState blockAnnotationState =
                 pass.rebalanceCodePaths(
-                    pass.visit(block.getGraph().getRootNode().get()), errorReporter);
+                    pass.visit(block.getGraph().getRootNode().get()), idGenerator, errorReporter);
             openToCloseMapBuilder.putAll(blockAnnotationState.getOpenToCloseMap());
             closeToOpenMapBuilder.putAll(blockAnnotationState.getCloseToOpenMap());
           }
@@ -221,8 +235,8 @@ public final class HtmlTagMatchingPass {
               if (optionalTag.getTagName().isDefinitelyOptional()) {
                 if (TagName.checkOpenTagClosesOptional(
                     soyNode.getTagName(), optionalTag.getTagName())) {
-                  // TODO(b/120431381): Inject a synthetic close tag into the AST.
-                  // Also need to put this in the open->close and close->open maps.
+                  injectCloseTag(
+                      optionalTag, idGenerator, openToCloseMapBuilder, closeToOpenMapBuilder);
                 }
               }
             }
@@ -234,6 +248,7 @@ public final class HtmlTagMatchingPass {
               }
               inForeignContent = true;
             }
+            openTag = (HtmlOpenTagNode) node.getSoyNode().get();
             stack.push(openTag);
             break;
           case CLOSE_TAG:
@@ -265,9 +280,9 @@ public final class HtmlTagMatchingPass {
               } else if (openTag.getTagName().isDefinitelyOptional()
                   && TagName.checkCloseTagClosesOptional(
                       closeTag.getTagName(), openTag.getTagName())) {
-                // TODO(b/120431381): Inject a synthetic closing tag for openTag and add this
-                // synthetic tag to the open-
-                // and close-tag maps.
+                // Close tag closes an optional open tag (e.g. <li> ... </ul>). Inject a synthetic
+                // close tag that matches `openTag`.
+                injectCloseTag(openTag, idGenerator, openToCloseMapBuilder, closeToOpenMapBuilder);
               } else {
               // Potentially unbalanced tags. These will be flagged as errors later.
               openToCloseMapBuilder.put(openTag, Optional.absent());
@@ -283,6 +298,28 @@ public final class HtmlTagMatchingPass {
       }
     }
     return TagAnnotationState.create(openToCloseMapBuilder.build(), closeToOpenMapBuilder.build());
+  }
+
+  /** Injects a synthetic close tag that corresponds to the given open tag into the AST. */
+  private static void injectCloseTag(
+      HtmlOpenTagNode optionalOpenTag,
+      IdGenerator idGenerator,
+      ImmutableMultimap.Builder<HtmlTagNode, Optional<HtmlTagNode>> openToCloseMapBuilder,
+      ImmutableMultimap.Builder<HtmlTagNode, ExpectedTagInfo> closeToOpenMapBuilder) {
+    ParentSoyNode<StandaloneNode> openTagParent = optionalOpenTag.getParent();
+    int i = openTagParent.getChildIndex(optionalOpenTag);
+    HtmlCloseTagNode syntheticClose =
+        new HtmlCloseTagNode(
+            idGenerator.genId(),
+            optionalOpenTag.getTagName(),
+            optionalOpenTag.getSourceLocation(),
+            TagExistence.SYNTHETIC);
+    // This inserts the synthetic close tag right before the open tag.
+    openTagParent.addChild(i, syntheticClose);
+    // Add the synthetic node to the tag maps.
+    closeToOpenMapBuilder.put(
+        syntheticClose, ExpectedTagInfo.create(Optional.of(optionalOpenTag), Optional.absent()));
+    openToCloseMapBuilder.put(optionalOpenTag, Optional.of(syntheticClose));
   }
 
   /**
@@ -308,11 +345,13 @@ public final class HtmlTagMatchingPass {
     // Now that the data structure has been created, we can walk through the data structure
     // and trigger error messages depending on the condition.
     for (HtmlTagNode openTag : tagAnnotationState.getOpenToCloseMap().keySet()) {
+      ImmutableCollection<Optional<HtmlTagNode>> closeTagList =
+          tagAnnotationState.getOpenToCloseMap().get(openTag);
       int counter = 0;
       // For open tags, we want to distinguish between tags that will never be closed and tags
       // that are sometimes closed. This helps the developer know if control flow is causing some
       // state that makes this open tag sometimes unclosable.
-      for (Optional<HtmlTagNode> node : tagAnnotationState.getOpenToCloseMap().get(openTag)) {
+      for (Optional<HtmlTagNode> node : closeTagList) {
         if (node.isPresent()) {
           counter++;
           openTag.addTagPair(node.get());
@@ -321,7 +360,7 @@ public final class HtmlTagMatchingPass {
       }
       if (counter == 0) {
         errorReporter.report(openTag.getSourceLocation(), UNEXPECTED_OPEN_TAG_ALWAYS);
-      } else if (counter < tagAnnotationState.getOpenToCloseMap().get(openTag).size()) {
+      } else if (counter < closeTagList.size()) {
         errorReporter.report(openTag.getSourceLocation(), UNEXPECTED_OPEN_TAG_SOMETIMES);
       }
     }
