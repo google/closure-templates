@@ -65,9 +65,10 @@ public class BidiFormatter {
         return DEFAULT_LTR_INSTANCE;
       case RTL:
         return DEFAULT_RTL_INSTANCE;
-      default:
+      case NEUTRAL:
         throw new IllegalArgumentException("invalid context directionality: " + contextDir);
     }
+    throw new AssertionError(contextDir);
   }
 
   /** @param contextDir The context directionality */

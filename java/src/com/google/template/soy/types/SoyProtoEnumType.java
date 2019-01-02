@@ -53,9 +53,11 @@ public final class SoyProtoEnumType extends SoyType {
         return ProtoUtils.calculateJsEnumName(descriptor);
       case TOFU:
         return JavaQualifiedNames.getQualifiedName(descriptor) + ".getDescriptor()";
-      default:
+      case PYTHON_SRC:
+      case JBC_SRC:
         throw new UnsupportedOperationException();
     }
+    throw new AssertionError(backend);
   }
 
   public Integer getValue(String memberName) {

@@ -790,7 +790,8 @@ final class RawTextContextUpdater {
                               .withState(HtmlContext.JS_REGEX)
                               .withSlashType(Context.JsFollowingSlash.NONE)
                               .build();
-                        default:
+                        case NONE:
+                        case UNKNOWN:
                           RawTextNode suffixNode =
                               node.substring(/* new node id= */ Integer.MAX_VALUE, offset);
                           throw SoyAutoescapeException.createWithNode(
@@ -801,6 +802,7 @@ final class RawTextContextUpdater {
                                   + "`",
                               suffixNode);
                       }
+                      throw new AssertionError(prior.slashType);
                     }
                   },
                   /**

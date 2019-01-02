@@ -406,7 +406,8 @@ public final class Context {
               escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
             }
             break;
-          default:
+          case NONE:
+          case NORMAL:
             escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
             break;
         }
@@ -463,7 +464,8 @@ public final class Context {
                 + " Otherwise, hardcode the full URI in the template or pass a complete"
                 + " SanitizedContent or SafeUrl object.",
             node);
-      default:
+      case NONE:
+      case TRUSTED_RESOURCE_URI_END:
         break;
     }
 

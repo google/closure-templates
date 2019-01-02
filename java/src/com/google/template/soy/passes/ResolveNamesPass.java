@@ -333,9 +333,8 @@ public final class ResolveNamesPass extends CompilerFilePass {
       case IJ_PARAM:
       case UNDECLARED:
         return Optional.absent();
-      default:
-        throw new AssertionError();
     }
+    throw new AssertionError(varDefn.kind());
   }
 
   // -----------------------------------------------------------------------------------------------

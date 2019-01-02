@@ -97,8 +97,17 @@ public enum BuiltinFunction implements SoyFunction {
         return ImmutableSet.of(3);
       case DEBUG_SOY_TEMPLATE_INFO:
         return ImmutableSet.of(0);
-      default:
+      case IS_FIRST:
+      case IS_LAST:
+      case INDEX:
+      case CHECK_NOT_NULL:
+      case XID:
+      case V1_EXPRESSION:
+      case REMAINDER:
+      case MSG_WITH_ID:
+      case TO_FLOAT:
         return ImmutableSet.of(1);
     }
+    throw new AssertionError(this);
   }
 }

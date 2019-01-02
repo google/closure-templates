@@ -61,9 +61,8 @@ final class SoyParseUtils {
           errorReporter.report(ident.location(), MISSING_CALLEE_NAMESPACE, name);
         }
         return name;
-      default:
-        throw new AssertionError();
     }
+    throw new AssertionError(ident.type());
   }
 
   /** Unescapes a Soy string, according to JavaScript rules. */

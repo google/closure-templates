@@ -145,9 +145,11 @@ public class SanitizedContent extends SoyData {
         case CSS:
         case TRUSTED_RESOURCE_URI:
           return Dir.LTR;
-        default:
+        case HTML:
+        case TEXT:
           return null;
       }
+      throw new AssertionError(this);
     }
   }
 

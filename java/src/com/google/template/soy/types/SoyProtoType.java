@@ -273,9 +273,10 @@ public final class SoyProtoType extends SoyType {
       case TOFU:
       case JBC_SRC:
         return JavaQualifiedNames.getClassName(typeDescriptor);
-      default:
+      case PYTHON_SRC:
         throw new UnsupportedOperationException();
     }
+    throw new AssertionError(backend);
   }
 
   @Override

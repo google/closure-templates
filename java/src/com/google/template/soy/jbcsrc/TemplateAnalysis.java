@@ -239,8 +239,6 @@ final class TemplateAnalysis {
           case UNKNOWN:
             this.current = Block.merge(loopEnd, ifEmptyEnd);
             break;
-          default:
-            throw new AssertionError();
         }
       } else {
         switch (isLoopEmpty) {
@@ -253,8 +251,6 @@ final class TemplateAnalysis {
           case UNKNOWN:
             this.current = Block.merge(loopEnd, loopBegin);
             break;
-          default:
-            throw new AssertionError();
         }
       }
     }

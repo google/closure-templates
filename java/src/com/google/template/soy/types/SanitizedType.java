@@ -63,10 +63,8 @@ public abstract class SanitizedType extends PrimitiveType {
 
       case TEXT:
         return StringType.getInstance();
-
-      default:
-        throw new AssertionError("unexpected content kind " + contentKind);
     }
+    throw new AssertionError(contentKind);
   }
 
   // -----------------------------------------------------------------------------------------------

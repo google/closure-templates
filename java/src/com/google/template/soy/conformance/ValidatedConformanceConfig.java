@@ -98,10 +98,10 @@ public final class ValidatedConformanceConfig {
       case BAN_XID_FOR_CSS_OBFUSCATION:
         return new BanXidForCssObfuscation(error);
       case REQUIREMENTTYPE_NOT_SET:
-      default:
         throw new AssertionError(
             "unexpected requirement type: " + requirement.getRequirementTypeCase());
     }
+    throw new AssertionError(requirement.getRequirementTypeCase());
   }
 
   /**

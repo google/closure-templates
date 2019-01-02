@@ -71,9 +71,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         return visitPropNode(node, (TemplatePropVar) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
-      default:
-        throw new AssertionError();
     }
+    throw new AssertionError(defn.kind());
   }
 
   @Override

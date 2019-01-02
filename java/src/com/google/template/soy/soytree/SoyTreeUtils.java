@@ -123,8 +123,6 @@ public final class SoyTreeUtils {
           continue;
         case SKIP_CHILDREN:
           continue;
-        default:
-          throw new AssertionError();
       }
     }
   }

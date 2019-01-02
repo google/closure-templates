@@ -598,8 +598,6 @@ public final class JsType {
         builder.addType("!goog.html.SafeUrl");
         builder.addType("!goog.Uri");
         break;
-      default:
-        throw new AssertionError("Unhandled content kind");
     }
 
     // TODO(lukes): consider eliminating the isCompatibleWith method and just inlining the

@@ -587,8 +587,6 @@ final class HtmlRewriter {
           case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
             handleXmlAttributeQuoted(false);
             break;
-          default:
-            throw new UnsupportedOperationException("cant yet handle: " + startState);
         }
         if (context.getState() == startState && startIndex == currentRawTextIndex) {
           // sanity! make sure we are making progress.  Calling handle* should ensure that we
@@ -1429,8 +1427,6 @@ final class HtmlRewriter {
         case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
           // do nothing
           break;
-        default:
-          throw new AssertionError();
       }
     }
 
@@ -1487,9 +1483,6 @@ final class HtmlRewriter {
         case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
           // do nothing
           break;
-
-        default:
-          throw new AssertionError("unexpected state: " + context.getState());
       }
     }
 
@@ -1520,8 +1513,6 @@ final class HtmlRewriter {
             // blockKind == null we will avoid parsing this block. (since State will == NONE).
             // we could also just assume html... but that might be confusing in some cases?
             break;
-          default:
-            throw new AssertionError();
         }
       }
       State startState = State.fromKind(blockKind);
@@ -1625,9 +1616,6 @@ final class HtmlRewriter {
         case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
           // do nothing
           break;
-
-        default:
-          throw new AssertionError("unexpected control flow starting state: " + startingState);
       }
     }
 
@@ -1771,7 +1759,6 @@ final class HtmlRewriter {
         case BEFORE_ATTRIBUTE_VALUE:
         case HTML_TAG_NAME:
           // impossible?
-        default:
           throw new AssertionError(
               "found non-empty context for unexpected state: " + blockCtx.getState());
       }
