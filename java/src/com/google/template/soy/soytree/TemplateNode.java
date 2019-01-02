@@ -299,17 +299,20 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
-    this.params = copyParams(orig.params);
-    this.injectedParams = copyParams(orig.injectedParams);
+    this.params = copyParams(orig.params, copyState);
+    this.injectedParams = copyParams(orig.injectedParams, copyState);
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
   }
 
-  private static ImmutableList<TemplateParam> copyParams(ImmutableList<TemplateParam> orig) {
+  private static ImmutableList<TemplateParam> copyParams(
+      ImmutableList<TemplateParam> orig, CopyState copyState) {
     ImmutableList.Builder<TemplateParam> newParams = ImmutableList.builder();
     for (TemplateParam prev : orig) {
-      newParams.add(prev.copy());
+      TemplateParam next = prev.copy();
+      newParams.add(next);
+      copyState.updateRefs(prev, next);
     }
     return newParams.build();
   }
@@ -529,7 +532,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       if (!headerVar.isRequired()) {
         sb.append("?");
       }
-      sb.append(" ").append(headerVar.name()).append(": ").append(headerVar.type()).append("}");
+      sb.append(" ")
+          .append(headerVar.name())
+          .append(": ")
+          .append(headerVar.hasType() ? headerVar.type() : headerVar.getTypeNode())
+          .append("}");
       if (headerVar.desc() != null) {
         sb.append("  /** ").append(headerVar.desc()).append(" */");
       }

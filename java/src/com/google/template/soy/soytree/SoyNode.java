@@ -163,6 +163,9 @@ public interface SoyNode extends Node {
 
     @Override
     ParentSoyNode<StandaloneNode> getParent();
+
+    @Override
+    StandaloneNode copy(CopyState copyState);
   }
 
 

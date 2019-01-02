@@ -114,5 +114,8 @@ public interface ExprNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /** A node representing a primitive literal. */
-  public static interface PrimitiveNode extends ExprNode {}
+  public static interface PrimitiveNode extends ExprNode {
+    @Override
+    PrimitiveNode copy(CopyState copyState);
+  }
 }

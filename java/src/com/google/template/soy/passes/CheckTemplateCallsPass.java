@@ -291,7 +291,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         }
       }
 
-      return Predicates.in(paramNamesToRuntimeCheck);
+      return Predicates.in(ImmutableSet.copyOf(paramNamesToRuntimeCheck));
     }
 
     /**

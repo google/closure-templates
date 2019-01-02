@@ -60,7 +60,7 @@ public final class SoyTreeUtils {
 
       @Override
       public VisitDirective exec(Node node) {
-        for (Class type : types) {
+        for (Class<?> type : types) {
           if (type.isInstance(node)) {
             found = true;
             return VisitDirective.ABORT;

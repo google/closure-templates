@@ -73,8 +73,13 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
 
   protected HtmlTagNode(HtmlTagNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.tagName = orig.tagName;
     this.tagExistence = orig.tagExistence;
+    //  Rebuild the TagName object
+    StandaloneNode tagChild = getChild(0);
+    this.tagName =
+        tagChild instanceof RawTextNode
+            ? new TagName((RawTextNode) tagChild)
+            : new TagName((PrintNode) tagChild);
     // The taggedPairs field contains references to other tag nodes.
     // We need to register ourselves so that people who reference us get updated and we need to
     // listen to updates

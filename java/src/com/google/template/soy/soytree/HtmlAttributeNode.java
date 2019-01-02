@@ -99,7 +99,7 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   }
 
   @Override
-  public SoyNode copy(CopyState copyState) {
+  public HtmlAttributeNode copy(CopyState copyState) {
     return new HtmlAttributeNode(this, copyState);
   }
 

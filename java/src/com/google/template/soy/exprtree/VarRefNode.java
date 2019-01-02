@@ -70,9 +70,10 @@ public final class VarRefNode extends AbstractExprNode {
     this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
     this.subtituteType = orig.subtituteType;
     // Maintain the original def in case only a subtree is getting cloned, but also register a
-    // listener so that if the defn is replaced we will get updated also.
+    // listener so that if the defn is replaced we will get updated also. Unless this is an
+    // $ij param which doesn't get cloned because they are implicitly defined by their var refs.
     this.defn = orig.defn;
-    if (orig.defn != null) {
+    if (orig.defn != null && orig.defn.kind() != VarDefn.Kind.IJ_PARAM) {
       copyState.registerRefListener(
           orig.defn,
           new CopyState.Listener<VarDefn>() {

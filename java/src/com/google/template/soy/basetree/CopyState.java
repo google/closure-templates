@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * An object that can hold extra state for tree copying operations, passed to {@link
@@ -89,6 +90,22 @@ public final class CopyState {
       @SuppressWarnings("unchecked")
       T typedValue = (T) oldMapping;
       listener.newVersion(typedValue);
+    }
+  }
+
+  /**
+   * Asserts that there are no pending listeners.
+   *
+   * <p>This can be useful in a test environment to ensure that the copy worked correctly. N.B. it
+   * is possible for a copy to be 'correct' and for not all listeners to fire, this is common when
+   * copying small parts of the AST (anything below a template).
+   */
+  public void checkAllListenersFired() {
+    for (Map.Entry<Object, Object> entry : mappings.entrySet()) {
+      if (entry.getValue() instanceof Listener) {
+        throw new IllegalStateException(
+            "Listener for " + entry.getKey() + " never fired: " + entry.getValue());
+      }
     }
   }
 

@@ -66,7 +66,7 @@ public final class GlobalNode extends AbstractExprNode {
     super(orig, copyState);
     this.name = orig.name;
     this.soyType = orig.soyType;
-    this.value = orig.value;
+    this.value = orig.value == null ? null : orig.value.copy(copyState);
     this.resolveCallback = orig.resolveCallback;
   }
 
