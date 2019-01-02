@@ -52,17 +52,43 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class SoyFileSetParser {
   /**
+   * This interface can be implemented by a SoyFileSupplier to provide access to an AST.
+   *
+   * <p>This is a hack to support our goal of caching AST objects.
+   *
+   * <p>Currently SoyFileSet is responsible for collecting all compiler configuration and
+   * constructing a PassManager. Then it hands the PassManager and all the SoyFileSuppliers to this
+   * class to actually parse the source files and invoke the passes.
+   *
+   * <p>This set up is problematic for the caching strategy implemented by SoyInputCache and used
+   * elsewhere. SoyInputCache uses a File object as the cache key, while intuitive this is
+   * incompatible with the SoyFileSupplier interface which abstracts the File away. For the other
+   * cached objects, they are read/cached prior to being passed to SoyFileSet so this works fine,
+   * but for actual Source files, we are very flexible in how they can be configured. So to pass the
+   * AST through we use this interface that SoyFileSuppliers can implement to share a cached AST
+   * object. So we can 'tunnel' the data through and use a weird downcast to find it later.
+   *
+   * <p>This tightly couples AbstractSoyCompiler and this class, but I (lukes@) believe such a
+   * coupling is reasonable, the thing that makes it awkward is SoyFileSet! Ideally SoyFileSet
+   * wouldn't exist and AbstractSoyCompiler would construct SoyFileSetParser directly.
+   */
+  interface HasAstOrErrors {
+    @Nullable
+    SoyFileNode getAst(IdGenerator nodeIdGen, ErrorReporter errorReporter);
+  }
+
+  /**
    * Simple tuple of un an-evaluatied compilation unit containing information about dependencies.
    */
   @AutoValue
   abstract static class CompilationUnitAndKind {
     static CompilationUnitAndKind create(
-        SoyFileKind fileKind, String filePath, CompilationUnit compilationUni) {
+        SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
       // sanity check
       checkArgument(
           fileKind != SoyFileKind.SRC, "compilation units should only represent dependencies");
       return new AutoValue_SoyFileSetParser_CompilationUnitAndKind(
-          fileKind, filePath, compilationUni);
+          fileKind, filePath, compilationUnit);
     }
 
     abstract SoyFileKind fileKind();
@@ -202,17 +228,24 @@ public abstract class SoyFileSetParser {
    */
   private SoyFileNode parseSoyFileHelper(SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
       throws IOException {
-    try (Reader soyFileReader = soyFileSupplier.open()) {
-      String filePath = soyFileSupplier.getFilePath();
-      int lastBangIndex = filePath.lastIndexOf('!');
-      if (lastBangIndex != -1) {
-        // This is a resource in a JAR file. Only keep everything after the bang.
-        filePath = filePath.substring(lastBangIndex + 1);
+    // See copious comments above on this test
+    if (soyFileSupplier instanceof HasAstOrErrors) {
+      return ((HasAstOrErrors) soyFileSupplier).getAst(nodeIdGen, errorReporter());
+    } else {
+      try (Reader soyFileReader = soyFileSupplier.open()) {
+        String filePath = soyFileSupplier.getFilePath();
+        int lastBangIndex = filePath.lastIndexOf('!');
+        if (lastBangIndex != -1) {
+          // This is a resource in a JAR file. Only keep everything after the bang.
+          filePath = filePath.substring(lastBangIndex + 1);
+        }
+        // Think carefully before adding new parameters to the parser.
+        // Currently the only parameters are the id generator, the file, and the errorReporter.
+        // This
+        // ensures that the file be cached without worrying about other compiler inputs.
+        return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter())
+            .parseSoyFile();
       }
-      // Think carefully before adding new parameters to the parser.
-      // Currently the only parameters are the id generator, the file, and the errorReporter.  This
-      // ensures that the file be cached without worrying about other compiler inputs.
-      return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter()).parseSoyFile();
     }
   }
 }

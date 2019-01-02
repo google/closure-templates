@@ -34,7 +34,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -270,8 +269,7 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
-        sfsBuilder.add(
-            soyCompilerFileReader.read(src).asCharSource(StandardCharsets.UTF_8), src.getPath());
+        sfsBuilder.addFile(cache.read(src, Readers.SOY_FILE_READER, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError("File: " + src.getPath() + " passed to --srcs does not exist");
       }
