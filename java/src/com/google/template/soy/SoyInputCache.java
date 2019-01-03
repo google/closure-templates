@@ -27,13 +27,27 @@ interface SoyInputCache {
         @Override
         public <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader)
             throws IOException {
-          return reader.read(file, fileReader);
+          T value = reader.read(file, fileReader, this);
+          // everything is always immediately evicted
+          reader.onEvict(value);
+          return value;
         }
+
+        @Override
+        public void declareDependency(File file, File dependency) {}
       };
 
   /** A Reader can read a file as a structured object. */
   interface Reader<T> {
-    T read(File file, SoyCompilerFileReader fileReader) throws IOException;
+    /** Reads an object from the file using the given file reader. */
+    T read(File file, SoyCompilerFileReader fileReader, SoyInputCache cache) throws IOException;
+
+    /**
+     * Called when the item is removed from the cache.
+     *
+     * <p>The default implementation does nothing. This can be used to manage 'closeable' resources.
+     */
+    default void onEvict(T item) throws IOException {}
   }
 
   /**
@@ -47,4 +61,10 @@ interface SoyInputCache {
    * @return the result of reaeding the file, possibly from a cache.
    */
   <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader) throws IOException;
+
+  /**
+   * Declares that one file depends on another. Therefore if {@code dependency} changes then {@code
+   * file} should be evicted.
+   */
+  void declareDependency(File file, File dependency);
 }

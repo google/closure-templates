@@ -46,7 +46,8 @@ final class Readers {
   static final SoyInputCache.Reader<LoggingConfig> LOGGING_CONFIG_READER =
       new SoyInputCache.Reader<LoggingConfig>() {
         @Override
-        public LoggingConfig read(File file, SoyCompilerFileReader reader) throws IOException {
+        public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
+            throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return LoggingConfig.parseFrom(stream);
           }
@@ -56,8 +57,8 @@ final class Readers {
   static final SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>> GLOBALS_READER =
       new SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>>() {
         @Override
-        public ImmutableMap<String, PrimitiveData> read(File file, SoyCompilerFileReader reader)
-            throws IOException {
+        public ImmutableMap<String, PrimitiveData> read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
@@ -68,7 +69,8 @@ final class Readers {
   static final SoyInputCache.Reader<FileDescriptorSet> FILE_DESCRIPTOR_SET_READER =
       new SoyInputCache.Reader<FileDescriptorSet>() {
         @Override
-        public FileDescriptorSet read(File file, SoyCompilerFileReader reader) throws IOException {
+        public FileDescriptorSet read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
+            throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY);
           }
@@ -80,7 +82,8 @@ final class Readers {
   static final SoyInputCache.Reader<CompilationUnit> COMPILATION_UNIT_READER =
       new SoyInputCache.Reader<CompilationUnit>() {
         @Override
-        public CompilationUnit read(File file, SoyCompilerFileReader reader) throws IOException {
+        public CompilationUnit read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
+            throws IOException {
           try (InputStream is =
               new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
             return CompilationUnit.parseFrom(is);
@@ -154,8 +157,8 @@ final class Readers {
         private final FixedIdGenerator idGenerator = new FixedIdGenerator(-1);
 
         @Override
-        public CachedSoyFileSupplier read(File file, SoyCompilerFileReader reader)
-            throws IOException {
+        public CachedSoyFileSupplier read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           CharSource source = reader.read(file).asCharSource(UTF_8);
           SoyFileSupplier delegate = new StableSoyFileSupplier(source, file.getPath());
           ErrorReporter errors = ErrorReporter.create(/*fileSuppliers*/ ImmutableMap.of());
