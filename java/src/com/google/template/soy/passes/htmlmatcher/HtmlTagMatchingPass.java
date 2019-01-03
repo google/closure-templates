@@ -453,18 +453,19 @@ public final class HtmlTagMatchingPass {
 
     ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> truePath = new ArrayDeque<>();
     if (nextNode.isPresent() && !Boolean.FALSE.equals(originalState)) {
-      exprValueMap.put(condition, true);
-      truePath = visit(nextNode.get(), exprValueMap);
+      Map<Equivalence.Wrapper<ExprNode>, Boolean> lMap = new HashMap<>(exprValueMap);
+      lMap.put(condition, true);
+      truePath = visit(nextNode.get(), lMap);
     }
 
     ArrayDeque<ArrayDeque<HtmlMatcherGraphNode>> falsePath = new ArrayDeque<>();
     if (nextAltNode.isPresent() && !Boolean.TRUE.equals(originalState)) {
-      exprValueMap.put(condition, false);
-      falsePath = visit(nextAltNode.get(), exprValueMap);
+      Map<Equivalence.Wrapper<ExprNode>, Boolean> rMap = new HashMap<>(exprValueMap);
+      rMap.put(condition, false);
+      falsePath = visit(nextAltNode.get(), rMap);
     }
     truePath.addAll(falsePath);
 
-    exprValueMap.remove(condition);
     return truePath;
   }
 
