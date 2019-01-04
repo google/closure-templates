@@ -22,7 +22,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -38,6 +41,10 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import javax.annotation.Nullable;
 
@@ -63,16 +70,115 @@ final class Readers {
         }
       };
 
-  // TODO(lukes): this isn't ideal.  What we really want to cache are FileDescriptor objects
-  // instead of FileDescriptorSet protos.  But since file descriptors depend on each other that
-  // makes it tricky to reason about caching.  The best strategy might be a second layer cache.
-  static final SoyInputCache.Reader<FileDescriptorSet> FILE_DESCRIPTOR_SET_READER =
-      new SoyInputCache.Reader<FileDescriptorSet>() {
+  /**
+   * A cached descriptor set.
+   *
+   * <p>Reading descriptors is expensive and takes multiple steps:
+   *
+   * <ol>
+   *   <li>First we need to parse the protos, this can be expensive due to size
+   *   <li>Then we need to resolve all the symbols and construct FileDescriptor objects, this is
+   *       complex because the files depend on each other but we don't know how until we read the
+   *       protos.
+   * </ol>
+   *
+   * <p>To make caching effective we essentially do these 2 steps at different times. The {@link
+   * #FILE_DESCRIPTOR_SET_READER} is responsible for step 1 and our caller is responsible for
+   * assisting with step #2 (by calculating the filename->FileDescriptorSet map).
+   */
+  static final class CachedDescriptorSet {
+    private final File file;
+    private final Map<String, FileDescriptorProto> protosByFileName;
+    private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();;
+
+    CachedDescriptorSet(File file, FileDescriptorSet proto) {
+      this.file = checkNotNull(file);
+      ImmutableMap.Builder<String, FileDescriptorProto> protosByFileNameBuilder =
+          ImmutableMap.builder();
+      for (FileDescriptorProto fileProto : proto.getFileList()) {
+        protosByFileNameBuilder.put(fileProto.getName(), fileProto);
+      }
+      this.protosByFileName = protosByFileNameBuilder.build();
+    }
+
+    File getFile() {
+      return file;
+    }
+
+    Set<String> getProtoFileNames() {
+      return protosByFileName.keySet();
+    }
+
+    /**
+     * Returns the descriptors for all enums, messages and extensions defined directly in this file.
+     *
+     * <p>If you want descriptors from dependencies you will need to call this method on those
+     * objects (or invoke {@link FileDescriptor#getDependencies}).
+     *
+     * @param protoFileToDescriptor a map of proto file names to the CachedDescriptorSet that
+     *     contains them.
+     * @param cache The cache so file dependencies can be recorded.
+     */
+    Collection<FileDescriptor> getFileDescriptors(
+        Map<String, CachedDescriptorSet> protoFileToDescriptor, SoyInputCache cache)
+        throws DescriptorValidationException {
+      if (fileNameToDescriptors.size() == protosByFileName.size()) {
+        return fileNameToDescriptors.values();
+      }
+      // we are missing some descriptors, iterate over everything to make sure they are populated.
+      for (FileDescriptorProto fileProto : protosByFileName.values()) {
+        buildDescriptor(fileProto, protoFileToDescriptor, cache);
+      }
+      return fileNameToDescriptors.values();
+    }
+
+    private FileDescriptor buildDescriptor(
+        FileDescriptorProto fileProto,
+        Map<String, CachedDescriptorSet> protoFileToDescriptor,
+        SoyInputCache cache)
+        throws DescriptorValidationException {
+      FileDescriptor descriptor = fileNameToDescriptors.get(fileProto.getName());
+      if (descriptor != null) {
+        return descriptor;
+      }
+      FileDescriptor[] deps = new FileDescriptor[fileProto.getDependencyCount()];
+      for (int i = 0; i < fileProto.getDependencyCount(); i++) {
+        String depName = fileProto.getDependency(i);
+        CachedDescriptorSet dep = protoFileToDescriptor.get(depName);
+        if (dep == null) {
+          throw new IllegalStateException(
+              "Cannot find proto descriptor for "
+                  + depName
+                  + " which is a dependency of "
+                  + fileProto.getName());
+        }
+        FileDescriptorProto depProto = dep.protosByFileName.get(depName);
+        if (depProto == null) {
+          throw new IllegalStateException(
+              "Cannot find proto for: "
+                  + depName
+                  + " which is a dependency of "
+                  + fileProto.getName());
+        }
+        if (dep != this) {
+          cache.declareDependency(getFile(), dep.getFile());
+        }
+        deps[i] = dep.buildDescriptor(depProto, protoFileToDescriptor, cache);
+      }
+      descriptor = FileDescriptor.buildFrom(fileProto, deps);
+      fileNameToDescriptors.put(fileProto.getName(), descriptor);
+      return descriptor;
+    }
+  }
+
+  static final SoyInputCache.Reader<CachedDescriptorSet> FILE_DESCRIPTOR_SET_READER =
+      new SoyInputCache.Reader<CachedDescriptorSet>() {
         @Override
-        public FileDescriptorSet read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
-            throws IOException {
+        public CachedDescriptorSet read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
-            return FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY);
+            return new CachedDescriptorSet(
+                file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
           }
         }
       };

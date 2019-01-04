@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -171,6 +173,7 @@ public final class SoyProtoType extends SoyType {
     synchronized SoyType getType() {
       if (type == null) {
         type = FieldVisitor.visitField(getDescriptor(), visitor);
+        checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
         visitor = null;
       }
       return type;

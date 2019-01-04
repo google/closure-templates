@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
-import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -478,19 +477,11 @@ public final class SoyFileSet {
      *
      * @param descriptorFile A file containing FileDescriptorSet binary protos. These typically end
      *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
+     * @deprecated Call {@link #addProtoDescriptors} instead
      */
+    @Deprecated
     public Builder addProtoDescriptorsFromFile(File descriptorFile) throws IOException {
       typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
-      return this;
-    }
-
-    /**
-     * Add all proto descriptors found in the file descriptor set to the type registry.
-     *
-     * @param proto A FileDescriptorSet proto.
-     */
-    Builder addProtoDescriptorsFromFileDescriptorProto(FileDescriptorSet proto) {
-      typeRegistryBuilder.addFileDescriptorSetProto(proto);
       return this;
     }
 

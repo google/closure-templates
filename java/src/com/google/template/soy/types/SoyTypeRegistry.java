@@ -316,22 +316,22 @@ public class SoyTypeRegistry {
 
     public Builder() {}
 
-    /** Read a file descriptor set from a file and register any proto types found within. */
+    /**
+     * Read a file descriptor set from a file and register any proto types found within.
+     *
+     * @deprecated Pass Descriptor objects to {@link #addDescriptors} instead.
+     */
+    @Deprecated
     public Builder addFileDescriptorSetFromFile(File descriptorFile) throws IOException {
       // TODO(lukes): if we called buildDescriptors here we could force callers to pass files in
       // dependency order (and also throw DescriptorValidationException here).  This would improve
       // performance (slightly, due to less recursion and no need for the nameToProtos map), but
       // more importantly it would improve error locality.
       try (InputStream inputStream = new BufferedInputStream(new FileInputStream(descriptorFile))) {
-        addFileDescriptorSetProto(FileDescriptorSet.parseFrom(inputStream, ProtoUtils.REGISTRY));
-      }
-      return this;
-    }
-
-    /** Adds a file descriptor proto. */
-    public Builder addFileDescriptorSetProto(FileDescriptorSet proto) {
-      for (FileDescriptorProto file : proto.getFileList()) {
-        nameToProtos.put(file.getName(), file);
+        for (FileDescriptorProto file :
+            FileDescriptorSet.parseFrom(inputStream, ProtoUtils.REGISTRY).getFileList()) {
+          nameToProtos.put(file.getName(), file);
+        }
       }
       return this;
     }
@@ -347,9 +347,11 @@ public class SoyTypeRegistry {
     private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
       Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
       for (String name : nameToProtos.keySet()) {
-        visitor.visit(buildDescriptor(null, name, parsedDescriptors, nameToProtos));
+        visitor.visitFile(buildDescriptor(null, name, parsedDescriptors, nameToProtos));
       }
-      visitor.visit(descriptors);
+      for (GenericDescriptor descriptor : descriptors) {
+        visitor.visitGeneric(descriptor);
+      }
     }
 
     private static FileDescriptor buildDescriptor(
@@ -403,44 +405,85 @@ public class SoyTypeRegistry {
                 })
             .build();
 
-    void visit(Iterable<? extends GenericDescriptor> descriptors) {
-      for (GenericDescriptor descriptor : descriptors) {
-        visit(descriptor);
+    void visitGeneric(GenericDescriptor descriptor) {
+      if (descriptor instanceof FileDescriptor) {
+        visitFile((FileDescriptor) descriptor);
+      } else if (descriptor instanceof Descriptor) {
+        visitMessage((Descriptor) descriptor, /*exploreDependencies=*/ true);
+      } else if (descriptor instanceof FieldDescriptor) {
+        visitField((FieldDescriptor) descriptor, /*exploreDependencies=*/ true);
+      } else if (descriptor instanceof EnumDescriptor) {
+        visitEnum((EnumDescriptor) descriptor);
+      } // services, etc. not needed thus far so neither gathered nor dispatched
+    }
+
+    void visitFile(FileDescriptor fileDescriptor) {
+      if (!visited.add(fileDescriptor.getFullName())) {
+        return;
+      }
+      for (FileDescriptor dependency : fileDescriptor.getDependencies()) {
+        visitFile(dependency);
+      }
+      // disable exploring dependencies when visiting all declarations in a file. Because we have
+      // already visited all the file level dependencies we don't need to do more explorations
+      // since we will just visit the same things over and over.
+      visitMessages(fileDescriptor.getMessageTypes(), /* exploreDependencies=*/ false);
+      visitFields(fileDescriptor.getExtensions(), /* exploreDependencies=*/ false);
+      visitEnums(fileDescriptor.getEnumTypes());
+    }
+
+    private void visitMessages(List<Descriptor> descriptors, boolean exploreDependencies) {
+      for (Descriptor message : descriptors) {
+        visitMessage(message, exploreDependencies);
       }
     }
 
-    void visit(GenericDescriptor descriptor) {
-      if (!visited.add(descriptor.getFullName())) {
+    private void visitMessage(Descriptor messageDescriptor, boolean exploreDependencies) {
+      if (!visited.add(messageDescriptor.getFullName())) {
         return;
       }
-      if (descriptor instanceof FileDescriptor) {
-        FileDescriptor fileDescriptor = (FileDescriptor) descriptor;
-        visit(fileDescriptor.getMessageTypes());
-        visit(fileDescriptor.getExtensions());
-        visit(fileDescriptor.getEnumTypes());
-        visit(fileDescriptor.getDependencies());
-      } else if (descriptor instanceof Descriptor) {
-        Descriptor messageDescriptor = (Descriptor) descriptor;
-        descriptors.put(messageDescriptor.getFullName(), messageDescriptor);
-        visit(messageDescriptor.getEnumTypes());
-        visit(messageDescriptor.getExtensions());
-        visit(messageDescriptor.getNestedTypes());
-        visit(messageDescriptor.getFields());
-      } else if (descriptor instanceof FieldDescriptor) {
-        FieldDescriptor fieldDescriptor = (FieldDescriptor) descriptor;
-        if (fieldDescriptor.getType() == Type.MESSAGE) {
-          visit(fieldDescriptor.getMessageType());
-        }
-        if (fieldDescriptor.getType() == Type.ENUM) {
-          visit(fieldDescriptor.getEnumType());
-        }
-        if (fieldDescriptor.isExtension() && !ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
-          extensions.put(fieldDescriptor.getContainingType().getFullName(), fieldDescriptor);
-        }
-      } else if (descriptor instanceof EnumDescriptor) {
-        EnumDescriptor enumDescriptor = (EnumDescriptor) descriptor;
-        descriptors.put(descriptor.getFullName(), enumDescriptor);
-      } // services, etc. not needed thus far so neither gathered nor dispatched
+      descriptors.put(messageDescriptor.getFullName(), messageDescriptor);
+      visitEnums(messageDescriptor.getEnumTypes());
+      visitFields(messageDescriptor.getExtensions(), exploreDependencies);
+      visitMessages(messageDescriptor.getNestedTypes(), exploreDependencies);
+      // we only need to visit fields to collect field types when we are exploring dependencies
+      if (exploreDependencies) {
+        visitFields(messageDescriptor.getFields(), exploreDependencies);
+      }
+    }
+
+    private void visitEnums(List<EnumDescriptor> enumDescriptors) {
+      for (EnumDescriptor enumDescriptor : enumDescriptors) {
+        visitEnum(enumDescriptor);
+      }
+    }
+
+    private void visitEnum(EnumDescriptor enumDescriptor) {
+      if (!visited.add(enumDescriptor.getFullName())) {
+        return;
+      }
+      descriptors.put(enumDescriptor.getFullName(), enumDescriptor);
+    }
+
+    private void visitFields(List<FieldDescriptor> fieldDescriptors, boolean exploreDependencies) {
+      for (FieldDescriptor fieldDescriptor : fieldDescriptors) {
+        visitField(fieldDescriptor, exploreDependencies);
+      }
+    }
+
+    private void visitField(FieldDescriptor fieldDescriptor, boolean exploreDependencies) {
+      if (!visited.add(fieldDescriptor.getFullName())) {
+        return;
+      }
+      if (exploreDependencies && fieldDescriptor.getType() == Type.MESSAGE) {
+        visitMessage(fieldDescriptor.getMessageType(), exploreDependencies);
+      }
+      if (exploreDependencies && fieldDescriptor.getType() == Type.ENUM) {
+        visitEnum(fieldDescriptor.getEnumType());
+      }
+      if (fieldDescriptor.isExtension() && !ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
+        extensions.put(fieldDescriptor.getContainingType().getFullName(), fieldDescriptor);
+      }
     }
   }
 }

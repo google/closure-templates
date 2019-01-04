@@ -22,6 +22,8 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -37,6 +39,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -251,21 +254,10 @@ public abstract class AbstractSoyCompiler {
         .setWarningSink(err)
         .setValidatedLoggingConfig(parseLoggingConfig())
         // Set experimental features that are not generally available.
-        .setExperimentalFeatures(experimentalFeatures);
+        .setExperimentalFeatures(experimentalFeatures)
+        .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
+        .setCompileTimeGlobals(parseGlobals());
 
-    for (File protoFileDescriptor : protoFileDescriptors) {
-      try {
-        sfsBuilder.addProtoDescriptorsFromFileDescriptorProto(
-            cache.read(
-                protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER, soyCompilerFileReader));
-      } catch (IOException ioe) {
-        throw new CommandLineError(
-            "Error parsing proto file descriptor from "
-                + protoFileDescriptor
-                + ": "
-                + ioe.getMessage());
-      }
-    }
     // add sources
     for (File src : srcs) {
       try {
@@ -275,7 +267,6 @@ public abstract class AbstractSoyCompiler {
       }
     }
     addCompilationUnitsToBuilder(sfsBuilder);
-    sfsBuilder.setCompileTimeGlobals(parseGlobals());
     // Disable optimizer if the flag is set to true.
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
@@ -297,6 +288,57 @@ public abstract class AbstractSoyCompiler {
               + "compiler performance."
           );
     }
+  }
+
+  @VisibleForTesting
+  static List<FileDescriptor> parseProtos(
+      List<File> protoFileDescriptors,
+      SoyInputCache cache,
+      SoyCompilerFileReader reader,
+      PrintStream err) {
+    Map<String, Readers.CachedDescriptorSet> protoFileToDescriptor = new LinkedHashMap<>();
+    List<Readers.CachedDescriptorSet> cachedDescriptors =
+        new ArrayList<>(protoFileDescriptors.size());
+    for (File protoFileDescriptor : protoFileDescriptors) {
+      try {
+        Readers.CachedDescriptorSet cachedDescriptor =
+            cache.read(protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER, reader);
+        for (String protoFileName : cachedDescriptor.getProtoFileNames()) {
+          Readers.CachedDescriptorSet old =
+              protoFileToDescriptor.put(protoFileName, cachedDescriptor);
+          if (old != null) {
+            err.println(
+                "WARNING: "
+                    + protoFileName
+                    + " has descriptors defined in both: "
+                    + protoFileDescriptor.getPath()
+                    + " and  "
+                    + old.getFile().getPath()
+                    + ". Do your proto_library rules have overlapping sources?");
+          }
+        }
+        cachedDescriptors.add(cachedDescriptor);
+      } catch (IOException ioe) {
+        throw new CommandLineError(
+            "Error parsing proto file descriptor from "
+                + protoFileDescriptor
+                + ": "
+                + ioe.getMessage());
+      }
+    }
+    List<FileDescriptor> descriptors = new ArrayList<>(protoFileToDescriptor.size());
+    for (Readers.CachedDescriptorSet cachedDescriptor : cachedDescriptors) {
+      try {
+        descriptors.addAll(cachedDescriptor.getFileDescriptors(protoFileToDescriptor, cache));
+      } catch (DescriptorValidationException e) {
+        throw new CommandLineError(
+            "Error parsing proto file descriptor from "
+                + cachedDescriptor.getFile()
+                + ": "
+                + e.getMessage());
+      }
+    }
+    return descriptors;
   }
 
   private void addCompilationUnitsToBuilder(SoyFileSet.Builder sfsBuilder) {
