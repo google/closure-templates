@@ -18,6 +18,9 @@ package com.google.template.soy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -39,10 +42,10 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -296,7 +299,8 @@ public abstract class AbstractSoyCompiler {
       SoyInputCache cache,
       SoyCompilerFileReader reader,
       PrintStream err) {
-    Map<String, Readers.CachedDescriptorSet> protoFileToDescriptor = new LinkedHashMap<>();
+    SetMultimap<String, Readers.CachedDescriptorSet> protoFileToDescriptor =
+        MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
     List<Readers.CachedDescriptorSet> cachedDescriptors =
         new ArrayList<>(protoFileDescriptors.size());
     for (File protoFileDescriptor : protoFileDescriptors) {
@@ -304,18 +308,7 @@ public abstract class AbstractSoyCompiler {
         Readers.CachedDescriptorSet cachedDescriptor =
             cache.read(protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER, reader);
         for (String protoFileName : cachedDescriptor.getProtoFileNames()) {
-          Readers.CachedDescriptorSet old =
-              protoFileToDescriptor.put(protoFileName, cachedDescriptor);
-          if (old != null) {
-            err.println(
-                "WARNING: "
-                    + protoFileName
-                    + " has descriptors defined in both: "
-                    + protoFileDescriptor.getPath()
-                    + " and  "
-                    + old.getFile().getPath()
-                    + ". Do your proto_library rules have overlapping sources?");
-          }
+          protoFileToDescriptor.put(protoFileName, cachedDescriptor);
         }
         cachedDescriptors.add(cachedDescriptor);
       } catch (IOException ioe) {
@@ -324,6 +317,20 @@ public abstract class AbstractSoyCompiler {
                 + protoFileDescriptor
                 + ": "
                 + ioe.getMessage());
+      }
+    }
+    for (Map.Entry<String, Set<Readers.CachedDescriptorSet>> entry :
+        Multimaps.asMap(protoFileToDescriptor).entrySet()) {
+      if (entry.getValue().size() > 1) {
+        err.println(
+            "WARNING: "
+                + entry.getKey()
+                + " has a descriptor defined in each of these files: "
+                + entry.getValue().stream()
+                    .map(c -> c.getFile().getPath())
+                    .sorted()
+                    .collect(Collectors.joining(", "))
+                + ". Do your proto_library rules have overlapping sources?");
       }
     }
     List<FileDescriptor> descriptors = new ArrayList<>(protoFileToDescriptor.size());

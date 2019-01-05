@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.io.CharSource;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
@@ -120,7 +121,7 @@ final class Readers {
      * @param cache The cache so file dependencies can be recorded.
      */
     Collection<FileDescriptor> getFileDescriptors(
-        Map<String, CachedDescriptorSet> protoFileToDescriptor, SoyInputCache cache)
+        SetMultimap<String, CachedDescriptorSet> protoFileToDescriptor, SoyInputCache cache)
         throws DescriptorValidationException {
       if (fileNameToDescriptors.size() == protosByFileName.size()) {
         return fileNameToDescriptors.values();
@@ -134,7 +135,7 @@ final class Readers {
 
     private FileDescriptor buildDescriptor(
         FileDescriptorProto fileProto,
-        Map<String, CachedDescriptorSet> protoFileToDescriptor,
+        SetMultimap<String, CachedDescriptorSet> protoFileToDescriptor,
         SoyInputCache cache)
         throws DescriptorValidationException {
       FileDescriptor descriptor = fileNameToDescriptors.get(fileProto.getName());
@@ -144,14 +145,25 @@ final class Readers {
       FileDescriptor[] deps = new FileDescriptor[fileProto.getDependencyCount()];
       for (int i = 0; i < fileProto.getDependencyCount(); i++) {
         String depName = fileProto.getDependency(i);
-        CachedDescriptorSet dep = protoFileToDescriptor.get(depName);
-        if (dep == null) {
+        Set<CachedDescriptorSet> depDescriptorSets = protoFileToDescriptor.get(depName);
+        if (depDescriptorSets.isEmpty()) {
           throw new IllegalStateException(
               "Cannot find proto descriptor for "
                   + depName
                   + " which is a dependency of "
                   + fileProto.getName());
         }
+        // add dependencies on all files that might provide the dependency, that way we will always
+        // get evicted, even if not all potential dependencies are present.
+        for (CachedDescriptorSet dep : depDescriptorSets) {
+          if (dep != this) {
+            cache.declareDependency(getFile(), dep.getFile());
+          }
+        }
+        // look up the dep from the first depDescriptorSet.  It is arbitrary which one we use.
+        // Often, this set has exactly one entry, and when it doesn't we should have already issued
+        // a warning.
+        CachedDescriptorSet dep = depDescriptorSets.iterator().next();
         FileDescriptorProto depProto = dep.protosByFileName.get(depName);
         if (depProto == null) {
           throw new IllegalStateException(
@@ -159,9 +171,6 @@ final class Readers {
                   + depName
                   + " which is a dependency of "
                   + fileProto.getName());
-        }
-        if (dep != this) {
-          cache.declareDependency(getFile(), dep.getFile());
         }
         deps[i] = dep.buildDescriptor(depProto, protoFileToDescriptor, cache);
       }
