@@ -262,7 +262,7 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
-        sfsBuilder.addFile(cache.read(src, Readers.SOY_FILE_READER, soyCompilerFileReader));
+        sfsBuilder.addFile(cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError("File: " + src.getPath() + " passed to --srcs does not exist");
       }
@@ -297,14 +297,14 @@ public abstract class AbstractSoyCompiler {
       SoyInputCache cache,
       SoyCompilerFileReader reader,
       PrintStream err) {
-    SetMultimap<String, Readers.CachedDescriptorSet> protoFileToDescriptor =
+    SetMultimap<String, CacheLoaders.CachedDescriptorSet> protoFileToDescriptor =
         MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-    List<Readers.CachedDescriptorSet> cachedDescriptors =
+    List<CacheLoaders.CachedDescriptorSet> cachedDescriptors =
         new ArrayList<>(protoFileDescriptors.size());
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
-        Readers.CachedDescriptorSet cachedDescriptor =
-            cache.read(protoFileDescriptor, Readers.FILE_DESCRIPTOR_SET_READER, reader);
+        CacheLoaders.CachedDescriptorSet cachedDescriptor =
+            cache.read(protoFileDescriptor, CacheLoaders.CACHED_DESCRIPTOR_SET_LOADER, reader);
         for (String protoFileName : cachedDescriptor.getProtoFileNames()) {
           protoFileToDescriptor.put(protoFileName, cachedDescriptor);
         }
@@ -317,7 +317,7 @@ public abstract class AbstractSoyCompiler {
                 + ioe.getMessage());
       }
     }
-    for (Map.Entry<String, Set<Readers.CachedDescriptorSet>> entry :
+    for (Map.Entry<String, Set<CacheLoaders.CachedDescriptorSet>> entry :
         Multimaps.asMap(protoFileToDescriptor).entrySet()) {
       if (entry.getValue().size() > 1) {
         err.println(
@@ -332,7 +332,7 @@ public abstract class AbstractSoyCompiler {
       }
     }
     List<FileDescriptor> descriptors = new ArrayList<>(protoFileToDescriptor.size());
-    for (Readers.CachedDescriptorSet cachedDescriptor : cachedDescriptors) {
+    for (CacheLoaders.CachedDescriptorSet cachedDescriptor : cachedDescriptors) {
       try {
         descriptors.addAll(cachedDescriptor.getFileDescriptors(protoFileToDescriptor, cache));
       } catch (DescriptorValidationException e) {
@@ -365,7 +365,7 @@ public abstract class AbstractSoyCompiler {
         sfsBuilder.addCompilationUnit(
             depKind,
             depFile.getPath(),
-            cache.read(depFile, Readers.COMPILATION_UNIT_READER, soyCompilerFileReader));
+            cache.read(depFile, CacheLoaders.COMPILATION_UNIT_LOADER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(
             "Unable to read header file: " + depFile + ": " + e.getMessage());
@@ -378,7 +378,7 @@ public abstract class AbstractSoyCompiler {
     for (File loggingConfig : loggingConfigs) {
       try {
         configBuilder.mergeFrom(
-            cache.read(loggingConfig, Readers.LOGGING_CONFIG_READER, soyCompilerFileReader));
+            cache.read(loggingConfig, CacheLoaders.LOGGING_CONFIG_LOADER, soyCompilerFileReader));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
@@ -399,7 +399,7 @@ public abstract class AbstractSoyCompiler {
     for (File globalsFile : globalsFiles) {
       try {
         ImmutableMap<String, PrimitiveData> parsedGlobals =
-            cache.read(globalsFile, Readers.GLOBALS_READER, soyCompilerFileReader);
+            cache.read(globalsFile, CacheLoaders.GLOBALS_LOADER, soyCompilerFileReader);
         for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
           PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
           if (oldValue != null && !entry.getValue().equals(oldValue)) {

@@ -25,11 +25,11 @@ interface SoyInputCache {
   SoyInputCache DEFAULT =
       new SoyInputCache() {
         @Override
-        public <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader)
+        public <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader)
             throws IOException {
-          T value = reader.read(file, fileReader, this);
+          T value = loader.read(file, reader, this);
           // everything is always immediately evicted
-          reader.onEvict(value);
+          loader.onEvict(value);
           return value;
         }
 
@@ -38,7 +38,7 @@ interface SoyInputCache {
       };
 
   /** A Reader can read a file as a structured object. */
-  interface Reader<T> {
+  interface CacheLoader<T> {
     /** Reads an object from the file using the given file reader. */
     T read(File file, SoyCompilerFileReader fileReader, SoyInputCache cache) throws IOException;
 
@@ -47,6 +47,7 @@ interface SoyInputCache {
      *
      * <p>The default implementation does nothing. This can be used to manage 'closeable' resources.
      *
+     * @param item The item being evicted
      * @throws IOException if closing the object requires closing files or other resources.
      */
     default void onEvict(T item) throws IOException {}
@@ -58,11 +59,12 @@ interface SoyInputCache {
    * <p>There is no guarantee for how long or even if the file will be cached.
    *
    * @param file The file to read
-   * @param reader The strategy for interpreting the file contents. Callers should ensure to always
+   * @param loader The strategy for interpreting the file contents. Callers should ensure to always
    *     pass the same instance.
+   * @param reader The reader to use to open the file
    * @return the result of reaeding the file, possibly from a cache.
    */
-  <T> T read(File file, Reader<T> reader, SoyCompilerFileReader fileReader) throws IOException;
+  <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader) throws IOException;
 
   /**
    * Declares that one file depends on another. Therefore if {@code dependency} changes then {@code

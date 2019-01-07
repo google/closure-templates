@@ -49,10 +49,10 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import javax.annotation.Nullable;
 
-/** Implementations of {@link SoyInputCache.Reader} for common compiler inputs. */
-final class Readers {
-  static final SoyInputCache.Reader<LoggingConfig> LOGGING_CONFIG_READER =
-      new SoyInputCache.Reader<LoggingConfig>() {
+/** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
+final class CacheLoaders {
+  static final SoyInputCache.CacheLoader<LoggingConfig> LOGGING_CONFIG_LOADER =
+      new SoyInputCache.CacheLoader<LoggingConfig>() {
         @Override
         public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
             throws IOException {
@@ -62,8 +62,8 @@ final class Readers {
         }
       };
 
-  static final SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>> GLOBALS_READER =
-      new SoyInputCache.Reader<ImmutableMap<String, PrimitiveData>>() {
+  static final SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>> GLOBALS_LOADER =
+      new SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>>() {
         @Override
         public ImmutableMap<String, PrimitiveData> read(
             File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
@@ -84,7 +84,7 @@ final class Readers {
    * </ol>
    *
    * <p>To make caching effective we essentially do these 2 steps at different times. The {@link
-   * #FILE_DESCRIPTOR_SET_READER} is responsible for step 1 and our caller is responsible for
+   * #CACHED_DESCRIPTOR_SET_LOADER} is responsible for step 1 and our caller is responsible for
    * assisting with step #2 (by calculating the filename->FileDescriptorSet map).
    */
   static final class CachedDescriptorSet {
@@ -180,8 +180,8 @@ final class Readers {
     }
   }
 
-  static final SoyInputCache.Reader<CachedDescriptorSet> FILE_DESCRIPTOR_SET_READER =
-      new SoyInputCache.Reader<CachedDescriptorSet>() {
+  static final SoyInputCache.CacheLoader<CachedDescriptorSet> CACHED_DESCRIPTOR_SET_LOADER =
+      new SoyInputCache.CacheLoader<CachedDescriptorSet>() {
         @Override
         public CachedDescriptorSet read(
             File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
@@ -194,8 +194,8 @@ final class Readers {
 
   // TODO(lukes): ideally this would be reading directly to a List<TemplateMetadata> objects by
   // invoking the TemplateMetadataSerializer.  Doing so will require changing how types are parsed.
-  static final SoyInputCache.Reader<CompilationUnit> COMPILATION_UNIT_READER =
-      new SoyInputCache.Reader<CompilationUnit>() {
+  static final SoyInputCache.CacheLoader<CompilationUnit> COMPILATION_UNIT_LOADER =
+      new SoyInputCache.CacheLoader<CompilationUnit>() {
         @Override
         public CompilationUnit read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
             throws IOException {
@@ -267,8 +267,8 @@ final class Readers {
     }
   }
 
-  static final SoyInputCache.Reader<CachedSoyFileSupplier> SOY_FILE_READER =
-      new SoyInputCache.Reader<CachedSoyFileSupplier>() {
+  static final SoyInputCache.CacheLoader<CachedSoyFileSupplier> SOY_FILE_LOADER =
+      new SoyInputCache.CacheLoader<CachedSoyFileSupplier>() {
         private final FixedIdGenerator idGenerator = new FixedIdGenerator(-1);
 
         @Override
