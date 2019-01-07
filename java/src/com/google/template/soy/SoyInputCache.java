@@ -46,6 +46,8 @@ interface SoyInputCache {
      * Called when the item is removed from the cache.
      *
      * <p>The default implementation does nothing. This can be used to manage 'closeable' resources.
+     *
+     * @throws IOException if closing the object requires closing files or other resources.
      */
     default void onEvict(T item) throws IOException {}
   }

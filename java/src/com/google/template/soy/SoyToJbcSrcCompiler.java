@@ -44,7 +44,7 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   )
   private File outputSrcJar;
 
-  SoyToJbcSrcCompiler(ClassLoader loader, SoyInputCache cache) {
+  SoyToJbcSrcCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
 

@@ -161,29 +161,27 @@ public abstract class AbstractSoyCompiler {
 
   private final SoyCompilerFileReader soyCompilerFileReader;
 
-  final ClassLoader pluginClassLoader;
+  final PluginLoader pluginLoader;
   private final SoyInputCache cache;
 
   AbstractSoyCompiler(
-      ClassLoader pluginClassLoader,
-      SoyInputCache cache,
-      SoyCompilerFileReader soyCompilerFileReader) {
+      PluginLoader pluginLoader, SoyInputCache cache, SoyCompilerFileReader soyCompilerFileReader) {
     this.cache = cache;
-    this.pluginClassLoader = pluginClassLoader;
+    this.pluginLoader = pluginLoader;
     this.soyCompilerFileReader = soyCompilerFileReader;
   }
 
   protected AbstractSoyCompiler(
-      ClassLoader pluginClassLoader, SoyCompilerFileReader soyCompilerFileReader) {
-    this(pluginClassLoader, SoyInputCache.DEFAULT, soyCompilerFileReader);
+      PluginLoader pluginLoader, SoyCompilerFileReader soyCompilerFileReader) {
+    this(pluginLoader, SoyInputCache.DEFAULT, soyCompilerFileReader);
   }
 
-  AbstractSoyCompiler(ClassLoader pluginClassLoader, SoyInputCache cache) {
-    this(pluginClassLoader, cache, new FileSystemSoyFileReader());
+  AbstractSoyCompiler(PluginLoader pluginLoader, SoyInputCache cache) {
+    this(pluginLoader, cache, FileSystemSoyFileReader.INSTANCE);
   }
 
   AbstractSoyCompiler() {
-    this(AbstractSoyCompiler.class.getClassLoader(), SoyInputCache.DEFAULT);
+    this(new PluginLoader.Default(), SoyInputCache.DEFAULT);
   }
 
   final void runMain(String... args) {
@@ -218,7 +216,7 @@ public abstract class AbstractSoyCompiler {
   private void doMain(String[] args, PrintStream err) throws IOException {
     Stopwatch timer = Stopwatch.createStarted();
     Stopwatch guiceTimer = Stopwatch.createUnstarted();
-    SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginClassLoader);
+    SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginLoader);
     try {
       cmdLineParser.parseArgument(args);
     } catch (CmdLineException cle) {

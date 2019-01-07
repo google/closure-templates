@@ -88,7 +88,7 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
     new SoyMsgExtractor().runMain(args);
   }
 
-  SoyMsgExtractor(ClassLoader loader, SoyInputCache cache) {
+  SoyMsgExtractor(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
 

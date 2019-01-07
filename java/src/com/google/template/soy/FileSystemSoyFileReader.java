@@ -22,7 +22,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 /** Reads files from the file system. */
-class FileSystemSoyFileReader implements SoyCompilerFileReader {
+final class FileSystemSoyFileReader implements SoyCompilerFileReader {
+  static final FileSystemSoyFileReader INSTANCE = new FileSystemSoyFileReader();
+
+  private FileSystemSoyFileReader() {}
+
   @Override
   public ByteSource read(File f) throws FileNotFoundException {
     if (!f.exists()) {

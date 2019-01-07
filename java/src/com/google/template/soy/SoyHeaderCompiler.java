@@ -42,7 +42,7 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
               + " invocation will produce exactly one file containing all the TemplateMetadata")
   private File output;
 
-  SoyHeaderCompiler(ClassLoader loader, SoyInputCache cache) {
+  SoyHeaderCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
 

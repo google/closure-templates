@@ -136,7 +136,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
-  SoyToJsSrcCompiler(ClassLoader loader, SoyInputCache cache) {
+  SoyToJsSrcCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
 

@@ -38,9 +38,9 @@ final class SoyCmdLineParser extends CmdLineParser {
     CmdLineParser.registerHandler(SoyMsgPlugin.class, MsgPluginOptionHandler.class);
   }
 
-  private final ClassLoader pluginLoader;
+  private final PluginLoader pluginLoader;
 
-  SoyCmdLineParser(Object bean, ClassLoader loader) {
+  SoyCmdLineParser(Object bean, PluginLoader loader) {
     super(bean);
     this.pluginLoader = loader;
   }
@@ -283,13 +283,10 @@ final class SoyCmdLineParser extends CmdLineParser {
       String flagName,
       String objectType,
       Class<T> clazz,
-      ClassLoader loader,
+      PluginLoader loader,
       String instanceClassName) {
     try {
-      return Class.forName(instanceClassName, true, loader)
-          .asSubclass(clazz)
-          .getConstructor()
-          .newInstance();
+      return loader.loadPlugin(instanceClassName).asSubclass(clazz).getConstructor().newInstance();
     } catch (ClassCastException cce) {
       throw new CommandLineError(
           String.format(
