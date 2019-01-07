@@ -313,6 +313,14 @@ public class SoyTypeRegistry {
     // constructing in the provided order we will limit the depth of the recusion below.
     private final Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
     private final List<GenericDescriptor> descriptors = new ArrayList<>();
+    /**
+     * Whether or not all the descriptors added to {@link #descriptors} are {@link FileDescriptor}
+     * objects. If they are we can optimize traversal in the {@link DescriptorVisitor}.
+     *
+     * <p>This case is always true when using the command line compiler. It is only possibly not
+     * true when using the SoyFileSet apis directly.
+     */
+    private boolean areAllDescriptorsFileDescriptors = true;
 
     public Builder() {}
 
@@ -339,6 +347,9 @@ public class SoyTypeRegistry {
     /** Registers a collection of descriptors of any type. */
     public Builder addDescriptors(Iterable<? extends GenericDescriptor> descriptorsToAdd) {
       for (GenericDescriptor descriptorToAdd : descriptorsToAdd) {
+        if (areAllDescriptorsFileDescriptors && !(descriptorToAdd instanceof FileDescriptor)) {
+          areAllDescriptorsFileDescriptors = false;
+        }
         descriptors.add(descriptorToAdd);
       }
       return this;
@@ -347,10 +358,12 @@ public class SoyTypeRegistry {
     private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
       Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
       for (String name : nameToProtos.keySet()) {
-        visitor.visitFile(buildDescriptor(null, name, parsedDescriptors, nameToProtos));
+        visitor.visitFile(
+            buildDescriptor(null, name, parsedDescriptors, nameToProtos),
+            /*onlyVisitingFiles=*/ areAllDescriptorsFileDescriptors);
       }
       for (GenericDescriptor descriptor : descriptors) {
-        visitor.visitGeneric(descriptor);
+        visitor.visitGeneric(descriptor, /*onlyVisitingFiles=*/ areAllDescriptorsFileDescriptors);
       }
     }
 
@@ -405,85 +418,120 @@ public class SoyTypeRegistry {
                 })
             .build();
 
-    void visitGeneric(GenericDescriptor descriptor) {
+    /**
+     * Collect all enum, message, and extension descriptors referenced by the given descriptor
+     *
+     * @param descriptor the descriptor to explore
+     * @param onlyVisitingFiles whether or not we are only visiting files descriptors, in this
+     *     scenario we can optimize our exploration to avoid visiting the same descriptors multiple
+     *     times.
+     */
+    void visitGeneric(GenericDescriptor descriptor, boolean onlyVisitingFiles) {
       if (descriptor instanceof FileDescriptor) {
-        visitFile((FileDescriptor) descriptor);
+        visitFile((FileDescriptor) descriptor, onlyVisitingFiles);
       } else if (descriptor instanceof Descriptor) {
-        visitMessage((Descriptor) descriptor, /*exploreDependencies=*/ true);
+        visitMessage((Descriptor) descriptor, /*exploreDependencies=*/ true, onlyVisitingFiles);
       } else if (descriptor instanceof FieldDescriptor) {
-        visitField((FieldDescriptor) descriptor, /*exploreDependencies=*/ true);
+        visitField((FieldDescriptor) descriptor, /*exploreDependencies=*/ true, onlyVisitingFiles);
       } else if (descriptor instanceof EnumDescriptor) {
-        visitEnum((EnumDescriptor) descriptor);
+        visitEnum((EnumDescriptor) descriptor, onlyVisitingFiles);
       } // services, etc. not needed thus far so neither gathered nor dispatched
     }
 
-    void visitFile(FileDescriptor fileDescriptor) {
-      if (!visited.add(fileDescriptor.getFullName())) {
+    private void visitFiles(List<FileDescriptor> descriptors, boolean onlyVisitingFiles) {
+      final int size = descriptors.size();
+      for (int i = 0; i < size; i++) {
+        visitFile(descriptors.get(i), onlyVisitingFiles);
+      }
+    }
+
+    void visitFile(FileDescriptor fileDescriptor, boolean onlyVisitingFiles) {
+      if (!shouldVisitDescriptor(fileDescriptor, onlyVisitingFiles)) {
         return;
       }
-      for (FileDescriptor dependency : fileDescriptor.getDependencies()) {
-        visitFile(dependency);
-      }
+      visitFiles(fileDescriptor.getDependencies(), onlyVisitingFiles);
       // disable exploring dependencies when visiting all declarations in a file. Because we have
       // already visited all the file level dependencies we don't need to do more explorations
       // since we will just visit the same things over and over.
-      visitMessages(fileDescriptor.getMessageTypes(), /* exploreDependencies=*/ false);
-      visitFields(fileDescriptor.getExtensions(), /* exploreDependencies=*/ false);
-      visitEnums(fileDescriptor.getEnumTypes());
+      visitMessages(
+          fileDescriptor.getMessageTypes(), /* exploreDependencies=*/ false, onlyVisitingFiles);
+      visitFields(
+          fileDescriptor.getExtensions(), /* exploreDependencies=*/ false, onlyVisitingFiles);
+      visitEnums(fileDescriptor.getEnumTypes(), onlyVisitingFiles);
     }
 
-    private void visitMessages(List<Descriptor> descriptors, boolean exploreDependencies) {
-      for (Descriptor message : descriptors) {
-        visitMessage(message, exploreDependencies);
+    private void visitMessages(
+        List<Descriptor> descriptors, boolean exploreDependencies, boolean onlyVisitingFiles) {
+      final int size = descriptors.size();
+      for (int i = 0; i < size; i++) {
+        visitMessage(descriptors.get(i), exploreDependencies, onlyVisitingFiles);
       }
     }
 
-    private void visitMessage(Descriptor messageDescriptor, boolean exploreDependencies) {
-      if (!visited.add(messageDescriptor.getFullName())) {
+    private void visitMessage(
+        Descriptor messageDescriptor, boolean exploreDependencies, boolean onlyVisitingFiles) {
+      if (!shouldVisitDescriptor(messageDescriptor, onlyVisitingFiles)) {
         return;
       }
       descriptors.put(messageDescriptor.getFullName(), messageDescriptor);
-      visitEnums(messageDescriptor.getEnumTypes());
-      visitFields(messageDescriptor.getExtensions(), exploreDependencies);
-      visitMessages(messageDescriptor.getNestedTypes(), exploreDependencies);
+      visitEnums(messageDescriptor.getEnumTypes(), onlyVisitingFiles);
+      visitFields(messageDescriptor.getExtensions(), exploreDependencies, onlyVisitingFiles);
+      visitMessages(messageDescriptor.getNestedTypes(), exploreDependencies, onlyVisitingFiles);
       // we only need to visit fields to collect field types when we are exploring dependencies
       if (exploreDependencies) {
-        visitFields(messageDescriptor.getFields(), exploreDependencies);
+        visitFields(messageDescriptor.getFields(), exploreDependencies, onlyVisitingFiles);
       }
     }
 
-    private void visitEnums(List<EnumDescriptor> enumDescriptors) {
-      for (EnumDescriptor enumDescriptor : enumDescriptors) {
-        visitEnum(enumDescriptor);
+    private void visitEnums(List<EnumDescriptor> enumDescriptors, boolean onlyVisitingFiles) {
+      final int size = enumDescriptors.size();
+      for (int i = 0; i < size; i++) {
+        visitEnum(enumDescriptors.get(i), onlyVisitingFiles);
       }
     }
 
-    private void visitEnum(EnumDescriptor enumDescriptor) {
-      if (!visited.add(enumDescriptor.getFullName())) {
+    private void visitEnum(EnumDescriptor enumDescriptor, boolean onlyVisitingFiles) {
+      if (!shouldVisitDescriptor(enumDescriptor, onlyVisitingFiles)) {
         return;
       }
       descriptors.put(enumDescriptor.getFullName(), enumDescriptor);
     }
 
-    private void visitFields(List<FieldDescriptor> fieldDescriptors, boolean exploreDependencies) {
-      for (FieldDescriptor fieldDescriptor : fieldDescriptors) {
-        visitField(fieldDescriptor, exploreDependencies);
+    private void visitFields(
+        List<FieldDescriptor> fieldDescriptors,
+        boolean exploreDependencies,
+        boolean onlyVisitingFiles) {
+      final int size = fieldDescriptors.size();
+      for (int i = 0; i < size; i++) {
+        visitField(fieldDescriptors.get(i), exploreDependencies, onlyVisitingFiles);
       }
     }
 
-    private void visitField(FieldDescriptor fieldDescriptor, boolean exploreDependencies) {
-      if (!visited.add(fieldDescriptor.getFullName())) {
+    private void visitField(
+        FieldDescriptor fieldDescriptor, boolean exploreDependencies, boolean onlyVisitingFiles) {
+      if (!shouldVisitDescriptor(fieldDescriptor, onlyVisitingFiles)) {
         return;
       }
       if (exploreDependencies && fieldDescriptor.getType() == Type.MESSAGE) {
-        visitMessage(fieldDescriptor.getMessageType(), exploreDependencies);
+        visitMessage(fieldDescriptor.getMessageType(), exploreDependencies, onlyVisitingFiles);
       }
       if (exploreDependencies && fieldDescriptor.getType() == Type.ENUM) {
-        visitEnum(fieldDescriptor.getEnumType());
+        visitEnum(fieldDescriptor.getEnumType(), onlyVisitingFiles);
       }
       if (fieldDescriptor.isExtension() && !ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
         extensions.put(fieldDescriptor.getContainingType().getFullName(), fieldDescriptor);
       }
+    }
+
+    private boolean shouldVisitDescriptor(GenericDescriptor descriptor, boolean onlyVisitingFiles) {
+      // if we are only visiting files, then we don't need to check the visited hash set unless this
+      // descriptor is a file, this is because the traversal strategy (where we disable
+      // 'exploreDependencies') means that we are guaranteed to visit each descriptor exactly once.
+      // So checking the visited set is redundant.
+      if (onlyVisitingFiles && !(descriptor instanceof FileDescriptor)) {
+        return true;
+      }
+      return visited.add(descriptor.getFullName());
     }
   }
 }
