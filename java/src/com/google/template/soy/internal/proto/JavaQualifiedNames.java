@@ -63,16 +63,6 @@ public final class JavaQualifiedNames {
     return getClassName(enumType).replace('$', '.');
   }
 
-  /** Returns the class name for the message descriptor (uses '$' inner class seperator). */
-  public static String getClassName(Descriptors.Descriptor msg) {
-    return getClassName(msg, ProtoFlavor.PROTO2);
-  }
-
-  /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
-  public static String getClassName(Descriptors.EnumDescriptor enumType) {
-    return getClassName(enumType, ProtoFlavor.PROTO2);
-  }
-
   /**
    * Returns the fully-qualified name for the message descriptor with the given flavor (uses '.'
    * inner class seperator).
@@ -89,6 +79,16 @@ public final class JavaQualifiedNames {
     return getClassName(enumType, flavor).replace('$', '.');
   }
 
+  /** Returns the class name for the message descriptor (uses '$' inner class seperator). */
+  public static String getClassName(Descriptors.Descriptor msg) {
+    return getClassName(msg, ProtoFlavor.PROTO2);
+  }
+
+  /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
+  public static String getClassName(Descriptors.EnumDescriptor enumType) {
+    return getClassName(enumType, ProtoFlavor.PROTO2);
+  }
+
   /**
    * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
    * separated using '$' instead of '.'.
@@ -103,6 +103,34 @@ public final class JavaQualifiedNames {
    */
   public static String getClassName(EnumDescriptor descriptor, ProtoFlavor flavor) {
     return getClassName(classNameWithoutPackage(descriptor, flavor), descriptor.getFile(), flavor);
+  }
+
+  private static String getClassName(
+      String nameWithoutPackage, FileDescriptor file, ProtoFlavor flavor) {
+    StringBuilder sb = new StringBuilder();
+    if (multipleJavaFiles(file, flavor)) {
+      sb.append(getPackage(file, flavor));
+      if (sb.length() > 0) {
+        sb.append('.');
+      }
+    } else {
+      sb.append(getClassName(file, flavor));
+      if (sb.length() > 0) {
+        sb.append('$');
+      }
+    }
+    sb.append(nameWithoutPackage.replace('.', '$'));
+    return sb.toString();
+  }
+
+  private static String getClassName(FileDescriptor file, ProtoFlavor flavor) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getPackage(file, flavor));
+    if (sb.length() > 0) {
+      sb.append('.');
+    }
+    sb.append(getFileClassName(file, flavor));
+    return sb.toString();
   }
 
   /** Returns the Java name for a proto field. */
@@ -158,34 +186,6 @@ public final class JavaQualifiedNames {
       }
     }
     return result.toString();
-  }
-
-  private static String getClassName(
-      String nameWithoutPackage, FileDescriptor file, ProtoFlavor flavor) {
-    StringBuilder sb = new StringBuilder();
-    if (multipleJavaFiles(file, flavor)) {
-      sb.append(getPackage(file, flavor));
-      if (sb.length() > 0) {
-        sb.append('.');
-      }
-    } else {
-      sb.append(getClassName(file, flavor));
-      if (sb.length() > 0) {
-        sb.append('$');
-      }
-    }
-    sb.append(nameWithoutPackage.replace('.', '$'));
-    return sb.toString();
-  }
-
-  private static String getClassName(FileDescriptor file, ProtoFlavor flavor) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(getPackage(file, flavor));
-    if (sb.length() > 0) {
-      sb.append('.');
-    }
-    sb.append(getFileClassName(file, flavor));
-    return sb.toString();
   }
 
   static String getPackage(FileDescriptor file, ProtoFlavor flavor) {
