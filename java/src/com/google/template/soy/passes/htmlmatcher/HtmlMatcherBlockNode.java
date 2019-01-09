@@ -33,10 +33,21 @@ public final class HtmlMatcherBlockNode extends HtmlMatcherGraphNode {
 
   private final HtmlMatcherGraph graph;
 
+  private final String parentBlockType;
+
   @Nullable private HtmlMatcherGraphNode nextNode;
 
-  public HtmlMatcherBlockNode(HtmlMatcherGraph graph) {
+  public HtmlMatcherBlockNode(HtmlMatcherGraph graph, String parentBlockType) {
     this.graph = graph;
+    this.parentBlockType = parentBlockType;
+  }
+
+  public HtmlMatcherGraph getGraph() {
+    return graph;
+  }
+
+  public String getParentBlockType() {
+    return parentBlockType;
   }
 
   // ------ HtmlMatcherGraphNode implementation ------
@@ -44,10 +55,6 @@ public final class HtmlMatcherBlockNode extends HtmlMatcherGraphNode {
   @Override
   public Optional<SoyNode> getSoyNode() {
     return Optional.absent();
-  }
-
-  public HtmlMatcherGraph getGraph() {
-    return graph;
   }
 
   @Override

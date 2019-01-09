@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.TagName;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Pass for checking the balance of open tag nodes with possible close tags.
@@ -61,28 +62,43 @@ public final class HtmlTagMatchingPass {
       SoyErrorKind.of("''{0}'' tag is a void element and must not specify a close tag.");
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
       SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected HTML close tag.");
+  private static final String UNEXPECTED_CLOSE_TAG = "Unexpected HTML close tag.";
 
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_KNOWN =
-      SoyErrorKind.of("Unexpected HTML close tag. Expected to match the ''<{0}>'' at {1}.");
+  private static final String UNEXPECTED_CLOSE_TAG_KNOWN =
+      "Unexpected HTML close tag. Expected to match the ''<{0}>'' at {1}.";
 
-  private static final SoyErrorKind UNEXPECTED_OPEN_TAG_ALWAYS =
-      SoyErrorKind.of("This HTML open tag is never matched with a close tag.");
+  private static final String UNEXPECTED_OPEN_TAG_ALWAYS =
+      "This HTML open tag is never matched with a close tag.";
 
-  private static final SoyErrorKind UNEXPECTED_OPEN_TAG_SOMETIMES =
-      SoyErrorKind.of("This HTML open tag does not consistently match with a close tag.");
+  private static final String UNEXPECTED_OPEN_TAG_SOMETIMES =
+      "This HTML open tag does not consistently match with a close tag.";
 
   private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
 
-  private final boolean inForeignContent;
+  private static final String BLOCK_QUALIFIER = " Tags within a %s must be internally balanced.";
 
-  public HtmlTagMatchingPass(boolean inForeignContent) {
+  private final boolean inForeignContent;
+  @Nullable private final String parentBlockType;
+
+  public HtmlTagMatchingPass(boolean inForeignContent, String parentBlockType) {
     this.inForeignContent = inForeignContent;
+    this.parentBlockType = parentBlockType;
+  }
+
+  public HtmlTagMatchingPass(String parentBlockType) {
+    this.inForeignContent = false;
+    this.parentBlockType = parentBlockType;
   }
 
   public HtmlTagMatchingPass() {
     this.inForeignContent = false;
+    this.parentBlockType = null;
+  }
+
+  private SoyErrorKind makeSoyErrorKind(String soyError) {
+    return SoyErrorKind.of(
+        soyError
+            + (parentBlockType != null ? String.format(BLOCK_QUALIFIER, parentBlockType) : ""));
   }
 
   /**
@@ -199,15 +215,16 @@ public final class HtmlTagMatchingPass {
         if (graphNode instanceof HtmlMatcherBlockNode) {
           HtmlMatcherBlockNode block = (HtmlMatcherBlockNode) graphNode;
           if (block.getGraph().getRootNode().isPresent()) {
-            HtmlTagMatchingPass pass = new HtmlTagMatchingPass(inForeignContent);
+            HtmlTagMatchingPass pass =
+                new HtmlTagMatchingPass(inForeignContent, block.getParentBlockType());
             TagAnnotationState blockAnnotationState =
                 pass.rebalanceCodePaths(
                     pass.visit(block.getGraph().getRootNode().get()), idGenerator, errorReporter);
-            openToCloseMapBuilder.putAll(blockAnnotationState.getOpenToCloseMap());
-            closeToOpenMapBuilder.putAll(blockAnnotationState.getCloseToOpenMap());
+            pass.annotateTagsAndCheckForErrors(blockAnnotationState, errorReporter);
           }
           continue;
         }
+
         HtmlMatcherTagNode node = (HtmlMatcherTagNode) graphNode;
         HtmlOpenTagNode openTag;
         switch (node.getTagKind()) {
@@ -340,7 +357,7 @@ public final class HtmlTagMatchingPass {
    *       open tags.
    * </ol>
    */
-  private static void annotateTagsAndCheckForErrors(
+  private void annotateTagsAndCheckForErrors(
       TagAnnotationState tagAnnotationState, ErrorReporter errorReporter) {
     // Now that the data structure has been created, we can walk through the data structure
     // and trigger error messages depending on the condition.
@@ -359,9 +376,11 @@ public final class HtmlTagMatchingPass {
         }
       }
       if (counter == 0) {
-        errorReporter.report(openTag.getSourceLocation(), UNEXPECTED_OPEN_TAG_ALWAYS);
+        errorReporter.report(
+            openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_ALWAYS));
       } else if (counter < closeTagList.size()) {
-        errorReporter.report(openTag.getSourceLocation(), UNEXPECTED_OPEN_TAG_SOMETIMES);
+        errorReporter.report(
+            openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
       }
     }
     // For close tags, we sometimes can offer a hint to where a possible open tag might be.
@@ -371,11 +390,12 @@ public final class HtmlTagMatchingPass {
           if (info.getExpectedOpenTag().isPresent()) {
             errorReporter.report(
                 closeTag.getSourceLocation(),
-                UNEXPECTED_CLOSE_TAG_KNOWN,
+                makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
                 info.getExpectedOpenTag().get().getTagName(),
                 info.getExpectedOpenTag().get().getSourceLocation());
           } else {
-            errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+            errorReporter.report(
+                closeTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_CLOSE_TAG));
           }
           break;
         }

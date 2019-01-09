@@ -238,43 +238,50 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     @Override
     protected void visitMsgNode(MsgNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
     }
 
     @Override
     protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
     }
 
     @Override
     protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
     }
 
     @Override
     protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
     }
 
     @Override
     protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "msg"));
     }
 
     @Override
     protected void visitForIfemptyNode(ForIfemptyNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "loop"));
     }
 
     @Override
     protected void visitForNonemptyNode(ForNonemptyNode node) {
       htmlMatcherGraph.addNode(
-          new HtmlMatcherBlockNode(new HtmlTagVisitor(idGenerator, errorReporter).exec(node)));
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "loop"));
     }
 
     // These two blocks are explicitly not affected by foreign content, so just run the pass
@@ -283,13 +290,14 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     @Override
     protected void visitLetContentNode(LetContentNode node) {
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass().run(htmlMatcherGraph, idGenerator, errorReporter);
+      new HtmlTagMatchingPass("let content").run(htmlMatcherGraph, idGenerator, errorReporter);
     }
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass().run(htmlMatcherGraph, idGenerator, errorReporter);
+      new HtmlTagMatchingPass("call param content")
+          .run(htmlMatcherGraph, idGenerator, errorReporter);
     }
 
     private void enterConditionalContext() {
