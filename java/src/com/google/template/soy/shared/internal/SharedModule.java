@@ -23,6 +23,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Singleton;
 
@@ -61,11 +63,20 @@ public final class SharedModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, ? extends SoyFunction> provideSoyFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
-    ImmutableMap.Builder<String, SoyFunction> mapBuilder = ImmutableMap.builder();
+    Map<String, SoyFunction> mapBuilder = new LinkedHashMap<>();
     for (SoyFunction function : soyFunctionsSet) {
-      mapBuilder.put(function.getName(), function);
+      SoyFunction old = mapBuilder.put(function.getName(), function);
+      if (old != null && !old.getClass().getName().equals(function.getClass().getName())) {
+        throw new IllegalStateException(
+            "Found two functions with the same name: '"
+                + function.getName()
+                + "' and different implementations: "
+                + function
+                + " vs "
+                + old);
+      }
     }
-    return mapBuilder.build();
+    return ImmutableMap.copyOf(mapBuilder);
   }
 
   /**
@@ -77,11 +88,20 @@ public final class SharedModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, ? extends SoyPrintDirective> provideSoyDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-    ImmutableMap.Builder<String, SoyPrintDirective> mapBuilder = ImmutableMap.builder();
+    Map<String, SoyPrintDirective> mapBuilder = new LinkedHashMap<>();
     for (SoyPrintDirective directive : soyDirectivesSet) {
-      mapBuilder.put(directive.getName(), directive);
+      SoyPrintDirective old = mapBuilder.put(directive.getName(), directive);
+      if (old != null && !old.getClass().getName().equals(directive.getClass().getName())) {
+        throw new IllegalStateException(
+            "Found two print directives with the same name: '"
+                + directive.getName()
+                + "' and different implementations: "
+                + directive
+                + " vs "
+                + old);
+      }
     }
-    return mapBuilder.build();
+    return ImmutableMap.copyOf(mapBuilder);
   }
 
   @Override
