@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +112,9 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
   }
 
   public void addTagPair(HtmlTagNode node) {
-    this.taggedPairs.add(node);
+    if (!this.taggedPairs.contains(node)) {
+      this.taggedPairs.add(node);
+    }
   }
 
   /** Returns true if this node was inserted by the {@code StrictHtmlValidationPass}. */
