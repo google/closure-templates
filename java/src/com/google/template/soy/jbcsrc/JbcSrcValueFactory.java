@@ -84,6 +84,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private static final ImmutableSet<Class<?>> FLOAT_TYPES =
       ImmutableSet.of(SoyValue.class, double.class, FloatData.class, NumberData.class);
 
+  private static final ImmutableSet<Class<?>> NUMBER_TYPES =
+      ImmutableSet.of(SoyValue.class, double.class, NumberData.class);
+
   // We allow 'double' for soy int types because double has more precision than soy guarantees
   // for its int type.
   private static final ImmutableSet<Class<?>> INT_TYPES =
@@ -425,6 +428,10 @@ final class JbcSrcValueFactory extends JavaValueFactory {
                 && matchesProtoDescriptor(
                     ProtocolMessageEnum.class, clazz, ((SoyProtoEnumType) type).getDescriptor()));
       case UNION:
+        // number is a special case, it should work for double and NumberData
+        if (type.equals(SoyTypes.NUMBER_TYPE)) {
+          return NUMBER_TYPES.contains(clazz);
+        }
         // If this is a union, make sure the type is valid for every member.
         // If the type isn't valid for any member, then there's no guarantee this will work
         // for an arbitrary template at runtime.
