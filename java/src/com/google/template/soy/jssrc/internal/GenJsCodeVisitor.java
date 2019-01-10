@@ -177,7 +177,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Used for looking up the local name for a given template call to a fully qualified template
    * name. This is created on a per {@link SoyFileNode} basis.
    */
-  @VisibleForTesting protected TemplateAliases templateAliases;
+  protected TemplateAliases templateAliases;
 
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
