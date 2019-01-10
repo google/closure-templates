@@ -52,7 +52,6 @@ import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -184,9 +183,19 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       this.errorReporter = errorReporter;
     }
 
+    public boolean isBalancedInternally(ParentSoyNode<?> node) {
+      if (!SoyTreeUtils.hasHtmlNodes(node)) {
+        return true;
+      }
+      ErrorReporter reporter = ErrorReporter.createForTest();
+      HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
+      new HtmlTagMatchingPass().run(htmlMatcherGraph, idGenerator, reporter);
+      return reporter.getErrors().isEmpty();
+    }
+
     @Override
     public HtmlMatcherGraph exec(SoyNode node) {
-      visitChildren((BlockNode) node);
+      visitChildren((ParentSoyNode<?>) node);
       return htmlMatcherGraph;
     }
 
@@ -202,6 +211,9 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitIfNode(IfNode node) {
+      if (isBalancedInternally(node)) {
+        return;
+      }
       enterConditionalContext();
       visitChildren(node);
       exitConditionalContext();
@@ -209,6 +221,9 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitIfCondNode(IfCondNode node) {
+      if (isBalancedInternally(node)) {
+        return;
+      }
       HtmlMatcherConditionNode conditionNode = enterConditionBranch(node.getExpr(), node);
       visitChildren(node);
       exitConditionBranch(conditionNode);
@@ -216,6 +231,9 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
+      if (isBalancedInternally(node)) {
+        return;
+      }
       enterConditionalContext();
       visitChildren(node);
       exitConditionalContext();
@@ -223,6 +241,9 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitSwitchCaseNode(SwitchCaseNode node) {
+      if (isBalancedInternally(node)) {
+        return;
+      }
       for (ExprNode expr : node.getExprList()) {
         HtmlMatcherConditionNode conditionNode = enterConditionBranch(expr, node);
         visitChildren(node);
@@ -329,7 +350,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     private void exitConditionBranch(HtmlMatcherConditionNode ifConditionNode) {
       // The graph cursor points to the syntactically last HTML tag in the if block. Note that this
       // could be the originating HtmlMatcherConditionNode.
-      if (htmlMatcherGraph.getNodeAtCursor().isPresent()) {
+      if (htmlMatcherGraph.getNodeAtCursor().isPresent() && !activeEdgeStack.isEmpty()) {
         HtmlMatcherGraphNode activeNode = htmlMatcherGraph.getNodeAtCursor().get();
         activeEdgeStack.peek().add(ActiveEdge.create(activeNode, activeNode.getActiveEdgeKind()));
       }

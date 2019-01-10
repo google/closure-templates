@@ -109,19 +109,9 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     // The root node should be a opening <span> tag.
     TestUtils.assertNodeIsOpenTagWithName(node, "span");
 
-    // The next node should be {if $cond1}.
-    HtmlMatcherGraphNode ifCondNode = node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(ifCondNode).isInstanceOf(HtmlMatcherConditionNode.class);
-
-    HtmlMatcherGraphNode accNode = ifCondNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(accNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
-
     // Follow the {@code true} edge. The next node should be the </div>
-    node = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
+    node = node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
     TestUtils.assertNodeIsCloseTagWithName(node, "span");
-
-    // Follow the graph along the false edge from the if condition node.
-    assertThat(ifCondNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(accNode);
   }
 
   @Test
@@ -338,33 +328,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     // Assert: follow the graph and validate its structure.
 
     // The root node should be {if $cond1}.
-    HtmlMatcherGraphNode ifConditionNode = matcherGraph.get().getRootNode().get();
-    assertThatIfExpressionEqualTo(ifConditionNode, "$cond1");
+    HtmlMatcherGraphNode nextNode = matcherGraph.get().getRootNode().get();
 
-    // Follow the true branch of {if $cond1}.
-    HtmlMatcherGraphNode nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
-
-    // Reaching the accumulator node means you have reached the end of the true branch.
-    HtmlMatcherGraphNode accNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(accNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
-
-    // Follow the false edge of {if $cond1}; this is the template code in the {else} block.
-    nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
-
-    // The false branch should also end with the accumulator node.
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(nextNode).isEqualTo(accNode);
-
-    // There should be an open and close HTML tag, then the end of the graph.
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
     TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
 
     nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
@@ -395,55 +360,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     matcherPass.run(template, new IncrementingIdGenerator());
     Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
 
-    // Assert: follow the graph and validate its structure.
+    HtmlMatcherGraphNode nextNode = matcherGraph.get().getRootNode().get();
 
-    // The root node should be {if $cond1}.
-    HtmlMatcherGraphNode ifConditionNode = matcherGraph.get().getRootNode().get();
-    assertThatIfExpressionEqualTo(ifConditionNode, "$cond1");
-
-    // Follow the true branch of {if $cond1}; this should lead to {if $nestedCond}.
-    HtmlMatcherGraphNode nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
-
-    HtmlMatcherGraphNode nestedIfConditionNode =
-        nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThatIfExpressionEqualTo(nestedIfConditionNode, "$nestedCond");
-
-    // Follow the true branch of {if $nestedCond}.
-    nextNode = nestedIfConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
-
-    // The true branch of the nested if node terminates in a nested accumulator node.
-    HtmlMatcherGraphNode nestedAccNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(nestedAccNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
-
-    // The false branch of the nested if node should terminate at the nested accumulator node.
-    nextNode = nestedIfConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    assertThat(nextNode).isEqualTo(nestedAccNode);
-
-    // Follow the false branch of the outer if node.
-    nextNode = ifConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
-
-    // The true branch of the nested if node terminates in an outer accumulator node.
-    HtmlMatcherGraphNode outerAccNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(outerAccNode).isInstanceOf(HtmlMatcherAccumulatorNode.class);
-
-    // The nested accumulator node should link to the outer accumulator node.
-    nextNode = nestedAccNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(nextNode).isEqualTo(outerAccNode);
-
-    // There should be an open and close HTML tag, then the end of the graph.
-    nextNode = outerAccNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
     TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
 
     nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
@@ -542,25 +460,7 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
     Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
-
-    // Assert: follow the graph and validate its structure.
-
-    // The root node should be {case 1}.
-    HtmlMatcherGraphNode switchCaseNode1 = matcherGraph.get().getRootNode().get();
-    assertThatSwitchCaseCommandEqualTo(switchCaseNode1, "1, 2");
-
-    // Follow the true branch of {case 1}.
-    HtmlMatcherGraphNode nextNode = switchCaseNode1.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "li");
-
-    // The next code should be the accumulator node. This terminates the {case 1} branch.
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "li");
-
-    // Follow the false branch. This should lead to the {case 2} node.
-    HtmlMatcherGraphNode switchCaseNode2 =
-        switchCaseNode1.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    assertThatSwitchCaseCommandEqualTo(switchCaseNode2, "1, 2");
+    assertThat(matcherGraph.get().getRootNode()).isAbsent();
   }
 
   @Test
@@ -583,38 +483,15 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     // Act: execute the graph builder and follow the graph to the accumulator node.
     matcherPass.run(template, new IncrementingIdGenerator());
     Optional<HtmlMatcherGraph> matcherGraph = matcherPass.getHtmlMatcherGraph();
-    HtmlMatcherGraphNode switchCaseNode1 = matcherGraph.get().getRootNode().get();
-    HtmlMatcherGraphNode accNode =
-        switchCaseNode1
-            .getNodeForEdgeKind(EdgeKind.TRUE_EDGE) // <div>
-            .get()
-            .getNodeForEdgeKind(EdgeKind.TRUE_EDGE) // </div>
-            .get()
-            .getNodeForEdgeKind(EdgeKind.TRUE_EDGE) // Accumulator node
-            .get();
-    HtmlMatcherGraphNode switchCaseNode2 =
-        switchCaseNode1.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get(); // {default} block
-
-    // Follow the false edge of {case 2}; this is the body of the {default} block.
-    HtmlMatcherGraphNode nextNode = switchCaseNode2.getNodeForEdgeKind(EdgeKind.FALSE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "div");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
-
-    // The false branch should also end with the accumulator node.
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    assertThat(nextNode).isEqualTo(accNode);
-
-    // There should be an open and close HTML tag, then the end of the graph.
-    nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsOpenTagWithName(nextNode, "span");
-
-    nextNode = nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE).get();
-    TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
-
-    // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(
+            matcherGraph
+                .get()
+                .getRootNode()
+                .get() // <span>
+                .getNodeForEdgeKind(EdgeKind.TRUE_EDGE)
+                .get() // </span>
+                .getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
+        .isAbsent();
   }
 
   private static void assertThatIfExpressionEqualTo(HtmlMatcherGraphNode node, String exprString) {
