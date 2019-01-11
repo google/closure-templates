@@ -19,6 +19,7 @@ import static com.google.common.base.Strings.emptyToNull;
 
 import com.google.common.base.Converter;
 import com.google.common.base.Strings;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -217,11 +218,39 @@ public final class TemplateMetadataSerializer {
       builder.add(
           Parameter.builder()
               .setName(parameter.getName())
-              .setType(fromProto(parameter.getType(), typeRegistry, filePath, errorReporter))
               .setRequired(parameter.getRequired())
+              .setTypeLazily(
+                  new SoyTypeSupplier(parameter.getType(), typeRegistry, filePath, errorReporter))
               .build());
     }
     return builder.build();
+  }
+
+  /**
+   * Lazily parses a type.
+   *
+   * <p>We do this lazily because for many compiles we never access these types. For many
+   * dependencies there are templates that are never called by the source templates, so there is no
+   * point in fully resolving its types.
+   */
+  private static final class SoyTypeSupplier implements Supplier<SoyType> {
+    final SoyTypeP typeProto;
+    final SoyTypeRegistry typeRegistry;
+    final String filePath;
+    final ErrorReporter errorReporter;
+
+    SoyTypeSupplier(
+        SoyTypeP type, SoyTypeRegistry typeRegistry, String filePath, ErrorReporter errorReporter) {
+      this.typeProto = type;
+      this.typeRegistry = typeRegistry;
+      this.filePath = filePath;
+      this.errorReporter = errorReporter;
+    }
+
+    @Override
+    public SoyType get() {
+      return fromProto(typeProto, typeRegistry, filePath, errorReporter);
+    }
   }
 
   private static SoyType fromProto(

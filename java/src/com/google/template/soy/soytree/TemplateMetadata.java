@@ -18,8 +18,11 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -94,6 +97,58 @@ public abstract class TemplateMetadata {
    */
   @AutoValue
   public abstract static class Parameter {
+    /**
+     * A simple wrapper so that Parameter continues to have correct equals/hashCode methods even
+     * though we might only lazily calculate the type.
+     */
+    abstract static class LazyTypeWrapper {
+      static LazyTypeWrapper constant(final SoyType type) {
+        return new LazyTypeWrapper() {
+          @Override
+          SoyType getType() {
+            return type;
+          }
+        };
+      }
+
+      static LazyTypeWrapper fromSupplier(final Supplier<SoyType> typeSupplier) {
+        return new LazyTypeWrapper() {
+          @LazyInit SoyType type;
+
+          @Override
+          SoyType getType() {
+            SoyType local = type;
+            if (local == null) {
+              local = typeSupplier.get();
+              if (local == null) {
+                throw new IllegalStateException("typeSupplier returned null");
+              }
+              this.type = local;
+            }
+            return local;
+          }
+        };
+      }
+
+      @ForOverride
+      abstract SoyType getType();
+
+      @Override
+      public final int hashCode() {
+        return getType().hashCode();
+      }
+
+      @Override
+      public final boolean equals(Object other) {
+        return other instanceof LazyTypeWrapper
+            && ((LazyTypeWrapper) other).getType().equals(getType());
+      }
+
+      @Override
+      public String toString() {
+        return getType().toString();
+      }
+    }
 
     static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
       ImmutableList.Builder<Parameter> params = ImmutableList.builder();
@@ -116,7 +171,11 @@ public abstract class TemplateMetadata {
 
     // TODO(lukes): this will likely not work once we start compiling templates separately,
     // especially if we want to start pruning the proto descriptors required by the compiler.
-    public abstract SoyType getType();
+    public SoyType getType() {
+      return getTypeWrapper().getType();
+    }
+
+    abstract LazyTypeWrapper getTypeWrapper();
 
     public abstract boolean isRequired();
 
@@ -126,7 +185,15 @@ public abstract class TemplateMetadata {
 
       public abstract Builder setName(String name);
 
-      public abstract Builder setType(SoyType type);
+      public Builder setTypeLazily(final Supplier<SoyType> typeSupplier) {
+        return setTypeWrapper(LazyTypeWrapper.fromSupplier(typeSupplier));
+      }
+
+      public Builder setType(final SoyType type) {
+        return setTypeWrapper(LazyTypeWrapper.constant(type));
+      }
+
+      abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
 
       public abstract Builder setRequired(boolean isRequired);
 
