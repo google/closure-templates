@@ -117,7 +117,7 @@ final class RawTextContextUpdater {
    * @param text Non empty.
    * @return the number of characters consumed
    */
-  private int processNextToken(RawTextNode node, int offset, String text) {
+  private int processNextToken(RawTextNode node, final int offset, String text) {
     // Find the transition whose pattern matches earliest in the raw text (and is applicable)
     int numCharsConsumed;
     Context next;
@@ -516,14 +516,20 @@ final class RawTextContextUpdater {
       super(pattern);
     }
 
+    /** Matches the whole string. */
+    TrustedResourceUriPartTransition() {
+      super();
+    }
+
     @Override
-    boolean isApplicableTo(Context prior, Matcher matcher) {
+    boolean isApplicableTo(Context prior, @Nullable Matcher matcher) {
       return prior.uriType == UriType.TRUSTED_RESOURCE;
     }
 
     @Override
-    Context computeNextContext(RawTextNode node, int offset, Context context, Matcher matcher) {
-      String match = matcher.group();
+    Context computeNextContext(
+        RawTextNode node, int offset, Context context, @Nullable Matcher matcher) {
+      String match = matcher == null ? node.getRawText().substring(offset) : matcher.group();
       switch (context.uriPart) {
         case START:
           // Most of the work is here.  We expect the match to be one of the following forms:
@@ -657,7 +663,7 @@ final class RawTextContextUpdater {
           .put(
               HtmlContext.HTML_HTML_ATTR_VALUE,
               ImmutableList.of(
-                  new Transition(Pattern.compile(".+")) {
+                  new Transition() {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
                       return prior.derive(HtmlHtmlAttributePosition.NOT_START);
@@ -930,7 +936,7 @@ final class RawTextContextUpdater {
               ImmutableList.of(
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
-                  new TrustedResourceUriPartTransition(Pattern.compile(".+"))))
+                  new TrustedResourceUriPartTransition()))
           // All edges out of rcdata are triggered by tags which are handled in the InferenceEngine
           .put(HtmlContext.HTML_RCDATA, ImmutableList.of(TRANSITION_TO_SELF))
           // Text context has no edges except to itself.
