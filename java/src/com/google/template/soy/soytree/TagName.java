@@ -127,6 +127,14 @@ public final class TagName {
       ImmutableSet.of("a", "audio", "del", "ins", "map", "noscript", "video");
 
   /**
+   * Certain optional tags need to be excluded from the HTML matcher graph during validation. In
+   * general developers will usually close these tags in a header template and close in a footer
+   * template. In this case, it does little to enforce that these tags are balanced.
+   */
+  private static final ImmutableSet<String> HTML_OPEN_TAG_EXCLUDE_SET =
+      ImmutableSet.of("head", "body", "html");
+
+  /**
    * A map that is used to check whether a particular optional tag can be implicitly closed by a
    * following open tag. See {@link #checkCloseTagClosesOptional} method for more information.
    *
@@ -222,6 +230,10 @@ public final class TagName {
 
   public boolean isDefinitelyVoid() {
     return VOID_TAG_NAMES.contains(nameAsLowerCase);
+  }
+
+  public boolean isExcludedOptionalTag() {
+    return isStatic() && HTML_OPEN_TAG_EXCLUDE_SET.contains(getStaticTagNameAsLowerCase());
   }
 
   public boolean isDefinitelyOptional() {

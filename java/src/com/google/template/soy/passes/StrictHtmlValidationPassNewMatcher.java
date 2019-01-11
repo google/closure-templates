@@ -192,11 +192,17 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+      if (node.getTagName().isExcludedOptionalTag()) {
+        return;
+      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+      if (node.getTagName().isExcludedOptionalTag()) {
+        return;
+      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
