@@ -90,10 +90,9 @@ public final class TagName {
    * believe the last {@code <li>} is auto closed.
    *
    * <p>This map defines the rules for strict HTML validation: whenever we see a open tag that is in
-   * this map, only a subset of close tags can auto-close it. There are two optional tags that are
-   * not include in this map: {@code <p>} tags can be auto-closed by everyone (almost), and {@code
-   * <html>} tags should never be auto-closed. While {@code <html>} is an optional tag, it must be
-   * kept in the stack; we can only close it when we are at the end of a soy template.
+   * this map, only a subset of close tags can auto-close it. There is one optional tags that is not
+   * include in this map: {@code <html>} tags should never be auto-closed. While {@code <html>} is
+   * an optional tag, it is ignored by the tag matching system.
    */
   private static final ImmutableSetMultimap<String, String> OPTIONAL_TAG_CLOSE_TAG_RULES =
       new ImmutableSetMultimap.Builder<String, String>()
@@ -118,6 +117,16 @@ public final class TagName {
           .build();
 
   /**
+   * List of tags that do <em>not</em> close a {@code <p>} tag.
+   *
+   * <p>The {@code <p>} tag gets special treatment, because it can be closed by any HTML close tag
+   * except the ones in this list. See <a *
+   * href="https://www.w3.org/TR/html5/syntax.html#optional-tags">https://www.w3.org/TR/html5/syntax.html#optional-tags</a>
+   */
+  private static final ImmutableSet<String> PTAG_CLOSE_EXCEPTIONS =
+      ImmutableSet.of("a", "audio", "del", "ins", "map", "noscript", "video");
+
+  /**
    * A map that is used to check whether a particular optional tag can be implicitly closed by a
    * following open tag. See {@link #checkCloseTagClosesOptional} method for more information.
    *
@@ -137,6 +146,38 @@ public final class TagName {
           .putAll("rp", "rp", "rt")
           .put("optgroup", "optgroup")
           .putAll("option", "option", "optgroup")
+          .putAll(
+              "p",
+              "address",
+              "article",
+              "aside",
+              "blockquote",
+              "caption",
+              "details",
+              "div",
+              "dl",
+              "fieldset",
+              "figcaption",
+              "figure",
+              "footer",
+              "form",
+              "h1",
+              "h2",
+              "h3",
+              "h4",
+              "h5",
+              "h6",
+              "header",
+              "hr",
+              "main",
+              "nav",
+              "ol",
+              "p",
+              "pre",
+              "section",
+              "span",
+              "table",
+              "ul")
           .putAll("thead", "tbody", "tfoot")
           .putAll("tbody", "tbody", "tfoot")
           .put("tfoot", "table")
@@ -144,10 +185,6 @@ public final class TagName {
           .putAll("td", "tr", "th")
           .putAll("th", "td", "th")
           .build();
-
-  /** List of tags that can be implicitly closed by pretty much anything. */
-  private static final ImmutableSet<String> UNIVERSALLY_CLOSABLE_TAG_NAMES =
-      ImmutableSet.of("p", "caption");
 
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
@@ -196,8 +233,7 @@ public final class TagName {
     if (nameAsLowerCase == null) {
       return false;
     }
-    return UNIVERSALLY_CLOSABLE_TAG_NAMES.contains(nameAsLowerCase)
-        || OPTIONAL_TAG_CLOSE_TAG_RULES.containsKey(nameAsLowerCase)
+    return OPTIONAL_TAG_CLOSE_TAG_RULES.containsKey(nameAsLowerCase)
         || OPTIONAL_TAG_OPEN_CLOSE_RULES.containsKey(nameAsLowerCase)
         || "html".equals(nameAsLowerCase);
   }
@@ -229,8 +265,10 @@ public final class TagName {
     String openTagName = optionalOpenTag.getStaticTagNameAsLowerCase();
     String closeTagName = closeTag.getStaticTagNameAsLowerCase();
     checkArgument(!openTagName.equals(closeTagName));
-    return UNIVERSALLY_CLOSABLE_TAG_NAMES.contains(openTagName)
-        || OPTIONAL_TAG_CLOSE_TAG_RULES.containsEntry(openTagName, closeTagName);
+    if ("p".equals(openTagName)) {
+      return !PTAG_CLOSE_EXCEPTIONS.contains(closeTagName);
+    }
+    return OPTIONAL_TAG_CLOSE_TAG_RULES.containsEntry(openTagName, closeTagName);
   }
 
   /**
@@ -260,9 +298,6 @@ public final class TagName {
       return false;
     }
     String optionalTagName = optionalOpenTag.getStaticTagNameAsLowerCase();
-    if (UNIVERSALLY_CLOSABLE_TAG_NAMES.contains(optionalTagName)) {
-      return true;
-    }
     String openTagName = openTag.getStaticTagNameAsLowerCase();
     return OPTIONAL_TAG_OPEN_CLOSE_RULES.containsEntry(optionalTagName, openTagName);
   }
