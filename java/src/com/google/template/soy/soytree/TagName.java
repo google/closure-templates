@@ -154,33 +154,7 @@ public final class TagName {
           .putAll("rp", "rp", "rt")
           .put("optgroup", "optgroup")
           .putAll("option", "option", "optgroup")
-          .putAll(
-              "p",
-              "address",
-              "article",
-              "aside",
-              "blockquote",
-              "div",
-              "dl",
-              "fieldset",
-              "footer",
-              "form",
-              "h1",
-              "h2",
-              "h3",
-              "h4",
-              "h5",
-              "h6",
-              "header",
-              "hr",
-              "menu",
-              "nav",
-              "ol",
-              "p",
-              "pre",
-              "section",
-              "table",
-              "ul")
+          .putAll("p", "p")
           .putAll("thead", "tbody", "tfoot")
           .putAll("tbody", "tbody", "tfoot")
           .put("tfoot", "table")
