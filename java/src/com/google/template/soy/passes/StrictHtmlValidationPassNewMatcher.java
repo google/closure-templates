@@ -107,7 +107,16 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
     if (node.isStrictHtml()) {
       htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass().run(htmlMatcherGraph, idGenerator, errorReporter);
+      new HtmlTagMatchingPass(
+              errorReporter,
+              idGenerator,
+              /** inCondition */
+              false,
+              /** inForeignContent */
+              false,
+              /** parentBlockType */
+              null)
+          .run(htmlMatcherGraph);
       for (VeLogNode veNode : SoyTreeUtils.getAllNodesOfType(node, VeLogNode.class)) {
         checkVeLogNode(veNode);
       }
@@ -125,6 +134,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
       errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
       return;
     }
+
     HtmlOpenTagNode firstTag = node.getOpenTagNode();
     // The first child of {velog} must be an open tag.
     if (firstTag == null) {
@@ -136,10 +146,11 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     // after it. If it is the only thing, the velog is valid.
     if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
       if (node.numChildren() > 1) {
-        errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
       }
       return;
     }
+
 
     SoyNode lastChild = node.getChild(node.numChildren() - 1);
     HtmlCloseTagNode lastTag = null;
@@ -153,7 +164,7 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     // close the first tag within {velog} command.
     if (lastTag.getTaggedPairs().size() != 1
         || !Objects.equals(lastTag.getTaggedPairs().get(0), firstTag)) {
-      errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
     }
   }
 
@@ -296,14 +307,29 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     @Override
     protected void visitLetContentNode(LetContentNode node) {
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass("let content").run(htmlMatcherGraph, idGenerator, errorReporter);
+      new HtmlTagMatchingPass(
+              errorReporter,
+              idGenerator,
+              /** inCondition */
+              false,
+              /** inForeignContent */
+              false,
+              "let content")
+          .run(htmlMatcherGraph);
     }
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
       HtmlMatcherGraph htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass("call param content")
-          .run(htmlMatcherGraph, idGenerator, errorReporter);
+      new HtmlTagMatchingPass(
+              errorReporter,
+              idGenerator,
+              /** inCondition */
+              false,
+              /** inForeignContent */
+              false,
+              "call param content")
+          .run(htmlMatcherGraph);
     }
 
     private void enterConditionalContext() {
@@ -325,7 +351,9 @@ public final class StrictHtmlValidationPassNewMatcher extends CompilerFilePass {
     }
 
     private HtmlMatcherConditionNode enterConditionBranch(ExprNode expr, SoyNode node) {
-      HtmlMatcherConditionNode conditionNode = new HtmlMatcherConditionNode(node, expr);
+      HtmlMatcherConditionNode conditionNode =
+          new HtmlMatcherConditionNode(
+              node, expr, new HtmlTagVisitor(idGenerator, errorReporter).exec(node));
       htmlMatcherGraph.addNode(conditionNode);
       htmlMatcherGraph.saveCursor();
       conditionNode.setActiveEdgeKind(EdgeKind.TRUE_EDGE);
