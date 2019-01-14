@@ -616,11 +616,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String templateName = node.getTemplateName();
     String partialName = node.getPartialTemplateName();
     String alias;
-    boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
 
-    // TODO(lukes): does it make sense to add deltemplates or private templates to exports?
-    if (addToExports && node instanceof TemplateDelegateNode) {
-      alias = node.getPartialTemplateName().substring(1);
+    if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
+      alias = partialName.substring(1);
     } else {
       alias = templateAliases.get(templateName);
     }
@@ -639,10 +637,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     JsDoc jsDoc = generateFunctionJsDoc(node, alias);
     Expression function = Expression.function(jsDoc, generateFunctionBody(node));
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
-    if (addToExports) {
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
       declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
-      declarations.add(
-          assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
+      // don't export deltemplates or private templates
+      if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
+        declarations.add(
+            assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
+      }
     } else {
       declarations.add(Statement.assign(alias, function, jsDoc));
     }
