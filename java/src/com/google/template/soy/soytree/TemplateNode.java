@@ -237,6 +237,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   // TODO(user): Remove.
   private final String commandText;
 
+  private final SourceLocation openTagLocation;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -281,6 +283,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.params = regularParams.build();
     this.injectedParams = injectedParams.build();
     this.commandText = nodeBuilder.getCmdText().trim();
+    this.openTagLocation = nodeBuilder.openTagLocation;
   }
 
   /**
@@ -304,6 +307,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
+    this.openTagLocation = orig.openTagLocation;
   }
 
   private static ImmutableList<TemplateParam> copyParams(
@@ -344,6 +348,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns the visibility of this template. */
   public Visibility getVisibility() {
     return visibility;
+  }
+
+  /** The location of the {(del)template ...} */
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
   }
 
   /** Returns the mode of autoescaping. */

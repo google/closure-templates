@@ -137,6 +137,7 @@ public abstract class TemplateNodeBuilder {
   protected boolean strictHtmlDisabled;
 
   SourceLocation sourceLocation;
+  SourceLocation openTagLocation;
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   protected TemplateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
@@ -159,6 +160,13 @@ public abstract class TemplateNodeBuilder {
   public TemplateNodeBuilder setSourceLocation(SourceLocation location) {
     checkState(sourceLocation == null);
     this.sourceLocation = checkNotNull(location);
+    return this;
+  }
+
+  /** Sets the source location. */
+  public TemplateNodeBuilder setOpenTagLocation(SourceLocation location) {
+    checkState(openTagLocation == null);
+    this.openTagLocation = checkNotNull(location);
     return this;
   }
 

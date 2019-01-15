@@ -208,8 +208,8 @@ public final class SourceLocationTest {
     assertEquals(2, location.getBeginLine());
     assertEquals(1, location.getBeginColumn());
     // End after .t}
-    assertEquals(2, location.getEndLine());
-    assertEquals(13, location.getEndColumn());
+    assertEquals(4, location.getEndLine());
+    assertEquals(11, location.getEndColumn());
   }
 
   @Test

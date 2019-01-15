@@ -1440,7 +1440,7 @@ private Identifier DelPackage() :
  */
 private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 {
-  Token open;
+  Token open, close = null;
   TemplateNode templateNode = null;
   RawTextNode initialWhitespace = null;
   List<StandaloneNode> templateBodyNodes = null;
@@ -1453,8 +1453,12 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       TemplateOpenTagHelper(builder, open, false)
       initialWhitespace = TemplateHeader(builder)
       templateBodyNodes = TemplateBlock()
-      <CMD_CLOSE_TEMPLATE>
-      { templateNode = builder.build(); }
+      close = <CMD_CLOSE_TEMPLATE>
+      {
+        builder.setSourceLocation(createSrcLoc(open, close));
+        templateNode = builder.build();
+      }
+
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
       return null;  // continue trying to parse other templates
@@ -1469,8 +1473,11 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       TemplateOpenTagHelper(builder, open, true)
       initialWhitespace = TemplateHeader(builder)
       templateBodyNodes = TemplateBlock()
-      <CMD_CLOSE_DELTEMPLATE>
-      { templateNode = builder.build(); }
+      close = <CMD_CLOSE_DELTEMPLATE>
+      {
+        builder.setSourceLocation(createSrcLoc(open, close));
+        templateNode = builder.build();
+      }
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
       return null;  // continue trying to parse other templates
@@ -1485,8 +1492,11 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       TemplateOpenTagHelper(builder, open, false)
       initialWhitespace = ElementHeader(builder)
       templateBodyNodes = TemplateBlock()
-      <CMD_CLOSE_ELEMENT>
-      { templateNode = builder.build(); }
+      close = <CMD_CLOSE_ELEMENT>
+      {
+        builder.setSourceLocation(createSrcLoc(open, close));
+        templateNode = builder.build();
+      }
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_ELEMENT);
       return null;  // continue trying to parse other templates
@@ -1543,7 +1553,7 @@ private void TemplateOpenTagHelper(TemplateNodeBuilder builder, Token open, bool
     }
   }
   close = <CMD_END>
-  { builder.setSourceLocation(createSrcLoc(open, close)); }
+  { builder.setOpenTagLocation(createSrcLoc(open, close)); }
 }
 
 
