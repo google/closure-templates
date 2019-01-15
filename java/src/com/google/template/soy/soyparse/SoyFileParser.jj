@@ -1442,65 +1442,85 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 {
   Token open;
   TemplateNode templateNode = null;
-  TemplateNodeBuilder builder;
+  RawTextNode initialWhitespace = null;
+  List<StandaloneNode> templateBodyNodes = null;
 }
 {
   (
     open = <TEMPLATE_OPEN>
-    { builder = new TemplateBasicNodeBuilder(soyFileHeaderInfo, errorReporter); }
+    { TemplateBasicNodeBuilder builder = new TemplateBasicNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
-      templateNode = TemplateHelper(builder, open, false)
+      TemplateOpenTagHelper(builder, open, false)
+      initialWhitespace = TemplateHeader(builder)
+      templateBodyNodes = TemplateBlock()
       <CMD_CLOSE_TEMPLATE>
+      { templateNode = builder.build(); }
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
+      return null;  // continue trying to parse other templates
     } catch (AbortParsingError e) {
       // do nothing, continue trying to parse other templates
       return null;
     }
   |
     open = <DELTEMPLATE_OPEN>
-    { builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
+    { TemplateDelegateNodeBuilder builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
-      templateNode = TemplateHelper(builder, open, true)
+      TemplateOpenTagHelper(builder, open, true)
+      initialWhitespace = TemplateHeader(builder)
+      templateBodyNodes = TemplateBlock()
       <CMD_CLOSE_DELTEMPLATE>
+      { templateNode = builder.build(); }
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
+      return null;  // continue trying to parse other templates
     } catch (AbortParsingError e) {
       // do nothing, continue trying to parse other templates
       return null;
     }
   |
     open = <ELEMENT_OPEN>
+    { TemplateElementNodeBuilder builder = new TemplateElementNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
-      templateNode = ElementHelper(new TemplateElementNodeBuilder(soyFileHeaderInfo, errorReporter), open)
+      TemplateOpenTagHelper(builder, open, false)
+      initialWhitespace = ElementHeader(builder)
+      templateBodyNodes = TemplateBlock()
       <CMD_CLOSE_ELEMENT>
+      { templateNode = builder.build(); }
     } catch (ParseException e) {
       reportFileErrorAndSkipTo(e, CMD_CLOSE_ELEMENT);
+      return null;  // continue trying to parse other templates
     } catch (AbortParsingError e) {
       // do nothing, continue trying to parse other templates
       return null;
     }
   )
-  { return templateNode; }
+  {
+    if (initialWhitespace != null) {
+      templateNode.addChild(initialWhitespace);
+    }
+    if (templateBodyNodes != null) {
+      templateNode.addChildren(templateBodyNodes);
+    }
+    return templateNode;
+  }
 }
 
 
 /**
  * A helper for parsing everything except the open and close tags of a template.
  *
- * TemplateHelper -> TemplateName Attributes CmdEnd TemplateHeader TemplateBlock
+ * TemplateOpenTagHelper -> TemplateName Attributes CmdEnd
  *
  * @param builder Template node builder.
  * @param open The {template or {deltemplate token.
  * @param isDeltemplate True if the template is a deltemplate.
  */
-private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boolean isDeltemplate) :
+private void TemplateOpenTagHelper(TemplateNodeBuilder builder, Token open, boolean isDeltemplate) :
 {
   Identifier templateName;
   List<CommandTagAttribute> attributes;
   Token close;
-  RawTextNode initialWhitespace;
-  List<StandaloneNode> templateBodyNodes;
 }
 {
   {
@@ -1509,96 +1529,45 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
     builder.setId(nodeIdGen.genId());
   }
 
+  templateName = TemplateNameInDef(isDeltemplate)
+
+  attributes = Attributes()
+  {
+    builder.setCommandValues(templateName, attributes);
+    // We can't set soy doc until after setCommandValues due to conditions in the builder.
+    // --- Set the SoyDoc. ---
+    // special tokens are accessible from the non-special tokens that come after them.
+    Token soyDoc = open.specialToken;
+    if (soyDoc != null && soyDoc.kind == SOYDOC) {
+      builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
+    }
+  }
+  close = <CMD_END>
+  { builder.setSourceLocation(createSrcLoc(open, close)); }
+}
+
+
+/**
+ * A helper for parsing template name in the {template}, {deltemplate} or {element} definition.
+ * @param isDeltemplate True if the template is a deltemplate.
+ */
+private Identifier TemplateNameInDef(boolean isDeltemplate) :
+{
+  Identifier templateName;
+}
+{
   templateName = TemplateName()
   {
     if (!isDeltemplate && templateName.type() != Identifier.Type.DOT_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_TEMPLATE_NAME, templateName.identifier());
-    }
-    if (isDeltemplate && templateName.type() == Identifier.Type.DOT_IDENT) {
+    } else if (isDeltemplate && templateName.type() == Identifier.Type.DOT_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_DELTEMPLATE_NAME, templateName.identifier());
     }
   }
 
-  attributes = Attributes()
-  {
-    builder.setCommandValues(templateName, attributes);
-    // We can't set soy doc until after setCommandValues due to conditions in the builder.
-    // --- Set the SoyDoc. ---
-    // special tokens are accessible from the non-special tokens that come after them.
-    Token soyDoc = open.specialToken;
-    if (soyDoc != null && soyDoc.kind == SOYDOC) {
-      builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
-    }
-  }
-
-  close = <CMD_END>
-  { builder.setSourceLocation(createSrcLoc(open, close)); }
-
-  initialWhitespace = TemplateHeader(builder)
-  templateBodyNodes = TemplateBlock()
-
-  {
-    TemplateNode templateNode = builder.build();
-    if (initialWhitespace != null) {
-      templateNode.addChild(initialWhitespace);
-    }
-    templateNode.addChildren(templateBodyNodes);
-    return templateNode;
-  }
-}
-
-/**
- * A helper for parsing everything except the open and close tags of a template.
- *
- * TemplateHelper -> TemplateName Attributes CmdEnd TemplateHeader TemplateBlock
- *
- * @param builder Template node builder.
- */
-private TemplateNode ElementHelper(TemplateElementNodeBuilder builder, Token open) :
-{
-  Identifier templateName;
-  List<CommandTagAttribute> attributes;
-  RawTextNode initialWhitespace;
-  Token close;
-  List<StandaloneNode> templateBodyNodes;
-}
-{
-  {
-    // eagerly fetch the id to be backwards compatible.  if we delay allocating, all the ids in the
-    // file will change.  TODO(user): remove ids
-    builder.setId(nodeIdGen.genId());
-  }
-
-  templateName = TemplateName()
-
-  attributes = Attributes()
-  {
-    builder.setCommandValues(templateName, attributes);
-    // We can't set soy doc until after setCommandValues due to conditions in the builder.
-    // --- Set the SoyDoc. ---
-    // special tokens are accessible from the non-special tokens that come after them.
-    Token soyDoc = open.specialToken;
-    if (soyDoc != null && soyDoc.kind == SOYDOC) {
-      builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
-    }
-  }
-
-  close = <CMD_END>
-  { builder.setSourceLocation(createSrcLoc(open, close)); }
-
-  initialWhitespace = ElementHeader(builder)
-  templateBodyNodes = TemplateBlock()
-
-  {
-    TemplateNode templateNode = builder.build();
-    if (initialWhitespace != null) {
-      templateNode.addChild(initialWhitespace);
-    }
-    templateNode.addChildren(templateBodyNodes);
-    return templateNode;
-  }
+  { return templateName; }
 }
 
 
@@ -1795,6 +1764,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
  * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
+ *
+ * TODO(b/122855061): Merge Merge ElementHeader and TemplateHeader.
  */
 private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
 {
