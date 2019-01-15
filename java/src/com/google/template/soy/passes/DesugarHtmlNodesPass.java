@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -46,7 +47,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -84,7 +84,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     boolean needsSpaceSelfClosingTag;
 
     /** Tracks all the nodes that should replace the current node. */
-    final List<StandaloneNode> replacements = new ArrayList<>();
+    private Optional<ImmutableList<StandaloneNode>> replacements = Optional.absent();
 
     RewritingVisitor(IdGenerator idGenerator) {
       this.idGenerator = idGenerator;
@@ -100,18 +100,26 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       needsSpaceForAttribute = true;
 
       visitChildren(tag);
-
       // Synthetic tags are not rendered to raw HTML text. They are only rendered in backends that
       // emit code for HTML tags, like the iDOM backend.
-      if (!tag.isSynthetic()) {
-        replacements.add(createPrefix(tag instanceof HtmlOpenTagNode ? "<" : "</", tag));
-        replacements.addAll(tag.getChildren());
-        replacements.add(
-            createSuffix(
-                tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing()
-                    ? (needsSpaceSelfClosingTag ? " />" : "/>")
-                    : ">",
-                tag));
+      //
+      // Since this pass is not run by the iDOM back-end, just remove synthetic nodes here.
+      if (tag.isSynthetic()) {
+        replacements = Optional.of(ImmutableList.of());
+      } else {
+        replacements =
+            Optional.of(
+                ImmutableList.<StandaloneNode>builder()
+                    .add(createPrefix(tag instanceof HtmlOpenTagNode ? "<" : "</", tag))
+                    .addAll(tag.getChildren())
+                    .add(
+                        createSuffix(
+                            tag instanceof HtmlOpenTagNode
+                                    && ((HtmlOpenTagNode) tag).isSelfClosing()
+                                ? (needsSpaceSelfClosingTag ? " />" : "/>")
+                                : ">",
+                            tag))
+                    .build());
       }
 
       needsSpaceForAttribute = false;
@@ -131,9 +139,13 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     @Override
     protected void visitHtmlCommentNode(HtmlCommentNode node) {
       visitChildren(node);
-      replacements.add(createPrefix("<!--", node));
-      replacements.addAll(node.getChildren());
-      replacements.add(createSuffix("-->", node));
+      replacements =
+          Optional.of(
+              ImmutableList.<StandaloneNode>builder()
+                  .add(createPrefix("<!--", node))
+                  .addAll(node.getChildren())
+                  .add(createSuffix("-->", node))
+                  .build());
     }
 
     @Override
@@ -142,12 +154,16 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
       Quotes quotes = node.getQuotes();
       if (quotes == Quotes.NONE) {
-        replacements.addAll(node.getChildren());
+        replacements = Optional.of(ImmutableList.copyOf(node.getChildren()));
         needsSpaceSelfClosingTag = true;
       } else {
-        replacements.add(createPrefix(quotes.getQuotationCharacter(), node));
-        replacements.addAll(node.getChildren());
-        replacements.add(createSuffix(quotes.getQuotationCharacter(), node));
+        replacements =
+            Optional.of(
+                ImmutableList.<StandaloneNode>builder()
+                    .add(createPrefix(quotes.getQuotationCharacter(), node))
+                    .addAll(node.getChildren())
+                    .add(createSuffix(quotes.getQuotationCharacter(), node))
+                    .build());
         needsSpaceSelfClosingTag = false;
       }
     }
@@ -189,21 +205,23 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       //     space character
       // 2. if the preceding node is a quoted attribute value
       //    -This would always work, but is technically out of spec so we should probably avoid it.
+      ImmutableList.Builder<StandaloneNode> builder = ImmutableList.<StandaloneNode>builder();
       if (needsSpaceForAttribute) {
         // TODO(lukes): in this case, if the attribute is dynamic and ultimately renders the
         // empty string, we will render an extra space.
-        replacements.add(
+        builder.add(
             new RawTextNode(idGenerator.genId(), " ", node.getSourceLocation().getBeginLocation()));
       } else {
         // After any attribute, the next attribute will need a space character.
         needsSpaceForAttribute = true;
       }
-      replacements.add(node.getChild(0));
+      builder.add(node.getChild(0));
       if (node.hasValue()) {
-        replacements.add(new RawTextNode(idGenerator.genId(), "=", node.getEqualsLocation()));
+        builder.add(new RawTextNode(idGenerator.genId(), "=", node.getEqualsLocation()));
         // normally there would only be 1 child, but rewriting may have split it into multiple
-        replacements.addAll(node.getChildren().subList(1, node.numChildren()));
+        builder.addAll(node.getChildren().subList(1, node.numChildren()));
       }
+      replacements = Optional.of(builder.build());
     }
 
     @Override
@@ -291,18 +309,21 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       for (int i = 0; i < parent.numChildren(); i++) {
         C child = parent.getChild(i);
         visit(child);
-        if (!replacements.isEmpty()) {
+        if (replacements.isPresent()) {
+          // Note: if {@code replacements} is empty, the child node is simply removed. This happens
+          // for example if the child node is synthetic and was auto-injected during
+          // StrictHtmlValidationPass.
           parent.removeChild(i);
           // safe because every replacement always replaces a standalone node with other standalone
           // nodes.
           @SuppressWarnings("unchecked")
-          List<? extends C> typedReplacements = (List<? extends C>) replacements;
+          List<? extends C> typedReplacements = (List<? extends C>) replacements.get();
           parent.addChildren(i, typedReplacements);
-          i += replacements.size() - 1;
-          replacements.clear();
+          i += replacements.get().size() - 1;
+          replacements = Optional.absent();
         }
       }
-      checkState(replacements.isEmpty());
+      checkState(!replacements.isPresent());
     }
   }
 }
