@@ -20,6 +20,7 @@ import com.google.common.base.Predicate;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -47,10 +48,28 @@ final class SoyElementPass extends CompilerFilePass {
       SoyErrorKind.of(
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
 
-  private final ErrorReporter errorReporter;
+  private static final Predicate<SoyNode> OPEN_TAG_MATCHER =
+      new Predicate<SoyNode>() {
+        @Override
+        public boolean apply(SoyNode node) {
+          return node.getKind() == Kind.HTML_OPEN_TAG_NODE;
+        }
+      };
 
-  SoyElementPass(ErrorReporter errorReporter) {
+  private static final Predicate<SoyNode> CLOSE_TAG_MATCHER =
+      new Predicate<SoyNode>() {
+        @Override
+        public boolean apply(SoyNode node) {
+          return node.getKind() == Kind.HTML_CLOSE_TAG_NODE;
+        }
+      };
+
+  private final ErrorReporter errorReporter;
+  private final boolean checkTaggedPairs;
+
+  SoyElementPass(ErrorReporter errorReporter, boolean checkTaggedPairs) {
     this.errorReporter = errorReporter;
+    this.checkTaggedPairs = checkTaggedPairs;
   }
 
   @Override
@@ -59,7 +78,8 @@ final class SoyElementPass extends CompilerFilePass {
       if (!(template instanceof TemplateElementNode)) {
         continue;
       }
-
+      HtmlOpenTagNode firstOpenTagNode = null;
+      HtmlCloseTagNode lastCloseTagNode = null;
       VeLogNode firstVeLog =
           (VeLogNode)
               template.firstChildThatMatches(
@@ -69,30 +89,28 @@ final class SoyElementPass extends CompilerFilePass {
                       return node.getKind() == Kind.VE_LOG_NODE;
                     }
                   });
+
       if (firstVeLog != null) {
         if (template.getChildren().size() == 1) {
           errorReporter.report(firstVeLog.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         }
-        continue;
+        firstOpenTagNode = (HtmlOpenTagNode) firstVeLog.firstChildThatMatches(OPEN_TAG_MATCHER);
+        lastCloseTagNode = (HtmlCloseTagNode) firstVeLog.lastChildThatMatches(CLOSE_TAG_MATCHER);
+      } else {
+        firstOpenTagNode = (HtmlOpenTagNode) template.firstChildThatMatches(OPEN_TAG_MATCHER);
+        lastCloseTagNode = (HtmlCloseTagNode) template.lastChildThatMatches(CLOSE_TAG_MATCHER);
       }
-      HtmlOpenTagNode firstOpenTagNode =
-          (HtmlOpenTagNode)
-              template.firstChildThatMatches(
-                  new Predicate<SoyNode>() {
-                    @Override
-                    public boolean apply(SoyNode node) {
-                      return node.getKind() == Kind.HTML_OPEN_TAG_NODE;
-                    }
-                  });
 
-      if (firstOpenTagNode == null) {
-        // A prior pass will report an error if the Soy element has no open tag node,
-        // so just skip in this case.
-        // TODO: Put this check in when we switch the HTML validator, as it won't do that
-        // there.
+      if (firstOpenTagNode == null || !firstOpenTagNode.isSelfClosing()) {
+        if (firstOpenTagNode == null || lastCloseTagNode == null) {
+          errorReporter.report(template.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         continue;
       }
+        if (checkTaggedPairs) {
+          validateSoyElementHasOneRootTagNode(firstOpenTagNode, lastCloseTagNode);
+        }
       validateTagNodeHasOneChild(firstOpenTagNode);
+      }
       validateNoKey(firstOpenTagNode);
       validateNoDynamicTag(firstOpenTagNode);
     }
@@ -116,6 +134,16 @@ final class SoyElementPass extends CompilerFilePass {
   private void validateNoDynamicTag(HtmlOpenTagNode firstTagNode) {
     if (!firstTagNode.getTagName().isStatic()) {
       errorReporter.report(firstTagNode.getSourceLocation(), ROOT_IS_DYNAMIC_TAG);
+    }
+  }
+
+  private void validateSoyElementHasOneRootTagNode(
+      HtmlOpenTagNode firstNode, HtmlCloseTagNode lastCloseTagNode) {
+    if (firstNode.getTaggedPairs().size() != 1
+        || lastCloseTagNode.getTaggedPairs().size() != 1
+        || !firstNode.getTaggedPairs().get(0).equals(lastCloseTagNode)
+        || !lastCloseTagNode.getTaggedPairs().get(0).equals(firstNode)) {
+      errorReporter.report(lastCloseTagNode.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
     }
   }
 }

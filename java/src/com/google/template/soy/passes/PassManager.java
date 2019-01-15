@@ -335,7 +335,10 @@ public final class PassManager {
       addPass(new KeyCommandPass(errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
       // validation).
-      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
+      addPass(
+          new SoyElementPass(
+              errorReporter, options.getExperimentalFeatures().contains("new_html_matcher")),
+          singleFilePassesBuilder);
 
       // Cross template checking passes
 
