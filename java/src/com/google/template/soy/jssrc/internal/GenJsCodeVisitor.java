@@ -51,6 +51,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -109,6 +110,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -409,6 +411,41 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       throw new AssertionError("impossible");
     }
 
+    // add declarations for the ijdata params
+    // This takes advantage of the way '@record' types in closure are 'open'.
+    // Unfortunately clutz doesn't understand this:
+    // https://github.com/angular/clutz/issues/832
+    // So TS users will not be able to see the property definitions.
+    // The most practical solution to that is for soy to generate its own .d.ts files.
+    Map<String, SoyType> ijData = getAllIjDataParams(node);
+    if (!ijData.isEmpty()) {
+      GoogRequire require = GoogRequire.create("soy");
+      jsCodeBuilder.appendLine();
+      for (Map.Entry<String, SoyType> entry : ijData.entrySet()) {
+        jsCodeBuilder.appendLine();
+        //
+        jsCodeBuilder.appendLine(
+            JsDoc.builder()
+                // Because every declaration can declare a type, we can get errors if they don't
+                // declare identical types.  There isn't a good way to force identical declarations
+                // so we just suppress the duplicate error warning.
+                .addParameterizedAnnotation("suppress", "duplicate")
+                // declare every field as optional.  This is because if a template is unused and
+                // declares an ij param we don't want to force people to supply a value.
+                .addParameterizedAnnotation(
+                    "type", getJsTypeForParam(entry.getValue()).typeExpr() + "|undefined")
+                .build()
+                .toString());
+        jsCodeBuilder.append(
+            require
+                .reference()
+                .dotAccess("IjData")
+                .dotAccess("prototype")
+                .dotAccess(entry.getKey())
+                .asStatement());
+      }
+    }
+
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       jsCodeBuilder.appendLine().appendLine();
@@ -418,6 +455,35 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.appendCodeTo(file);
     jsFilesContents.add(file.toString());
     jsCodeBuilder = null;
+  }
+
+  private Map<String, SoyType> getAllIjDataParams(SoyFileNode node) {
+    Map<String, SoyType> params = new LinkedHashMap<>();
+    for (TemplateNode template : node.getChildren()) {
+      for (TemplateParam param : template.getInjectedParams()) {
+        SoyType oldType = params.put(param.name(), param.type());
+        if (oldType != null) {
+          // merge the types
+          params.put(
+              param.name(),
+              typeRegistry.getOrCreateUnionType(Arrays.asList(param.type(), oldType)));
+        }
+      }
+      for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
+        if (varRef.isDollarSignIjParameter()) {
+          // for the most part getType() is '?' but it may be special cased elsewhere in the
+          // compiler so use the var ref type.  (e.g. ContentSecurityPolicyNonceInjectionPass)
+          SoyType oldType = params.put(varRef.getName(), varRef.getType());
+          if (oldType != null) {
+            // merge the types
+            params.put(
+                varRef.getName(),
+                typeRegistry.getOrCreateUnionType(Arrays.asList(varRef.getType(), oldType)));
+          }
+        }
+      }
+    }
+    return params;
   }
 
   /**
@@ -690,8 +756,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     } else {
       jsDocBuilder.addParam("opt_data", "Object<string, *>=");
     }
-    jsDocBuilder.addParam("opt_ijData", "Object<string, *>=");
-    jsDocBuilder.addParam("opt_ijData_deprecated", "Object<string, *>=");
+    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("soy"));
+    // TODO(lukes): remove |Object<string, *> and only add the '=' if ij data is truly optional
+    jsDocBuilder.addParam("opt_ijData", "soy.IjData|Object<string, *>=");
+    jsDocBuilder.addParam("opt_ijData_deprecated", "soy.IjData|Object<string, *>=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
@@ -711,7 +779,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         Statement.assign(
             "opt_ijData",
             Expression.id("opt_ijData_deprecated")
-                .or(Expression.id("opt_ijData"), templateTranslationContext.codeGenerator())));
+                .or(Expression.id("opt_ijData"), templateTranslationContext.codeGenerator())
+                .castAs("!soy.IjData")));
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {

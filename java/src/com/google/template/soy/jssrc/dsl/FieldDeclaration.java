@@ -33,19 +33,19 @@ public abstract class FieldDeclaration extends Expression {
 
   abstract String fieldName();
 
-  abstract JsDoc jsdoc();
+  abstract JsDoc jsDoc();
 
   @Nullable
   abstract Expression value();
 
-  public static FieldDeclaration createWithoutValue(String fieldName, JsDoc jsdoc) {
+  public static FieldDeclaration createWithoutValue(String fieldName, JsDoc jsDoc) {
     return new AutoValue_FieldDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(), fieldName, jsdoc, null);
+        /* initialStatements= */ ImmutableList.<Statement>of(), fieldName, jsDoc, null);
   }
 
-  public static FieldDeclaration create(String fieldName, JsDoc jsdoc, Expression value) {
+  public static FieldDeclaration create(String fieldName, JsDoc jsDoc, Expression value) {
     return new AutoValue_FieldDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(), fieldName, jsdoc, value);
+        /* initialStatements= */ ImmutableList.<Statement>of(), fieldName, jsDoc, value);
   }
 
   @Override
@@ -60,6 +60,7 @@ public abstract class FieldDeclaration extends Expression {
     if (value() != null) {
       value().collectRequires(collector);
     }
+    jsDoc().collectRequires(collector);
   }
 
   @Override
@@ -69,7 +70,7 @@ public abstract class FieldDeclaration extends Expression {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(jsdoc());
+    ctx.append(jsDoc());
     Expression assignment = Expression.id("this").dotAccess(fieldName());
     if (value() != null) {
       assignment = assignment.assign(value());

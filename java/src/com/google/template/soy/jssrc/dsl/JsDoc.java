@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -32,7 +33,15 @@ public abstract class JsDoc {
     return new AutoValue_JsDoc.Builder();
   }
 
+  abstract ImmutableList<GoogRequire> requires();
+
   abstract ImmutableList<Param> params();
+
+  public void collectRequires(RequiresCollector collector) {
+    for (GoogRequire require : requires()) {
+      collector.add(require);
+    }
+  }
 
   /** Builder for JsDoc. */
   @AutoValue.Builder
@@ -40,7 +49,14 @@ public abstract class JsDoc {
 
     abstract ImmutableList.Builder<Param> paramsBuilder();
 
+    abstract ImmutableList.Builder<GoogRequire> requiresBuilder();
+
     public abstract JsDoc build();
+
+    public Builder addGoogRequire(GoogRequire require) {
+      requiresBuilder().add(require);
+      return this;
+    }
 
     public Builder addParameterizedAnnotation(String name, String value) {
       paramsBuilder().add(Param.create(name, value));

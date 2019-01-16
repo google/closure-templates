@@ -62,6 +62,7 @@ abstract class FunctionDeclaration extends Expression {
   @Override
   public void collectRequires(RequiresCollector collector) {
     body().collectRequires(collector);
+    jsDoc().collectRequires(collector);
   }
 
   @Override

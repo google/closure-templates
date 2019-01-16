@@ -124,6 +124,7 @@ public abstract class ClassExpression extends Expression {
     @Override
     public void collectRequires(RequiresCollector collector) {
       body().collectRequires(collector);
+      jsDoc().collectRequires(collector);
     }
 
     @Override

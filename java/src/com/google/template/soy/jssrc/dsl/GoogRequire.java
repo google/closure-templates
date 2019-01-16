@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.dottedIdWithRequires;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -30,13 +31,24 @@ import com.google.errorprone.annotations.Immutable;
 public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   private static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
+  private static final Expression GOOG_REQUIRE_TYPE = dottedIdNoRequire("goog.requireType");
 
   /**
    * Creates a new {@code GoogRequire} that requires the given symbol: {@code
    * goog.require('symbol'); }
    */
   public static GoogRequire create(String symbol) {
-    return new AutoValue_GoogRequire(symbol, GOOG_REQUIRE.call(stringLiteral(symbol)));
+    return new AutoValue_GoogRequire(
+        symbol, GOOG_REQUIRE.call(stringLiteral(symbol)), /*isTypeRequire=*/ false);
+  }
+
+  /**
+   * Creates a new {@code GoogRequire} that requires the given symbol: {@code
+   * goog.requireType('symbol'); }
+   */
+  public static GoogRequire createTypeRequire(String symbol) {
+    return new AutoValue_GoogRequire(
+        symbol, GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)), /*isTypeRequire=*/ true);
   }
 
   /**
@@ -47,9 +59,22 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     CodeChunkUtils.checkId(alias);
     return new AutoValue_GoogRequire(
         symbol,
+        VariableDeclaration.builder(alias).setRhs(GOOG_REQUIRE.call(stringLiteral(symbol))).build(),
+        /*isTypeRequire=*/ false);
+  }
+
+  /**
+   * Creates a new {@code GoogRequire} that requires the given symbol and aliases it to the given
+   * name: {@code var alias = goog.requireType('symbol'); }
+   */
+  public static GoogRequire createTypeRequireWithAlias(String symbol, String alias) {
+    CodeChunkUtils.checkId(alias);
+    return new AutoValue_GoogRequire(
+        symbol,
         VariableDeclaration.builder(alias)
-            .setRhs(GOOG_REQUIRE.call(stringLiteral(symbol)))
-            .build());
+            .setRhs(GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)))
+            .build(),
+        /*isTypeRequire=*/ true);
   }
 
   /** The symbol to require. */
@@ -57,6 +82,8 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   /** A code chunk that will generate the {@code goog.require()}. */
   abstract CodeChunk chunk();
+
+  abstract boolean isTypeRequire();
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public Expression reference() {
@@ -83,6 +110,33 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   public void writeTo(StringBuilder sb) {
     sb.append(chunk().getStatementsForInsertingIntoForeignCodeAtIndent(0));
+  }
+
+  /** For 2 goog requires with the same symbol. Return the perfered one. */
+  public GoogRequire merge(GoogRequire other) {
+    checkArgument(other.symbol().equals(symbol()));
+    if (other.equals(this)) {
+      return this;
+    }
+    // if symbols are equal and the references are, then they must differ only by requireType or not
+    // prefer the non requireType symbol
+    if ((other.chunk() instanceof VariableDeclaration
+            && chunk() instanceof VariableDeclaration
+            && ((VariableDeclaration) chunk())
+                .varName()
+                .equals(((VariableDeclaration) other.chunk()).varName()))
+        || (!(chunk() instanceof VariableReference)
+            && !(other.chunk() instanceof VariableDeclaration))) {
+      if (other.isTypeRequire()) {
+        return this;
+      }
+      return other;
+    }
+    throw new IllegalArgumentException(
+        "Found the same namespace added as a require in multiple incompatible ways: "
+            + other
+            + " vs. "
+            + this);
   }
 
   @Override

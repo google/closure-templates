@@ -85,6 +85,9 @@ public abstract class VariableDeclaration extends Statement {
     if (rhs() != null) {
       rhs().collectRequires(collector);
     }
+    if (jsDoc() != null) {
+      jsDoc().collectRequires(collector);
+    }
   }
 
   /** A builder for a {@link VariableDeclaration}. */

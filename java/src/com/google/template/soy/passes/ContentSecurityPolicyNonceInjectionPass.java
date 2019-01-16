@@ -34,7 +34,9 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.AnyType;
 import javax.annotation.Nullable;
 
 /**
@@ -74,6 +76,8 @@ import javax.annotation.Nullable;
  */
 public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
+  public static final InjectedParam DEFN =
+      new InjectedParam(CSP_NONCE_VARIABLE_NAME, SourceLocation.UNKNOWN, AnyType.getInstance());
 
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
@@ -204,6 +208,6 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         CSP_NONCE_VARIABLE_NAME,
         insertionLocation,
         /* isDollarSignIjParameter= */ true,
-        /* defn= */ null /* will be assigned by resolvenamespass */);
+        /* defn= */ DEFN);
   }
 }

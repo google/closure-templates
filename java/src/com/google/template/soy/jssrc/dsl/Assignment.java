@@ -42,6 +42,9 @@ abstract class Assignment extends Statement {
   @Override
   public void collectRequires(RequiresCollector collector) {
     rhs().collectRequires(collector);
+    if (jsDoc() != null) {
+      jsDoc().collectRequires(collector);
+    }
   }
 
   @Override

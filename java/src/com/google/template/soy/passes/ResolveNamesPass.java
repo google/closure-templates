@@ -386,6 +386,11 @@ public final class ResolveNamesPass extends CompilerFilePass {
 
     @Override
     protected void visitVarRefNode(VarRefNode varRef) {
+      if (varRef.getDefnDecl() != null) {
+        // some passes (e.g. ContentSecurityPolicyNonceInjectionPass) add var refs with accurate
+        // defns.
+        return;
+      }
       if (varRef.isDollarSignIjParameter()) {
         InjectedParam ijParam = ijParams.get(varRef.getName());
         if (ijParam == null) {
