@@ -89,16 +89,15 @@ final class SoyElementPass extends CompilerFilePass {
                       return node.getKind() == Kind.VE_LOG_NODE;
                     }
                   });
+      firstOpenTagNode = (HtmlOpenTagNode) template.firstChildThatMatches(OPEN_TAG_MATCHER);
+      lastCloseTagNode = (HtmlCloseTagNode) template.lastChildThatMatches(CLOSE_TAG_MATCHER);
 
       if (firstVeLog != null) {
-        if (template.getChildren().size() == 1) {
+        if (firstOpenTagNode != null || lastCloseTagNode != null) {
           errorReporter.report(firstVeLog.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         }
         firstOpenTagNode = (HtmlOpenTagNode) firstVeLog.firstChildThatMatches(OPEN_TAG_MATCHER);
         lastCloseTagNode = (HtmlCloseTagNode) firstVeLog.lastChildThatMatches(CLOSE_TAG_MATCHER);
-      } else {
-        firstOpenTagNode = (HtmlOpenTagNode) template.firstChildThatMatches(OPEN_TAG_MATCHER);
-        lastCloseTagNode = (HtmlCloseTagNode) template.lastChildThatMatches(CLOSE_TAG_MATCHER);
       }
 
       if (firstOpenTagNode == null || !firstOpenTagNode.isSelfClosing()) {
