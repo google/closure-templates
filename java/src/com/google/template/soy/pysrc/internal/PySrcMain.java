@@ -76,7 +76,8 @@ public final class PySrcMain {
     BidiGlobalDir bidiGlobalDir =
         SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
     try (SoyScopedData.InScope inScope = apiCallScope.enter(/* msgBundle= */ null, bidiGlobalDir)) {
-      return createVisitor(pySrcOptions, currentManifest).gen(soyTree, errorReporter);
+      return createVisitor(pySrcOptions, inScope.getBidiGlobalDir(), errorReporter, currentManifest)
+          .gen(soyTree, errorReporter);
     }
   }
 
@@ -167,24 +168,35 @@ public final class PySrcMain {
 
   @VisibleForTesting
   static GenPyCodeVisitor createVisitor(
-      SoyPySrcOptions pySrcOptions, ImmutableMap<String, String> currentManifest) {
+      SoyPySrcOptions pySrcOptions,
+      BidiGlobalDir bidiGlobalDir,
+      ErrorReporter errorReporter,
+      ImmutableMap<String, String> currentManifest) {
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider
+    final PythonValueFactoryImpl pluginValueFactory =
+        new PythonValueFactoryImpl(errorReporter, bidiGlobalDir);
     class PyCallExprVisitorSupplier implements Supplier<GenPyCallExprVisitor> {
       GenPyExprsVisitorFactory factory;
 
       @Override
       public GenPyCallExprVisitor get() {
-        return new GenPyCallExprVisitor(isComputableAsPyExprs, checkNotNull(factory));
+        return new GenPyCallExprVisitor(
+            isComputableAsPyExprs, pluginValueFactory, checkNotNull(factory));
       }
     }
     PyCallExprVisitorSupplier provider = new PyCallExprVisitorSupplier();
     GenPyExprsVisitorFactory genPyExprsFactory =
-        new GenPyExprsVisitorFactory(isComputableAsPyExprs, provider);
+        new GenPyExprsVisitorFactory(isComputableAsPyExprs, pluginValueFactory, provider);
     provider.factory = genPyExprsFactory;
 
     return new GenPyCodeVisitor(
-        pySrcOptions, currentManifest, isComputableAsPyExprs, genPyExprsFactory, provider.get());
+        pySrcOptions,
+        currentManifest,
+        isComputableAsPyExprs,
+        genPyExprsFactory,
+        provider.get(),
+        pluginValueFactory);
   }
 }

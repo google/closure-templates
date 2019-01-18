@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy.plugin.javascript.restricted;
+package com.google.template.soy.plugin.python.restricted;
 
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.util.List;
 
 /**
- * A {@link SoySourceFunction} that generates code to be called at JavaScript render time. All
- * SoyJavaScriptSourceFunction implementations must be annotated with {@literal @}{@link
+ * A {@link SoySourceFunction} that generates code to be called at Python render time. All
+ * SoyPythonFunction implementations must be annotated with {@literal @}{@link
  * com.google.template.soy.shared.restricted.SoyFunctionSignature}.
  */
-public interface SoyJavaScriptSourceFunction extends SoySourceFunction {
+public interface SoyPythonSourceFunction extends SoySourceFunction {
   /**
-   * Instructs Soy as to how to implement the function when compiling to JavaScript.
+   * Instructs Soy as to how to implement the function when compiling to Python.
    *
    * <p>The {@code args} can only represent the types that can represent all values of the type
    * listed in the function signature. Additionally, the return value must represent a type
    * compatible with the returnType of the function signature.
    */
-  JavaScriptValue applyForJavaScriptSource(
-      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context);
+  PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context);
 }

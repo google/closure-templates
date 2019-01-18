@@ -75,12 +75,14 @@ public final class MsgFuncGenerator {
 
   MsgFuncGenerator(
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
+      PythonValueFactoryImpl pluginFactoryImpl,
       MsgNode msgNode,
       LocalVariableStack localVarExprs,
       ErrorReporter errorReporter) {
     this.msgNode = msgNode;
     this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
-    this.translateToPyExprVisitor = new TranslateToPyExprVisitor(localVarExprs, errorReporter);
+    this.translateToPyExprVisitor =
+        new TranslateToPyExprVisitor(localVarExprs, pluginFactoryImpl, errorReporter);
     String translator = PyExprUtils.TRANSLATOR_NAME;
 
     if (this.msgNode.isPlrselMsg()) {

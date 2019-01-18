@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
+  private final PythonValueFactoryImpl pluginValueFactory;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
@@ -59,8 +60,10 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
   GenPyCallExprVisitor(
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+      PythonValueFactoryImpl pluginValueFactory,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
+    this.pluginValueFactory = pluginValueFactory;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
   }
 
@@ -160,7 +163,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     } else {
       // Case 2: Delegate call with variant expression.
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarStack, errorReporter);
+          new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, errorReporter);
       variantPyExpr = translator.exec(variantSoyExpr);
     }
     String calleeExprText =
@@ -184,7 +187,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    */
   public String genObjToPass(CallNode callNode) {
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarStack, errorReporter);
+        new TranslateToPyExprVisitor(localVarStack, pluginValueFactory, errorReporter);
 
     // Generate the expression for the original data to pass.
     String dataToPass;

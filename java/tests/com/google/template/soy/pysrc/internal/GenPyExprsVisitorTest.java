@@ -86,8 +86,7 @@ public final class GenPyExprsVisitorTest {
             + "{else}\n"
             + "  Bleh\n"
             + "{/if}\n";
-    String expectedPyExprText =
-        "('Blah' if data.get('goo') else '') if data.get('boo') else 'Bleh'";
+    String expectedPyExprText = "'Blah' if data.get('goo') else '' if data.get('boo') else 'Bleh'";
 
     assertThatSoyExpr(soyNodeCode)
         .compilesTo(

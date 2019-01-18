@@ -47,6 +47,13 @@ public final class PyExprUtils {
   /** Expression constant for empty string. */
   private static final PyExpr EMPTY_STRING = new PyStringExpr("''");
 
+  public static final int CALL_PRECEDENCE = 9;
+
+  public static final int SUBSCRIPT_PRECEDENCE = 9;
+  public static final int GETPROP_PRECEDENCE = 9;
+
+  public static final int IN_PRECEDENCE = 5;
+
   /**
    * Map used to provide operator precedences in Python.
    *
@@ -145,7 +152,9 @@ public final class PyExprUtils {
    * @return The PyExpr potentially wrapped in parenthesis.
    */
   public static PyExpr maybeProtect(PyExpr expr, int minSafePrecedence) {
-    if (expr.getPrecedence() > minSafePrecedence) {
+    // all python operators are left associative, so if this has equivalent precedence we don't need
+    // to wrap
+    if (expr.getPrecedence() >= minSafePrecedence) {
       return expr;
     } else {
       return new PyExpr("(" + expr.getText() + ")", Integer.MAX_VALUE);

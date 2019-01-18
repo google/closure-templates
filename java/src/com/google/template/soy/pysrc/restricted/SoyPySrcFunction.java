@@ -24,7 +24,9 @@ import java.util.List;
  *
  * <p>Important: This may only be used in implementing function plugins.
  *
+ * @deprecated use SoyPythonSourceFunction instead.
  */
+@Deprecated
 public interface SoyPySrcFunction extends SoyFunction {
 
   /**

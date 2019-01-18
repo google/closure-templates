@@ -50,6 +50,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -112,9 +113,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private final LocalVariableStack localVarExprs;
 
   private final ErrorReporter errorReporter;
+  private final PythonValueFactoryImpl pluginValueFactory;
 
-  TranslateToPyExprVisitor(LocalVariableStack localVarExprs, ErrorReporter errorReporter) {
+  TranslateToPyExprVisitor(
+      LocalVariableStack localVarExprs,
+      PythonValueFactoryImpl pluginValueFactory,
+      ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+    this.pluginValueFactory = pluginValueFactory;
     this.localVarExprs = localVarExprs;
   }
 
@@ -418,6 +424,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     Object soyFunction = node.getSoyFunction();
     if (soyFunction instanceof BuiltinFunction) {
       return visitNonPluginFunction(node, (BuiltinFunction) soyFunction);
+    } else if (soyFunction instanceof SoyPythonSourceFunction) {
+      return pluginValueFactory.applyFunction(
+          node.getSourceLocation(),
+          node.getFunctionName(),
+          (SoyPythonSourceFunction) soyFunction,
+          visitChildren(node));
     } else if (soyFunction instanceof SoyPySrcFunction) {
       List<PyExpr> args = visitChildren(node);
       return ((SoyPySrcFunction) soyFunction).computeForPySrc(args);

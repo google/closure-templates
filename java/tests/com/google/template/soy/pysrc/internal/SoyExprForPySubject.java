@@ -30,6 +30,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -109,6 +110,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
+    final PythonValueFactoryImpl pluginValueFactory =
+        new PythonValueFactoryImpl(ErrorReporter.exploding(), BidiGlobalDir.LTR);
     // There is a circular dependency between the GenPyExprsVisitorFactory and GenPyCallExprVisitor
     // here we resolve it with a mutable field in a custom provider
     class PyCallExprVisitorSupplier implements Supplier<GenPyCallExprVisitor> {
@@ -116,12 +119,13 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
 
       @Override
       public GenPyCallExprVisitor get() {
-        return new GenPyCallExprVisitor(isComputableAsPyExprs, checkNotNull(factory));
+        return new GenPyCallExprVisitor(
+            isComputableAsPyExprs, pluginValueFactory, checkNotNull(factory));
       }
     }
     PyCallExprVisitorSupplier provider = new PyCallExprVisitorSupplier();
     GenPyExprsVisitorFactory genPyExprsFactory =
-        new GenPyExprsVisitorFactory(isComputableAsPyExprs, provider);
+        new GenPyExprsVisitorFactory(isComputableAsPyExprs, pluginValueFactory, provider);
     provider.factory = genPyExprsFactory;
     GenPyExprsVisitor genPyExprsVisitor =
         genPyExprsFactory.create(localVarExprs, ErrorReporter.exploding());
@@ -172,7 +176,11 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     ExprNode exprNode = node.getExpr();
 
     PyExpr actualPyExpr =
-        new TranslateToPyExprVisitor(localVarExprs, ErrorReporter.exploding()).exec(exprNode);
+        new TranslateToPyExprVisitor(
+                localVarExprs,
+                new PythonValueFactoryImpl(ErrorReporter.exploding(), BidiGlobalDir.LTR),
+                ErrorReporter.exploding())
+            .exec(exprNode);
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
     assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
 

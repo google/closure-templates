@@ -60,14 +60,17 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   /** Injectable factory for creating an instance of this class. */
   public static final class GenPyExprsVisitorFactory {
     private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
+    private final PythonValueFactoryImpl pluginValueFactory;
     // depend on a Supplier since there is a circular dependency between GenPyExprsVisitorFactory
     // and GenPyCallExprVisitor
     private final Supplier<GenPyCallExprVisitor> genPyCallExprVisitor;
 
     GenPyExprsVisitorFactory(
         IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
+        PythonValueFactoryImpl pluginValueFactory,
         Supplier<GenPyCallExprVisitor> genPyCallExprVisitor) {
       this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
+      this.pluginValueFactory = pluginValueFactory;
       this.genPyCallExprVisitor = genPyCallExprVisitor;
     }
 
@@ -76,6 +79,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
           isComputableAsPyExprVisitor,
           this,
           genPyCallExprVisitor.get(),
+          pluginValueFactory,
           localVarExprs,
           errorReporter);
     }
@@ -84,6 +88,8 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
+
+  private final PythonValueFactoryImpl pluginValueFactory;
 
   private final GenPyCallExprVisitor genPyCallExprVisitor;
 
@@ -98,11 +104,13 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
+      PythonValueFactoryImpl pluginValueFactory,
       LocalVariableStack localVarExprs,
       ErrorReporter errorReporter) {
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
+    this.pluginValueFactory = pluginValueFactory;
     this.localVarExprs = localVarExprs;
     this.errorReporter = errorReporter;
   }
@@ -172,7 +180,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitPrintNode(PrintNode node) {
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
 
     PyExpr pyExpr = translator.exec(node.getExpr());
 
@@ -249,7 +257,8 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   }
 
   private PyStringExpr generateMsgFunc(MsgNode msg) {
-    return new MsgFuncGenerator(genPyExprsVisitorFactory, msg, localVarExprs, errorReporter)
+    return new MsgFuncGenerator(
+            genPyExprsVisitorFactory, pluginValueFactory, msg, localVarExprs, errorReporter)
         .getPyExpr();
   }
 
@@ -263,7 +272,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     GenPyExprsVisitor genPyExprsVisitor =
         genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
 
     StringBuilder pyExprTextSb = new StringBuilder();
 
