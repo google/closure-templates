@@ -241,10 +241,11 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
       // Apply directive.
       expr =
           SoyJsPluginUtils.applyDirective(
-              translationContext.codeGenerator(),
               expr,
               (SoyJsSrcPrintDirective) directive,
-              argChunks);
+              argChunks,
+              node.getSourceLocation(),
+              errorReporter);
     }
 
     chunks.add(expr);

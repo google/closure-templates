@@ -16,16 +16,29 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -63,6 +76,16 @@ public final class SoyJsPluginUtils {
     return Expression.operation(op, operands).assertExpr();
   }
 
+  private static final SoyErrorKind UNEXPECTED_PLUGIN_ERROR =
+      SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
+
+  private static String formatPlain(String innerFmt) {
+    return "Error in plugin implementation for {0} ''{1}''."
+        + "\n"
+        + innerFmt
+        + "\nPlugin implementation: {2}";
+  }
+
   /**
    * Applies the given print directive to {@code expr} and returns the result.
    *
@@ -72,12 +95,18 @@ public final class SoyJsPluginUtils {
    * @param args Print directive args, if any.
    */
   public static Expression applyDirective(
-      CodeChunk.Generator generator,
       Expression expr,
       SoyJsSrcPrintDirective directive,
-      List<Expression> args) {
+      List<Expression> args,
+      SourceLocation location,
+      ErrorReporter errorReporter) {
     List<JsExpr> argExprs = Lists.transform(args, TO_JS_EXPR);
-    JsExpr applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
+    JsExpr applied;
+    try {
+      applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
+    } catch (Throwable t) {
+      applied = report(location, directive, t, errorReporter);
+    }
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
     expr.collectRequires(collector);
     for (Expression arg : args) {
@@ -96,5 +125,60 @@ public final class SoyJsPluginUtils {
       initialStatements.addAll(arg.initialStatements());
     }
     return fromExpr(applied, collector.get()).withInitialStatements(initialStatements.build());
+  }
+
+  public static Expression applySoyFunction(
+      SoyJsSrcFunction soyJsSrcFunction,
+      List<Expression> args,
+      SourceLocation location,
+      ErrorReporter errorReporter) {
+    List<JsExpr> functionInputs = new ArrayList<>(args.size());
+    List<Statement> initialStatements = new ArrayList<>();
+    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+
+    // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
+    // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
+    for (Expression arg : args) {
+      arg.collectRequires(collector);
+      functionInputs.add(arg.singleExprOrName());
+      Iterables.addAll(initialStatements, arg.initialStatements());
+    }
+
+    // Compute the function on the JsExpr inputs.
+    if (soyJsSrcFunction instanceof SoyLibraryAssistedJsSrcFunction) {
+      Collection<String> requires = ImmutableSet.of();
+      try {
+        requires = ((SoyLibraryAssistedJsSrcFunction) soyJsSrcFunction).getRequiredJsLibNames();
+      } catch (Throwable t) {
+        report(location, soyJsSrcFunction, t, errorReporter);
+      }
+      for (String name : requires) {
+        collector.add(GoogRequire.create(name));
+      }
+    }
+    JsExpr outputExpr;
+    try {
+      outputExpr = soyJsSrcFunction.computeForJsSrc(functionInputs);
+    } catch (Throwable t) {
+      outputExpr = report(location, soyJsSrcFunction, t, errorReporter);
+    }
+    Expression functionOutput = dontTrustPrecedenceOf(outputExpr, collector.get());
+
+    return functionOutput.withInitialStatements(initialStatements);
+  }
+
+  private static JsExpr report(
+      SourceLocation location, Object obj, Throwable t, ErrorReporter errorReporter) {
+    BaseUtils.trimStackTraceTo(t, SoyJsPluginUtils.class);
+    errorReporter.report(
+        location,
+        UNEXPECTED_PLUGIN_ERROR,
+        obj instanceof SoyJsSrcFunction ? "function" : "directive",
+        obj instanceof SoyJsSrcFunction
+            ? ((SoyJsSrcFunction) obj).getName()
+            : ((SoyJsSrcPrintDirective) obj).getName(),
+        obj.getClass().getName(),
+        Throwables.getStackTraceAsString(t));
+    return new JsExpr("if you see this, soy swallowed an error", Integer.MAX_VALUE);
   }
 }

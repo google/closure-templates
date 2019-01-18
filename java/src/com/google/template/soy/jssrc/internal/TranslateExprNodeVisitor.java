@@ -23,7 +23,6 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
-import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.not;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
@@ -48,7 +47,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.error.ErrorReporter;
@@ -82,14 +80,13 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -638,32 +635,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
       }
 
-      List<Expression> args = visitChildren(node);
-      List<JsExpr> functionInputs = new ArrayList<>(args.size());
-      List<Statement> initialStatements = new ArrayList<>();
-      RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-
-      // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
-      // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
-      for (Expression arg : args) {
-        arg.collectRequires(collector);
-        functionInputs.add(arg.singleExprOrName());
-        Iterables.addAll(initialStatements, arg.initialStatements());
-      }
-
-      // Compute the function on the JsExpr inputs.
-      SoyJsSrcFunction soyJsSrcFunction = (SoyJsSrcFunction) soyFunction;
-      if (soyJsSrcFunction instanceof SoyLibraryAssistedJsSrcFunction) {
-        for (String name :
-            ((SoyLibraryAssistedJsSrcFunction) soyJsSrcFunction).getRequiredJsLibNames()) {
-          collector.add(GoogRequire.create(name));
-        }
-      }
-
-      JsExpr outputExpr = soyJsSrcFunction.computeForJsSrc(functionInputs);
-      Expression functionOutput = dontTrustPrecedenceOf(outputExpr, collector.get());
-
-      return functionOutput.withInitialStatements(initialStatements);
+      return SoyJsPluginUtils.applySoyFunction(
+          (SoyJsSrcFunction) soyFunction,
+          visitChildren(node),
+          node.getSourceLocation(),
+          errorReporter);
     }
   }
 
