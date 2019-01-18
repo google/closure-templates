@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -29,7 +28,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.StringType;
 import java.util.Objects;
 
@@ -49,7 +48,7 @@ final class KeyCommandPass extends CompilerFilePass {
       SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
-      SoyErrorKind.of("Unsupported type: keys must be of type string or integer.");
+      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string or integer.");
 
   private static final SoyErrorKind KEY_ELEMENT_AMBIGUOUS =
       SoyErrorKind.of(
@@ -114,24 +113,17 @@ final class KeyCommandPass extends CompilerFilePass {
 
   private void checkNodeIsSupportedType(KeyNode node) {
     ExprNode expr = node.getExpr().getRoot();
-    switch (expr.getKind()) {
-      case INTEGER_NODE:
-      case STRING_NODE:
-        // Above types are supported.
-        break;
-      case VAR_REF_NODE:
-        SoyType type = ((VarRefNode) expr).getType();
-        if (type.isAssignableFrom(IntType.getInstance())
-            || type.isAssignableFrom(StringType.getInstance())) {
-          // Allow variable types of string, int, or in the case of a union, if any of the union
-          // types are string or int.
-          // The gencode then asserts that a supported type is passed in at runtime.
-          break;
-        }
-        // Fall through.
-      default:
-        // All other types are not supported.
-        errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE);
+    if (expr.getType().getKind() == Kind.ANY || expr.getType().getKind() == Kind.UNKNOWN) {
+      errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE, expr.getType());
+      return;
+    }
+
+    // Note that GenIncrementalDomCodeVisitor also asserts that a supported type is passed
+    // in, so for union types (e.g. string|bool), that check will catch a bool passed in
+    // at runtime.
+    if (!expr.getType().isAssignableFrom(IntType.getInstance())
+        && !expr.getType().isAssignableFrom(StringType.getInstance())) {
+      errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE, expr.getType());
     }
   }
 }
