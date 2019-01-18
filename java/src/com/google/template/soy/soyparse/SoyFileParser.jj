@@ -125,6 +125,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplatePropVar;
@@ -528,6 +529,9 @@ public class SoyFileParser {
 
   /** Path of source being parsed. This is descriptive, not a means to refetch source. */
   private String filePath;
+
+  /** Controls how to handle whitespaces (e.g. whether to join lines or preserve whitespace). */
+  private WhitespaceMode whitespaceMode = WhitespaceMode.JOIN;
 
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
@@ -1451,6 +1455,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     { TemplateBasicNodeBuilder builder = new TemplateBasicNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
       TemplateOpenTagHelper(builder, open, false)
+      { whitespaceMode = builder.getWhitespaceMode(); }
       initialWhitespace = TemplateHeader(builder)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_TEMPLATE>
@@ -1471,6 +1476,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     { TemplateDelegateNodeBuilder builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
       TemplateOpenTagHelper(builder, open, true)
+      { whitespaceMode = builder.getWhitespaceMode(); }
       initialWhitespace = TemplateHeader(builder)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_DELTEMPLATE>
@@ -1661,7 +1667,7 @@ private void SkipWhitespace() : { }
 private RawTextNode RawText() :
 {
   Token token;
-  RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
+  RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
 }
 {
   // There is a choice conflict here because given a sequence of two characters we could parse it
@@ -1723,7 +1729,9 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
     (
-      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen); }
+      {
+        RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
+      }
 
       ( LOOKAHEAD(1)  // prefer staying in the loop
         tok = <TOKEN_WS>
@@ -1789,7 +1797,7 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
     (
-      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen); }
+      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode); }
 
       ( LOOKAHEAD(1)  // prefer staying in the loop
         tok = <TOKEN_WS>
@@ -2163,7 +2171,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
   // This will make it possible to detect if a leading {plural} or {select} was preceeded by content
   [ LOOKAHEAD(1)  // prefer taking this branch over skipping and consuming as RawText
     { Token tok;
-      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
+      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
     }
     ( LOOKAHEAD(1)  // prefer staying in the loop
       tok = <TOKEN_WS>

@@ -107,6 +107,9 @@ public abstract class TemplateNodeBuilder {
   /** This template's visibility level. */
   protected Visibility visibility;
 
+  /** This template's whitespace handling mode. */
+  protected WhitespaceMode whitespaceMode = WhitespaceMode.JOIN;
+
   /**
    * The mode of autoescaping for this template. This is private instead of protected to enforce use
    * of setAutoescapeInfo().
@@ -180,7 +183,7 @@ public abstract class TemplateNodeBuilder {
       Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml");
+      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml", "whitespace");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
@@ -208,6 +211,9 @@ public abstract class TemplateNodeBuilder {
           break;
         case "stricthtml":
           strictHtmlDisabled = attribute.valueAsDisabled(errorReporter);
+          break;
+        case "whitespace":
+          whitespaceMode = attribute.valueAsWhitespaceMode(errorReporter);
           break;
         default:
           break;
@@ -331,6 +337,11 @@ public abstract class TemplateNodeBuilder {
   public SanitizedContentKind getContentKind() {
     checkState(autoescapeMode != null); // make sure setAutoescapeInfo was called
     return contentKind;
+  }
+
+  /** Gets the whitespace handling mode. */
+  public WhitespaceMode getWhitespaceMode() {
+    return whitespaceMode;
   }
 
   /** @return Required CSS namespaces. */

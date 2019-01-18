@@ -231,6 +231,29 @@ public final class CommandTagAttribute {
   }
 
   @Nullable
+  WhitespaceMode valueAsWhitespaceMode(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    WhitespaceMode whitespaceMode = WhitespaceMode.forAttributeValue(value);
+
+    if (whitespaceMode == WhitespaceMode.JOIN) {
+      errorReporter.report(
+          valueLocation,
+          EXPLICIT_DEFAULT_ATTRIBUTE,
+          key.identifier(),
+          WhitespaceMode.JOIN.getAttributeValue());
+    } else if (whitespaceMode == null) {
+      errorReporter.report(
+          valueLocation,
+          INVALID_ATTRIBUTE_LIST,
+          key.identifier(),
+          WhitespaceMode.getAttributeValues());
+    }
+
+    return whitespaceMode;
+  }
+
+  @Nullable
   public SanitizedContentKind valueAsContentKind(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 

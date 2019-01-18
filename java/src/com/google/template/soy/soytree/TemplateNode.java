@@ -205,6 +205,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Visibility of this template. */
   private final Visibility visibility;
 
+  /** Whitespace handling mode for this template. */
+  private final WhitespaceMode whitespaceMode;
+
   /** The mode of autoescaping for this template. */
   private final AutoescapeMode autoescapeMode;
 
@@ -260,6 +263,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
     this.visibility = visibility;
+    this.whitespaceMode = nodeBuilder.getWhitespaceMode();
     this.autoescapeMode = nodeBuilder.getAutoescapeMode();
     this.contentKind = nodeBuilder.getContentKind();
     this.requiredCssNamespaces = nodeBuilder.getRequiredCssNamespaces();
@@ -288,6 +292,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected TemplateNode(TemplateNode orig, CopyState copyState) {
@@ -296,6 +301,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
     this.visibility = orig.visibility;
+    this.whitespaceMode = orig.whitespaceMode;
     this.autoescapeMode = orig.autoescapeMode;
     this.contentKind = orig.contentKind;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;
@@ -353,6 +359,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** The location of the {(del)template ...} */
   public SourceLocation getOpenTagLocation() {
     return this.openTagLocation;
+  }
+
+  /** Returns the whitespace handling mode for this template. */
+  public WhitespaceMode getWhitespaceMode() {
+    return whitespaceMode;
   }
 
   /** Returns the mode of autoescaping. */

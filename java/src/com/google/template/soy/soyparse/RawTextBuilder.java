@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
+import com.google.template.soy.soytree.WhitespaceMode;
 import javax.annotation.Nullable;
 
 /**
@@ -38,11 +39,14 @@ import javax.annotation.Nullable;
  *         <li>Replace interior newlines and surrounding whitespace with a single {@code ' '} unless
  *             it immediately precedes a '<' or succeeds a '>' in which case we just remove it.
  *       </ul>
- *
  *   <li>Calculate the 'effective' start and end locations given the stripping of leading and
  *       trailing whitespace
  *   <li>Accumulate our other 'textual' tokens which do not trigger line joining
  * </ul>
+ *
+ * <p>The default line joining behavior can be customized by passing "whitespaceMode = PRESERVE" to
+ * the constructor. This will trigger the builder to preserve all whitespace characters (including
+ * newlines) in the output.
  *
  * <p>These rules appear to be an approximation of the <a
  * href="https://www.w3.org/TR/html4/struct/text.html#h-9.1">html whitespace rules</a> but it
@@ -55,6 +59,7 @@ final class RawTextBuilder {
   private final StringBuilder buffer = new StringBuilder();
   private final String fileName;
   private final IdGenerator nodeIdGen;
+  private final WhitespaceMode whitespaceMode;
 
   // The index in buffer where the current sequence of basic textual content starts.
   private int basicStart = -1;
@@ -70,9 +75,17 @@ final class RawTextBuilder {
   // text literal.  this will force us to record a new offset for the next token
   private SourceOffsets.Reason discontinuityReason = Reason.NONE;
 
-  RawTextBuilder(String fileName, IdGenerator nodeIdGen) {
+  /**
+   * Initializes a new instance of this raw text builder object.
+   *
+   * @param fileName Path to the template file.
+   * @param nodeIdGen An object that generates Ids for new tokens.
+   * @param whitespaceMode Indicates how to handle whitespace in the output.
+   */
+  RawTextBuilder(String fileName, IdGenerator nodeIdGen, WhitespaceMode whitespaceMode) {
     this.fileName = checkNotNull(fileName);
     this.nodeIdGen = checkNotNull(nodeIdGen);
+    this.whitespaceMode = checkNotNull(whitespaceMode);
   }
 
   /** Append a basic token. 'Basic' tokens are text literals. */
@@ -87,7 +100,7 @@ final class RawTextBuilder {
         if (token.image.indexOf('\r') != -1 || token.image.indexOf('\n') != -1) {
           basicHasNewline = true;
         }
-        if (basicStartOfWhitespace == -1) {
+        if (basicStartOfWhitespace == -1 && whitespaceMode == WhitespaceMode.JOIN) {
           basicStartOfWhitespace = buffer.length();
           endLineAtStartOfWhitespace = offsets.endLine();
           endColumnAtStartOfWhitespace = offsets.endColumn();
