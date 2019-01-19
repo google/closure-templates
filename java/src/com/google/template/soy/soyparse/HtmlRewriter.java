@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -53,6 +54,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
@@ -820,11 +822,11 @@ final class HtmlRewriter {
       RawTextNode node = consumeHtmlIdentifier(EXPECTED_TAG_NAME);
       if (node == null) {
         // consumeHtmlIdentifier will have already reported an error, try to keep going
-        context.setTagName(
-            new TagName(new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation())));
+        context.setTagNameNode(
+            new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation()));
       } else {
         validateIdentifier(node, TAG_NAME, BAD_TAG_NAME);
-        context.setTagName(new TagName(node));
+        context.setTagNameNode(node);
       }
     }
 
@@ -1450,7 +1452,9 @@ final class HtmlRewriter {
 
         case HTML_TAG_NAME:
           if (node.getKind() == Kind.PRINT_NODE) {
-            context.setTagName(new TagName((PrintNode) node));
+            // We have to copy so we can re-parent in the tag safely.  In theory we could get away
+            // with just a shallow copy, which would be more efficient.
+            context.setTagNameNode(node.copy(new CopyState()));
             edits.remove(node);
           } else {
             errorReporter.report(node.getSourceLocation(), INVALID_TAG_NAME);
@@ -1963,7 +1967,7 @@ final class HtmlRewriter {
 
     SourceLocation.Point tagStartPoint;
     RawTextNode tagStartNode;
-    TagName tagName;
+    StandaloneNode tagNameNode;
     State tagStartState;
 
     // TODO(lukes): consider lazily allocating these lists.
@@ -2094,8 +2098,8 @@ final class HtmlRewriter {
       if (tagStartPoint != null) {
         error = format(error, "Expected tagStartPoint to be null, got: %s", tagStartPoint);
       }
-      if (tagName != null) {
-        error = format(error, "Expected tagName to be null, got: %s", tagName);
+      if (tagNameNode != null) {
+        error = format(error, "Expected tagName to be null, got: %s", tagNameNode.toSourceString());
       }
       if (tagStartNode != null) {
         error = format(error, "Expected tagStartNode to be null, got: %s", tagStartNode);
@@ -2109,9 +2113,6 @@ final class HtmlRewriter {
                 error,
                 "Expected quotedAttributeValueStart to be null, got: %s",
                 quotedAttributeValueStart);
-      }
-      if (tagName != null) {
-        error = format(error, "Expected tagName to be null, got: %s", tagName);
       }
       if (commentStartPoint != null) {
         error = format(error, "Expected commentStartPoint to be null, got: %s", commentStartPoint);
@@ -2144,7 +2145,7 @@ final class HtmlRewriter {
     void reset() {
       tagStartPoint = null;
       tagStartNode = null;
-      tagName = null;
+      tagNameNode = null;
       tagStartState = null;
       directTagChildren.clear();
       directCommentChildren.clear();
@@ -2206,11 +2207,12 @@ final class HtmlRewriter {
       return tagStartPoint.asLocation(filePath);
     }
 
-    /** Sets the tag name of the tag currently being built. */
-    void setTagName(TagName tagName) {
-      this.tagName = checkNotNull(tagName);
-      edits.remove(tagName.getNode());
-      setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, tagName.getTagLocation().getEndPoint());
+    /** Sets the node that holds the tag name of the tag currently being built. */
+    void setTagNameNode(StandaloneNode rawTextOrPrintNode) {
+      this.tagNameNode = checkNotNull(rawTextOrPrintNode);
+      edits.remove(rawTextOrPrintNode);
+      setState(
+          State.AFTER_TAG_NAME_OR_ATTRIBUTE, rawTextOrPrintNode.getSourceLocation().getEndPoint());
     }
 
     void startAttribute(StandaloneNode attrName) {
@@ -2324,7 +2326,7 @@ final class HtmlRewriter {
      */
     State createTag(RawTextNode tagEndNode, boolean selfClosing, SourceLocation.Point endPoint) {
       maybeFinishPendingAttribute(endPoint);
-      ParentSoyNode<StandaloneNode> replacement;
+      HtmlTagNode replacement;
       SourceLocation sourceLocation = new SourceLocation(filePath, tagStartPoint, endPoint);
       if (isCloseTag) {
         // we allow for attributes in close tags in the parser since there is a usecase for msg
@@ -2337,14 +2339,18 @@ final class HtmlRewriter {
         }
         replacement =
             new HtmlCloseTagNode(
-                nodeIdGen.genId(), tagName, sourceLocation, TagExistence.IN_TEMPLATE);
+                nodeIdGen.genId(), tagNameNode, sourceLocation, TagExistence.IN_TEMPLATE);
       } else {
         replacement =
             new HtmlOpenTagNode(
-                nodeIdGen.genId(), tagName, sourceLocation, selfClosing, TagExistence.IN_TEMPLATE);
+                nodeIdGen.genId(),
+                tagNameNode,
+                sourceLocation,
+                selfClosing,
+                TagExistence.IN_TEMPLATE);
       }
       // Depending on the tag name, we may need to enter a special state after the tag.
-      State nextState = getNextState(tagName);
+      State nextState = getNextState(replacement.getTagName());
       // if we see a naked </script report an error
       if (isCloseTag && nextState.isRcDataState() && tagStartState != nextState) {
         errorReporter.report(tagStartLocation(), UNEXPECTED_CLOSE_TAG);
@@ -2354,13 +2360,11 @@ final class HtmlRewriter {
         nextState = State.PCDATA;
       }
       edits.remove(tagEndNode);
-      edits.addChild(replacement, tagName.getNode());
       edits.addChildren(replacement, directTagChildren);
-      // cast is safe because Html(Open|Close)TagNode implement StandaloneNode
-      edits.replace(tagStartNode, (StandaloneNode) replacement);
+      edits.replace(tagStartNode, replacement);
       directTagChildren.clear();
       tagStartPoint = null;
-      tagName = null;
+      tagNameNode = null;
       tagStartState = null;
       tagStartNode = null;
       checkEmpty("Expected state to be empty after completing a tag");

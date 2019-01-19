@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SwitchCaseNode;
-import com.google.template.soy.soytree.TagName;
 
 /** Utility functions for HTML Matcher Graph tests. */
 public final class TestUtils {
@@ -43,7 +42,7 @@ public final class TestUtils {
   public static HtmlOpenTagNode soyHtmlOpenTagNode() {
     return new HtmlOpenTagNode(
         idGenerator.genId(),
-        new TagName(new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN)),
+        new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN),
         SourceLocation.UNKNOWN,
         /** selfClosing */
         false,
@@ -53,7 +52,7 @@ public final class TestUtils {
   public static HtmlCloseTagNode soyHtmlCloseTagNode() {
     return new HtmlCloseTagNode(
         idGenerator.genId(),
-        new TagName(new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN)),
+        new RawTextNode(idGenerator.genId(), "div", SourceLocation.UNKNOWN),
         SourceLocation.UNKNOWN,
         TagExistence.IN_TEMPLATE);
   }

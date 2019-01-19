@@ -20,6 +20,7 @@ import com.google.common.base.Equivalence;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -234,10 +235,11 @@ public final class HtmlTagMatchingPass {
    */
   private void injectCloseTag(
       HtmlOpenTagNode optionalOpenTag, HtmlTagNode destinationTag, IdGenerator idGenerator) {
+    StandaloneNode openTagCopy = optionalOpenTag.getTagName().getNode().copy(new CopyState());
     HtmlCloseTagNode syntheticClose =
         new HtmlCloseTagNode(
             idGenerator.genId(),
-            optionalOpenTag.getTagName(),
+            openTagCopy,
             optionalOpenTag.getSourceLocation(),
             TagExistence.SYNTHETIC);
     // If destination is null, then insert at the end of the template.

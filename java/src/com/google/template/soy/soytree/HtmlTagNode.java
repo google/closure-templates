@@ -17,10 +17,10 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
  *
  * <p>The first child is guaranteed to be the tag name, any after that are guaranteed to be in
  * attribute context. There is always at least one child.
+ *
+ * <p>TODO(b/123090196): Merge {@link TagName} API into this class.
  */
 public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     implements StandaloneNode {
@@ -66,9 +68,12 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
   private final List<HtmlTagNode> taggedPairs = new ArrayList<>();
 
   protected HtmlTagNode(
-      int id, TagName tagName, SourceLocation sourceLocation, TagExistence tagExistence) {
+      int id, StandaloneNode node, SourceLocation sourceLocation, TagExistence tagExistence) {
     super(id, sourceLocation);
-    this.tagName = checkNotNull(tagName);
+    checkNotNull(node);
+    checkState(node.getParent() == null);
+    addChild(node);
+    this.tagName = tagNameFromNode(node);
     this.tagExistence = tagExistence;
   }
 
@@ -77,10 +82,7 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     this.tagExistence = orig.tagExistence;
     //  Rebuild the TagName object
     StandaloneNode tagChild = getChild(0);
-    this.tagName =
-        tagChild instanceof RawTextNode
-            ? new TagName((RawTextNode) tagChild)
-            : new TagName((PrintNode) tagChild);
+    this.tagName = tagNameFromNode(tagChild);
     // The taggedPairs field contains references to other tag nodes.
     // We need to register ourselves so that people who reference us get updated and we need to
     // listen to updates
@@ -136,5 +138,13 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
       }
     }
     return null;
+  }
+
+  private static final TagName tagNameFromNode(StandaloneNode rawTextOrPrintNode) {
+    checkState(
+        rawTextOrPrintNode instanceof RawTextNode || rawTextOrPrintNode instanceof PrintNode);
+    return rawTextOrPrintNode instanceof RawTextNode
+        ? new TagName((RawTextNode) rawTextOrPrintNode)
+        : new TagName((PrintNode) rawTextOrPrintNode);
   }
 }
