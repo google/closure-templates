@@ -65,11 +65,9 @@ final class SoyElementPass extends CompilerFilePass {
       };
 
   private final ErrorReporter errorReporter;
-  private final boolean checkTaggedPairs;
 
-  SoyElementPass(ErrorReporter errorReporter, boolean checkTaggedPairs) {
+  SoyElementPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.checkTaggedPairs = checkTaggedPairs;
   }
 
   @Override
@@ -105,9 +103,7 @@ final class SoyElementPass extends CompilerFilePass {
           errorReporter.report(template.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
         continue;
       }
-        if (checkTaggedPairs) {
-          validateSoyElementHasOneRootTagNode(firstOpenTagNode, lastCloseTagNode);
-        }
+        validateSoyElementHasOneRootTagNode(firstOpenTagNode, lastCloseTagNode);
       validateTagNodeHasOneChild(firstOpenTagNode);
       }
       validateNoKey(firstOpenTagNode);

@@ -295,11 +295,7 @@ public final class PassManager {
       // can run anywhere
       addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
-      if (options.getExperimentalFeatures().contains("new_html_matcher")) {
-        addPass(new StrictHtmlValidationPassNewMatcher(errorReporter), singleFilePassesBuilder);
-      } else {
-        addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-      }
+      addPass(new StrictHtmlValidationPassNewMatcher(errorReporter), singleFilePassesBuilder);
 
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
@@ -335,10 +331,7 @@ public final class PassManager {
       addPass(new KeyCommandPass(errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
       // validation).
-      addPass(
-          new SoyElementPass(
-              errorReporter, options.getExperimentalFeatures().contains("new_html_matcher")),
-          singleFilePassesBuilder);
+      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
 
       // Cross template checking passes
 
