@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
@@ -85,7 +84,6 @@ final class V1JsExprTranslator {
    * @param errorReporter For reporting syntax errors.
    * @return The resulting expression code after the necessary substitutions.
    */
-  @VisibleForTesting
   static JsExpr translateToJsExpr(
       String soyExpr,
       SourceLocation sourceLocation,
