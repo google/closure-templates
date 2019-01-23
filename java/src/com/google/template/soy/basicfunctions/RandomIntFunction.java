@@ -24,11 +24,12 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -40,8 +41,8 @@ import java.util.List;
     name = "randomInt",
     // TODO(b/70946095): param should be an 'int', not a 'number'
     value = @Signature(returnType = "int", parameterTypes = "number"))
-public final class RandomIntFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+public final class RandomIntFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -50,10 +51,11 @@ public final class RandomIntFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    PyExpr arg = args.get(0);
-    // Subtract 1 from the argument as the python randint function is inclusive on both sides.
-    return new PyExpr("random.randint(0, " + arg.getText() + " - 1)", Integer.MAX_VALUE);
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory
+        .global("random.randint")
+        .call(factory.constant(0), args.get(0).plus(factory.constant(-1)));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.

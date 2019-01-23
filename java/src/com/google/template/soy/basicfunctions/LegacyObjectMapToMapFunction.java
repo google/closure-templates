@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -26,11 +25,12 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -50,8 +50,8 @@ import java.util.List;
     name = "legacyObjectMapToMap",
     // Note: the return type is overridden in ResolveExpressionTypePass
     value = @Signature(parameterTypes = "?", returnType = "?"))
-public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyPySrcFunction, SoyJavaScriptSourceFunction {
+public final class LegacyObjectMapToMapFunction
+    implements SoyJavaSourceFunction, SoyPythonSourceFunction, SoyJavaScriptSourceFunction {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
@@ -73,7 +73,8 @@ public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     // TODO(b/69064788): The runtime representations of legacy_object_map and
     // experimental_map should be different in every backend, just as they are different in JS.
     // However, based on the low usage of pysrc and its existing incompatibilities, we are going
@@ -82,6 +83,6 @@ public final class LegacyObjectMapToMapFunction extends TypedSoyFunction
     // interoperable in pysrc in limited situations (the type checker will still rule out many
     // situations). If this turns out to be infeasible and we need two map types for a long time,
     // we will need to change pysrc after all.
-    return Iterables.getOnlyElement(args);
+    return args.get(0);
   }
 }

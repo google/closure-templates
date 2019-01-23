@@ -16,7 +16,6 @@
 
 package com.google.template.soy.bidifunctions;
 
-import com.google.common.base.Supplier;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
@@ -27,11 +26,12 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,16 +54,8 @@ import java.util.List;
           // TODO(b/70946095): should take a string and a bool
           parameterTypes = {"?", "?"})
     })
-final class BidiDirAttrFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
-
-  /** Supplier for the current bidi global directionality. */
-  private final Supplier<BidiGlobalDir> bidiGlobalDirProvider;
-
-  /** @param bidiGlobalDirProvider Supplier for the current bidi global directionality. */
-  BidiDirAttrFunction(Supplier<BidiGlobalDir> bidiGlobalDirProvider) {
-    this.bidiGlobalDirProvider = bidiGlobalDirProvider;
-  }
+final class BidiDirAttrFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
@@ -95,18 +87,13 @@ final class BidiDirAttrFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    PyExpr value = args.get(0);
-    PyExpr isHtml = (args.size() == 2) ? args.get(1) : null;
-
-    String callText =
-        "bidi.dir_attr("
-            + bidiGlobalDirProvider.get().getCodeSnippet()
-            + ", "
-            + value.getText()
-            + (isHtml != null ? ", " + isHtml.getText() : "")
-            + ")";
-
-    return new PyExpr(callText, Integer.MAX_VALUE);
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory
+        .global("bidi.dir_attr")
+        .call(
+            context.getBidiDir(),
+            args.get(0),
+            args.size() == 2 ? args.get(1) : factory.constant(false));
   }
 }

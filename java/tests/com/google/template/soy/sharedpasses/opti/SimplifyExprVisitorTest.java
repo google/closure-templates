@@ -26,8 +26,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.PluginResolver.Mode;
 import com.google.template.soy.shared.internal.InternalPlugins;
-import com.google.template.soy.shared.internal.SoyScopedData;
-import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import org.junit.Test;
@@ -166,7 +164,6 @@ public final class SimplifyExprVisitorTest {
     }
 
     private void simplifiesTo(String expected) {
-      SoyScopedData data = new SoySimpleScope();
       ExprRootNode exprRoot =
           new ExprRootNode(SoyFileParser.parseExpression(actual(), ErrorReporter.exploding()));
 
@@ -176,7 +173,7 @@ public final class SimplifyExprVisitorTest {
               /** directives= */
               ImmutableMap.of(),
               InternalPlugins.internalLegacyFunctionMap(),
-              InternalPlugins.internalFunctionMap(data),
+              InternalPlugins.internalFunctionMap(),
               ErrorReporter.exploding());
       for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(exprRoot, FunctionNode.class)) {
         function.setSoyFunction(

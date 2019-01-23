@@ -18,11 +18,9 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,13 +38,5 @@ public class LengthFunctionTest {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(lengthFunction);
     SoyValue list = SoyValueConverterUtility.newList(1, 3, 5, 7);
     assertThat(tester.callFunction(list)).isEqualTo(4);
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    LengthFunction lengthFunction = new LengthFunction();
-    PyExpr expr = new PyExpr("data", Integer.MAX_VALUE);
-    assertThat(lengthFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("len(data)", Integer.MAX_VALUE));
   }
 }

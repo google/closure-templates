@@ -24,9 +24,10 @@ import java.util.Set;
 /**
  * A soy function that carries type information.
  *
- * <p>New functions should use {@code SoyJavaSourceFunction} and/or {@code
- * SoyJavaScriptSourceFunction} instead of this.
+ * @deprecated New functions should use {@code SoyJavaSourceFunction}, {@code
+ *     SoyJavaScriptSourceFunction} and {@code SoyPythonSourceFunction} instead of this.
  */
+@Deprecated
 public abstract class TypedSoyFunction implements SoyFunction {
 
   @Override

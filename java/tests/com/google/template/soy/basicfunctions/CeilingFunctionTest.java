@@ -18,10 +18,8 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -48,11 +46,4 @@ public class CeilingFunctionTest {
     assertThat(result).isEqualTo(3L);
   }
 
-  @Test
-  public void testComputeForPySrc() {
-    CeilingFunction ceilingFunction = new CeilingFunction();
-    PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);
-    assertThat(ceilingFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("int(math.ceil(number))", Integer.MAX_VALUE));
-  }
 }

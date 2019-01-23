@@ -16,23 +16,21 @@
 
 package com.google.template.soy.bidifunctions;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 
 /** Lists all the functions in this package. */
 public class BidiFunctions {
   private BidiFunctions() {}
 
-  public static ImmutableSet<SoySourceFunction> functions(Supplier<BidiGlobalDir> bidiGlobalDir) {
+  public static ImmutableSet<SoySourceFunction> functions() {
     return ImmutableSet.of(
-        new BidiDirAttrFunction(bidiGlobalDir),
-        new BidiEndEdgeFunction(bidiGlobalDir),
-        new BidiGlobalDirFunction(bidiGlobalDir),
-        new BidiMarkAfterFunction(bidiGlobalDir),
-        new BidiMarkFunction(bidiGlobalDir),
-        new BidiStartEdgeFunction(bidiGlobalDir),
+        new BidiDirAttrFunction(),
+        new BidiEndEdgeFunction(),
+        new BidiGlobalDirFunction(),
+        new BidiMarkAfterFunction(),
+        new BidiMarkFunction(),
+        new BidiStartEdgeFunction(),
         new BidiTextDirFunction());
   }
 }

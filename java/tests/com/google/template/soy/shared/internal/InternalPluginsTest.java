@@ -24,13 +24,13 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,15 +66,15 @@ public final class InternalPluginsTest {
   @Test
   public void testFunctionsSupportAllBackends() {
     for (Map.Entry<String, SoySourceFunction> entry :
-        InternalPlugins.internalFunctionMap(data).entrySet()) {
+        InternalPlugins.internalFunctionMap().entrySet()) {
       Object function = entry.getValue();
-      assertThat(function).isInstanceOf(TypedSoyFunction.class);
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
-      assertThat(function).isInstanceOf(SoyPySrcFunction.class);
+      assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
       // Internal functions should no longer implement SoyJavaFunction or SoyJsSrcFunction
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
+      assertThat(function).isNotInstanceOf(SoyPySrcFunction.class);
     }
   }
 

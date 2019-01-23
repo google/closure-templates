@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -27,13 +26,13 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -52,8 +51,8 @@ import java.util.List;
             returnType = "bool",
             parameterTypes = {"string", "string"}))
 @SoyPureFunction
-final class StrContainsFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+final class StrContainsFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -63,13 +62,9 @@ final class StrContainsFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    // Coerce SanitizedContent args to strings.
-    String arg0 = args.get(0).toPyString().getText();
-    String arg1 = args.get(1).toPyString().getText();
-
-    String exprText = "(" + arg0 + ").find(" + arg1 + ") != -1";
-    return new PyExpr(exprText, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return args.get(1).coerceToString().in(args.get(0).coerceToString());
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.

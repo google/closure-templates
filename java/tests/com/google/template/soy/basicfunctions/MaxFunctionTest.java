@@ -18,11 +18,9 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -57,12 +55,4 @@ public class MaxFunctionTest {
         .isEqualTo(IntegerData.forValue(8));
   }
 
-  @Test
-  public void testComputeForPySrc() {
-    MaxFunction maxFunction = new MaxFunction();
-    PyExpr expr0 = new PyExpr("number0", Integer.MAX_VALUE);
-    PyExpr expr1 = new PyExpr("number1", Integer.MAX_VALUE);
-    assertThat(maxFunction.computeForPySrc(ImmutableList.of(expr0, expr1)))
-        .isEqualTo(new PyExpr("max(number0, number1)", Integer.MAX_VALUE));
-  }
 }

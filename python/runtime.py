@@ -156,7 +156,7 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   """
   entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id, variant))
   fn = entry[1] if entry else None
-  if not fn and variant != '':
+  if not fn and variant:
     # Fallback to empty variant.
     entry = _DELEGATE_REGISTRY.get(_gen_delegate_id(template_id))
     fn = entry[1] if entry else None
@@ -312,20 +312,6 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
         (template_id, variant, priority))
 
 
-def simplify_num(value, precision):
-  """Convert the given value to an int if the precision is below 1.
-
-  Args:
-    value: A number value (int, float, etc.).
-    precision: The desired precision.
-  Returns:
-    A number typed as an int if the precision is low enough.
-  """
-  if precision <= 0:
-    return int(value)
-  return value
-
-
 def type_safe_add(*args):
   """A coercion function emulating JS style type conversion in the '+' operator.
 
@@ -379,6 +365,14 @@ def type_safe_add(*args):
         is_string = True
 
   return result
+
+
+def list_contains(l, item):
+  """Equivalent to `item in l` but using soy's equality algorithm."""
+  for el in l:
+    if type_safe_eq(item, el):
+      return True
+  return False
 
 
 def type_safe_eq(first, second):
@@ -521,6 +515,29 @@ def str_to_ascii_lower_case(s):
 def str_to_ascii_upper_case(s):
   """Converts the ASCII characters in the given string to upper case."""
   return ''.join([c.upper() if 'a' <= c <= 'z' else c for c in s])
+
+
+def soy_round(num, precision=0):
+  """Implements the soy rounding logic for the round() function.
+
+  Python rounds ties away from 0 instead of towards infinity as JS and Java do.
+  So to make the behavior consistent, we add the smallest possible float amount
+  to break ties towards infinity.
+
+  Args:
+    num: the number to round
+    precision: the number of digits after the point to preserve
+
+  Returns:
+    a rounded number
+  """
+  float_breakdown = math.frexp(num)
+  tweaked_number = (
+      (float_breakdown[0] + sys.float_info.epsilon) * 2**float_breakdown[1])
+  rounded_number = round(tweaked_number, precision)
+  if not precision or precision < 0:
+    return int(rounded_number)
+  return rounded_number
 
 
 ######################

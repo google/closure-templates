@@ -130,7 +130,7 @@ public final class SoyFileSetParserBuilder {
     this.scopedData = new SoySimpleScope();
     this.soyFunctionMap = InternalPlugins.internalLegacyFunctionMap();
     this.soyPrintDirectiveMap = InternalPlugins.internalDirectiveMap(scopedData);
-    this.sourceFunctionMap = InternalPlugins.internalFunctionMap(scopedData);
+    this.sourceFunctionMap = InternalPlugins.internalFunctionMap();
   }
 
   /** Enable experiments. Returns this object, for chaining. */

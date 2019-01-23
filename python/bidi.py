@@ -285,6 +285,23 @@ def unicode_wrap(global_dir, text):
   return wrapped_text
 
 
+def bidi_end_edge(d):
+  if d < 0:
+    return 'left'
+  return 'right'
+
+
+def bidi_start_edge(d):
+  if d < 0:
+    return 'right'
+  return 'left'
+
+
+def bidi_mark(d):
+  if d < 0:
+    return '\u200F'
+  return '\u200E'
+
 ###########
 # Classes #
 ###########

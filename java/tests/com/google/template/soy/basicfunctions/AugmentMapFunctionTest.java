@@ -18,12 +18,10 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,14 +50,5 @@ public class AugmentMapFunctionTest {
     assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("yyy").integerValue())
         .isEqualTo(5);
     assertThat(((SoyDict) augmentedDict.getField("ccc")).getField("xxx")).isEqualTo(null);
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
-    PyExpr baseMapExpr = new PyExpr("base", Integer.MAX_VALUE);
-    PyExpr additionalMapExpr = new PyExpr("additional", Integer.MAX_VALUE);
-    assertThat(augmentMapFunction.computeForPySrc(ImmutableList.of(baseMapExpr, additionalMapExpr)))
-        .isEqualTo(new PyExpr("dict(base, **additional)", Integer.MAX_VALUE));
   }
 }

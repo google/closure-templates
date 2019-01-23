@@ -18,7 +18,6 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyValueConverter;
@@ -26,7 +25,6 @@ import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,12 +50,5 @@ public final class LegacyObjectMapToMapFunctionTest {
     SoyMapImpl convertedMap = (SoyMapImpl) tester.callFunction(legacyObjectMap);
     assertThat(map.get(StringData.forValue("x")))
         .isEqualTo(convertedMap.get(StringData.forValue("x")));
-  }
-
-  @Test
-  public void computeForPySrc() {
-    PyExpr legacyObjectMap = new PyExpr("legacy_object_map", Integer.MAX_VALUE);
-    PyExpr map = LEGACY_OBJECT_MAP_TO_MAP.computeForPySrc(ImmutableList.of(legacyObjectMap));
-    assertThat(map).isEqualTo(legacyObjectMap); // TODO(b/69064788): fix
   }
 }

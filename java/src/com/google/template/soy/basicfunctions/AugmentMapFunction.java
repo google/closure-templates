@@ -25,14 +25,14 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -53,8 +53,8 @@ import java.util.List;
 @SoyDeprecated(
     "This function will be deleted along with legacy_object_maps."
         + " If you need AugmentMap-like functionality, please implement it as a custom Soy plugin.")
-public final class AugmentMapFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+public final class AugmentMapFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -76,9 +76,10 @@ public final class AugmentMapFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("dict");
-    fnBuilder.addArg(args.get(0)).setUnpackedKwargs(args.get(1));
-    return fnBuilder.asPyExpr();
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory
+        .global("dict")
+        .call(args.get(0).getProp("items").call().plus(args.get(1).getProp("items").call()));
   }
 }

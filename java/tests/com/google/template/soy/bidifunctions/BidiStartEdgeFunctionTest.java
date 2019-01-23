@@ -18,13 +18,8 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.shared.SharedRestrictedTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,11 +34,7 @@ public class BidiStartEdgeFunctionTest {
   @Test
   public void testComputeForJava() {
     // the java source version doesn't use the provider
-    BidiStartEdgeFunction fn =
-        new BidiStartEdgeFunction(
-            () -> {
-              throw new UnsupportedOperationException();
-            });
+    BidiStartEdgeFunction fn = new BidiStartEdgeFunction();
 
     SoyJavaSourceFunctionTester tester =
         new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.LTR).build();
@@ -52,18 +43,5 @@ public class BidiStartEdgeFunctionTest {
     tester =
         new SoyJavaSourceFunctionTester.Builder(fn).withBidiGlobalDir(BidiGlobalDir.RTL).build();
     assertThat(tester.callFunction()).isEqualTo("right");
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    BidiStartEdgeFunction codeSnippet =
-        new BidiStartEdgeFunction(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
-
-    assertThat(codeSnippet.computeForPySrc(ImmutableList.<PyExpr>of()))
-        .isEqualTo(
-            new PyExpr(
-                "'right' if (-1 if IS_RTL else 1) < 0 else 'left'",
-                PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
 }

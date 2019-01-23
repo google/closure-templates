@@ -18,13 +18,10 @@ package com.google.template.soy.bidifunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -50,18 +47,5 @@ public class BidiTextDirFunctionTest {
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL))).isEqualTo(-1);
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
         .isEqualTo(0);
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    BidiTextDirFunction bidiTextDirFunction = new BidiTextDirFunction();
-
-    PyExpr data = new PyStringExpr("'data'");
-    assertThat(bidiTextDirFunction.computeForPySrc(ImmutableList.of(data)).getText())
-        .isEqualTo("bidi.text_dir('data')");
-
-    PyExpr isHtml = new PyExpr("is_html", Integer.MAX_VALUE);
-    assertThat(bidiTextDirFunction.computeForPySrc(ImmutableList.of(data, isHtml)).getText())
-        .isEqualTo("bidi.text_dir('data', is_html)");
   }
 }

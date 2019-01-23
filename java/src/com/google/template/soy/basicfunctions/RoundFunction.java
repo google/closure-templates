@@ -17,7 +17,6 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.internal.targetexpr.TargetExpr;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -26,12 +25,13 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -56,8 +56,8 @@ import java.util.List;
           parameterTypes = {"?", "?"}),
     })
 @SoyPureFunction
-public final class RoundFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+public final class RoundFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
@@ -69,57 +69,11 @@ public final class RoundFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    PyExpr value = args.get(0);
-    PyExpr precision = (args.size() == 2) ? args.get(1) : null;
-
-    int precisionAsInt = convertNumDigits(precision);
-    boolean isLiteral = precisionAsInt != Integer.MIN_VALUE;
-
-    if ((precisionAsInt >= -12 && precisionAsInt <= 12) || !isLiteral) {
-      // Python rounds ties away from 0 instead of towards infinity as JS and Java do. So to make
-      // the behavior consistent, we add the smallest possible float amount to break ties towards
-      // infinity.
-      String floatBreakdown = "math.frexp(" + value.getText() + ")";
-      String precisionValue = isLiteral ? precisionAsInt + "" : precision.getText();
-      StringBuilder roundedValue =
-          new StringBuilder("round(")
-              .append('(')
-              .append(floatBreakdown)
-              .append("[0]")
-              .append(" + sys.float_info.epsilon)*2**")
-              .append(floatBreakdown)
-              .append("[1]")
-              .append(", ")
-              .append(precisionValue)
-              .append(")");
-      // The precision is less than 1. Convert to an int to prevent extraneous decimals in display.
-      return new PyExpr(
-          "runtime.simplify_num(" + roundedValue + ", " + precisionValue + ")", Integer.MAX_VALUE);
-    } else {
-      throw new IllegalArgumentException(
-          "Second argument to round() function is "
-              + precisionAsInt
-              + ", which is too large in magnitude.");
-    }
-  }
-
-  /**
-   * Convert the number of digits after the point from an expression to an int.
-   *
-   * @param numDigitsAfterPt The number of digits after the point as an expression
-   * @return The number of digits after the point and an int.
-   */
-  private static int convertNumDigits(TargetExpr numDigitsAfterPt) {
-    int numDigitsAfterPtAsInt = 0;
-    if (numDigitsAfterPt != null) {
-      try {
-        numDigitsAfterPtAsInt = Integer.parseInt(numDigitsAfterPt.getText());
-      } catch (NumberFormatException nfe) {
-        numDigitsAfterPtAsInt = Integer.MIN_VALUE; // indicates it's not a simple integer literal
-      }
-    }
-    return numDigitsAfterPtAsInt;
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory
+        .global("runtime.soy_round")
+        .call(args.get(0), args.size() > 1 ? args.get(1) : factory.constant(0));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.

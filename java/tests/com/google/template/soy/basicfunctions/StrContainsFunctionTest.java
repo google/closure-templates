@@ -19,13 +19,8 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -65,29 +60,5 @@ public class StrContainsFunctionTest {
             tester.callFunction(
                 ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("baz", ContentKind.TEXT)))
         .isEqualTo(false);
-  }
-
-  @Test
-  public void testComputeForPySrc_stringInput() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
-    PyExpr substring = new PyStringExpr("'bar'", Integer.MAX_VALUE);
-    assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(
-            new PyExpr(
-                "('foobar').find('bar') != -1",
-                PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
-  }
-
-  @Test
-  public void testComputeForPySrc_nonStringInput() {
-    StrContainsFunction strContains = new StrContainsFunction();
-    PyExpr base = new PyExpr("foobar", Integer.MAX_VALUE);
-    PyExpr substring = new PyExpr("bar", Integer.MAX_VALUE);
-    assertThat(strContains.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(
-            new PyExpr(
-                "(str(foobar)).find(str(bar)) != -1",
-                PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
   }
 }

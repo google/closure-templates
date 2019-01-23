@@ -19,11 +19,8 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,18 +42,5 @@ public class StrLenFunctionTest {
   public void testComputeForJavaSource_containsSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrLenFunction());
     assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT))).isEqualTo(9);
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    StrLenFunction strLen = new StrLenFunction();
-
-    PyExpr string = new PyStringExpr("'data'");
-    assertThat(strLen.computeForPySrc(ImmutableList.of(string)))
-        .isEqualTo(new PyExpr("len('data')", Integer.MAX_VALUE));
-
-    PyExpr data = new PyExpr("data", Integer.MAX_VALUE);
-    assertThat(strLen.computeForPySrc(ImmutableList.of(data)))
-        .isEqualTo(new PyExpr("len(str(data))", Integer.MAX_VALUE));
   }
 }

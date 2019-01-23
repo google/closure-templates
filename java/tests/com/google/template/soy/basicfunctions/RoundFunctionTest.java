@@ -18,12 +18,9 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,44 +43,5 @@ public class RoundFunctionTest {
     assertThat(tester.callFunction(input, 0)).isEqualTo(IntegerData.forValue(9753));
     assertThat(tester.callFunction(input, 4)).isEqualTo(FloatData.forValue(9753.1416));
     assertThat(tester.callFunction(input, -2)).isEqualTo(IntegerData.forValue(9800));
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    RoundFunction roundFunction = new RoundFunction();
-
-    String modifiedNumber =
-        "(math.frexp(number)[0] + sys.float_info.epsilon)*2**math.frexp(number)[1]";
-
-    PyExpr floatExpr = new PyExpr("number", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr)))
-        .isEqualTo(
-            new PyExpr(
-                "runtime.simplify_num(round(" + modifiedNumber + ", 0), 0)", Integer.MAX_VALUE));
-
-    PyExpr numDigitsAfterPtExpr = new PyExpr("0", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new PyExpr(
-                "runtime.simplify_num(round(" + modifiedNumber + ", 0), 0)", Integer.MAX_VALUE));
-
-    numDigitsAfterPtExpr = new PyExpr("4", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new PyExpr(
-                "runtime.simplify_num(round(" + modifiedNumber + ", 4), 4)", Integer.MAX_VALUE));
-
-    numDigitsAfterPtExpr = new PyExpr("-2", Operator.NEGATIVE.getPrecedence());
-    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new PyExpr(
-                "runtime.simplify_num(round(" + modifiedNumber + ", -2), -2)", Integer.MAX_VALUE));
-
-    numDigitsAfterPtExpr = new PyExpr("digits", Integer.MAX_VALUE);
-    assertThat(roundFunction.computeForPySrc(ImmutableList.of(floatExpr, numDigitsAfterPtExpr)))
-        .isEqualTo(
-            new PyExpr(
-                "runtime.simplify_num(round(" + modifiedNumber + ", digits), digits)",
-                Integer.MAX_VALUE));
   }
 }

@@ -18,11 +18,9 @@ package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,13 +37,5 @@ public final class HtmlToTextFunctionTest {
     SoyValue html = SanitizedContents.constantHtml(HTML);
     assertThat(tester.callFunction(html)).isEqualTo(TEXT);
     assertThat(tester.callFunction(TEXT)).isEqualTo(TEXT);
-  }
-
-  @Test
-  public void testComputeForPySrc() {
-    HtmlToTextFunction htmlToTextFunction = new HtmlToTextFunction();
-    PyExpr expr = new PyExpr("PY_CODE", Integer.MAX_VALUE);
-    assertThat(htmlToTextFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("sanitize.html_to_text(PY_CODE)", Integer.MAX_VALUE));
   }
 }

@@ -19,11 +19,8 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -65,21 +62,4 @@ public class StrIndexOfFunctionTest {
         .isEqualTo(-1);
   }
 
-  @Test
-  public void testComputeForPySrc_stringInput() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    PyExpr base = new PyStringExpr("'foobar'", Integer.MAX_VALUE);
-    PyExpr substring = new PyStringExpr("'bar'", Integer.MAX_VALUE);
-    assertThat(strIndexOf.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(new PyExpr("('foobar').find('bar')", Integer.MAX_VALUE));
-  }
-
-  @Test
-  public void testComputeForPySrc_nonStringInput() {
-    StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
-    PyExpr base = new PyExpr("foobar", Integer.MAX_VALUE);
-    PyExpr substring = new PyExpr("bar", Integer.MAX_VALUE);
-    assertThat(strIndexOf.computeForPySrc(ImmutableList.of(base, substring)))
-        .isEqualTo(new PyExpr("(str(foobar)).find(str(bar))", Integer.MAX_VALUE));
-  }
 }

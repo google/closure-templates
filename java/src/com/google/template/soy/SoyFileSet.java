@@ -218,7 +218,7 @@ public final class SoyFileSet {
               .putAll(InternalPlugins.fromDirectives(extraSoyPrintDirectives.build()))
               .build(),
           ImmutableMap.<String, SoySourceFunction>builder()
-              .putAll(InternalPlugins.internalFunctionMap(coreDependencies.scopedData))
+              .putAll(InternalPlugins.internalFunctionMap())
               .putAll(InternalPlugins.fromFunctions(extraSourceFunctions.build()))
               .build(),
           filesBuilder.build(),

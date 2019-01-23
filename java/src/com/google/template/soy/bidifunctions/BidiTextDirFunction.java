@@ -25,11 +25,12 @@ import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginCont
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
 import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.pysrc.restricted.PyExpr;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
+import com.google.template.soy.plugin.python.restricted.PythonPluginContext;
+import com.google.template.soy.plugin.python.restricted.PythonValue;
+import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
+import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
-import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -48,8 +49,8 @@ import java.util.List;
           returnType = "int",
           parameterTypes = {"?", "?"})
     })
-final class BidiTextDirFunction extends TypedSoyFunction
-    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPySrcFunction {
+final class BidiTextDirFunction
+    implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
@@ -73,14 +74,10 @@ final class BidiTextDirFunction extends TypedSoyFunction
   }
 
   @Override
-  public PyExpr computeForPySrc(List<PyExpr> args) {
-    PyExpr value = args.get(0);
-    PyExpr isHtml = (args.size() == 2) ? args.get(1) : null;
-
-    String callText =
-        (isHtml != null)
-            ? "bidi.text_dir(" + value.getText() + ", " + isHtml.getText() + ")"
-            : "bidi.text_dir(" + value.getText() + ")";
-    return new PyExpr(callText, Integer.MAX_VALUE);
+  public PythonValue applyForPythonSource(
+      PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
+    return factory
+        .global("bidi.text_dir")
+        .call(args.get(0), args.size() == 2 ? args.get(1) : factory.constant(false));
   }
 }
