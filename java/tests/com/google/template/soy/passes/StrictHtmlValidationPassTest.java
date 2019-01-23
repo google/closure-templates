@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -40,14 +39,14 @@ import org.junit.runners.JUnit4;
 
 /** Tests that build an HTML Matcher graph and validates it. */
 @RunWith(JUnit4.class)
-public final class StrictHtmlValidationPassNewMatcherTest {
+public final class StrictHtmlValidationPassTest {
 
   @Test
   public void testEmptyTemplate() {
     // Arrange: set up an empty template.
     SoyFileNode template = parseTemplateBody("");
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -62,8 +61,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
   public void testSimpleTemplate() {
     // Arrange: set up a simple template.
     SoyFileNode template = parseTemplateBody(Joiner.on("\n").join("<div>", "</div>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -80,8 +79,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
   public void testErrorForSelfClosingTag() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileNode template = parseTemplateBody("<div/>\n");
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(errorReporter);
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(errorReporter);
 
     matcherPass.run(template, new IncrementingIdGenerator());
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -96,8 +95,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
         parseTemplateBody(
             Joiner.on("\n")
                 .join("{@param cond1: bool}", "<span>", "  {if $cond1}Content1{/if}", "</span>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -135,8 +134,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "<div>",
                     "  {if $cond1}</div><div>Content1{/if}",
                     "</div>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -190,8 +189,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "  {if $cond2}<div>Content2{/if}",
                     "</div>",
                     "</div>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -260,8 +259,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "{elseif $cond3}<li>List 3",
                     "{/if}",
                     "</li>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -328,8 +327,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "{else}<div>Content 2</div>",
                     "{/if}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -388,8 +387,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "{else}<div>Content 2</div>",
                     "{/if}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -467,8 +466,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "  {case 3}<li>List 3",
                     "{/switch}",
                     "</li>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -536,8 +535,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "  {case 1, 2}<li>List 1</li>",
                     "{/switch}",
                     ""));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.exploding());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.exploding());
 
     // Act: execute the graph builder.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -577,8 +576,8 @@ public final class StrictHtmlValidationPassNewMatcherTest {
                     "   {default}<div>Default content</div>",
                     "{/switch}",
                     "<span>non-conditional content</span>"));
-    StrictHtmlValidationPassNewMatcher matcherPass =
-        new StrictHtmlValidationPassNewMatcher(ErrorReporter.createForTest());
+    StrictHtmlValidationPass matcherPass =
+        new StrictHtmlValidationPass(ErrorReporter.createForTest());
 
     // Act: execute the graph builder and follow the graph to the accumulator node.
     matcherPass.run(template, new IncrementingIdGenerator());
@@ -644,10 +643,7 @@ public final class StrictHtmlValidationPassNewMatcherTest {
     return SoyFileSetParserBuilder.forFileContents(soyFile)
         // Tests in this suite run the new Strict HTML Validation passes manually.
         .addPassContinuationRule(
-            "StrictHtmlValidationPassNewMatcher", PassContinuationRule.STOP_BEFORE_PASS)
-        // TODO(b/113531978): Remove the "new_html_matcher" flag when the new HTML matcher
-        // goes live.
-        .enableExperimentalFeatures(ImmutableList.of("new_html_matcher"))
+            "StrictHtmlValidation", PassContinuationRule.STOP_BEFORE_PASS)
         .desugarHtmlNodes(false)
         .errorReporter(ErrorReporter.createForTest())
         .parse()

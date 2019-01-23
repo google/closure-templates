@@ -295,7 +295,7 @@ public final class PassManager {
       // can run anywhere
       addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
-      addPass(new StrictHtmlValidationPassNewMatcher(errorReporter), singleFilePassesBuilder);
+      addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
 
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
