@@ -1685,7 +1685,6 @@ public class RenderVisitorTest {
   }
 
   @Test
-  @ExperimentalFeatures("prop_vars")
   public void testKeyNodeIsNoOp() throws Exception {
     assertRender("<div {key 'foo'}></div>", "<div></div>");
   }

@@ -363,7 +363,6 @@ public final class CheckTemplateHeaderVarsPassTest {
 
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();

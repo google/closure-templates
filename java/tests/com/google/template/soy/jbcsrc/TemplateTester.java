@@ -28,7 +28,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.truth.FailureMetadata;
@@ -275,9 +274,7 @@ public final class TemplateTester {
 
     @CheckReturnValue
     public IterableSubject failsToCompileWithErrorsThat() {
-      SoyFileSetParserBuilder builder =
-          SoyFileSetParserBuilder.forFileContents(actual())
-              .enableExperimentalFeatures(ImmutableList.of("prop_vars"));
+      SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
       for (SoyFunction function : soyFunctions) {
         builder.addSoyFunction(function);
       }
@@ -366,7 +363,6 @@ public final class TemplateTester {
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
                 .errorReporter(ErrorReporter.exploding())
-                .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
                 .parse();
         SoyFileSetNode fileSet = parseResult.fileSet();
 

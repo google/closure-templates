@@ -141,7 +141,6 @@ public class PrerenderVisitorTest {
   }
 
   @Test
-  @ExperimentalFeatures("prop_vars")
   public void testPrerenderWithKeyNodeError() throws Exception {
     try {
       prerender("<div {key 'foo'}></div>");

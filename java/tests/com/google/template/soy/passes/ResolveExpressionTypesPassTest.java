@@ -114,7 +114,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -170,7 +169,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('example.ExampleExtendable', $proto)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .typeRegistry(typeRegistry)
             .parse()
             .fileSet();

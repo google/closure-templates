@@ -147,7 +147,6 @@ public class BytecodeCompilerTest {
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
-            .enableExperimentalFeatures(ImmutableList.of("prop_vars"))
             .build();
     ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
