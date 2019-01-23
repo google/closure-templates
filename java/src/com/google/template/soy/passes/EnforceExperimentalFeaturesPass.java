@@ -17,20 +17,14 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
-import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateElementNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
 
 /**
  * A pass that ensures that experimental features are only used when enabled.
@@ -42,14 +36,6 @@ import com.google.template.soy.soytree.defn.TemplatePropVar;
  */
 final class EnforceExperimentalFeaturesPass extends CompilerFilePass {
 
-  private static final SoyErrorKind ELEMENT_NOT_ALLOWED =
-      SoyErrorKind.of("'{'element ...'}' declarations are not available for general use.");
-  private static final SoyErrorKind PROP_VARS_NOT_ALLOWED =
-      SoyErrorKind.of("@prop declarations are not available for general use.");
-  private static final SoyErrorKind KEY_COMMAND_NOT_ALLOWED =
-      SoyErrorKind.of("The key command is not available for general use.");
-  private static final SoyErrorKind KEY_ATTR_NOT_ALLOWED =
-      SoyErrorKind.of("Key attributes are not available for general use.");
   private static final SoyErrorKind DYNAMIC_VE_NOT_ALLOWED =
       SoyErrorKind.of("Dynamic VE features are not available for general use.");
 
@@ -62,25 +48,7 @@ final class EnforceExperimentalFeaturesPass extends CompilerFilePass {
   }
 
   @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) { // TODO(b/114483225): Remove.
-    if (!features.contains("prop_vars")) {
-      for (CallNode call : SoyTreeUtils.getAllNodesOfType(file, CallNode.class)) {
-        if (call.getKeyExpr() != null) {
-          reporter.report(call.getKeyExpr().getSourceLocation(), KEY_ATTR_NOT_ALLOWED);
-        }
-      }
-      for (KeyNode keyNode : SoyTreeUtils.getAllNodesOfType(file, KeyNode.class)) {
-        reporter.report(keyNode.getSourceLocation(), KEY_COMMAND_NOT_ALLOWED);
-      }
-      for (TemplateNode template : file.getChildren()) {
-        if (template instanceof TemplateElementNode) {
-          reporter.report(template.getSourceLocation(), ELEMENT_NOT_ALLOWED);
-          for (TemplatePropVar prop : ((TemplateElementNode) template).getPropVars()) {
-            reporter.report(prop.nameLocation(), PROP_VARS_NOT_ALLOWED);
-          }
-        }
-      }
-    }
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     if (!features.contains("dynamic_ve")) {
       for (VeLiteralNode veLiteral : SoyTreeUtils.getAllNodesOfType(file, VeLiteralNode.class)) {
         reporter.report(veLiteral.getSourceLocation(), DYNAMIC_VE_NOT_ALLOWED);
