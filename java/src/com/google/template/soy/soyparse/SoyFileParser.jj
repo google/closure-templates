@@ -1456,7 +1456,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     try {
       TemplateOpenTagHelper(builder, open, false)
       { whitespaceMode = builder.getWhitespaceMode(); }
-      initialWhitespace = TemplateHeader(builder)
+      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ false)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_TEMPLATE>
       {
@@ -1477,7 +1477,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     try {
       TemplateOpenTagHelper(builder, open, true)
       { whitespaceMode = builder.getWhitespaceMode(); }
-      initialWhitespace = TemplateHeader(builder)
+      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ false)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_DELTEMPLATE>
       {
@@ -1496,7 +1496,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     { TemplateElementNodeBuilder builder = new TemplateElementNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
       TemplateOpenTagHelper(builder, open, false)
-      initialWhitespace = ElementHeader(builder)
+      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ true)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_ELEMENT>
       {
@@ -1718,13 +1718,15 @@ private RawTextNode RawText() :
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
  */
-private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
+private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean allowProps) :
 {
   Token tok;
   TemplateHeaderVarDefn param;
   List<HeaderParam> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
+  List<TemplatePropVar> propVars = ImmutableList.of();
+
 }
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
@@ -1757,76 +1759,14 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
             params.add((HeaderParam) param);
             break;
           case PROP:
-            errorReporter.report(param.nameLocation(), PROP_IN_TEMPLATE);
-            break;
-          case IJ_PARAM:
-          case LOCAL_VAR:
-          case UNDECLARED:
-            throw new AssertionError("unexpected var kind: " + param.kind());
-        }
-      }
-    )
-  )*
-
-  { templateBuilder.addParams(params);
-    return whitespace;
-  }
-}
-
-/**
- * Important: The element header consists of a sequence of ParamDecls() separated by optional
- * whitespace.
- *
- * ElementHeader -> ( Whitespace() | ParamDecl() )*
- *
- * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
- * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
- * consumed here, and returned as RawTextNode.
- *
- * TODO(b/122855061): Merge Merge ElementHeader and TemplateHeader.
- */
-private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
-{
-  Token tok;
-  TemplateHeaderVarDefn param;
-  List<HeaderParam> params = ImmutableList.of();
-  ImmutableList.Builder<TemplatePropVar> propVars = ImmutableList.builder();
-  RawTextNode whitespace = null;
-  String soyDoc = null;
-}
-{
-  ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
-    (
-      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode); }
-
-      ( LOOKAHEAD(1)  // prefer staying in the loop
-        tok = <TOKEN_WS>
-        { if (tok.specialToken != null) {
-            soyDoc = tok.specialToken.image;
-          }
-          builder.addBasic(tok);
-        }
-      )+
-
-      { whitespace = builder.build(); }
-    |
-      param = ParamDecl(soyDoc)
-      {
-        switch (param.kind()) {
-          case PARAM:
-            // we just parsed a param, preceding whitespace/doc comments are not important
-            whitespace = null;
-            soyDoc = null;
-            if (params.isEmpty()) {
-              params = new ArrayList<HeaderParam>();
+            if (allowProps) {
+              if (propVars.isEmpty()) {
+                propVars = new ArrayList<TemplatePropVar>();
+              }
+              propVars.add((TemplatePropVar) param);
+            } else {
+              errorReporter.report(param.nameLocation(), PROP_IN_TEMPLATE);
             }
-            params.add((HeaderParam) param);
-            break;
-          case PROP:
-            // We just parsed a prop var, preceding whitespace/doc comments are not important.
-            whitespace = null;
-            soyDoc = null;
-            propVars.add((TemplatePropVar) param);
             break;
           case IJ_PARAM:
           case LOCAL_VAR:
@@ -1837,8 +1777,11 @@ private RawTextNode ElementHeader(TemplateElementNodeBuilder templateBuilder) :
     )
   )*
 
-  { templateBuilder.addParams(params);
-    templateBuilder.setPropVars(propVars.build());
+  {
+    templateBuilder.addParams(params);
+    if (allowProps) {
+      ((TemplateElementNodeBuilder) templateBuilder).setPropVars(propVars);
+    }
     return whitespace;
   }
 }

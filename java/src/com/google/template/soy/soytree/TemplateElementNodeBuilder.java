@@ -89,8 +89,8 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-  public TemplateNodeBuilder setPropVars(ImmutableList<TemplatePropVar> newPropVars) {
-    this.propVars = newPropVars;
+  public TemplateNodeBuilder setPropVars(List<TemplatePropVar> newPropVars) {
+    this.propVars = ImmutableList.copyOf(newPropVars);
     checkDuplicateHeaderVars(params, propVars, errorReporter);
     return this;
   }
