@@ -73,6 +73,7 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -1043,6 +1044,14 @@ final class ExpressionCompiler {
           },
           detacher,
           varManager);
+    }
+
+    @Override
+    protected SoyExpression visitVeLiteralNode(VeLiteralNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(
+              constant(node.getId()), constant(node.getName().identifier())));
     }
 
     // Catch-all for unimplemented nodes

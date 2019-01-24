@@ -24,8 +24,12 @@ import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.logging.LoggableElement;
+import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -247,5 +251,20 @@ public final class TranslateExprNodeVisitorTest {
             + "}\n";
 
     assertThatSoyFile(soyFile).generatesTemplateThat().isEqualTo(expectedJs);
+  }
+
+  @Test
+  public void testVeLiteral() {
+    assertThatSoyExpr("ve(MyVe)")
+        .withLoggingConfig(
+            ValidatedLoggingConfig.create(
+                LoggingConfig.newBuilder()
+                    .addElement(LoggableElement.newBuilder().setId(8675309).setName("MyVe"))
+                    .build()))
+        .withExperimentalFeatures(ImmutableList.of("dynamic_ve"))
+        .generatesCode(
+            "goog.DEBUG "
+                + "? new soy.velog.$$VisualElement(8675309, 'MyVe') "
+                + ": new soy.velog.$$VisualElement(8675309);");
   }
 }

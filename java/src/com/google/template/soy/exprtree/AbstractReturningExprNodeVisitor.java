@@ -144,6 +144,9 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case PROTO_INIT_NODE:
         return visitProtoInitNode((ProtoInitNode) node);
 
+      case VE_LITERAL_NODE:
+        return visitVeLiteralNode((VeLiteralNode) node);
+
       default:
         throw new UnsupportedOperationException();
     }
@@ -315,6 +318,13 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitProtoInitNode(ProtoInitNode node) {
+    return visitExprNode(node);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for ve nodes.
+
+  protected R visitVeLiteralNode(VeLiteralNode node) {
     return visitExprNode(node);
   }
 

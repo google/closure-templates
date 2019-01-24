@@ -29,6 +29,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.operation;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
@@ -38,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
@@ -78,6 +80,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -603,8 +606,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           // this is a no-op in js
           return visit(node.getChild(0));
         case DEBUG_SOY_TEMPLATE_INFO:
-          return Expression.dottedIdNoRequire("goog.DEBUG")
-              .and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
+          return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
         case VE_DATA:
           // TODO(b/71641483): Implement this once we have ve runtime objects.
           throw new UnsupportedOperationException();
@@ -712,5 +714,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return ImmutableSet.of(argSize);
       }
     };
+  }
+
+  @Override
+  protected Expression visitVeLiteralNode(VeLiteralNode node) {
+    return Expression.ifExpression(
+            GOOG_DEBUG,
+            construct(
+                SOY_VISUAL_ELEMENT,
+                Expression.number(node.getId()),
+                Expression.stringLiteral(node.getName().identifier())))
+        .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId())))
+        .build(codeGenerator);
   }
 }

@@ -318,6 +318,41 @@ class Logger {
   evalLoggingFunction(name, args) {}
 }
 
+/**
+ * Soy's runtime representation of objects of the Soy `ve` type.
+ *
+ * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
+ * this from handwritten code.
+ *
+ * @final
+ */
+class $$VisualElement {
+  /**
+   * @param {number} id
+   * @param {string=} name
+   */
+  constructor(id, name = undefined) {
+    /** @private @const {number} */
+    this.id_ = id;
+    /** @private @const {string|undefined} */
+    this.name_ = name;
+  }
+
+  /** @return {number} */
+  getId() {
+    return this.id_;
+  }
+
+  /** @override */
+  toString() {
+    if (goog.DEBUG) {
+      return `**FOR DEBUGGING ONLY ve(${this.name_}), id: ${this.id_}**`;
+    } else {
+      return 'zSoyVez';
+    }
+  }
+}
+
 exports = {
   $$hasMetadata,
   $$getLoggingAttribute,
@@ -328,6 +363,7 @@ exports = {
   FunctionMetadata,
   Logger,
   Metadata,
+  $$VisualElement,
   emitLoggingCommands,
   setMetadataTestOnly,
   setUpLogging,

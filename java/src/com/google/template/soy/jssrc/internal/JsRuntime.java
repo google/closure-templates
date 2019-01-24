@@ -51,6 +51,7 @@ public final class JsRuntime {
   private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
   private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
+  private static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
 
@@ -124,6 +125,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
       SOY_NEWMAPS.dotAccess("$$transformValues");
+
+  public static final Expression SOY_VISUAL_ELEMENT = SOY_VELOG.dotAccess("$$VisualElement");
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 
