@@ -328,7 +328,7 @@ public final class PassManager {
         addPass(new AssertStrictAutoescapingPass(errorReporter), singleFilePassesBuilder);
       }
       // Needs to run after HtmlRewritePass.
-      addPass(new KeyCommandPass(errorReporter), singleFilePassesBuilder);
+      addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
       // validation).
       addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);

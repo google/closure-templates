@@ -54,22 +54,26 @@ final class KeyCommandPass extends CompilerFilePass {
       SoyErrorKind.of(
           "Key elements must have open tags that map to a single HTML close tag and vice versa.");
 
+  private final boolean disableAllTypeChecking;
   private final ErrorReporter errorReporter;
 
-  KeyCommandPass(ErrorReporter errorReporter) {
+  KeyCommandPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+    this.disableAllTypeChecking = disableAllTypeChecking;
     this.errorReporter = errorReporter;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (KeyNode node : SoyTreeUtils.getAllNodesOfType(file, KeyNode.class)) {
-      checkNodeIsValidOpenTagNodeChild(node);
+      checkNodeIsValidChildOfOpenTagNode(node);
       checkNoDuplicateKeyAttribute(node);
-      checkNodeIsSupportedType(node);
+      if (!disableAllTypeChecking) {
+        checkNodeIsSupportedType(node);
+      }
     }
   }
 
-  private void checkNodeIsValidOpenTagNodeChild(KeyNode node) {
+  private void checkNodeIsValidChildOfOpenTagNode(KeyNode node) {
     if (!(node.getParent() instanceof HtmlOpenTagNode)) {
       errorReporter.report(node.getSourceLocation(), KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG);
       return;
