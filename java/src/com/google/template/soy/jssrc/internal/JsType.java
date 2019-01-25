@@ -233,7 +233,7 @@ public final class JsType {
     return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ false);
   }
 
-  public static JsType forIncrementalDomSetter(SoyType soyType) {
+  public static JsType forIncrementalDomProp(SoyType soyType) {
     return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ true);
   }
 
