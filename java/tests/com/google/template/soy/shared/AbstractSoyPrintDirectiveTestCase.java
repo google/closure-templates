@@ -189,7 +189,7 @@ public abstract class AbstractSoyPrintDirectiveTestCase {
   }
 
   private static String getSoyUtilsPath() {
-    return "testdata/javascript/soy_usegoog_lib_nomap.js";
+    return "testdata/javascript/soy_usegoog_lib_es5.js";
   }
 
   /** Data for a single print directive test to run in a JS interpreter. */
