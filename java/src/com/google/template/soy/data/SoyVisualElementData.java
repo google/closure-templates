@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,31 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import com.google.protobuf.Message;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
-/** Soy's runtime representation of objects of the Soy {@code ve} type. */
+/** Soy's runtime representation of objects of the Soy {@code ve_data} type. */
 @AutoValue
-public abstract class SoyVisualElement extends SoyAbstractValue {
+public abstract class SoyVisualElementData extends SoyAbstractValue {
 
-  public static SoyVisualElement create(long id, String name) {
-    return new AutoValue_SoyVisualElement(id, name);
+  public static SoyVisualElementData create(SoyVisualElement ve, Message data) {
+    return new AutoValue_SoyVisualElementData(ve, data);
   }
 
-  public abstract long id();
+  public abstract SoyVisualElement ve();
 
-  public abstract String name();
+  @Nullable
+  public abstract Message data();
 
   @Override
   public boolean coerceToBoolean() {
     return true;
   }
 
-  String getDebugString() {
-    return String.format("ve(%s)", name());
-  }
-
   @Override
   public String coerceToString() {
-    return String.format("**FOR DEBUGGING ONLY %s, id: %s**", getDebugString(), id());
+    return String.format("**FOR DEBUGGING ONLY ve_data(%s, %s)**", ve().getDebugString(), data());
   }
 
   @Override

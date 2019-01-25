@@ -101,8 +101,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         case DEBUG_SOY_TEMPLATE_INFO:
           return visitDebugSoyTemplateInfoFunction(node);
         case VE_DATA:
-          // TODO(b/71641483): Implement this once we have ve runtime objects.
-          throw new UnsupportedOperationException();
+          return visitVeDataFunction(node);
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -168,6 +167,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitDebugSoyTemplateInfoFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitVeDataFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

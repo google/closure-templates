@@ -127,6 +127,8 @@ public final class JsRuntime {
       SOY_NEWMAPS.dotAccess("$$transformValues");
 
   public static final Expression SOY_VISUAL_ELEMENT = SOY_VELOG.dotAccess("$$VisualElement");
+  public static final Expression SOY_VISUAL_ELEMENT_DATA =
+      SOY_VELOG.dotAccess("$$VisualElementData");
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 

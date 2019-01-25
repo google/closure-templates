@@ -40,6 +40,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COE
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
@@ -608,8 +609,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case DEBUG_SOY_TEMPLATE_INFO:
           return GOOG_DEBUG.and(JsRuntime.SOY_DEBUG_SOY_TEMPLATE_INFO, codeGenerator);
         case VE_DATA:
-          // TODO(b/71641483): Implement this once we have ve runtime objects.
-          throw new UnsupportedOperationException();
+          return visitVeDataFunction(node);
         case REMAINDER:
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler
@@ -691,6 +691,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         V1JsExprTranslator.translateToJsExpr(
             expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
     return Expression.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
+  }
+
+  private Expression visitVeDataFunction(FunctionNode node) {
+    return construct(SOY_VISUAL_ELEMENT_DATA, visit(node.getChild(0)), visit(node.getChild(1)));
   }
 
   private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {

@@ -343,12 +343,58 @@ class $$VisualElement {
     return this.id_;
   }
 
+  /** @package @return {string} */
+  toDebugString() {
+    return `ve(${this.name_})`;
+  }
+
   /** @override */
   toString() {
     if (goog.DEBUG) {
-      return `**FOR DEBUGGING ONLY ve(${this.name_}), id: ${this.id_}**`;
+      return `**FOR DEBUGGING ONLY ${this.toDebugString()}, id: ${this.id_}**`;
     } else {
       return 'zSoyVez';
+    }
+  }
+}
+
+/**
+ * Soy's runtime representation of objects of the Soy `ve_data` type.
+ *
+ * <p>This is for use only in Soy internal code and Soy generated JS. DO NOT use
+ * this from handwritten code.
+ *
+ * @final
+ */
+class $$VisualElementData {
+  /**
+   * @param {!$$VisualElement} ve
+   * @param {?Message} data
+   */
+  constructor(ve, data) {
+    /** @private @const {!$$VisualElement} */
+    this.ve_ = ve;
+    /** @private @const {?Message} */
+    this.data_ = data;
+  }
+
+  /** @return {!$$VisualElement} */
+  getVe() {
+    return this.ve_;
+  }
+
+  /** @return {?Message} */
+  getData() {
+    return this.data_;
+  }
+
+  /** @override */
+  toString() {
+    if (goog.DEBUG) {
+      return `**FOR DEBUGGING ONLY ve_data(${this.ve_.toDebugString()}, ${
+          this.data_})**`;
+    } else {
+      return 'zSoyVeDz';
     }
   }
 }
@@ -364,6 +410,7 @@ exports = {
   Logger,
   Metadata,
   $$VisualElement,
+  $$VisualElementData,
   emitLoggingCommands,
   setMetadataTestOnly,
   setUpLogging,

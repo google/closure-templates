@@ -971,6 +971,14 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(parameters.getRenderContext().getDebugSoyTemplateInfo());
     }
 
+    @Override
+    SoyExpression visitVeDataFunction(FunctionNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(
+              visit(node.getChild(0)), visit(node.getChild(1))));
+    }
+
     // Non-builtin functions
 
     @Override
