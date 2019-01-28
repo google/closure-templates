@@ -31,6 +31,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SAN
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_UNSANITIZED_TEXT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
@@ -451,11 +452,31 @@ public final class JsType {
               .build();
         }
       case VE:
-        // TODO(b/71641483): Implement this once we have ve runtime objects.
-        throw new UnsupportedOperationException();
+        return builder()
+            .addType("!soy.velog.$$VisualElement")
+            .addRequire(SOY_VELOG)
+            .setPredicate(
+                new TypePredicate() {
+                  @Override
+                  public Optional<Expression> maybeCheck(
+                      Expression value, Generator codeGenerator) {
+                    return Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT));
+                  }
+                })
+            .build();
       case VE_DATA:
-        // TODO(b/71641483): Implement this once we have ve runtime objects.
-        throw new UnsupportedOperationException();
+        return builder()
+            .addType("!soy.velog.$$VisualElementData")
+            .addRequire(SOY_VELOG)
+            .setPredicate(
+                new TypePredicate() {
+                  @Override
+                  public Optional<Expression> maybeCheck(
+                      Expression value, Generator codeGenerator) {
+                    return Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT_DATA));
+                  }
+                })
+            .build();
       case ERROR:
         // continue
     }
