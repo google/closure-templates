@@ -16,10 +16,10 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -27,10 +27,10 @@ import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.types.IntType;
-import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -49,7 +49,7 @@ final class KeyCommandPass extends CompilerFilePass {
       SoyErrorKind.of("The key attribute is deprecated. Instead, use the '{'key'}' command.");
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
-      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string or integer.");
+      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, integer, or enum.");
 
   private static final SoyErrorKind KEY_ELEMENT_AMBIGUOUS =
       SoyErrorKind.of(
@@ -117,21 +117,47 @@ final class KeyCommandPass extends CompilerFilePass {
   }
 
   private void checkNodeIsSupportedType(KeyNode node) {
-    ExprNode expr = node.getExpr().getRoot();
-    if (expr.getType().getKind() == Kind.ANY || expr.getType().getKind() == Kind.UNKNOWN) {
-      errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE, expr.getType());
-      return;
+    SoyType exprType = node.getExpr().getRoot().getType();
+    Collection<SoyType> unwrapped =
+        exprType.getKind() == Kind.UNION
+            ? ((UnionType) exprType).getMembers()
+            : ImmutableSet.of(exprType);
+    boolean isSupportedType = true;
+    for (SoyType type : unwrapped) {
+      switch (type.getKind()) {
+        case ERROR:
+        case NULL:
+        case INT:
+        case STRING:
+        case PROTO_ENUM:
+          // these are all fine.
+          // null should potentially be rejected, but it is often hard to avoid nullable expressions
+          break;
+        case BOOL:
+        case FLOAT:
+        case HTML:
+        case ATTRIBUTES:
+        case JS:
+        case CSS:
+        case URI:
+        case TRUSTED_RESOURCE_URI:
+        case LIST:
+        case RECORD:
+        case LEGACY_OBJECT_MAP:
+        case MAP:
+        case PROTO:
+        case VE:
+        case VE_DATA:
+        case ANY:
+        case UNKNOWN:
+          isSupportedType = false;
+          break;
+        case UNION:
+          throw new AssertionError("impossible");
+      }
     }
-
-    boolean isSupportedType =
-        // Note that GenIncrementalDomCodeVisitor also asserts that a supported type is passed
-        // in, so for union types (e.g. string|bool), that check will catch a bool passed in
-        // at runtime.
-        expr.getType().isAssignableFrom(IntType.getInstance())
-            || expr.getType().isAssignableFrom(StringType.getInstance())
-            || expr.getType() instanceof SoyProtoEnumType;
     if (!isSupportedType) {
-      errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE, expr.getType());
+      errorReporter.report(node.getExpr().getSourceLocation(), UNSUPPORTED_TYPE, exprType);
     }
   }
 }
