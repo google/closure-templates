@@ -3660,6 +3660,10 @@ goog.html.SafeUrl.isSmsUrlBodyValid_ = function(smsUrl) {
   }
   return /^(?:[a-z0-9\-_.~]|%[0-9a-f]{2})+$/i.test(bodyValue);
 };
+goog.html.SafeUrl.fromSshUrl = function(sshUrl) {
+  goog.string.internal.caseInsensitiveStartsWith(sshUrl, "ssh://") || (sshUrl = goog.html.SafeUrl.INNOCUOUS_STRING);
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(sshUrl);
+};
 goog.html.SafeUrl.sanitizeChromeExtensionUrl = function(url, extensionId) {
   return goog.html.SafeUrl.sanitizeExtensionUrl_(/^chrome-extension:\/\/([^\/]+)\//, url, extensionId);
 };
