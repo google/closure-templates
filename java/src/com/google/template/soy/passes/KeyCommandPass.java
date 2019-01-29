@@ -125,16 +125,16 @@ final class KeyCommandPass extends CompilerFilePass {
     boolean isSupportedType = true;
     for (SoyType type : unwrapped) {
       switch (type.getKind()) {
-        case ERROR:
+        case ERROR: // allow ERROR to avoid cascading errors
         case NULL:
         case INT:
+        case FLOAT:
         case STRING:
         case PROTO_ENUM:
           // these are all fine.
           // null should potentially be rejected, but it is often hard to avoid nullable expressions
           break;
         case BOOL:
-        case FLOAT:
         case HTML:
         case ATTRIBUTES:
         case JS:
