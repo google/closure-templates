@@ -143,14 +143,10 @@ public final class RenderContext {
     }
     // TODO(lukes): this adapter is lame.  there should just be a way to get the print directive to
     // hand us an escaper or a function rather than writing this adapter.
-    return new Function<String, String>() {
-      @Override
-      public String apply(String input) {
-        return printDirective
+    return input ->
+        printDirective
             .applyForJava(StringData.forValue(input), ImmutableList.<SoyValue>of())
             .stringValue();
-      }
-    };
   }
 
   /**

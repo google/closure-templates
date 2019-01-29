@@ -515,10 +515,8 @@ final class MsgCompiler {
             // We need to call a different method in this case to add the ordering constraint
             // between the start and end tag.
             putEntyInMap =
-                new Function<Expression, Statement>() {
-                  @Override
-                  public Statement apply(Expression mapExpression) {
-                    return mapExpression
+                mapExpression ->
+                    mapExpression
                         // need to cast since it is stored in a SoyValueProvider field
                         .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
                         .invokeVoid(
@@ -530,8 +528,6 @@ final class MsgCompiler {
                                 /* prefix= */ enterLoggableElement,
                                 /* suffix= */ ExtraCodeCompiler.NO_OP),
                             constant(closeTagPlaceholderName));
-                  }
-                };
           }
         } else if (childIndex == veLogNode.numChildren() - 1) {
           putEntyInMap =
@@ -584,20 +580,17 @@ final class MsgCompiler {
 
   private Function<Expression, Statement> putToMapFunction(
       final String mapKey, final Expression valueExpression, @Nullable final Label labelStart) {
-    return new Function<Expression, Statement>() {
-      @Override
-      public Statement apply(Expression mapExpression) {
-        Statement statement =
-            mapExpression
-                // need to cast since it is stored in a SoyValueProvider field
-                .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
-                .invokeVoid(
-                    MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(mapKey), valueExpression);
-        if (labelStart != null) {
-          statement = statement.labelStart(labelStart);
-        }
-        return statement;
+    return mapExpression -> {
+      Statement statement =
+          mapExpression
+              // need to cast since it is stored in a SoyValueProvider field
+              .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
+              .invokeVoid(
+                  MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(mapKey), valueExpression);
+      if (labelStart != null) {
+        statement = statement.labelStart(labelStart);
       }
+      return statement;
     };
   }
 }

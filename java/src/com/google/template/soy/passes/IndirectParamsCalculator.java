@@ -253,9 +253,7 @@ public final class IndirectParamsCalculator {
     for (Parameter p : callee.getParameters()) {
       if (!allCallParamKeys.contains(p.getName())) {
         // For some reason we only record the first one.
-        if (!indirectParams.containsKey(p.getName())) {
-          indirectParams.put(p.getName(), p);
-        }
+        indirectParams.putIfAbsent(p.getName(), p);
         indirectParamTypes.put(p.getName(), p.getType());
         paramKeyToCalleesMultimap.put(p.getName(), callee);
       }

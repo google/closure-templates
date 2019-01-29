@@ -1185,13 +1185,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .call(
                   number(0), dottedIdNoRequire("Math.ceil").call(end.minus(start).divideBy(step)));
       // optimize for foreach over a range
-      getDataItemFunction =
-          new Function<Expression, Expression>() {
-            @Override
-            public Expression apply(Expression index) {
-              return start.plus(index.times(step));
-            }
-          };
+      getDataItemFunction = index -> start.plus(index.times(step));
     } else {
       // Define list var and list-len var.
       Expression dataRef = translateExpr(node.getExpr());
@@ -1199,13 +1193,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Expression listVar = VariableDeclaration.builder(listVarName).setRhs(dataRef).build().ref();
       // does it make sense to store this in a variable?
       limitInitializer = listVar.dotAccess("length");
-      getDataItemFunction =
-          new Function<Expression, Expression>() {
-            @Override
-            public Expression apply(Expression index) {
-              return id(listVarName).bracketAccess(index);
-            }
-          };
+      getDataItemFunction = index -> id(listVarName).bracketAccess(index);
     }
 
     // Generate the foreach body as a CodeChunk.

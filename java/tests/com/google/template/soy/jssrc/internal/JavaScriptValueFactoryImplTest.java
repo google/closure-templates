@@ -25,11 +25,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptPluginContext;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValue;
-import com.google.template.soy.plugin.javascript.restricted.JavaScriptValueFactory;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -38,15 +34,10 @@ import org.junit.runners.JUnit4;
 public final class JavaScriptValueFactoryImplTest {
 
   static final SoyJavaScriptSourceFunction callModuleFn =
-      (JavaScriptValueFactory factory,
-          List<JavaScriptValue> args,
-          JavaScriptPluginContext context) -> factory.callModuleFunction("foo.bar", "baz");
+      (factory, args, context) -> factory.callModuleFunction("foo.bar", "baz");
 
   static final SoyJavaScriptSourceFunction callNamespaceFn =
-      (JavaScriptValueFactory factory,
-          List<JavaScriptValue> args,
-          JavaScriptPluginContext context) ->
-          factory.callNamespaceFunction("foo.bar", "foo.bar.baz");
+      (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz");
 
   @Test
   public void testCallModuleFunctionInGoogModule() throws Exception {
@@ -78,10 +69,7 @@ public final class JavaScriptValueFactoryImplTest {
     Expression expr =
         applyFunction(
             new SoyJsSrcOptions(),
-            (JavaScriptValueFactory factory,
-                List<JavaScriptValue> args,
-                JavaScriptPluginContext context) ->
-                factory.callNamespaceFunction("foo.bar", "foo.bar"));
+            (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("foo.bar();");
@@ -95,10 +83,7 @@ public final class JavaScriptValueFactoryImplTest {
     Expression expr =
         applyFunction(
             new SoyJsSrcOptions(),
-            (JavaScriptValueFactory factory,
-                List<JavaScriptValue> args,
-                JavaScriptPluginContext context) ->
-                factory.callNamespaceFunction("foo.bar", "foo.bar.baz"));
+            (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("foo.bar.baz();");

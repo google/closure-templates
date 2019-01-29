@@ -397,10 +397,7 @@ public final class HtmlTagMatchingPass {
     // In this case, it is unnecessary once we have decided that $foo is TRUE to traverse the
     // branch where $foo is FALSE. We save the original state of the value and use it below
     // to decide if we should take a branch.
-    Boolean originalState = null;
-    if (exprValueMap.containsKey(condition)) {
-      originalState = exprValueMap.get(condition);
-    }
+    Boolean originalState = exprValueMap.getOrDefault(condition, null);
 
     Optional<HtmlMatcherGraphNode> nextNode = condNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     Optional<HtmlMatcherGraphNode> nextAltNode = condNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE);

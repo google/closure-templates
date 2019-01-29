@@ -43,14 +43,12 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private SourceLocation actualSourceLocation;
   private SoyFileNode fileNode;
 
-  private static final Subject.Factory<TemplateSubject, String> FACTORY = TemplateSubject::new;
-
   TemplateSubject(FailureMetadata failureMetadata, String s) {
     super(failureMetadata, s);
   }
 
   public static TemplateSubject assertThatTemplateContent(String input) {
-    return Truth.assertAbout(FACTORY).that(input);
+    return Truth.assertAbout(TemplateSubject::new).that(input);
   }
 
   public TemplateSubject causesError(SoyErrorKind error) {

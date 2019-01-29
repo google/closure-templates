@@ -1283,23 +1283,20 @@ final class HtmlRewriter {
           node,
           collectMsgBranches(node),
           "msg",
-          new Function<BlockNode, String>() {
-            @Override
-            public String apply(BlockNode input) {
-              switch (input.getKind()) {
-                case MSG_FALLBACK_GROUP_NODE:
-                  return "fallbackmsg";
-                case MSG_NODE:
-                  return "msg";
-                case MSG_PLURAL_CASE_NODE:
-                case MSG_SELECT_CASE_NODE:
-                  return "case block";
-                case MSG_PLURAL_DEFAULT_NODE:
-                case MSG_SELECT_DEFAULT_NODE:
-                  return "default block";
-                default:
-                  throw new AssertionError("unexepected node: " + input);
-              }
+          input -> {
+            switch (input.getKind()) {
+              case MSG_FALLBACK_GROUP_NODE:
+                return "fallbackmsg";
+              case MSG_NODE:
+                return "msg";
+              case MSG_PLURAL_CASE_NODE:
+              case MSG_SELECT_CASE_NODE:
+                return "case block";
+              case MSG_PLURAL_DEFAULT_NODE:
+              case MSG_SELECT_DEFAULT_NODE:
+                return "default block";
+              default:
+                throw new AssertionError("unexepected node: " + input);
             }
           },
           true, // exactly one branch will execute once
@@ -1314,14 +1311,11 @@ final class HtmlRewriter {
           node,
           node.getChildren(),
           node.getCommandName() + " loop",
-          new Function<BlockNode, String>() {
-            @Override
-            public String apply(@Nullable BlockNode input) {
-              if (input instanceof ForNonemptyNode) {
-                return "loop body";
-              }
-              return "ifempty block";
+          input -> {
+            if (input instanceof ForNonemptyNode) {
+              return "loop body";
             }
+            return "ifempty block";
           },
           /* willExactlyOneBranchExecuteOnce= */ false,
           node.hasIfEmptyBlock() /* one branch will execute if there is an ifempty block. */);
@@ -1334,17 +1328,14 @@ final class HtmlRewriter {
           node,
           node.getChildren(),
           "if",
-          new Function<BlockNode, String>() {
-            @Override
-            public String apply(@Nullable BlockNode input) {
-              if (input instanceof IfCondNode) {
-                if (node.getChild(0) == input) {
-                  return "if block";
-                }
-                return "elseif block";
+          input -> {
+            if (input instanceof IfCondNode) {
+              if (node.getChild(0) == input) {
+                return "if block";
               }
-              return "else block";
+              return "elseif block";
             }
+            return "else block";
           },
           // one and only one child will execute if we have an else
           hasElse,
@@ -1358,14 +1349,11 @@ final class HtmlRewriter {
           node,
           node.getChildren(),
           "switch",
-          new Function<BlockNode, String>() {
-            @Override
-            public String apply(@Nullable BlockNode input) {
-              if (input instanceof SwitchCaseNode) {
-                return "case block";
-              }
-              return "default block";
+          input -> {
+            if (input instanceof SwitchCaseNode) {
+              return "case block";
             }
+            return "default block";
           },
           // one and only one child will execute if we have a default
           hasDefault,

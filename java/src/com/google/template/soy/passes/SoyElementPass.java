@@ -49,20 +49,10 @@ final class SoyElementPass extends CompilerFilePass {
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div).");
 
   private static final Predicate<SoyNode> OPEN_TAG_MATCHER =
-      new Predicate<SoyNode>() {
-        @Override
-        public boolean apply(SoyNode node) {
-          return node.getKind() == Kind.HTML_OPEN_TAG_NODE;
-        }
-      };
+      node -> node.getKind() == Kind.HTML_OPEN_TAG_NODE;
 
   private static final Predicate<SoyNode> CLOSE_TAG_MATCHER =
-      new Predicate<SoyNode>() {
-        @Override
-        public boolean apply(SoyNode node) {
-          return node.getKind() == Kind.HTML_CLOSE_TAG_NODE;
-        }
-      };
+      node -> node.getKind() == Kind.HTML_CLOSE_TAG_NODE;
 
   private final ErrorReporter errorReporter;
 
@@ -79,14 +69,7 @@ final class SoyElementPass extends CompilerFilePass {
       HtmlOpenTagNode firstOpenTagNode = null;
       HtmlCloseTagNode lastCloseTagNode = null;
       VeLogNode firstVeLog =
-          (VeLogNode)
-              template.firstChildThatMatches(
-                  new Predicate<SoyNode>() {
-                    @Override
-                    public boolean apply(SoyNode node) {
-                      return node.getKind() == Kind.VE_LOG_NODE;
-                    }
-                  });
+          (VeLogNode) template.firstChildThatMatches(node -> node.getKind() == Kind.VE_LOG_NODE);
       firstOpenTagNode = (HtmlOpenTagNode) template.firstChildThatMatches(OPEN_TAG_MATCHER);
       lastCloseTagNode = (HtmlCloseTagNode) template.lastChildThatMatches(CLOSE_TAG_MATCHER);
 

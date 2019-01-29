@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types;
 
+import static java.util.Comparator.comparing;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -37,21 +39,10 @@ import java.util.Set;
  */
 public final class UnionType extends SoyType {
   private static final Predicate<SoyType> IS_NULL =
-      new Predicate<SoyType>() {
-        @Override
-        public boolean apply(SoyType memberType) {
-          return memberType.getKind() == SoyType.Kind.NULL;
-        }
-      };
+      memberType -> memberType.getKind() == SoyType.Kind.NULL;
 
   /** Comparator that defines the ordering of types. */
-  private static final Comparator<SoyType> MEMBER_ORDER =
-      new Comparator<SoyType>() {
-        @Override
-        public int compare(SoyType st1, SoyType st2) {
-          return st1.toString().compareTo(st2.toString());
-        }
-      };
+  private static final Comparator<SoyType> MEMBER_ORDER = comparing(SoyType::toString);
 
   private final ImmutableSortedSet<SoyType> members;
 
@@ -131,7 +122,7 @@ public final class UnionType extends SoyType {
 
   /** Returns true if the union includes the null type. */
   public boolean isNullable() {
-    return Iterables.any(members, IS_NULL);
+    return members.stream().anyMatch(IS_NULL);
   }
 
   /** Returns a Soy type that is equivalent to this one but with 'null' removed. */

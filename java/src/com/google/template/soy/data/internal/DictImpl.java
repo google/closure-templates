@@ -18,7 +18,6 @@ package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -142,28 +141,14 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   @Nonnull
   public final Iterable<? extends SoyValue> getItemKeys() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
-    return Iterables.transform(
-        providerMap.keySet(),
-        new Function<String, SoyValue>() {
-          @Override
-          public SoyValue apply(String key) {
-            return StringData.forValue(key);
-          }
-        });
+    return Iterables.transform(providerMap.keySet(), StringData::forValue);
   }
 
   @Nonnull
   @Override
   public Iterable<? extends SoyValue> keys() {
     typeTracker.maybeSetMapType();
-    return Iterables.transform(
-        providerMap.keySet(),
-        new Function<String, SoyValue>() {
-          @Override
-          public SoyValue apply(String key) {
-            return StringData.forValue(key);
-          }
-        });
+    return Iterables.transform(providerMap.keySet(), StringData::forValue);
   }
 
   @Override

@@ -65,9 +65,8 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
     // All possible OptionalSafeTags.
     Object[] optionalSafeTagsAsArgs =
-        ImmutableSet.copyOf(OptionalSafeTag.values())
-            .stream()
-            .map(OptionalSafeTag.TO_TAG_NAME)
+        ImmutableSet.copyOf(OptionalSafeTag.values()).stream()
+            .map(OptionalSafeTag::getTagName)
             .toArray(String[]::new);
 
     // Safe tags are preserved. Others are not.
@@ -110,7 +109,7 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     // All possible OptionalSafeTags.
     ImmutableList<JsExpr> optionalSafeTagsAsJsExprs =
         Arrays.stream(OptionalSafeTag.values())
-            .map(OptionalSafeTag.TO_TAG_NAME)
+            .map(OptionalSafeTag::getTagName)
             .map(input -> new JsExpr(String.format("'%s'", input), Integer.MAX_VALUE))
             .collect(toImmutableList());
 
@@ -168,7 +167,7 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     // All possible OptionalSafeTags.
     ImmutableList<PyExpr> optionalSafeTagsAsPyExprs =
         Arrays.stream(OptionalSafeTag.values())
-            .map(OptionalSafeTag.TO_TAG_NAME)
+            .map(OptionalSafeTag::getTagName)
             .map(input -> new PyExpr(String.format("'%s'", input), Integer.MAX_VALUE))
             .collect(toImmutableList());
 

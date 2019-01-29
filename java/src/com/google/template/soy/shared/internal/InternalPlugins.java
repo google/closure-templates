@@ -73,20 +73,8 @@ public final class InternalPlugins {
 
   public static ImmutableMap<String, SoyPrintDirective> internalDirectiveMap(
       final SoyScopedData soyScopedData) {
-    Supplier<BidiGlobalDir> bidiProvider =
-        new Supplier<BidiGlobalDir>() {
-          @Override
-          public BidiGlobalDir get() {
-            return soyScopedData.getBidiGlobalDir();
-          }
-        };
-    Supplier<String> localeProvider =
-        new Supplier<String>() {
-          @Override
-          public String get() {
-            return soyScopedData.getLocale();
-          }
-        };
+    Supplier<BidiGlobalDir> bidiProvider = soyScopedData::getBidiGlobalDir;
+    Supplier<String> localeProvider = soyScopedData::getLocale;
     return fromDirectives(
         Iterables.concat(
             CoreDirectives.directives(),

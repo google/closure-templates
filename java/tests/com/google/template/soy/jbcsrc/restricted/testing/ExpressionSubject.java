@@ -38,12 +38,9 @@ import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.Obj
  */
 public final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
 
-  private static final Subject.Factory<ExpressionSubject, Expression> FACTORY =
-      ExpressionSubject::new;
-
   /** Returns a truth subject that can be used to assert on an {@link Expression}. */
   public static ExpressionSubject assertThatExpression(Expression resp) {
-    return Truth.assertAbout(FACTORY).that(resp);
+    return Truth.assertAbout(ExpressionSubject::new).that(resp);
   }
 
   private final ExpressionEvaluator evaluator = new ExpressionEvaluator();

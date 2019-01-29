@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -239,14 +238,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   @Override
   public JbcSrcJavaValue listOf(List<JavaValue> args) {
     List<SoyExpression> soyExprs =
-        Lists.transform(
-            args,
-            new Function<JavaValue, SoyExpression>() {
-              @Override
-              public SoyExpression apply(JavaValue value) {
-                return (SoyExpression) ((JbcSrcJavaValue) value).expr();
-              }
-            });
+        Lists.transform(args, value -> (SoyExpression) ((JbcSrcJavaValue) value).expr());
     return JbcSrcJavaValue.of(SoyExpression.asBoxedList(soyExprs), reporter);
   }
 

@@ -35,21 +35,10 @@ import java.util.Map;
  */
 public final class PyFunctionExprBuilder {
   private static final Function<Map.Entry<String, PyExpr>, String> KEYWORD_ARG_MAPPER =
-      new Function<Map.Entry<String, PyExpr>, String>() {
-        @Override
-        public String apply(Map.Entry<String, PyExpr> entry) {
-          String key = entry.getKey();
-          PyExpr value = entry.getValue();
-          return key + "=" + value.getText();
-        }
-      };
-
-  private static final Function<PyExpr, String> LIST_ARG_MAPPER =
-      new Function<PyExpr, String>() {
-        @Override
-        public String apply(PyExpr arg) {
-          return arg.getText();
-        }
+      entry -> {
+        String key = entry.getKey();
+        PyExpr value = entry.getValue();
+        return key + "=" + value.getText();
       };
 
   private final String funcName;
@@ -158,7 +147,7 @@ public final class PyFunctionExprBuilder {
     Joiner joiner = Joiner.on(", ").skipNulls();
 
     // Join args and kwargs into simple strings.
-    String args = joiner.join(Iterables.transform(argList, LIST_ARG_MAPPER));
+    String args = joiner.join(Iterables.transform(argList, PyExpr::getText));
     String kwargs = joiner.join(Iterables.transform(kwargMap.entrySet(), KEYWORD_ARG_MAPPER));
 
     // Strip empty strings.

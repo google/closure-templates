@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
@@ -111,13 +110,7 @@ public final class DelTemplateSelector<T> {
   public static final class Builder<T> {
     private final Table<String, String, Group.Builder<T>> nameAndVariantToGroup =
         Tables.newCustomTable(
-            new LinkedHashMap<String, Map<String, Group.Builder<T>>>(),
-            new Supplier<Map<String, Group.Builder<T>>>() {
-              @Override
-              public Map<String, Group.Builder<T>> get() {
-                return new LinkedHashMap<>();
-              }
-            });
+            new LinkedHashMap<String, Map<String, Group.Builder<T>>>(), LinkedHashMap::new);
 
     /** Adds a template in the default delpackage. */
     public T addDefault(String delTemplateName, String variant, T value) {

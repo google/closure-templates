@@ -736,11 +736,7 @@ public final class GenerateParseInfoVisitor
    * @return The identifier in upper underscore format.
    */
   private String convertToUpperUnderscore(String ident) {
-    String result = convertedIdents.get(ident);
-    if (result == null) {
-      result = BaseUtils.convertToUpperUnderscore(ident);
-      convertedIdents.put(ident, result);
-    }
+    String result = convertedIdents.computeIfAbsent(ident, BaseUtils::convertToUpperUnderscore);
     return result;
   }
 

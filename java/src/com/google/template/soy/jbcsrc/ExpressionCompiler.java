@@ -25,7 +25,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -250,11 +249,8 @@ final class ExpressionCompiler {
       return Optional.absent();
     }
     Supplier<ExpressionDetacher> throwingSupplier =
-        new Supplier<ExpressionDetacher>() {
-          @Override
-          public ExpressionDetacher get() {
-            throw new AssertionError();
-          }
+        () -> {
+          throw new AssertionError();
         };
     return Optional.of(
         new CompilerVisitor(parameters, varManager, throwingSupplier, reporter, registry)
@@ -273,13 +269,7 @@ final class ExpressionCompiler {
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // necessary.
-            Suppliers.memoize(
-                new Supplier<ExpressionDetacher>() {
-                  @Override
-                  public ExpressionDetacher get() {
-                    return detacherFactory.createExpressionDetacher(reattachPoint);
-                  }
-                }),
+            Suppliers.memoize(() -> detacherFactory.createExpressionDetacher(reattachPoint)),
             reporter,
             registry));
   }
@@ -1042,16 +1032,7 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitProtoInitNode(ProtoInitNode node) {
-      return ProtoUtils.createProto(
-          node,
-          new Function<ExprNode, SoyExpression>() {
-            @Override
-            public SoyExpression apply(ExprNode expr) {
-              return visit(expr);
-            }
-          },
-          detacher,
-          varManager);
+      return ProtoUtils.createProto(node, this::visit, detacher, varManager);
     }
 
     @Override

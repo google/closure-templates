@@ -157,11 +157,8 @@ public final class NullSafeAccumulatorTest {
         .generates("a.getMapFieldMap().get(key);");
   }
 
-  private static final Subject.Factory<AccumulatorSubject, NullSafeAccumulator> FACTORY =
-      AccumulatorSubject::new;
-
   private static AccumulatorSubject assertThat(NullSafeAccumulator accumulator) {
-    return Truth.assertAbout(FACTORY).that(accumulator);
+    return Truth.assertAbout(AccumulatorSubject::new).that(accumulator);
   }
 
   private static final class AccumulatorSubject

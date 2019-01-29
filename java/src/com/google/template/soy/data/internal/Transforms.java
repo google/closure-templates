@@ -27,11 +27,8 @@ import com.google.template.soy.data.SoyValueProvider;
  */
 final class Transforms {
   static final Function<SoyValueProvider, SoyValue> RESOLVE_FUNCTION =
-      new Function<SoyValueProvider, SoyValue>() {
-        @Override
-        public SoyValue apply(SoyValueProvider provider) {
-          Preconditions.checkNotNull(provider);
-          return provider.resolve();
-        }
+      provider -> {
+        Preconditions.checkNotNull(provider);
+        return provider.resolve();
       };
 }

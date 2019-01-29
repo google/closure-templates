@@ -17,17 +17,16 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+import static java.util.Comparator.comparingInt;
 
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.html.types.SafeHtmlProto;
 import com.google.common.html.types.SafeScriptProto;
@@ -59,13 +58,13 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
@@ -215,9 +214,9 @@ public class SoyTypeRegistry {
     synchronized (lock) {
       if (lazyAllSortedTypeNames == null) {
         lazyAllSortedTypeNames =
-            Ordering.natural()
-                .immutableSortedCopy(
-                    Iterables.concat(BUILTIN_TYPES.keySet(), descriptors.keySet()));
+            Stream.concat(BUILTIN_TYPES.keySet().stream(), descriptors.keySet().stream())
+                .sorted()
+                .collect(toImmutableList());
       }
       return lazyAllSortedTypeNames;
     }
@@ -405,17 +404,8 @@ public class SoyTypeRegistry {
             // We need a custom comparator since FieldDescriptor doesn't implement equals/hashCode
             // reasonably.  We don't really care about the order, just deduplication.
             .treeSetValues(
-                new Comparator<FieldDescriptor>() {
-                  @Override
-                  public int compare(FieldDescriptor left, FieldDescriptor right) {
-                    return ComparisonChain.start()
-                        .compare(left.getNumber(), right.getNumber())
-                        .compare(
-                            left.getContainingType().getFullName(),
-                            right.getContainingType().getFullName())
-                        .result();
-                  }
-                })
+                comparingInt(FieldDescriptor::getNumber)
+                    .thenComparing(left -> left.getContainingType().getFullName()))
             .build();
 
     /**

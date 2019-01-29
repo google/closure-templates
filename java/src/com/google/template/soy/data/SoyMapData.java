@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -285,14 +284,7 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
   @Nonnull
   @Override
   public Iterable<? extends SoyValue> keys() {
-    return Iterables.transform(
-        map.keySet(),
-        new Function<String, SoyValue>() {
-          @Override
-          public SoyValue apply(String key) {
-            return StringData.forValue(key);
-          }
-        });
+    return Iterables.transform(map.keySet(), StringData::forValue);
   }
 
   @Override

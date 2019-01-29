@@ -83,9 +83,7 @@ public final class TemplateTester {
   private static RenderContext.Builder createDefaultBuilder() {
     return new RenderContext.Builder()
         .withSoyPrintDirectives(
-            InternalPlugins.internalDirectiveMap(new SoySimpleScope())
-                .entrySet()
-                .stream()
+            InternalPlugins.internalDirectiveMap(new SoySimpleScope()).entrySet().stream()
                 .filter(e -> e.getValue() instanceof SoyJavaPrintDirective)
                 .collect(
                     toImmutableMap(Map.Entry::getKey, e -> (SoyJavaPrintDirective) e.getValue())));
@@ -117,9 +115,6 @@ public final class TemplateTester {
         templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ true);
   }
 
-  private static final Subject.Factory<CompiledTemplateSubject, String> FACTORY =
-      CompiledTemplateSubject::new;
-
   /**
    * Returns a truth subject that can be used to assert on an template given the template body.
    *
@@ -141,7 +136,7 @@ public final class TemplateTester {
   }
 
   static CompiledTemplateSubject assertThatFile(String... template) {
-    return Truth.assertAbout(FACTORY).that(Joiner.on('\n').join(template));
+    return Truth.assertAbout(CompiledTemplateSubject::new).that(Joiner.on('\n').join(template));
   }
 
   /**

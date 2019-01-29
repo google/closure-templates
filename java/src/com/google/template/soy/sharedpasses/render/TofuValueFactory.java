@@ -16,7 +16,6 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -60,14 +59,7 @@ class TofuValueFactory extends JavaValueFactory {
   SoyValue computeForJava(
       SoyJavaSourceFunction srcFn, List<SoyValue> args, TofuPluginContext context) {
     List<JavaValue> javaArgs =
-        Lists.transform(
-            args,
-            new Function<SoyValue, JavaValue>() {
-              @Override
-              public JavaValue apply(SoyValue soyArg) {
-                return TofuJavaValue.forSoyValue(soyArg, fn.getSourceLocation());
-              }
-            });
+        Lists.transform(args, soyArg -> TofuJavaValue.forSoyValue(soyArg, fn.getSourceLocation()));
     TofuJavaValue result = (TofuJavaValue) srcFn.applyForJavaSource(this, javaArgs, context);
     if (!result.hasSoyValue()) {
       throw RenderException.create(
@@ -106,17 +98,14 @@ class TofuValueFactory extends JavaValueFactory {
     List<SoyValue> values =
         Lists.transform(
             args,
-            new Function<JavaValue, SoyValue>() {
-              @Override
-              public SoyValue apply(JavaValue soyArg) {
-                TofuJavaValue tjv = (TofuJavaValue) soyArg;
-                if (!tjv.hasSoyValue()) {
-                  throw RenderException.create(
-                      "listOf may only be called with the 'arg' parameters to "
-                          + "JavaValueFactory methods");
-                }
-                return tjv.soyValue();
+            soyArg -> {
+              TofuJavaValue tjv = (TofuJavaValue) soyArg;
+              if (!tjv.hasSoyValue()) {
+                throw RenderException.create(
+                    "listOf may only be called with the 'arg' parameters to "
+                        + "JavaValueFactory methods");
               }
+              return tjv.soyValue();
             });
     return TofuJavaValue.forSoyValue(
         SoyValueConverter.INSTANCE.convert(values).resolve(), fn.getSourceLocation());

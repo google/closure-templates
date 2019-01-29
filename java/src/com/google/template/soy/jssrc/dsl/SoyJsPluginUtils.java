@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.Expression.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -52,27 +51,12 @@ import java.util.List;
  */
 public final class SoyJsPluginUtils {
 
-  private static final Function<Expression, JsExpr> TO_JS_EXPR =
-      new Function<Expression, JsExpr>() {
-        @Override
-        public JsExpr apply(Expression chunk) {
-          return chunk.singleExprOrName();
-        }
-      };
-
   private SoyJsPluginUtils() {}
 
   /** Generates a JS expression for the given operator and operands. */
   public static JsExpr genJsExprUsingSoySyntax(Operator op, List<JsExpr> operandJsExprs) {
     List<Expression> operands =
-        Lists.transform(
-            operandJsExprs,
-            new Function<JsExpr, Expression>() {
-              @Override
-              public Expression apply(JsExpr input) {
-                return fromExpr(input, ImmutableList.<GoogRequire>of());
-              }
-            });
+        Lists.transform(operandJsExprs, input -> fromExpr(input, ImmutableList.<GoogRequire>of()));
     return Expression.operation(op, operands).assertExpr();
   }
 
@@ -100,7 +84,7 @@ public final class SoyJsPluginUtils {
       List<Expression> args,
       SourceLocation location,
       ErrorReporter errorReporter) {
-    List<JsExpr> argExprs = Lists.transform(args, TO_JS_EXPR);
+    List<JsExpr> argExprs = Lists.transform(args, Expression::singleExprOrName);
     JsExpr applied;
     try {
       applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);

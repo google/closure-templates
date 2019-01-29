@@ -61,10 +61,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
   private static final Joiner JOINER = Joiner.on('\n');
 
-  private static final Subject.Factory<ForFile, String> TEMPLATE_FACTORY = ForFile::new;
-
-  private static final Subject.Factory<ForExprs, String> EXPR_FACTORY = ForExprs::new;
-
   private final SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
@@ -78,12 +74,12 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   }
 
   static ForFile assertThatSoyFile(String... lines) {
-    return assertAbout(TEMPLATE_FACTORY).that(JOINER.join(lines));
+    return assertAbout(ForFile::new).that(JOINER.join(lines));
   }
 
   static ForFile assertThatTemplateBody(String... lines) {
     String templateBody = JOINER.join(lines);
-    return assertAbout(TEMPLATE_FACTORY)
+    return assertAbout(ForFile::new)
         .that("{namespace ns}\n" + "{template .aaa}\n" + templateBody + "{/template}\n");
   }
 
@@ -96,7 +92,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   }
 
   static ForExprs assertThatSoyExpr(TestExpr build) {
-    return assertAbout(EXPR_FACTORY).that(build.buildTemplateThatContainsOneExpression());
+    return assertAbout(ForExprs::new).that(build.buildTemplateThatContainsOneExpression());
   }
 
   static TestExpr expr(String... lines) {

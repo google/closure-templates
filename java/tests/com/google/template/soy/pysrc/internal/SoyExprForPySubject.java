@@ -192,10 +192,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   // -----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyExprForPySubject test.
 
-  private static final Subject.Factory<SoyExprForPySubject, String> SOYEXPR =
-      SoyExprForPySubject::new;
-
   public static SoyExprForPySubject assertThatSoyExpr(String expr) {
-    return assertAbout(SOYEXPR).that(expr);
+    return assertAbout(SoyExprForPySubject::new).that(expr);
   }
 }

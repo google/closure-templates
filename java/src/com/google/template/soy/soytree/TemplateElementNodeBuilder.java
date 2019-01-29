@@ -16,12 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -139,25 +138,10 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
       ErrorReporter errorReporter) {
 
     final Set<String> propVarNames =
-        FluentIterable.from(propVars)
-            .transform(
-                new Function<TemplateHeaderVarDefn, String>() {
-                  @Override
-                  public String apply(TemplateHeaderVarDefn propVar) {
-                    return propVar.name();
-                  }
-                })
-            .toSet();
+        propVars.stream().map(TemplateHeaderVarDefn::name).collect(toImmutableSet());
 
     Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
-        Iterables.filter(
-            params,
-            new Predicate<TemplateHeaderVarDefn>() {
-              @Override
-              public boolean apply(TemplateHeaderVarDefn param) {
-                return propVarNames.contains(param.name());
-              }
-            });
+        Iterables.filter(params, param -> propVarNames.contains(param.name()));
     for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
       errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
     }

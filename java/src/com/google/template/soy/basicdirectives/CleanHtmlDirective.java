@@ -16,11 +16,11 @@
 
 package com.google.template.soy.basicdirectives;
 
-import com.google.common.base.Function;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
@@ -86,11 +86,10 @@ final class CleanHtmlDirective
   @Override
   public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ImmutableSet<OptionalSafeTag> optionalSafeTags =
-        FluentIterable.from(args)
-            .transform(SOY_VALUE_TO_STRING)
-            // FROM_TAG_NAME throws IllegalArgumentException for invalid OptionalSafeTags.
-            .transform(OptionalSafeTag.FROM_TAG_NAME)
-            .toSet();
+        args.stream()
+            .map(SoyValue::stringValue)
+            .map(OptionalSafeTag::fromTagName)
+            .collect(toImmutableSet());
 
     return Sanitizers.cleanHtml(value, optionalSafeTags);
   }
@@ -169,7 +168,7 @@ final class CleanHtmlDirective
       // TODO(msamuel): Instead of parsing generated JS, we should have a CheckArgumentsPass that
       // allows directives and functions to examine their input expressions prior to compilation and
       // relay the input file and line number to the template author along with an error message.
-      Iterable<String> optionalSafeTagExprs = Iterables.transform(args, TARGET_EXPR_TO_STRING);
+      Iterable<String> optionalSafeTagExprs = Iterables.transform(args, TargetExpr::getText);
 
       // Verify that all exprs are single-quoted valid OptionalSafeTags.
       for (String singleQuoted : optionalSafeTagExprs) {
@@ -189,20 +188,4 @@ final class CleanHtmlDirective
     }
     return optionalSafeTagsArg;
   }
-
-  private static final Function<SoyValue, String> SOY_VALUE_TO_STRING =
-      new Function<SoyValue, String>() {
-        @Override
-        public String apply(SoyValue soyValue) {
-          return soyValue.stringValue();
-        }
-      };
-
-  private static final Function<TargetExpr, String> TARGET_EXPR_TO_STRING =
-      new Function<TargetExpr, String>() {
-        @Override
-        public String apply(TargetExpr expr) {
-          return expr.getText();
-        }
-      };
 }

@@ -102,13 +102,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * Matches functions available in the environment in which output will be run including things
    * like {@link EscapingConventions.CrossLanguageStringXform#getLangFunctionNames}.
    */
-  protected Predicate<String> availableIdentifiers =
-      new Predicate<String>() {
-        @Override
-        public boolean apply(String functionName) {
-          return functionName.indexOf('.') < 0; // Only match builtins.
-        }
-      };
+  protected Predicate<String> availableIdentifiers = functionName -> functionName.indexOf('.') < 0;
 
   /**
    * A matcher for functions available in the environment in which output will be run including
@@ -148,13 +142,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
     availableIdentifiers =
         Predicates.or(
-            availableIdentifiers,
-            new Predicate<String>() {
-              @Override
-              public boolean apply(String identifierName) {
-                return namePattern.matcher(identifierName).matches();
-              }
-            });
+            availableIdentifiers, identifierName -> namePattern.matcher(identifierName).matches());
   }
 
   /**

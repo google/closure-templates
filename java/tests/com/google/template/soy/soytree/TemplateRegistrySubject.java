@@ -32,15 +32,12 @@ import java.util.List;
  */
 final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, TemplateRegistry> {
 
-  private static final Subject.Factory<TemplateRegistrySubject, TemplateRegistry>
-      TEMPLATE_REGISTRY = TemplateRegistrySubject::new;
-
   private TemplateRegistrySubject(FailureMetadata failureMetadata, TemplateRegistry registry) {
     super(failureMetadata, registry);
   }
 
   static TemplateRegistrySubject assertThatRegistry(TemplateRegistry registry) {
-    return Truth.assertAbout(TEMPLATE_REGISTRY).that(registry);
+    return Truth.assertAbout(TemplateRegistrySubject::new).that(registry);
   }
 
   TemplateBasicNodeSubject containsBasicTemplate(String name) {
@@ -48,7 +45,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     if (templateBasicNode == null) {
       fail("The registry doesn't contain a template named", name);
     }
-    return Truth.assertAbout(TemplateBasicNodeSubject.TEMPLATE_BASIC_NODE).that(templateBasicNode);
+    return Truth.assertAbout(TemplateBasicNodeSubject::new).that(templateBasicNode);
   }
 
   void doesNotContainBasicTemplate(String name) {
@@ -62,8 +59,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     ImmutableList<TemplateMetadata> delTemplates =
         actual().getDelTemplateSelector().delTemplateNameToValues().get(name);
     Truth.assertThat(delTemplates).isNotEmpty();
-    return Truth.assertAbout(TemplateDelegateNodesSubject.TEMPLATE_DELEGATE_NODES)
-        .that(delTemplates);
+    return Truth.assertAbout(TemplateDelegateNodesSubject::new).that(delTemplates);
   }
 
   void doesNotContainDelTemplate(String name) {
@@ -72,10 +68,6 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
 
   static class TemplateBasicNodeSubject
       extends Subject<TemplateBasicNodeSubject, TemplateMetadata> {
-
-    private static final Subject.Factory<TemplateBasicNodeSubject, TemplateMetadata>
-        TEMPLATE_BASIC_NODE = TemplateBasicNodeSubject::new;
-
     TemplateBasicNodeSubject(FailureMetadata failureMetadata, TemplateMetadata templateBasicNode) {
       super(failureMetadata, templateBasicNode);
     }
@@ -87,10 +79,6 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
 
   static class TemplateDelegateNodesSubject
       extends Subject<TemplateDelegateNodesSubject, List<TemplateMetadata>> {
-
-    private static final Subject.Factory<TemplateDelegateNodesSubject, List<TemplateMetadata>>
-        TEMPLATE_DELEGATE_NODES = TemplateDelegateNodesSubject::new;
-
     TemplateDelegateNodesSubject(FailureMetadata failureMetadata, List<TemplateMetadata> nodes) {
       super(failureMetadata, nodes);
     }

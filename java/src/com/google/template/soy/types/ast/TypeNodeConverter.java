@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types.ast;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -187,7 +189,7 @@ public final class TypeNodeConverter
     // that all type nodes are visited.
     SoyType type =
         typeRegistry.getOrCreateUnionType(
-            ImmutableList.copyOf(Lists.transform(node.candidates(), this)));
+            node.candidates().stream().map(this).collect(toImmutableList()));
     node.setResolvedType(type);
     return type;
   }

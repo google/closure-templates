@@ -392,11 +392,9 @@ public final class ResolveNamesPass extends CompilerFilePass {
         return;
       }
       if (varRef.isDollarSignIjParameter()) {
-        InjectedParam ijParam = ijParams.get(varRef.getName());
-        if (ijParam == null) {
-          ijParam = new InjectedParam(varRef.getName(), varRef.getSourceLocation());
-          ijParams.put(varRef.getName(), ijParam);
-        }
+        InjectedParam ijParam =
+            ijParams.computeIfAbsent(
+                varRef.getName(), k -> new InjectedParam(k, varRef.getSourceLocation()));
         varRef.setDefn(ijParam);
         return;
       }

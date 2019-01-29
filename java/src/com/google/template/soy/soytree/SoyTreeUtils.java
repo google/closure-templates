@@ -177,12 +177,7 @@ public final class SoyTreeUtils {
     return getAllMatchingNodesOfType(
         rootSoyNode,
         FunctionNode.class,
-        new Predicate<FunctionNode>() {
-          @Override
-          public boolean apply(FunctionNode function) {
-            return functionToMatch.equals(function.getSoyFunction());
-          }
-        });
+        function -> functionToMatch.equals(function.getSoyFunction()));
   }
 
   /**

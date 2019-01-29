@@ -185,9 +185,7 @@ public final class SimplifyExprVisitorTest {
     }
   }
 
-  private static final Subject.Factory<SimplifySubject, String> FACTORY = SimplifySubject::new;
-
   private static SimplifySubject assertThat(String input) {
-    return Truth.assertAbout(FACTORY).that(input);
+    return Truth.assertAbout(SimplifySubject::new).that(input);
   }
 }

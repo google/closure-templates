@@ -300,8 +300,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       baseLcTagName = lcTagName;
     }
     String basePlaceholderName =
-        LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.containsKey(baseLcTagName) ?
-            LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.get(baseLcTagName) : baseLcTagName;
+        LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP.getOrDefault(baseLcTagName, baseLcTagName);
     if (isEndTag) {
       basePlaceholderName = "end_" + basePlaceholderName;
     } else if (!isSelfEnding) {
