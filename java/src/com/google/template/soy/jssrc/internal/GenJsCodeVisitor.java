@@ -435,7 +435,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 // declare every field as optional.  This is because if a template is unused and
                 // declares an ij param we don't want to force people to supply a value.
                 .addParameterizedAnnotation(
-                    "type", getJsTypeForParam(entry.getValue()).typeExpr() + "|undefined")
+                    "type",
+                    getJsTypeForParamForDeclaration(entry.getValue()).typeExpr() + "|undefined")
                 .build()
                 .toString());
         jsCodeBuilder.append(
@@ -1450,7 +1451,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Generate members for explicit params.
     Map<String, String> record = new LinkedHashMap<>();
     for (TemplateParam param : node.getParams()) {
-      JsType jsType = getJsTypeForParam(param.type());
+      JsType jsType = getJsTypeForParamForDeclaration(param.type());
       record.put(
           genParamAlias(param.name()),
           jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
@@ -1485,7 +1486,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // analysis to determine if the template is always called.)
         SoyType indirectParamType =
             typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
-        JsType jsType = getJsTypeForParam(indirectParamType);
+        JsType jsType = getJsTypeForParamForDeclaration(indirectParamType);
         // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
         // strict deps errors.  This should be fine though since the transitive soy template that
         // actually has the param will add them.
@@ -1520,7 +1521,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
       Expression paramChunk = genCodeForParamAccess(paramName, param);
-      JsType jsType = getJsTypeForParam(paramType);
+      JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);
       Expression coerced = jsType.getValueCoercion(paramChunk, generator);
@@ -1557,8 +1558,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return Statement.of(declarations.build());
   }
 
-  protected JsType getJsTypeForParam(SoyType paramType) {
+  /** Gets the type to use for a parameter in record type declarations. */
+  protected JsType getJsTypeForParamForDeclaration(SoyType paramType) {
     return JsType.forJsSrc(paramType);
+  }
+
+  /** Gets the type to use for a parameter in runtime assertions. */
+  protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
+    return getJsTypeForParamForDeclaration(paramType);
   }
 
   /**
