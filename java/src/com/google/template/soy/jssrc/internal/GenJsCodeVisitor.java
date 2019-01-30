@@ -97,11 +97,13 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplatePropVar;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
@@ -703,6 +705,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     JsDoc jsDoc = generateFunctionJsDoc(node, alias);
     Expression function = Expression.function(jsDoc, generateFunctionBody(node));
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
+
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
       // don't export deltemplates or private templates
@@ -781,7 +784,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             Expression.id("opt_ijData_deprecated")
                 .or(Expression.id("opt_ijData"), templateTranslationContext.codeGenerator())
                 .castAs("!soy.IjData")));
-
+    if (node instanceof TemplateElementNode) {
+      TemplateElementNode elementNode = (TemplateElementNode) node;
+      for (TemplatePropVar propVar : elementNode.getPropVars()) {
+        bodyStatements.add(
+            VariableDeclaration.builder(propVar.name())
+                .setRhs(getExprTranslator().exec(propVar.defaultValue()))
+                .build());
+      }
+    }
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
