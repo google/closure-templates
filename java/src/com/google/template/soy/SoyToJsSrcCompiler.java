@@ -16,9 +16,14 @@
 
 package com.google.template.soy;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
+import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,21 +34,6 @@ import org.kohsuke.args4j.Option;
  *
  */
 public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
-  @Option(
-    name = "--outputPathFormat",
-    required = true,
-    usage =
-        "[Required] A format string that specifies how to build the path to each"
-            + " output file. If not generating localized JS, then there will be one output"
-            + " JS file (UTF-8) for each input Soy file. If generating localized JS, then"
-            + " there will be one output JS file for each combination of input Soy file and"
-            + " locale. The format string can include literal characters as well as the"
-            + " placeholders {INPUT_DIRECTORY}, {INPUT_FILE_NAME},"
-            + " {INPUT_FILE_NAME_NO_EXT}, {LOCALE}, {LOCALE_LOWER_CASE}. Note"
-            + " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes"
-            + " pt_br."
-  )
-  protected String outputPathFormat;
 
   @Option(
     name = "--allowExternalCalls",
@@ -136,6 +126,9 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   )
   private SoyMsgPlugin messagePlugin = new XliffMsgPlugin();
 
+  private final PerInputOutputFiles outputFiles =
+      new PerInputOutputFiles("soy.js", PerInputOutputFiles.JS_JOINER);
+
   SoyToJsSrcCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -154,9 +147,12 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   void validateFlags() {
-    if (outputPathFormat.isEmpty()) {
-      exitWithError("Must provide the output path format.");
-    }
+    outputFiles.validateFlags();
+  }
+
+  @Override
+  Iterable<?> extraFlagsObjects() {
+    return ImmutableList.of(outputFiles);
   }
 
   @Override
@@ -175,14 +171,26 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();
     if (generateLocalizedJs) {
-      sfs.compileToJsSrcFiles(
-          outputPathFormat,
-          jsSrcOptions,
-          locales,
-          messagePlugin,
-          messageFilePathFormat);
+      for (String locale : locales) {
+        String msgFilePath =
+            MainEntryPointUtils.buildFilePath(
+                messageFilePathFormat, locale, /*inputFilePath=*/ null);
+
+        SoyMsgBundle msgBundle =
+            new SoyMsgBundleHandler(messagePlugin).createFromFile(new File(msgFilePath));
+        if (msgBundle.getLocaleString() == null) {
+          // TODO: Remove this check (but make sure no projects depend on this behavior).
+          // There was an error reading the message file. We continue processing only if the locale
+          // begins with "en", because falling back to the Soy source will probably be fine.
+          if (!locale.startsWith("en")) {
+            throw new IOException("Error opening or reading message file " + msgFilePath);
+          }
+        }
+        outputFiles.writeFiles(srcs, sfs.compileToJsSrc(jsSrcOptions, msgBundle), locale);
+      }
     } else {
-      sfs.compileToJsSrcFiles(outputPathFormat, jsSrcOptions, locales, null, null);
+      outputFiles.writeFiles(
+          srcs, sfs.compileToJsSrc(jsSrcOptions, /*msgBundle=*/ null), /*locale=*/ null);
     }
   }
 }

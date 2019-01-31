@@ -27,4 +27,8 @@ final class CommandLineError extends Error {
   CommandLineError(String msg) {
     super(msg);
   }
+
+  CommandLineError(String msg, Throwable t) {
+    super(msg, t);
+  }
 }

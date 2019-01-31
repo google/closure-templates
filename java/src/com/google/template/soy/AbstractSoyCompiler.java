@@ -17,6 +17,7 @@ package com.google.template.soy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
@@ -72,7 +73,7 @@ public abstract class AbstractSoyCompiler {
           "The list of source Soy files. Extra arguments are treated as srcs. Sources"
               + " are required from either this flag or as extra arguments.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> srcs = new ArrayList<>();
+  List<File> srcs = new ArrayList<>();
 
   @Option(
       name = "--depHeaders",
@@ -216,7 +217,11 @@ public abstract class AbstractSoyCompiler {
   private void doMain(String[] args, PrintStream err) throws IOException {
     Stopwatch timer = Stopwatch.createStarted();
     Stopwatch guiceTimer = Stopwatch.createUnstarted();
-    SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginLoader);
+    SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(pluginLoader);
+    cmdLineParser.registerFlagsObject(this);
+    for (Object flagsObject : extraFlagsObjects()) {
+      cmdLineParser.registerFlagsObject(flagsObject);
+    }
     try {
       cmdLineParser.parseArgument(args);
     } catch (CmdLineException cle) {
@@ -429,6 +434,12 @@ public abstract class AbstractSoyCompiler {
    */
   @ForOverride
   void validateFlags() {}
+
+  /** Extension point for subtypes to register extra objects containing flag definitions. */
+  @ForOverride
+  Iterable<?> extraFlagsObjects() {
+    return ImmutableList.of();
+  }
 
   /**
    * Performs the actual compilation.

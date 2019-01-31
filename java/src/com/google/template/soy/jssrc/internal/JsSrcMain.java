@@ -16,13 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import com.google.common.io.Files;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -31,15 +26,10 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
-import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.internal.SoyScopedData;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -50,7 +40,6 @@ import javax.annotation.Nullable;
  *
  */
 public class JsSrcMain {
-
   /** The scope object that manages the API call scope. */
   private final SoyScopedData.Enterable apiCallScope;
 
@@ -104,67 +93,6 @@ public class JsSrcMain {
       new CombineConsecutiveRawTextNodesPass().run(soyTree);
       return createVisitor(jsSrcOptions, typeRegistry, inScope.getBidiGlobalDir(), errorReporter)
           .gen(soyTree, templateRegistry, errorReporter);
-    }
-  }
-
-  /**
-   * Generates JS source files given a Soy parse tree, an options object, an optional bundle of
-   * translated messages, and information on where to put the output files.
-   *
-   * @param soyTree The Soy parse tree to generate JS source code for.
-   * @param templateRegistry The template registry that contains all the template information.
-   * @param jsSrcOptions The compilation options relevant to this backend.
-   * @param locale The current locale that we're generating JS for, or null if not applicable.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
-   *     source.
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
-   * @param errorReporter The Soy error reporter that collects errors during code generation.
-   * @throws IOException If there is an error in opening/writing an output JS file.
-   */
-  public void genJsFiles(
-      SoyFileSetNode soyTree,
-      TemplateRegistry templateRegistry,
-      SoyJsSrcOptions jsSrcOptions,
-      @Nullable String locale,
-      @Nullable SoyMsgBundle msgBundle,
-      String outputPathFormat,
-      ErrorReporter errorReporter)
-      throws IOException {
-
-    List<String> jsFileContents =
-        genJsSrc(soyTree, templateRegistry, jsSrcOptions, msgBundle, errorReporter);
-
-    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(soyTree.getChildren());
-
-    if (srcsToCompile.size() != jsFileContents.size()) {
-      throw new AssertionError(
-          String.format(
-              "Expected to generate %d code chunk(s), got %d",
-              srcsToCompile.size(), jsFileContents.size()));
-    }
-
-    Multimap<String, Integer> outputs =
-        MainEntryPointUtils.mapOutputsToSrcs(locale, outputPathFormat, srcsToCompile);
-
-    for (String outputFilePath : outputs.keySet()) {
-      Writer out = Files.newWriter(new File(outputFilePath), UTF_8);
-      try {
-        boolean isFirst = true;
-        for (int inputFileIndex : outputs.get(outputFilePath)) {
-          if (isFirst) {
-            isFirst = false;
-          } else {
-            // Concatenating JS files is not safe unless we know that the last statement from one
-            // couldn't combine with the isFirst statement of the next.  Inserting a semicolon will
-            // prevent this from happening.
-            out.write("\n;\n");
-          }
-          out.write(jsFileContents.get(inputFileIndex));
-        }
-      } finally {
-        out.close();
-      }
     }
   }
 

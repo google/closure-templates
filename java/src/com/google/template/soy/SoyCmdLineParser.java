@@ -20,6 +20,9 @@ import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.kohsuke.args4j.ClassParser;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.NamedOptionDef;
@@ -36,13 +39,23 @@ final class SoyCmdLineParser extends CmdLineParser {
     CmdLineParser.registerHandler(Boolean.class, BooleanOptionHandler.class);
     CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
     CmdLineParser.registerHandler(SoyMsgPlugin.class, MsgPluginOptionHandler.class);
+    CmdLineParser.registerHandler(Path.class, PathOptionHandler.class);
   }
 
   private final PluginLoader pluginLoader;
 
-  SoyCmdLineParser(Object bean, PluginLoader loader) {
-    super(bean);
+  SoyCmdLineParser(PluginLoader loader) {
+    super(/*bean=*/ null);
     this.pluginLoader = loader;
+  }
+
+  /**
+   * Registers the flags defined in {@code bean} with this parser.
+   *
+   * <p>Must be called before {@link #parseArgument}.
+   */
+  void registerFlagsObject(Object bean) {
+    new ClassParser().parse(bean, this);
   }
 
   // NOTE: all the OptionHandler types need to be public with public constructors so args4j can use
@@ -200,6 +213,46 @@ final class SoyCmdLineParser extends CmdLineParser {
     @Override
     File parseItem(String item) {
       return new File(item);
+    }
+  }
+
+  /** OptionHandler for args4j that handles a comma-delimited list of Path objects. */
+  public static final class PathListOptionHandler extends ListOptionHandler<Path> {
+
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public PathListOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super Path> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    Path parseItem(String item) {
+      return Paths.get(item);
+    }
+  }
+
+  /** OptionHandler for args4j that handles a comma-delimited list of Path objects. */
+  public static final class PathOptionHandler extends OptionHandler<Path> {
+
+    public PathOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super Path> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
+      String parameter = params.getParameter(0);
+      // An empty string should be null
+      if (parameter.isEmpty()) {
+        setter.addValue(null);
+      } else {
+        setter.addValue(Paths.get(parameter));
+      }
+      return 1;
+    }
+
+    @Override
+    public String getDefaultMetaVariable() {
+      return "foo/bar/baz";
     }
   }
 

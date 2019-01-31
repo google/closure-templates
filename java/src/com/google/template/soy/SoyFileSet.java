@@ -16,7 +16,6 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -36,7 +35,6 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
@@ -54,7 +52,6 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
@@ -67,7 +64,6 @@ import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
-import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -900,6 +896,8 @@ public final class SoyFileSet {
    * Compiles this Soy file set into JS source code files and returns these JS files as a list of
    * strings, one per file.
    *
+   * <p>TODO(lukes): deprecate and delete localized builds
+   *
    * @param jsSrcOptions The compilation options for the JS Src output target.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
@@ -910,7 +908,14 @@ public final class SoyFileSet {
   @SuppressWarnings("deprecation")
   public List<String> compileToJsSrc(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
-    ParseResult result = preprocessJsSrcResults();
+    resetErrorReporter();
+    // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
+    // and constants. For consistency/reusability of templates it would be nice to not allow that
+    // but the cat is out of the bag.
+    PassManager.Builder builder =
+        passManagerBuilder().allowUnknownGlobals().allowV1Expression().desugarHtmlNodes(false);
+    ParseResult result = parse(builder);
+    throwIfErrorsPresent();
     TemplateRegistry registry = result.registry();
     SoyFileSetNode fileSet = result.fileSet();
     List<String> generatedSrcs =
@@ -919,99 +924,6 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     reportWarnings();
     return generatedSrcs;
-  }
-
-  /**
-   * Compiles this Soy file set into JS source code files and writes these JS files to disk.
-   *
-   * @param outputPathFormat The format string defining how to build the output file path
-   *     corresponding to an input file path.
-   * @param jsSrcOptions The compilation options for the JS Src output target.
-   * @param locales The list of locales. Can be an empty list if not applicable.
-   * @param msgPlugin The {@link SoyMsgPlugin} to use, or null if not applicable
-   * @param messageFilePathFormat The message file path format, or null if not applicable.
-   * @throws SoyCompilationException If compilation fails.
-   * @throws IOException If there is an error in opening/reading a message file or opening/writing
-   *     an output JS file.
-   */
-  @SuppressWarnings("deprecation")
-  void compileToJsSrcFiles(
-      String outputPathFormat,
-      SoyJsSrcOptions jsSrcOptions,
-      List<String> locales,
-      @Nullable SoyMsgPlugin msgPlugin,
-      @Nullable String messageFilePathFormat)
-      throws IOException {
-    ParseResult result = preprocessJsSrcResults();
-
-    SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
-    if (locales.isEmpty()) {
-      // Not generating localized JS.
-      new JsSrcMain(scopedData.enterable(), typeRegistry)
-          .genJsFiles(soyTree, registry, jsSrcOptions, null, null, outputPathFormat, errorReporter);
-
-    } else {
-      checkArgument(
-          msgPlugin != null, "a message plugin must be provided when generating localized sources");
-      checkArgument(
-          messageFilePathFormat != null,
-          "a messageFilePathFormat must be provided when generating localized sources");
-      // Generating localized JS.
-      for (String locale : locales) {
-
-        SoyFileSetNode soyTreeClone = soyTree.copy(new CopyState());
-
-        String msgFilePath = MainEntryPointUtils.buildFilePath(messageFilePathFormat, locale, null);
-
-        SoyMsgBundle msgBundle =
-            new SoyMsgBundleHandler(msgPlugin).createFromFile(new File(msgFilePath));
-        if (msgBundle.getLocaleString() == null) {
-          // TODO: Remove this check (but make sure no projects depend on this behavior).
-          // There was an error reading the message file. We continue processing only if the locale
-          // begins with "en", because falling back to the Soy source will probably be fine.
-          if (!locale.startsWith("en")) {
-            throw new IOException("Error opening or reading message file " + msgFilePath);
-          }
-        }
-
-        new JsSrcMain(scopedData.enterable(), typeRegistry)
-            .genJsFiles(
-                soyTreeClone,
-                registry,
-                jsSrcOptions,
-                locale,
-                msgBundle,
-                outputPathFormat,
-                errorReporter);
-      }
-    }
-    throwIfErrorsPresent();
-    reportWarnings();
-  }
-
-  @SuppressWarnings("deprecation")
-  private ParseResult preprocessJsSrcResults() {
-    resetErrorReporter();
-
-    // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
-    // and constants. For consistency/reusability of templates it would be nice to not allow that
-    // but the cat is out of the bag.
-    PassManager.Builder builder =
-        passManagerBuilder().allowUnknownGlobals().allowV1Expression().desugarHtmlNodes(false);
-    ParseResult parseResult = parse(builder);
-    throwIfErrorsPresent();
-    return parseResult;
-  }
-
-  /** Prepares the parsed result for use in generating Incremental DOM source code. */
-  @SuppressWarnings("deprecation")
-  private ParseResult preprocessIncrementalDOMResults() {
-    requireStrictAutoescaping();
-    // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
-    ParseResult result = parse(passManagerBuilder().desugarHtmlNodes(false));
-    throwIfErrorsPresent();
-    return result;
   }
 
   /**
