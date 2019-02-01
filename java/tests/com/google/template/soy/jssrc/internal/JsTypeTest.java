@@ -150,7 +150,9 @@ public final class JsTypeTest {
         .isEqualTo("!proto.soy.test.Proto3Message");
 
     assertThatTypeExprStrict(HtmlType.getInstance())
-        .isEqualTo("!goog.soy.data.SanitizedContent|function()");
+        .isEqualTo(
+            "!goog.soy.data.SanitizedContent|"
+                + "!google3.javascript.template.soy.element_lib_idom.IdomFunction|function()");
   }
 
   @Test

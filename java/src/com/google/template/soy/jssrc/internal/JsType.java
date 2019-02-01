@@ -198,18 +198,30 @@ public final class JsType {
   private static final JsType IDOM_ATTRIBUTES =
       builder().addType("function()").setPredicate(GOOG_IS_FUNCTION).build();
 
+  private static final GoogRequire SANITIZED_CONTENT_KIND =
+      GoogRequire.createWithAlias("goog.soy.data.SanitizedContentKind", "SanitizedContentKind");
+  // This cannot use a goog.require() alias to avoid conflicts with legacy
+  // FilterHtmlAttributesDirective
+  private static final Expression IS_IDOM_FUNCTION_TYPE =
+      GoogRequire.create("google3.javascript.template.soy.soyutils_directives")
+          .googModuleGet()
+          .dotAccess("$$isIdomFunctionType");
+
   private static final JsType IDOM_HTML =
       builder()
           .addType("!goog.soy.data.SanitizedContent")
           .addRequire(GoogRequire.create("goog.soy.data.SanitizedContent"))
+          .addType("!google3.javascript.template.soy.element_lib_idom.IdomFunction")
+          .addRequire(
+              GoogRequire.createTypeRequire("google3.javascript.template.soy.element_lib_idom"))
           .addType("function()")
           .setPredicate(
               new TypePredicate() {
                 @Override
                 public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
                   return Optional.of(
-                      GOOG_IS_FUNCTION
-                          .call(value)
+                      IS_IDOM_FUNCTION_TYPE
+                          .call(value, SANITIZED_CONTENT_KIND.dotAccess("HTML"))
                           .or(value.instanceOf(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
                 }
               })
