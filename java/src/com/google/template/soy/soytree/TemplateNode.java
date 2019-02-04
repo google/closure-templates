@@ -589,4 +589,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     // the function signature, because what it will produce is an empty struct.
     return false;
   }
+
+  /** Returns true if the template has at least one legacy SoyDoc param. */
+  public boolean hasLegacyParams() {
+    for (TemplateParam param : getParams()) {
+      if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

@@ -33,6 +33,12 @@ import com.google.template.soy.soytree.VeLogNode;
 /** Validates restrictions specific to Soy elements. */
 final class SoyElementPass extends CompilerFilePass {
 
+  private static final SoyErrorKind HAS_SOYDOC_PARAMS =
+      SoyErrorKind.of(
+          "Soy '{element}' templates must not have SoyDoc parameters.  "
+              + "Move all parameters to '{@param}' commands."
+          );
+
   private static final SoyErrorKind ROOT_HAS_KEY_NODE =
       SoyErrorKind.of(
           "The root node of Soy elements must not have a key. "
@@ -65,6 +71,12 @@ final class SoyElementPass extends CompilerFilePass {
     for (TemplateNode template : file.getChildren()) {
       if (!(template instanceof TemplateElementNode)) {
         continue;
+      }
+      if (template.hasLegacyParams()) {
+        errorReporter.report(
+            template.getSourceLocation(),
+            HAS_SOYDOC_PARAMS
+            );
       }
       HtmlOpenTagNode firstOpenTagNode = null;
       HtmlCloseTagNode lastCloseTagNode = null;
