@@ -36,7 +36,7 @@ message LoggableElement {
   // Must be unique.
   string name = 1;
   // The id that will be logged.  Must be unique.
-  int64 id = 2 [jstype = JS_STRING];
+  int64 id = 2;
   // The fully qualified name of the protocol buffer that
   // will be used to specify metadata for the element.  Allowed to be the empty
   // string if there is no such proto.

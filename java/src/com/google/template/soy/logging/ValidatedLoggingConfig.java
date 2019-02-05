@@ -36,6 +36,12 @@ public final class ValidatedLoggingConfig {
   public static final ValidatedLoggingConfig EMPTY =
       new ValidatedLoggingConfig(ImmutableMap.<String, ValidatedLoggableElement>of());
 
+  /** The maximum safe integer value in JavaScript: 2^53 - 1 */
+  private static final long MAX_ID_VALUE = 9007199254740991L;
+
+  /** The minimum safe integer value in JavaScript. */
+  private static final long MIN_ID_VALUE = -MAX_ID_VALUE;
+
   /**
    * Parses the logging config proto into a {@link ValidatedLoggingConfig}.
    *
@@ -48,6 +54,13 @@ public final class ValidatedLoggingConfig {
     for (LoggableElement element : ImmutableSet.copyOf(configProto.getElementList())) {
       String name = element.getName();
       checkArgument(BaseUtils.isDottedIdentifier(name), "'%s' is not a valid identifier", name);
+      checkArgument(
+          MIN_ID_VALUE <= element.getId() && element.getId() <= MAX_ID_VALUE,
+          "ID %s for '%s' must be between %s and %s (inclusive).",
+          element.getId(),
+          name,
+          MIN_ID_VALUE,
+          MAX_ID_VALUE);
       ValidatedLoggableElement elementConfig = ValidatedLoggableElement.create(element);
       ValidatedLoggableElement oldWithSameId =
           elementsById.put(elementConfig.getId(), elementConfig);

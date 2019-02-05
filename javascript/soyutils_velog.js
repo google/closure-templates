@@ -37,14 +37,14 @@ const {startsWith} = goog.require('goog.string');
 /** @final */
 class ElementMetadata {
   /**
-   * @param {string} id
+   * @param {number} id
    * @param {?Message} data
    * @param {boolean} logOnly
    */
   constructor(id, data, logOnly) {
     /**
      * The identifier for the logging element
-     * @const {string}
+     * @const {number}
      */
     this.id = id;
     /**
@@ -138,7 +138,7 @@ function setMetadataTestOnly(testdata) {
 /**
  * Records the id and additional data into the global metadata structure.
  *
- * @param {string} veid The id of the visual element that will be logged.
+ * @param {number} veid The id of the visual element that will be logged.
  * @param {?Message} veData Additional data that is needed for logging.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *

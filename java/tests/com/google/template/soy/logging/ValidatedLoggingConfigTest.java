@@ -17,7 +17,7 @@
 package com.google.template.soy.logging;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,47 +27,47 @@ import org.junit.runners.JUnit4;
 public final class ValidatedLoggingConfigTest {
   @Test
   public void testLoggingValidation_badName() {
-    try {
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(LoggableElement.newBuilder().setName("%%%"))
-              .build());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertThat(expected).hasMessageThat().isEqualTo("'%%%' is not a valid identifier");
-    }
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(LoggableElement.newBuilder().setName("%%%"))
+                        .build()));
+    assertThat(expected).hasMessageThat().isEqualTo("'%%%' is not a valid identifier");
   }
 
   @Test
   public void testLoggingValidation_duplicateNames() {
-    try {
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
-              .addElement(LoggableElement.newBuilder().setName("Foo").setId(2))
-              .build());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertThat(expected)
-          .hasMessageThat()
-          .isEqualTo("Found 2 LoggableElements with the same name Foo, their ids are 1 and 2");
-    }
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
+                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(2))
+                        .build()));
+    assertThat(expected)
+        .hasMessageThat()
+        .isEqualTo("Found 2 LoggableElements with the same name Foo, their ids are 1 and 2");
   }
 
   @Test
   public void testLoggingValidation_duplicateIds() {
-    try {
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
-              .addElement(LoggableElement.newBuilder().setName("Bar").setId(1))
-              .build());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertThat(expected)
-          .hasMessageThat()
-          .isEqualTo("Found 2 LoggableElements with the same id 1: Foo and Bar");
-    }
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
+                        .addElement(LoggableElement.newBuilder().setName("Bar").setId(1))
+                        .build()));
+    assertThat(expected)
+        .hasMessageThat()
+        .isEqualTo("Found 2 LoggableElements with the same id 1: Foo and Bar");
   }
 
   @Test
@@ -77,5 +77,50 @@ public final class ValidatedLoggingConfigTest {
             .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
             .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
             .build());
+  }
+
+  @Test
+  public void testLoggingValidation_idValueEdgeCases() {
+    ValidatedLoggingConfig.create(
+        LoggingConfig.newBuilder()
+            .addElement(LoggableElement.newBuilder().setName("Foo").setId(-9007199254740991L))
+            .addElement(LoggableElement.newBuilder().setName("Bar").setId(9007199254740991L))
+            .build());
+  }
+
+  @Test
+  public void testLoggingValidation_idTooLarge() {
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(
+                            LoggableElement.newBuilder().setName("Foo").setId(9007199254740992L))
+                        .build()));
+    assertThat(expected)
+        .hasMessageThat()
+        .isEqualTo(
+            "ID 9007199254740992 for 'Foo' must be between -9007199254740991 and 9007199254740991 "
+                + "(inclusive).");
+  }
+
+  @Test
+  public void testLoggingValidation_idTooSmall() {
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(
+                            LoggableElement.newBuilder().setName("Foo").setId(-9007199254740992L))
+                        .build()));
+    assertThat(expected)
+        .hasMessageThat()
+        .isEqualTo(
+            "ID -9007199254740992 for 'Foo' must be between -9007199254740991 and 9007199254740991 "
+                + "(inclusive).");
   }
 }
