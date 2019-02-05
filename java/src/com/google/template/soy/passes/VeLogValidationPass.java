@@ -97,10 +97,6 @@ final class VeLogValidationPass extends CompilerFilePass {
   private static final SoyErrorKind BAD_DATA_TYPE =
       SoyErrorKind.of(
           "Illegal VE metadata type ''{0}'' for this VE. The metadata must be a proto.");
-  private static final SoyErrorKind DUPLICATE_DATA =
-      SoyErrorKind.of(
-          "VE data was already specified using a ''ve_data'' parameter, you cannot override with "
-              + "a ''data'' attribute.");
   private static final SoyErrorKind INVALID_VE =
       SoyErrorKind.of(
           "The velog command requires a VE identifier, a call to ''ve(..)'' or a call to "
@@ -201,15 +197,6 @@ final class VeLogValidationPass extends CompilerFilePass {
       FunctionNode fn = (FunctionNode) node.getVeDataExpression().getRoot();
       Object soyFunction = fn.getSoyFunction();
       if (soyFunction.equals(BuiltinFunction.VE_DATA)) {
-        if (node.getConfigExpression() != null
-            // Allow ve_data(MyVe, null) with a "data" attribute because VeRewritePass rewrites
-            // ve_data(MyVe) to ve_data(MyVe, null) to simplify backend logic, so we can't tell
-            // if someone explicitly wrote the null parameter or not, and need to allow it for the
-            // rewrite case.
-            && fn.getChild(1).getKind() != ExprNode.Kind.NULL_NODE) {
-          // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
-          reporter.report(node.getConfigExpression().getSourceLocation(), DUPLICATE_DATA);
-        }
         if (fn.getChild(0).getKind() == ExprNode.Kind.VE_LITERAL_NODE) {
           // TODO(b/71641483): remove this once we have runtime support for dynamic VEs.
           VeLiteralNode ve = (VeLiteralNode) fn.getChild(0);

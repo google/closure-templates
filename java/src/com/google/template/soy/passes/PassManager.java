@@ -281,7 +281,7 @@ public final class PassManager {
       addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
       addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
       // Run before the RewriteGlobalsPass as it removes some globals.
-      addPass(new VeRewritePass(), singleFilePassesBuilder);
+      addPass(new VeRewritePass(errorReporter), singleFilePassesBuilder);
       addPass(
           new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter),
           singleFilePassesBuilder);

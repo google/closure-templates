@@ -139,7 +139,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     return dataExpr;
   }
 
-  /** Returns a reference to the config expression, if there is one. */
+  /** Returns a reference to the logonly expression, if there is one. */
   @Nullable
   public ExprRootNode getLogonlyExpression() {
     return logonlyExpr;

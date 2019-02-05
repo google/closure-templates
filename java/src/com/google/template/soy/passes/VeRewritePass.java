@@ -17,6 +17,8 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -37,6 +39,18 @@ import com.google.template.soy.soytree.VeLogNode;
  * </ul>
  */
 final class VeRewritePass extends CompilerFilePass {
+
+  private static final SoyErrorKind ILLEGAL_DATA_EXPR =
+      SoyErrorKind.of(
+          "The velog ''data=$expr'' syntax can only be used if using a raw VE name in the velog "
+              + "statement. If using a ''ve'' or ''ve_data'' typed object, pass the data in the "
+              + "''ve_data'' object.");
+
+  private final ErrorReporter reporter;
+
+  VeRewritePass(ErrorReporter reporter) {
+    this.reporter = reporter;
+  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -61,6 +75,9 @@ final class VeRewritePass extends CompilerFilePass {
       // Adding veName as a child of veData above removes veName as a child of the VeLogNode's
       // VeDataExpression. So we can just add a child back here, instead of replacing.
       node.getVeDataExpression().addChild(veData);
+    } else if (node.getConfigExpression() != null) {
+      // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
+      reporter.report(node.getConfigExpression().getSourceLocation(), ILLEGAL_DATA_EXPR);
     }
   }
 
