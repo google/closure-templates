@@ -25777,9 +25777,9 @@ soy.$$augmentMap = function(baseMap, additionalMap) {
  * Copies extra properties into an object if they do not already exist. The
  * destination object is mutated in the process.
  *
- * @param {!Object} obj The destination object to update.
- * @param {!Object} defaults An object with default properties to apply.
- * @return {!Object} The destination object for convenience.
+ * @param {?} obj The destination object to update.
+ * @param {?} defaults An object with default properties to apply.
+ * @return {?} The destination object for convenience.
  */
 soy.$$assignDefaults = function(obj, defaults) {
   for (var key in defaults) {

@@ -274,7 +274,7 @@ public final class JspbTest {
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = /** @type {!soy.IjData} */ (opt_ijData_deprecated || opt_ijData);\n"
-            + "  var $tmp = opt_data.moo.$jspbMessageInstance || opt_data.moo;\n"
+            + "  var $tmp = /** @type {?} */ (opt_data.moo).$jspbMessageInstance || opt_data.moo;\n"
             + "  /** @type {proto.example.ExampleExtendable} */\n"
             + "  var moo = soy.asserts.assertType("
             + "$tmp instanceof proto.example.ExampleExtendable, "
