@@ -23,7 +23,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
 interface TemplateParameterLookup {
@@ -35,12 +35,12 @@ interface TemplateParameterLookup {
   Expression getParam(TemplateParam param);
 
   /**
-   * Returns a soy expression for the initial value of an {@code @prop} parameter.
+   * Returns a soy expression for the initial value of an {@code @state} parameter.
    *
    * <p>This expression will either be a static field reference or a constant expression that is
    * safe to include in any context.
    */
-  SoyExpression getProp(TemplatePropVar propVar);
+  SoyExpression getState(TemplateStateVar stateVar);
 
   /**
    * Returns an expression for a given local variable.

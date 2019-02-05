@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import javax.annotation.Nullable;
 
 /**
@@ -38,8 +38,8 @@ import javax.annotation.Nullable;
  */
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 
-  /** The prop variables from template header. */
-  private final ImmutableList<TemplatePropVar> propVars;
+  /** The state variables from template header. */
+  private final ImmutableList<TemplateStateVar> stateVars;
 
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
@@ -48,15 +48,15 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    * @param nodeBuilder builder containing template initialization params
    * @param soyFileHeaderInfo info from the containing Soy file's header declarations
    * @param params the params from template header or SoyDoc. Null if no decls and no SoyDoc.
-   * @param propVars the prop variables from the template header
+   * @param stateVars the state variables from the template header
    */
   TemplateElementNode(
       TemplateElementNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       @Nullable ImmutableList<TemplateParam> params,
-      ImmutableList<TemplatePropVar> propVars) {
+      ImmutableList<TemplateStateVar> stateVars) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
-    this.propVars = propVars;
+    this.stateVars = stateVars;
   }
 
   /**
@@ -66,23 +66,23 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
    */
   private TemplateElementNode(TemplateElementNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.propVars = copyProps(orig.propVars, copyState);
+    this.stateVars = copyState(orig.stateVars, copyState);
   }
 
-  private static ImmutableList<TemplatePropVar> copyProps(
-      ImmutableList<TemplatePropVar> orig, CopyState copyState) {
-    ImmutableList.Builder<TemplatePropVar> newParams = ImmutableList.builder();
-    for (TemplatePropVar prev : orig) {
-      TemplatePropVar next = prev.copy();
+  private static ImmutableList<TemplateStateVar> copyState(
+      ImmutableList<TemplateStateVar> orig, CopyState copyState) {
+    ImmutableList.Builder<TemplateStateVar> newParams = ImmutableList.builder();
+    for (TemplateStateVar prev : orig) {
+      TemplateStateVar next = prev.copy();
       newParams.add(next);
       copyState.updateRefs(prev, next);
     }
     return newParams.build();
   }
 
-  /** Returns the prop variables from template header. */
-  public ImmutableList<TemplatePropVar> getPropVars() {
-    return propVars;
+  /** Returns the state variables from template header. */
+  public ImmutableList<TemplateStateVar> getStateVars() {
+    return stateVars;
   }
 
   @Override
@@ -94,8 +94,8 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     builder.addAll(super.getExprList());
-    for (TemplatePropVar prop : getPropVars()) {
-      builder.add(prop.defaultValue());
+    for (TemplateStateVar state : getStateVars()) {
+      builder.add(state.defaultValue());
     }
     return builder.build();
   }
@@ -106,7 +106,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     // Gather up all the @params declared in the template header (not in the SoyDoc).
     return new ImmutableList.Builder<TemplateHeaderVarDefn>()
         .addAll(super.getHeaderParamsForSourceString())
-        .addAll(propVars)
+        .addAll(stateVars)
         .build();
   }
 
@@ -115,7 +115,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
     return ImmutableMap.of(
         HeaderParam.class, "@param",
         InjectedParam.class, "@inject",
-        TemplatePropVar.class, "@prop");
+        TemplateStateVar.class, "@state");
   }
 
   @Override

@@ -465,14 +465,15 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testPropNodeNumber() {
-    assertThatElementBody("{@prop foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
-    assertThatElementBody("{@prop foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
+  public void testStateNodeNumber() {
+    assertThatElementBody("{@state foo: number= 1}", "<a>{$foo}</a>").rendersAs("<a>1</a>");
+    assertThatElementBody("{@state foo:= 1}", "<p>{$foo}</p>").rendersAs("<p>1</p>");
   }
 
   @Test
   public void testPropNodeBoolean() {
-    assertThatElementBody("{@prop foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>").rendersAs("<p>1</p>");
+    assertThatElementBody("{@state foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
+        .rendersAs("<p>1</p>");
   }
 
   @Test

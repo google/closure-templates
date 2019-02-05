@@ -103,7 +103,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
@@ -787,10 +787,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                 .castAs("!soy.IjData")));
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
-      for (TemplatePropVar propVar : elementNode.getPropVars()) {
+      for (TemplateStateVar stateVar : elementNode.getStateVars()) {
         bodyStatements.add(
-            VariableDeclaration.builder(propVar.name())
-                .setRhs(getExprTranslator().exec(propVar.defaultValue()))
+            VariableDeclaration.builder(stateVar.name())
+                .setRhs(getExprTranslator().exec(stateVar.defaultValue()))
                 .build());
       }
     }

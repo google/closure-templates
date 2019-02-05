@@ -89,7 +89,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -338,8 +338,8 @@ final class ExpressionCompiler {
     }
 
     @Override
-    final SoyExpression visitPropNode(VarRefNode node, TemplatePropVar prop) {
-      return parameters.getProp(prop);
+    final SoyExpression visitStateNode(VarRefNode node, TemplateStateVar state) {
+      return parameters.getState(state);
     }
 
     // Collection literals
@@ -1219,7 +1219,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    Boolean visitPropNode(VarRefNode node, TemplatePropVar prop) {
+    Boolean visitStateNode(VarRefNode node, TemplateStateVar state) {
       return false;
     }
 

@@ -22,7 +22,7 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
@@ -46,9 +46,9 @@ final class ResolveHeaderParamTypesPass extends CompilerFilePass {
         }
       }
       if (template instanceof TemplateElementNode) {
-        for (TemplatePropVar prop : ((TemplateElementNode) template).getPropVars()) {
-          if (prop.getTypeNode() != null) {
-            prop.setType(converter.getOrCreateType(prop.getTypeNode()));
+        for (TemplateStateVar state : ((TemplateElementNode) template).getStateVars()) {
+          if (state.getTypeNode() != null) {
+            state.setType(converter.getOrCreateType(state.getTypeNode()));
           }
         }
       }

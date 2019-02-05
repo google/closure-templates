@@ -37,7 +37,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -229,8 +229,8 @@ final class ExpressionToSoyValueProviderCompiler {
     }
 
     @Override
-    Optional<Expression> visitPropNode(VarRefNode node, TemplatePropVar prop) {
-      SoyExpression expression = variables.getProp(prop);
+    Optional<Expression> visitStateNode(VarRefNode node, TemplateStateVar state) {
+      SoyExpression expression = variables.getState(state);
       if (allowsBoxing()) {
         return Optional.of(expression.boxAsSoyValueProvider());
       }

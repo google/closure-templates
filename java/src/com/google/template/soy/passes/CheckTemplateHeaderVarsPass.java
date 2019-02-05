@@ -35,7 +35,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -54,8 +54,8 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNUSED_PARAM =
       SoyErrorKind.of("Param ''{0}'' unused in template body.");
-  private static final SoyErrorKind UNUSED_PROP =
-      SoyErrorKind.of("Prop var ''{0}'' unused in template body.");
+  private static final SoyErrorKind UNUSED_STATE =
+      SoyErrorKind.of("State var ''{0}'' unused in template body.");
 
   private final ErrorReporter errorReporter;
 
@@ -112,18 +112,18 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       }
     }
 
-    List<TemplateHeaderVarDefn> unusedPropVars = new ArrayList<>();
-    // Process @prop header variables.
+    List<TemplateHeaderVarDefn> unusedStateVars = new ArrayList<>();
+    // Process @state header variables.
     if (node instanceof TemplateElementNode) {
       TemplateElementNode el = (TemplateElementNode) node;
-      for (TemplatePropVar propVar : el.getPropVars()) {
-        allHeaderVarNames.add(propVar.name());
-        if (dataKeys.containsKey(propVar.name())) {
+      for (TemplateStateVar stateVar : el.getStateVars()) {
+        allHeaderVarNames.add(stateVar.name());
+        if (dataKeys.containsKey(stateVar.name())) {
           // Good: declared and referenced in the template.
-          dataKeys.removeAll(propVar.name());
+          dataKeys.removeAll(stateVar.name());
         } else {
           // Bad: declared in the header, but not used.
-          unusedPropVars.add(propVar);
+          unusedStateVars.add(stateVar);
         }
       }
     }
@@ -141,7 +141,7 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
       reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_PARAM);
     }
     if (node instanceof TemplateElementNode) {
-      reportUnusedHeaderVars(errorReporter, unusedPropVars, UNUSED_PROP);
+      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_STATE);
     }
   }
 

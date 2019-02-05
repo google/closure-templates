@@ -211,10 +211,10 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
-  private static final SoyErrorKind TYPE_MISMATCH_PROP =
+  private static final SoyErrorKind TYPE_MISMATCH_STATE =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
-  private static final SoyErrorKind PROP_MUST_BE_CONSTANT =
+  private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
       SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
@@ -277,7 +277,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
       // analyzed
       List<TemplateHeaderVarDefn> headerVars = Lists.newArrayList(node.getParams());
       if (node.getKind() == SoyNode.Kind.TEMPLATE_ELEMENT_NODE) {
-        headerVars.addAll(((TemplateElementNode) node).getPropVars());
+        headerVars.addAll(((TemplateElementNode) node).getStateVars());
       }
 
       // If the default value expressions are not constant, they could reference another default
@@ -289,7 +289,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
           if (!SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
             errorReporter.report(
                 headerVar.defaultValue().getSourceLocation(),
-                PROP_MUST_BE_CONSTANT,
+                STATE_MUST_BE_CONSTANT,
                 headerVar.name());
             headerVar.setType(ErrorType.getInstance());
           }
@@ -321,7 +321,7 @@ final class ResolveExpressionTypesPass extends CompilerFilePass {
             if (!declaredType.isAssignableFrom(actualType)) {
               errorReporter.report(
                   headerVar.defaultValue().getSourceLocation(),
-                  TYPE_MISMATCH_PROP,
+                  TYPE_MISMATCH_STATE,
                   headerVar.name(),
                   actualType,
                   declaredType);

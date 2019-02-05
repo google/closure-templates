@@ -307,22 +307,22 @@ public final class CheckTemplateHeaderVarsPassTest {
   }
 
   @Test
-  public void testUndeclaredPropVar() {
-    String propVarDecl = "{@prop foo:= 1}";
+  public void testUndeclaredStateVar() {
+    String stateVarDecl = "{@state foo:= 1}";
     String templateBody = "<div>{$boo}</div>";
-    ImmutableList<SoyError> errors = soyErrorsForElement(propVarDecl, templateBody);
+    ImmutableList<SoyError> errors = soyErrorsForElement(stateVarDecl, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-    assertThat(errors.get(1).message()).isEqualTo("Prop var 'foo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("State var 'foo' unused in template body.");
   }
 
   @Test
-  public void testUnusedPropVar() {
-    String propVarDecl = "{@prop foo:= 2}";
+  public void testUnusedStateVar() {
+    String stateVarDecl = "{@state foo:= 2}";
     String templateBody = "<b>Hello</b>";
-    ImmutableList<SoyError> errors = soyErrorsForElement(propVarDecl, templateBody);
+    ImmutableList<SoyError> errors = soyErrorsForElement(stateVarDecl, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("Prop var 'foo' unused in template body.");
+        .isEqualTo("State var 'foo' unused in template body.");
   }
 
   private static ImmutableList<SoyError> soyDocErrorsForTemplate(

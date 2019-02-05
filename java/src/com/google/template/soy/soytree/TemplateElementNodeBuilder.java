@@ -32,7 +32,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.List;
 import java.util.Set;
 
@@ -45,7 +45,7 @@ import java.util.Set;
 public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
 
   private static final SoyErrorKind DUPLICATE_DECLARATION =
-      SoyErrorKind.of("Param ''{0}'' is a duplicate of prop var ''{0}''.");
+      SoyErrorKind.of("Param ''{0}'' is a duplicate of state var ''{0}''.");
 
   protected static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
       ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
@@ -55,8 +55,8 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
 
-  /** The prop variables from template header. */
-  private ImmutableList<TemplatePropVar> propVars = ImmutableList.of();
+  /** The state variables from template header. */
+  private ImmutableList<TemplateStateVar> stateVars = ImmutableList.of();
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
@@ -88,9 +88,9 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-  public TemplateNodeBuilder setPropVars(List<TemplatePropVar> newPropVars) {
-    this.propVars = ImmutableList.copyOf(newPropVars);
-    checkDuplicateHeaderVars(params, propVars, errorReporter);
+  public TemplateNodeBuilder setStateVars(List<TemplateStateVar> newStateVars) {
+    this.stateVars = ImmutableList.copyOf(newStateVars);
+    checkDuplicateHeaderVars(params, stateVars, errorReporter);
     return this;
   }
 
@@ -102,7 +102,7 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
   @Override
   public TemplateElementNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
     super.addParams(allParams);
-    checkDuplicateHeaderVars(params, propVars, errorReporter);
+    checkDuplicateHeaderVars(params, stateVars, errorReporter);
     return this;
   }
 
@@ -115,7 +115,7 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
             this.sourceLocation, BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
       }
     }
-    return new TemplateElementNode(this, soyFileHeaderInfo, params, propVars);
+    return new TemplateElementNode(this, soyFileHeaderInfo, params, stateVars);
   }
 
   /**
@@ -124,24 +124,24 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
    *
    * <pre>{@code
    * {@param s: bool}
-   * {@prop s: bool}
+   * {@state s: bool}
    * }</pre>
    *
    * Note that it is not possible to have duplicate names of the same declaration type. Any
-   * duplicate {@code @prop} or {@code @param} will have been flagged as error during the resolve-
+   * duplicate {@code @state} or {@code @param} will have been flagged as error during the resolve-
    * names pass or in {@link #addParams(Iterable)}.
    */
   @VisibleForTesting
   static void checkDuplicateHeaderVars(
       ImmutableList<? extends TemplateHeaderVarDefn> params,
-      ImmutableList<? extends TemplateHeaderVarDefn> propVars,
+      ImmutableList<? extends TemplateHeaderVarDefn> stateVars,
       ErrorReporter errorReporter) {
 
-    final Set<String> propVarNames =
-        propVars.stream().map(TemplateHeaderVarDefn::name).collect(toImmutableSet());
+    final Set<String> stateVarNames =
+        stateVars.stream().map(TemplateHeaderVarDefn::name).collect(toImmutableSet());
 
     Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
-        Iterables.filter(params, param -> propVarNames.contains(param.name()));
+        Iterables.filter(params, param -> stateVarNames.contains(param.name()));
     for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
       errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
     }

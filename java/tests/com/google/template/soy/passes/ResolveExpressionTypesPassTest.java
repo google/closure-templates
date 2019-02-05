@@ -39,7 +39,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -99,12 +99,12 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testProp() {
+  public void testState() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructElementSource(
-                    "{@prop pa:= true}",
-                    "{@prop pb:= [1,2,3]}",
+                    "{@state pa:= true}",
+                    "{@state pb:= [1,2,3]}",
                     "{@param pc: bool|null = null}",
                     "{@param pd: list<int>|null = null}",
                     "<div>",
@@ -119,9 +119,10 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
     TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
 
-    List<TemplatePropVar> props = node.getPropVars();
-    assertThat(props.get(0).defaultValue().getType()).isEqualTo(BoolType.getInstance());
-    assertThat(props.get(1).defaultValue().getType()).isEqualTo(ListType.of(IntType.getInstance()));
+    List<TemplateStateVar> stateVars = node.getStateVars();
+    assertThat(stateVars.get(0).defaultValue().getType()).isEqualTo(BoolType.getInstance());
+    assertThat(stateVars.get(1).defaultValue().getType())
+        .isEqualTo(ListType.of(IntType.getInstance()));
 
     List<TemplateParam> params = node.getParams();
     assertThat(params.get(0).defaultValue().getType()).isEqualTo(NullType.getInstance());
@@ -151,7 +152,7 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
-  public void testPropTypeInference() {
+  public void testStateTypeInference() {
     SoyTypeRegistry typeRegistry =
         new SoyTypeRegistry.Builder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
@@ -160,9 +161,9 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructElementSource(
-                    "{@prop pa:= true}",
-                    "{@prop pb:= [1,2,3]}",
-                    "{@prop proto:= example.ExampleExtendable()}",
+                    "{@state pa:= true}",
+                    "{@state pb:= [1,2,3]}",
+                    "{@state proto:= example.ExampleExtendable()}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
@@ -174,16 +175,17 @@ public final class ResolveExpressionTypesPassTest {
             .fileSet();
     assertTypes(soyTree);
     TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
-    List<TemplatePropVar> props = node.getPropVars();
+    List<TemplateStateVar> stateVars = node.getStateVars();
 
-    assertThat(props.get(0).name()).isEqualTo("pa");
-    assertThat(props.get(0).type()).isEqualTo(BoolType.getInstance());
+    assertThat(stateVars.get(0).name()).isEqualTo("pa");
+    assertThat(stateVars.get(0).type()).isEqualTo(BoolType.getInstance());
 
-    assertThat(props.get(1).name()).isEqualTo("pb");
-    assertThat(props.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
+    assertThat(stateVars.get(1).name()).isEqualTo("pb");
+    assertThat(stateVars.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
 
-    assertThat(props.get(2).name()).isEqualTo("proto");
-    assertThat(props.get(2).type()).isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
+    assertThat(stateVars.get(2).name()).isEqualTo("proto");
+    assertThat(stateVars.get(2).type())
+        .isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
   }
 
   @Test

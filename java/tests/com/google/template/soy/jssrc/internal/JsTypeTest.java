@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.internal.JsType.forIncrementalDomProp;
+import static com.google.template.soy.jssrc.internal.JsType.forIncrementalDomState;
 import static com.google.template.soy.jssrc.internal.JsType.forJsSrc;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
@@ -203,7 +203,7 @@ public final class JsTypeTest {
   }
 
   private String getSoyTypeAssertionStrict(SoyType instance, String varName) {
-    return forIncrementalDomProp(instance)
+    return forIncrementalDomState(instance)
         .getSoyTypeAssertion(
             id(varName),
             varName,
@@ -218,7 +218,7 @@ public final class JsTypeTest {
   }
 
   private StringSubject assertThatTypeExprStrict(SoyType soyType) {
-    return assertThat(forIncrementalDomProp(soyType).typeExpr());
+    return assertThat(forIncrementalDomState(soyType).typeExpr());
   }
 
   private StringSubject assertThatTypeExprForRecordMember(SoyType soyType) {

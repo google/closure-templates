@@ -26,17 +26,17 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * An explicitly declared template prop variable.
+ * An explicitly declared template state variable.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 @Immutable
-public final class TemplatePropVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
+public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final String desc;
   @Nullable private final TypeNode typeNode;
   private final ExprRootNode initialValue;
 
-  public TemplatePropVar(
+  public TemplateStateVar(
       String name,
       @Nullable TypeNode typeNode,
       ExprNode initialValue,
@@ -48,7 +48,7 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
     this.initialValue = new ExprRootNode(initialValue);
   }
 
-  private TemplatePropVar(TemplatePropVar old) {
+  private TemplateStateVar(TemplateStateVar old) {
     super(old);
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
     this.desc = old.desc;
@@ -67,7 +67,7 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
 
   @Override
   public Kind kind() {
-    return Kind.PROP;
+    return Kind.STATE;
   }
 
   @Override
@@ -103,7 +103,7 @@ public final class TemplatePropVar extends AbstractVarDefn implements TemplateHe
   }
 
   @Override
-  public TemplatePropVar copy() {
-    return new TemplatePropVar(this);
+  public TemplateStateVar copy() {
+    return new TemplateStateVar(this);
   }
 }

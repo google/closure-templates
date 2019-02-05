@@ -128,7 +128,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplatePropVar;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
@@ -238,14 +238,14 @@ import javax.annotation.Nullable;
  *        list<int>}  /**
  *        A list of numbers. *&#47;
  *
- * 4. Prop variable declaration:
- *    + Soy tag with command name "@prop" and command text "key: type".
- *    + Prop variables must be explicitly initialized.
+ * 4. State variable declaration:
+ *    + Soy tag with command name "@state" and command text "key: type".
+ *    + State variables must be explicitly initialized.
  *    + Optional desc string is written as a block doc comment, which either must
- *      precede the prop tag, or must start on the same line as the end of the '@prop' tag.
+ *      precede the state tag, or must start on the same line as the end of the '@state' tag.
  *    Examples:
- *    {@prop foo: bool = true}
- *    {@prop foo: list<int> = [1, 2, 3]}  /** A list of numbers. *&#47;
+ *    {@state foo: bool = true}
+ *    {@state foo: list<int> = [1, 2, 3]}  /** A list of numbers. *&#47;
  *
  * Body:
  *
@@ -446,10 +446,10 @@ public class SoyFileParser {
       SoyErrorKind.of(
           "Default parameters are not supported on optional parameters. Did you mean "
           + "'''{@param ...}'''?");
-  private static final SoyErrorKind PROP_IN_TEMPLATE =
-      SoyErrorKind.of("@prop declarations are only allowed in elements.");
-  private static final SoyErrorKind PROP_REQUIRES_VALUE =
-      SoyErrorKind.of("@prop declarations require an initial value.");
+  private static final SoyErrorKind STATE_IN_TEMPLATE =
+      SoyErrorKind.of("@state declarations are only allowed in elements.");
+  private static final SoyErrorKind STATE_REQUIRES_VALUE =
+      SoyErrorKind.of("@state declarations require an initial value.");
 
   // Expression errors:
   private static final SoyErrorKind DUPLICATE_KEY_NAME =
@@ -898,7 +898,7 @@ TOKEN_MGR_DECLS: {
 | < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
 
-| < DECL_BEGIN_PROP_VAR          : "{@prop"        > : IN_CMD_TAG
+| < DECL_BEGIN_STATE_VAR          : "{@state"        > : IN_CMD_TAG
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -980,7 +980,7 @@ TOKEN_MGR_DECLS: {
 <IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
 | < CMD_COLON: ":" > : EXPR  // for type expressions or param/let expressions
-| < CMD_COLON_EQ: ":=" > : EXPR  // @prop declarations where the type is inferred
+| < CMD_COLON_EQ: ":=" > : EXPR  // @state declarations where the type is inferred
 | < CMD_EQ: "=" >
 | < CMD_DOT: "." >
 }
@@ -1456,7 +1456,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     try {
       TemplateOpenTagHelper(builder, open, false)
       { whitespaceMode = builder.getWhitespaceMode(); }
-      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ false)
+      initialWhitespace = TemplateHeader(builder, /* allowState=*/ false)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_TEMPLATE>
       {
@@ -1477,7 +1477,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     try {
       TemplateOpenTagHelper(builder, open, true)
       { whitespaceMode = builder.getWhitespaceMode(); }
-      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ false)
+      initialWhitespace = TemplateHeader(builder, /* allowState=*/ false)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_DELTEMPLATE>
       {
@@ -1496,7 +1496,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     { TemplateElementNodeBuilder builder = new TemplateElementNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
       TemplateOpenTagHelper(builder, open, false)
-      initialWhitespace = TemplateHeader(builder, /* allowProps=*/ true)
+      initialWhitespace = TemplateHeader(builder, /* allowState=*/ true)
       templateBodyNodes = TemplateBlock()
       close = <CMD_CLOSE_ELEMENT>
       {
@@ -1718,14 +1718,14 @@ private RawTextNode RawText() :
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
  */
-private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean allowProps) :
+private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean allowState) :
 {
   Token tok;
   TemplateHeaderVarDefn param;
   List<HeaderParam> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
-  List<TemplatePropVar> propVars = ImmutableList.of();
+  List<TemplateStateVar> stateVars = ImmutableList.of();
 
 }
 {
@@ -1758,14 +1758,14 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
             }
             params.add((HeaderParam) param);
             break;
-          case PROP:
-            if (allowProps) {
-              if (propVars.isEmpty()) {
-                propVars = new ArrayList<TemplatePropVar>();
+          case STATE:
+            if (allowState) {
+              if (stateVars.isEmpty()) {
+                stateVars = new ArrayList<TemplateStateVar>();
               }
-              propVars.add((TemplatePropVar) param);
+              stateVars.add((TemplateStateVar) param);
             } else {
-              errorReporter.report(param.nameLocation(), PROP_IN_TEMPLATE);
+              errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
             }
             break;
           case IJ_PARAM:
@@ -1779,8 +1779,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
 
   {
     templateBuilder.addParams(params);
-    if (allowProps) {
-      ((TemplateElementNodeBuilder) templateBuilder).setPropVars(propVars);
+    if (allowState) {
+      ((TemplateElementNodeBuilder) templateBuilder).setStateVars(stateVars);
     }
     return whitespace;
   }
@@ -1800,7 +1800,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   ExprNode value = null;
   boolean optional = false;
   boolean inject = false;
-  boolean propVar = false;
+  boolean stateVar = false;
 }
 {
   (
@@ -1808,7 +1808,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   | tagBegin = <DECL_BEGIN_OPT_PARAM>  { optional = true; }
   | tagBegin = <DECL_BEGIN_INJECT_PARAM>  { inject = true; }
   | tagBegin = <DECL_BEGIN_OPT_INJECT_PARAM> { inject = true; optional = true; }
-  | tagBegin = <DECL_BEGIN_PROP_VAR> { propVar = true; }
+  | tagBegin = <DECL_BEGIN_STATE_VAR> { stateVar = true; }
   )
   // If there is a special token directly attached to the {@param, use that instead of whatever
   // was passed to us.
@@ -1841,12 +1841,12 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
       desc = desc.substring(3, desc.length() - 2).trim();
     }
-    if (propVar) {
+    if (stateVar) {
       if (value == null) {
-        errorReporter.report(createSrcLoc(tagBegin), PROP_REQUIRES_VALUE);
+        errorReporter.report(createSrcLoc(tagBegin), STATE_REQUIRES_VALUE);
         value = errorExpr(name);
       }
-      return new TemplatePropVar(
+      return new TemplateStateVar(
           name.image,
           paramTypeNode,
           value,
