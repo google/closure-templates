@@ -96,10 +96,10 @@ final class SoyElementPass extends CompilerFilePass {
       if (firstOpenTagNode == null || !firstOpenTagNode.isSelfClosing()) {
         if (firstOpenTagNode == null || lastCloseTagNode == null) {
           errorReporter.report(template.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
-        continue;
-      }
+          continue;
+        }
         validateSoyElementHasOneRootTagNode(firstOpenTagNode, lastCloseTagNode);
-      validateTagNodeHasOneChild(firstOpenTagNode);
+        validateTagNodeHasOneChild(firstOpenTagNode);
       }
       validateNoKey(firstOpenTagNode);
       validateNoDynamicTag(firstOpenTagNode);

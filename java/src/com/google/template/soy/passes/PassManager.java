@@ -41,9 +41,9 @@ import java.util.Map;
  * <p>This arranges all compiler passes into four phases.
  *
  * <ul>
- *   <li>The single file passes. This includes AST rewriting passes such as {@link HtmlRewritePass}
- *       and {@link RewriteGendersPass} and other kinds of validation that doesn't require
- *       information about the full file set.
+ *   <li>The single file passes. This includes AST rewriting passes such as {@link
+ *       ResolveExpressionTypesPass} and {@link RewriteGenderMsgsPass} and other kinds of validation
+ *       that doesn't require information about the full file set.
  *   <li>Cross template checking passes. This includes AST validation passes like the {@link
  *       CheckVisibilityPass}. Passes should run here if they need to check the relationships
  *       between templates.
@@ -352,11 +352,6 @@ public final class PassManager {
       if (options.allowExternalCalls() == TriState.DISABLED) {
         addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
-      // if htmlrewriting is enabled, don't desugar because later passes want the nodes
-      // we need to run this here, before the autoescaper because the autoescaper may choke on lots
-      // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
-      // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
-      addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
 
       if (autoescaperEnabled) {
         addPass(
@@ -382,9 +377,8 @@ public final class PassManager {
       if (optimize && options.isOptimizerEnabled()) {
         addPass(new OptimizationPass(), crossTemplateCheckingPassesBuilder);
       }
-      // A number of the passes above (desugar, htmlrewrite), may chop up raw text nodes, and the
-      // Optimizer may produce additional RawTextNodes.
-      // Stich them back together here.
+      // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional
+      // RawTextNodes. Stich them back together here.
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
       building = false;
       if (!passContinuationRegistry.isEmpty()) {

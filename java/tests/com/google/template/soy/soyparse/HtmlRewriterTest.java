@@ -151,6 +151,27 @@ public final class HtmlRewriterTest {
     assertThat(((HtmlOpenTagNode) node.getChild(0)).isSelfClosing()).isTrue();
   }
 
+  // The newlines between the print nodes will get eliminated by the line joining algorithm, but we
+  // track where they were trimmed to make sure this doedsn't parse the same as 'foo={$p}{$p}{$p}'
+  @Test
+  public void testJoinedWhitespace() {
+    TemplateNode node = runPass("{@param p:?}<img\nfoo={$p}\n{$p}\n{$p} />");
+    assertThatASTString(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    RAW_TEXT_NODE\n"
+                + "    HTML_ATTRIBUTE_VALUE_NODE\n"
+                + "      PRINT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    PRINT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    PRINT_NODE\n"
+                + "");
+  }
+
   @Test
   public void testDynamicTagName() {
     TemplateNode node = runPass("{let $t : 'div' /}<{$t}>content</{$t}>");
@@ -564,8 +585,6 @@ public final class HtmlRewriterTest {
                 new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)
             .parseSoyFile();
     if (node != null) {
-      // remove empty raw text nodes
-      new CombineConsecutiveRawTextNodesPass().run(node);
       return node.getChild(0);
     }
     return null;

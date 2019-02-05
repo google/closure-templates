@@ -621,10 +621,21 @@ final class HtmlRewriter {
       if (currentRawTextNode.missingWhitespaceAt(currentRawText.length())) {
         handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint());
       }
+      // empty raw text nodes won't get visited in the loop above, just delete them here.
+      // the parser produces empty raw text nodes to track where whitespace is trimmed.  We take
+      // advantage of this in the handleJoinedWhitespace method to tell where unquoted attributes
+      // end.
+      if (currentRawTextNode.isEmpty()) {
+        edits.remove(currentRawTextNode);
+      }
     }
 
     /** Called to handle whitespace that was completely removed from a raw text node. */
     void handleJoinedWhitespace(SourceLocation.Point point) {
+      // Whitespace isn't meaningful within a tag, but it does show where users separated things
+      // so treat the 'joined' whitespace like real whitespace.
+      // TODO(lukes): it would be nice to be able to treat joined whitespace as 'real whitespace'
+      // then the normal loops in the handle* methods would just #dealwithit.
       switch (context.getState()) {
         case UNQUOTED_ATTRIBUTE_VALUE:
           context.createUnquotedAttributeValue(point);
