@@ -134,20 +134,37 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     reporter.report(location, error, args);
   }
 
-  @Override
-  public JavaScriptValue callModuleFunction(
-      String moduleName, String functionName, JavaScriptValue... params) {
-    Expression function;
+  private Expression chainedDotAccess(Expression base, String suffix) {
+    for (String part : Splitter.on('.').splitToList(suffix)) {
+      base = base.dotAccess(part);
+    }
+    return base;
+  }
+
+  private Expression referenceModuleExport(String moduleName, String export) {
+    Expression module;
     if (jsSrcOptions.shouldGenerateGoogModules()) {
       String alias =
           "$"
               + CaseFormat.LOWER_UNDERSCORE.to(
                   CaseFormat.LOWER_CAMEL, moduleName.replace('.', '_'));
-      function = GoogRequire.createWithAlias(moduleName, alias).dotAccess(functionName);
+      module = GoogRequire.createWithAlias(moduleName, alias).reference();
     } else {
-      function = GoogRequire.create(moduleName).googModuleGet().dotAccess(functionName);
+      module = GoogRequire.create(moduleName).googModuleGet();
     }
-    return new JavaScriptValueImpl(function.call(unwrapParams(Arrays.asList(params))));
+    return chainedDotAccess(module, export);
+  }
+
+  @Override
+  public JavaScriptValue getModuleExport(String moduleName, String export) {
+    return new JavaScriptValueImpl(referenceModuleExport(moduleName, export));
+  }
+
+  @Override
+  public JavaScriptValue callModuleFunction(
+      String moduleName, String functionName, JavaScriptValue... params) {
+    return new JavaScriptValueImpl(
+        referenceModuleExport(moduleName, functionName).call(unwrapParams(Arrays.asList(params))));
   }
 
   @Override
@@ -166,16 +183,9 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     if (fullFunctionName.length() == googProvide.length()) {
       function = require.reference();
     } else {
-      String suffix = fullFunctionName.substring(googProvide.length() + 1);
-      Expression expr = null;
-      for (String part : Splitter.on('.').splitToList(suffix)) {
-        if (expr == null) {
-          expr = require.dotAccess(part);
-        } else {
-          expr = expr.dotAccess(part);
-        }
-      }
-      function = expr;
+      function =
+          chainedDotAccess(
+              require.reference(), fullFunctionName.substring(googProvide.length() + 1));
     }
     return new JavaScriptValueImpl(function.call(unwrapParams(Arrays.asList(params))));
   }

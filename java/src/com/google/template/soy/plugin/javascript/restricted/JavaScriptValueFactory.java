@@ -20,6 +20,20 @@ package com.google.template.soy.plugin.javascript.restricted;
 public abstract class JavaScriptValueFactory {
 
   /**
+   * Instructs Soy to reference the given export which is provided by a {@code goog.module}. This
+   * also works for {@code goog.provide}.
+   *
+   * <p>For example, given this JavaScript file:<code><pre>
+   * goog.module('foo.bar');
+   * exports.baz = {quz: ...};
+   * </pre></code>
+   *
+   * <p>You would arrange to have Soy call it by invoking {@code factory.moduleExport("foo.bar",
+   * "baz.qux")}
+   */
+  public abstract JavaScriptValue getModuleExport(String moduleName, String export);
+
+  /**
    * Instructs Soy to call the given function which is provided by a {@code goog.module} with the
    * given params at runtime.
    *

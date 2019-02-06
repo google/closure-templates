@@ -36,8 +36,33 @@ public final class JavaScriptValueFactoryImplTest {
   static final SoyJavaScriptSourceFunction callModuleFn =
       (factory, args, context) -> factory.callModuleFunction("foo.bar", "baz");
 
+  static final SoyJavaScriptSourceFunction moduleExportFn =
+      (factory, args, context) -> factory.getModuleExport("foo.bar", "baz.qux");
+
   static final SoyJavaScriptSourceFunction callNamespaceFn =
       (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz");
+
+  @Test
+  public void testGetModuleExportInGoogModule() throws Exception {
+    SoyJsSrcOptions opts = new SoyJsSrcOptions();
+    opts.setShouldGenerateGoogModules(true);
+
+    Expression expr = applyFunction(opts, moduleExportFn);
+
+    assertThat(getRequires(expr)).isEqualTo("var $fooBar = goog.require('foo.bar');\n");
+    assertThat(expr.getCode()).isEqualTo("$fooBar.baz.qux;");
+  }
+
+  @Test
+  public void testGetModuleExportInGoogProvide() throws Exception {
+    SoyJsSrcOptions opts = new SoyJsSrcOptions();
+    opts.setShouldProvideRequireSoyNamespaces(true);
+
+    Expression expr = applyFunction(opts, moduleExportFn);
+
+    assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
+    assertThat(expr.getCode()).isEqualTo("goog.module.get('foo.bar').baz.qux;");
+  }
 
   @Test
   public void testCallModuleFunctionInGoogModule() throws Exception {
