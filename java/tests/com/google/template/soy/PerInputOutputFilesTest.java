@@ -20,20 +20,27 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import java.io.File;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.kohsuke.args4j.CmdLineParser;
 
 @RunWith(JUnit4.class)
 public final class PerInputOutputFilesTest {
-  final PerInputOutputFiles outputFiles = new PerInputOutputFiles("soy.js", Joiner.on("\n"));
+  private final PerInputOutputFiles outputFiles =
+      new PerInputOutputFiles("soy.js", Joiner.on("\n"));
+
+  private SoyCmdLineParser cmdLineParser;
+
+  @Before
+  public final void constructParser() {
+    cmdLineParser = new SoyCmdLineParser(/*loader=*/ null);
+    cmdLineParser.registerFlagsObject(outputFiles);
+  }
 
   @Test
   public void testValidate_setBothSets() throws Exception {
-    new CmdLineParser(outputFiles)
-        .parseArgument(
-            new String[] {"--outputPathFormat", "foo/bar.js", "--outputDirectory", "foo/"});
+    cmdLineParser.parseArgument("--outputPathFormat", "foo/bar.js", "--outputDirectory", "foo/");
     try {
       outputFiles.validateFlags();
       fail();
@@ -47,7 +54,7 @@ public final class PerInputOutputFilesTest {
 
   @Test
   public void testValidate_setNeither() throws Exception {
-    new CmdLineParser(outputFiles).parseArgument(new String[] {});
+    cmdLineParser.parseArgument();
     try {
       outputFiles.validateFlags();
       fail();
@@ -60,8 +67,7 @@ public final class PerInputOutputFilesTest {
 
   @Test
   public void testGetOutputPath_inputRoots() throws Exception {
-    new CmdLineParser(outputFiles)
-        .parseArgument(new String[] {"--outputDirectory", "out", "--inputRoots", "root"});
+    cmdLineParser.parseArgument("--outputDirectory", "out", "--inputRoots", "root");
     assertThat(outputFiles.getOutputPath(new File("root/foo/bar.soy"), /*locale=*/ null).toString())
         .isEqualTo("out/foo/bar.soy.js");
     // files not under a root are copied as is
@@ -72,7 +78,7 @@ public final class PerInputOutputFilesTest {
   // just a basic test, there are more tests in MainEntryPointUtilsTest
   @Test
   public void testGetOutputPath_outputPathFormat() throws Exception {
-    new CmdLineParser(outputFiles).parseArgument(new String[] {"--outputPathFormat", "foo.js"});
+    cmdLineParser.parseArgument("--outputPathFormat", "foo.js");
     assertThat(outputFiles.getOutputPath(new File("root/foo/bar.soy"), /*locale=*/ null).toString())
         .isEqualTo("foo.js");
   }
