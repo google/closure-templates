@@ -1180,7 +1180,7 @@ public final class EscapingConventions {
       if (language == EscapingLanguage.JAVASCRIPT) {
         return ImmutableList.<String>of("goog.string.urlEncode", "encodeURIComponent");
       } else if (language == EscapingLanguage.PYTHON) {
-        return ImmutableList.<String>of("urllib.quote");
+        return ImmutableList.<String>of("quote");
       }
       return super.getLangFunctionNames(language);
     }

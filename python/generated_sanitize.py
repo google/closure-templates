@@ -2,7 +2,11 @@
 from __future__ import unicode_literals
 
 import re
-import urllib
+
+try:
+  from urllib.parse import quote  # Python 3
+except ImportError:
+  from urllib import quote  # Python 2
 
 try:
   str = unicode
@@ -11,7 +15,7 @@ except NameError:
 
 
 def escape_uri_helper(v):
-  return urllib.quote(str(v), '')
+  return quote(str(v), '')
 
 _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE = {
   '\x00': '&#0;',

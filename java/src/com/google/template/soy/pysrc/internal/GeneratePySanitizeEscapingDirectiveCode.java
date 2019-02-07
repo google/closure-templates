@@ -126,7 +126,11 @@ public final class GeneratePySanitizeEscapingDirectiveCode
         .append("from __future__ import unicode_literals\n")
         .append("\n")
         .append("import re\n")
-        .append("import urllib\n")
+        .append("\n")
+        .append("try:\n")
+        .append("  from urllib.parse import quote  # Python 3\n")
+        .append("except ImportError:\n")
+        .append("  from urllib import quote  # Python 2\n")
         .append("\n")
         .append("try:\n")
         .append("  str = unicode\n")
@@ -166,9 +170,10 @@ public final class GeneratePySanitizeEscapingDirectiveCode
   protected void useExistingLibraryFunction(
       StringBuilder outputCode, String identifier, String existingFunction) {
     String fnName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, identifier);
-    // When urllib.quote is called without a second parameter, '/' is by default NOT escaped.
+    // When quote is called without a second parameter, '/' is by default NOT escaped.
     // Adding an empty string as a second parameter ensures that '/' is escaped.
-    // Documentation: https://docs.python.org/2/library/urllib.html#urllib.quote
+    // Documentation: https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote
+    //                https://docs.python.org/2/library/urllib.html#urllib.quote
     outputCode
         .append("\ndef ")
         .append(fnName)
