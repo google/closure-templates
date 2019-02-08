@@ -28,6 +28,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.Message;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -479,11 +480,16 @@ final class MsgCompiler {
                   // 1. we don't have to worry about logonly
                   // 2. we need to only generate 'half' of it
                   Label restartPoint = new Label();
-                  Expression veData = exprCompiler.compile(veLogNode.getVeDataExpression());
                   return appendable
                       .enterLoggableElement(
-                          MethodRef.CREATE_LOG_STATEMENT.invoke(
-                              veData, BytecodeUtils.constant(false)))
+                          MethodRef.LOG_STATEMENT_CREATE.invoke(
+                              BytecodeUtils.constant(veLogNode.getLoggingId()),
+                              veLogNode.getConfigExpression() == null
+                                  ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
+                                  : exprCompiler
+                                      .compile(veLogNode.getConfigExpression(), restartPoint)
+                                      .unboxAs(Message.class),
+                              BytecodeUtils.constant(false)))
                       .toStatement()
                       .labelStart(restartPoint);
                 }

@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.passes;
 
+import com.google.common.base.Optional;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -39,6 +40,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -58,6 +60,11 @@ import com.google.template.soy.types.VeType;
  * </ul>
  */
 final class VeLogValidationPass extends CompilerFilePass {
+  private static final SoyErrorKind UNEXPECTED_CONFIG =
+      SoyErrorKind.of(
+          "Unexpected ''data'' attribute for logging element ''{0}'', there is no configured "
+              + "''proto_extension_type'' in the logging configuration for this element. "
+              + "Did you forget to configure it?");
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
           "Unexpected data argument. The data (''{0}'') must match with the VE passed as the "
@@ -212,6 +219,21 @@ final class VeLogValidationPass extends CompilerFilePass {
       // A null config means this velog statement has an unknown VE name. This error will have
       // already been reported by validateVeDataFunctionNode, so continue on the best we can.
       node.setLoggingId(config.getId());
+      if (node.getConfigExpression() != null) {
+        SoyType type = node.getConfigExpression().getType();
+        Optional<String> protoName = config.getProtoName();
+        if (!protoName.isPresent()) {
+          reporter.report(
+              node.getConfigExpression().getSourceLocation(),
+              UNEXPECTED_CONFIG,
+              veName.identifier());
+        } else if (type.getKind() != Kind.ERROR
+            && (type.getKind() != Kind.PROTO
+                || !((SoyProtoType) type).getDescriptor().getFullName().equals(protoName.get()))) {
+          reporter.report(
+              node.getConfigExpression().getSourceLocation(), WRONG_TYPE, protoName.get(), type);
+        }
+      }
     }
 
     if (node.getLogonlyExpression() != null) {

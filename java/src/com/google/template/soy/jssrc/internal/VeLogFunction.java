@@ -45,6 +45,7 @@ public final class VeLogFunction implements SoyJavaScriptSourceFunction {
         "soy.velog",
         "soy.velog.$$getLoggingAttribute",
         args.get(0),
-        args.size() > 1 ? args.get(1) : factory.constant(false));
+        args.get(1),
+        args.size() > 2 ? args.get(2) : factory.constant(false));
   }
 }

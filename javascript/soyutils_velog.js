@@ -47,14 +47,12 @@ class ElementMetadata {
      * @const {number}
      */
     this.id = id;
-
     /**
      * The optional payload from the `data` attribute. This is guaranteed to
      * match the proto_type specified in the logging configuration.
      * @const {?Message}
      */
     this.data = data;
-
     /**
      * Whether or not this element is in logOnly mode. In logOnly mode the log
      * records are collected but the actual elements are not rendered.
@@ -140,18 +138,16 @@ function setMetadataTestOnly(testdata) {
 /**
  * Records the id and additional data into the global metadata structure.
  *
- * @param {!$$VisualElementData} veData The VE to log.
+ * @param {number} veid The id of the visual element that will be logged.
+ * @param {?Message} veData Additional data that is needed for logging.
  * @param {boolean} logOnly Whether to enable counterfactual logging.
  *
  * @return {string} The HTML attribute that will be stored in the DOM.
  */
-function $$getLoggingAttribute(veData, logOnly) {
+function $$getLoggingAttribute(veid, veData, logOnly) {
   if ($$hasMetadata()) {
     const dataIdx =
-        metadata.elements.push(
-            new ElementMetadata(
-                veData.getVe().getId(), veData.getData(), logOnly))
-        - 1;
+        metadata.elements.push(new ElementMetadata(veid, veData, logOnly)) - 1;
     // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
     // we insert the return value of this method as a plain string instead of a
     // HTML attribute, therefore the desugaring pass does not know how to handle

@@ -35,6 +35,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -856,7 +857,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitVeLogNode(final VeLogNode node) {
     final Label restartPoint = new Label();
-    final Expression veData = exprCompiler.compile(node.getVeDataExpression(), restartPoint);
+    final Expression configExpression =
+        node.getConfigExpression() == null
+            ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
+            : exprCompiler.compile(node.getConfigExpression(), restartPoint).unboxAs(Message.class);
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
     final Statement body = Statement.concat(visitChildren(node));
     final Statement exitStatement =
@@ -866,13 +870,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getLogonlyExpression() != null) {
       final Expression logonlyExpression =
           exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAs(boolean.class);
+      final Expression appendable = appendableExpression;
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
           // Key
           // LO: logonly
           // HL: hasLogger
-          // veData: SoyVisualElementData
+          // id: logging id
+          // data: config expression
           // LS: LogStatement
           // A: appendable
           //
@@ -886,12 +892,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           Label noLogger = new Label();
           hasLogger.gen(cb); // HL, LO
           cb.ifZCmp(EQ, noLogger); // LO
-          veData.gen(cb); // veData, LO
-          cb.swap(); // LO, veData
-          MethodRef.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
-          appendableExpression.gen(cb); // A, LS
+          cb.pushLong(node.getLoggingId()); // id, LO
+          cb.dup2X1(); // id, LO, id
+          cb.pop2(); // LO, id
+          configExpression.gen(cb); // data, LO, id
+          cb.swap(); // LO, data, id
+          MethodRef.LOG_STATEMENT_CREATE.invokeUnchecked(cb); // LS
+          appendable.gen(cb); // A, LS
           cb.swap(); // LS, A
-          AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // A
+          AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // appendable
           cb.pop();
           Label bodyLabel = new Label();
           cb.goTo(bodyLabel);
@@ -906,17 +915,21 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           exitStatement.gen(cb);
         }
       };
+
     } else {
       final Statement enterStatement =
           ControlFlow.IfBlock.create(
                   hasLogger,
                   appendableExpression
                       .enterLoggableElement(
-                          MethodRef.CREATE_LOG_STATEMENT.invoke(
-                              veData, BytecodeUtils.constant(false)))
+                          MethodRef.LOG_STATEMENT_CREATE.invoke(
+                              BytecodeUtils.constant(node.getLoggingId()),
+                              configExpression,
+                              BytecodeUtils.constant(false)))
                       .toStatement()
                       .labelStart(restartPoint))
               .asStatement();
+      ;
       return Statement.concat(enterStatement, body, exitStatement);
     }
   }
