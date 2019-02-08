@@ -39,7 +39,6 @@ public final class VeLogNodeTest {
 
     assertThat(logNode.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), null)}<div></div>{/velog}");
-    assertThat(logNode.getConfigExpression()).isNull();
     assertThat(logNode.getLogonlyExpression()).isNull();
   }
 
@@ -62,8 +61,7 @@ public final class VeLogNodeTest {
     VeLogNode logNode = parseVeLog("{velog Bar data=\"soy.test.Foo()\"}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
-        .isEqualTo("{velog ve_data(ve(Bar), null) data=\"soy.test.Foo()\"}<div></div>{/velog}");
-    assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
+        .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo())}<div></div>{/velog}");
     assertThat(logNode.getLogonlyExpression()).isNull();
   }
 
@@ -73,7 +71,6 @@ public final class VeLogNodeTest {
 
     assertThat(logNode.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), null) logonly=\"false\"}<div></div>{/velog}");
-    assertThat(logNode.getConfigExpression()).isNull();
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
@@ -83,10 +80,7 @@ public final class VeLogNodeTest {
         parseVeLog("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
-        .isEqualTo(
-            "{velog ve_data(ve(Bar), null) data=\"soy.test.Foo()\" logonly=\"false\"}<div></div>"
-                + "{/velog}");
-    assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
+        .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo()) logonly=\"false\"}<div></div>{/velog}");
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 

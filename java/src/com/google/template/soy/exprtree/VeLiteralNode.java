@@ -36,6 +36,8 @@ public final class VeLiteralNode extends AbstractExprNode {
   private VeLiteralNode(VeLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
+    this.id = orig.id;
+    this.type = orig.type;
   }
 
   public Identifier getName() {

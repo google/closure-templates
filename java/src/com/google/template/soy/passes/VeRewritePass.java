@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.VeLogNode;
  *
  * <ul>
  *   <li>Rewrites {@code {velog MyVe}} to {@code {velog ve_data(MyVe)}}
+ *   <li>Rewrites {@code {velog MyVe data="$data"}} to {@code {velog ve_data(MyVe, $data)}}
  *   <li>Rewrites {@code ve_data(MyVe, $data)} to {@code ve_data(ve(MyVe), $data)}
  *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
  * </ul>
@@ -72,6 +73,12 @@ final class VeRewritePass extends CompilerFilePass {
               BuiltinFunction.VE_DATA,
               veName.getSourceLocation());
       veData.addChild(veName);
+      // Move the data expression into the second parameter of the ve_data function so that the data
+      // is correctly logged.
+      // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
+      if (node.getConfigExpression() != null) {
+        node.moveConfigExpression(veData);
+      }
       // Adding veName as a child of veData above removes veName as a child of the VeLogNode's
       // VeDataExpression. So we can just add a child back here, instead of replacing.
       node.getVeDataExpression().addChild(veData);

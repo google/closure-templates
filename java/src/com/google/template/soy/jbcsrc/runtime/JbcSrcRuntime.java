@@ -36,6 +36,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -746,5 +747,9 @@ public final class JbcSrcRuntime {
         c.close();
       }
     }
+  }
+
+  public static LogStatement createLogStatement(SoyVisualElementData veData, boolean logOnly) {
+    return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
 }

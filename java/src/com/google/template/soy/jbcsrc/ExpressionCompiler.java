@@ -966,7 +966,8 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(
           node.getType(),
           MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(
-              visit(node.getChild(0)), visit(node.getChild(1))));
+              visit(node.getChild(0)),
+              visit(node.getChild(1)).checkedCast(BytecodeUtils.MESSAGE_TYPE)));
     }
 
     // Non-builtin functions
