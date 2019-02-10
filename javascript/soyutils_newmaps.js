@@ -31,10 +31,11 @@ function $$legacyObjectMapToMap(obj) {
 /**
  * Calls a function for each value in a map and inserts the result (with the
  * same key) into a new map.
- * @param {!SoyMap<K, V>} map The map over which to iterate.
- * @param {function(V):V} f The function to call for every value.
- * @return {!Map<K, V>} a new map with the results from f
- * @template K, V
+ * @param {!SoyMap<K, VIn>} map The map over which to iterate.
+ * @param {function((VIn|null|undefined)):VOut|function(VIn):VOut} f The
+ *     function to call for every value.
+ * @return {!Map<K, VOut>} a new map with the results from f
+ * @template K, VIn, VOut
  */
 function $$transformValues(map, f) {
   const m = new Map();

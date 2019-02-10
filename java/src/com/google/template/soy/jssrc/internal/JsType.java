@@ -196,7 +196,13 @@ public final class JsType {
   private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES_STRICT;
 
   private static final JsType IDOM_ATTRIBUTES =
-      builder().addType("function()").setPredicate(GOOG_IS_FUNCTION).build();
+      builder()
+          .addType("function()")
+          .addType("!google3.javascript.template.soy.element_lib_idom.IdomFunction")
+          .addRequire(
+              GoogRequire.createTypeRequire("google3.javascript.template.soy.element_lib_idom"))
+          .setPredicate(GOOG_IS_FUNCTION)
+          .build();
 
   private static final GoogRequire SANITIZED_CONTENT_KIND =
       GoogRequire.createWithAlias("goog.soy.data.SanitizedContentKind", "SanitizedContentKind");
@@ -598,6 +604,7 @@ public final class JsType {
     // consumed by an escaper function.
     // TODO(lukes): maybe we should define typedefs for these?
     Builder builder = builder();
+    builder.addType("!soydata.$$EMPTY_STRING_");
     builder.addType("!" + type);
     builder.addRequire(GoogRequire.create(type));
     if (!isStrict) {

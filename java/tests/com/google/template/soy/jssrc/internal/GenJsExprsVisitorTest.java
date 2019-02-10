@@ -195,19 +195,22 @@ public final class GenJsExprsVisitorTest {
 
   @Test
   public void testCall() {
-    assertGeneratedChunks("{call some.func data=\"all\" /}", "some.func(opt_data, opt_ijData);");
+    assertGeneratedChunks(
+        "{call some.func data=\"all\" /}", "some.func(/** @type {?} */ (opt_data), opt_ijData);");
 
     String soyNodeCode = JOINER.join(
         "{@param boo : ?}",
         "{call some.func data=\"$boo.foo\" /}");
-    assertGeneratedChunks(soyNodeCode, "some.func(opt_data.boo.foo, opt_ijData);");
+    assertGeneratedChunks(
+        soyNodeCode, "some.func(/** @type {?} */ (opt_data.boo.foo), opt_ijData);");
 
     soyNodeCode = JOINER.join(
         "{@param moo : ?}",
         "{call some.func}",
         "  {param goo: $moo /}",
         "{/call}");
-    assertGeneratedChunks(soyNodeCode, "some.func({goo: opt_data.moo}, opt_ijData);");
+    assertGeneratedChunks(
+        soyNodeCode, "some.func(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);");
 
     soyNodeCode =
         JOINER.join(
@@ -239,8 +242,8 @@ public final class GenJsExprsVisitorTest {
             "  {param goo kind=\"text\"}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
             "{/call}");
     expectedJsExprText =
-        "some.func({goo: soydata.$$markUnsanitizedTextForInternalBlocks("
-            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo)}, opt_ijData);";
+        "some.func(/** @type {?} */ ({goo: soydata.$$markUnsanitizedTextForInternalBlocks("
+            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo)}), opt_ijData);";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 

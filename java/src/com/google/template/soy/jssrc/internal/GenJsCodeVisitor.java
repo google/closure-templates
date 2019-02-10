@@ -1453,9 +1453,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     for (TemplateParam param : node.getParams()) {
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       record.put(
-          genParamAlias(param.name()),
-          jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
+          param.name(), jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));
       for (GoogRequire require : jsType.getGoogRequires()) {
+        // TODO(lukes): switch these to requireTypes
         jsCodeBuilder.addGoogRequire(require);
       }
       paramNames.add(param.name());
@@ -1490,9 +1490,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
         // strict deps errors.  This should be fine though since the transitive soy template that
         // actually has the param will add them.
-        record.put(
-            genParamAlias(indirectParamName),
-            jsType.typeExprForRecordMember(/* isOptional= */ true));
+        record.put(indirectParamName, jsType.typeExprForRecordMember(/* isOptional= */ true));
       }
     }
     StringBuilder sb = new StringBuilder();

@@ -268,13 +268,17 @@ public class GenCallCodeUtils {
       dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.isPassingData()) {
       dataToPass = exprTranslator.exec(callNode.getDataExpr());
+    } else if (callNode.numChildren() == 0) {
+      // If we're passing neither children nor indirect data, we can immediately return null.
+      return LITERAL_NULL;
     } else {
       dataToPass = LITERAL_NULL;
     }
 
     // ------ Case 1: No additional params ------
     if (callNode.numChildren() == 0) {
-      return dataToPass;
+      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
+      return dataToPass.castAs("?");
     }
 
     // ------ Build an object literal containing the additional params ------
@@ -314,9 +318,11 @@ public class GenCallCodeUtils {
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {
       Expression allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
+      // No need to cast; assignDefaults already returns {?}.
       return allData;
     } else {
-      return params;
+      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
+      return params.castAs("?");
     }
   }
 

@@ -590,7 +590,8 @@ public final class GenJsCodeVisitorTest {
             + "  var gamma__wrapped21 = "
             + "soydata.$$markUnsanitizedTextForInternalBlocks(gamma__soy21);\n"
             + "  var delta__soy24 = 'Boop!';\n"
-            + "  var delta__wrapped24 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
+            + "  var delta__wrapped24 = soydata.VERY_UNSAFE"
+            + ".$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
             + "  output += alpha__soy8 + beta__wrapped11 + gamma__wrapped21 + delta__wrapped24;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
@@ -679,11 +680,13 @@ public final class GenJsCodeVisitorTest {
   public void testBasicCall() {
 
     assertGeneratedJsCode(
-        "{call some.func data=\"all\" /}\n", "output += some.func(opt_data, opt_ijData);\n");
+        "{call some.func data=\"all\" /}\n",
+        "output += some.func(/** @type {?} */ (opt_data), opt_ijData);\n");
 
     String soyNodeCode =
         "{@param moo : ?}\n" + "{call some.func}\n" + "  {param goo : $moo /}\n" + "{/call}\n";
-    assertGeneratedJsCode(soyNodeCode, "output += some.func({goo: opt_data.moo}, opt_ijData);\n");
+    assertGeneratedJsCode(
+        soyNodeCode, "output += some.func(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);\n");
 
     soyNodeCode =
         "{@param boo : ?}\n"
@@ -714,7 +717,7 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(
         "{@param boo : ?}\n" + "{delcall my.delegate data=\"$boo.foo\" /}\n",
         "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', false)"
-            + "(opt_data.boo.foo, opt_ijData);\n");
+            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
@@ -722,13 +725,13 @@ public final class GenJsCodeVisitorTest {
             + "{delcall my.delegate variant=\"$voo\" data=\"$boo.foo\" /}\n",
         "output += soy.$$getDelegateFn("
             + "soy.$$getDelTemplateId('my.delegate'), opt_data.voo, false)"
-            + "(opt_data.boo.foo, opt_ijData);\n");
+            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
 
     assertGeneratedJsCode(
         "{@param boo : ?}\n"
             + "{delcall my.delegate data=\"$boo.foo\" allowemptydefault=\"true\" /}\n",
         "output += soy.$$getDelegateFn(soy.$$getDelTemplateId('my.delegate'), '', true)"
-            + "(opt_data.boo.foo, opt_ijData);\n");
+            + "(/** @type {?} */ (opt_data.boo.foo), opt_ijData);\n");
   }
 
   @Test

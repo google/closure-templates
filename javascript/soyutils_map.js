@@ -45,7 +45,7 @@ const {shuffle} = goog.require('goog.array');
 class SoyMap {
   /**
    * @param {K} k
-   * @return {V}
+   * @return {V|undefined}
    */
   get(k) {}
 
@@ -83,7 +83,7 @@ class SoyMap {
  * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
  * N.B.: although ES6 Maps and jspb.Maps allow many values to serve as map keys,
  * legacy object maps allow only string keys.
- * @param {!SoyMap<string, V>} map
+ * @param {!SoyMap<?, V>} map
  * @return {!Object<V>}
  * @template V
  */

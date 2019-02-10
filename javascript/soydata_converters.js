@@ -131,7 +131,8 @@ soydata.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
 /**
  * Converts an HTML Sanitized Content object to a corresponding
  * Safe String Proto.
- * @param {!goog.soy.data.SanitizedHtml|string} sanitizedHtml
+ * @param {!goog.soy.data.SanitizedHtml|string|!soydata.IdomFunction|!Function}
+ *     sanitizedHtml
  * @return {!proto.webutil.html.types.SafeHtmlProto}
  */
 soydata.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
@@ -221,7 +222,7 @@ soydata.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
 
 /**
  * Converts a Safe String Proto to HTML Sanitized Content.
- * @param {?proto.webutil.html.types.SafeHtmlProto} x null or a safe string proto.
+ * @param {?proto.webutil.html.types.SafeHtmlProto|undefined} x null or a safe string proto.
  * @return {?goog.soy.data.SanitizedHtml}
  */
 soydata.unpackProtoToSanitizedHtml = function(x) {
@@ -236,7 +237,7 @@ soydata.unpackProtoToSanitizedHtml = function(x) {
 
 /**
  * Converts a Safe String Proto to CSS Sanitized Content.
- * @param {?proto.webutil.html.types.SafeStyleProto | proto.webutil.html.types.SafeStyleSheetProto} x
+ * @param {?proto.webutil.html.types.SafeStyleProto | ?proto.webutil.html.types.SafeStyleSheetProto} x
  *   null or a safe string proto.
  * @return {?goog.soy.data.SanitizedCss}
  */
@@ -272,7 +273,7 @@ soydata.unpackProtoToSanitizedJs = function(x) {
 
 /**
  * Converts a Safe String Proto to URI Sanitized Content.
- * @param {?proto.webutil.html.types.SafeUrlProto | proto.webutil.html.types.TrustedResourceUrlProto} x
+ * @param {?proto.webutil.html.types.SafeUrlProto | ?proto.webutil.html.types.TrustedResourceUrlProto} x
  *   null or a safe string proto.
  * @return {?goog.soy.data.SanitizedUri}
  */

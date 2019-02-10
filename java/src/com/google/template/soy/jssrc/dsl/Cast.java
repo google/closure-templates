@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -30,9 +29,7 @@ abstract class Cast extends Expression {
   abstract String typeExpr();
 
   static Cast create(Expression expr, String typeExpr) {
-    return new AutoValue_Cast(
-        /** initialStatements= */
-        ImmutableList.<Statement>of(), expr, typeExpr);
+    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr);
   }
 
   @Override

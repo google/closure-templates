@@ -16399,15 +16399,22 @@ goog.html.SafeUrl.sanitize = function(url) {
  *
  * @see http://url.spec.whatwg.org/#concept-relative-url
  * @param {string|!goog.string.TypedString} url The URL to validate.
+ * @param {boolean=} opt_allowDataUrl Whether to allow valid data: URLs.
  * @return {!goog.html.SafeUrl} The validated URL, wrapped as a SafeUrl.
  */
-goog.html.SafeUrl.sanitizeAssertUnchanged = function(url) {
+goog.html.SafeUrl.sanitizeAssertUnchanged = function(url, opt_allowDataUrl) {
   if (url instanceof goog.html.SafeUrl) {
     return url;
   } else if (typeof url == 'object' && url.implementsGoogStringTypedString) {
     url = /** @type {!goog.string.TypedString} */ (url).getTypedStringValue();
   } else {
     url = String(url);
+  }
+  if (opt_allowDataUrl && /^data:/i.test(url)) {
+    var safeUrl = goog.html.SafeUrl.fromDataUrl(url);
+    if (safeUrl.getTypedStringValue() == url) {
+      return safeUrl;
+    }
   }
   if (!goog.asserts.assert(
           goog.html.SAFE_URL_PATTERN_.test(url),
@@ -25185,7 +25192,7 @@ const {shuffle} = goog.require('goog.array');
 class SoyMap {
   /**
    * @param {K} k
-   * @return {V}
+   * @return {V|undefined}
    */
   get(k) {}
 
@@ -25223,7 +25230,7 @@ class SoyMap {
  * Converts an ES6 Map or jspb.Map into an equivalent legacy object map.
  * N.B.: although ES6 Maps and jspb.Maps allow many values to serve as map keys,
  * legacy object maps allow only string keys.
- * @param {!SoyMap<string, V>} map
+ * @param {!SoyMap<?, V>} map
  * @return {!Object<V>}
  * @template V
  */
@@ -25338,10 +25345,11 @@ function $$legacyObjectMapToMap(obj) {
 /**
  * Calls a function for each value in a map and inserts the result (with the
  * same key) into a new map.
- * @param {!SoyMap<K, V>} map The map over which to iterate.
- * @param {function(V):V} f The function to call for every value.
- * @return {!Map<K, V>} a new map with the results from f
- * @template K, V
+ * @param {!SoyMap<K, VIn>} map The map over which to iterate.
+ * @param {function((VIn|null|undefined)):VOut|function(VIn):VOut} f The
+ *     function to call for every value.
+ * @return {!Map<K, VOut>} a new map with the results from f
+ * @template K, VIn, VOut
  */
 function $$transformValues(map, f) {
   const m = new Map();
@@ -25441,6 +25449,20 @@ soy.IjData = function() {};
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
 // semantically distinct from the plain text string `"a<b>c"` and smart
 // templates can take that distinction into account.
+
+/**
+ * Properties added to all idom HTML / Attributes functions. The TypeScript type
+ * inherits this and adds a call signature (which is not really possible here).
+ * @typedef {{
+ *   toString: function(),
+ *   contentKind: !goog.soy.data.SanitizedContentKind
+ * }}
+ */
+soydata.IdomFunctionMembers;
+
+
+/** @typedef {!soydata.IdomFunctionMembers|!Function} */
+soydata.IdomFunction;
 
 /**
  * Checks whether a given value is of a given content kind.
@@ -25824,7 +25846,7 @@ soy.$$checkNotNull = function(val) {
 /**
  * Parses the given string into a base 10 integer. Returns null if parse is
  * unsuccessful.
- * @param {string} str The string to parse
+ * @param {?string} str The string to parse
  * @return {?number} The string parsed as a base 10 integer, or null if
  * unsuccessful
  */
@@ -26036,7 +26058,7 @@ soy.$$registerDelegateFn = function(
  *     empty string).
  * @param {boolean} allowsEmptyDefault Whether to default to the empty template
  *     function if there's no active implementation.
- * @return {Function} The retrieved implementation function.
+ * @return {!Function} The retrieved implementation function.
  */
 soy.$$getDelegateFn = function(
     delTemplateId, delTemplateVariant, allowsEmptyDefault) {
@@ -26093,7 +26115,7 @@ soy.$$EMPTY_TEMPLATE_FN_ = function(
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {function(*, ?goog.i18n.bidi.Dir=): (T|soydata.$$EMPTY_STRING_)}
+ * @return {function(*, ?goog.i18n.bidi.Dir=): (T|!soydata.$$EMPTY_STRING_)}
  *     A factory that takes content and an optional content direction and
  *     returns a new instance, or an empty string. If the content direction is
  *     undefined, ctor.prototype.contentDir is used.
@@ -26117,7 +26139,7 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
    * @param {?} content The content to put in the instance.
    * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction. If
    *     undefined, ctor.prototype.contentDir is used.
-   * @return {!goog.soy.data.SanitizedContent|soydata.$$EMPTY_STRING_} The new
+   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
@@ -26150,7 +26172,7 @@ soydata.$$makeSanitizedContentFactoryForInternalBlocks_ = function(ctor) {
  * string as SanitizedContent, since it's a no-op for empty strings anyways.
  *
  * @param {function(new: T)} ctor A constructor.
- * @return {function(*): (T|soydata.$$EMPTY_STRING_)} A
+ * @return {function(*): (T|!soydata.$$EMPTY_STRING_)} A
  *     factory that takes content and returns a
  *     new instance (with default directionality, i.e.
  *     ctor.prototype.contentDir), or an empty string.
@@ -26173,7 +26195,7 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
    * Creates a ctor-type SanitizedContent instance.
    *
    * @param {?} content The content to put in the instance.
-   * @return {!goog.soy.data.SanitizedContent|soydata.$$EMPTY_STRING_} The new
+   * @return {!goog.soy.data.SanitizedContent|!soydata.$$EMPTY_STRING_} The new
    *     instance, or an empty string. A new instance is actually of type T
    *     above (ctor's type, a descendant of SanitizedContent), but there's no
    *     way to express that here.
@@ -26196,7 +26218,8 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
  * @param {?} content Text.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.UnsanitizedText|soydata.$$EMPTY_STRING_} Wrapped result.
+ * @return {!goog.soy.data.UnsanitizedText|!soydata.$$EMPTY_STRING_} Wrapped
+ *     result.
  */
 soydata.$$markUnsanitizedTextForInternalBlocks = function(
     content, opt_contentDir) {
@@ -26214,7 +26237,7 @@ soydata.$$markUnsanitizedTextForInternalBlocks = function(
  * @param {?} content Text.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml|soydata.$$EMPTY_STRING_} Wrapped
+ * @return {!goog.soy.data.SanitizedHtml|!soydata.$$EMPTY_STRING_} Wrapped
  *     result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
@@ -26226,7 +26249,7 @@ soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
  * Creates kind="js" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {!goog.soy.data.SanitizedJs|soydata.$$EMPTY_STRING_} Wrapped result.
+ * @return {!goog.soy.data.SanitizedJs|!soydata.$$EMPTY_STRING_} Wrapped result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
@@ -26237,7 +26260,7 @@ soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
  * Creates kind="trustedResourceUri" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {goog.soy.data.SanitizedTrustedResourceUri|soydata.$$EMPTY_STRING_}
+ * @return {!goog.soy.data.SanitizedTrustedResourceUri|!soydata.$$EMPTY_STRING_}
  *     Wrapped result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
@@ -26249,7 +26272,8 @@ soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
  * Creates kind="uri" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {goog.soy.data.SanitizedUri|soydata.$$EMPTY_STRING_} Wrapped result.
+ * @return {!goog.soy.data.SanitizedUri|!soydata.$$EMPTY_STRING_} Wrapped
+ *     result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
@@ -26260,7 +26284,7 @@ soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks =
  * Creates kind="attributes" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {goog.soy.data.SanitizedHtmlAttribute|soydata.$$EMPTY_STRING_}
+ * @return {!goog.soy.data.SanitizedHtmlAttribute|!soydata.$$EMPTY_STRING_}
  *     Wrapped result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
@@ -26272,7 +26296,8 @@ soydata.VERY_UNSAFE.$$ordainSanitizedAttributesForInternalBlocks =
  * Creates kind="css" block contents (internal use only).
  *
  * @param {?} content Text.
- * @return {goog.soy.data.SanitizedCss|soydata.$$EMPTY_STRING_} Wrapped result.
+ * @return {!goog.soy.data.SanitizedCss|!soydata.$$EMPTY_STRING_} Wrapped
+ *     result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
@@ -26330,8 +26355,10 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
 /**
  * Converts HTML to plain text by removing tags, normalizing spaces and
  * converting entities.
- * TODO(tomnguyen): Support IdomFunction in value.
- * @param {string|?goog.soy.data.SanitizedHtml|?goog.soy.data.UnsanitizedText}
+ *
+ * The last two parameters are idom functions.
+ * @param {(string|?goog.soy.data.SanitizedHtml|?goog.soy.data.UnsanitizedText|
+ *     !soydata.IdomFunction|!Function|null|undefined)}
  *     value
  * @return {string}
  */
@@ -27349,7 +27376,7 @@ soy.$$bidiMarkAfter = function(bidiGlobalDir, text, opt_isHtml) {
  *     if rtl, 0 if unknown.
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedContent|string} The wrapped text.
+ * @return {string} The wrapped text.
  */
 soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
@@ -27395,7 +27422,8 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
  *     if rtl, 0 if unknown.
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.SanitizedContent|string} The wrapped string.
+ * @return {!goog.soy.data.UnsanitizedText|!goog.soy.data.SanitizedHtml|string}
+ *     The wrapped string.
  */
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
