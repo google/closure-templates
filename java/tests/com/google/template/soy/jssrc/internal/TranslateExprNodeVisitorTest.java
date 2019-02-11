@@ -92,15 +92,11 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("$goo.boo")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("gooData8.boo;");
-    assertThatSoyExpr("$boo[0][1].foo[2]")
-        .generatesCode(
-            "opt_data.boo[/** @type {?} */ (0)][/** @type {?} */ (1)].foo[/** @type {?} */ (2)];");
-    assertThatSoyExpr("$boo[0][1]")
-        .generatesCode("opt_data.boo[/** @type {?} */ (0)][/** @type {?} */ (1)];");
-    assertThatSoyExpr("$boo[/** @type {?} */ ($foo)][/** @type {?} */ ($goo+1)]")
+    assertThatSoyExpr("$boo[0][1].foo[2]").generatesCode("opt_data.boo[0][1].foo[2];");
+    assertThatSoyExpr("$boo[0][1]").generatesCode("opt_data.boo[0][1];");
+    assertThatSoyExpr("$boo[$foo][$goo+1]")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode(
-            "opt_data.boo[/** @type {?} */ (opt_data.foo)][/** @type {?} */ (gooData8 + 1)];");
+        .generatesCode("opt_data.boo[opt_data.foo][gooData8 + 1];");
     assertThatSoyExpr("$class").generatesCode("opt_data.class;");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield;");
   }

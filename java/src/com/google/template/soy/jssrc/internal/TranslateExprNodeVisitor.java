@@ -367,9 +367,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return isSoyMapAtRuntime(baseType)
               ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // soy.Map
               : base.bracketAccess(
-                  // The key type may not match JsCompiler's type system (passing number as enum, or
-                  // nullable proto field).  I could instead cast this to the map's key type.
-                  visit(keyNode).castAs("?"), itemAccess.isNullSafe()); // vanilla bracket access
+                  visit(keyNode), itemAccess.isNullSafe()); // vanilla bracket access
         }
 
       default:
@@ -551,11 +549,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
             fieldDesc.isRepeated()
                 ? GOOG_ARRAY_MAP.call(fieldValue, sanitizedContentPackFn)
                 : sanitizedContentPackFn.call(fieldValue);
-      }
-
-      if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
-        fieldValue =
-            fieldValue.castAs("?" + ProtoUtils.calculateJsEnumName(fieldDesc.getEnumType()));
       }
 
       if (fieldDesc.isExtension()) {
