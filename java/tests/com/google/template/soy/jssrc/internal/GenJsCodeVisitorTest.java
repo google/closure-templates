@@ -978,8 +978,8 @@ public final class GenJsCodeVisitorTest {
             + "}');\n"
             + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'FORMAT': opt_data.format, "
-            + "'STATUS_1': opt_data.gender[0], "
-            + "'STATUS_2': opt_data.gender[1], "
+            + "'STATUS_1': opt_data.gender[/** @type {?} */ (0)], "
+            + "'STATUS_2': opt_data.gender[/** @type {?} */ (1)], "
             + "'PERSON_1': opt_data.person1, "
             + "'PERSON_2': opt_data.person2});\n"
             + "output += msg_s;\n";
@@ -1033,12 +1033,12 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}');\n"
             + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-            + "{'STATUS': opt_data.values.gender[0], "
-            + "'NUM_1': opt_data.values.people[0], "
-            + "'NUM_2': opt_data.values.people[1], "
+            + "{'STATUS': opt_data.values.gender[/** @type {?} */ (0)], "
+            + "'NUM_1': opt_data.values.people[/** @type {?} */ (0)], "
+            + "'NUM_2': opt_data.values.people[/** @type {?} */ (1)], "
             + "'PERSON': opt_data.person, "
-            + "'XXX_1': opt_data.values.people[0], "
-            + "'XXX_2': opt_data.values.people[1]});\n"
+            + "'XXX_1': opt_data.values.people[/** @type {?} */ (0)], "
+            + "'XXX_2': opt_data.values.people[/** @type {?} */ (1)]});\n"
             + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
