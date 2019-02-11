@@ -157,14 +157,17 @@ public final class JspbTest {
   public void testProtoInit_enumField() {
     assertThatSoyExpr("example.ExampleExtendable(someEnum: example.SomeEnum.SECOND)")
         .withTypeRegistry(REGISTRY)
-        .generatesCode("var $tmp = new proto.example.ExampleExtendable();", "$tmp.setSomeEnum(2);");
+        .generatesCode(
+            "var $tmp = new proto.example.ExampleExtendable();",
+            "$tmp.setSomeEnum(/** @type {?proto.example.SomeEnum} */ (2));");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(someEnum: $e)")
                 .withParam("{@param e: example.SomeEnum}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();", "$tmp.setSomeEnum(opt_data.e);");
+            "var $tmp = new proto.example.ExampleExtendable();",
+            "$tmp.setSomeEnum(/** @type {?proto.example.SomeEnum} */ (opt_data.e));");
   }
 
   @Test
