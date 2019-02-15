@@ -474,16 +474,11 @@ final class MsgCompiler {
                   // 1. we don't have to worry about logonly
                   // 2. we need to only generate 'half' of it
                   Label restartPoint = new Label();
+                  Expression veData = exprCompiler.compile(veLogNode.getVeDataExpression());
                   return appendable
                       .enterLoggableElement(
-                          MethodRef.LOG_STATEMENT_CREATE.invoke(
-                              BytecodeUtils.constant(veLogNode.getLoggingId()),
-                              veLogNode.getConfigExpression() == null
-                                  ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
-                                  : exprCompiler
-                                      .compile(veLogNode.getConfigExpression(), restartPoint)
-                                      .unboxAsMessage(),
-                              BytecodeUtils.constant(false)))
+                          MethodRef.CREATE_LOG_STATEMENT.invoke(
+                              veData, /*logonly*/ BytecodeUtils.constant(false)))
                       .toStatement()
                       .labelStart(restartPoint);
                 }

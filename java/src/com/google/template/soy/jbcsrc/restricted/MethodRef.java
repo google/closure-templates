@@ -28,7 +28,6 @@ import com.google.common.primitives.UnsignedLongs;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -417,9 +416,9 @@ public abstract class MethodRef {
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       create(LoggingAdvisingAppendable.class, "buffering").asNonNullable();
 
-  public static final MethodRef LOG_STATEMENT_CREATE =
-      create(LogStatement.class, "create", long.class, Message.class, boolean.class)
-          .asNonNullable();
+  public static final MethodRef CREATE_LOG_STATEMENT =
+      MethodRef.create(
+          JbcSrcRuntime.class, "createLogStatement", SoyVisualElementData.class, boolean.class);
 
   public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
 

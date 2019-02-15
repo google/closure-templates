@@ -24,9 +24,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
-import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -89,11 +87,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             Identifier.create(VeLogFunction.NAME, insertionLocation),
             VeLogFunction.INSTANCE,
             insertionLocation);
-    funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
-    funcNode.addChild(
-        node.getConfigExpression() == null
-            ? new NullNode(insertionLocation)
-            : node.getConfigExpression().copy(new CopyState()));
+    funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
     if (node.getLogonlyExpression() != null) {
       funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
     }

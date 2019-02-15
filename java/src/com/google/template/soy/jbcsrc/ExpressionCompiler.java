@@ -963,10 +963,10 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitVeDataFunction(FunctionNode node) {
+      SoyExpression ve = visit(node.getChild(0));
+      Expression data = visit(node.getChild(1)).unboxAsMessage();
       return SoyExpression.forSoyValue(
-          node.getType(),
-          MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(
-              visit(node.getChild(0)), visit(node.getChild(1))));
+          node.getType(), MethodRef.SOY_VISUAL_ELEMENT_DATA_CREATE.invoke(ve, data));
     }
 
     // Non-builtin functions

@@ -24,6 +24,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -72,7 +73,8 @@ public final class VeLogNode extends AbstractBlockCommandNode
   }
 
   private final ExprRootNode veDataExpr;
-  @Nullable private final ExprRootNode dataExpr;
+  // TODO(b/71641483): Delete dataExpr once all velog statements are migrated to the ve_data syntax.
+  @Nullable private ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
   @Nullable private Long loggingId;
 
@@ -139,6 +141,14 @@ public final class VeLogNode extends AbstractBlockCommandNode
     return dataExpr;
   }
 
+  /**
+   * Removes the config expression from the AST and adds it as the next child of the given parent.
+   */
+  public void moveConfigExpressionTo(ParentExprNode parent) {
+    parent.addChild(dataExpr.getRoot());
+    dataExpr = null;
+  }
+
   /** Returns a reference to the logonly expression, if there is one. */
   @Nullable
   public ExprRootNode getLogonlyExpression() {
@@ -172,7 +182,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
   @Override
   public String getCommandText() {
     return veDataExpr.toSourceString()
-        + (dataExpr != null ? " data=\"" + dataExpr.toSourceString() + "\"" : "")
         + (logonlyExpr != null ? " logonly=\"" + logonlyExpr.toSourceString() + "\"" : "");
   }
 
