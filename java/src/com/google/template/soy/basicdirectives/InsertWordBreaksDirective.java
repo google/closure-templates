@@ -107,7 +107,7 @@ final class InsertWordBreaksDirective
         UnionType.of(StringType.getInstance(), HtmlType.getInstance()),
         JbcSrcMethods.INSERT_WORD_BREAKS.invoke(
             value.box(),
-            BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE)));
+            BytecodeUtils.numericConversion(args.get(0).unboxAsLong(), Type.INT_TYPE)));
   }
 
   @Override
@@ -116,7 +116,7 @@ final class InsertWordBreaksDirective
     return AppendableAndOptions.create(
         JbcSrcMethods.INSERT_WORD_BREAKS_STREAMING.invoke(
             delegateAppendable,
-            BytecodeUtils.numericConversion(args.get(0).unboxAs(long.class), Type.INT_TYPE)));
+            BytecodeUtils.numericConversion(args.get(0).unboxAsLong(), Type.INT_TYPE)));
   }
 
   @Override

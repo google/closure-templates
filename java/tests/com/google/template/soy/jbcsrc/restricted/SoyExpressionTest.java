@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSanitiz
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -33,11 +34,15 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -55,7 +60,7 @@ public class SoyExpressionTest {
     SoyExpression expr = SoyExpression.forInt(constant(12L));
     assertThatExpression(expr).evaluatesTo(12L);
     assertThatExpression(expr.box()).evaluatesTo(IntegerData.forValue(12));
-    assertThatExpression(expr.box().unboxAs(long.class)).evaluatesTo(12L);
+    assertThatExpression(expr.box().unboxAsLong()).evaluatesTo(12L);
     assertThatExpression(expr.coerceToDouble()).evaluatesTo(12D);
     assertThatExpression(
             SoyExpression.forSoyValue(AnyType.getInstance(), expr.box()).coerceToDouble())
@@ -101,7 +106,10 @@ public class SoyExpressionTest {
   public void testNullExpression() {
     assertThatExpression(SoyExpression.NULL).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.box()).evaluatesTo(null);
-    assertThatExpression(SoyExpression.NULL.box().unboxAs(Object.class)).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box().unboxAsList()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box().unboxAsString()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.box().unboxAsMessage()).evaluatesTo(null);
+    assertThatExpression(SoyExpression.NULL.unboxAsMessage()).evaluatesTo(null);
     assertThatExpression(SoyExpression.NULL.coerceToBoolean()).evaluatesTo(false);
     assertThatExpression(SoyExpression.NULL.coerceToString()).evaluatesTo("null");
   }
@@ -192,7 +200,46 @@ public class SoyExpressionTest {
             StringType.getInstance(),
             MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asNullable());
     assertThatExpression(nullableString).evaluatesTo(StringData.forValue("hello"));
-    assertThatExpression(nullableString.unboxAs(String.class).invoke(MethodRef.STRING_IS_EMPTY))
+    assertThatExpression(nullableString.unboxAsString().invoke(MethodRef.STRING_IS_EMPTY))
         .evaluatesTo(false);
+  }
+
+  @Test
+  public void testUnboxNullMarkedNonNullable() {
+    SoyExpression secretNullString =
+        SoyExpression.forSoyValue(
+            StringType.getInstance(),
+            new Expression(BytecodeUtils.SOY_STRING_TYPE, Feature.NON_NULLABLE) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.pushNull();
+              }
+            });
+    assertThatExpression(secretNullString.unboxAsString())
+        .throwsException(NullPointerException.class);
+
+    SoyExpression secretNullList =
+        SoyExpression.forSoyValue(
+            ListType.ANY_LIST,
+            new Expression(BytecodeUtils.SOY_LIST_TYPE, Feature.NON_NULLABLE) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.pushNull();
+              }
+            });
+    assertThatExpression(secretNullList.unboxAsList()).throwsException(NullPointerException.class);
+
+    SoyExpression secretNullProto =
+        SoyExpression.forSoyValue(
+            new SoyProtoType(
+                new SoyTypeRegistry(), Proto3Message.getDescriptor(), ImmutableSet.of()),
+            new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_NULLABLE) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.pushNull();
+              }
+            });
+    assertThatExpression(secretNullProto.unboxAsMessage())
+        .throwsException(NullPointerException.class);
   }
 }

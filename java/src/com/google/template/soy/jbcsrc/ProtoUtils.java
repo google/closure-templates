@@ -881,7 +881,7 @@ final class ProtoUtils {
       Preconditions.checkArgument(listArg.isNonNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
-      SoyExpression unboxed = listArg.unboxAs(List.class);
+      SoyExpression unboxed = listArg.unboxAsList();
       Expression resolved = detacher.get().resolveSoyValueProviderList(unboxed);
 
       // Enter new scope

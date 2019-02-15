@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_T
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
-import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -427,40 +426,180 @@ public final class SoyExpression extends Expression {
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
   }
 
-  // TODO(lukes): split this into a set of specialized methods, one per target type like we did
-  // for the 'coerce' methods.
-
   /**
-   * Unboxes this to a {@link SoyExpression} with a runtime type of {@code asType}.
+   * Unboxes this to a {@link SoyExpression} with a boolean runtime type.
    *
    * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
    * or other means) that the value does have the appropriate type but you prefer to interact with
    * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()}
-   * which are designed for that use case.
+   * consider {@link #coerceToBoolean()} which is designed for that use case.
    */
-  public SoyExpression unboxAs(Class<?> asType) {
-    checkArgument(
-        !SoyValue.class.isAssignableFrom(asType),
-        "Cannot use unboxAs() to convert to a SoyValue: %s, use .box() instead",
-        asType);
-
-    // No-op conversion, always allow.
-    // SoyExpressions that are already unboxed fall into this case.
-    if (BytecodeUtils.isDefinitelyAssignableFrom(
-        Type.getType(asType), soyRuntimeType.runtimeType())) {
+  public SoyExpression unboxAsBoolean() {
+    if (alreadyUnboxed(boolean.class)) {
       return this;
     }
+    assertBoxed(boolean.class);
 
+    return forBool(delegate.invoke(MethodRef.SOY_VALUE_BOOLEAN_VALUE));
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with a long runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
+   * consider {@link #coerceToDouble()} which is designed for that use case.
+   */
+  public SoyExpression unboxAsLong() {
+    if (alreadyUnboxed(long.class)) {
+      return this;
+    }
+    assertBoxed(long.class);
+
+    return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with a double runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
+   * consider {@link #coerceToDouble()} which is designed for that use case.
+   */
+  public SoyExpression unboxAsDouble() {
+    if (alreadyUnboxed(double.class)) {
+      return this;
+    }
+    assertBoxed(double.class);
+
+    return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with a String runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
+   * consider {@link #coerceToString()} which is designed for that use case.
+   */
+  public SoyExpression unboxAsString() {
+    if (alreadyUnboxed(String.class)) {
+      return this;
+    }
+    assertBoxed(String.class);
+
+    Expression unboxedString;
+    if (delegate.isNonNullable()) {
+      unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
+    } else {
+      unboxedString =
+          new Expression(BytecodeUtils.STRING_TYPE, features()) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              Label end = new Label();
+              delegate.gen(adapter);
+              BytecodeUtils.nullCoalesce(adapter, end);
+              MethodRef.SOY_VALUE_STRING_VALUE.invokeUnchecked(adapter);
+              adapter.mark(end);
+            };
+          };
+    }
+    // We need to ensure that santized types don't lose their content kinds
+    return soyRuntimeType.isKnownSanitizedContent()
+        ? forSanitizedString(unboxedString, ((SanitizedType) soyType()).getContentKind())
+        : forString(unboxedString);
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with a List runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation.
+   */
+  public SoyExpression unboxAsList() {
+    if (alreadyUnboxed(List.class)) {
+      return this;
+    }
+    assertBoxed(List.class);
+
+    Expression unboxedList;
+    if (delegate.isNonNullable()) {
+      unboxedList = delegate.checkedCast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST);
+    } else {
+      unboxedList =
+          new Expression(BytecodeUtils.LIST_TYPE, features()) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              Label end = new Label();
+              delegate.gen(adapter);
+              BytecodeUtils.nullCoalesce(adapter, end);
+              adapter.checkCast(SOY_LIST_TYPE);
+              MethodRef.SOY_LIST_AS_JAVA_LIST.invokeUnchecked(adapter);
+              adapter.mark(end);
+            };
+          };
+    }
+
+    ListType asListType;
+    if (soyType().getKind() != Kind.NULL
+        && soyRuntimeType.asNonNullable().isKnownListOrUnionOfLists()) {
+      asListType = soyRuntimeType.asNonNullable().asListType();
+    } else {
+      Kind kind = soyType().getKind();
+      if (kind == Kind.UNKNOWN || kind == Kind.NULL) {
+        asListType = ListType.of(UnknownType.getInstance());
+      } else {
+        // The type checker should have already rejected all of these
+        throw new UnsupportedOperationException("Can't convert " + soyRuntimeType + " to List");
+      }
+    }
+    return forList(asListType, unboxedList);
+  }
+
+  /**
+   * Unboxes this to a {@link SoyExpression} with a Message runtime type.
+   *
+   * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
+   * or other means) that the value does have the appropriate type but you prefer to interact with
+   * it as its unboxed representation.
+   */
+  public Expression unboxAsMessage() {
+    if (soyType().getKind() == Kind.NULL) {
+      // If this is a null literal, return a Messaged-typed null literal.
+      return BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE);
+    }
     // Attempting to unbox an unboxed proto
     // (We compare the non-nullable type because being null doesn't impact unboxability,
     //  and if we didn't remove null then isKnownProtoOrUnionOfProtos would fail.)
-    if (asType.equals(Message.class)
-        && soyRuntimeType.asNonNullable().isKnownProtoOrUnionOfProtos()
-        && !isBoxed()) {
+    if (soyRuntimeType.asNonNullable().isKnownProtoOrUnionOfProtos() && !isBoxed()) {
       return this;
     }
+    if (delegate.isNonNullable()) {
+      return delegate.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+    }
 
+    return new Expression(BytecodeUtils.MESSAGE_TYPE, features()) {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        delegate.gen(adapter);
+        BytecodeUtils.nullCoalesce(adapter, end);
+        MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(adapter);
+        adapter.mark(end);
+      }
+    };
+  }
+
+  private boolean alreadyUnboxed(Class<?> asType) {
+    return BytecodeUtils.isDefinitelyAssignableFrom(
+        Type.getType(asType), soyRuntimeType.runtimeType());
+  }
+
+  private void assertBoxed(Class<?> asType) {
     if (!isBoxed()) {
       throw new IllegalStateException(
           "Trying to unbox an unboxed value ("
@@ -469,70 +608,6 @@ public final class SoyExpression extends Expression {
               + asType
               + " doesn't make sense. Should you be using a type coercion? e.g. coerceToBoolean()");
     }
-
-    if (asType.equals(boolean.class)) {
-      return forBool(delegate.invoke(MethodRef.SOY_VALUE_BOOLEAN_VALUE));
-    }
-    if (asType.equals(long.class)) {
-      return forInt(delegate.invoke(MethodRef.SOY_VALUE_LONG_VALUE));
-    }
-    if (asType.equals(double.class)) {
-      return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
-    }
-
-    if (delegate.isNonNullable()) {
-      if (asType.equals(String.class)) {
-        Expression unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
-        // We need to ensure that santized types don't lose their content kinds
-        return soyRuntimeType.isKnownSanitizedContent()
-            ? forSanitizedString(unboxedString, ((SanitizedType) soyType()).getContentKind())
-            : forString(unboxedString);
-      }
-      if (asType.equals(List.class)) {
-        return unboxAsList();
-      }
-      if (asType.equals(Message.class)) {
-        SoyRuntimeType runtimeType = getUnboxedType(soyType());
-        return forProto(
-            runtimeType,
-            delegate
-                .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
-                .checkedCast(runtimeType.runtimeType()));
-      }
-    } else {
-      // else it must be a List/Proto/String all of which must preserve null through the unboxing
-      // operation
-      // TODO(lukes): this violates the expression contract since we jump to a label outside the
-      // scope of the expression
-      final Label end = new Label();
-      Expression nonNullDelegate =
-          new Expression(resultType(), features()) {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              delegate.gen(adapter);
-              BytecodeUtils.nullCoalesce(adapter, end);
-            }
-          };
-      return withSource(nonNullDelegate).asNonNullable().unboxAs(asType).asNullable().labelEnd(end);
-    }
-    throw new UnsupportedOperationException("Can't unbox " + soyRuntimeType + " as " + asType);
-  }
-
-  private SoyExpression unboxAsList() {
-    ListType asListType;
-    if (soyRuntimeType.isKnownListOrUnionOfLists()) {
-      asListType = soyRuntimeType.asListType();
-    } else {
-      Kind kind = soyType().getKind();
-      if (kind == Kind.UNKNOWN) {
-        asListType = ListType.of(UnknownType.getInstance());
-      } else {
-        // The type checker should have already rejected all of these
-        throw new UnsupportedOperationException("Can't convert " + soyRuntimeType + " to List");
-      }
-    }
-    return forList(
-        asListType, delegate.checkedCast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
   }
 
   /** Returns a new {@link SoyExpression} with the same type but a new delegate expression. */

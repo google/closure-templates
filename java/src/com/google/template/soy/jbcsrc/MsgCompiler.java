@@ -28,7 +28,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.Message;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -363,10 +362,7 @@ final class MsgCompiler {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
       }
       render =
-          appendableExpression
-              .appendString(value.unboxAs(String.class))
-              .toStatement()
-              .labelStart(start);
+          appendableExpression.appendString(value.unboxAsString()).toStatement().labelStart(start);
     }
     return Statement.concat(
         initMsgRenderer,
@@ -399,9 +395,7 @@ final class MsgCompiler {
         putSelectPartIntoMap(originalMsg, placeholderNameToPutStatement, (SoyMsgSelectPart) child);
       } else if (child instanceof SoyMsgPlaceholderPart) {
         putPlaceholderIntoMap(
-            originalMsg,
-            placeholderNameToPutStatement,
-            (SoyMsgPlaceholderPart) child);
+            originalMsg, placeholderNameToPutStatement, (SoyMsgPlaceholderPart) child);
       } else {
         throw new AssertionError("unexpected child: " + child);
       }
@@ -488,7 +482,7 @@ final class MsgCompiler {
                                   ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
                                   : exprCompiler
                                       .compile(veLogNode.getConfigExpression(), restartPoint)
-                                      .unboxAs(Message.class),
+                                      .unboxAsMessage(),
                               BytecodeUtils.constant(false)))
                       .toStatement()
                       .labelStart(restartPoint);

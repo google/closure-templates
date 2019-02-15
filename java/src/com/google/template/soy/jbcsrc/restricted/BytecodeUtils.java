@@ -581,17 +581,17 @@ public final class BytecodeUtils {
     SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
     SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
     if (leftRuntimeType.isKnownString()) {
-      return doEqualsString(left.unboxAs(String.class), right);
+      return doEqualsString(left.unboxAsString(), right);
     }
     if (rightRuntimeType.isKnownString()) {
       // TODO(lukes): we are changing the order of evaluation here.
-      return doEqualsString(right.unboxAs(String.class), left);
+      return doEqualsString(right.unboxAsString(), left);
     }
     if (leftRuntimeType.isKnownInt()
         && rightRuntimeType.isKnownInt()
         && left.isNonNullable()
         && right.isNonNullable()) {
-      return compare(Opcodes.IFEQ, left.unboxAs(long.class), right.unboxAs(long.class));
+      return compare(Opcodes.IFEQ, left.unboxAsLong(), right.unboxAsLong());
     }
     if (leftRuntimeType.isKnownNumber()
         && rightRuntimeType.isKnownNumber()
@@ -615,9 +615,9 @@ public final class BytecodeUtils {
     SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
     if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
       if (stringExpr.isNonNullable()) {
-        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAs(String.class));
+        return stringExpr.invoke(MethodRef.EQUALS, other.unboxAsString());
       } else {
-        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAs(String.class));
+        return MethodRef.OBJECTS_EQUALS.invoke(stringExpr, other.unboxAsString());
       }
     }
     if (otherRuntimeType.isKnownNumber() && other.isNonNullable()) {

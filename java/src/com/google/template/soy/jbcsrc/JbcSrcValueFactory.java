@@ -346,10 +346,10 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
     // Otherwise, we're an unboxed type (non-SoyValue).
 
-    // int needs special-casing for overflow, and because we can't unboxAs(int.class)
+    // int needs special-casing for overflow, and because we can't unbox as int
     if (expectedParamType == int.class) {
-      // We box + invoke rather than unboxAs(long.class) + numericConversion so that we get
-      // overflow checking (built into integerValue()).
+      // We box + invoke rather than unboxAsLong() + numericConversion so that we get overflow
+      // checking (built into integerValue()).
       return actualParam.box().invoke(MethodRef.SOY_VALUE_INTEGER_VALUE);
     }
     // double needs special casing since we allow soy int -> double conversions (since double
@@ -358,8 +358,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       return actualParam.coerceToDouble();
     }
     // For protos, we need to unbox as Message & then cast.
-    if (Message.class.isAssignableFrom(expectedParamType) && expectedParamType != Message.class) {
-      return actualParam.unboxAs(Message.class).checkedCast(expectedParamType);
+    if (Message.class.isAssignableFrom(expectedParamType)) {
+      if (expectedParamType.equals(Message.class)) {
+        return actualParam.unboxAsMessage();
+      }
+      return actualParam.unboxAsMessage().checkedCast(expectedParamType);
     }
     // For protocol enums, we need to call forNumber on the type w/ the param (as casted to an int).
     // This is because Soy internally stores enums as ints. We know this is safe because we
@@ -367,10 +370,20 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     if (expectedParamType.isEnum()
         && ProtocolMessageEnum.class.isAssignableFrom(expectedParamType)) {
       return MethodRef.create(expectedParamType, "forNumber", int.class)
-          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAs(long.class), Type.INT_TYPE));
+          .invoke(BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE));
     }
 
-    return actualParam.unboxAs(expectedParamType);
+    if (expectedParamType.equals(boolean.class)) {
+      return actualParam.unboxAsBoolean();
+    } else if (expectedParamType.equals(long.class)) {
+      return actualParam.unboxAsLong();
+    } else if (expectedParamType.equals(String.class)) {
+      return actualParam.unboxAsString();
+    } else if (expectedParamType.equals(List.class)) {
+      return actualParam.unboxAsList();
+    }
+
+    throw new AssertionError("Unable to convert parameter to " + expectedParamType);
   }
 
   /** Returns true if the clazz is allowed as a parameter type for the given soy type. */

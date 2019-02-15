@@ -127,7 +127,7 @@ final class CleanHtmlDirective
   private Expression fromTagNameList(List<SoyExpression> args) {
     List<Expression> optionalSafeTags = new ArrayList<>();
     for (SoyExpression arg : args) {
-      optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAs(String.class)));
+      optionalSafeTags.add(JbcSrcMethods.FROM_TAG_NAME.invoke(arg.unboxAsString()));
     }
     return BytecodeUtils.asList(optionalSafeTags);
   }

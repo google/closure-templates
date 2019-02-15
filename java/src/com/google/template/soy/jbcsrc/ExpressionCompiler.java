@@ -415,7 +415,7 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLT, left.unboxAs(long.class), right.unboxAs(long.class)));
+            compare(Opcodes.IFLT, left.unboxAsLong(), right.unboxAsLong()));
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
@@ -433,7 +433,7 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGT, left.unboxAs(long.class), right.unboxAs(long.class)));
+            compare(Opcodes.IFGT, left.unboxAsLong(), right.unboxAsLong()));
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
@@ -452,7 +452,7 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFLE, left.unboxAs(long.class), right.unboxAs(long.class)));
+            compare(Opcodes.IFLE, left.unboxAsLong(), right.unboxAsLong()));
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
@@ -471,7 +471,7 @@ final class ExpressionCompiler {
       SoyExpression right = visit(node.getChild(1));
       if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
-            compare(Opcodes.IFGE, left.unboxAs(long.class), right.unboxAs(long.class)));
+            compare(Opcodes.IFGE, left.unboxAsLong(), right.unboxAsLong()));
       }
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
@@ -584,8 +584,8 @@ final class ExpressionCompiler {
 
     private static SoyExpression applyBinaryIntOperator(
         final int operator, SoyExpression left, SoyExpression right) {
-      final SoyExpression leftInt = left.unboxAs(long.class);
-      final SoyExpression rightInt = right.unboxAs(long.class);
+      final SoyExpression leftInt = left.unboxAsLong();
+      final SoyExpression rightInt = right.unboxAsLong();
       return SoyExpression.forInt(
           new Expression(Type.LONG_TYPE) {
             @Override
@@ -618,7 +618,7 @@ final class ExpressionCompiler {
     protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       final SoyExpression child = visit(node.getChild(0));
       if (child.assignableToNullableInt()) {
-        final SoyExpression intExpr = child.unboxAs(long.class);
+        final SoyExpression intExpr = child.unboxAsLong();
         return SoyExpression.forInt(
             new Expression(Type.LONG_TYPE, child.features()) {
               @Override
@@ -629,7 +629,7 @@ final class ExpressionCompiler {
             });
       }
       if (child.assignableToNullableFloat()) {
-        final SoyExpression floatExpr = child.unboxAs(double.class);
+        final SoyExpression floatExpr = child.unboxAsDouble();
         return SoyExpression.forFloat(
             new Expression(Type.DOUBLE_TYPE, child.features()) {
               @Override
@@ -953,7 +953,7 @@ final class ExpressionCompiler {
     SoyExpression visitToFloatFunction(FunctionNode node) {
       SoyExpression arg = visit(node.getChild(0));
       return SoyExpression.forFloat(
-          BytecodeUtils.numericConversion(arg.unboxAs(long.class), Type.DOUBLE_TYPE));
+          BytecodeUtils.numericConversion(arg.unboxAsLong(), Type.DOUBLE_TYPE));
     }
 
     @Override
@@ -1161,8 +1161,7 @@ final class ExpressionCompiler {
         // optimized the same way because there is no real way to 'unbox' a SoyMap.
         if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
           soyValueProvider =
-              MethodRef.RUNTIME_GET_LIST_ITEM.invoke(
-                  baseExpr.unboxAs(List.class), keyExpr.unboxAs(long.class));
+              MethodRef.RUNTIME_GET_LIST_ITEM.invoke(baseExpr.unboxAsList(), keyExpr.unboxAsLong());
         } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
           // Box and do a map style lookup.
           soyValueProvider =

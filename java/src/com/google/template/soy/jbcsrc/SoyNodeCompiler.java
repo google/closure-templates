@@ -35,7 +35,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
-import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -377,7 +376,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               },
               DERIVED);
     } else {
-      SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAs(List.class);
+      SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAsList();
       Variable listVar =
           scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
       initializers.add(listVar.initializer());
@@ -515,7 +514,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // runtime with IllegalArgumentException.
       Expression startExpression =
           MethodRef.INTS_CHECKED_CAST.invoke(
-              exprCompiler.compile(expression.get(), startDetachPoint).unboxAs(long.class));
+              exprCompiler.compile(expression.get(), startDetachPoint).unboxAsLong());
       if (!startExpression.isCheap()) {
         // bounce it into a local variable
         Variable startVar = scope.createSynthetic(varName, startExpression, STORE);
@@ -860,7 +859,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Expression configExpression =
         node.getConfigExpression() == null
             ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
-            : exprCompiler.compile(node.getConfigExpression(), restartPoint).unboxAs(Message.class);
+            : exprCompiler.compile(node.getConfigExpression(), restartPoint).unboxAsMessage();
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
     final Statement body = Statement.concat(visitChildren(node));
     final Statement exitStatement =
@@ -869,7 +868,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .asStatement();
     if (node.getLogonlyExpression() != null) {
       final Expression logonlyExpression =
-          exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAs(boolean.class);
+          exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAsBoolean();
       final Expression appendable = appendableExpression;
       return new Statement() {
         @Override

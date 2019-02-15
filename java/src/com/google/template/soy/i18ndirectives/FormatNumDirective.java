@@ -216,25 +216,21 @@ class FormatNumDirective
     Expression minFractionDigits =
         args.size() > 2
             ? MethodRef.create(Integer.class, "valueOf", int.class)
-                .invoke(
-                    BytecodeUtils.numericConversion(args.get(2).unboxAs(long.class), Type.INT_TYPE))
+                .invoke(BytecodeUtils.numericConversion(args.get(2).unboxAsLong(), Type.INT_TYPE))
             : BytecodeUtils.constantNull(Type.getType(Integer.class));
 
     Expression maxFractionDigits =
         args.size() > 3
             ? MethodRef.create(Integer.class, "valueOf", int.class)
-                .invoke(
-                    BytecodeUtils.numericConversion(args.get(3).unboxAs(long.class), Type.INT_TYPE))
+                .invoke(BytecodeUtils.numericConversion(args.get(3).unboxAsLong(), Type.INT_TYPE))
             : minFractionDigits;
 
     return SoyExpression.forString(
         JbcSrcMethods.FORMAT_NUM.invoke(
             context.getULocale(),
             value.coerceToDouble(),
-            !args.isEmpty()
-                ? args.get(0).unboxAs(String.class)
-                : BytecodeUtils.constant(DEFAULT_FORMAT),
-            args.size() > 1 ? args.get(1).unboxAs(String.class) : BytecodeUtils.constant("local"),
+            !args.isEmpty() ? args.get(0).unboxAsString() : BytecodeUtils.constant(DEFAULT_FORMAT),
+            args.size() > 1 ? args.get(1).unboxAsString() : BytecodeUtils.constant("local"),
             minFractionDigits,
             maxFractionDigits));
   }
