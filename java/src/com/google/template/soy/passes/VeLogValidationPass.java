@@ -16,16 +16,12 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -91,17 +87,14 @@ final class VeLogValidationPass extends CompilerFilePass {
           "Illegal VE metadata type ''{0}'' for this VE. The metadata must be a proto.");
   private static final SoyErrorKind INVALID_VE =
       SoyErrorKind.of(
-          "The velog command requires a VE identifier, a call to ''ve(..)'' or a call to "
-              + "''ve_data(...)'', found an expression of type ''{0}''.");
+          "The velog command requires a VE identifier, an expression of the ''ve'' type or an "
+              + "expression of the ''ve_data'' type. Found an expression of type ''{0}''.");
 
   private final ErrorReporter reporter;
-  private final ValidatedLoggingConfig loggingConfig;
   private final SoyTypeRegistry typeRegistry;
 
-  VeLogValidationPass(
-      ErrorReporter reporter, ValidatedLoggingConfig loggingConfig, SoyTypeRegistry typeRegistry) {
+  VeLogValidationPass(ErrorReporter reporter, SoyTypeRegistry typeRegistry) {
     this.reporter = reporter;
-    this.loggingConfig = loggingConfig;
     this.typeRegistry = typeRegistry;
   }
 
@@ -182,37 +175,14 @@ final class VeLogValidationPass extends CompilerFilePass {
     }
   }
 
-  /** Type checks both expressions and assigns the {@link VeLogNode#getLoggingId()} field. */
+  /** Type checks the VE and logonly expressions. */
   private void validateVeLogNode(VeLogNode node) {
-    Identifier veName = null;
-    if (node.getVeDataExpression().getRoot().getKind() == ExprNode.Kind.FUNCTION_NODE) {
-      FunctionNode fn = (FunctionNode) node.getVeDataExpression().getRoot();
-      Object soyFunction = fn.getSoyFunction();
-      if (soyFunction.equals(BuiltinFunction.VE_DATA)) {
-        if (fn.getChild(0).getKind() == ExprNode.Kind.VE_LITERAL_NODE) {
-          // TODO(b/71641483): remove this once we have runtime support for dynamic VEs.
-          VeLiteralNode ve = (VeLiteralNode) fn.getChild(0);
-          veName = ve.getName();
-        }
-      }
-    }
-
-    if (veName == null) {
+    if (node.getVeDataExpression().getRoot().getType().getKind() != Kind.VE_DATA) {
       reporter.report(
           node.getVeDataExpression().getSourceLocation(),
           INVALID_VE,
           node.getVeDataExpression().getRoot().getType());
-      return;
     }
-
-    ValidatedLoggableElement config = loggingConfig.getElement(veName.identifier());
-
-    if (config != null) {
-      // A null config means this velog statement has an unknown VE name. This error will have
-      // already been reported by validateVeDataFunctionNode, so continue on the best we can.
-      node.setLoggingId(config.getId());
-    }
-
     if (node.getLogonlyExpression() != null) {
       // check to see if it is in a msg node.  logonly is disallowed in msg nodes because we don't
       // have an implementation strategy.

@@ -76,7 +76,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
   // TODO(b/71641483): Delete dataExpr once all velog statements are migrated to the ve_data syntax.
   @Nullable private ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
-  @Nullable private Long loggingId;
 
   public VeLogNode(
       int id,
@@ -115,19 +114,10 @@ public final class VeLogNode extends AbstractBlockCommandNode
     this.veDataExpr = orig.veDataExpr.copy(copyState);
     this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
-    this.loggingId = orig.loggingId;
   }
 
   SamenessKey getSamenessKey() {
     return new SamenessKey(this);
-  }
-
-  /**
-   * Returns the logging id associated with this log statement, or {@code null} if it doesn't exist.
-   */
-  @Nullable
-  public Long getLoggingId() {
-    return loggingId;
   }
 
   /** Returns a reference to the VE expression. */
@@ -215,9 +205,5 @@ public final class VeLogNode extends AbstractBlockCommandNode
     appendSourceStringForChildren(sb);
     sb.append("{/velog}");
     return sb.toString();
-  }
-
-  public void setLoggingId(long id) {
-    this.loggingId = id;
   }
 }

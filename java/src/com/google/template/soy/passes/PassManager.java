@@ -255,8 +255,7 @@ public final class PassManager {
       // Note that we try to run all of the single file passes to report as many errors as possible,
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
-      ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
-          ImmutableList.<CompilerFilePass>builder();
+      ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
       // needs to come early so that it is consistently enforced
       addPass(
           new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
@@ -309,9 +308,7 @@ public final class PassManager {
             singleFilePassesBuilder);
         addPass(new VeLogRewritePass(), singleFilePassesBuilder);
         // needs to run after both resolve types and htmlrewrite pass
-        addPass(
-            new VeLogValidationPass(errorReporter, loggingConfig, registry),
-            singleFilePassesBuilder);
+        addPass(new VeLogValidationPass(errorReporter, registry), singleFilePassesBuilder);
       }
       addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);
       if (!allowUnknownGlobals) {
@@ -341,7 +338,7 @@ public final class PassManager {
       // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
       // use.
       ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
-          ImmutableList.<CompilerFileSetPass>builder();
+          ImmutableList.builder();
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);

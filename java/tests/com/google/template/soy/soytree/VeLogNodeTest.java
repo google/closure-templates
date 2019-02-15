@@ -43,17 +43,15 @@ public final class VeLogNodeTest {
   }
 
   @Test
-  public void testClonePreservesId() {
+  public void testClone() {
     VeLogNode logNode = parseVeLog("{velog Bar}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), null)}<div></div>{/velog}");
-    assertThat(logNode.getLoggingId()).isEqualTo(1);
 
     VeLogNode copy = logNode.copy(new CopyState());
     assertThat(copy.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), null)}<div></div>{/velog}");
-    assertThat(copy.getLoggingId()).isEqualTo(1);
   }
 
   @Test
