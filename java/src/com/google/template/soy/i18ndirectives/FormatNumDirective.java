@@ -163,7 +163,7 @@ class FormatNumDirective
       expr.append(".setSignificantDigits(3)"); // Note that this trims trailing zeros.
     }
 
-    expr.append(".format(" + value.getText() + ")");
+    expr.append(".format(/** @type {number} */ (").append(value.getText()).append("))");
 
     return new JsExpr(expr.toString(), Integer.MAX_VALUE);
   }
