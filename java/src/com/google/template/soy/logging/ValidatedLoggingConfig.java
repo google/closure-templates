@@ -33,8 +33,14 @@ import javax.annotation.Nullable;
  * <p>Ensures that there are no duplicate names or ids and Enables easy lookup.
  */
 public final class ValidatedLoggingConfig {
-  public static final ValidatedLoggingConfig EMPTY =
-      new ValidatedLoggingConfig(ImmutableMap.<String, ValidatedLoggableElement>of());
+  private static final ValidatedLoggableElement UNDEFINED_VE =
+      ValidatedLoggableElement.create(
+          LoggableElement.newBuilder()
+              .setName("UndefinedVe")
+              .setId(SoyLogger.UNDEFINED_VE_ID)
+              .build());
+
+  public static final ValidatedLoggingConfig EMPTY = create(LoggingConfig.getDefaultInstance());
 
   /** The maximum safe integer value in JavaScript: 2^53 - 1 */
   private static final long MAX_ID_VALUE = 9007199254740991L;
@@ -50,6 +56,8 @@ public final class ValidatedLoggingConfig {
   public static ValidatedLoggingConfig create(LoggingConfig configProto) {
     Map<String, ValidatedLoggableElement> elementsByName = new LinkedHashMap<>();
     Map<Long, ValidatedLoggableElement> elementsById = new LinkedHashMap<>();
+    elementsByName.put(UNDEFINED_VE.getName(), UNDEFINED_VE);
+    elementsById.put(UNDEFINED_VE.getId(), UNDEFINED_VE);
     // perfect duplicates are allowed, though not encouraged.
     for (LoggableElement element : ImmutableSet.copyOf(configProto.getElementList())) {
       String name = element.getName();
@@ -107,7 +115,7 @@ public final class ValidatedLoggingConfig {
           element.getName(),
           element.getId(),
           element.getProtoType().isEmpty()
-              ? Optional.<String>absent()
+              ? Optional.absent()
               : Optional.of(element.getProtoType()));
     }
 

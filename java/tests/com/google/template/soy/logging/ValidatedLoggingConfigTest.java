@@ -123,4 +123,29 @@ public final class ValidatedLoggingConfigTest {
             "ID -9007199254740992 for 'Foo' must be between -9007199254740991 and 9007199254740991 "
                 + "(inclusive).");
   }
+
+  @Test
+  public void testLoggingValidation_duplicateUndefinedVe() {
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    LoggingConfig.newBuilder()
+                        .addElement(
+                            LoggableElement.newBuilder()
+                                .setId(-1)
+                                .setName("BadVe")
+                                .setProtoType("a.bad.Data"))
+                        .build()));
+    assertThat(expected)
+        .hasMessageThat()
+        .isEqualTo("Found 2 LoggableElements with the same id -1: UndefinedVe and BadVe");
+  }
+
+  @Test
+  public void testEmptyHasUndefinedVe() {
+    assertThat(ValidatedLoggingConfig.EMPTY.allKnownIdentifiers()).containsExactly("UndefinedVe");
+    assertThat(ValidatedLoggingConfig.EMPTY.getElement("UndefinedVe").getId()).isEqualTo(-1);
+  }
 }

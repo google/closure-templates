@@ -33,7 +33,7 @@ public interface SoyLogger {
   // called to format a logging function value.
   String evalLoggingFunction(LoggingFunctionInvocation value);
 
-  static final SoyLogger NO_OP =
+  SoyLogger NO_OP =
       new SoyLogger() {
         @Override
         public void enter(LogStatement statement) {}
@@ -46,4 +46,7 @@ public interface SoyLogger {
           return value.placeholderValue();
         }
       };
+
+  /** The ID of the UndefinedVe. */
+  long UNDEFINED_VE_ID = -1;
 }

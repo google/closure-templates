@@ -302,6 +302,7 @@ function getDataAttribute(element, attr) {
  * @interface
  */
 class Logger {
+
   /**
    * Called when a `{velog}` statement is entered.
    * @param {!ElementMetadata} elementMetadata
@@ -321,6 +322,9 @@ class Logger {
    */
   evalLoggingFunction(name, args) {}
 }
+
+/** The ID of the UndefinedVe. */
+const UNDEFINED_VE_ID = -1;
 
 /**
  * Soy's runtime representation of objects of the Soy `ve` type.
@@ -412,6 +416,7 @@ exports = {
   ElementMetadata,
   FunctionMetadata,
   Logger,
+  UNDEFINED_VE_ID,
   Metadata,
   $$VisualElement,
   $$VisualElementData,
