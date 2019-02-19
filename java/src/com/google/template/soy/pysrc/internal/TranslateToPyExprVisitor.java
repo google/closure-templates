@@ -16,9 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -63,6 +61,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@link ExprNode}) into an equivalent
@@ -165,14 +164,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitListLiteralNode(ListLiteralNode node) {
     return PyExprUtils.convertIterableToPyListExpr(
-        Iterables.transform(
-            node.getChildren(),
-            new Function<ExprNode, PyExpr>() {
-              @Override
-              public PyExpr apply(ExprNode node) {
-                return visit(node);
-              }
-            }));
+        node.getChildren().stream().map(n -> visit(n)).collect(Collectors.toList()));
   }
 
   @Override

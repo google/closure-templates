@@ -16,9 +16,10 @@
 
 package com.google.template.soy.error;
 
+import static java.util.Comparator.comparing;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
-import com.google.common.collect.ComparisonChain;
 import com.google.template.soy.base.SourceLocation;
 
 /** A structured error object for reporting */
@@ -57,7 +58,7 @@ public abstract class SoyError implements Comparable<SoyError> {
 
   /** The full formatted error. */
   @Override
-  public String toString() {
+  public final String toString() {
     return location().getFilePath()
         + ':'
         + location().getBeginLine()
@@ -71,10 +72,6 @@ public abstract class SoyError implements Comparable<SoyError> {
 
   @Override
   public int compareTo(SoyError o) {
-    // TODO(user): use Comparator.comparing(...)
-    return ComparisonChain.start()
-        .compare(location(), o.location())
-        .compare(message(), o.message())
-        .result();
+    return comparing(SoyError::location).thenComparing(SoyError::message).compare(this, o);
   }
 }

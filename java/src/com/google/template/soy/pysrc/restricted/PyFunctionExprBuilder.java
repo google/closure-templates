@@ -16,15 +16,16 @@
 
 package com.google.template.soy.pysrc.restricted;
 
-import com.google.common.base.Function;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A class for building code for a function call expression in Python. It builds to a PyExpr so it
@@ -34,12 +35,6 @@ import java.util.Map;
  *
  */
 public final class PyFunctionExprBuilder {
-  private static final Function<Map.Entry<String, PyExpr>, String> KEYWORD_ARG_MAPPER =
-      entry -> {
-        String key = entry.getKey();
-        PyExpr value = entry.getValue();
-        return key + "=" + value.getText();
-      };
 
   private final String funcName;
   private final Deque<PyExpr> argList;
@@ -144,18 +139,24 @@ public final class PyFunctionExprBuilder {
   public String build() {
     StringBuilder sb = new StringBuilder(funcName + "(");
 
-    Joiner joiner = Joiner.on(", ").skipNulls();
-
     // Join args and kwargs into simple strings.
-    String args = joiner.join(Iterables.transform(argList, PyExpr::getText));
-    String kwargs = joiner.join(Iterables.transform(kwargMap.entrySet(), KEYWORD_ARG_MAPPER));
+    String args =
+        argList.stream()
+            .map(PyExpr::getText)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(", "));
+    String kwargs =
+        kwargMap.entrySet().stream()
+            .map(entry -> entry.getKey() + "=" + entry.getValue().getText())
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(", "));
 
     // Strip empty strings.
     args = Strings.emptyToNull(args);
     kwargs = Strings.emptyToNull(kwargs);
 
     // Join all pieces together.
-    joiner.appendTo(sb, args, kwargs, unpackedKwargs);
+    Joiner.on(", ").skipNulls().appendTo(sb, args, kwargs, unpackedKwargs);
 
     sb.append(")");
     return sb.toString();
