@@ -17,62 +17,71 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeFormatter;
 import com.google.template.soy.basetree.SourceBuilder;
+import com.google.template.soy.basetree.SourceBuilder.Indent;
+import com.google.template.soy.basetree.SourceBuilder.LineBuilder;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.ast.TypeFormatter;
 
 /** Formatting logic for {template}, {detemplate} and {element}. A 'friend' of TemplateNode. */
 public final class TemplateNodeFormatter {
-  private final AbstractSoyNodeVisitor<SourceBuilder> formatter;
+  private final NodeFormatter nodeFormatter;
+  private final TypeFormatter typeFormatter;
   private final SourceBuilder sb;
 
-  public TemplateNodeFormatter(AbstractSoyNodeVisitor<SourceBuilder> formatter, SourceBuilder sb) {
-    this.formatter = formatter;
+  public TemplateNodeFormatter(
+      NodeFormatter nodeFormatter, TypeFormatter typeFormatter, SourceBuilder sb) {
+    this.nodeFormatter = nodeFormatter;
+    this.typeFormatter = typeFormatter;
     this.sb = sb;
   }
 
   public void format(TemplateNode node) {
+    sb.newLine();
     if (node.getSoyDoc() != null) {
-      sb.appendLine(node.getSoyDoc());
+      sb.maybeNewLine();
+      sb.appendMultiline(node.getSoyDoc());
+      sb.newLine();
     }
 
     // Begin tag.
-    sb.appendLine(node.getTagString());
-    sb.indent();
-
-    ImmutableList<TemplateHeaderVarDefn> headerVars = node.getHeaderParamsForSourceString();
-    for (TemplateHeaderVarDefn headerVar : headerVars) {
-      StringBuilder paramBuilder = new StringBuilder();
-      paramBuilder.append("{").append(node.getDeclNameMap().get(headerVar.getClass()));
-      if (!headerVar.isRequired()) {
-        paramBuilder.append("?");
-      }
-      paramBuilder.append(" ").append(headerVar.name());
-      String typeString =
-          String.valueOf(headerVar.hasType() ? ": " + headerVar.type() : headerVar.getTypeNode());
-      boolean implicitType = typeString.equals("null");
-      if (!implicitType) {
-        // TODO(user): This won't work for non-primites, to be fixed.
-        paramBuilder.append(": ").append(typeString);
-      }
-      if (headerVar.defaultValue() != null) {
-        if (!implicitType) {
-          paramBuilder.append(" ");
-        } else {
-          paramBuilder.append(" :");
+    sb.maybeNewLine().append(node.getTagString());
+    try (Indent indent = sb.indent()) {
+      ImmutableList<TemplateHeaderVarDefn> headerVars = node.getHeaderParamsForSourceString();
+      for (final TemplateHeaderVarDefn headerVar : headerVars) {
+        LineBuilder line = sb.maybeNewLine();
+        line.append("{").append(node.getDeclNameMap().get(headerVar.getClass()));
+        if (!headerVar.isRequired()) {
+          line.append("?");
         }
-        paramBuilder.append("= ").append(headerVar.defaultValue().toSourceString());
+        line.append(" ").append(headerVar.name());
+        boolean implicitType = headerVar.getTypeNode() == null;
+        if (!implicitType) {
+          line.append(": ");
+          typeFormatter.formatNext(headerVar.getTypeNode());
+        }
+
+        if (headerVar.defaultValue() != null) {
+          line.append(implicitType ? " :" : " ")
+              .append("= ")
+              .append(headerVar.defaultValue().toSourceString());
+        }
+        line.append("}");
+        if (headerVar.desc() != null) {
+          line.append("  /** ").append(headerVar.desc()).append(" */");
+        }
       }
-      paramBuilder.append("}");
-      if (headerVar.desc() != null) {
-        paramBuilder.append("  /** ").append(headerVar.desc()).append(" */");
+      if (!headerVars.isEmpty() && node.numChildren() > 0) {
+        sb.newLine();
+        sb.newLine();
       }
-      sb.appendLine(paramBuilder.toString());
+      for (Node child : node.getChildren()) {
+        nodeFormatter.formatNext(child);
+      }
     }
-
-    formatter.visitChildren(node);
-
-    sb.dedent();
     // End tag.
-    sb.appendLine("{/" + node.getCommandName() + "}");
+    sb.maybeNewLine().append("{/").append(node.getCommandName()).append("}");
   }
 }
