@@ -73,7 +73,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   }
 
   private final ExprRootNode veDataExpr;
-  // TODO(b/71641483): Delete dataExpr once all velog statements are migrated to the ve_data syntax.
+  // TODO(b/124762130): Delete dataExpr once all velog statements are migrated to the ve_data syntax
   @Nullable private ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
 

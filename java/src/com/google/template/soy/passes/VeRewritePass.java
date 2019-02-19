@@ -75,7 +75,7 @@ final class VeRewritePass extends CompilerFilePass {
       veData.addChild(veName);
       // Move the data expression into the second parameter of the ve_data function so that the data
       // is correctly logged.
-      // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
+      // TODO(b/124762130): remove this once all data attributes have been migrated to ve_data.
       if (node.getConfigExpression() != null) {
         node.moveConfigExpressionTo(veData);
       }
@@ -83,7 +83,7 @@ final class VeRewritePass extends CompilerFilePass {
       // VeDataExpression. So we can just add a child back here, instead of replacing.
       node.getVeDataExpression().addChild(veData);
     } else if (node.getConfigExpression() != null) {
-      // TODO(b/71641483): remove this once all data attributes have been migrated to ve_data.
+      // TODO(b/124762130): remove this once all data attributes have been migrated to ve_data.
       reporter.report(node.getConfigExpression().getSourceLocation(), ILLEGAL_DATA_EXPR);
     }
   }
