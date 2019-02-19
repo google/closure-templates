@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
@@ -35,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -183,12 +182,12 @@ public final class CallDelegateNode extends CallNode {
   @Override
   public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
     if (paramsToRuntimeCheckByDelegate == null) {
-      return Predicates.alwaysTrue();
+      return arg -> true;
     }
     Predicate<String> params = paramsToRuntimeCheckByDelegate.get(calleeTemplateName);
     if (params == null) {
       // The callee was not known when we performed static type checking.  Check all params.
-      return Predicates.alwaysTrue();
+      return arg -> true;
     }
     return params;
   }

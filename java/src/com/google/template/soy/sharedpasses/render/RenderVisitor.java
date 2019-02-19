@@ -19,8 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -95,6 +93,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -279,7 +278,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     // check all params of the node. This callpath should only be called in the case of external
     // calls into soy (e.g. RenderVisitor.exec(node)).  For calls to templates from soy, the
     // renderTemplate() method is called directly.
-    renderTemplate(node, /*paramsToTypeCheck=*/ Predicates.alwaysTrue());
+    renderTemplate(node, /*paramsToTypeCheck=*/ arg -> true);
   }
 
   @Override
@@ -870,7 +869,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void checkStrictParamTypes(TemplateNode node, Predicate<String> paramsToTypeCheck) {
     for (TemplateParam param : node.getParams()) {
-      if (paramsToTypeCheck.apply(param.name())) {
+      if (paramsToTypeCheck.test(param.name())) {
         checkStrictParamType(node, param, env.getVarProvider(param));
       }
     }

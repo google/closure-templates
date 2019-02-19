@@ -23,7 +23,6 @@ import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_AT
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -45,6 +44,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -548,7 +548,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       return new AutoValue_MsgNode_RepresentativeNodes(
           ImmutableListMultimap.copyOf(baseNameToRepNodesMap),
           ImmutableMap.copyOf(nonRepNodeToRepNodeMap),
-          ImmutableMap.copyOf(Maps.filterValues(repNodeToExample, Predicates.notNull())));
+          ImmutableMap.copyOf(Maps.filterValues(repNodeToExample, Objects::nonNull)));
     }
 
     private static void maybeEnqueue(Deque<SoyNode> traversalQueue, SoyNode child) {

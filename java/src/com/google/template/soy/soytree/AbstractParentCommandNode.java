@@ -16,13 +16,13 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Predicate;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -140,7 +140,7 @@ abstract class AbstractParentCommandNode<N extends SoyNode> extends AbstractComm
   @Nullable
   public SoyNode firstChildThatMatches(Predicate<SoyNode> condition) {
     int firstChildIndex = 0;
-    while (firstChildIndex < numChildren() && !condition.apply(getChild(firstChildIndex))) {
+    while (firstChildIndex < numChildren() && !condition.test(getChild(firstChildIndex))) {
       firstChildIndex++;
     }
     if (firstChildIndex < numChildren()) {
@@ -153,7 +153,7 @@ abstract class AbstractParentCommandNode<N extends SoyNode> extends AbstractComm
   @Nullable
   public SoyNode lastChildThatMatches(Predicate<SoyNode> condition) {
     int lastChildIndex = numChildren() - 1;
-    while (lastChildIndex >= 0 && !condition.apply(getChild(lastChildIndex))) {
+    while (lastChildIndex >= 0 && !condition.test(getChild(lastChildIndex))) {
       lastChildIndex--;
     }
     if (lastChildIndex >= 0) {

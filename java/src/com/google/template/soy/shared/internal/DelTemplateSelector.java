@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
@@ -28,6 +27,7 @@ import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -156,7 +156,7 @@ public final class DelTemplateSelector<T> {
     T select(Predicate<String> activeDelPackageSelector) {
       Map.Entry<String, T> selected = null;
       for (Map.Entry<String, T> entry : delpackageToValue.entrySet()) {
-        if (activeDelPackageSelector.apply(entry.getKey())) {
+        if (activeDelPackageSelector.test(entry.getKey())) {
           if (selected != null) {
             // how important is this?  maybe instead of checking at deltemplate selection time we
             // should validate active packages at the beginning of rendering (this is what the js

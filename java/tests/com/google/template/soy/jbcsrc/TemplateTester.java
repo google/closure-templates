@@ -24,8 +24,6 @@ import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
@@ -75,6 +73,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.CheckReturnValue;
 
 /** Utilities for testing compiled soy templates. */
@@ -90,8 +89,7 @@ public final class TemplateTester {
   }
 
   static RenderContext getDefaultContext(CompiledTemplates templates) {
-    return getDefaultContext(
-        templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ false);
+    return getDefaultContext(templates, arg -> false, /* debugSoyTemplateInfo= */ false);
   }
 
   static RenderContext getDefaultContext(
@@ -111,8 +109,7 @@ public final class TemplateTester {
   }
 
   static RenderContext getDefaultContextWithDebugInfo(CompiledTemplates templates) {
-    return getDefaultContext(
-        templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ true);
+    return getDefaultContext(templates, arg -> false, /* debugSoyTemplateInfo= */ true);
   }
 
   /**

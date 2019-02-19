@@ -20,9 +20,6 @@ import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
@@ -32,14 +29,13 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Type representing a set of possible alternative types.
  *
  */
 public final class UnionType extends SoyType {
-  private static final Predicate<SoyType> IS_NULL =
-      memberType -> memberType.getKind() == SoyType.Kind.NULL;
 
   /** Comparator that defines the ordering of types. */
   private static final Comparator<SoyType> MEMBER_ORDER = comparing(SoyType::toString);
@@ -122,13 +118,16 @@ public final class UnionType extends SoyType {
 
   /** Returns true if the union includes the null type. */
   public boolean isNullable() {
-    return members.stream().anyMatch(IS_NULL);
+    return members.stream().anyMatch(t -> t.getKind() == SoyType.Kind.NULL);
   }
 
   /** Returns a Soy type that is equivalent to this one but with 'null' removed. */
   public SoyType removeNullability() {
     if (isNullable()) {
-      return of(Collections2.filter(members, Predicates.not(IS_NULL)));
+      return of(
+          members.stream()
+              .filter(t -> t.getKind() != SoyType.Kind.NULL)
+              .collect(Collectors.toList()));
     }
     return this;
   }

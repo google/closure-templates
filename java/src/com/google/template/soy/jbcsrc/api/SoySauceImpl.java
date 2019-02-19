@@ -22,8 +22,6 @@ import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -35,6 +33,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
@@ -50,6 +49,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /** Main entry point for rendering Soy templates on the server. */
 public final class SoySauceImpl implements SoySauce {
@@ -106,7 +106,7 @@ public final class SoySauceImpl implements SoySauce {
     private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final Optional<ContentKind> contentKind;
-    private Predicate<String> activeDelegatePackages = Predicates.alwaysFalse();
+    private Predicate<String> activeDelegatePackages = arg -> false;
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
     private SoyLogger logger = SoyLogger.NO_OP;
     private final RenderContext.Builder contextBuilder =

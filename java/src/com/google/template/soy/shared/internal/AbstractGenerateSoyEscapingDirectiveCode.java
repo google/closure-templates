@@ -19,8 +19,6 @@ package com.google.template.soy.shared.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Charsets;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -29,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.ParametersAreNonnullByDefault;
 import org.apache.tools.ant.Task;
@@ -141,8 +140,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       throw new IllegalStateException("Please specify a pattern attribute for <libdefined>");
     }
     availableIdentifiers =
-        Predicates.or(
-            availableIdentifiers, identifierName -> namePattern.matcher(identifierName).matches());
+        availableIdentifiers.or(identifierName -> namePattern.matcher(identifierName).matches());
   }
 
   /**
@@ -283,7 +281,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
       // If there is an existing function, use it.
       for (String existingFunction : escaper.getLangFunctionNames(getLanguage())) {
-        if (availableIdentifiers.apply(existingFunction)) {
+        if (availableIdentifiers.test(existingFunction)) {
           useExistingLibraryFunction(outputCode, escapeDirectiveIdent, existingFunction);
           continue escaperLoop;
         }

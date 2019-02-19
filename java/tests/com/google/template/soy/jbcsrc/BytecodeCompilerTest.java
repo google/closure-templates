@@ -28,8 +28,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContextWit
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -77,6 +75,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -160,20 +159,20 @@ public class BytecodeCompilerTest {
                 parser.typeRegistry())
             .get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
-    Predicate<String> activePackages = Predicates.alwaysFalse();
+    Predicate<String> activePackages = arg -> false;
 
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
 
-    activePackages = Predicates.equalTo("SecretFeature");
+    activePackages = "SecretFeature"::equals;
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("SecretFeature aaaaaah");
 
-    activePackages = Predicates.equalTo("AlternateSecretFeature");
+    activePackages = "AlternateSecretFeature"::equals;
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("AlternateSecretFeature aaaaaah");
 
-    activePackages = Predicates.equalTo("NonexistentFeature");
+    activePackages = "NonexistentFeature"::equals;
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
   }

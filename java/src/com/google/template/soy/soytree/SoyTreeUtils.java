@@ -18,8 +18,6 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -39,6 +37,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -137,7 +136,7 @@ public final class SoyTreeUtils {
    */
   public static <T extends Node> ImmutableList<T> getAllNodesOfType(
       Node rootSoyNode, final Class<T> classObject) {
-    return getAllMatchingNodesOfType(rootSoyNode, classObject, Predicates.alwaysTrue());
+    return getAllMatchingNodesOfType(rootSoyNode, classObject, arg -> true);
   }
 
   /**
@@ -156,7 +155,7 @@ public final class SoyTreeUtils {
           public VisitDirective exec(Node node) {
             if (classObject.isInstance(node)) {
               T typedNode = classObject.cast(node);
-              if (filter.apply(typedNode)) {
+              if (filter.test(typedNode)) {
                 matchedNodesBuilder.add(typedNode);
               }
             }

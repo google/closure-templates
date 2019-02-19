@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -59,6 +57,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -248,7 +247,7 @@ public final class BaseTofu implements SoyTofu {
       ImmutableMap<String, Supplier<Object>> pluginInstances) {
 
     if (activeDelPackageNames == null) {
-      activeDelPackageNames = Predicates.alwaysFalse();
+      activeDelPackageNames = arg -> false;
     }
 
     try (SoyScopedData.InScope inScope = apiCallScope.enter(msgBundle)) {

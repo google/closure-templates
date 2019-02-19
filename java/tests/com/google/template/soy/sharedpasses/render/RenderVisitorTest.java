@@ -20,8 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -67,6 +65,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
@@ -293,7 +292,7 @@ public class RenderVisitorTest {
             new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
             data,
             TEST_IJ_DATA,
-            Predicates.<String>alwaysFalse(),
+            arg -> false,
             msgBundle,
             xidRenamingMap,
             cssRenamingMap,
@@ -933,11 +932,7 @@ public class RenderVisitorTest {
 
     assertThat(
             renderTemplateInFile(
-                soyFileContent,
-                "ns.callerTemplate",
-                data,
-                TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse()))
+                soyFileContent, "ns.callerTemplate", data, TEST_IJ_DATA, arg -> false))
         .isEqualTo(expectedOutput);
   }
 
@@ -1052,7 +1047,7 @@ public class RenderVisitorTest {
             getDeltemplateSelector(fileSet),
             data,
             testIj,
-            Predicates.<String>alwaysFalse(),
+            arg -> false,
             null,
             xidRenamingMap,
             cssRenamingMap,
@@ -1126,32 +1121,32 @@ public class RenderVisitorTest {
             .parse();
     final SoyRecord data = SoyValueConverterUtility.newDict();
 
-    Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
+    Predicate<String> activeDelPackageNames = arg -> false;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("000");
 
-    activeDelPackageNames = Predicates.equalTo("SecretFeature");
+    activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("111 aaaaaah");
 
-    activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
+    activeDelPackageNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("222 aaaaaah injected");
 
-    activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
+    activeDelPackageNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("000");
 
     activeDelPackageNames =
-        Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
+        ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
@@ -1163,7 +1158,7 @@ public class RenderVisitorTest {
           "ns1.callerTemplate",
           data,
           TEST_IJ_DATA,
-          Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature")));
+          ImmutableSet.of("SecretFeature", "AlternateSecretFeature")::contains);
       fail("expected RenderException");
     } catch (RenderException e) {
       assertThat(e)
@@ -1281,32 +1276,32 @@ public class RenderVisitorTest {
             .errorReporter(FAIL)
             .parse();
 
-    Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
+    Predicate<String> activeDelPackageNames = arg -> false;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("000alpha000beta000empty000global");
 
-    activeDelPackageNames = Predicates.equalTo("SecretFeature");
+    activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("111alpha111beta111empty111global");
 
-    activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
+    activeDelPackageNames = "AlternateSecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("222alpha000beta222empty222global");
 
-    activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
+    activeDelPackageNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
         .isEqualTo("000alpha000beta000empty000global");
 
     activeDelPackageNames =
-        Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
+        ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
                 result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
@@ -1317,7 +1312,7 @@ public class RenderVisitorTest {
           "ns1.callerTemplate",
           TEST_DATA,
           TEST_IJ_DATA,
-          Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature")));
+          ImmutableSet.of("SecretFeature", "AlternateSecretFeature")::contains);
       fail("expected RenderException");
     } catch (RenderException e) {
       assertThat(e)
@@ -1367,13 +1362,13 @@ public class RenderVisitorTest {
 
     parseResult = SoyFileSetParserBuilder.forFileContents(soyFileContent1a).parse();
 
-    Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
+    Predicate<String> activeDelPackageNames = arg -> false;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
         .isEmpty();
 
-    activeDelPackageNames = Predicates.equalTo("SecretFeature");
+    activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
@@ -1384,32 +1379,32 @@ public class RenderVisitorTest {
     parseResult =
         SoyFileSetParserBuilder.forFileContents(soyFileContent1a, soyFileContent2).parse();
 
-    activeDelPackageNames = Predicates.alwaysFalse();
+    activeDelPackageNames = arg -> false;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
         .isEmpty();
 
-    activeDelPackageNames = Predicates.equalTo("SecretFeature");
+    activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
         .isEqualTo("111 aaaaaah");
 
-    activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
+    activeDelPackageNames = "NonexistentFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
         .isEmpty();
 
-    activeDelPackageNames = Predicates.in(ImmutableSet.of("NonexistentFeature", "SecretFeature"));
+    activeDelPackageNames = ImmutableSet.of("NonexistentFeature", "SecretFeature")::contains;
     assertThat(
             renderTemplateInFile(
                 parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
         .isEqualTo("111 aaaaaah");
 
     // ------ Test with only file 1b in bundle. ------
-    activeDelPackageNames = Predicates.alwaysFalse();
+    activeDelPackageNames = arg -> false;
     try {
       renderTemplateInFile(
           SoyFileSetParserBuilder.forFileContents(soyFileContent1b).parse(),
@@ -1436,7 +1431,7 @@ public class RenderVisitorTest {
       assertThat(e).hasMessageThat().contains("Found no active impl for delegate call");
     }
 
-    activeDelPackageNames = Predicates.equalTo("SecretFeature");
+    activeDelPackageNames = "SecretFeature"::equals;
     assertThat(
             renderTemplateInFile(
                 SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2).parse(),
@@ -1524,7 +1519,7 @@ public class RenderVisitorTest {
                 "ns.callerTemplate",
                 SoyValueConverterUtility.newDict(),
                 null,
-                Predicates.<String>alwaysFalse()))
+                arg -> false))
         .isEqualTo("callee param param");
     assertThat(buffer.toString()).isEqualTo("callee\nparam\n");
     // Restore stdout.
@@ -1589,7 +1584,7 @@ public class RenderVisitorTest {
                 "ns.template",
                 data,
                 TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse(),
+                arg -> false,
                 outputSb))
         .isEqualTo("Before: 1");
     assertThat(outputAtFutureGetTime.get()).isEqualTo("Before: ");
@@ -1611,7 +1606,7 @@ public class RenderVisitorTest {
           "ns.template",
           SoyValueConverterUtility.newDict("foo", Futures.immediateFuture("hello world")),
           TEST_IJ_DATA,
-          Predicates.<String>alwaysFalse(),
+          arg -> false,
           outputSb);
       fail("expected RenderException");
     } catch (RenderException e) {
@@ -1669,7 +1664,7 @@ public class RenderVisitorTest {
                 "ns.caller",
                 data,
                 TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse(),
+                arg -> false,
                 outputSb))
         .isEqualTo("<div>static-content future-content</div>");
     // we only get the <div>.  we used to get the 'static-content' as well but that was only

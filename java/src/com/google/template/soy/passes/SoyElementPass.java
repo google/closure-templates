@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Predicate;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -29,6 +28,7 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import java.util.function.Predicate;
 
 /** Validates restrictions specific to Soy elements. */
 final class SoyElementPass extends CompilerFilePass {

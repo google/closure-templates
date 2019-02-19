@@ -16,8 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -68,6 +66,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -291,7 +290,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         }
       }
 
-      return Predicates.in(ImmutableSet.copyOf(paramNamesToRuntimeCheck));
+      return ImmutableSet.copyOf(paramNamesToRuntimeCheck)::contains;
     }
 
     /**

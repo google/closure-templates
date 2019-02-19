@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.api;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
@@ -27,6 +26,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.CheckReturnValue;
 
 /**

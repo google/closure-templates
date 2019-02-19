@@ -21,8 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -30,6 +28,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -136,7 +135,7 @@ public final class CallBasicNode extends CallNode {
 
   @Override
   public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
-    return paramsToRuntimeTypeCheck == null ? Predicates.alwaysTrue() : paramsToRuntimeTypeCheck;
+    return paramsToRuntimeTypeCheck == null ? arg -> true : paramsToRuntimeTypeCheck;
   }
 
   @Override

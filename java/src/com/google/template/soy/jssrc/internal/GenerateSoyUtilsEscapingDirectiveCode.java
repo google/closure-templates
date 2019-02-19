@@ -275,7 +275,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
           .append("  if (!soy.esc.$$FILTER_FOR_")
           .append(filterName)
           .append("_.test(str)) {\n");
-      if (availableIdentifiers.apply("goog.asserts.fail")) {
+      if (availableIdentifiers.test("goog.asserts.fail")) {
         outputCode
             .append("    goog.asserts.fail('Bad value `%s` for |")
             .append(name)

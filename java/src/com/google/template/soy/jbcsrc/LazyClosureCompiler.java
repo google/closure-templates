@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.common.base.Predicates.notNull;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
@@ -77,6 +76,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -608,7 +608,8 @@ final class LazyClosureCompiler {
 
     Iterable<ParentCapture> getCapturedFields() {
       return Iterables.concat(
-          Iterables.filter(asList(paramsCapture, ijCapture, renderContextCapture), notNull()),
+          Iterables.filter(
+              asList(paramsCapture, ijCapture, renderContextCapture), Objects::nonNull),
           paramFields.values(),
           localFields.values(),
           syntheticFields.values());
