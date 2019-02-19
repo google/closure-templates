@@ -33,6 +33,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.UriType;
+import com.google.template.soy.types.SoyType.Kind;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Test;
@@ -670,6 +671,24 @@ public class SoyTypesTest {
             SoyTypes.getSoyTypeForBinaryOperator(
                 UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
         .isNotNull();
+  }
+
+  @Test
+  public void testIsKindOrUnionOfKind() {
+    assertThat(SoyTypes.isKindOrUnionOfKind(MapType.ANY_MAP, Kind.MAP)).isTrue();
+    assertThat(
+            SoyTypes.isKindOrUnionOfKind(
+                UnionType.of(
+                    VeType.of("my.Proto"), VeType.of("my.OtherProto"), VeType.of("my.LastProto")),
+                Kind.VE))
+        .isTrue();
+    assertThat(
+            SoyTypes.isKindOrUnionOfKind(
+                UnionType.of(
+                    VeType.of("my.Proto"), VeType.of("my.OtherProto"), NullType.getInstance()),
+                Kind.VE))
+        .isFalse();
+    assertThat(SoyTypes.isKindOrUnionOfKind(IntType.getInstance(), Kind.BOOL)).isFalse();
   }
 
   static SoyTypeSubject assertThatSoyType(String typeString) {

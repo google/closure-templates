@@ -100,6 +100,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
@@ -364,7 +365,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
           ExprNode keyNode = itemAccess.getKeyExprChild();
           SoyType baseType = itemAccess.getBaseExprChild().getType();
-          return isSoyMapAtRuntime(baseType)
+          return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP)
               ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // soy.Map
               : base.bracketAccess(
                   // The key type may not match JsCompiler's type system (passing number as enum, or
@@ -375,22 +376,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       default:
         return new NullSafeAccumulator(visit(node));
     }
-  }
-
-  /** Returns true if this type will be represented by a {@code SoyMap} at runtime. */
-  private static boolean isSoyMapAtRuntime(SoyType type) {
-    if (type.getKind() == SoyType.Kind.MAP) {
-      return true;
-    }
-    if (type.getKind() == SoyType.Kind.UNION) {
-      for (SoyType member : ((UnionType) type).getMembers()) {
-        if (member.getKind() != SoyType.Kind.NULL && member.getKind() != SoyType.Kind.MAP) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
   }
 
   /**

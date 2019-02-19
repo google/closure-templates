@@ -38,6 +38,7 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeType;
 
 /**
@@ -89,6 +90,9 @@ final class VeLogValidationPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The velog command requires a VE identifier, an expression of the ''ve'' type or an "
               + "expression of the ''ve_data'' type. Found an expression of type ''{0}''.");
+  private static final SoyErrorKind VE_UNION_WITH_DATA =
+      SoyErrorKind.of(
+          "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
@@ -207,10 +211,12 @@ final class VeLogValidationPass extends CompilerFilePass {
     ExprNode veExpr = node.getChild(0);
     ExprNode dataExpr = node.getChild(1);
 
-    if (veExpr.getType().getKind() != Kind.ERROR) {
-      if (veExpr.getType().getKind() != Kind.VE) {
-        reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
-      } else if (dataExpr.getType().getKind() != Kind.NULL) {
+    if (veExpr.getType().getKind() == Kind.ERROR) {
+      return;
+    }
+
+    if (veExpr.getType().getKind() == Kind.VE) {
+      if (dataExpr.getType().getKind() != Kind.NULL) {
         VeType veType = (VeType) veExpr.getType();
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
@@ -231,6 +237,14 @@ final class VeLogValidationPass extends CompilerFilePass {
           }
         }
       }
+    } else if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
+      // This is a union of VE types with different data types, so it's okay to wrap in ve_data as
+      // long as ve_data's data parameter is null.
+      if (dataExpr.getType().getKind() != Kind.NULL) {
+        reporter.report(dataExpr.getSourceLocation(), VE_UNION_WITH_DATA, veExpr.getType());
+      }
+    } else {
+      reporter.report(veExpr.getSourceLocation(), WRONG_TYPE, "ve", veExpr.getType());
     }
   }
 

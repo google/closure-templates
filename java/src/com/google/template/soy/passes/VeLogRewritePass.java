@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeDataType;
 
 /**
@@ -50,7 +51,7 @@ final class VeLogRewritePass extends CompilerFilePass {
 
   private void maybeRewriteVeLogNode(VeLogNode node) {
     ExprNode veExpr = node.getVeDataExpression().getRoot();
-    if (veExpr.getType().getKind() == Kind.VE) {
+    if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
       FunctionNode veData =
           new FunctionNode(
               Identifier.create(BuiltinFunction.VE_DATA.getName(), veExpr.getSourceLocation()),

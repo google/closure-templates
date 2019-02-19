@@ -64,10 +64,7 @@ public final class SoyTypes {
     if (NUMERIC_PRIMITIVES.contains(kind)) {
       return true;
     }
-    if (type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type)) {
-      return true;
-    }
-    return false;
+    return type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type);
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -157,7 +154,7 @@ public final class SoyTypes {
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
     // If either of the types is an error type, return the error type
     if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
-      return Optional.<SoyType>of(ErrorType.getInstance());
+      return Optional.of(ErrorType.getInstance());
     }
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
@@ -174,12 +171,12 @@ public final class SoyTypes {
     } else {
       // If we get here then we know that we have a mix of float and int.  In this case arithmetic
       // ops always 'upgrade' to float.  So just return that.
-      return Optional.<SoyType>of(FloatType.getInstance());
+      return Optional.of(FloatType.getInstance());
     }
   }
 
   /**
-   * Helper method used by {@link getSoyTypeForBinaryOperator} for handling {@code UnionType}
+   * Helper method used by {@link #getSoyTypeForBinaryOperator} for handling {@code UnionType}
    * instances.
    */
   @Nullable
@@ -232,6 +229,25 @@ public final class SoyTypes {
       return null;
     }
     return isNullable ? makeNullable(result) : result;
+  }
+
+  /**
+   * Returns true if the given type matches the given kind, or if the given type is a union of types
+   * that all match the given kind.
+   */
+  public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
+    if (type.getKind() == kind) {
+      return true;
+    }
+    if (type.getKind() == Kind.UNION) {
+      for (SoyType member : ((UnionType) type).getMembers()) {
+        if (member.getKind() != kind) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -326,7 +342,7 @@ public final class SoyTypes {
    *
    * <ul>
    *   <li>If both operands are numbers, returns the number type calculated by {@link
-   *       computeLowestCommonTypeArithmetic}.
+   *       #computeLowestCommonTypeArithmetic}.
    *   <li>If any of the operands is disallowed, returns null that indicates a compilation error.
    *   <li>If any of the operands is string type, returns string type.
    *   <li>Otherwise, returns null that indicates a compilation error.
