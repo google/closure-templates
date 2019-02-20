@@ -91,6 +91,11 @@ final class JbcSrcValueErrorReporter {
           formatPlain("Invalid call to {2}, {3} is incompatible with {4}."),
           StyleAllowance.NO_PUNCTUATION);
 
+  private static final SoyErrorKind VE_PARAM_NOT_SUPPORTED =
+      SoyErrorKind.of(
+          formatPlain("The ve and ve_data types cannot be passed to plugins."),
+          StyleAllowance.NO_PUNCTUATION);
+
   private static final SoyErrorKind UNEXPECTED_ERROR =
       SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
@@ -248,6 +253,10 @@ final class JbcSrcValueErrorReporter {
 
   void unexpectedError(Throwable t) {
     report(UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
+  }
+
+  void veParam() {
+    report(VE_PARAM_NOT_SUPPORTED);
   }
 
   private static String formatPlain(String innerFmt) {

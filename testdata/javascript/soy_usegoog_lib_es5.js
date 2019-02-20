@@ -3780,7 +3780,9 @@ goog.html.SafeStyle.sanitizePropertyValue_ = function(value) {
     return 'url("' + goog.html.SafeUrl.unwrap(value).replace(/</g, "%3c").replace(/[\\"]/g, "\\$&") + '")';
   }
   var result = value instanceof goog.string.Const ? goog.string.Const.unwrap(value) : goog.html.SafeStyle.sanitizePropertyValueString_(String(value));
-  goog.asserts.assert(!/[{;}]/.test(result), "Value does not allow [{;}].");
+  if (/[{;}]/.test(result)) {
+    throw new goog.asserts.AssertionError("Value does not allow [{;}], got: %s.", [result]);
+  }
   return result;
 };
 goog.html.SafeStyle.sanitizePropertyValueString_ = function(value) {
