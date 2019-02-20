@@ -86,6 +86,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -644,8 +645,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
-          // TODO(b/71641483): Implement this once we have ve runtime objects.
-          throw new UnsupportedOperationException();
+          return NullData.INSTANCE;
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -817,6 +817,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private SoyValue visitToFloatFunction(FunctionNode node) {
     IntegerData v = (IntegerData) visit(node.getChild(0));
     return FloatData.forValue((double) v.longValue());
+  }
+
+  @Override
+  protected SoyValue visitVeLiteralNode(VeLiteralNode node) {
+    return NullData.INSTANCE;
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -47,6 +47,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -109,6 +110,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private static final PyExpr ERROR =
       new PyExpr("raise Exception('Soy compilation failed')", Integer.MAX_VALUE);
 
+  private static final PyExpr NONE = new PyExpr("None", Integer.MAX_VALUE);
+
   private final LocalVariableStack localVarExprs;
 
   private final ErrorReporter errorReporter;
@@ -149,7 +152,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitNullNode(NullNode node) {
     // Nulls are represented as 'None' in Python.
-    return new PyExpr("None", Integer.MAX_VALUE);
+    return NONE;
   }
 
   @Override
@@ -462,8 +465,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
       case VE_DATA:
-        // TODO(b/71641483): Implement this once we have ve runtime objects.
-        throw new UnsupportedOperationException();
+        return NONE;
       case MSG_WITH_ID:
       case REMAINDER:
         // should have been removed earlier in the compiler
@@ -608,5 +610,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   protected PyExpr visitProtoInitNode(ProtoInitNode node) {
     errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
     return ERROR;
+  }
+
+  @Override
+  protected PyExpr visitVeLiteralNode(VeLiteralNode node) {
+    return NONE;
   }
 }

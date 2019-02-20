@@ -53,6 +53,7 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
         // fallthrough
       case LIST:
       case MAP:
+      case VE:
         for (TypeNode child : node.arguments()) {
           child.accept(this);
         }
