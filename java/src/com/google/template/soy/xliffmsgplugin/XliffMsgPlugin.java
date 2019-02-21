@@ -27,7 +27,7 @@ import org.xml.sax.SAXException;
  * Message plugin for XLIFF format.
  *
  */
-public class XliffMsgPlugin implements SoyMsgPlugin {
+public final class XliffMsgPlugin implements SoyMsgPlugin {
 
   @Override
   public CharSequence generateExtractedMsgsFile(

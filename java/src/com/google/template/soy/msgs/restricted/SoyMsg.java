@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.DoNotMock;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import javax.annotation.Nullable;
 
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
  */
 @DoNotMock("use the builder() instead to construct a real instance")
 @AutoValue
+@Immutable
 public abstract class SoyMsg {
 
   /** Returns a new builder for {@link SoyMsg}. */

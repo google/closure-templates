@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Ascii;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.msgs.SoyMsgException;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -32,7 +33,8 @@ import java.util.Objects;
  * explicitValue} with status set to EXPLICIT and the remaining by an enum value.
  *
  */
-public class SoyMsgPluralCaseSpec {
+@Immutable
+public final class SoyMsgPluralCaseSpec {
 
   /** The type. EXPLICIT indicating numeric, or one of the others indicating non-numeric. */
   public enum Type {

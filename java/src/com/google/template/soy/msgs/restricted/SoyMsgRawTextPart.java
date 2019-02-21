@@ -19,6 +19,8 @@ package com.google.template.soy.msgs.restricted;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Utf8;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -33,7 +35,7 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
 
   /** Returns a SoyMsgRawTextPart representing the specified raw text string. */
   public static SoyMsgRawTextPart of(String rawText) {
-    byte[] utf8Bytes = rawText.getBytes(UTF_8);
+    int utf8Length = Utf8.encodedLength(rawText);
 
     // Determine whether UTF8 or UTF16 uses less memory, and choose between one of the two internal
     // implementations. char[] is preferred if the sizes are equal because it is faster to turn
@@ -44,10 +46,10 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
     // of implementation class is the same. This ensures operations like equals() and hashCode()
     // do not have to decode the contents.
 
-    if (utf8Bytes.length < rawText.length() * BYTES_PER_CHAR) {
-      return new Utf8SoyMsgRawTextPart(utf8Bytes);
+    if (utf8Length < rawText.length() * BYTES_PER_CHAR) {
+      return new Utf8SoyMsgRawTextPart(rawText);
     } else {
-      return new CharArraySoyMsgRawTextPart(rawText.toCharArray());
+      return new CharArraySoyMsgRawTextPart(rawText);
     }
   }
 
@@ -70,10 +72,11 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
    */
   @VisibleForTesting
   static final class Utf8SoyMsgRawTextPart extends SoyMsgRawTextPart {
+    @SuppressWarnings("Immutable") // we never modify this array
     private final byte[] utf8Bytes;
 
-    Utf8SoyMsgRawTextPart(byte[] utf8Bytes) {
-      this.utf8Bytes = utf8Bytes;
+    Utf8SoyMsgRawTextPart(String rawText) {
+      this.utf8Bytes = rawText.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -103,10 +106,11 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
    */
   @VisibleForTesting
   static final class CharArraySoyMsgRawTextPart extends SoyMsgRawTextPart {
+    @SuppressWarnings("Immutable") // we never modify this array
     private final char[] charArray;
 
-    CharArraySoyMsgRawTextPart(char[] charArray) {
-      this.charArray = charArray;
+    CharArraySoyMsgRawTextPart(String rawText) {
+      this.charArray = rawText.toCharArray();
     }
 
     @Override
