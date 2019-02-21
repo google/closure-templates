@@ -18,6 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.Random;
 
 /**
@@ -60,12 +61,15 @@ final class CompactInterner {
   private static final int GROWTH_DENOMINATOR = 4;
 
   /** Hash table of all the items interned. */
+  @GuardedBy("this")
   private Object[] table;
 
   /** Number of items in the table. */
+  @GuardedBy("this")
   private int count;
 
   /** The total number of collisions, including collisions incurred during a rehash. */
+  @GuardedBy("this")
   private long collisions;
 
   public CompactInterner() {
@@ -115,6 +119,7 @@ final class CompactInterner {
   }
 
   /** Doubles the table size. */
+  @GuardedBy("this")
   private void rehashIfNeeded() {
     int currentSize = table.length;
     if (currentSize - count >= currentSize / (MAX_EXPECTED_COLLISION_COUNT + 1)) {
@@ -137,7 +142,7 @@ final class CompactInterner {
   }
 
   @VisibleForTesting
-  double getAverageCollisions() {
+  synchronized double getAverageCollisions() {
     return 1.0 * collisions / count;
   }
 
@@ -151,7 +156,7 @@ final class CompactInterner {
   }
 
   @VisibleForTesting
-  double getOverhead() {
+  synchronized double getOverhead() {
     return 1.0 * (table.length - count) / count;
   }
 

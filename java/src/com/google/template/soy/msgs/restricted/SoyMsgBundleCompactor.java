@@ -45,7 +45,7 @@ public final class SoyMsgBundleCompactor {
   /** The default case spec for select blocks. */
   private static final String DEFAULT_SELECT_CASE_SPEC = null;
 
-  private CompactInterner interner = new CompactInterner();
+  private final CompactInterner interner = new CompactInterner();
 
   /**
    * Returns a more memory-efficient version of the internal message bundle.
