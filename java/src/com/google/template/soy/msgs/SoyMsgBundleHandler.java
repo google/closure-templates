@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  *
  */
 @Immutable
-public final class SoyMsgBundleHandler {
+public class SoyMsgBundleHandler {
 
   /**
    * Options for generating an output messages file.
