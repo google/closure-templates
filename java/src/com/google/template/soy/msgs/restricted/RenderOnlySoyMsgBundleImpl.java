@@ -17,15 +17,14 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.ImmutableLongArray;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -41,6 +40,7 @@ import javax.annotation.Nullable;
  * of the message instead of storing them.
  *
  */
+@Immutable
 final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
@@ -48,15 +48,17 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   private final ULocale locale;
   private final boolean isRtl;
 
-  /**
-   * Sorted array of message ID's that can be binary searched.
-   *
-   * <p>Importantly, this doesn't use any generic List type, to avoid wrapper Long objects.
-   */
-  private final long[] idArray;
+  // Using parallel collections saves memory versus using a Map, because it avoids:
+  // * having to wrap the longs in a new Long(), and
+  // * avoids wrapping the key/value pair in an Entry.
+  // Also, using a sorted collection utilizes memory better, since unlike a hash table, you
+  // need neither a linked list nor empty spaces in the hash table.
 
-  /** Array containing the message parts in the same order as idArray. */
-  private final ImmutableList<SoyMsgPart>[] valueArray;
+  /** Sorted array of message ID's that can be binary searched. */
+  private final ImmutableLongArray ids;
+
+  /** List containing the message parts in the same order as ids. */
+  private final ImmutableList<ImmutableList<SoyMsgPart>> values;
 
   /**
    * Constructs a map of render-only soy messages. This implementation saves memory but doesn't
@@ -92,25 +94,9 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
       partsMap.put(msgId, parts);
     }
 
-    // Using parallel long[] and List[] arrays saves memory versus using a Map, because it avoids
-    // having to wrap the longs in a new Long(), and avoids wrapping the key/value pair in an
-    // Entry. Also, using a sorted array utilizes memory better, since unlike a hash table, you
-    // need neither a linked list nor empty spaces in the hash table.
-    idArray = new long[partsMap.size()];
-    // can't directly construct generic arrays.
-    @SuppressWarnings("unchecked")
-    ImmutableList<SoyMsgPart>[] typedArray = new ImmutableList[partsMap.size()];
-    valueArray = typedArray;
-
-    // Build the arrays in the same order as the sorted map. Note we can't use toArray() since it
-    // won't create a primitive long[] (only Long wrappers).
-    int index = 0;
-    for (Map.Entry<Long, ImmutableList<SoyMsgPart>> entry : partsMap.entrySet()) {
-      idArray[index] = entry.getKey();
-      valueArray[index] = entry.getValue();
-      index++;
-    }
-    checkState(index == partsMap.size());
+    // This will build the collections in the same order as the sorted map.
+    ids = ImmutableLongArray.copyOf(partsMap.keySet());
+    values = ImmutableList.copyOf(partsMap.values());
   }
 
   /** Brings a message back to life from only its ID and parts. */
@@ -142,19 +128,38 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   @Override
   public SoyMsg getMsg(long msgId) {
-    int index = Arrays.binarySearch(idArray, msgId);
-    return index >= 0 ? resurrectMsg(msgId, valueArray[index]) : null;
+    int index = binarySearch(msgId);
+    return index >= 0 ? resurrectMsg(msgId, values.get(index)) : null;
   }
 
   @Override
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
-    int index = Arrays.binarySearch(idArray, msgId);
-    return index >= 0 ? valueArray[index] : ImmutableList.<SoyMsgPart>of();
+    int index = binarySearch(msgId);
+    return index >= 0 ? values.get(index) : ImmutableList.<SoyMsgPart>of();
+  }
+
+  private int binarySearch(long key) {
+    int low = 0;
+    int high = ids.length() - 1;
+
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      long midVal = ids.get(mid);
+
+      if (midVal < key) {
+        low = mid + 1;
+      } else if (midVal > key) {
+        high = mid - 1;
+      } else {
+        return mid;
+      }
+    }
+    return -(low + 1);
   }
 
   @Override
   public int getNumMsgs() {
-    return idArray.length;
+    return ids.length();
   }
 
   @Override
@@ -164,7 +169,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
       @Override
       public boolean hasNext() {
-        return index < idArray.length;
+        return index < ids.length();
       }
 
       @Override
@@ -172,7 +177,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        SoyMsg result = resurrectMsg(idArray[index], valueArray[index]);
+        SoyMsg result = resurrectMsg(ids.get(index), values.get(index));
         index++;
         return result;
       }

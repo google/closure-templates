@@ -16,6 +16,7 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -27,6 +28,7 @@ import org.xml.sax.SAXException;
  * Message plugin for XLIFF format.
  *
  */
+@Immutable
 public final class XliffMsgPlugin implements SoyMsgPlugin {
 
   @Override

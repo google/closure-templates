@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.error.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +36,8 @@ import java.util.regex.Pattern;
  * parsing of the input data. The {@code SoyMsgPlugin} implements the specific message file format.
  *
  */
-public class SoyMsgBundleHandler {
+@Immutable
+public final class SoyMsgBundleHandler {
 
   /**
    * Options for generating an output messages file.

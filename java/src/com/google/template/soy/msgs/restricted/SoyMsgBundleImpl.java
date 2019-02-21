@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
  * <p>Important: Only use this class from message plugins!
  *
  */
+@Immutable
 public class SoyMsgBundleImpl extends SoyMsgBundle {
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
@@ -44,7 +46,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   private final boolean isRtl;
 
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
-  private final Map<Long, SoyMsg> msgMap;
+  private final ImmutableMap<Long, SoyMsg> msgMap;
 
   /** Regex pattern for extracting message attributes from the message description. */
   private static final Pattern MESSAGE_ATTRIBUTE_PATTERN = Pattern.compile("\\[[^\\[\\]]*\\]");

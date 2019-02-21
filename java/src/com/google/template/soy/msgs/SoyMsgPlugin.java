@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 
@@ -23,6 +24,7 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
  * Plugin for implementing a specific message file format.
  *
  */
+@Immutable
 public interface SoyMsgPlugin {
 
   /**
