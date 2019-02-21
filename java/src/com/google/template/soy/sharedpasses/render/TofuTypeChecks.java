@@ -123,11 +123,10 @@ public final class TofuTypeChecks {
       case URI:
         return isSanitizedofKind(value, ContentKind.URI);
       case VE:
-        // TODO(b/71641483): Implement this once we have ve runtime objects.
-        throw new UnsupportedOperationException();
       case VE_DATA:
-        // TODO(b/71641483): Implement this once we have ve runtime objects.
-        throw new UnsupportedOperationException();
+        // Dynamic VE support is minimally implemented in Tofu: ve and ve_data objects are always
+        // null.
+        return value == NullData.INSTANCE;
       case ERROR:
         // continue
     }
