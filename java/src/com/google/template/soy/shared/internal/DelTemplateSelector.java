@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
+import com.google.errorprone.annotations.Immutable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -43,6 +44,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> The type of the values in the selector
  */
+@Immutable(containerOf = "T")
 public final class DelTemplateSelector<T> {
   private final ImmutableTable<String, String, Group<T>> nameAndVariantToGroup;
   private final ImmutableListMultimap<String, T> delTemplateNameToValues;
@@ -138,6 +140,7 @@ public final class DelTemplateSelector<T> {
   }
 
   /** Represents all the templates for a given deltemplate name and variant value. */
+  @Immutable(containerOf = "T")
   private static final class Group<T> {
     final String formattedName;
     @Nullable final T defaultValue;
