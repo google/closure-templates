@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.shared;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 public interface CompiledTemplate {
   /** A factory interface for constructing a {@link CompiledTemplate}. */
+  @Immutable
   interface Factory {
     /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
     CompiledTemplate create(SoyRecord params, SoyRecord ij);
