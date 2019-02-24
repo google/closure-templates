@@ -95,7 +95,7 @@ soydata.IdomFunction;
  * Checks whether a given value is of a given content kind.
  *
  * @param {?} value The value to be examined.
- * @param {goog.soy.data.SanitizedContentKind} contentKind The desired content
+ * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
  *     kind.
  * @return {boolean} Whether the given value is of the given kind.
  * @private
@@ -443,7 +443,7 @@ soy.$$assignDefaults = function(obj, defaults) {
 
 /**
  * Gets the keys in a map as an array. There are no guarantees on the order.
- * @param {Object} map The map to get the keys of.
+ * @param {!Object} map The map to get the keys of.
  * @return {!Array<string>} The array of keys in the given map.
  */
 soy.$$getMapKeys = function(map) {
@@ -473,12 +473,12 @@ soy.$$checkNotNull = function(val) {
 /**
  * Parses the given string into a base 10 integer. Returns null if parse is
  * unsuccessful.
- * @param {?string} str The string to parse
+ * @param {?string|!goog.soy.data.UnsanitizedText} str The string to parse
  * @return {?number} The string parsed as a base 10 integer, or null if
  * unsuccessful
  */
 soy.$$parseInt = function(str) {
-  var parsed = parseInt(str, 10);
+  var parsed = parseInt(String(str), 10);
   return isNaN(parsed) ? null : parsed;
 };
 
@@ -487,7 +487,7 @@ soy.$$parseInt = function(str) {
  * bail out to a runtime function. In practice, this only means comparisons
  * of boolean and number are valid for equals, and everything else needs this
  * function. Even "strings" have to go through this since in some cases they
- * are just strings and in some cases they are UnsanitzedText. In addition,
+ * are just strings and in some cases they are UnsanitizedText. In addition,
  * some sanitized content may be functions or objects that need to be coerced
  * to a string.
  * @param {?} obj1
@@ -548,7 +548,7 @@ soy.$$equals = function(obj1, obj2) {
 
 /**
  * Parses the given string into a float. Returns null if parse is unsuccessful.
- * @param {string} str The string to parse
+ * @param {?string|!goog.soy.data.UnsanitizedText} str The string to parse
  * @return {?number} The string parsed as a float, or null if unsuccessful.
  */
 soy.$$parseFloat = function(str) {
@@ -627,14 +627,14 @@ soy.$$getDelTemplateId = function(delTemplateName) {
 /**
  * Map from registered delegate template key to the priority of the
  * implementation.
- * @type {Object}
+ * @const {!Object<number>}
  * @private
  */
 soy.$$DELEGATE_REGISTRY_PRIORITIES_ = {};
 
 /**
  * Map from registered delegate template key to the implementation function.
- * @type {Object}
+ * @const {!Object<!Function>}
  * @private
  */
 soy.$$DELEGATE_REGISTRY_FUNCTIONS_ = {};
@@ -650,7 +650,7 @@ soy.$$DELEGATE_REGISTRY_FUNCTIONS_ = {};
  * @param {string} delTemplateVariant The delegate template variant (can be
  *     empty string).
  * @param {number} delPriority The implementation's priority value.
- * @param {Function} delFn The implementation function.
+ * @param {!Function} delFn The implementation function.
  */
 soy.$$registerDelegateFn = function(
     delTemplateId, delTemplateVariant, delPriority, delFn) {
@@ -680,9 +680,10 @@ soy.$$registerDelegateFn = function(
  * true, then returns an implementation that is equivalent to an empty template
  * (i.e. rendered output would be empty string).
  *
- * @param {string} delTemplateId The delegate template id.
- * @param {string} delTemplateVariant The delegate template variant (can be
- *     empty string).
+ * @param {string|!goog.soy.data.UnsanitizedText} delTemplateId The
+ *     delegate template id.
+ * @param {string|!goog.soy.data.UnsanitizedText} delTemplateVariant
+ *     The delegate template variant (can be empty string).
  * @param {boolean} allowsEmptyDefault Whether to default to the empty template
  *     function if there's no active implementation.
  * @return {!Function} The retrieved implementation function.
@@ -714,14 +715,12 @@ soy.$$getDelegateFn = function(
  * Private helper soy.$$getDelegateFn(). This is the empty template function
  * that is returned whenever there's no delegate implementation found.
  *
- * @param {Object<string, *>=} opt_data
- * @param {Object<string, *>=} opt_ijData
- * @param {Object<string, *>=} opt_ijData_deprecated TODO(b/36644846): remove
+ * Note: This is also used for idom.
+ *
  * @return {string}
  * @private
  */
-soy.$$EMPTY_TEMPLATE_FN_ = function(
-    opt_data, opt_ijData, opt_ijData_deprecated) {
+soy.$$EMPTY_TEMPLATE_FN_ = function() {
   return '';
 };
 
@@ -958,7 +957,7 @@ soy.$$escapeHtml = function(value) {
  *
  * @param {?} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
- * @param {Array<string>=} opt_safeTags Additional tag names to whitelist.
+ * @param {?Array<string>=} opt_safeTags Additional tag names to whitelist.
  * @return {!goog.soy.data.SanitizedHtml} A sanitized and normalized version of
  *     value.
  */
@@ -1106,7 +1105,7 @@ soy.$$escapeHtmlRcdata = function(value) {
 /**
  * Matches any/only HTML5 void elements' start tags.
  * See http://www.w3.org/TR/html-markup/syntax.html#syntax-elements
- * @type {RegExp}
+ * @const {!RegExp}
  * @private
  */
 soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
@@ -1121,7 +1120,7 @@ soy.$$HTML5_VOID_ELEMENTS_ = new RegExp(
  *
  * @param {?} value The HTML to be escaped. May not be a string, but the
  *     value will be coerced to a string.
- * @param {Object<string, boolean>=} opt_tagWhitelist Has an own property whose
+ * @param {?Object<string, boolean>=} opt_tagWhitelist Has an own property whose
  *     name is a lower-case tag name and whose value is `1` for
  *     each element that is allowed in the output.
  * @return {string} A representation of value without disallowed tags,
@@ -1229,7 +1228,7 @@ soy.$$embedCssIntoHtml_ = function(css) {
  * If `<table>` is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched `</table>` to break page layout.
  *
- * @param {Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
+ * @param {!Array<string>} tags Array of open/close tags (e.g. '<p>', '</p>')
  *    that will be modified in place to be either an open tag, one or more close
  *    tags concatenated, or the empty string.
  * @return {string} zero or more closed tags that close all elements that are
@@ -1434,7 +1433,7 @@ soy.$$escapeJsRegex = function(value) {
  *     url        ([!#$%&*-~]|{nonascii}|{escape})*
  * </pre>
  *
- * @type {RegExp}
+ * @const {!RegExp}
  * @private
  */
 soy.$$problematicUriMarks_ = /['()]/g;
@@ -2105,7 +2104,7 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
  * @param {?} param The JS object for the parameter.
  * @param {string} jsDocTypeStr SoyDoc type str.
  * @return {?} the param value
- * @throws {goog.asserts.AssertionError} When the condition evaluates to false.
+ * @throws {!goog.asserts.AssertionError} When the condition evaluates to false.
  */
 soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   if (goog.asserts.ENABLE_ASSERTS && !condition) {

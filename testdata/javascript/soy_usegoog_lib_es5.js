@@ -5968,7 +5968,7 @@ soy.$$checkNotNull = function(val) {
   return val;
 };
 soy.$$parseInt = function(str) {
-  var parsed = parseInt(str, 10);
+  var parsed = parseInt(String(str), 10);
   return isNaN(parsed) ? null : parsed;
 };
 soy.$$equals = function(obj1, obj2) {

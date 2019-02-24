@@ -247,14 +247,22 @@ public final class JsType {
     SANITIZED_TYPES_STRICT = Maps.immutableEnumMap(typesStrict);
   }
 
+  /** Returns a JS type with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forJsSrc(SoyType soyType) {
     return forSoyType(soyType, /* isIncrementalDom= */ false, /* isStrict= */ false);
   }
 
+  /** Returns a JS type with strict rules. */
+  public static JsType forJsSrcStrict(SoyType soyType) {
+    return forSoyType(soyType, /* isIncrementalDom= */ false, /* isStrict= */ true);
+  }
+
+  /** Returns a JS type for idom with looser rules, allowing 1/0 for bools or nullable protos. */
   public static JsType forIncrementalDom(SoyType soyType) {
     return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ false);
   }
 
+  /** Returns a JS type for idom with strict rules. */
   public static JsType forIncrementalDomState(SoyType soyType) {
     return forSoyType(soyType, /* isIncrementalDom= */ true, /* isStrict= */ true);
   }

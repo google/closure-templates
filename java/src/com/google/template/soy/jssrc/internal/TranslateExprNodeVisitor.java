@@ -52,6 +52,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -539,8 +540,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       }
 
       if (fieldDesc.getType() == FieldDescriptor.Type.ENUM && !fieldDesc.isRepeated()) {
+        // At runtime, this may be null, but we can't tell if this is a non-nullable proto3 field.
         fieldValue =
-            fieldValue.castAs("?" + ProtoUtils.calculateJsEnumName(fieldDesc.getEnumType()));
+            fieldValue.castAs(
+                (fieldDesc.getFile().getSyntax() == Syntax.PROTO3 ? "!" : "?")
+                    + ProtoUtils.calculateJsEnumName(fieldDesc.getEnumType()));
       }
 
       if (fieldDesc.isExtension()) {
@@ -637,8 +641,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     }
   }
 
+  protected JsType jsTypeFor(SoyType type) {
+    return JsType.forJsSrcStrict(type);
+  }
+
   private Expression visitCheckNotNullFunction(FunctionNode node) {
-    return SOY_CHECK_NOT_NULL.call(visit(node.getChild(0)));
+    return SOY_CHECK_NOT_NULL
+        .call(visit(node.getChild(0)))
+        // It is impossible to make a Closure template function that takes T|null and returns T.  To
+        // avoid JSCompiler errors when passing checkNotNull to a function that doesn't accept null,
+        // we manually cast away the nullness.
+        .castAs(jsTypeFor(SoyTypes.tryRemoveNull(node.getChild(0).getType())).typeExpr());
   }
 
   private Expression visitIsFirstFunction(FunctionNode node) {

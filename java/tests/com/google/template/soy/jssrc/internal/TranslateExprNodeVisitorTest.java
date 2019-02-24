@@ -210,7 +210,7 @@ public final class TranslateExprNodeVisitorTest {
   public void testCheckNotNull() {
     assertThatSoyExpr("checkNotNull($goo) ? 1 : 0")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0;")
+        .generatesCode("/** @type {?} */ (soy.$$checkNotNull(gooData8)) ? 1 : 0;")
         .withPrecedence(CONDITIONAL);
   }
 
