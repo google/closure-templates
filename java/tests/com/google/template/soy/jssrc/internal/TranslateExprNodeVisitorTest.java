@@ -24,7 +24,6 @@ import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.logging.LoggableElement;
@@ -265,7 +264,6 @@ public final class TranslateExprNodeVisitorTest {
                 LoggingConfig.newBuilder()
                     .addElement(LoggableElement.newBuilder().setId(8675309).setName("MyVe"))
                     .build()))
-        .withExperimentalFeatures(ImmutableList.of("dynamic_ve"))
         .generatesCode(
             "goog.DEBUG "
                 + "? new soy.velog.$$VisualElement(8675309, 'MyVe') "

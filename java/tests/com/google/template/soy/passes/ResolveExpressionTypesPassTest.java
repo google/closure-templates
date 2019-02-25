@@ -856,7 +856,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('ve<null>', ve(VeNoData))}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
-            .enableExperimentalFeatures(ImmutableList.of("dynamic_ve"))
             .setLoggingConfig(
                 ValidatedLoggingConfig.create(
                     LoggingConfig.newBuilder()
@@ -897,7 +896,6 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('ve_data', ve_data(ve(VeNoData), null))}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
-            .enableExperimentalFeatures(ImmutableList.of("dynamic_ve"))
             .setLoggingConfig(
                 ValidatedLoggingConfig.create(
                     LoggingConfig.newBuilder()

@@ -256,10 +256,6 @@ public final class PassManager {
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
-      // needs to come early so that it is consistently enforced
-      addPass(
-          new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
-          singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(new ResolveHeaderParamTypesPass(registry, errorReporter), singleFilePassesBuilder);

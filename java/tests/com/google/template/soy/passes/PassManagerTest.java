@@ -59,10 +59,10 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                "EnforceExperimentalFeatures", PassContinuationRule.STOP_AFTER_PASS)
+                "ResolveHeaderParamTypes", PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses)).containsExactly("EnforceExperimentalFeatures");
+    assertThat(names(manager.singleFilePasses)).containsExactly("ResolveHeaderParamTypes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -71,7 +71,7 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                "EnforceExperimentalFeatures", PassContinuationRule.STOP_BEFORE_PASS)
+                "ResolveHeaderParamTypes", PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses)).isEmpty();

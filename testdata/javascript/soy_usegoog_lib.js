@@ -16636,7 +16636,6 @@ goog.html.SafeStyle.fromConstant = function(style) {
   if (styleString.length === 0) {
     return goog.html.SafeStyle.EMPTY;
   }
-  goog.html.SafeStyle.checkStyle_(styleString);
   goog.asserts.assert(
       goog.string.internal.endsWith(styleString, ';'),
       'Last character of style string is not \';\': ' + styleString);
@@ -16646,17 +16645,6 @@ goog.html.SafeStyle.fromConstant = function(style) {
           'specify a "name: value" pair: ' + styleString);
   return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       styleString);
-};
-
-
-/**
- * Checks if the style definition is valid.
- * @param {string} style
- * @private
- */
-goog.html.SafeStyle.checkStyle_ = function(style) {
-  goog.asserts.assert(
-      !/[<>]/.test(style), 'Forbidden characters in style string: ' + style);
 };
 
 
@@ -16838,7 +16826,6 @@ goog.html.SafeStyle.create = function(map) {
   if (!style) {
     return goog.html.SafeStyle.EMPTY;
   }
-  goog.html.SafeStyle.checkStyle_(style);
   return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
       style);
 };
@@ -17225,7 +17212,8 @@ goog.html.SafeStyleSheet.createRule = function(selector, style) {
   if (!(style instanceof goog.html.SafeStyle)) {
     style = goog.html.SafeStyle.create(style);
   }
-  var styleSheet = selector + '{' + goog.html.SafeStyle.unwrap(style) + '}';
+  var styleSheet = selector + '{' +
+      goog.html.SafeStyle.unwrap(style).replace(/</g, '\\3C ') + '}';
   return goog.html.SafeStyleSheet
       .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
 };
