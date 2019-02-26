@@ -94,7 +94,7 @@ public final class VeLogInstrumentationVisitorTest {
                 + "{/velog}");
     assertThatSourceString(
             runPass(
-                "{velog Foo data=\"soy.test.Foo(intField: 123)\"}"
+                "{velog ve_data(Foo, soy.test.Foo(intField: 123))}"
                     + "<input id=\"1\" class=\"fooClass\"/>"
                     + "{/velog}"))
         .isEqualTo(

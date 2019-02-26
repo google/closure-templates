@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -38,6 +38,11 @@ import javax.annotation.Nullable;
  */
 public final class VeLogNode extends AbstractBlockCommandNode
     implements ExprHolderNode, StatementNode, MsgBlockNode {
+
+  private static final SoyErrorKind DATA_ATTRIBUTE_UNSUPPORTED =
+      SoyErrorKind.of(
+          "The ''data='' attribute is no longer supported, use the new data syntax instead: "
+              + "'''{velog ve_data(MyVe, $data)}'''.");
 
   /**
    * An equivalence key for comparing {@link VeLogNode} instances.
@@ -59,22 +64,18 @@ public final class VeLogNode extends AbstractBlockCommandNode
       }
       SamenessKey otherKey = (SamenessKey) other;
       return ExprEquivalence.get().equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
-          && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr)
-          && ExprEquivalence.get().equivalent(delegate.dataExpr, otherKey.delegate.dataExpr);
+          && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr);
     }
 
     @Override
     public int hashCode() {
       return Objects.hash(
           ExprEquivalence.get().wrap(delegate.veDataExpr),
-          ExprEquivalence.get().wrap(delegate.logonlyExpr),
-          ExprEquivalence.get().wrap(delegate.dataExpr));
+          ExprEquivalence.get().wrap(delegate.logonlyExpr));
     }
   }
 
   private final ExprRootNode veDataExpr;
-  // TODO(b/124762130): Delete dataExpr once all velog statements are migrated to the ve_data syntax
-  @Nullable private ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
 
   public VeLogNode(
@@ -85,7 +86,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
       ErrorReporter errorReporter) {
     super(id, location, "velog");
     this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
-    ExprRootNode configExpr = null;
     ExprRootNode logonlyExpr = null;
     for (CommandTagAttribute attr : attributes) {
       switch (attr.getName().identifier()) {
@@ -93,7 +93,8 @@ public final class VeLogNode extends AbstractBlockCommandNode
           logonlyExpr = new ExprRootNode(attr.valueAsExpr(errorReporter));
           break;
         case "data":
-          configExpr = new ExprRootNode(attr.valueAsExpr(errorReporter));
+          // TODO(b/124762130): Remove this after 2019-08-26, when people are used to the new syntax
+          errorReporter.report(attr.getName().location(), DATA_ATTRIBUTE_UNSUPPORTED);
           break;
         default:
           errorReporter.report(
@@ -101,18 +102,16 @@ public final class VeLogNode extends AbstractBlockCommandNode
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "velog",
-              ImmutableList.of("logonly", "data"));
+              ImmutableList.of("logonly"));
           break;
       }
     }
-    this.dataExpr = configExpr;
     this.logonlyExpr = logonlyExpr;
   }
 
   private VeLogNode(VeLogNode orig, CopyState copyState) {
     super(orig, copyState);
     this.veDataExpr = orig.veDataExpr.copy(copyState);
-    this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
   }
 
@@ -123,20 +122,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
   /** Returns a reference to the VE expression. */
   public ExprRootNode getVeDataExpression() {
     return veDataExpr;
-  }
-
-  /** Returns a reference to the config expression, if there is one. */
-  @Nullable
-  public ExprRootNode getConfigExpression() {
-    return dataExpr;
-  }
-
-  /**
-   * Removes the config expression from the AST and adds it as the next child of the given parent.
-   */
-  public void moveConfigExpressionTo(ParentExprNode parent) {
-    parent.addChild(dataExpr.getRoot());
-    dataExpr = null;
   }
 
   /** Returns a reference to the logonly expression, if there is one. */
@@ -189,9 +174,6 @@ public final class VeLogNode extends AbstractBlockCommandNode
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     builder.add(veDataExpr);
-    if (dataExpr != null) {
-      builder.add(dataExpr);
-    }
     if (logonlyExpr != null) {
       builder.add(logonlyExpr);
     }

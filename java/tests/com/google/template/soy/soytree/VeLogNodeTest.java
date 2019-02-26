@@ -56,7 +56,7 @@ public final class VeLogNodeTest {
 
   @Test
   public void testParsing_configExpression() {
-    VeLogNode logNode = parseVeLog("{velog Bar data=\"soy.test.Foo()\"}<div></div>{/velog}");
+    VeLogNode logNode = parseVeLog("{velog ve_data(Bar, soy.test.Foo())}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo())}<div></div>{/velog}");
@@ -75,7 +75,7 @@ public final class VeLogNodeTest {
   @Test
   public void testParsing_configAndLogonly() {
     VeLogNode logNode =
-        parseVeLog("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}<div></div>{/velog}");
+        parseVeLog("{velog ve_data(Bar, soy.test.Foo()) logonly=\"false\"}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
         .isEqualTo("{velog ve_data(ve(Bar), soy.test.Foo()) logonly=\"false\"}<div></div>{/velog}");

@@ -131,7 +131,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{velog Foo data=\"soy.test.Foo(intField: 123)\"}<div data-id=1></div>{/velog}");
+        "{velog ve_data(Foo, soy.test.Foo(intField: 123))}<div data-id=1></div>{/velog}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
         .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");

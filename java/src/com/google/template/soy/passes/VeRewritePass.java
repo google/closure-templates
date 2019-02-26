@@ -17,8 +17,6 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -34,24 +32,11 @@ import com.google.template.soy.soytree.VeLogNode;
  *
  * <ul>
  *   <li>Rewrites {@code {velog MyVe}} to {@code {velog ve_data(MyVe)}}
- *   <li>Rewrites {@code {velog MyVe data="$data"}} to {@code {velog ve_data(MyVe, $data)}}
  *   <li>Rewrites {@code ve_data(MyVe, $data)} to {@code ve_data(ve(MyVe), $data)}
  *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
  * </ul>
  */
 final class VeRewritePass extends CompilerFilePass {
-
-  private static final SoyErrorKind ILLEGAL_DATA_EXPR =
-      SoyErrorKind.of(
-          "The velog ''data=$expr'' syntax can only be used if using a raw VE name in the velog "
-              + "statement. If using a ''ve'' or ''ve_data'' typed object, pass the data in the "
-              + "''ve_data'' object.");
-
-  private final ErrorReporter reporter;
-
-  VeRewritePass(ErrorReporter reporter) {
-    this.reporter = reporter;
-  }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -73,18 +58,9 @@ final class VeRewritePass extends CompilerFilePass {
               BuiltinFunction.VE_DATA,
               veName.getSourceLocation());
       veData.addChild(veName);
-      // Move the data expression into the second parameter of the ve_data function so that the data
-      // is correctly logged.
-      // TODO(b/124762130): remove this once all data attributes have been migrated to ve_data.
-      if (node.getConfigExpression() != null) {
-        node.moveConfigExpressionTo(veData);
-      }
       // Adding veName as a child of veData above removes veName as a child of the VeLogNode's
       // VeDataExpression. So we can just add a child back here, instead of replacing.
       node.getVeDataExpression().addChild(veData);
-    } else if (node.getConfigExpression() != null) {
-      // TODO(b/124762130): remove this once all data attributes have been migrated to ve_data.
-      reporter.report(node.getConfigExpression().getSourceLocation(), ILLEGAL_DATA_EXPR);
     }
   }
 

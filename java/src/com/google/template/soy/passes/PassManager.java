@@ -45,8 +45,8 @@ import java.util.Map;
  *       ResolveExpressionTypesPass} and {@link RewriteGenderMsgsPass} and other kinds of validation
  *       that doesn't require information about the full file set.
  *   <li>Cross template checking passes. This includes AST validation passes like the {@link
- *       CheckVisibilityPass}. Passes should run here if they need to check the relationships
- *       between templates.
+ *       CheckTemplateVisibilityPass}. Passes should run here if they need to check the
+ *       relationships between templates.
  *   <li>The autoescaper. This runs in its own special phase because it can do special things like
  *       create synthetic templates and add them to the tree.
  *   <li>Simplification passes. This includes tree simplification passes like the optimizer. These
@@ -276,7 +276,7 @@ public final class PassManager {
       addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
       addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
       // Run before the RewriteGlobalsPass as it removes some globals.
-      addPass(new VeRewritePass(errorReporter), singleFilePassesBuilder);
+      addPass(new VeRewritePass(), singleFilePassesBuilder);
       addPass(
           new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter),
           singleFilePassesBuilder);
