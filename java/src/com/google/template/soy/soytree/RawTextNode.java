@@ -146,6 +146,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     return offsets.getPoint(rawText, i);
   }
 
+  // TODO(lukes): Move to SourceLocation.
   /** Returns the source location of the given substring. */
   public SourceLocation substringLocation(int start, int end) {
     checkElementIndex(start, rawText.length(), "start");
