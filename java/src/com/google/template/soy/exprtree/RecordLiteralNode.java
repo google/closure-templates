@@ -28,14 +28,17 @@ import com.google.template.soy.basetree.CopyState;
  */
 public final class RecordLiteralNode extends AbstractParentExprNode {
 
+  private final Identifier recordIdentifier;
   private final ImmutableList<Identifier> keys;
 
   /**
    * Constructs a new record literal node with the given keys. The values should be set as children
    * of this node, in the same order as the keys.
    */
-  public RecordLiteralNode(Iterable<Identifier> keys, SourceLocation sourceLocation) {
+  public RecordLiteralNode(
+      Identifier recordIdentifier, Iterable<Identifier> keys, SourceLocation sourceLocation) {
     super(sourceLocation);
+    this.recordIdentifier = recordIdentifier;
     this.keys = ImmutableList.copyOf(keys);
   }
 
@@ -46,7 +49,12 @@ public final class RecordLiteralNode extends AbstractParentExprNode {
    */
   private RecordLiteralNode(RecordLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.recordIdentifier = orig.recordIdentifier;
     this.keys = orig.keys;
+  }
+
+  public Identifier getRecordIdentifier() {
+    return recordIdentifier;
   }
 
   public ImmutableList<Identifier> getKeys() {

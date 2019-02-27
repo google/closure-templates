@@ -73,6 +73,7 @@ final class VeRewritePass extends CompilerFilePass {
       GlobalNode global = (GlobalNode) node.getChild(0);
       VeLiteralNode veNode =
           new VeLiteralNode(
+              Identifier.create("ve", global.getSourceLocation()),
               Identifier.create(global.getName(), global.getSourceLocation()),
               global.getSourceLocation());
       node.replaceChild(0, veNode);

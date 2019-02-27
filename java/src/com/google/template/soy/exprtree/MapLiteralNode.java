@@ -18,14 +18,21 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import java.util.Map;
 
 /** A node representing a map literal (with keys and values as alternating children). */
 public final class MapLiteralNode extends AbstractParentExprNode {
 
-  public MapLiteralNode(ImmutableMap<ExprNode, ExprNode> map, SourceLocation sourceLocation) {
+  private final Identifier mapIdentifier;
+
+  public MapLiteralNode(
+      Identifier mapIdentifier,
+      ImmutableMap<ExprNode, ExprNode> map,
+      SourceLocation sourceLocation) {
     super(sourceLocation);
+    this.mapIdentifier = mapIdentifier;
     for (Map.Entry<ExprNode, ExprNode> entry : map.entrySet()) {
       addChild(entry.getKey());
       addChild(entry.getValue());
@@ -35,11 +42,16 @@ public final class MapLiteralNode extends AbstractParentExprNode {
   /** Copy constructor. */
   private MapLiteralNode(MapLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.mapIdentifier = orig.mapIdentifier;
   }
 
   @Override
   public Kind getKind() {
     return Kind.MAP_LITERAL_NODE;
+  }
+
+  public Identifier getMapIdentifier() {
+    return mapIdentifier;
   }
 
   @Override

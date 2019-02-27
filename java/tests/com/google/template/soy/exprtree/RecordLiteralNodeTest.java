@@ -38,6 +38,7 @@ public final class RecordLiteralNodeTest {
 
     RecordLiteralNode recordLit =
         new RecordLiteralNode(
+            Identifier.create("record", X),
             ImmutableList.of(
                 Identifier.create("aaa", X),
                 Identifier.create("bbb", X),
@@ -48,7 +49,8 @@ public final class RecordLiteralNodeTest {
             new StringNode("blah", QuoteStyle.SINGLE, X), new IntegerNode(123, X), fooDataRef));
     assertThat(recordLit.toSourceString()).isEqualTo("record(aaa: 'blah', bbb: 123, boo: $foo)");
 
-    RecordLiteralNode emptyRecordLit = new RecordLiteralNode(ImmutableList.of(), X);
+    RecordLiteralNode emptyRecordLit =
+        new RecordLiteralNode(Identifier.create("record", X), ImmutableList.of(), X);
     assertThat(emptyRecordLit.toSourceString()).isEqualTo("record()");
   }
 }

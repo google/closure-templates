@@ -24,20 +24,27 @@ import javax.annotation.Nullable;
 /** A node representing the {@code ve(VeName)} expression, to create a VE for VE logging. */
 public final class VeLiteralNode extends AbstractExprNode {
 
+  private final Identifier veIdentifier;
   private final Identifier name;
   @Nullable private Long id;
   private SoyType type;
 
-  public VeLiteralNode(Identifier name, SourceLocation srcLoc) {
+  public VeLiteralNode(Identifier veIdentifier, Identifier name, SourceLocation srcLoc) {
     super(srcLoc);
+    this.veIdentifier = veIdentifier;
     this.name = name;
   }
 
   private VeLiteralNode(VeLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.veIdentifier = orig.veIdentifier;
     this.name = orig.name;
     this.id = orig.id;
     this.type = orig.type;
+  }
+
+  public Identifier getVeIdentifier() {
+    return veIdentifier;
   }
 
   public Identifier getName() {

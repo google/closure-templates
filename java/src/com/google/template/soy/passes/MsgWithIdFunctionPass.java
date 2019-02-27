@@ -135,6 +135,7 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
     // this way we don't trigger a cascade of errors about incorrect types
     RecordLiteralNode recordLiteral =
         new RecordLiteralNode(
+            Identifier.create("record", fn.getSourceLocation()),
             ImmutableList.of(
                 Identifier.create("id", fn.getSourceLocation()),
                 Identifier.create("msg", fn.getSourceLocation())),
@@ -182,6 +183,7 @@ final class MsgWithIdFunctionPass extends CompilerFilePass {
     // This map literal has 2 keys: 'id' and 'msg'
     RecordLiteralNode recordLiteral =
         new RecordLiteralNode(
+            Identifier.create("record", fn.getSourceLocation()),
             ImmutableList.of(
                 Identifier.create("id", fn.getSourceLocation()),
                 Identifier.create("msg", fn.getSourceLocation())),
