@@ -211,7 +211,7 @@ goog.define = function(name, defaultValue) {
  * purposes and it is difficult for the JSCompiler to statically determine
  * whether they are used.
  */
-goog.define('goog.DEBUG', true);
+goog.DEBUG = goog.define('goog.DEBUG', true);
 
 
 /**
@@ -234,7 +234,7 @@ goog.define('goog.DEBUG', true);
  * be used instead of the new code (he).
  *
  */
-goog.define('goog.LOCALE', 'en');  // default to en
+goog.LOCALE = goog.define('goog.LOCALE', 'en');  // default to en
 
 
 /**
@@ -248,7 +248,7 @@ goog.define('goog.LOCALE', 'en');  // default to en
  * relying on non-standard implementations, specify
  * "--define goog.TRUSTED_SITE=false" to the compiler.
  */
-goog.define('goog.TRUSTED_SITE', true);
+goog.TRUSTED_SITE = goog.define('goog.TRUSTED_SITE', true);
 
 
 /**
@@ -259,21 +259,23 @@ goog.define('goog.TRUSTED_SITE', true);
  * @see https://goo.gl/PudQ4y
  *
  */
-goog.define('goog.STRICT_MODE_COMPATIBLE', false);
+goog.STRICT_MODE_COMPATIBLE = goog.define('goog.STRICT_MODE_COMPATIBLE', false);
 
 
 /**
  * @define {boolean} Whether code that calls {@link goog.setTestOnly} should
  *     be disallowed in the compilation unit.
  */
-goog.define('goog.DISALLOW_TEST_ONLY_CODE', COMPILED && !goog.DEBUG);
+goog.DISALLOW_TEST_ONLY_CODE =
+    goog.define('goog.DISALLOW_TEST_ONLY_CODE', COMPILED && !goog.DEBUG);
 
 
 /**
  * @define {boolean} Whether to use a Chrome app CSP-compliant method for
  *     loading scripts via goog.require. @see appendScriptSrcNode_.
  */
-goog.define('goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING', false);
+goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING =
+    goog.define('goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING', false);
 
 
 /**
@@ -822,7 +824,7 @@ goog.addDependency = function(relPath, provides, requires, opt_loadFlags) {
  * provided (and depend on the fact that some outside tool correctly ordered
  * the script).
  */
-goog.define('goog.ENABLE_DEBUG_LOADER', true);
+goog.ENABLE_DEBUG_LOADER = goog.define('goog.ENABLE_DEBUG_LOADER', true);
 
 
 /**
@@ -1005,14 +1007,14 @@ goog.instantiatedSingletons_ = [];
  * However in some environments the use of `eval` is banned
  * so we provide an alternative.
  */
-goog.define('goog.LOAD_MODULE_USING_EVAL', true);
+goog.LOAD_MODULE_USING_EVAL = goog.define('goog.LOAD_MODULE_USING_EVAL', true);
 
 
 /**
  * @define {boolean} Whether the exports of goog.modules should be sealed when
  * possible.
  */
-goog.define('goog.SEAL_MODULE_EXPORTS', goog.DEBUG);
+goog.SEAL_MODULE_EXPORTS = goog.define('goog.SEAL_MODULE_EXPORTS', goog.DEBUG);
 
 
 /**
@@ -1039,7 +1041,7 @@ goog.DEPENDENCIES_ENABLED = !COMPILED && goog.ENABLE_DEBUG_LOADER;
 // NOTE(sdh): we could expand this to accept a language level to bypass
 // detection: e.g. goog.TRANSPILE == 'es5' would transpile ES6 files but
 // would leave ES3 and ES5 files alone.
-goog.define('goog.TRANSPILE', 'detect');
+goog.TRANSPILE = goog.define('goog.TRANSPILE', 'detect');
 
 /**
  * @define {boolean} If true assume that ES modules have already been
@@ -1048,7 +1050,8 @@ goog.define('goog.TRANSPILE', 'detect');
  * the debug loader and transpile server side. Thus this is only respected if
  * goog.TRANSPILE is "never".
  */
-goog.define('goog.ASSUME_ES_MODULES_TRANSPILED', false);
+goog.ASSUME_ES_MODULES_TRANSPILED =
+    goog.define('goog.ASSUME_ES_MODULES_TRANSPILED', false);
 
 
 /**
@@ -1067,14 +1070,14 @@ goog.define('goog.ASSUME_ES_MODULES_TRANSPILED', false);
  * goog.TRANSPILE is set to 'always' and then forcing the language level to be
  * something lower than what the environment detects.
  */
-goog.define('goog.TRANSPILE_TO_LANGUAGE', '');
+goog.TRANSPILE_TO_LANGUAGE = goog.define('goog.TRANSPILE_TO_LANGUAGE', '');
 
 
 /**
  * @define {string} Path to the transpiler.  Executing the script at this
  * path (relative to base.js) should define a function $jscomp.transpile.
  */
-goog.define('goog.TRANSPILER', 'transpile.js');
+goog.TRANSPILER = goog.define('goog.TRANSPILER', 'transpile.js');
 
 
 /**
@@ -2333,7 +2336,8 @@ goog.defineClass.ClassDescriptor;
  * When sealing is disabled the constructor function will not be wrapped by
  * goog.defineClass, making it incompatible with ES6 class methods.
  */
-goog.define('goog.defineClass.SEAL_CLASS_INSTANCES', goog.DEBUG);
+goog.defineClass.SEAL_CLASS_INSTANCES =
+    goog.define('goog.defineClass.SEAL_CLASS_INSTANCES', goog.DEBUG);
 
 
 /**
@@ -4233,7 +4237,8 @@ goog.require('goog.dom.NodeType');
 /**
  * @define {boolean} Whether to strip out asserts or to leave them in.
  */
-goog.define('goog.asserts.ENABLE_ASSERTS', goog.DEBUG);
+goog.asserts.ENABLE_ASSERTS =
+    goog.define('goog.asserts.ENABLE_ASSERTS', goog.DEBUG);
 
 
 
@@ -4640,7 +4645,8 @@ goog.require('goog.asserts');
  * Setting goog.TRUSTED_SITE to false will automatically set
  * NATIVE_ARRAY_PROTOTYPES to false.
  */
-goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);
+goog.NATIVE_ARRAY_PROTOTYPES =
+    goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);
 
 
 /**
@@ -4648,7 +4654,8 @@ goog.define('goog.NATIVE_ARRAY_PROTOTYPES', goog.TRUSTED_SITE);
  * array functions where appropriate (e.g., `Array#filter`) and remove the
  * unused pure JS implementation.
  */
-goog.define('goog.array.ASSUME_NATIVE_FUNCTIONS', false);
+goog.array.ASSUME_NATIVE_FUNCTIONS =
+    goog.define('goog.array.ASSUME_NATIVE_FUNCTIONS', false);
 
 
 /**
@@ -7999,13 +8006,15 @@ goog.require('goog.string.internal');
  * @define {boolean} Enables HTML escaping of lowercase letter "e" which helps
  * with detection of double-escaping as this letter is frequently used.
  */
-goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
+goog.string.DETECT_DOUBLE_ESCAPING =
+    goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
 
 
 /**
  * @define {boolean} Whether to force non-dom html unescaping.
  */
-goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
+goog.string.FORCE_NON_DOM_HTML_UNESCAPING =
+    goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
 
 
 /**
@@ -9927,38 +9936,40 @@ goog.require('goog.string');
 /**
  * @define {boolean} Whether we know at compile-time that the browser is IE.
  */
-goog.define('goog.userAgent.ASSUME_IE', false);
+goog.userAgent.ASSUME_IE = goog.define('goog.userAgent.ASSUME_IE', false);
 
 
 /**
  * @define {boolean} Whether we know at compile-time that the browser is EDGE.
  */
-goog.define('goog.userAgent.ASSUME_EDGE', false);
+goog.userAgent.ASSUME_EDGE = goog.define('goog.userAgent.ASSUME_EDGE', false);
 
 
 /**
  * @define {boolean} Whether we know at compile-time that the browser is GECKO.
  */
-goog.define('goog.userAgent.ASSUME_GECKO', false);
+goog.userAgent.ASSUME_GECKO = goog.define('goog.userAgent.ASSUME_GECKO', false);
 
 
 /**
  * @define {boolean} Whether we know at compile-time that the browser is WEBKIT.
  */
-goog.define('goog.userAgent.ASSUME_WEBKIT', false);
+goog.userAgent.ASSUME_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_WEBKIT', false);
 
 
 /**
  * @define {boolean} Whether we know at compile-time that the browser is a
  *     mobile device running WebKit e.g. iPhone or Android.
  */
-goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
+goog.userAgent.ASSUME_MOBILE_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
 
 
 /**
  * @define {boolean} Whether we know at compile-time that the browser is OPERA.
  */
-goog.define('goog.userAgent.ASSUME_OPERA', false);
+goog.userAgent.ASSUME_OPERA = goog.define('goog.userAgent.ASSUME_OPERA', false);
 
 
 /**
@@ -9966,7 +9977,8 @@ goog.define('goog.userAgent.ASSUME_OPERA', false);
  *     `goog.userAgent.isVersionOrHigher`
  *     function will return true for any version.
  */
-goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
+goog.userAgent.ASSUME_ANY_VERSION =
+    goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
 
 
 /**
@@ -10126,63 +10138,67 @@ goog.userAgent.PLATFORM = goog.userAgent.determinePlatform_();
  * @define {boolean} Whether the user agent is running on a Macintosh operating
  *     system.
  */
-goog.define('goog.userAgent.ASSUME_MAC', false);
+goog.userAgent.ASSUME_MAC = goog.define('goog.userAgent.ASSUME_MAC', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on a Windows operating
  *     system.
  */
-goog.define('goog.userAgent.ASSUME_WINDOWS', false);
+goog.userAgent.ASSUME_WINDOWS =
+    goog.define('goog.userAgent.ASSUME_WINDOWS', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on a Linux operating
  *     system.
  */
-goog.define('goog.userAgent.ASSUME_LINUX', false);
+goog.userAgent.ASSUME_LINUX = goog.define('goog.userAgent.ASSUME_LINUX', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on a X11 windowing
  *     system.
  */
-goog.define('goog.userAgent.ASSUME_X11', false);
+goog.userAgent.ASSUME_X11 = goog.define('goog.userAgent.ASSUME_X11', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on Android.
  */
-goog.define('goog.userAgent.ASSUME_ANDROID', false);
+goog.userAgent.ASSUME_ANDROID =
+    goog.define('goog.userAgent.ASSUME_ANDROID', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on an iPhone.
  */
-goog.define('goog.userAgent.ASSUME_IPHONE', false);
+goog.userAgent.ASSUME_IPHONE =
+    goog.define('goog.userAgent.ASSUME_IPHONE', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on an iPad.
  */
-goog.define('goog.userAgent.ASSUME_IPAD', false);
+goog.userAgent.ASSUME_IPAD = goog.define('goog.userAgent.ASSUME_IPAD', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on an iPod.
  */
-goog.define('goog.userAgent.ASSUME_IPOD', false);
+goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
 
 
 /**
  * @define {boolean} Whether the user agent is running on KaiOS.
  */
-goog.define('goog.userAgent.ASSUME_KAIOS', false);
+goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
 
 /**
  * @define {boolean} Whether the user agent is running on Go2Phone.
  */
-goog.define('goog.userAgent.ASSUME_GO2PHONE', false);
+goog.userAgent.ASSUME_GO2PHONE =
+    goog.define('goog.userAgent.ASSUME_GO2PHONE', false);
 
 
 /**
@@ -10536,11 +10552,13 @@ goog.require('goog.userAgent');
 
 
 /** @define {boolean} Whether logging should be enabled. */
-goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
+goog.debug.LOGGING_ENABLED =
+    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
 
 
 /** @define {boolean} Whether to force "sloppy" stack building. */
-goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
+goog.debug.FORCE_SLOPPY_STACKS =
+    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
 
 
 /**
@@ -13674,7 +13692,8 @@ goog.functions.create = function(constructor, var_args) {
  * @define {boolean} Whether the return value cache should be used.
  *    This should only be used to disable caches when testing.
  */
-goog.define('goog.functions.CACHE_RETURN_VALUE', true);
+goog.functions.CACHE_RETURN_VALUE =
+    goog.define('goog.functions.CACHE_RETURN_VALUE', true);
 
 
 /**
@@ -14413,7 +14432,7 @@ goog.provide('goog.i18n.bidi.Format');
  *
  * {@see goog.i18n.bidi.IS_RTL}
  */
-goog.define('goog.i18n.bidi.FORCE_RTL', false);
+goog.i18n.bidi.FORCE_RTL = goog.define('goog.i18n.bidi.FORCE_RTL', false);
 
 
 /**
