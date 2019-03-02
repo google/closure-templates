@@ -40,7 +40,7 @@ public final class JsCodeBuilderTest {
     assertThat(jcb.getCode()).isEqualTo("var output = '';\n");
 
     jcb = new JsCodeBuilder().pushOutputVar("output").addChunkToOutputVar(id("boo"));
-    assertThat(jcb.getCode()).isEqualTo("var output = '' + boo;\n");
+    assertThat(jcb.getCode()).isEqualTo("var output = '' + (boo);\n");
     jcb.pushOutputVar("param5")
         .setOutputVarInited()
         .addChunksToOutputVar(ImmutableList.of(
@@ -48,6 +48,6 @@ public final class JsCodeBuilderTest {
             id("c").minus(id("d")),
             id("e").times(id("f"))));
     assertThat(jcb.getCode())
-        .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\n");
+        .isEqualTo("var output = '' + (boo);\nparam5 += a - b + (c - d) + e * f;\n");
   }
 }
