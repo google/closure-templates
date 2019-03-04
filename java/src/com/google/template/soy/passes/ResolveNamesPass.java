@@ -64,7 +64,7 @@ import java.util.Map;
 public final class ResolveNamesPass extends CompilerFilePass {
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
-          "Found global reference aliasing a local variable ''{0}'', did you mean " + "''${0}''?");
+          "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
       SoyErrorKind.of("Variable ''${0}'' already defined{1}.");
@@ -400,8 +400,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
       }
       VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
-        // this case is mostly about supporting v1 templates.  Undeclared vars for v2 templates are
-        // flagged as errors in the CheckTemplateParamsPass
+        // Undeclared vars are flagged as errors in the CheckTemplateHeaderVarsPass.
         varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
       }
       varRef.setDefn(varDefn);
