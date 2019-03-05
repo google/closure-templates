@@ -3411,11 +3411,14 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
       var event =
           goog.DebugLoader_.IS_OLD_IE_ ? 'onreadystatechange' : 'onload';
       var defer = goog.Dependency.defer_ ? 'defer' : '';
-      doc.write(
-          '<script src="' + this.path + '" ' + event +
+      var script = '<script src="' + this.path + '" ' + event +
           '="goog.Dependency.callback_(\'' + key +
           '\', this)" type="text/javascript" ' + defer + nonceAttr + '><' +
-          '/script>');
+          '/script>';
+      doc.write(
+          goog.TRUSTED_TYPES_POLICY_ ?
+              goog.TRUSTED_TYPES_POLICY_.createHTML(script) :
+              script);
     } else {
       var scriptEl =
           /** @type {!HTMLScriptElement} */ (doc.createElement('script'));
@@ -3448,7 +3451,9 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
         };
       }
 
-      scriptEl.src = this.path;
+      scriptEl.src = goog.TRUSTED_TYPES_POLICY_ ?
+          goog.TRUSTED_TYPES_POLICY_.createScriptURL(this.path) :
+          this.path;
       doc.head.appendChild(scriptEl);
     }
   };
@@ -3502,13 +3507,19 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
     // appending?
     function write(src, contents) {
       if (contents) {
+        var script = '<script type="module" crossorigin>' + contents + '</' +
+            'script>';
         doc.write(
-            '<script type="module" crossorigin>' + contents + '</' +
-            'script>');
+            goog.TRUSTED_TYPES_POLICY_ ?
+                goog.TRUSTED_TYPES_POLICY_.createHTML(script) :
+                script);
       } else {
+        var script = '<script type="module" crossorigin src="' + src + '"></' +
+            'script>';
         doc.write(
-            '<script type="module" crossorigin src="' + src + '"></' +
-            'script>');
+            goog.TRUSTED_TYPES_POLICY_ ?
+                goog.TRUSTED_TYPES_POLICY_.createHTML(script) :
+                script);
       }
     }
 
@@ -3528,9 +3539,13 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
       }
 
       if (contents) {
-        scriptEl.textContent = contents;
+        scriptEl.textContent = goog.TRUSTED_TYPES_POLICY_ ?
+            goog.TRUSTED_TYPES_POLICY_.createScript(contents) :
+            contents;
       } else {
-        scriptEl.src = src;
+        scriptEl.src = goog.TRUSTED_TYPES_POLICY_ ?
+            goog.TRUSTED_TYPES_POLICY_.createScriptURL(src) :
+            src;
       }
 
       doc.head.appendChild(scriptEl);
@@ -3716,11 +3731,14 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
         load();
       });
 
-      doc.write(
-          '<script type="text/javascript">' +
+      var script = '<script type="text/javascript">' +
           goog.protectScriptTag_('goog.Dependency.callback_("' + key + '");') +
           '</' +
-          'script>');
+          'script>';
+      doc.write(
+          goog.TRUSTED_TYPES_POLICY_ ?
+              goog.TRUSTED_TYPES_POLICY_.createHTML(script) :
+              script);
     }
 
     // If one thing is pending it is this.
@@ -4060,6 +4078,53 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
     goog.debugLoader_.bootstrap(namespaces, callback);
   };
 }
+
+
+/**
+ * @define {string} Trusted Types policy name. If non-empty then Closure will
+ * use Trusted Types.
+ */
+goog.define('goog.TRUSTED_TYPES_POLICY_NAME', '');
+
+
+/**
+ * Returns the parameter.
+ * @param {string} s
+ * @return {string}
+ * @private
+ */
+goog.identity_ = function(s) {
+  return s;
+};
+
+
+/**
+ * Creates Trusted Types policy if Trusted Types are supported by the browser.
+ * The policy just blesses any string as a Trusted Type. It is not visibility
+ * restricted because anyone can also call TrustedTypes.createPolicy directly.
+ * However, the allowed names should be restricted by a HTTP header and the
+ * reference to the created policy should be visibility restricted.
+ * @param {string} name
+ * @return {?TrustedTypePolicy}
+ * @throws {!TypeError} If called with a name which is already registered.
+ */
+goog.createTrustedTypesPolicy = function(name) {
+  if (typeof TrustedTypes === 'undefined') {
+    return null;
+  }
+  return TrustedTypes.createPolicy(name, {
+    createHTML: goog.identity_,
+    createScript: goog.identity_,
+    createScriptURL: goog.identity_,
+    createURL: goog.identity_
+  });
+};
+
+
+/** @private @const {?TrustedTypePolicy} */
+goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ?
+    goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#base') :
+    null;
 
 //javascript/closure/debug/error.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
