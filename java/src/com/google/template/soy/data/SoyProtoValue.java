@@ -23,6 +23,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -246,8 +247,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @Deprecated
   @Override
   public boolean hasField(String name) {
-    asRecord();
-    return doHasField(name);
+    if (asRecord()) {
+      return doHasField(name);
+    }
+    return false;
   }
 
   private boolean doHasField(String name) {
@@ -264,8 +267,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @Deprecated
   @Override
   public SoyValue getField(String name) {
-    asRecord();
-    return doGetField(name);
+    if (asRecord()) {
+      return doGetField(name);
+    }
+    return null;
   }
 
   private SoyValue doGetField(String name) {
@@ -276,8 +281,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @Deprecated
   @Override
   public SoyValueProvider getFieldProvider(String name) {
-    asRecord();
-    return doGetFieldProvider(name);
+    if (asRecord()) {
+      return doGetFieldProvider(name);
+    }
+    return null;
   }
 
   private SoyValueProvider doGetFieldProvider(final String name) {
@@ -303,74 +310,86 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @Deprecated
   @Override
   public Collection<SoyValue> getItemKeys() {
-    asMap();
-    // We allow iteration over keys for reflection, to support existing templates that require
-    // this. We don't guarantee that this will be particularly fast (e.g. by caching) to avoid
-    // slowing down the common case of field access. This basically goes over all possible keys,
-    // but filters ones that need to be ignored or lack a suitable value.
-    ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
-    for (String key : clazz().fields.keySet()) {
-      if (doHasField(key)) {
-        builder.add(StringData.forValue(key));
+    if (asMap()) {
+      // We allow iteration over keys for reflection, to support existing templates that require
+      // this. We don't guarantee that this will be particularly fast (e.g. by caching) to avoid
+      // slowing down the common case of field access. This basically goes over all possible keys,
+      // but filters ones that need to be ignored or lack a suitable value.
+      ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
+      for (String key : clazz().fields.keySet()) {
+        if (doHasField(key)) {
+          builder.add(StringData.forValue(key));
+        }
       }
+      return builder.build();
     }
-    return builder.build();
+    return ImmutableList.of();
   }
 
   @Deprecated
   @Override
   public boolean hasItem(SoyValue key) {
-    asMap();
-    return doHasField(key.stringValue());
+    if (asMap()) {
+      return doHasField(key.stringValue());
+    }
+    return false;
   }
 
   @Deprecated
   @Override
   public SoyValue getItem(SoyValue key) {
-    asMap();
-    return doGetField(key.stringValue());
+    if (asMap()) {
+      return doGetField(key.stringValue());
+    }
+    return null;
   }
 
   @Deprecated
   @Override
   public SoyValueProvider getItemProvider(SoyValue key) {
-    asMap();
-    return doGetFieldProvider(key.stringValue());
+    if (asMap()) {
+      return doGetFieldProvider(key.stringValue());
+    }
+    return null;
   }
 
-  private void asMap() {
-    asDeprecatedType("map");
+  @CheckReturnValue
+  private boolean asMap() {
+    return asDeprecatedType("map");
   }
 
-  private void asRecord() {
-    asDeprecatedType("record");
+  @CheckReturnValue
+  private boolean asRecord() {
+    return asDeprecatedType("record");
   }
 
-  private void asDeprecatedType(String type) {
+  @CheckReturnValue
+  private boolean asDeprecatedType(String type) {
     Object locationKey = getAndClearLocationKey();
     String fullName = clazz().fullName;
-    if (logger.isLoggable(Level.WARNING)) {
-      if (locationKey == null) {
-        // if there is no locationKey (i.e. this is jbcsrc), then we will use a stack trace
-        Exception e = new Exception("bad proto access");
-        Names.rewriteStackTrace(e);
-        logger.log(
-            Level.WARNING,
-            String.format(
-                "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
-                ,
-                fullName, type),
-            e);
+    // TODO(lukes): consider throwing an exception here, this would be inconsistent withh JS but
+    // would be more useful.
+    if (locationKey == null) {
+      // if there is no locationKey (i.e. this is jbcsrc), then we will use a stack trace
+      Exception e = new Exception("bad proto access");
+      Names.rewriteStackTrace(e);
+      logger.log(
+          Level.SEVERE,
+          String.format(
+              "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+              ,
+              fullName, type),
+          e);
       } else {
-        // if there is a locationKey (i.e. this is tofu), then we will use the location key
-        logger.log(
-            Level.WARNING,
-            String.format(
-                "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
-                    + "\n\t%s",
-                fullName, type, locationKey));
-      }
+      // if there is a locationKey (i.e. this is tofu), then we will use the location key
+      logger.log(
+          Level.SEVERE,
+          String.format(
+              "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+                  + "\n\t%s",
+              fullName, type, locationKey));
     }
+    return Flags.allowReflectiveProtoAccess();
   }
 
   private Object getAndClearLocationKey() {
@@ -399,7 +418,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
 
   @Override
   public String coerceToString() {
-    // TODO(gboyer): Make this consistent with Javascript or AbstractMap.
+    // TODO(gboyer): Make this consistent with JavaScript.
     // TODO(gboyer): Respect ProtoUtils.shouldJsIgnoreField(...)?
     return proto.toString();
   }

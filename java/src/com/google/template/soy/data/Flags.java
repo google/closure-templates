@@ -22,6 +22,9 @@ public final class Flags {
   private static final boolean STRING_IS_NOT_SANITIZED_CONTENT =
       Boolean.getBoolean("soy_sanitized_content_is_not_string");
 
+  private static final boolean ALLOW_SOY_PROTO_REFLECTION =
+      Boolean.getBoolean("ALLOW_SOY_PROTO_REFLECTION");
+
   /**
    * Disables a mode where string == SanitizedContent for Java runtime. This is for compatibility
    * while we fix the depot.
@@ -29,6 +32,11 @@ public final class Flags {
   public static boolean stringIsNotSanitizedContent() {
     boolean retVal = STRING_IS_NOT_SANITIZED_CONTENT;
     return retVal;
+  }
+
+  static boolean allowReflectiveProtoAccess() {
+    boolean allowReflection = ALLOW_SOY_PROTO_REFLECTION;
+    return allowReflection;
   }
 
   private Flags() {}

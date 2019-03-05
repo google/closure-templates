@@ -100,8 +100,8 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.UnionType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -387,7 +387,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     // If the static type is a proto, access it using proto semantics
     // the base type is possibly nullable, so remove null before testing for being a proto
-    if (SoyTypes.tryRemoveNull(fieldAccess.getBaseExprChild().getType()).getKind() == Kind.PROTO) {
+    if (isProtoOrUnionOfProtos(fieldAccess.getBaseExprChild().getType())) {
       return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
     }
     maybeMarkBadProtoAccess(fieldAccess, base);
@@ -409,6 +409,22 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     return (value != null) ? value : UndefinedData.INSTANCE;
+  }
+
+  private static boolean isProtoOrUnionOfProtos(SoyType type) {
+    if (type.getKind() == SoyType.Kind.PROTO) {
+      return true;
+    }
+    if (type.getKind() == SoyType.Kind.UNION) {
+      for (SoyType memberType : ((UnionType) type).getMembers()) {
+        if (memberType.getKind() != SoyType.Kind.PROTO
+            && memberType.getKind() != SoyType.Kind.NULL) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   private SoyValue visitNullSafeItemAccessNode(ItemAccessNode itemAccess) {
