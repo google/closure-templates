@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 
 /**
  * Interface for the definition of a template header variable, i.e. a value that is declared in a
- * template using @param or @prop.
+ * template using @param or @state.
  */
 public interface TemplateHeaderVarDefn extends VarDefn {
 
