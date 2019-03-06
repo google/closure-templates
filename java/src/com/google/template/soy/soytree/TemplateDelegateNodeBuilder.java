@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -32,7 +31,6 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -42,7 +40,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
+public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDelegateNodeBuilder> {
   private static final SoyErrorKind INVALID_VARIANT_STRING =
       SoyErrorKind.of("Invalid variant ''{0}'' value must be an identifier.");
   private static final SoyErrorKind INVALID_VARIANT_INTEGER =
@@ -69,17 +67,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   }
 
   @Override
-  public TemplateDelegateNodeBuilder setId(int id) {
-    return (TemplateDelegateNodeBuilder) super.setId(id);
-  }
-
-  @Override
-  public TemplateDelegateNodeBuilder setSourceLocation(SourceLocation location) {
-    return (TemplateDelegateNodeBuilder) super.setSourceLocation(location);
-  }
-
-  @Override
-  public TemplateNodeBuilder setCommandValues(
+  public TemplateDelegateNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
@@ -184,16 +172,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
     return ".__deltemplate_" + delPackageTemplateAndVariantStr;
-  }
-
-  @Override
-  public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
-    return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc, soyDocLocation);
-  }
-
-  @Override
-  public TemplateDelegateNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
-    return (TemplateDelegateNodeBuilder) super.addParams(allParams);
   }
 
   @Override

@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class TemplateNodeBuilder {
+public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /**
    * A way for a param migration script to disable the mixed param warning so it doesn't prevent the
    * script from running.
@@ -153,24 +153,24 @@ public abstract class TemplateNodeBuilder {
    *
    * @return This builder.
    */
-  public TemplateNodeBuilder setId(int id) {
+  public T setId(int id) {
     Preconditions.checkState(this.id == null);
     this.id = id;
-    return this;
+    return (T) this;
   }
 
   /** Sets the source location. */
-  public TemplateNodeBuilder setSourceLocation(SourceLocation location) {
+  public T setSourceLocation(SourceLocation location) {
     checkState(sourceLocation == null);
     this.sourceLocation = checkNotNull(location);
-    return this;
+    return (T) this;
   }
 
   /** Sets the source location. */
-  public TemplateNodeBuilder setOpenTagLocation(SourceLocation location) {
+  public T setOpenTagLocation(SourceLocation location) {
     checkState(openTagLocation == null);
     this.openTagLocation = checkNotNull(location);
-    return this;
+    return (T) this;
   }
 
   /**
@@ -179,8 +179,7 @@ public abstract class TemplateNodeBuilder {
    * @param name The template name
    * @param attrs The attributes that are set on the tag {e.g. {@code kind="strict"}}
    */
-  public abstract TemplateNodeBuilder setCommandValues(
-      Identifier name, List<CommandTagAttribute> attrs);
+  public abstract T setCommandValues(Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
       ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml", "whitespace");
@@ -228,7 +227,7 @@ public abstract class TemplateNodeBuilder {
    *
    * @return This builder.
    */
-  public TemplateNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
+  public T setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
     Preconditions.checkState(this.soyDoc == null);
     Preconditions.checkState(cmdText != null);
     this.soyDoc = soyDoc;
@@ -237,7 +236,7 @@ public abstract class TemplateNodeBuilder {
     this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
     this.addParams(parseSoyDocDeclsHelper(soyDoc, cleanedSoyDoc, soyDocLocation));
 
-    return this;
+    return (T) this;
   }
 
   /**
@@ -246,7 +245,7 @@ public abstract class TemplateNodeBuilder {
    *
    * @param newParams The params to add.
    */
-  public TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> newParams) {
+  public T addParams(Iterable<? extends TemplateParam> newParams) {
 
     Set<String> seenParamKeys = new HashSet<>();
     boolean hasTemplateHeaderParams = false;
@@ -280,7 +279,7 @@ public abstract class TemplateNodeBuilder {
         }
       }
     }
-    return this;
+    return (T) this;
   }
 
   /** Builds the template node. Will error if not enough info as been set on this builder. */

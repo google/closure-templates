@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -42,7 +41,8 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
+public final class TemplateElementNodeBuilder
+    extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 
   private static final SoyErrorKind DUPLICATE_DECLARATION =
       SoyErrorKind.of("Param ''{0}'' is a duplicate of state var ''{0}''.");
@@ -66,17 +66,7 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
   }
 
   @Override
-  public TemplateElementNodeBuilder setId(int id) {
-    return (TemplateElementNodeBuilder) super.setId(id);
-  }
-
-  @Override
-  public TemplateElementNodeBuilder setSourceLocation(SourceLocation location) {
-    return (TemplateElementNodeBuilder) super.setSourceLocation(location);
-  }
-
-  @Override
-  public TemplateNodeBuilder setCommandValues(
+  public TemplateElementNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.attrs = attrs;
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
@@ -88,15 +78,10 @@ public final class TemplateElementNodeBuilder extends TemplateNodeBuilder {
     return this;
   }
 
-  public TemplateNodeBuilder setStateVars(List<TemplateStateVar> newStateVars) {
+  public TemplateElementNodeBuilder setStateVars(List<TemplateStateVar> newStateVars) {
     this.stateVars = ImmutableList.copyOf(newStateVars);
     checkDuplicateHeaderVars(params, stateVars, errorReporter);
     return this;
-  }
-
-  @Override
-  public TemplateElementNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
-    return (TemplateElementNodeBuilder) super.setSoyDoc(soyDoc, soyDocLocation);
   }
 
   @Override

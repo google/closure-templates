@@ -19,11 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 
 /**
@@ -32,7 +30,7 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
+public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicNodeBuilder> {
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateBasicNodeBuilder(
@@ -41,17 +39,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
   }
 
   @Override
-  public TemplateBasicNodeBuilder setId(int id) {
-    return (TemplateBasicNodeBuilder) super.setId(id);
-  }
-
-  @Override
-  public TemplateBasicNodeBuilder setSourceLocation(SourceLocation location) {
-    return (TemplateBasicNodeBuilder) super.setSourceLocation(location);
-  }
-
-  @Override
-  public TemplateNodeBuilder setCommandValues(
+  public TemplateBasicNodeBuilder setCommandValues(
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
@@ -79,16 +67,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     setTemplateNames(
         soyFileHeaderInfo.namespace + templateName.identifier(), templateName.identifier());
     return this;
-  }
-
-  @Override
-  public TemplateBasicNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
-    return (TemplateBasicNodeBuilder) super.setSoyDoc(soyDoc, soyDocLocation);
-  }
-
-  @Override
-  public TemplateBasicNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
-    return (TemplateBasicNodeBuilder) super.addParams(allParams);
   }
 
   @Override
