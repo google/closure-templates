@@ -555,6 +555,23 @@
             </configuration>
           </execution>
           <execution>
+            <id>SoyToIncrementalDomSrcCompiler</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyToIncrementalDomSrcCompiler</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToIncrementalDomSrcCompiler</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+          <execution>
             <id>SoyToJsSrcCompiler</id>
             <phase>package</phase>
             <goals>

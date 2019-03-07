@@ -40,6 +40,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
+import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -921,6 +923,29 @@ public final class SoyFileSet {
     List<String> generatedSrcs =
         new JsSrcMain(scopedData.enterable(), typeRegistry)
             .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
+    throwIfErrorsPresent();
+    reportWarnings();
+    return generatedSrcs;
+  }
+
+  /**
+   * Compiles this Soy file set into iDOM source code files and returns these JS files as a list of
+   * strings, one per file.
+   *
+   * @param jsSrcOptions The compilation options for the JS Src output target.
+   * @return A list of strings where each string represents the JS source code that belongs in one
+   *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
+   * @throws SoyCompilationException If compilation fails.
+   */
+  public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
+    resetErrorReporter();
+    requireStrictAutoescaping();
+    // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
+    ParseResult result = parse(passManagerBuilder().desugarHtmlNodes(false));
+    throwIfErrorsPresent();
+    List<String> generatedSrcs =
+        new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)
+            .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
     throwIfErrorsPresent();
     reportWarnings();
     return generatedSrcs;
