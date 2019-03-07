@@ -28,6 +28,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.StringType;
 import java.util.Objects;
@@ -122,11 +123,14 @@ final class KeyCommandPass extends CompilerFilePass {
       return;
     }
 
-    // Note that GenIncrementalDomCodeVisitor also asserts that a supported type is passed
-    // in, so for union types (e.g. string|bool), that check will catch a bool passed in
-    // at runtime.
-    if (!expr.getType().isAssignableFrom(IntType.getInstance())
-        && !expr.getType().isAssignableFrom(StringType.getInstance())) {
+    boolean isSupportedType =
+        // Note that GenIncrementalDomCodeVisitor also asserts that a supported type is passed
+        // in, so for union types (e.g. string|bool), that check will catch a bool passed in
+        // at runtime.
+        expr.getType().isAssignableFrom(IntType.getInstance())
+            || expr.getType().isAssignableFrom(StringType.getInstance())
+            || expr.getType() instanceof SoyProtoEnumType;
+    if (!isSupportedType) {
       errorReporter.report(node.getSourceLocation(), UNSUPPORTED_TYPE, expr.getType());
     }
   }
