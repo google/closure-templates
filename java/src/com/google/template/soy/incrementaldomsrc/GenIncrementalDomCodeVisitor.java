@@ -944,13 +944,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     KeyNode keyNode = node.getKeyNode();
-    Expression key = incrementKeyForTemplate(template);
-    if (keyNode != null) {
-      key = translateExpr(keyNode.getExpr());
+    Expression key = Expression.LITERAL_UNDEFINED;
+    if (keyNode == null) {
+      key = incrementKeyForTemplate(template);
+    } else {
       keyCounterStack.push(new Holder<>(0));
     }
-
     args.add(key);
+
     // Instead of inlining the array, place the variable declaration in the global scope
     // and lazily initialize it in the template.
     if (!staticAttributes.isEmpty()) {
@@ -1098,15 +1099,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-    Expression tagCodeChunk = getTagNameCodeChunk(node.getTagName());
-    emitOpenAndVisitAttributes(node, tagCodeChunk);
-
     if (node.getKeyNode() != null) {
-      // Push key AFTER emitting `elementOpen`, so all tags INSIDE the keyed element are keyed,
-      // but not the element itself.
+      // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
+      // we do not specify any key.
       Expression key = translateExpr(node.getKeyNode().getExpr());
       getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
     }
+
+    Expression tagCodeChunk = getTagNameCodeChunk(node.getTagName());
+    emitOpenAndVisitAttributes(node, tagCodeChunk);
 
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self

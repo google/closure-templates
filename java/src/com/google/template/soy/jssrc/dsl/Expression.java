@@ -47,6 +47,7 @@ public abstract class Expression extends CodeChunk {
   public static final Expression LITERAL_TRUE = id("true");
   public static final Expression LITERAL_FALSE = id("false");
   public static final Expression LITERAL_NULL = id("null");
+  public static final Expression LITERAL_UNDEFINED = id("undefined");
   public static final Expression LITERAL_EMPTY_STRING = Leaf.create("''", /* isCheap= */ true);
   public static final Expression EMPTY_OBJECT_LITERAL = Leaf.create("{}", /* isCheap= */ false);
   public static final Expression THIS = id("this");
