@@ -16,9 +16,9 @@
 
 package com.google.template.soy.data.restricted;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import java.io.IOException;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * String data.

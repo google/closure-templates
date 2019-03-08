@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * A parameter declared in the template header.
@@ -32,7 +31,6 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Immutable
 public final class HeaderParam extends TemplateParam {
   private final TypeNode typeNode;
 

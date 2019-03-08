@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 
 /**
@@ -28,6 +29,7 @@ import com.google.template.soy.base.SourceLocation;
  * <p>This is either a full dotted identifier or a partial identifier.
  */
 @AutoValue
+@Immutable
 public abstract class Identifier {
 
   /** What flavor of identifier this is. */

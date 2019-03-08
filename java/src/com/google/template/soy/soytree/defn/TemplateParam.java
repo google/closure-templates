@@ -22,7 +22,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * An explicitly declared template parameter.
@@ -30,7 +29,6 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Immutable
 public abstract class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
   /** Enum for the location of the declaration. */
   public static enum DeclLoc {

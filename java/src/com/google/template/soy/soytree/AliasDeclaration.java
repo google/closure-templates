@@ -19,11 +19,13 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
 
 /** An {@code {alias ..}} declaration. */
 @AutoValue
+@Immutable
 public abstract class AliasDeclaration {
 
   public static AliasDeclaration create(Identifier namespace, Identifier alias) {

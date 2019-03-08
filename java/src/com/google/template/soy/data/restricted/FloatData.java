@@ -16,7 +16,7 @@
 
 package com.google.template.soy.data.restricted;
 
-import javax.annotation.concurrent.Immutable;
+import com.google.errorprone.annotations.Immutable;
 
 /**
  * Float data.

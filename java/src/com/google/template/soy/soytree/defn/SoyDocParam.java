@@ -21,7 +21,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * A parameter declared in the template SoyDoc.
@@ -29,7 +28,6 @@ import javax.annotation.concurrent.Immutable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Immutable
 public final class SoyDocParam extends TemplateParam {
 
   public SoyDocParam(

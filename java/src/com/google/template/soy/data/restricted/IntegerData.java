@@ -17,7 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
-import javax.annotation.concurrent.Immutable;
+import com.google.errorprone.annotations.Immutable;
 
 /**
  * Integer data.

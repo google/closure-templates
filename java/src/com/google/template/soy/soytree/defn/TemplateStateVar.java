@@ -23,14 +23,12 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.ast.TypeNode;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * An explicitly declared template state variable.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-@Immutable
 public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final String desc;
   @Nullable private final TypeNode typeNode;

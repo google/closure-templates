@@ -16,8 +16,8 @@
 
 package com.google.template.soy.data.restricted;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SoyDataException;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * Undefined data. Used only by Tofu, not jbcsrc.
