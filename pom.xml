@@ -6,7 +6,7 @@
   <name>Closure Templates</name>
   <groupId>com.google.template</groupId>
   <artifactId>soy</artifactId>
-  <version>2018-03-14</version>
+  <version>2019-03-08</version>
   <description>
     Closure Templates are a client-side and server-side templating system.
   </description>
@@ -820,7 +820,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>javacc-maven-plugin</artifactId>
         <version>2.6</version>
-        <!-- TODO: this is failing according to 
+        <!-- TODO: this is failing according to
              https://travis-ci.org/google/closure-templates/builds/101956895 -->
         <configuration>
           <sourceDirectory>${project.basedir}/java/src</sourceDirectory>
@@ -833,8 +833,8 @@
             </goals>
           </execution>
         </executions>
-        <!-- 
-        The maven plugin is still on version 5 of javacc upgrade to 6.1.2 to be closer to the 
+        <!--
+        The maven plugin is still on version 5 of javacc upgrade to 6.1.2 to be closer to the
         version used by the google internal build of soy.
         -->
         <dependencies>
