@@ -322,9 +322,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // If there are indirect parameters, allow an arbitrary object.
       // Either way, allow null, since the caller may not pass parameters.
       jsDocBuilder.addParam("opt_data", noRequiredParams ? "?Object<string, *>=" : "null=");
-    } else if (!node.hasStrictParams()) {
-      // If there are legacy params (declared in comment, not via {@param}), use a loose type.
-      jsDocBuilder.addParam("opt_data", "?=");
     } else if (noRequiredParams) {
       // All parameters are optional or only owned by an indirect callee; caller doesn't need to
       // pass an object.
@@ -440,7 +437,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private VariableDeclaration generateClassForSoyElement(
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
-    String paramsType = node.hasStrictParams() ? "!" + alias + ".Params" : "null";
+    String paramsType = node.getParams().isEmpty() ? "null" : "!" + alias + ".Params";
     String optIjDataType = "!soy.IjData=";
 
     ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();

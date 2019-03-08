@@ -43,8 +43,8 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "/** @param goo */\n"
             + "{template .foo}\n"
+            + "  {@param goo: ?}\n"
             + "  Blah{$goo}blah\n"
             + "{/template}\n";
 

@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -448,13 +447,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return soyDoc;
   }
 
-  /** Returns the description portion of the SoyDoc (before @param tags), or null. */
+  /** Returns the description portion of the SoyDoc, or null. */
   @Nullable
   public String getSoyDocDesc() {
     return soyDocDesc;
   }
 
-  /** Returns the params from template header or SoyDoc. */
+  /** Returns the params from template header. */
   public ImmutableList<TemplateParam> getParams() {
     return params;
   }
@@ -464,7 +463,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return injectedParams;
   }
 
-  /** Returns all params from template header or SoyDoc, both regular and injected. */
+  /** Returns all params from template header, both regular and injected. */
   public Iterable<TemplateParam> getAllParams() {
     return Iterables.concat(params, injectedParams);
   }
@@ -491,16 +490,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return exprs.build();
   }
 
-  protected ImmutableList<TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
-    // Header.
-    // Gather up all the @params declared in the template header (not in the SoyDoc).
-    ImmutableList.Builder<TemplateHeaderVarDefn> headerOnlyParams = ImmutableList.builder();
-    for (TemplateParam headerParam : params) {
-      if (headerParam.declLoc().equals(DeclLoc.HEADER)) {
-        headerOnlyParams.add(headerParam);
-      }
-    }
-    return headerOnlyParams.build();
+  protected ImmutableList<? extends TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
+    return params;
   }
 
   @Override
@@ -540,8 +531,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Add the Soy template syntax that declares `headerVar` to the string builder. */
-  protected <T extends TemplateHeaderVarDefn> void appendHeaderVarDecl(
-      ImmutableList<T> headerVars, StringBuilder sb) {
+  protected void appendHeaderVarDecl(
+      ImmutableList<? extends TemplateHeaderVarDefn> headerVars, StringBuilder sb) {
 
     for (TemplateHeaderVarDefn headerVar : headerVars) {
       // Ignore any unknown declaration type.
@@ -576,27 +567,5 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* methodName= */ partialTemplateName.substring(1),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
-  }
-
-  /** Returns true if the template has at least one strict param. */
-  public boolean hasStrictParams() {
-    for (TemplateParam param : getParams()) {
-      if (param.declLoc() == TemplateParam.DeclLoc.HEADER) {
-        return true;
-      }
-    }
-    // Note: If there are only injected params, don't use strong typing for
-    // the function signature, because what it will produce is an empty struct.
-    return false;
-  }
-
-  /** Returns true if the template has at least one legacy SoyDoc param. */
-  public boolean hasLegacyParams() {
-    for (TemplateParam param : getParams()) {
-      if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC) {
-        return true;
-      }
-    }
-    return false;
   }
 }

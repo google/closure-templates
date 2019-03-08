@@ -372,8 +372,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         SoyType argType,
         SoyType formalType,
         TemplateParamTypes calleeParams) {
-      if ((!calleeParams.isStrictlyTyped && formalType.getKind() == SoyType.Kind.UNKNOWN)
-          || formalType.getKind() == SoyType.Kind.ANY) {
+      if (formalType.getKind() == SoyType.Kind.ANY) {
         // Special rules for unknown / any
         if (argType.getKind() == SoyType.Kind.PROTO) {
           errorReporter.report(
@@ -434,7 +433,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         paramTypes = new TemplateParamTypes();
 
         // Store all of the explicitly declared param types
-        paramTypes.isStrictlyTyped = !callee.getHasSoyDocParams();
         for (Parameter param : callee.getParameters()) {
           paramTypes.params.put(param.getName(), param.getType());
         }
@@ -563,7 +561,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     }
 
     private class TemplateParamTypes {
-      public boolean isStrictlyTyped = true;
       public final Multimap<String, SoyType> params = HashMultimap.create();
       public final Set<String> indirectParamNames = new HashSet<>();
 

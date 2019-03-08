@@ -887,8 +887,10 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "/** @param boo @param foo @param goo */\n"
             + "{template .callerTemplate}\n"
+            + "  {@param boo: ?}\n"
+            + "  {@param foo: ?}\n"
+            + "  {@param goo: ?}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -906,11 +908,9 @@ public class RenderVisitorTest {
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "/**\n"
-            + " * @param boo\n"
-            + " * @param goo\n"
-            + " */\n"
             + "{template .calleeTemplate}\n"
+            + "  {@param boo: ?}\n"
+            + "  {@param goo: ?}\n"
             + "  {$boo}\n"
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
@@ -984,8 +984,10 @@ public class RenderVisitorTest {
     String soyFileContent =
         "{namespace ns}\n"
             + "\n"
-            + "/** @param boo @param foo @param goo */\n"
             + "{template .callerTemplate}\n"
+            + "  {@param boo: ?}\n"
+            + "  {@param foo: ?}\n"
+            + "  {@param goo: ?}\n"
             + "  {call .calleeTemplate data=\"all\" /}\n"
             + "  {call .calleeTemplate data=\"$foo\" /}\n"
             + "  {call .calleeTemplate data=\"all\"}\n"
@@ -1003,11 +1005,9 @@ public class RenderVisitorTest {
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "/**\n"
-            + " * @param boo\n"
-            + " * @param goo\n"
-            + " */\n"
             + "{template .calleeTemplate}\n"
+            + "  {@param boo: ?}\n"
+            + "  {@param goo: ?}\n"
             + "  {$boo}{$ij.future}\n"
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
@@ -1079,8 +1079,8 @@ public class RenderVisitorTest {
             + "  {/delcall}\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // default implementation (doesn't use $boo)
             "  000\n"
             + "{/deltemplate}\n";
@@ -1089,8 +1089,8 @@ public class RenderVisitorTest {
         "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // implementation in SecretFeature
             "  111 {$boo}\n"
             + "{/deltemplate}\n";
@@ -1099,8 +1099,8 @@ public class RenderVisitorTest {
         "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // implementation in AlternateSecretFeature
             "  222 {call .helper data=\"all\" /}\n"
             + "{/deltemplate}\n";
@@ -1109,8 +1109,8 @@ public class RenderVisitorTest {
         "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{template .helper}\n"
+            + "  {@param boo: ?}\n"
             + "  {$boo} {$ij.ijStr}\n"
             + "{/template}\n";
 
@@ -1175,8 +1175,8 @@ public class RenderVisitorTest {
         ""
             + "{namespace ns1}\n"
             + "\n"
-            + "/** @param greekB */\n"
             + "{template .callerTemplate}\n"
+            + "  {@param greekB: ?}\n"
             + "  {delcall myApp.myDelegate variant=\"'alpha'\"}\n"
             + // variant is string
             "    {param boo: 'zzz' /}\n"
@@ -1195,25 +1195,25 @@ public class RenderVisitorTest {
             + "  {/delcall}\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // variant "" default
             "  000empty\n"
             + "{/deltemplate}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant "alpha" default
             "  000alpha\n"
             + "{/deltemplate}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant "beta" default
             "  000beta\n"
             + "{/deltemplate}\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant using global
             "  000global\n"
             + "{/deltemplate}\n";
@@ -1223,25 +1223,25 @@ public class RenderVisitorTest {
             + "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // variant "" in SecretFeature
             "  111empty\n"
             + "{/deltemplate}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "  {@param boo: ?}\n"
             + // "alpha" in SecretFeature
             "  111alpha\n"
             + "{/deltemplate}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n"
+            + "  {@param boo: ?}\n"
             + // "beta" in SecretFeature
             "  111beta\n"
             + "{/deltemplate}\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant using global
             "  111global\n"
             + "{/deltemplate}\n";
@@ -1251,19 +1251,19 @@ public class RenderVisitorTest {
             + "{delpackage AlternateSecretFeature}\n"
             + "{namespace ns3}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // variant "" in AlternateSecretFeature
             "  222empty\n"
             + "{/deltemplate}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant "alpha" in Alternate
             "  222alpha\n"
             + "{/deltemplate}\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
+            + "  {@param boo: ?}\n"
             + // variant using global
             "  222global\n"
             + "{/deltemplate}\n"; // Note: No variant "beta" in AlternateSecretFeature.
@@ -1349,8 +1349,8 @@ public class RenderVisitorTest {
         "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param boo */\n"
             + "{deltemplate myApp.myDelegate}\n"
+            + "  {@param boo: ?}\n"
             + // implementation in SecretFeature
             "  111 {$boo}\n"
             + "{/deltemplate}\n";
@@ -1502,10 +1502,8 @@ public class RenderVisitorTest {
             + "  {/call}\n"
             + "{/template}\n"
             + "\n"
-            + "/**\n"
-            + " * @param foo\n"
-            + " */\n"
             + "{template .calleeTemplate}\n"
+            + "  {@param foo: ?}\n"
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
             + "{/template}\n";

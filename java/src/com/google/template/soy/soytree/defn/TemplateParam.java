@@ -30,16 +30,6 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
-  /** Enum for the location of the declaration. */
-  public static enum DeclLoc {
-    // Declaration in template SoyDoc, e.g.
-    //     @param foo Blah blah blah.
-    SOY_DOC,
-    // Declaration in template header, e.g.
-    //     {@param foo: list<int>}  /** Blah blah blah. */
-    HEADER,
-  }
-
   private final String desc;
 
   /** Whether the param is required. */
@@ -105,9 +95,6 @@ public abstract class TemplateParam extends AbstractVarDefn implements TemplateH
   public String toString() {
     return getClass().getSimpleName() + "{name = " + name() + ", desc = " + desc + "}";
   }
-
-  /** Returns the location of the parameter declaration. */
-  public abstract DeclLoc declLoc();
 
   @Override
   public abstract TemplateParam copy();

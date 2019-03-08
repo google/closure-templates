@@ -178,15 +178,8 @@ import javax.annotation.Nullable;
  * 4. SoyDoc:
  *    + Starts with slash-star-star (/**) and ends with star-slash (*&#47;) like JavaDoc.
  *    + SoyDoc must appear on its own line(s) and start at the start of a line.
- *    + Currently recognizes two tags: "&#64;param keyName" and "&#64;param? optionalKeyName".
- *    Example:
- *    /**
- *     * &#64;param boo Something scary.
- *     * &#64;param? goo Something slimy (optional).
- *     *&#47;
  *
  * 5. Template:
- *    + Each template must be immediately preceded by a SoyDoc block.
  *    + The {template} tag and the {/template} tag must each appear on its own line(s) and start
  *      at the start of a line.
  *    Examples:

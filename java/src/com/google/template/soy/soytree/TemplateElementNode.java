@@ -101,7 +101,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   }
 
   @Override
-  protected ImmutableList<TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
+  protected ImmutableList<? extends TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
     // Header.
     // Gather up all the @params declared in the template header (not in the SoyDoc).
     return new ImmutableList.Builder<TemplateHeaderVarDefn>()

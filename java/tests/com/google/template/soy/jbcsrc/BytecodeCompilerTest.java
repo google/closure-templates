@@ -707,10 +707,8 @@ public class BytecodeCompilerTest {
   public void testParam_headerDocParam() {
     assertThatFile(
             "{namespace ns}",
-            "/** ",
-            " * @param foo A foo",
-            "*/ ",
             "{template .foo}",
+            "  {@param foo: ?}  /** A foo */",
             "  {$foo + 1}",
             "{/template}",
             "")

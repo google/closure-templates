@@ -58,14 +58,6 @@ public abstract class TemplateMetadata {
             .setVisibility(template.getVisibility())
             .setParameters(Parameter.directParametersFromTemplate(template))
             .setDataAllCallSituations(DataAllCallSituation.fromTemplate(template));
-    boolean hasSoyDocParams = false;
-    for (TemplateParam param : template.getAllParams()) {
-      if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC) {
-        hasSoyDocParams = true;
-        break;
-      }
-    }
-    builder.setHasSoyDocParams(hasSoyDocParams);
     switch (template.getKind()) {
       case TEMPLATE_BASIC_NODE:
         builder.setTemplateKind(Kind.BASIC);
@@ -317,15 +309,6 @@ public abstract class TemplateMetadata {
   public abstract ImmutableList<Parameter> getParameters();
 
   /**
-   * True if any parameter was declared in a soydoc comment instead of using the {@code {@param
-   * ....}} syntax. Some compiler passes use this to mark templates as non-'strictly' typed.
-   *
-   * <p>TODO(lukes): instead all such passes should probably just rely on the parameters being typed
-   * as {@code ?}.
-   */
-  public abstract boolean getHasSoyDocParams();
-
-  /**
    * The unique template calls that are performed by this template.
    *
    * <p>This is needed to calculate information about transitive parameters.
@@ -360,8 +343,6 @@ public abstract class TemplateMetadata {
     public abstract Builder setVisibility(Visibility visibility);
 
     public abstract Builder setParameters(ImmutableList<Parameter> parameters);
-
-    public abstract Builder setHasSoyDocParams(boolean hasSoyDocParams);
 
     public abstract Builder setDataAllCallSituations(
         ImmutableList<DataAllCallSituation> dataAllCallSituations);

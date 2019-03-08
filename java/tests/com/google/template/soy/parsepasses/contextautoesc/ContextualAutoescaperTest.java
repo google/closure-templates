@@ -1250,11 +1250,9 @@ public final class ContextualAutoescaperTest {
             "...",
             "</script>\n",
             "{/template}\n\n",
-            "/**\n",
-            " * @param pageIndex 0-indexed index of the current page.\n",
-            " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
-            " */\n",
             "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
+            "  {@param pageIndex: ?}\n",
+            "  {@param pageCount: ?}\n",
             "{$pageIndex |text} of {$pageCount |text}\n",
             "{/template}"),
         join(
@@ -1267,11 +1265,9 @@ public final class ContextualAutoescaperTest {
             "    ...\n",
             "  </script>\n",
             "{/template}\n\n",
-            "/**\n",
-            " * @param pageIndex 0-indexed index of the current page.\n",
-            " * @param pageCount Total count of pages.  Strictly greater than pageIndex.\n",
-            " */\n",
             "{template .pagenum visibility=\"private\" kind=\"text\"}\n",
+            "  {@param pageIndex: ?}\n",
+            "  {@param pageCount: ?}\n",
             "  {$pageIndex} of {$pageCount}\n",
             "{/template}"));
   }
@@ -1516,15 +1512,15 @@ public final class ContextualAutoescaperTest {
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             "{$x |escapeHtml}\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             "{$x}\n",
             "{/deltemplate}"));
   }
@@ -2044,15 +2040,15 @@ public final class ContextualAutoescaperTest {
         join(
             "{delpackage dp1}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp2}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             "<i>{$x}</i>\n",
             "{/deltemplate}"));
   }
@@ -2089,15 +2085,15 @@ public final class ContextualAutoescaperTest {
         join(
             "{delpackage dp1}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo kind=\"text\"}\n",
+            "  {@param x: ?}\n",
             "<b>{$x}</b>\n",
             "{/deltemplate}"),
         join(
             "{delpackage dp2}\n",
             "{namespace ns}\n\n",
-            "/** @param x */\n",
             "{deltemplate ns.foo kind=\"text\"}\n",
+            "  {@param x: ?}\n",
             "<i>{$x}</i>\n",
             "{/deltemplate}"));
   }

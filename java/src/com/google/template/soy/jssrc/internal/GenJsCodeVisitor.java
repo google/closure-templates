@@ -719,8 +719,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // ------ Add the @typedef of opt_data. ------
-    String paramsRecordType = node.hasStrictParams() ? genParamsRecordType(node) : null;
-    if (paramsRecordType != null) {
+    if (!node.getParams().isEmpty()) {
+      String paramsRecordType = genParamsRecordType(node);
       StringBuilder sb = new StringBuilder();
       sb.append(JsDoc.builder().addParameterizedAnnotation("typedef", paramsRecordType).build());
       sb.append("\n");
@@ -755,7 +755,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    if (node.hasStrictParams()) {
+    if (!node.getParams().isEmpty()) {
       jsDocBuilder.addParam("opt_data", alias + ".Params");
     } else {
       jsDocBuilder.addParam("opt_data", "Object<string, *>=");
@@ -1512,9 +1512,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected Statement genParamTypeChecks(TemplateNode node) {
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
     for (TemplateParam param : node.getAllParams()) {
-      if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
-        continue;
-      }
       String paramName = param.name();
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();

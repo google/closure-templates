@@ -51,11 +51,6 @@ public final class HeaderParam extends TemplateParam {
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
   }
 
-  @Override
-  public DeclLoc declLoc() {
-    return DeclLoc.HEADER;
-  }
-
   /**
    * Returns the TypeNode.
    *

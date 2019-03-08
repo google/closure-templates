@@ -34,10 +34,8 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " */",
         "{template .foo}",
+        "  {@param x: ?}",
         "  {print index($x)}",
         "{/template}");
   }
@@ -47,10 +45,8 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " */",
         "{template .foo}",
+        "  {@param x: ?}",
         "  {print index($x.y)}",
         "{/template}");
   }
@@ -70,10 +66,8 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
-        "/**",
-        " * @param x",
-        " */",
         "{template .foo}",
+        "  {@param x: ?}",
         "  {print index($x + 1)}",
         "{/template}");
   }
@@ -82,10 +76,8 @@ public final class CheckFunctionCallsVisitorTest {
   public void testLoopVariableOk() {
     assertSuccess(
         "{namespace ns}\n",
-        "/**",
-        " * @param elements",
-        " */",
         "{template .foo}",
+        "  {@param elements: ?}",
         "  {for $z in $elements}",
         "    {if isLast($z)}Lorem Ipsum{/if}",
         "  {/for}",
@@ -97,10 +89,8 @@ public final class CheckFunctionCallsVisitorTest {
     assertFunctionCallsInvalid(
         "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
-        "/**",
-        " * @param elements",
-        " */",
         "{template .foo}",
+        "  {@param elements: ?}",
         "  {for $z in $elements}",
         "    Lorem Ipsum...",
         "  {ifempty}",

@@ -24,7 +24,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -57,14 +56,12 @@ final class CheckDeclaredTypesPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode templateNode : file.getChildren()) {
       for (TemplateParam param : templateNode.getAllParams()) {
-        if (param.declLoc() == DeclLoc.HEADER) {
-          TypeNode type = param.getTypeNode();
-          // Skip this if it's a param with a default value and an inferred type. In the case of an
-          // illegal map key type, the error will be reported on the map literal by
-          // ResolveExpressionTypesPass.
-          if (type != null) {
-            type.accept(new MapKeyTypeChecker());
-          }
+        TypeNode type = param.getTypeNode();
+        // Skip this if it's a param with a default value and an inferred type. In the case of an
+        // illegal map key type, the error will be reported on the map literal by
+        // ResolveExpressionTypesPass.
+        if (type != null) {
+          type.accept(new MapKeyTypeChecker());
         }
       }
     }

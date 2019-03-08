@@ -61,8 +61,8 @@ public final class SoyTreeUtilsTest {
     String testFileContent =
         "{namespace boo}\n"
             + "\n"
-            + "/** @param items */\n"
             + "{template .foo}\n"
+            + "  {@param items: ?}\n"
             + "  {length($items) + 5}\n" // 5 nodes
             + "  {for $item in $items}\n" // 2 nodes
             + "    {$item.goo}\n" // 3 nodes

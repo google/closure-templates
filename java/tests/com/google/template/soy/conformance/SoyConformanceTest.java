@@ -134,38 +134,6 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testSoyDocParamsCauseErrorWhenSoyDocParamsAreBanned() {
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.NoSoyDocParams'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n"
-            + "/** @param foo */\n"
-            + "{template .bar}\n"
-            + "  {$foo}\n"
-            + "{/template}\n");
-  }
-
-  @Test
-  public void testHeaderParamsDoNotCauseErrorWhenSoyDocParamsAreBanned() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.NoSoyDocParams'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns}\n"
-            + "{template .bar}\n"
-            + "  {@param foo: string}\n"
-            + "  {$foo}\n"
-            + "{/template}\n");
-  }
-
-  @Test
   public void testWhitelistedFileDoesNotCauseErrors() {
     assertNoViolation(
         "requirement: {\n"

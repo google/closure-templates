@@ -153,7 +153,6 @@ public final class TemplateMetadataSerializer {
         .addAllDataAllCallSituation(
             protosFromCallSitatuations(meta.getDataAllCallSituations(), fileNode))
         .addAllParameter(protosFromParameters(meta.getParameters()))
-        .setHasSoyDocParams(meta.getHasSoyDocParams())
         .build();
   }
 
@@ -203,7 +202,6 @@ public final class TemplateMetadataSerializer {
         .setParameters(
             parametersFromProto(
                 templateProto.getParameterList(), typeRegistry, filePath, errorReporter))
-        .setHasSoyDocParams(templateProto.getHasSoyDocParams())
         .build();
   }
 

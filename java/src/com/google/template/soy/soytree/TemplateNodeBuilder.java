@@ -33,14 +33,10 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.SoyDocParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -51,34 +47,19 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
-  /**
-   * A way for a param migration script to disable the mixed param warning so it doesn't prevent the
-   * script from running.
-   */
-  private static final boolean DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION =
-      Boolean.getBoolean("DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION");
-
-  private static final SoyErrorKind INVALID_SOYDOC_PARAM =
-      SoyErrorKind.of("Found invalid soydoc param name ''{0}''.");
+  // TODO(b/78790262): Remove once people get used to it.
+  private static final SoyErrorKind SOYDOC_PARAM =
+      SoyErrorKind.of(
+          "SoyDoc params are not supported anymore. "
+              + "Use '{@param}' in the template header instead.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
   private static final SoyErrorKind KIND_BUT_NOT_STRICT =
       SoyErrorKind.of(
           "kind=\"...\" attribute is only valid with autoescape=\"strict\".",
           StyleAllowance.NO_CAPS);
-  private static final SoyErrorKind LEGACY_COMPATIBLE_PARAM_TAG =
-      SoyErrorKind.of(
-          "Found invalid SoyDoc param tag ''{0}''. The proper soydoc @param syntax is: "
-              + "''@param <name> <optional comment>''. Soy does not understand JsDoc style type "
-              + "declarations in SoyDoc.");
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("Param ''{0}'' already declared.");
-
-  private static final SoyErrorKind MIXED_PARAM_STYLES =
-      SoyErrorKind.of(
-          "Cannot mix SoyDoc params and header params in the same template. Please "
-              + " migrate to the '''{@param <name>: <type>}''' syntax."
-          );
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
@@ -131,10 +112,10 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** The full SoyDoc, including the start/end tokens, or null. */
   protected String soyDoc;
 
-  /** The description portion of the SoyDoc (before declarations), or null. */
+  /** The description portion of the SoyDoc, or null. */
   protected String soyDocDesc;
 
-  /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
+  /** The params from template header. Null if no decls. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
   protected boolean strictHtmlDisabled;
@@ -222,39 +203,40 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /**
-   * Sets the SoyDoc for the node to be built. The SoyDoc will be parsed to fill in SoyDoc param
-   * info.
+   * Sets the SoyDoc for the node to be built.
    *
    * @return This builder.
    */
   public T setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
     Preconditions.checkState(this.soyDoc == null);
     Preconditions.checkState(cmdText != null);
+    int paramOffset = soyDoc.indexOf("@param");
+    if (paramOffset != -1) {
+      errorReporter.report(
+          new RawTextNode(-1, soyDoc, soyDocLocation)
+              .substringLocation(paramOffset, paramOffset + "@param".length()),
+          SOYDOC_PARAM);
+    }
     this.soyDoc = soyDoc;
     Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
-    String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
-    this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
-    this.addParams(parseSoyDocDeclsHelper(soyDoc, cleanedSoyDoc, soyDocLocation));
+    this.soyDocDesc = cleanSoyDocHelper(soyDoc);
 
     return (T) this;
   }
 
   /**
-   * Helper for {@code setSoyDoc()} and {@code setHeaderDecls()}. This method is intended to be
-   * called at most once for SoyDoc params and at most once for header params.
+   * This method is intended to be called at most once for header params.
    *
    * @param newParams The params to add.
    */
   public T addParams(Iterable<? extends TemplateParam> newParams) {
 
     Set<String> seenParamKeys = new HashSet<>();
-    boolean hasTemplateHeaderParams = false;
     if (this.params == null) {
       this.params = ImmutableList.copyOf(newParams);
     } else {
       for (TemplateParam oldParam : this.params) {
         seenParamKeys.add(oldParam.name());
-        hasTemplateHeaderParams |= oldParam.declLoc() == DeclLoc.HEADER;
       }
       this.params =
           ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(newParams).build();
@@ -262,21 +244,11 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
     // Check new params.
     for (TemplateParam param : newParams) {
-      hasTemplateHeaderParams |= param.declLoc() == DeclLoc.HEADER;
       if (param.name().equals("ij")) {
         errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
       }
       if (!seenParamKeys.add(param.name())) {
         errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());
-      }
-    }
-    // if the template has any header params, report an error on each soydoc param
-    if (hasTemplateHeaderParams) {
-      for (TemplateParam param : this.params) {
-        if (param.declLoc() == DeclLoc.SOY_DOC && !DISABLE_MIXED_PARAMS_ERROR_FOR_MIGRATION) {
-          errorReporter.report(
-              param.nameLocation(), MIXED_PARAM_STYLES, param.nameLocation().getFilePath());
-        }
       }
     }
     return (T) this;
@@ -393,15 +365,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   private static final Pattern SOY_DOC_END =
       Pattern.compile("\\r?\\n? [\\ ]* [*][/] $", Pattern.COMMENTS);
 
-  /** Pattern for a SoyDoc declaration. */
-  // group(1) = declaration keyword; group(2) = declaration text.
-  private static final Pattern SOY_DOC_DECL_PATTERN =
-      Pattern.compile("( @param[?]? ) \\s+ ( \\S+ )", Pattern.COMMENTS);
-
-  /** Pattern for SoyDoc parameter declaration text. */
-  private static final Pattern SOY_DOC_PARAM_TEXT_PATTERN =
-      Pattern.compile("[a-zA-Z_]\\w*", Pattern.COMMENTS);
-
   /**
    * Private helper for the constructor to clean the SoyDoc. (1) Changes all newlines to "\n". (2)
    * Escapes deprecated javadoc tags. (3) Strips the start/end tokens and spaces (including newlines
@@ -435,7 +398,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       removeCommonStartCharHelper(lines, ' ', true);
     }
 
-    return Joiner.on('\n').join(lines);
+    return CharMatcher.whitespace().trimTrailingFrom(Joiner.on('\n').join(lines));
   }
 
   /**
@@ -489,73 +452,5 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     }
 
     return numCharsToRemove;
-  }
-
-  /**
-   * Private helper for the constructor to parse the SoyDoc description.
-   *
-   * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
-   * @return The description (with trailing whitespace removed).
-   */
-  private static String parseSoyDocDescHelper(String cleanedSoyDoc) {
-    Matcher paramMatcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
-    int endOfDescPos = (paramMatcher.find()) ? paramMatcher.start() : cleanedSoyDoc.length();
-    String soyDocDesc = cleanedSoyDoc.substring(0, endOfDescPos);
-    return CharMatcher.whitespace().trimTrailingFrom(soyDocDesc);
-  }
-
-  /**
-   * Private helper for the constructor to parse the SoyDoc declarations.
-   *
-   * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
-   * @return A SoyDocDeclsInfo object with the parsed info.
-   */
-  private List<SoyDocParam> parseSoyDocDeclsHelper(
-      String originalSoyDoc, String cleanedSoyDoc, SourceLocation soyDocSourceLocation) {
-    List<SoyDocParam> params = new ArrayList<>();
-    RawTextNode originalSoyDocAsNode = new RawTextNode(-1, originalSoyDoc, soyDocSourceLocation);
-    Matcher matcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
-    // Important: This statement finds the param for the first iteration of the loop.
-    boolean isFound = matcher.find();
-    while (isFound) {
-
-      // Save the match groups.
-      String declKeyword = matcher.group(1);
-      String declText = matcher.group(2);
-
-      String fullMatch = matcher.group();
-      // find the param in the original soy doc and use the RawTextNode support for
-      // calculating substring locations to get a more accurate location
-      int indexOfParamName = originalSoyDoc.indexOf(declText, originalSoyDoc.indexOf(fullMatch));
-      SourceLocation paramLocation =
-          originalSoyDocAsNode.substringLocation(
-              indexOfParamName, indexOfParamName + declText.length());
-      // Find the next declaration in the SoyDoc and extract this declaration's desc string.
-      int descStart = matcher.end();
-      // Important: This statement finds the param for the next iteration of the loop.
-      // We must find the next param now in order to know where the current param's desc ends.
-      isFound = matcher.find();
-      int descEnd = (isFound) ? matcher.start() : cleanedSoyDoc.length();
-      String desc = cleanedSoyDoc.substring(descStart, descEnd).trim();
-
-      if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
-
-        if (SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
-          params.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc, paramLocation));
-
-        } else {
-          if (declText.startsWith("{")) {
-            errorReporter.report(paramLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
-          } else {
-            errorReporter.report(paramLocation, INVALID_SOYDOC_PARAM, declText);
-          }
-        }
-
-      } else {
-        throw new AssertionError();
-      }
-    }
-
-    return params;
   }
 }

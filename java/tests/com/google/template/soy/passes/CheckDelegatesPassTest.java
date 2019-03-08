@@ -63,16 +63,16 @@ public final class CheckDelegatesPassTest {
             + "  blah\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
   }
@@ -88,16 +88,16 @@ public final class CheckDelegatesPassTest {
             + "  {delcall MagicButton}{param foo : '' /}{/delcall}\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
   }
@@ -129,7 +129,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
             + "but different param declarations compared to the "
-            + "definition at no-path-2:5:1.",
+            + "definition at no-path-2:4:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -139,23 +139,21 @@ public final class CheckDelegatesPassTest {
             + "{/template}\n"
             + "\n"
             + "/***/\n"
-            + // no params
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n" // no params
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param foo */\n"
-            + // has param 'foo'
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n" // has param 'foo'
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param "
-            + "declarations compared to the definition at no-path-2:5:1.",
+            + "declarations compared to the definition at no-path-2:4:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -164,18 +162,16 @@ public final class CheckDelegatesPassTest {
             + "  blah\n"
             + "{/template}\n"
             + "\n"
-            + "/** @param? foo */\n"
-            + // param 'foo' is optional
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n"
+            + "  {@param? foo: ?}\n" // param 'foo' is optional
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
             + "{namespace ns2}\n"
             + "\n"
-            + "/** @param foo */\n"
-            + // param 'foo' is required
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n"
+            + "  {@param foo: ?}\n" // param 'foo' is required
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
   }
@@ -184,18 +180,16 @@ public final class CheckDelegatesPassTest {
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
-            + "but different param declarations compared to the definition at no-path:8:1.",
+            + "but different param declarations compared to the definition at no-path:7:1.",
         ""
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + // no params
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n" // no params
             + "  vanilla\n"
             + "{/deltemplate}\n"
-            + "/** @param foo */\n"
-            + // some params params
-            "{deltemplate MagicButton variant=\"'something'\"}\n"
+            + "{deltemplate MagicButton variant=\"'something'\"}\n"
+            + "  {@param foo: ?}\n" // some params params
             + "  something\n"
             + "{/deltemplate}\n");
   }
@@ -208,13 +202,11 @@ public final class CheckDelegatesPassTest {
             + "{namespace ns1}\n"
             + "\n"
             + "/***/\n"
-            + // no params
-            "{deltemplate MagicButton}\n"
+            + "{deltemplate MagicButton}\n" // no params
             + "  vanilla\n"
             + "{/deltemplate}\n"
-            + "/** @param? foo */\n"
-            + // an optional param
-            "{deltemplate MagicButton variant=\"'something'\"}\n"
+            + "{deltemplate MagicButton variant=\"'something'\"}\n"
+            + "  {@param? foo: ?}\n" // an optional param
             + "  something\n"
             + "{/deltemplate}\n");
   }
@@ -253,16 +245,16 @@ public final class CheckDelegatesPassTest {
             + // basic call (should be delegate call)
             "{/template}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate ns1.MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
             + "{namespace ns1}\n"
             + "\n"
-            + "/** @param foo */\n"
             + "{deltemplate ns1.MagicButton}\n"
+            + "  {@param foo: ?}\n"
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
   }
@@ -339,7 +331,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "If one deltemplate has strict autoescaping, all its peers must also be strictly "
             + "autoescaped with the same content kind: HTML != null. "
-            + "Conflicting definition at no-path-3:5:1.",
+            + "Conflicting definition at no-path-3:4:1.",
         ""
             + "{namespace ns}\n\n"
             + "/***/\n"
@@ -351,15 +343,15 @@ public final class CheckDelegatesPassTest {
         ""
             + "{delpackage dp1}\n"
             + "{namespace ns}\n\n"
-            + "/** @param x */\n"
             + "{deltemplate foo autoescape=\"deprecated-contextual\"}\n"
+            + "  {@param x: ?}\n"
             + "<b>{$x}</b>\n"
             + "{/deltemplate}",
         ""
             + "{delpackage dp2}\n"
             + "{namespace ns}\n\n"
-            + "/** @param x */\n"
             + "{deltemplate foo stricthtml=\"false\"}\n"
+            + "  {@param x: ?}\n"
             + "<i>{$x}</i>\n"
             + "{/deltemplate}");
 
@@ -367,7 +359,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "If one deltemplate has strict autoescaping, all its peers must also be strictly "
             + "autoescaped with the same content kind: TEXT != HTML. "
-            + "Conflicting definition at no-path-3:5:1.",
+            + "Conflicting definition at no-path-3:4:1.",
         ""
             + "{namespace ns}\n\n"
             + "/***/\n"
@@ -378,15 +370,15 @@ public final class CheckDelegatesPassTest {
             + "{/template}",
         ""
             + "{namespace ns.default}\n\n"
-            + "/** @param x */\n"
             + "{deltemplate foo stricthtml=\"false\"}\n"
+            + "  {@param x: ?}\n"
             + "<b>{$x}</b>\n"
             + "{/deltemplate}",
         ""
             + "{delpackage dp2}\n"
             + "{namespace ns}\n\n"
-            + "/** @param x */\n"
             + "{deltemplate foo kind=\"text\"}\n"
+            + "  {@param x: ?}\n"
             + "<i>{$x}</i>\n"
             + "{/deltemplate}");
   }

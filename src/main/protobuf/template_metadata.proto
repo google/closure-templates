@@ -142,5 +142,6 @@ message TemplateMetadataP {
   VisibilityP visibility = 6;
   repeated ParameterP parameter = 7;
   repeated DataAllCallSituationP data_all_call_situation = 8;
-  bool has_soy_doc_params = 9;
+
+  reserved 9;
 }
