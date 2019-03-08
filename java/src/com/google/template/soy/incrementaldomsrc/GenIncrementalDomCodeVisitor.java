@@ -776,18 +776,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
       TemplateNode template = node.getNearestAncestor(TemplateNode.class);
       if (shouldPushKey) {
-        Expression key =
-            node.getKeyExpr() != null
-                ? translateExpr(node.getKeyExpr())
-                : incrementKeyForTemplate(template);
-        getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_KEY.call(key));
+        if (node.getKeyExpr() != null) {
+          getJsCodeBuilder()
+              .append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(translateExpr(node.getKeyExpr())));
+        } else {
+          getJsCodeBuilder()
+              .append(INCREMENTAL_DOM_PUSH_KEY.call(incrementKeyForTemplate(template)));
+        }
       }
       // TODO: In reality, the CALL_X functions are really just IDOM versions of the related
       // escaping directives. Consider doing a replace instead of not using escaping directives
       // at all.
       getJsCodeBuilder().append(call);
       if (shouldPushKey) {
-        getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call());
+        if (node.getKeyExpr() != null) {
+          getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
+        } else {
+          getJsCodeBuilder().append(INCREMENTAL_DOM_POP_KEY.call());
+        }
       }
     }
   }
