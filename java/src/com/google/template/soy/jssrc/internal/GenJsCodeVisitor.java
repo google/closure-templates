@@ -1165,7 +1165,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     ForNonemptyNode nonEmptyNode = (ForNonemptyNode) node.getChild(0);
     String varPrefix = nonEmptyNode.getVarName() + node.getId();
 
-    // TODO(user): A more consistent pattern for local variable management.
+    // TODO(b/32224284): A more consistent pattern for local variable management.
     String limitName = varPrefix + "ListLen";
     Expression limitInitializer;
     Optional<RangeArgs> args = RangeArgs.createFromNode(node);
@@ -1260,7 +1260,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String varName = node.getVarName();
     String varPrefix = varName + node.getForNodeId();
 
-    // TODO(user): A more consistent pattern for local variable management.
+    // TODO(b/32224284): A more consistent pattern for local variable management.
     String loopIndexName = varPrefix + "Index";
     String dataName = varPrefix + "Data";
 

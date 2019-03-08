@@ -107,7 +107,7 @@ public class JsCodeBuilder {
   /**
    * The current output variable.
    *
-   * <p>TODO(user): this is always an {@link Expression#id}. Consider exposing a subclass of
+   * <p>TODO(b/32224284): this is always an {@link Expression#id}. Consider exposing a subclass of
    * CodeChunk so we can enforce this invariant at compile time.
    */
   @Nullable protected Expression currOutputVar;

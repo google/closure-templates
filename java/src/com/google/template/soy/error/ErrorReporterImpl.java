@@ -120,7 +120,7 @@ final class ErrorReporterImpl extends ErrorReporter {
         ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
       // Try to find a snippet of source code associated with the exception and print it.
       Optional<String> snippet = getSourceLine(filePathsToSuppliers);
-      // TODO(user): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
+      // TODO(b/19269289): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
       // which occurs almost 100 times. Clean them up.
       if (snippet.isPresent()) {
         StringBuilder builder = new StringBuilder();

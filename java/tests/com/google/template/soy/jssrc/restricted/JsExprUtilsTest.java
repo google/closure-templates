@@ -82,8 +82,8 @@ public class JsExprUtilsTest {
    * This test shows the inherent error-prone nature of JsExpr. Nothing checks that the precedence
    * passed to the JsExpr ctor corresponds to the topmost operator in the text passed in to the
    * JsExpr ctor. Passing in the wrong precedence bypasses the parenthesization logic and lead to
-   * incorrect gencode. TODO(user): consolidate JS code generation under CodeChunk and eliminate
-   * JsExpr.
+   * incorrect gencode. TODO(b/33382980): consolidate JS code generation under CodeChunk and
+   * eliminate JsExpr.
    */
   @Test
   public void testJsExprGarbageInGarbageOut() {

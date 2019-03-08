@@ -266,7 +266,7 @@ public final class GenJsExprsVisitorTest {
 
     List<JsExpr> actualJsExprs = new ArrayList<>();
     for (Expression chunk : actualChunks) {
-      actualJsExprs.add(chunk.assertExpr()); // TODO(user): Fix tests to work with CodeChunks
+      actualJsExprs.add(chunk.assertExpr()); // TODO(b/32224284): Fix tests to work with CodeChunks
     }
 
     assertThat(actualJsExprs).hasSize(expectedJsExprs.size());

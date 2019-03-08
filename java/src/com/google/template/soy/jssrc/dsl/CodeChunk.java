@@ -46,7 +46,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  *     someFunction();
  *   }
  *   $$tmp0 = $$tmp0 * 5;
- * </code> TODO(user): do all JS code generation with this DSL (that is, remove {@link
+ * </code> TODO(b/33382980): do all JS code generation with this DSL (that is, remove {@link
  * com.google.template.soy.jssrc.internal.JsCodeBuilder}).
  */
 @Immutable
@@ -153,7 +153,7 @@ public abstract class CodeChunk {
    * CodeChunk#fromExpr(JsExpr)}. This is safe as long as each CodeChunk generated for production
    * code is {@link Expression#isRepresentableAsSingleExpression}.
    *
-   * <p>TODO(user): remove.
+   * <p>TODO(b/32224284): remove.
    */
   public final JsExpr assertExpr() {
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
@@ -175,7 +175,7 @@ public abstract class CodeChunk {
    * CodeChunk#fromExpr(JsExpr)}. This is safe as long as each CodeChunk generated for production
    * code is {@link Expression#isRepresentableAsSingleExpression}.
    *
-   * <p>TODO(user): remove.
+   * <p>TODO(b/32224284): remove.
    */
   public final JsExpr assertExprAndCollectRequires(RequiresCollector collector) {
     Expression expression = (Expression) this;

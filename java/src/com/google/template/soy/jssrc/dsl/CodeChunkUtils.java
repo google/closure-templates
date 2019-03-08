@@ -55,7 +55,7 @@ public final class CodeChunkUtils {
    * produce strings when combined with the plus operator; e.g. 2+2 might be 4 instead of '22'.
    *
    * <p>This is a port of {@link JsExprUtils#concatJsExprs}, which should eventually go away.
-   * TODO(user): make that go away.
+   * TODO(b/32224284): make that go away.
    */
   public static Expression concatChunks(List<? extends Expression> chunks) {
     return Concatenation.create(chunks);

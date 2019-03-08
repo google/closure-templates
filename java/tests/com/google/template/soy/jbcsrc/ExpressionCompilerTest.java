@@ -238,7 +238,7 @@ public class ExpressionCompilerTest {
   public void testModOpNode() {
     assertExpression("3 % 2").evaluatesTo(1L);
     assertExpression("5 % 3").evaluatesTo(2L);
-    // TODO(user): the soy type checker should flag this, but it doesn't.
+    // TODO(b/19833234): the soy type checker should flag this, but it doesn't.
     try {
       compileExpression("5.0 % 3.0");
       fail();

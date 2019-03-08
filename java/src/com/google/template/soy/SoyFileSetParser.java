@@ -188,7 +188,7 @@ public abstract class SoyFileSetParser {
         SoyFileNode node;
         if (cachedFile == null) {
           node = parseSoyFileHelper(fileSupplier, nodeIdGen);
-          // TODO(user): implement error recovery and keep on trucking in order to display
+          // TODO(b/19269289): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
           if (node == null) {

@@ -94,7 +94,7 @@ public abstract class Statement extends CodeChunk {
    * expression. For use only by {@link
    * com.google.template.soy.jssrc.internal.GenJsCodeVisitor#visitReturningCodeChunk}.
    *
-   * <p>TODO(user): remove.
+   * <p>TODO(b/33382980): remove.
    */
   public static Statement treatRawStringAsStatementLegacyOnly(
       String rawString, Iterable<GoogRequire> requires) {

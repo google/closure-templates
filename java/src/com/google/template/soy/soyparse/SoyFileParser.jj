@@ -1541,7 +1541,7 @@ private void TemplateOpenTagHelper(TemplateNodeBuilder builder, Token open, bool
 {
   {
     // eagerly fetch the id to be backwards compatible.  if we delay allocating, all the ids in the
-    // file will change.  TODO(user): remove ids
+    // file will change.  TODO(b/32224284): remove ids
     builder.setId(nodeIdGen.genId());
   }
 

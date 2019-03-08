@@ -237,7 +237,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private int maxLocalVariableTableSize = -1;
 
-  // TODO(user): Remove.
+  // TODO(b/19406885): Remove.
   private final String commandText;
 
   private final SourceLocation openTagLocation;
