@@ -23,7 +23,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -113,7 +112,7 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
   @Override
   protected ImmutableMap<Class<?>, String> getDeclNameMap() {
     return ImmutableMap.of(
-        HeaderParam.class, "@param",
+        TemplateParam.class, "@param",
         InjectedParam.class, "@inject",
         TemplateStateVar.class, "@state");
   }

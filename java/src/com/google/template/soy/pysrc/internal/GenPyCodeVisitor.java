@@ -59,7 +59,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ast.TypeNode;
 import java.util.ArrayList;
@@ -274,14 +273,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     protected void visitTemplateNode(TemplateNode node) {
       localVarExprs = new LocalVariableStack();
       for (TemplateParam param : node.getParams()) {
-        if (param instanceof HeaderParam) {
-          TypeNode type = ((HeaderParam) param).getTypeNode();
-          // Skip this if it's a param with a default value and an inferred type. We don't have to
-          // worry about a legacy_object_map sneaking in through an inferred type because there is
-          // no legacy_object_map literal syntax: http://b/79368576
-          if (type != null) {
-            type.accept(new LegacyObjectMapFinder(errorReporter));
-          }
+        TypeNode type = param.getTypeNode();
+        // Skip this if it's a param with a default value and an inferred type. We don't have to
+        // worry about a legacy_object_map sneaking in through an inferred type because there is
+        // no legacy_object_map literal syntax: http://b/79368576
+        if (type != null) {
+          type.accept(new LegacyObjectMapFinder(errorReporter));
         }
       }
 

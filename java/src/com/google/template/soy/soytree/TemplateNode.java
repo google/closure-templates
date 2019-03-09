@@ -32,7 +32,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -372,7 +371,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   protected ImmutableMap<Class<?>, String> getDeclNameMap() {
     return ImmutableMap.of(
-        HeaderParam.class, "@param",
+        TemplateParam.class, "@param",
         InjectedParam.class, "@inject");
   }
 

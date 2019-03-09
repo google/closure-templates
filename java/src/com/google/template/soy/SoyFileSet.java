@@ -983,10 +983,10 @@ public final class SoyFileSet {
     ParseResult result =
         parse(
             passManagerBuilder()
-                // ResolveHeaderParamTypesPass resolve types which is necessary for template
+                // ResolveTemplateParamTypesPass resolve types which is necessary for template
                 // metadatas
                 .addPassContinuationRule(
-                    "ResolveHeaderParamTypes", PassContinuationRule.STOP_AFTER_PASS),
+                    "ResolveTemplateParamTypes", PassContinuationRule.STOP_AFTER_PASS),
             typeRegistry);
 
     throwIfErrorsPresent();

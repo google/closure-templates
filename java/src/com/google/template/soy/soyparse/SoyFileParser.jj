@@ -126,8 +126,8 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -1715,7 +1715,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
 {
   Token tok;
   TemplateHeaderVarDefn param;
-  List<HeaderParam> params = ImmutableList.of();
+  List<TemplateParam> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
   List<TemplateStateVar> stateVars = ImmutableList.of();
@@ -1747,9 +1747,9 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
             whitespace = null;
             soyDoc = null;
             if (params.isEmpty()) {
-              params = new ArrayList<HeaderParam>();
+              params = new ArrayList<TemplateParam>();
             }
-            params.add((HeaderParam) param);
+            params.add((TemplateParam) param);
             break;
           case STATE:
             if (allowState) {
@@ -1877,7 +1877,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           errorReporter.report(createSrcLoc(tagBegin), OPTIONAL_DEFAULT_PARAM);
         }
       }
-      return new HeaderParam(
+      return new TemplateParam(
           name.image,
           createSrcLoc(name),
           // Optional params become nullable

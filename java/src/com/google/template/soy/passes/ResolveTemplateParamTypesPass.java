@@ -20,17 +20,16 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
-/** Resolve the TypeNode objects in HeaderParams to SoyTypes */
-final class ResolveHeaderParamTypesPass extends CompilerFilePass {
+/** Resolve the TypeNode objects in TemplateParams to SoyTypes */
+final class ResolveTemplateParamTypesPass extends CompilerFilePass {
   private final TypeNodeConverter converter;
 
-  ResolveHeaderParamTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolveTemplateParamTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
     this.converter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
@@ -38,11 +37,8 @@ final class ResolveHeaderParamTypesPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
       for (TemplateParam param : template.getAllParams()) {
-        if (param instanceof HeaderParam) {
-          HeaderParam hp = (HeaderParam) param;
-          if (hp.getTypeNode() != null) {
-            hp.setType(converter.getOrCreateType(hp.getTypeNode()));
-          }
+        if (param.getTypeNode() != null) {
+          param.setType(converter.getOrCreateType(param.getTypeNode()));
         }
       }
       if (template instanceof TemplateElementNode) {

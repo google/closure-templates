@@ -258,7 +258,7 @@ public final class PassManager {
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
-      addPass(new ResolveHeaderParamTypesPass(registry, errorReporter), singleFilePassesBuilder);
+      addPass(new ResolveTemplateParamTypesPass(registry, errorReporter), singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // needs to come before SoyConformancePass
       addPass(new ResolvePluginsPass(pluginResolver, registry), singleFilePassesBuilder);

@@ -50,7 +50,6 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -258,9 +257,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           // Check indirect params that are passed via data="all".
           // We only need to check explicit params of calling template here.
           for (TemplateParam callerParam : callerTemplate.getParams()) {
-            if (!(callerParam instanceof HeaderParam)) {
-              continue;
-            }
             String paramName = callerParam.name();
 
             // The parameter is explicitly overridden with another value, which we
