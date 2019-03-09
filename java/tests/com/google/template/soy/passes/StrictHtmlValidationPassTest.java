@@ -643,7 +643,7 @@ public final class StrictHtmlValidationPassTest {
     return SoyFileSetParserBuilder.forFileContents(soyFile)
         // Tests in this suite run the new Strict HTML Validation passes manually.
         .addPassContinuationRule(
-            "StrictHtmlValidation", PassContinuationRule.STOP_BEFORE_PASS)
+            StrictHtmlValidationPass.class, PassContinuationRule.STOP_BEFORE_PASS)
         .desugarHtmlNodes(false)
         .errorReporter(ErrorReporter.createForTest())
         .parse()

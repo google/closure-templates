@@ -23,7 +23,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 
 /** A compiler pass to run {@link SoyConformance}. */
-final class SoyConformancePass extends CompilerFilePass {
+public final class SoyConformancePass extends CompilerFilePass {
   private final SoyConformance conformance;
   private final ErrorReporter errorReporter;
 

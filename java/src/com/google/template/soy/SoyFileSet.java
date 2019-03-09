@@ -60,6 +60,8 @@ import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
+import com.google.template.soy.passes.ResolveTemplateParamTypesPass;
+import com.google.template.soy.passes.SoyConformancePass;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -655,7 +657,8 @@ public final class SoyFileSet {
     // pass.
     parse(
         passManagerBuilder()
-            .addPassContinuationRule("SoyConformance", PassContinuationRule.STOP_AFTER_PASS));
+            .addPassContinuationRule(
+                SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS));
     throwIfErrorsPresent();
     reportWarnings();
   }
@@ -986,7 +989,7 @@ public final class SoyFileSet {
                 // ResolveTemplateParamTypesPass resolve types which is necessary for template
                 // metadatas
                 .addPassContinuationRule(
-                    "ResolveTemplateParamTypes", PassContinuationRule.STOP_AFTER_PASS),
+                    ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_AFTER_PASS),
             typeRegistry);
 
     throwIfErrorsPresent();

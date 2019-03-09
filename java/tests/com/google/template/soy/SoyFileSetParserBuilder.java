@@ -26,7 +26,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.passes.CompilerFilePass;
+import com.google.template.soy.passes.CompilerPass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
@@ -257,13 +257,10 @@ public final class SoyFileSetParserBuilder {
    *
    * <p>Tests can use this to build a parse tree using up to a certain pass. See, for example {@link
    * com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphTest}.
-   *
-   * <p>Pass names are derived from their class names. See {@link CompilerFilePass#name()} for more
-   * info.
    */
   public SoyFileSetParserBuilder addPassContinuationRule(
-      String passName, PassContinuationRule rule) {
-    passManager.addPassContinuationRule(passName, rule);
+      Class<? extends CompilerPass> pass, PassContinuationRule rule) {
+    passManager.addPassContinuationRule(pass, rule);
     return this;
   }
 

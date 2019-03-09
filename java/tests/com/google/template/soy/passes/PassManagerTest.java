@@ -40,17 +40,22 @@ public final class PassManagerTest {
         .setErrorReporter(ErrorReporter.exploding());
   }
 
+  private static class NoSuchPass extends CompilerPass {}
+
   @Test
   public void testInvalidRule() {
     try {
-      builder().addPassContinuationRule("NoSuchPass", PassContinuationRule.STOP_AFTER_PASS).build();
+      builder()
+          .addPassContinuationRule(NoSuchPass.class, PassContinuationRule.STOP_AFTER_PASS)
+          .build();
       fail();
     } catch (IllegalStateException expected) {
       assertThat(expected)
           .hasMessageThat()
           .isEqualTo(
               "The following continuation rules don't match any pass: "
-                  + "{NoSuchPass=STOP_AFTER_PASS}");
+                  + "{class com.google.template.soy.passes.PassManagerTest$NoSuchPass="
+                  + "STOP_AFTER_PASS}");
     }
   }
 
@@ -59,7 +64,7 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                "ResolveTemplateParamTypes", PassContinuationRule.STOP_AFTER_PASS)
+                ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses)).containsExactly("ResolveTemplateParamTypes");
@@ -71,7 +76,7 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                "ResolveTemplateParamTypes", PassContinuationRule.STOP_BEFORE_PASS)
+                ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses)).isEmpty();

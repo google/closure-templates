@@ -26,7 +26,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass extends CompilerFilePass {
+public final class ResolveTemplateParamTypesPass extends CompilerFilePass {
   private final TypeNodeConverter converter;
 
   ResolveTemplateParamTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {

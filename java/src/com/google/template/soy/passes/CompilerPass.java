@@ -19,7 +19,7 @@ package com.google.template.soy.passes;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 
 /** A compiler pass */
-abstract class CompilerPass {
+public abstract class CompilerPass {
   @LazyInit private String name;
 
   public String name() {

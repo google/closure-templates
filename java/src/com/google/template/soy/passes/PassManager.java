@@ -123,7 +123,8 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
     private boolean addHtmlAttributesForDebugging = true;
-    private final Map<String, PassContinuationRule> passContinuationRegistry = Maps.newHashMap();
+    private final Map<Class<? extends CompilerPass>, PassContinuationRule>
+        passContinuationRegistry = Maps.newHashMap();
     private boolean building;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
@@ -238,13 +239,11 @@ public final class PassManager {
      * conformance-only compilations.
      *
      * <p>This method overwrites any previously registered rule.
-     *
-     * @param passName the pass name is derived from the pass class name. For example, the {@link
-     *     ResolveNamesPass} is named "ResolveNames". See {@link CompilerFilePass#name()}.
      */
-    public Builder addPassContinuationRule(String passName, PassContinuationRule rule) {
+    public Builder addPassContinuationRule(
+        Class<? extends CompilerPass> pass, PassContinuationRule rule) {
       checkNotNull(rule);
-      passContinuationRegistry.put(passName, rule);
+      passContinuationRegistry.put(pass, rule);
       return this;
     }
 
@@ -383,7 +382,7 @@ public final class PassManager {
     }
 
     <T extends CompilerPass> void addPass(T pass, ImmutableList.Builder<T> builder) {
-      PassContinuationRule rule = passContinuationRegistry.remove(pass.name());
+      PassContinuationRule rule = passContinuationRegistry.remove(pass.getClass());
       if (!building) {
         return;
       }
