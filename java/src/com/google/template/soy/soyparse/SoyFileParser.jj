@@ -1861,7 +1861,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       }
       // Optional params become nullable
       if (optional && !isNullable && paramTypeNode != null) {
-        NamedTypeNode nullType = NamedTypeNode.create(createSrcLoc(tagBegin), "null");
+        NamedTypeNode nullType = NamedTypeNode.create(paramTypeNode.sourceLocation(), "null");
         paramTypeNode = paramTypeNode instanceof UnionTypeNode
             ? UnionTypeNode.create(
                 ImmutableList.<TypeNode>builder()
