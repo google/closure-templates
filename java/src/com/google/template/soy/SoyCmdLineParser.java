@@ -344,20 +344,35 @@ final class SoyCmdLineParser extends CmdLineParser {
       throw new CommandLineError(
           String.format(
               "%s \"%s\" is not a subclass of %s.  Classes passed to %s should be %ss. "
-                  + "Did you pass it to the wrong flag?\nCaused by:\n%s",
+                  + "Did you pass it to the wrong flag?",
               objectType,
               instanceClassName,
               clazz.getSimpleName(),
               flagName,
-              clazz.getSimpleName(),
-              cce));
+              clazz.getSimpleName()),
+          cce);
     } catch (ReflectiveOperationException e) {
       throw new CommandLineError(
           String.format(
               "Cannot instantiate %s \"%s\" registered with flag %s.  Please make "
                   + "sure that the %s exists and is on the compiler classpath and has a public "
-                  + "zero arguments constructor.\nCaused by: %s",
-              objectType, instanceClassName, flagName, objectType, e));
+                  + "zero arguments constructor.",
+              objectType, instanceClassName, flagName, objectType),
+          e);
+    } catch (ExceptionInInitializerError e) {
+      throw new CommandLineError(
+          String.format(
+              "Cannot instantiate %s \"%s\" registered with flag %s. An error was thrown while "
+                  + "loading the class.  There is a bug in the implementation.",
+              objectType, instanceClassName, flagName),
+          e);
+    } catch (SecurityException e) {
+      throw new CommandLineError(
+          String.format(
+              "Cannot instantiate %s \"%s\" registered with flag %s. A security manager is "
+                  + "preventing instantiation.",
+              objectType, instanceClassName, flagName),
+          e);
     }
   }
 }

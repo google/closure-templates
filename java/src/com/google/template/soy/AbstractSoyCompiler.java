@@ -200,7 +200,7 @@ public abstract class AbstractSoyCompiler {
       err.println(compilationException.getMessage());
       return 1;
     } catch (CommandLineError e) {
-      err.println(e.getMessage());
+      e.printStackTrace(err);
       return 1;
     } catch (Throwable e) {
       err.println(
@@ -249,7 +249,15 @@ public abstract class AbstractSoyCompiler {
       List<Module> modules = new ArrayList<>();
       modules.add(new SoyModule());
       modules.addAll(pluginModules);
-      Injector injector = Guice.createInjector(modules);
+      Injector injector;
+      try {
+        injector = Guice.createInjector(modules);
+      } catch (Throwable t) {
+        throw new CommandLineError(
+            "Failed to create Guice injector.  Is there a bug in one of the modules passed to "
+                + "--pluginModules?",
+            t);
+      }
       sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
       guiceTimer.stop();
     } else {
@@ -457,6 +465,6 @@ public abstract class AbstractSoyCompiler {
    * @param errorMsg The error message to print.
    */
   static final RuntimeException exitWithError(String errorMsg) {
-    throw new CommandLineError("Error: " + errorMsg);
+    throw new CommandLineError(errorMsg);
   }
 }

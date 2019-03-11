@@ -31,4 +31,17 @@ final class CommandLineError extends Error {
   CommandLineError(String msg, Throwable t) {
     super(msg, t);
   }
+
+  // there is rarely a point in showing the stack trace since this is at the root of the compiler
+  // if needed for debugging this can be deleted.
+  @Override
+  public synchronized Throwable fillInStackTrace() {
+    return this; // no stack trace
+  }
+
+  @SuppressWarnings("OverrideThrowableToString") // we want to override the default formatting.
+  @Override
+  public String toString() {
+    return "error: " + getMessage();
+  }
 }
