@@ -255,9 +255,6 @@ public final class PassManager {
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
-      // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
-      // autoescaping.
-      addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(new ResolveTemplateParamTypesPass(registry, errorReporter), singleFilePassesBuilder);
@@ -267,6 +264,8 @@ public final class PassManager {
       // The check conformance pass needs to run on the rewritten html nodes, so it must
       // run after HtmlRewritePass
       addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
+      // needs to run after htmlrewriting, before resolvenames and autoescaping
+      addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
       // to create placeholders.
       addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
