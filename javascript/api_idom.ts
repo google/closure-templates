@@ -131,7 +131,7 @@ export class IncrementalDomRenderer {
     return incrementaldom.attr(name, value);
   }
 
-  currentPointer(): Node|void {
+  currentPointer(): Node|null {
     return incrementaldom.currentPointer();
   }
 
@@ -238,7 +238,9 @@ export class NullRenderer extends IncrementalDomRenderer {
 
   attr(name: string, value: string) {}
 
-  currentPointer() {}
+  currentPointer() {
+    return null;
+  }
 
   skip() {}
 

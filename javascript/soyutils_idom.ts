@@ -77,18 +77,19 @@ incrementaldom.setKeyAttributeName(null);
 function tryGetElement<T extends SoyElement<{}, {}>>(
     incrementaldom: IncrementalDomRenderer, elementClassCtor: new () => T,
     firstElementKey: string) {
-  const currentPointer = incrementaldom.currentPointer();
-  if (!currentPointer) return null;
-
-  const el = getSoyUntyped(currentPointer);
-  if (el instanceof elementClassCtor && isDataInitialized(currentPointer)) {
-    const currentPointerKey = getKey(currentPointer) as string;
-    const currentPointerKeyArr = JSON.parse(currentPointerKey);
-    return isProposedKeySuffixOfCurrentKey(
-               incrementaldom.getCurrentKeyStack().concat(firstElementKey),
-               currentPointerKeyArr) ?
-        el :
-        null;
+  let currentPointer = incrementaldom.currentPointer();
+  while (currentPointer != null) {
+    const el = getSoyUntyped(currentPointer);
+    if (el instanceof elementClassCtor && isDataInitialized(currentPointer)) {
+      const currentPointerKey = getKey(currentPointer) as string;
+      const currentPointerKeyArr = JSON.parse(currentPointerKey);
+      if (isProposedKeySuffixOfCurrentKey(
+              incrementaldom.getCurrentKeyStack().concat(firstElementKey),
+              currentPointerKeyArr)) {
+        return el;
+      }
+    }
+    currentPointer = currentPointer.nextSibling;
   }
   return null;
 }
