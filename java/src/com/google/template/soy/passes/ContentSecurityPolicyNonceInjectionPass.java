@@ -34,9 +34,8 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.AnyType;
+import com.google.template.soy.types.ast.NamedTypeNode;
 import javax.annotation.Nullable;
 
 /**
@@ -59,12 +58,12 @@ import javax.annotation.Nullable;
  *
  * <pre><code>
  *
- * &lt;script{if $ij.csp_nonce} nonce="{$ij.csp_nonce}{/if}>var x = 'foo'&lt;/script>
+ * &lt;script{if $csp_nonce} nonce="{$csp_nonce}"{/if}>var x = 'foo'&lt;/script>
  *
  * </code></pre>
  *
- * <p>Then if the user configures a {@code csp_nonce} in their CSP settings and as an input to
- * rendering, all author controlled scripts and styles will be authorized.
+ * <p>Then if the user configures a {@code csp_nonce} in their CSP settings and as an injected
+ * variable to rendering, all author controlled scripts and styles will be authorized.
  *
  * <p>This pass should:
  *
@@ -76,8 +75,6 @@ import javax.annotation.Nullable;
  */
 public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
-  public static final InjectedParam DEFN =
-      new InjectedParam(CSP_NONCE_VARIABLE_NAME, SourceLocation.UNKNOWN, AnyType.getInstance());
 
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
@@ -110,17 +107,36 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         errorReporter.report(var.getSourceLocation(), IJ_CSP_NONCE_REFERENCE);
       }
     }
-    for (HtmlOpenTagNode openTag : SoyTreeUtils.getAllNodesOfType(file, HtmlOpenTagNode.class)) {
-      if (isTagNonceable(openTag)) {
-        // this should point to the character immediately before the '>' or '/>' at the end of the
-        // open tag
-        SourceLocation insertionLocation =
-            openTag
-                .getSourceLocation()
-                .getEndPoint()
-                .offset(0, openTag.isSelfClosing() ? -2 : -1)
-                .asLocation(openTag.getSourceLocation().getFilePath());
-        openTag.addChild(createCspInjection(insertionLocation, nodeIdGen));
+    for (TemplateNode template : file.getChildren()) {
+      boolean injected = false;
+      TemplateParam defn =
+          new TemplateParam(
+              CSP_NONCE_VARIABLE_NAME,
+              SourceLocation.UNKNOWN,
+              // We don't use string because the targets don't have the dependency on
+              // goog.soy.data.UnsanitizedText.
+              NamedTypeNode.create(SourceLocation.UNKNOWN, "any"),
+              /* isRequired= */ false,
+              /* isInjected= */ true,
+              /* desc= */ "Created by ContentSecurityPolicyNonceInjectionPass.",
+              /* defaultValue= */ null);
+      for (HtmlOpenTagNode openTag :
+          SoyTreeUtils.getAllNodesOfType(template, HtmlOpenTagNode.class)) {
+        if (isTagNonceable(openTag)) {
+          // this should point to the character immediately before the '>' or '/>' at the end of the
+          // open tag
+          SourceLocation insertionLocation =
+              openTag
+                  .getSourceLocation()
+                  .getEndPoint()
+                  .offset(0, openTag.isSelfClosing() ? -2 : -1)
+                  .asLocation(openTag.getSourceLocation().getFilePath());
+          openTag.addChild(createCspInjection(insertionLocation, nodeIdGen, defn));
+          injected = true;
+        }
+      }
+      if (injected) {
+        template.addCspNonceParam(defn);
       }
     }
   }
@@ -167,17 +183,17 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
   }
 
   /**
-   * Generates an AST fragment that looks like: {if $ij.csp_nonce}nonce="{$ij.csp_nonce}"{/if}
+   * Generates an AST fragment that looks like: {if $csp_nonce} nonce="{$csp_nonce}"{/if}
    *
    * @param insertionLocation The location where it is being inserted
    * @param nodeIdGen The id generator to use
    */
   private static IfNode createCspInjection(
-      SourceLocation insertionLocation, IdGenerator nodeIdGen) {
+      SourceLocation insertionLocation, IdGenerator nodeIdGen, TemplateParam defn) {
     IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
     IfCondNode ifCondNode =
         new IfCondNode(
-            nodeIdGen.genId(), insertionLocation, "if", referenceCspNonce(insertionLocation));
+            nodeIdGen.genId(), insertionLocation, "if", referenceCspNonce(insertionLocation, defn));
     ifNode.addChild(ifCondNode);
     HtmlAttributeNode nonceAttribute =
         new HtmlAttributeNode(
@@ -195,19 +211,17 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         new PrintNode(
             nodeIdGen.genId(),
             insertionLocation,
-            /* isImplicit= */ true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
-            referenceCspNonce(insertionLocation),
+            /* isImplicit= */ true, // Implicit.  {$csp_nonce} not {print $csp_nonce}
+            referenceCspNonce(insertionLocation, defn),
             /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
     attributeValue.addChild(printNode);
     return ifNode;
   }
 
-  private static VarRefNode referenceCspNonce(SourceLocation insertionLocation) {
+  private static VarRefNode referenceCspNonce(
+      SourceLocation insertionLocation, TemplateParam defn) {
     return new VarRefNode(
-        CSP_NONCE_VARIABLE_NAME,
-        insertionLocation,
-        /* isDollarSignIjParameter= */ true,
-        /* defn= */ DEFN);
+        CSP_NONCE_VARIABLE_NAME, insertionLocation, /* isDollarSignIjParameter= */ false, defn);
   }
 }

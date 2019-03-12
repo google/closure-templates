@@ -67,7 +67,8 @@ public final class PassManagerTest {
                 ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses)).containsExactly("ResolveTemplateParamTypes");
+    assertThat(names(manager.singleFilePasses))
+        .containsExactly("ContentSecurityPolicyNonceInjection", "ResolveTemplateParamTypes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -79,7 +80,8 @@ public final class PassManagerTest {
                 ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses)).isEmpty();
+    assertThat(names(manager.singleFilePasses))
+        .containsExactly("ContentSecurityPolicyNonceInjection");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 

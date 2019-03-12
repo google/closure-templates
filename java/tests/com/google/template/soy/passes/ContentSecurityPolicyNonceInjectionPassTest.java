@@ -32,7 +32,7 @@ import org.junit.runners.JUnit4;
 public final class ContentSecurityPolicyNonceInjectionPassTest {
 
   private static final String NONCE =
-      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
+      "{if $csp_nonce} nonce=\"{$csp_nonce |escapeHtmlAttribute}\"{/if}";
 
   @Test
   public void testTrivialTemplate() {
