@@ -186,4 +186,4 @@ autoescaper what kind of content is being produced.
 ## More?
 
 Templates have several other attributes and advanced features listed in the
-[reference](../reference/templates).
+[reference](../reference/templates.md).

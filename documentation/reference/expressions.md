@@ -115,8 +115,8 @@ key-value pairs separated by `:` characters. For example,
 *   `map()`: the empty map
 *   `map(1: 'one', 2: 'two')`
 
-These expressions create [map](types#map) values. For more details about the
-difference between maps and legacy object maps see the [map](types#map)
+These expressions create [map](types.md#map) values. For more details about the
+difference between maps and legacy object maps see the [map](types.md#map)
 documentation.
 
 
@@ -147,8 +147,8 @@ For example: `$foo`
 ### `$ij.` parameters
 
 Injected data can be referenced by referencing properties of the `$ij` pseudo
-object. It is preferred to use the [`@inject` syntax](templates#inject), instead
-since it allows authors to declare type information.
+object. It is preferred to use the [`@inject` syntax](templates.md#inject),
+instead since it allows authors to declare type information.
 
 For example,
 
@@ -163,7 +163,7 @@ A global is a reference that looks like a simple dotted identifier sequence.
 Globals can be configured with the compiler via the `--compileTimeGlobalsFile`
 flag, proto enum values are also represented as global references.
 
-TIP: You can use the [`{alias ...}`](file-declarations#alias) directive to
+TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
 abbreviate globals.
 
 It is an error in the compiler to reference a global that doesn't have a
@@ -257,8 +257,9 @@ For example,
 Numeric division.
 
 NOTE: this always performs floating point division. For integer division
-consider using the [`floor`](functions#floor), [`ceiling`](functions#ceiling),
-or [`round`](functions#round) functions to process the result of a division.
+consider using the [`floor`](functions#floor),
+[`ceiling`](functions.md#ceiling), or [`round`](functions.md#round) functions to
+process the result of a division.
 
 For example,
 
@@ -394,8 +395,8 @@ Function calls consist of an identifier with a number of positional parameters:
 
 `<IDENT>(<EXPR>,...)`
 
-See the [dev guide](../dev/plugins) for how to register a custom function and
-the [functions reference](functions) for a list of all functions that are
+See the [dev guide](../dev/plugins.md) for how to register a custom function and
+the [functions reference](functions.md) for a list of all functions that are
 available by default.
 
 For example:
@@ -414,5 +415,5 @@ For example:
 
 *   `foo.bar.Baz(quux: 3)`
 
-TIP: You can use the [`{alias ...}`](file-declarations#alias) directive to
+TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
 abbreviate proto names used in initialization expressions.

@@ -52,7 +52,7 @@ When the compiler sees this, it inserts a runtime check to make sure that
 `|blessStringAsTrustedResourceUrlForLegacy` can be used to disable this as part
 of a migration to strict autoescaping.
 
-See [trusted_resource_uri](./security#trusted_resource_url) in the security
+See [trusted_resource_uri](./security.md#trusted_resource_url) in the security
 documentation for more information.
 
 ### `|changeNewlineToBr` {#changeNewlineToBr}
@@ -62,9 +62,9 @@ Changes newlines sequences: `\n`, `\r`, or `\r\n` to `<br>`.
 ### `|cleanHtml`, `|cleanHtml:'ul','li'` {#cleanHtml}
 
 Removes all but a small, safe subset of HTML from its input. This converts other
-[content kinds](../dev/security#content_kinds) (such as `text`) into `html`. If
-content with the `html` kind is passed to this print directive then the content
-is not changed.
+[content kinds](../dev/security.md#content_kinds) (such as `text`) into `html`.
+If content with the `html` kind is passed to this print directive then the
+content is not changed.
 
 Note that all attributes are removed except `dir` for directionality.
 

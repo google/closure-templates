@@ -4,7 +4,7 @@ go/soy/reference/security
 
 [TOC]
 
-See the [Dev Guide Security page](../dev/security) for how to use
+See the [Dev Guide Security page](../dev/security.md) for how to use
 `Closure Templates`'s security features. This page describes in more detail how
 they work.
 
@@ -202,7 +202,7 @@ This escaping logic applies to:
     *   tag
 
 It is also possible to disable this escaping using the
-[`|blessStringAsTrustedResourceUrlForLegacy`](./print-directives#blessStringAsTrustedResourceUrlForLegacy)
+[`|blessStringAsTrustedResourceUrlForLegacy`](./print-directives.md#blessStringAsTrustedResourceUrlForLegacy)
 directive. This can be useful when migrating templates to `strict` autoescaping.
 
 ##### Just entity-escape

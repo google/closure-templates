@@ -14,17 +14,17 @@ Support](../dev/localization#bidi_functions). For information on writing custom
 
 ## `isFirst($var)` {#isFirst}
 
-Use this with the `for` command. See the [`for` section](control-flow#for) of
+Use this with the `for` command. See the [`for` section](control-flow.md#for) of
 the Commands chapter.
 
 ## `isLast($var)` {#isLast}
 
-Use this with the `for` command. See the [`for` section](control-flow#for) of
+Use this with the `for` command. See the [`for` section](control-flow.md#for) of
 the Commands chapter.
 
 ## `index($var)` {#index}
 
-Use this with the `for` command. See the [`for` section](control-flow#for) of
+Use this with the `for` command. See the [`for` section](control-flow.md#for) of
 the Commands chapter.
 
 ## `isNonnull(value)` {#isNonnull}
@@ -50,7 +50,7 @@ values.
 The `v1Expression` function is part of the support for deprecated V1 syntax.
 This function can only be used by the JavaScript backend in legacy whitelisted
 files. When used the function must take a
-[string literal](expressions#string-literal) that contains some pseudo
+[string literal](expressions.md#string-literal) that contains some pseudo
 `Closure Templates` code. The JavaScript backend will perform some simple textual
 replacements to make variable references work, but otherwise emit it as is in
 the generated JavaScript.
@@ -58,7 +58,7 @@ the generated JavaScript.
 ## `remainder(length)` {#remainder}
 
 The `remainder` function is used in the context of plural messages. See the
-[reference on plurals](messages#offset-and-remainder) for more information.
+[reference on plurals](messages.md#offset-and-remainder) for more information.
 
 ## `length(list)` {#length}
 
@@ -78,30 +78,30 @@ Joins the list of strings with a string separator.
 
 ## `keys(legacyObjectMap)` {#keys}
 
-The keys of a [legacy object map](types#legacy_object_map) as a list. There is
-no guarantee on order.
+The keys of a [legacy object map](types.md#legacy_object_map) as a list. There
+is no guarantee on order.
 
 ## `mapKeys(map)` {#mapKeys}
 
-The keys of a [map](types#map) as a list. There is no guarantee on order.
+The keys of a [map](types.md#map) as a list. There is no guarantee on order.
 
 ## `mapToLegacyObjectMap(map)` {#mapToLegacyObjectMap}
 
-Converts a [map](types#map) to an equivalent
-[legacy_object_map](types#legacy_object_map).
+Converts a [map](types.md#map) to an equivalent
+[legacy_object_map](types.md#legacy_object_map).
 
 Because legacy object maps do not support non-string keys, all of the keys are
 coerced to strings in the returned legacy object map.
 
 ## `legacyObjectMapToMap(legacyObjectMap)` {#legacyObjectMapToMap}
 
-Converts a [legacy object map](types#legacy_object_map) to an equivalent
-[map](types#map).
+Converts a [legacy object map](types.md#legacy_object_map) to an equivalent
+[map](types.md#map).
 
 ## `augmentMap(baseMap, additionalMap)` {#augmentMap}
 
 WARNING: deprecated, this is only usable with the
-[legacy object map](types#legacy_object_map) type which is deprecated.
+[legacy object map](types.md#legacy_object_map) type which is deprecated.
 
 Builds an augmented map. The returned map contains mappings from both the base
 map and the additional map. If the same key appears in both, then the value from
@@ -252,7 +252,7 @@ Closure Compiler to perform compile time obfuscation. In Java, this uses a
 
 When a dotted identifier is passed, it is as if you had passed an equivalent
 string literal, the benefit is that using this syntax you can take advantage of
-the [`alias`](file-declarations#alias) syntax to abbreviate the identifier.
+the [`alias`](file-declarations.md#alias) syntax to abbreviate the identifier.
 
 For example, assuming that the file has `{alias foo.bar}`, then
 `xid('foo.bar')`, `xid(foo.bar)`, and `xid(bar)` will all evaluate to the same
@@ -274,10 +274,10 @@ Avoid passing it as other content kinds.
 ## `range([start,] end[, step])` {#range}
 
 Use this to create lists containing arithmetic progressions. It is most often
-used in [indexed for loops](control-flow#for-indexed). If the `step` argument is
-omitted, it defaults to 1. If the `start` argument is omitted, it defaults to 0.
-The full form returns a list of plain integers `[start, start + step, start + 2
-* step, ...]`.
+used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
+is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
+0. The full form returns a list of plain integers `[start, start + step, start +
+2 * step, ...]`.
 
 This function behaves identically to the Python `range` builtin function, or the
 Closure `goog.array.range` function.
@@ -431,8 +431,8 @@ message extractors, so it should be easy to correlate with the translation
 artifacts. You can use `com.google.template.soy.msgs.SoyMsgIdConverter` to
 convert the encoded IDs back to Java longs.
 
-The `msgWithId` function returns a simple [`record`](types#record) consisting of
-2 fields:
+The `msgWithId` function returns a simple [`record`](types.md#record) consisting
+of 2 fields:
 
 *   `id` which is the encoded msg Id
 *   `msg` which is the message content
@@ -446,4 +446,4 @@ a `let` variable and it *must* be the only child of that `let` variable.
 
 ## `ve_data(ve, data)` {#ve_data}
 
-See the documentation for the [ve_data literal](expressions#ve_data).
+See the documentation for the [ve_data literal](expressions.md#ve_data).

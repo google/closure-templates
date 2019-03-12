@@ -50,10 +50,10 @@ These are the `template` tag's attributes:
 
     *   If there is an `autoescape` value specified in the `template` tag, use
         that value.
-    *   Else default to [strict autoescaping](../dev/security#strict).
+    *   Else default to [strict autoescaping](../dev/security.md#strict).
 
-*   `kind`: Optional. Default `html`. See the security guide for other [content
-    kinds](../dev/security#content_kinds).
+*   `kind`: Optional. Default `html`. See the security guide for other
+    [content kinds](../dev/security.md#content_kinds).
 
 <!--#include file="common-attributes-include.md"-->
 
@@ -131,8 +131,8 @@ Syntax:
 {/template}
 ```
 
-`{@inject}` declares an [injected template parameter](../concepts/ij-data). The
-syntax is identical to the [@param](#param) syntax with the exception of the
+`{@inject}` declares an [injected template parameter](../concepts/ij-data.md).
+The syntax is identical to the [@param](#param) syntax with the exception of the
 keyword. This should be used in preference to the `$ij` syntax since it allows
 for strong type checking and better code generation.
 

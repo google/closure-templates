@@ -114,7 +114,7 @@ in the `desc`. For example:
 ```
 
 See more information about translating messages in the
-[Translation](../dev/localization) chapter.
+[Translation](../dev/localization.md) chapter.
 
 ### Genders
 

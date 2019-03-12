@@ -127,7 +127,7 @@ Example output (for operands = `['alpha', 'beta', 'gamma']`):
 ### Indexed iteration {#for-indexed}
 
 Occasionally, instead of iterating over a list, you may need to use a numerical
-loop. For this you can use the [`range(...)` function](functions#range), for
+loop. For this you can use the [`range(...)` function](functions.md#range), for
 example
 
 ```soy

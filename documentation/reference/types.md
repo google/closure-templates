@@ -333,7 +333,7 @@ An `A|B` union type can contain either a value of type `A` or a value of type
 ### `list<T>` {#list}
 
 A list can contain any type as an element. Lists can be accessed using the
-[indexed operators](expressions#indexing-operators).
+[indexed operators](expressions.md#indexing-operators).
 
 For example,
 
@@ -368,7 +368,7 @@ Python     | `list`
 ### `map<K, V>` {#map}
 
 A map takes two parameters for the key and value types. Maps are accessed using
-the [indexed operators](expressions#indexing-operators).
+the [indexed operators](expressions.md#indexing-operators).
 
 For example,
 
@@ -390,10 +390,10 @@ Maps have several advantages over [legacy object maps](#legacy_object_map):
     [number](#number) (While it is possible to declare a legacy object map
     with a non-string key type, the behavior of non-string keys in legacy object
     maps is undefined and buggy.)
-*   There is a syntax for creating a [map literal](expressions#map): `map(...)`.
-    By contrast, there is no syntax to create a `legacy_object_map` literal from
-    inside a Soy template. (Legacy object maps can only be passed in from host
-    environments during rendering.)
+*   There is a syntax for creating a [map literal](expressions.md#map):
+    `map(...)`. By contrast, there is no syntax to create a `legacy_object_map`
+    literal from inside a Soy template. (Legacy object maps can only be passed
+    in from host environments during rendering.)
 *   Legacy object maps are not supported if you are compiling to Python.
     (Declaring a `legacy_object_map` param is a compilation error in the Python
     backend.)
@@ -401,8 +401,8 @@ Maps have several advantages over [legacy object maps](#legacy_object_map):
 Maps and legacy object maps are distinct types. You cannot pass a legacy object
 map to a template expecting a map, and vice versa. If you need to convert from
 one map type to the other, use the
-[mapToLegacyObjectMap](functions#mapToLegacyObjectMap) and
-[legacyObjectMapToMap](functions#legacyObjectMapToMap) functions.
+[mapToLegacyObjectMap](functions.md#mapToLegacyObjectMap) and
+[legacyObjectMapToMap](functions.md#legacyObjectMapToMap) functions.
 
 Use `map` instead of `legacy_object_map` for all new `Closure Templates` code.
 
@@ -416,8 +416,8 @@ Python     | `dict`
 ### `legacy_object_map<K, V>` {#legacy_object_map}
 
 A legacy object map takes two parameters for the key and value types. Legacy
-object maps are accessed using the [indexed
-operators](expressions#indexing-operators).
+object maps are accessed using the
+[indexed operators](expressions.md#indexing-operators).
 
 For example,
 
@@ -449,7 +449,7 @@ Python     | not supported
 ### records: `[<prop-name>: <prop-type>,...]` {#record}
 
 Record types define an object with a given set of properties. The properties can
-be accessed using the [data access operators](expressions#data-access)
+be accessed using the [data access operators](expressions.md#data-access)
 
 For example,
 
@@ -480,9 +480,9 @@ operator.
 Protocol Buffers in `Closure Templates` have the same semantics as `JSPB`, not
 `Java` protos.
 
-See the [dev guide](../dev/protos) for more information on how protos work.
+See the [dev guide](../dev/protos.md) for more information on how protos work.
 
-TIP: You can use the [`{alias ...}`](file-declarations#alias) directive to
+TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
 abbreviate proto type names.
 
 NOTE: currently, protos are _not supported_ in the Python backend.
