@@ -13930,6 +13930,38 @@ goog.functions.rateLimit = function(f, interval, opt_scope) {
   });
 };
 
+//javascript/closure/html/trustedtypes.js
+// Copyright 2018 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Policy to convert strings to Trusted Types. See
+ * https://github.com/WICG/trusted-types for details.
+ *
+ * @visibility {//javascript/closure:__pkg__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__pkg__}
+ */
+
+goog.provide('goog.html.trustedtypes');
+
+/** @package @const {?TrustedTypePolicy} */
+goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY =
+    goog.TRUSTED_TYPES_POLICY_NAME ?
+    goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#html') :
+    null;
+
 //javascript/closure/string/typedstring.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -14191,6 +14223,7 @@ goog.string.Const.EMPTY = goog.string.Const.from('');
 goog.provide('goog.html.SafeScript');
 
 goog.require('goog.asserts');
+goog.require('goog.html.trustedtypes');
 goog.require('goog.string.Const');
 goog.require('goog.string.TypedString');
 
@@ -14241,7 +14274,7 @@ goog.html.SafeScript = function() {
    * The contained value of this SafeScript.  The field has a purposely
    * ugly name to make (non-compiled) code that attempts to directly access this
    * field stand out.
-   * @private {string}
+   * @private {!TrustedScript|string}
    */
   this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = '';
 
@@ -14355,7 +14388,7 @@ goog.html.SafeScript.fromJson = function(val) {
  * @override
  */
 goog.html.SafeScript.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_;
+  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString();
 };
 
 
@@ -14387,6 +14420,17 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeScript.unwrap = function(safeScript) {
+  return goog.html.SafeScript.unwrapTrustedScript(safeScript).toString();
+};
+
+
+/**
+ * Unwraps value as TrustedScript if supported or as a string if not.
+ * @param {!goog.html.SafeScript} safeScript
+ * @return {!TrustedScript|string}
+ * @see goog.html.SafeScript.unwrap
+ */
+goog.html.SafeScript.unwrapTrustedScript = function(safeScript) {
   // Perform additional Run-time type-checking to ensure that
   // safeScript is indeed an instance of the expected type.  This
   // provides some additional protection against security bugs due to
@@ -14448,7 +14492,11 @@ goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse =
  */
 goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
     script) {
-  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = script;
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ =
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScript(
+          script) :
+      script;
   return this;
 };
 
@@ -15407,6 +15455,7 @@ goog.i18n.bidi.DirectionalString.prototype.getDirection;
 goog.provide('goog.html.TrustedResourceUrl');
 
 goog.require('goog.asserts');
+goog.require('goog.html.trustedtypes');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
 goog.require('goog.string.Const');
@@ -15444,9 +15493,16 @@ goog.html.TrustedResourceUrl = function() {
    * The contained value of this TrustedResourceUrl.  The field has a purposely
    * ugly name to make (non-compiled) code that attempts to directly access this
    * field stand out.
-   * @private {string}
+   * @private {!TrustedScriptURL|string}
    */
   this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = '';
+
+  /**
+   * Value stored as TrustedURL. TrustedResourceURL corresponds to TrustedURL in
+   * some context thus we need to store it separately.
+   * @private {?TrustedURL}
+   */
+  this.trustedURL_ = null;
 
   /**
    * A type marker used to implement additional run-time type checking.
@@ -15489,7 +15545,8 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
+  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_
+      .toString();
 };
 
 
@@ -15569,6 +15626,19 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
+  return goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(trustedResourceUrl)
+      .toString();
+};
+
+
+/**
+ * Unwraps value as TrustedScriptURL if supported or as a string if not.
+ * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl
+ * @return {!TrustedScriptURL|string}
+ * @see goog.html.TrustedResourceUrl.unwrap
+ */
+goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(
+    trustedResourceUrl) {
   // Perform additional Run-time type-checking to ensure that
   // trustedResourceUrl is indeed an instance of the expected type.  This
   // provides some additional protection against security bugs due to
@@ -15592,6 +15662,19 @@ goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
         trustedResourceUrl + '\' of type ' + goog.typeOf(trustedResourceUrl));
     return 'type_error:TrustedResourceUrl';
   }
+};
+
+
+/**
+ * Unwraps value as TrustedURL if supported or as a string if not.
+ * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl
+ * @return {!TrustedURL|string}
+ * @see goog.html.TrustedResourceUrl.unwrap
+ */
+goog.html.TrustedResourceUrl.unwrapTrustedURL = function(trustedResourceUrl) {
+  return trustedResourceUrl.trustedURL_ ?
+      trustedResourceUrl.trustedURL_ :
+      goog.html.TrustedResourceUrl.unwrap(trustedResourceUrl);
 };
 
 
@@ -15812,7 +15895,15 @@ goog.html.TrustedResourceUrl
     .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
   var trustedResourceUrl = new goog.html.TrustedResourceUrl();
   trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY
+          .createScriptURL(url) :
       url;
+  if (goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY) {
+    trustedResourceUrl.trustedURL_ =
+        goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(
+            url);
+  }
   return trustedResourceUrl;
 };
 
@@ -15896,6 +15987,7 @@ goog.provide('goog.html.SafeUrl');
 goog.require('goog.asserts');
 goog.require('goog.fs.url');
 goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.html.trustedtypes');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
 goog.require('goog.string.Const');
@@ -15947,7 +16039,7 @@ goog.html.SafeUrl = function() {
    * The contained value of this SafeUrl.  The field has a purposely ugly
    * name to make (non-compiled) code that attempts to directly access this
    * field stand out.
-   * @private {string}
+   * @private {!TrustedURL|string}
    */
   this.privateDoNotAccessOrElseSafeUrlWrappedValue_ = '';
 
@@ -16012,7 +16104,7 @@ goog.html.SafeUrl.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.SafeUrl.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseSafeUrlWrappedValue_;
+  return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString();
 };
 
 
@@ -16066,6 +16158,17 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeUrl.unwrap = function(safeUrl) {
+  return goog.html.SafeUrl.unwrapTrustedURL(safeUrl).toString();
+};
+
+
+/**
+ * Unwraps value as TrustedURL if supported or as a string if not.
+ * @param {!goog.html.SafeUrl} safeUrl
+ * @return {!TrustedURL|string}
+ * @see goog.html.SafeUrl.unwrap
+ */
+goog.html.SafeUrl.unwrapTrustedURL = function(safeUrl) {
   // Perform additional Run-time type-checking to ensure that safeUrl is indeed
   // an instance of the expected type.  This provides some additional protection
   // against security bugs due to application code that disables type checks.
@@ -16538,7 +16641,11 @@ goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
     url) {
   var safeUrl = new goog.html.SafeUrl();
-  safeUrl.privateDoNotAccessOrElseSafeUrlWrappedValue_ = url;
+  safeUrl.privateDoNotAccessOrElseSafeUrlWrappedValue_ =
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(
+          url) :
+      url;
   return safeUrl;
 };
 
@@ -17537,6 +17644,7 @@ goog.require('goog.html.SafeStyle');
 goog.require('goog.html.SafeStyleSheet');
 goog.require('goog.html.SafeUrl');
 goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.html.trustedtypes');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
 goog.require('goog.labs.userAgent.browser');
@@ -17591,7 +17699,7 @@ goog.html.SafeHtml = function() {
    * The contained value of this SafeHtml.  The field has a purposely ugly
    * name to make (non-compiled) code that attempts to directly access this
    * field stand out.
-   * @private {string}
+   * @private {!TrustedHTML|string}
    */
   this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = '';
 
@@ -17654,7 +17762,7 @@ goog.html.SafeHtml.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.SafeHtml.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseSafeHtmlWrappedValue_;
+  return this.privateDoNotAccessOrElseSafeHtmlWrappedValue_.toString();
 };
 
 
@@ -17685,6 +17793,17 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeHtml.unwrap = function(safeHtml) {
+  return goog.html.SafeHtml.unwrapTrustedHTML(safeHtml).toString();
+};
+
+
+/**
+ * Unwraps value as TrustedHTML if supported or as a string if not.
+ * @param {!goog.html.SafeHtml} safeHtml
+ * @return {!TrustedHTML|string}
+ * @see goog.html.SafeHtml.unwrap
+ */
+goog.html.SafeHtml.unwrapTrustedHTML = function(safeHtml) {
   // Perform additional run-time type-checking to ensure that safeHtml is indeed
   // an instance of the expected type.  This provides some additional protection
   // against security bugs due to application code that disables type checks.
@@ -18365,7 +18484,11 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
  */
 goog.html.SafeHtml.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
     html, dir) {
-  this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = html;
+  this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createHTML(
+          html) :
+      html;
   this.dir_ = dir;
   return this;
 };
