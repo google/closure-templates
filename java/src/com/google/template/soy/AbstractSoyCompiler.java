@@ -40,6 +40,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringWriter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -287,11 +288,11 @@ public abstract class AbstractSoyCompiler {
     }
     compile(sfsBuilder);
     timer.stop();
-    double guiceRatio = ((double) guiceTimer.elapsed().toNanos()) / timer.elapsed().toNanos();
     // Unless the build is faster than 1 second, issue a warning if more than half of the build is
     // constructing the guice injector.  This often happens just because the modules install too
     // much and also due to general overhead of constructing the injector.
-    if (guiceRatio > 0.5 && timer.elapsed().getSeconds() > 1) {
+    if (timer.elapsed().compareTo(Duration.ofSeconds(1)) > 0
+        && guiceTimer.elapsed().compareTo(timer.elapsed().dividedBy(2)) > 0) {
       err.println(
           "WARNING: This compile took "
               + timer

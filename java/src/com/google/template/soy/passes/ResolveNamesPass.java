@@ -91,7 +91,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
      * <p>We add {@link #slotsToRelease} to {@link #availableSlots} only when exiting a scope if
      * this value == 0.
      */
-    private int delayReleaseClaims = 0;
+    private int activeLazySlots = 0;
 
     /**
      * Enters a new scope. Variables {@link #define defined} will have a lifetime that extends until
@@ -109,15 +109,15 @@ public final class ResolveNamesPass extends CompilerFilePass {
      * the parent scope closes.
      */
     void enterLazyScope() {
-      delayReleaseClaims++;
+      activeLazySlots++;
       enterScope();
     }
 
     /** Exits the current scope. */
     void exitLazyScope() {
-      checkState(delayReleaseClaims > 0, "Exiting a lazy scope when we aren't in one");
+      checkState(activeLazySlots > 0, "Exiting a lazy scope when we aren't in one");
       exitScope();
-      delayReleaseClaims--;
+      activeLazySlots--;
     }
 
     /**
@@ -136,7 +136,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
         }
         slotsToRelease.set(var.localVariableIndex());
       }
-      if (delayReleaseClaims == 0) {
+      if (activeLazySlots == 0) {
         availableSlots.or(slotsToRelease);
         slotsToRelease.clear();
       }
@@ -205,7 +205,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
     }
 
     void verify() {
-      checkState(delayReleaseClaims == 0, "%s lazy scope(s) are still active", delayReleaseClaims);
+      checkState(activeLazySlots == 0, "%s lazy scope(s) are still active", activeLazySlots);
       checkState(slotsToRelease.isEmpty(), "%s slots are waiting to be released", slotsToRelease);
       BitSet unavailableSlots = new BitSet(nextSlotToClaim);
       unavailableSlots.set(0, nextSlotToClaim);

@@ -226,17 +226,17 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
 
       // The fallback message is only used if the first message is not available, but the fallback
       // is. So availability of both messages must be tested.
-      long firstId = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
-      long secondId = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
+      long id1 = MsgUtils.computeMsgIdForDualFormat(node.getMsg());
+      long id2 = MsgUtils.computeMsgIdForDualFormat(node.getFallbackMsg());
       pyExprTextSb
           .append(PyExprUtils.TRANSLATOR_NAME)
           .append(".is_msg_available(")
-          .append(firstId)
+          .append(id1)
           .append(")")
           .append(" or not ")
           .append(PyExprUtils.TRANSLATOR_NAME)
           .append(".is_msg_available(")
-          .append(secondId)
+          .append(id2)
           .append(")");
 
       pyExprTextSb.append(" else ").append(fallbackMsg.getText());
