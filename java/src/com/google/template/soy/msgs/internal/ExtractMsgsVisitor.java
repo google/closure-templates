@@ -72,19 +72,6 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     return new SoyMsgBundleImpl(null, msgs);
   }
 
-  /**
-   * Returns a SoyMsgBundle containing all messages extracted from the given nodes (locale string is
-   * null).
-   */
-  public SoyMsgBundle execOnMultipleNodes(Iterable<? extends SoyNode> nodes) {
-    msgs = Lists.newArrayList();
-    for (SoyNode node : nodes) {
-      visit(node);
-    }
-    Collections.sort(msgs, SOURCE_LOCATION_ORDERING);
-    return new SoyMsgBundleImpl(null, msgs);
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
