@@ -2,8 +2,6 @@
 
 --------------------------------------------------------------------------------
 
-<!-- LINT.IfChange -->
-
 *   Basics
 
     *   [1. Templates](templates.md)
@@ -19,4 +17,3 @@
     *   [6. Type System](type-system.md)
 
     *   [7. Injected Data](ij-data.md)
-
