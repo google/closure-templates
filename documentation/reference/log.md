@@ -1,6 +1,5 @@
 # Logging
 
-go/soy/reference/log
 
 <!--#include file="commands-blurb-include.md"-->
 

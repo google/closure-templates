@@ -58,7 +58,3 @@ custom functions can be used in templates. To learn how to setup a plugin, see
 
 <br>
 
-[^pm]: The rules used to parse and evaluate expressions in Soy is actually quite
-    complicated, but the majority of places where you'd want them to work,
-    they just do.
-[^pd]: Print directives are post-processing on the output of a print command.

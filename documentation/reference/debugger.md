@@ -1,6 +1,5 @@
 # Debugger
 
-go/soy/reference/debugger
 
 <!--#include file="commands-blurb-include.md"-->
 

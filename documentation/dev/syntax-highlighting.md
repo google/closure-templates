@@ -1,7 +1,5 @@
 # Syntax highlighting
 
-\{{test}}
-
 Here are some syntax highlighters that we are aware of. We have not tried them
 all and cannot vouch for their correctness or safety.
 

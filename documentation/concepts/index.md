@@ -1,6 +1,5 @@
 # Concepts
 
-go/soy-concepts
 
 This page describes `Closure Templates`'s core concepts—what you need to understand
 in order to be a successful `Closure Templates` developer.

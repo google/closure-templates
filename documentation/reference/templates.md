@@ -1,6 +1,5 @@
 # Templates
 
-go/soy/reference/templates
 
 <!--#include file="commands-blurb-include.md"-->
 

@@ -1,6 +1,5 @@
 # Comments
 
-go/soy/reference/comments
 
 This page describes how to comment your Soy file.
 

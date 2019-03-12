@@ -1,6 +1,5 @@
 # Expressions
 
-go/soy/reference/expressions
 
 Expressions are written within templates to reference template data, variables,
 or compute intermediate values. `Closure Templates` uses a language-neutral

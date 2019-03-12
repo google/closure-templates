@@ -48,6 +48,3 @@ Java](../dev/java.md) for more information.
 You're done with basic `Closure Templates` concepts! Next, we suggest working
 through the codelabs.
 
-<section class="nextButton"><a href="../codelabs/index.md">CODELABS >></a></section>
-
-<br>

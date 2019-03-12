@@ -1,6 +1,5 @@
 # Print Directives
 
-go/soy-directives
 
 Print directives are post-processing on the output of a [`print`
 command](print.md).
@@ -34,12 +33,6 @@ inside an HTML `<option>` element.
 
 ### `|blessStringAsTrustedResourceUrlForLegacy` {#blessStringAsTrustedResourceUrlForLegacy}
 
-{{#internal}}
-
-WARNING: `|blessStringAsTrustedResourceUrlForLegacy` is disallowed for new
-templates.
-
-{{/internal}}
 
 Can be used to disable the autoescaper for sensitive resource urls. For example,
 

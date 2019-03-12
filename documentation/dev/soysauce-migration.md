@@ -179,15 +179,5 @@ happen:
 In SoySauce you always get `null`. We chose this option because it is more
 internally consistent (`Closure Templates`->`Closure Templates` and
 java->`Closure Templates` calls are treated equivalently) and it is more consistent
-with the behavior of the Javascript backend.
+with the behavior of the JavaScript backend.
 
-{{#internal}}
-
-### mutable protos
-
-SoySauce doesn't support the proto mutable Java api. This is a google internal
-only feature that creates an alternate set of generated code for protocol
-buffers. SoySauce depends on immutable proto2/proto3 api and will throw class
-cast exceptions if mutable protos are passed to templates.
-
-{{/internal}}

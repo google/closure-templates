@@ -1,6 +1,5 @@
 # Print
 
-go/soy/reference/print
 
 <!--#include file="commands-blurb-include.md"-->
 

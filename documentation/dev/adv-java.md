@@ -148,15 +148,11 @@ How to handle each event depends stronly on the particular environment of the
 rendering operation. For example,
 
 *   If the future is a `ListenableFuture` then a listener could be attached and
-    rendering could continue in the callback. {{#internal}} [`ListenableFuture`
-    example usage]. {{/internal}}
+    rendering could continue in the callback.
 
 *   If the HTTP server you are using supports asynchronous request processing
     (like the Servlet 3.0 `AsyncContext`), then you could integrate with that to
-    continue your rendering after the future is complete. {{#internal}} For Apps
-    Framework users, you can get this automatically by using the standard
-    response handlers, just use `TemplateResponse` or `StructuredPageResponse`
-    and the framework will handle the rest. {{/internal}}
+    continue your rendering after the future is complete.
 
 
 <br>

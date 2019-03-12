@@ -1,6 +1,5 @@
 # Raw Text Commands
 
-go/soy/reference/textual-commands
 
 <!--#include file="commands-blurb-include.md"-->
 

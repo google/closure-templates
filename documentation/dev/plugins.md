@@ -203,12 +203,6 @@ classes must be supplied to `SoySauce` or `Tofu` constructor (or
 JS, the compiler will output a `goog.require('some.js.lib');` and invoke
 `some.js.lib.uniqueId()` for each call to `uniqueId()`.
 
-{{#internal}}
-
-For Google users that use the [`af_soy_plugin` build rule](dir.md#plugin), this
-should be taken care of automatically.
-
-{{/internal}}
 
 ## More about SoyFunctionSignature...
 
@@ -238,13 +232,6 @@ overloads that have the same amount of arguments. Second, generic overloads are
 unsupported. It is impossible to say this function will return `T` when the
 input is `list<T>`.
 
-{{#internal}}
-
-For Google users, there is an annotation processor that can detect syntax errors
-and enforce these restrictions. It is automatically included in the build rule
-so no additional work is required to enable it.
-
-{{/internal}}
 
 ## Custom print directives, not recommended
 

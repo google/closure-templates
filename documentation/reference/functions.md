@@ -1,6 +1,5 @@
 # Functions
 
-go/soy-functions
 
 `Closure Templates` functions are called from within `Closure Templates`
 [expressions](expressions.md).

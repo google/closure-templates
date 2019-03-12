@@ -1,10 +1,5 @@
 # Types
 
-<!-- {{#internal}} -->
-
-go/soystatic
-
-<!-- {{/internal}} -->
 
 `Closure Templates` supports a basic type system. Parameters can be strictly typed
 to:
@@ -83,24 +78,6 @@ primitive.)
 `string` is one of the most common types in `Closure Templates`. In addition to
 plain strings there are a number of safe subtypes.
 
-{{#internal}}
-
-| Backend    | type in host language                                 |
-| ---------- | ----------------------------------------------------- |
-| JavaScript | `string`, `goog.soy.data.UnsanitizedText`, (all safe  |
-:            : string subtypes)                                      :
-| SoySauce   | `string`,                                             |
-:            : `com.google.template.soy.data.restricted.StringData`, :
-:            : `com.google.template.soy.data.SanitizedContent`       :
-| Tofu       | `com.google.template.soy.data.restricted.StringData`, |
-:            : `com.google.template.soy.data.SanitizedContent`       :
-| Python     | `string`, `UnsanitizedText` (all safe string          |
-:            : subtypes)                                             :
-
-{{/internal}}
-
-{{#external}}
-
 <table>
 <thead>
 <tr>
@@ -139,8 +116,6 @@ subtypes)</td>
 </tbody>
 </table>
 
-{{/external}}
-
 ### `html` {#html}
 
 `html` is for a string that contains safe HTML content. Safe html is HTML that
@@ -178,22 +153,6 @@ Additionally, all backends have support for coercing
 
 `uri` is for a string that contains a URI that came from a trusted source.
 
-{{#internal}}
-
-| Backend    | type in host language                           |
-| ---------- | ----------------------------------------------- |
-| JavaScript | `goog.soy.data.SanitizedUri`, `goog.Uri`,       |
-:            : `goog.html.SafeUrl`,                            :
-:            : `goog.html.TrustedResourceUrl`                  :
-| SoySauce   | `string`,                                       |
-:            : `com.google.template.soy.data.SanitizedContent` :
-| Tofu       | `com.google.template.soy.data.SanitizedContent` |
-| Python     | `sanitize.SanitizedUri`                         |
-
-{{/internal}}
-
-{{#external}}
-
 <table>
 <thead>
 <tr>
@@ -227,9 +186,6 @@ Additionally, all backends have support for coercing
 </tr>
 </tbody>
 </table>
-
-{{/external}}
-
 Additionally, all backends have support for coercing
 `webutil.html.types.SafeUrlProto` to a `uri` object.
 
@@ -237,22 +193,6 @@ Additionally, all backends have support for coercing
 
 `uri` is for a string that contains a URI that came from a trusted source and
 additionally can be used as a Script `src` or in other sensitive contexts.
-
-{{#internal}}
-
-| Backend    | type in host language                           |
-| ---------- | ----------------------------------------------- |
-| JavaScript | `goog.soy.data.SanitizedTrustedResourceUri`, :  |
-:            : `goog.html.TrustedResourceUrl`                  :
-| SoySauce   | `string`,                                       |
-:            : `com.google.template.soy.data.SanitizedContent` :
-| Tofu       | `com.google.template.soy.data.SanitizedContent` |
-| Python     | `sanitize.TrustedResourceUri`                   |
-
-{{/internal}}
-
-{{#external}}
-
 <table>
 <thead>
 <tr>
@@ -284,9 +224,6 @@ additionally can be used as a Script `src` or in other sensitive contexts.
 </tr>
 </tbody>
 </table>
-
-{{/external}}
-
 Additionally, all backends have support for coercing
 `webutil.html.types.TrustedResourceUrlProto` to a `trusted_resource_uri` object.
 

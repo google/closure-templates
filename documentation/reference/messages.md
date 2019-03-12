@@ -1,6 +1,5 @@
 # Translation (Msg, Plurals and Gender)
 
-go/soy-msg
 
 <!--#include file="commands-blurb-include.md"-->
 
@@ -140,7 +139,9 @@ translations of the same English message for different genders. The `genders`
 attribute value may contain one or more expressions (though using three or more
 gender expressions in one message is strongly discouraged). Each gender
 expression should evaluate to a string. There are three recognized cases:
-'female', 'male', and any other string[^1], which is treated as unknown gender.
+'female', 'male', and any other
+string, which is treated as
+unknown gender.
 
 For gender expressions, prefer data references (for example,
 `$userInfo.userGender`) instead of more complex expressions. Translators see the
@@ -353,7 +354,3 @@ To fix this you can use null safe access patterns:
 Now, if the list has too few people in it, the later placeholders will just
 evaluate to `null` instead of throwing an error.
 
-{{#internal}} See b/8428671 for more background. {{/internal}}
-
-[^1]: Some backends may allow `null` values for `genders` in _some_
-    circumstances. Users should not rely on this behavior.

@@ -1,6 +1,5 @@
 # File Declarations
 
-go/soy/reference/file-declarations
 
 <!--#include file="commands-blurb-include.md"-->
 

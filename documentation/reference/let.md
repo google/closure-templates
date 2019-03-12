@@ -1,6 +1,5 @@
 # Let command
 
-go/soy/reference/let
 
 <!--#include file="commands-blurb-include.md"-->
 

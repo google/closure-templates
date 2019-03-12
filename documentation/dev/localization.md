@@ -168,62 +168,6 @@ var MSG_UNNAMED_42 = goog.getMsg(
      'endLink': '</a>'});
 ```
 
-{{#internal_only_section}}
-
-## Internal Only Message Translation
-
-NOTE: The following section augments the above public content.
-
-In `Closure Templates`, messages for translation are inlined in the templates. To
-mark a message for translation, simply surround the text with the `msg` tag as
-described in the [Translation commands chapter](../reference/messages).
-`Closure Templates` can extract your message into the XMB file format required by
-the Translation Console (TC). Furthermore, `Closure Templates` can directly use
-translated message files in the XTB format output by the Translation Console and
-insert the translated text back into your template.
-
-
-#### Letting JS Compiler Handle Translation {#jscompiler}
-
-If your project only uses `Closure Templates` from JavaScript, an alternative
-translation solution is to let JS Compiler handle the translation of messages,
-just as it would for your hand-written JavaScript. However, if you share
-templates between Java and JavaScript, you should **always** use
-`Closure Templates` to handle messages because of correctness issues.
-
-To let JS Compiler handle the extraction and insertion of messages, run the
-`SoyToJsSrcCompiler` with these options:
-
--   `--should_generate_goog_msg_defs`: causes the `Closure Templates` compiler to
-    turn all `msg` blocks into `goog.getMsg` definitions (and their
-    corresponding usages). These `goog.getMsg` definitions can be translated by
-    the JS Compiler.
-
--   `--bidi_global_dir=<1/-1>`: provides the bidi global directionality
-    (ltr=`1`, rtl=`-1`) to the `Closure Templates` compiler so it can correctly
-    handle [bidi functions and directives](#bidi_functions).
-
-For example, consider this `msg` block:
-
-```soy
-{msg desc="Says hello and tells user to click a link."}
-  Hello {$userName}! Please click <a href="{$url}">here</a>.
-{/msg}
-```
-
-If you compiled this template with the option `--should_generate_goog_msg_defs`,
-then the resulting `goog.getMsg` definition might be:
-
-```soy
-/** @desc Says hello and tells user to click a link. */
-var MSG_UNNAMED_42 = goog.getMsg(
-    'Hello {$userName}! Please click {$startLink}here{$endLink}.',
-    {'userName': soy.$$escapeHtml(opt_data.userName),
-     'startLink': '<a href="' + soy.$$escapeHtml(opt_data.url) + '">',
-     'endLink': '</a>'});
-```
-
-{{/internal_only_section}}
 
 ## Using Multiple Natural Languages (Bidi)
 
@@ -245,66 +189,6 @@ For an example of a template that uses Bidi functions, see
 
 ### Bidi Functions in `Closure Templates` {#bidi_functions}
 
-{{#internal}}
-
-| Function                          | Usage                                    |
-| --------------------------------- | ---------------------------------------- |
-| `bidiGlobalDir()`                 | Provides a way to check the current      |
-:                                   : global directionality. Returns 1 for LTR :
-:                                   : or -1 for RTL.                           :
-| `bidiDirAttr(text, opt_isHtml)`   | If the overall directionality of `text`  |
-:                                   : is different from the global             :
-:                                   : directionality, then this function       :
-:                                   : generates the attribute `dir=ltr` or     :
-:                                   : `dir=rtl`, which you can include in the  :
-:                                   : HTML tag surrounding that piece of text. :
-:                                   : If the overall directionality of `text`  :
-:                                   : is the same as the global                :
-:                                   : directionality, this function returns    :
-:                                   : the empty string. Set the optional       :
-:                                   : second parameter to `true` if `text`     :
-:                                   : contains or can contain HTML tags or     :
-:                                   : HTML escape sequences (default `false`). :
-| `bidiMark()`                      | Generates the bidi mark formatting       |
-:                                   : character (LRM or RLM) that corresponds  :
-:                                   : to the global directionality. Note that  :
-:                                   : if you don't want to insert this mark    :
-:                                   : unconditionally, you should use          :
-:                                   : `bidiMarkAfter(text)` instead.           :
-| `bidiMarkAfter(text, opt_isHtml)` | If the exit (not overall) directionality |
-:                                   : of `text` is different from the global   :
-:                                   : directionality, then this function       :
-:                                   : generates either the LRM or RLM          :
-:                                   : character that corresponds to the global :
-:                                   : directionality. If the exit              :
-:                                   : directionality of `text` is the same as  :
-:                                   : the global directionality, this function :
-:                                   : returns the empty string. Set the        :
-:                                   : optional second parameter to `true` if   :
-:                                   : `text` contains or can contain HTML tags :
-:                                   : or HTML escape sequences (default        :
-:                                   : `false`). You should use this function   :
-:                                   : for an inline section of text that might :
-:                                   : be opposite directionality from the      :
-:                                   : global directionality. Also, set `text`  :
-:                                   : to the text that precedes this function. :
-| `bidiStartEdge()`                 | Generates the string "left" or the       |
-:                                   : string "right", if the global            :
-:                                   : directionality is LTR or RTL,            :
-:                                   : respectively.                            :
-| `bidiEndEdge()`                   | Generates the string "right" or the      |
-:                                   : string "left", if the global             :
-:                                   : directionality is LTR or RTL,            :
-:                                   : respectively.                            :
-| `bidiTextDir(text, opt_isHtml)`   | Checks the provided text for its overall |
-:                                   : (i.e. dominant) directionality. Returns  :
-:                                   : 1 for LTR, -1 for RTL, or 0 for neutral  :
-:                                   : (neither LTR nor RTL). Set the optional  :
-:                                   : second parameter to `true` if `text`     :
-:                                   : contains or can contain HTML tags or     :
-:                                   : HTML "escapes" (default `false`).        :
-
-{{/internal}}
 
 {{#external}}
 
@@ -412,36 +296,6 @@ HTML "escapes" (default <code>false</code>).</td>
 </tbody>
 </table>
 
-{{/external}}
-
-{{#internal}}
-
-### Bidi Directives in `Closure Templates` {#bidi_directives}
-
-| Function           | Usage                                                   |
-| ------------------ | ------------------------------------------------------- |
-| `│bidiSpanWrap`    | If the overall directionality of the `print` command is |
-:                    : different from the global directionality, then the      :
-:                    : compiler wraps the `print` command output in a span     :
-:                    : with `dir=ltr` or `dir=rtl`.<br><br>The template        :
-:                    : compiler applies autoescaping before evaluating         :
-:                    : `│bidiSpanWrap`, which is safe because `│bidiSpanWrap`  :
-:                    : correctly handles HTML-escaped text. If you're manually :
-:                    : escaping the output using `│escapeHtml`, be sure to put :
-:                    : `│escapeHtml` before `│bidiSpanWrap`, or else you'll    :
-:                    : end up escaping any span tags that are generated.)      :
-| `│bidiUnicodeWrap` | If the overall directionality the `print` command is    |
-:                    : different from the global directionality, then the      :
-:                    : compiler wraps the `print` command output with Unicode  :
-:                    : bidi formatting characters LRE or RLE at the start and  :
-:                    : PDF at the end.<br><br>This directive serves the same   :
-:                    : purpose as `│bidiSpanWrap`, but you should only use it  :
-:                    : in situations where HTML markup is not applicable, for  :
-:                    : example inside an HTML `<option>` element.              :
-
-{{/internal}}
-
-{{#external}}
 
 <table>
 <thead>

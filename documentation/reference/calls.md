@@ -1,7 +1,5 @@
 # Calls
 
-go/soy/reference/calls
-
 <!--#include file="commands-blurb-include.md"-->
 
 This chapter describes the call commands.

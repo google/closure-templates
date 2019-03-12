@@ -1,6 +1,5 @@
 # Security Reference
 
-go/soy/reference/security
 
 [TOC]
 

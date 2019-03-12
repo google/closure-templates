@@ -1,8 +1,5 @@
 # Compiling Templates
 
-go/soy-compilation
-
-[TOC]
 
 ## Invoking the compiler directly
 

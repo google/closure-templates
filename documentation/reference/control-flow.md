@@ -1,6 +1,5 @@
 # Control Flow
 
-go/soy/reference/control-flow
 
 <!--#include file="commands-blurb-include.md"-->
 

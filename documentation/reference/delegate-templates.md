@@ -1,6 +1,5 @@
 # Delegate templates
 
-go/soy/reference/delegate-templates
 
 <!--#include file="commands-blurb-include.md"-->
 
