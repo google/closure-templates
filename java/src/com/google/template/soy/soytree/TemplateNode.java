@@ -32,9 +32,9 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -369,10 +369,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return autoescapeMode;
   }
 
-  protected ImmutableMap<Class<?>, String> getDeclNameMap() {
-    return ImmutableMap.of(
-        TemplateParam.class, "@param",
-        InjectedParam.class, "@inject");
+  private String getDeclName(TemplateHeaderVarDefn headerVar) {
+    if (headerVar instanceof TemplateStateVar) {
+      return "@state";
+    } else if (headerVar.isInjected()) {
+      return "@inject";
+    } else {
+      return "@param";
+    }
   }
 
   private boolean computeStrictHtmlMode(boolean strictHtmlDisabled) {
@@ -537,11 +541,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       ImmutableList<? extends TemplateHeaderVarDefn> headerVars, StringBuilder sb) {
 
     for (TemplateHeaderVarDefn headerVar : headerVars) {
-      // Ignore any unknown declaration type.
-      if (!getDeclNameMap().containsKey(headerVar.getClass())) {
-        continue;
-      }
-      sb.append("  {").append(getDeclNameMap().get(headerVar.getClass()));
+      sb.append("  {").append(getDeclName(headerVar));
       if (!headerVar.isRequired()) {
         sb.append("?");
       }

@@ -17,13 +17,11 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -107,14 +105,6 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
         .addAll(super.getHeaderParamsForSourceString())
         .addAll(stateVars)
         .build();
-  }
-
-  @Override
-  protected ImmutableMap<Class<?>, String> getDeclNameMap() {
-    return ImmutableMap.of(
-        TemplateParam.class, "@param",
-        InjectedParam.class, "@inject",
-        TemplateStateVar.class, "@state");
   }
 
   @Override
