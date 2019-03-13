@@ -490,7 +490,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   protected ImmutableList<? extends TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
-    return params;
+    return new ImmutableList.Builder<TemplateHeaderVarDefn>()
+        .addAll(params)
+        .addAll(injectedParams)
+        .build();
   }
 
   @Override
