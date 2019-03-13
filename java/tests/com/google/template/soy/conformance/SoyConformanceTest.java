@@ -190,7 +190,6 @@ public class SoyConformanceTest {
             "a/b/c/foo/bar/baz.soy"));
   }
 
-
   @Test
   public void testBannedRawText() {
     assertViolation(
@@ -213,6 +212,31 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n" + "{template .foo}\n" + "bar\n" + "{/template}");
+  }
+
+  @Test
+  public void testBannedRawTextDoesNotIncludeComments() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  banned_raw_text: {\n"
+            + "    text: 'foo'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<!-- foo -->\n" + "{/template}");
+  }
+
+  @Test
+  public void testBannedRawTextIgnoresHtmlAttributes() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  banned_raw_text: {\n"
+            + "    text: 'foo'\n"
+            + "    except_in_html_attribute: 'link'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<a link=\"foo\"></a>\n" + "{/template}");
   }
 
   @Test

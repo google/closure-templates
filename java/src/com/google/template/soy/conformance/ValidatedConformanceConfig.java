@@ -87,7 +87,10 @@ public final class ValidatedConformanceConfig {
         return new BannedFunction(ImmutableSet.copyOf(bannedFunction.getFunctionList()), error);
       case BANNED_RAW_TEXT:
         Requirement.BannedRawText bannedRawText = requirement.getBannedRawText();
-        return new BannedRawText(ImmutableSet.copyOf(bannedRawText.getTextList()), error);
+        return new BannedRawText(
+            ImmutableSet.copyOf(bannedRawText.getTextList()),
+            ImmutableSet.copyOf(bannedRawText.getExceptInHtmlAttributeList()),
+            error);
       case BANNED_HTML_TAG:
         Requirement.BannedHtmlTag bannedHtmlTag = requirement.getBannedHtmlTag();
         return new BannedHtmlTag(bannedHtmlTag.getTagList(), error);

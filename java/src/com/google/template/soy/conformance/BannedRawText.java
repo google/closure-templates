@@ -19,6 +19,9 @@ package com.google.template.soy.conformance;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.RawTextNode;
 
 /**
@@ -29,20 +32,42 @@ import com.google.template.soy.soytree.RawTextNode;
 final class BannedRawText extends Rule<RawTextNode> {
 
   private final ImmutableSet<String> bannedTexts;
+  private final ImmutableSet<String> ignoredHtmlAttributes;
 
-  BannedRawText(ImmutableSet<String> bannedRawText, SoyErrorKind error) {
+  BannedRawText(
+      ImmutableSet<String> bannedRawText,
+      ImmutableSet<String> ignoredHtmlAttributes,
+      SoyErrorKind error) {
     super(error);
     this.bannedTexts = bannedRawText;
+    this.ignoredHtmlAttributes = ignoredHtmlAttributes;
   }
 
   @Override
   protected void doCheckConformance(RawTextNode node, ErrorReporter errorReporter) {
+    if (node.getParent() instanceof HtmlCommentNode) {
+      return;
+    }
     String rawText = node.getRawText();
     for (String bannedText : bannedTexts) {
       int indexOf = rawText.indexOf(bannedText);
-      if (indexOf > -1) {
+      if (indexOf > -1 && !isIgnoredHtmlAttribute(node)) {
         errorReporter.report(node.substringLocation(indexOf, indexOf + bannedText.length()), error);
       }
     }
+  }
+
+  private boolean isIgnoredHtmlAttribute(RawTextNode node) {
+    if (!(node.getParent() instanceof HtmlAttributeValueNode)
+        || !(node.getParent().getParent() instanceof HtmlAttributeNode)) {
+      return false;
+    }
+    HtmlAttributeNode htmlAttributeNode = (HtmlAttributeNode) node.getParent().getParent();
+    for (String ignoredAttribute : ignoredHtmlAttributes) {
+      if (htmlAttributeNode.definitelyMatchesAttributeName(ignoredAttribute)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

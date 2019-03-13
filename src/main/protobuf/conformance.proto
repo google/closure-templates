@@ -17,6 +17,7 @@
 syntax = "proto3";
 
 package soy;
+
 option java_package = "com.google.template.soy.conformance";
 option java_multiple_files = true;
 
@@ -45,6 +46,9 @@ message Requirement {
   message BannedRawText {
     // The banned text. This only bans literal text, not commands or expressions
     repeated string text = 1;
+    // However, if the text occurs inside the given html attributes, then it
+    // will be allowed.
+    repeated string except_in_html_attribute = 2;
   }
 
   message BannedHtmlTag {
@@ -99,4 +103,4 @@ message Requirement {
   repeated string only_apply_to = 15;
 
   reserved 10;
-};
+}
