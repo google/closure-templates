@@ -199,6 +199,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   Expression genCodeForParamAccess(String paramName, VarDefn varDefn) {
     Expression source = OPT_DATA;
     if (varDefn.isInjected()) {
+      // Special case for csp_nonce. It is created by the compiler itself, and users should not need
+      // to set it. So, instead of generating opt_ij_data.csp_nonce, we generate opt_ij_data &&
+      // opt_ij_data.csp_nonce.
+      // TODO(lukes): we only need to generate this logic if there aren't any other ij params
+      if (paramName.equals(CSP_NONCE_VARIABLE_NAME)) {
+        return OPT_IJ_DATA.and(OPT_IJ_DATA.dotAccess(paramName), codeGenerator);
+      }
       source = OPT_IJ_DATA;
     } else if (varDefn.kind() == VarDefn.Kind.STATE) {
       return genCodeForStateAccess(paramName, (TemplateStateVar) varDefn);
@@ -318,12 +325,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitVarRefNode(VarRefNode node) {
     Expression translation;
     if (node.isDollarSignIjParameter()) {
-      // Case 0: special cases for csp_nonce. It is created by the compiler itself, and users should
-      // not need to set it. So, instead of generating opt_ij_data.csp_nonce, we generate
-      // opt_ij_data && opt_ij_data.csp_nonce.
-      if (node.getName().equals(CSP_NONCE_VARIABLE_NAME)) {
-        return OPT_IJ_DATA.and(OPT_IJ_DATA.dotAccess(node.getName()), codeGenerator);
-      }
       // Case 1: Injected data reference.
       return OPT_IJ_DATA.dotAccess(node.getName());
     } else if ((translation = variableMappings.maybeGet(node.getName())) != null) {

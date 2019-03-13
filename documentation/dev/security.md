@@ -350,7 +350,7 @@ For example:
 becomes
 
 ```soy
-<script {if $ij.csp_nonce} nonce="{$ij.csp_nonce}"{/if}>...</script>
+<script{if $csp_nonce} nonce="{$csp_nonce}"{/if}>...</script>
 ```
 
 ### Configuring CSP nonces
@@ -368,5 +368,5 @@ and not reusing nonces
 ([article](https://www.securecoding.cert.org/confluence/display/java/MSC59-J.+Limit+the+lifetime+of+sensitive+data)).
 
 For step 2, render with an [injected data](../concepts/ij-data) bundle that
-includes an `$ij.csp_nonce` value that is a [valid
-nonce](https://w3c.github.io/webappsec/specs/content-security-policy/#source-list-valid-nonces).
+includes an `$csp_nonce` value that is a
+[valid nonce](https://w3c.github.io/webappsec/specs/content-security-policy/#source-list-valid-nonces).

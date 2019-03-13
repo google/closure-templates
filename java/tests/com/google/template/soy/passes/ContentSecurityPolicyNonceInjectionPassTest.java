@@ -20,9 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,8 +34,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ContentSecurityPolicyNonceInjectionPassTest {
 
+  private static final String DEFN =
+      "  {@inject? csp_nonce: any}  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
   private static final String NONCE =
-      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
+      "{if $csp_nonce} nonce=\"{$csp_nonce |escapeHtmlAttribute}\"{/if}";
 
   @Test
   public void testTrivialTemplate() {
@@ -46,6 +51,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<script" + NONCE + ">alert('Hello, World!')</script>\n",
             "{/template}"),
         join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
@@ -54,7 +60,11 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   @Test
   public void testOneSrcedScript() {
     assertInjected(
-        join("{template .foo}\n", "<script src=\"app.js\"" + NONCE + "></script>\n", "{/template}"),
+        join(
+            "{template .foo}\n",
+            DEFN,
+            "<script src=\"app.js\"" + NONCE + "></script>\n",
+            "{/template}"),
         join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
@@ -63,6 +73,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<script src=\"one.js\"" + NONCE + "></script>",
             "<script src=two.js" + NONCE + "></script>",
             "<script src=three.js" + NONCE + "></script>",
@@ -85,6 +96,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join(
             "{template .foo}\n",
             "  {@param jsUrls: list<string>}\n",
+            DEFN,
             "{for $jsUrl in $jsUrls}",
             "<script type=\"text/javascript\" ",
             "src='{$jsUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
@@ -105,6 +117,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<noscript></noscript>",
             "<script" + NONCE + ">alert('Hi');</script>",
             "<!-- <script>notAScript()</script> -->",
@@ -133,6 +146,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join(
             "{template .foo}\n",
             "  {@param appScriptUrl: ?}\n",
+            DEFN,
             "<script src=",
             "'{$appScriptUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
             NONCE + ">",
@@ -151,6 +165,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<style type=text/css",
             NONCE,
             ">",
@@ -168,6 +183,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<script src=//example.com/unquoted/url/" + NONCE + "></script>\n",
             "{/template}"),
         join(
@@ -182,6 +198,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join(
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param height: int}\n",
+            DEFN,
             "<a href='#' style='",
             "height:{$height |filterCssValue |escapeHtmlAttribute}px;'",
             " onclick='",
@@ -269,6 +286,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<link rel=\'Import\' href=\"foo.html\"" + NONCE + ">\n",
             "{/template}"),
         join("{template .foo}\n", "<link rel=\'Import\' href=\"foo.html\">\n", "{/template}"));
@@ -296,6 +314,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<link rel='preload' as='script' href='foo.js'" + NONCE + ">\n",
             "{/template}"),
         join(
@@ -309,6 +328,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
+            DEFN,
             "<link rel='preload' as='style' href='foo.js'" + NONCE + ">\n",
             "{/template}"),
         join(
@@ -323,19 +343,29 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
   }
 
+  @Test
+  public void testAlreadyHasNonce() {
+    assertInjectedWithWarning(
+        "{template .foo}\n<script nonce=''></script>\n{/template}",
+        "{template .foo}\n<script nonce=''></script>\n{/template}",
+        "Found a 'nonce' attribute on a tag that is supported by Soy auto-nonce support.");
+  }
+
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }
 
-  /**
-   * Returns the contextually rewritten and injected source.
-   *
-   * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
-   */
   private void assertInjected(String expectedOutput, String input) {
+    assertInjectedWithWarning(expectedOutput, input, null);
+  }
+
+  private void assertInjectedWithWarning(
+      String expectedOutput, String input, @Nullable String warning) {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     String namespace = "{namespace ns}\n\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(namespace + input)
+            .errorReporter(errorReporter)
             .runAutoescaper(true)
             .parse()
             .fileSet();
@@ -346,6 +376,13 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     String output = src.toString().trim();
     if (output.startsWith("{namespace ns")) {
       output = output.substring(output.indexOf('}') + 1).trim();
+    }
+
+    assertThat(errorReporter.getErrors()).isEmpty();
+    if (warning != null) {
+      assertThat(Iterables.getOnlyElement(errorReporter.getWarnings()).message()).contains(warning);
+    } else {
+      assertThat(errorReporter.getWarnings()).isEmpty();
     }
 
     assertThat(output).isEqualTo(expectedOutput);

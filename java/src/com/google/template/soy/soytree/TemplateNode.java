@@ -231,7 +231,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final ImmutableList<TemplateParam> params;
 
   /** The injected params from template header. */
-  private final ImmutableList<TemplateParam> injectedParams;
+  private ImmutableList<TemplateParam> injectedParams;
 
   private int maxLocalVariableTableSize = -1;
 
@@ -491,6 +491,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       }
     }
     return exprs.build();
+  }
+
+  public void addCspNonceParam(TemplateParam cspNonce) {
+    injectedParams =
+        ImmutableList.<TemplateParam>builder().addAll(injectedParams).add(cspNonce).build();
   }
 
   protected ImmutableList<? extends TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
