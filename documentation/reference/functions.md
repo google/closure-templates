@@ -131,10 +131,10 @@ The min of the two numbers.
 
 The max of the two numbers.
 
-## `parseInt(str, base)` {#parseInt}
+## `parseInt(str)` {#parseInt}
 
-Parses the string given a signed base integer. Returns `null` if the string
-cannot be parsed.
+Parses the string argument as a signed base 10 integer. Returns `null` if the
+string cannot be parsed.
 
 ## `parseFloat(str)` {#parseFloat}
 
