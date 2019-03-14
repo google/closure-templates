@@ -143,7 +143,7 @@ import javax.annotation.Nullable;
  * Visitor which resolves all expression types.
  *
  */
-final class ResolveExpressionTypesPass extends CompilerFilePass {
+public final class ResolveExpressionTypesPass extends CompilerFilePass {
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
