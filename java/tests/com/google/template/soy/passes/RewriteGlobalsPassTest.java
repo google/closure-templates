@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import org.junit.Test;
@@ -54,16 +56,18 @@ public final class RewriteGlobalsPassTest {
 
     ImmutableList.Builder<String> actual = ImmutableList.builder();
     for (SoyNode child : soytree.getChild(0).getChild(0).getChildren()) {
-      actual.add(child.toSourceString());
+      PrintNode printNode = (PrintNode) child;
+      GlobalNode global = (GlobalNode) printNode.getExpr().getRoot();
+      actual.add(global.getName());
     }
 
     assertThat(actual.build())
         .containsExactly(
-            "{foo.bar.baz}",
-            "{foo.bar.baz.with.field}",
-            "{global.with.sugar}",
-            "{global.with.sugar.with.field}",
-            "{unregistered}")
+            "foo.bar.baz",
+            "foo.bar.baz.with.field",
+            "global.with.sugar",
+            "global.with.sugar.with.field",
+            "unregistered")
         .inOrder();
   }
 }

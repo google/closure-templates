@@ -37,10 +37,11 @@ public final class GlobalNode extends AbstractExprNode {
   }
 
   public static GlobalNode error(SourceLocation location) {
-    return new GlobalNode("error", location);
+    return new GlobalNode("error", "error", location);
   }
 
   private final String name;
+  private final String sourceIdentifier;
 
   private boolean suppressUnknownGlobalErrors;
 
@@ -50,11 +51,14 @@ public final class GlobalNode extends AbstractExprNode {
 
   /**
    * @param name The name of the global.
+   * @param sourceIdentifier The identifier used in the source code to reference this global, before
+   *     being processed (for example, as an alias).
    * @param sourceLocation The node's source location.
    */
-  public GlobalNode(String name, SourceLocation sourceLocation) {
+  public GlobalNode(String name, String sourceIdentifier, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.name = name;
+    this.sourceIdentifier = sourceIdentifier;
   }
 
   /**
@@ -65,6 +69,7 @@ public final class GlobalNode extends AbstractExprNode {
   private GlobalNode(GlobalNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
+    this.sourceIdentifier = orig.sourceIdentifier;
     this.soyType = orig.soyType;
     this.value = orig.value == null ? null : orig.value.copy(copyState);
     this.resolveCallback = orig.resolveCallback;
@@ -130,7 +135,7 @@ public final class GlobalNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return name;
+    return sourceIdentifier;
   }
 
   @Override

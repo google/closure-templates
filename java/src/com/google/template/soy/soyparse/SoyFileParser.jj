@@ -3730,7 +3730,8 @@ private ExprNode GlobalOrFunctionCallLike() :
 
   { // If we did not find parens, this is a global node
     if (openParen == null) {
-      return new GlobalNode(headerInfo.resolveAlias(ident.identifier()), ident.location());
+      return new GlobalNode(
+          headerInfo.resolveAlias(ident.identifier()), ident.identifier(), ident.location());
     }
 
     // Check if this is a record. If not, look up ident in the type registry to see if it's a proto.
