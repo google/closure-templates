@@ -17,12 +17,17 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Primitives;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
@@ -43,6 +48,7 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -65,6 +71,9 @@ import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
@@ -295,7 +304,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       } else {
         if (!BytecodeUtils.isDefinitelyAssignableFrom(
             Type.getType(methodParam), expr.resultType())) {
-          reporter.invalidParameterType(method, i + 1, methodParam, expr);
+          reporter.invalidParameterType(method, i, methodParam, expr);
           expr = stubExpression(methodParam);
         }
         params[i] = expr;
@@ -307,21 +316,21 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private Expression adaptParameter(
       Method method, int paramIdx, Class<?> expectedParamType, JbcSrcJavaValue value) {
     // First we validate that the type is allowed based on the function's signature (if any).
-    boolean validType;
-    SoyType allowedType;
+    ValidationResult validationResult;
     if (value.isConstantNull()) {
       // If the value is for our "constant null", then we special-case things to allow
       // any valid type (expect primitives).
       // TODO(sameb): Limit the allowed types to ones that valid for real soy types, e.g
       // the union of all the values the *_TYPES constants + protos + proto enums - primitives.
-      validType = !Primitives.allPrimitiveTypes().contains(expectedParamType);
-      allowedType = NullType.getInstance();
+      validationResult =
+          Primitives.allPrimitiveTypes().contains(expectedParamType)
+              ? ValidationResult.forNullToPrimitive(NullType.getInstance())
+              : ValidationResult.valid();
     } else {
-      validType = isValidClassForType(expectedParamType, value.getAllowedType());
-      allowedType = value.getAllowedType();
+      validationResult = isValidClassForType(expectedParamType, value.getAllowedType());
     }
-    if (!validType) {
-      reporter.invalidParameterType(method, paramIdx + 1, expectedParamType, allowedType);
+    if (validationResult.result() != ValidationResult.Result.VALID) {
+      reporter.invalidParameterType(method, paramIdx, expectedParamType, validationResult);
       return stubExpression(expectedParamType);
     }
 
@@ -386,77 +395,173 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     throw new AssertionError("Unable to convert parameter to " + expectedParamType);
   }
 
-  /** Returns true if the clazz is allowed as a parameter type for the given soy type. */
-  private boolean isValidClassForType(Class<?> clazz, SoyType type) {
+  @AutoValue
+  abstract static class ValidationResult {
+    enum Result {
+      VALID,
+      NULL_TO_PRIMITIVE,
+      INVALID,
+      VE,
+    }
+
+    abstract Result result();
+
+    @Nullable
+    abstract SoyType allowedSoyType();
+
+    abstract ImmutableSet<String> allowedTypes();
+
+    ValidationResult merge(ValidationResult other) {
+      if (other.result() == Result.VALID) {
+        return this;
+      }
+      switch (result()) {
+        case VALID:
+          return other;
+        case NULL_TO_PRIMITIVE:
+        case VE:
+          throw new IllegalStateException("unexpected merge " + this + " w/ " + other);
+        case INVALID:
+          // When merging, the allowed types are the intersection of each type.
+          return ValidationResult.invalid(Sets.intersection(allowedTypes(), other.allowedTypes()));
+      }
+      throw new AssertionError("above switch is exhaustive");
+    }
+
+    static ValidationResult valid() {
+      return new AutoValue_JbcSrcValueFactory_ValidationResult(
+          Result.VALID, null, ImmutableSet.of());
+    }
+
+    static ValidationResult forNullToPrimitive(SoyType type) {
+      return new AutoValue_JbcSrcValueFactory_ValidationResult(
+          Result.NULL_TO_PRIMITIVE, type, ImmutableSet.of());
+    }
+
+    static ValidationResult invalid(Set<String> allowedTypes) {
+      return new AutoValue_JbcSrcValueFactory_ValidationResult(
+          Result.INVALID, null, ImmutableSet.copyOf(allowedTypes));
+    }
+
+    static ValidationResult ve(SoyType type) {
+      return new AutoValue_JbcSrcValueFactory_ValidationResult(Result.VE, type, ImmutableSet.of());
+    }
+  }
+
+  /**
+   * Returns the result of validating if the clazz is allowed as a parameter type for the given soy
+   * type.
+   */
+  private ValidationResult isValidClassForType(Class<?> clazz, SoyType type) {
     // Exit early if the class is primitive and the type is nullable -- that's not allowed.
     // Then remove null from the type.  This allows us to accept precise params for nullable
     // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
     if (SoyTypes.isNullable(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
-      return false;
+      return ValidationResult.forNullToPrimitive(type);
     }
+    // Also exit early if the type is a VE, since those aren't allowed as params.
+    if (SoyTypes.isKindOrUnionOfKind(type, SoyType.Kind.VE)
+        || SoyTypes.isKindOrUnionOfKind(type, SoyType.Kind.VE_DATA)) {
+      return ValidationResult.ve(type);
+    }
+
+    ImmutableSet<Class<?>> expectedClasses = null;
+    GenericDescriptor expectedDescriptor = null;
     type = SoyTypes.tryRemoveNull(type);
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:
-        return UNKNOWN_TYPES.contains(clazz);
+        expectedClasses = UNKNOWN_TYPES;
+        break;
       case ATTRIBUTES:
       case CSS:
       case HTML:
       case URI:
       case TRUSTED_RESOURCE_URI:
       case JS:
-        return SANITIZED_TYPES.contains(clazz);
+        expectedClasses = SANITIZED_TYPES;
+        break;
       case BOOL:
-        return BOOL_TYPES.contains(clazz);
+        expectedClasses = BOOL_TYPES;
+        break;
       case FLOAT:
-        return FLOAT_TYPES.contains(clazz);
+        expectedClasses = FLOAT_TYPES;
+        break;
       case INT:
-        return INT_TYPES.contains(clazz);
+        expectedClasses = INT_TYPES;
+        break;
       case LEGACY_OBJECT_MAP:
-        return LEGACY_OBJECT_MAP_TYPES.contains(clazz);
+        expectedClasses = LEGACY_OBJECT_MAP_TYPES;
+        break;
       case LIST:
-        return LIST_TYPES.contains(clazz);
+        expectedClasses = LIST_TYPES;
+        break;
       case MAP:
-        return MAP_TYPES.contains(clazz);
+        expectedClasses = MAP_TYPES;
+        break;
       case RECORD:
-        return RECORD_TYPES.contains(clazz);
+        expectedClasses = RECORD_TYPES;
+        break;
       case STRING:
-        return STRING_TYPES.contains(clazz);
+        expectedClasses = STRING_TYPES;
+        break;
       case NULL:
-        return NULL_TYPES.contains(clazz);
+        expectedClasses = NULL_TYPES;
+        break;
       case PROTO:
-        return PROTO_TYPES.contains(clazz)
-            || matchesProtoDescriptor(Message.class, clazz, ((SoyProtoType) type).getDescriptor());
+        expectedClasses = PROTO_TYPES;
+        expectedDescriptor = ((SoyProtoType) type).getDescriptor();
+        break;
       case PROTO_ENUM:
-        return PROTO_ENUM_TYPES.contains(clazz)
-            || (clazz.isEnum()
-                && matchesProtoDescriptor(
-                    ProtocolMessageEnum.class, clazz, ((SoyProtoEnumType) type).getDescriptor()));
+        expectedClasses = PROTO_ENUM_TYPES;
+        expectedDescriptor = ((SoyProtoEnumType) type).getDescriptor();
+        break;
       case UNION:
         // number is a special case, it should work for double and NumberData
         if (type.equals(SoyTypes.NUMBER_TYPE)) {
-          return NUMBER_TYPES.contains(clazz);
+          expectedClasses = NUMBER_TYPES;
+          break;
         }
         // If this is a union, make sure the type is valid for every member.
         // If the type isn't valid for any member, then there's no guarantee this will work
         // for an arbitrary template at runtime.
+        ValidationResult result = ValidationResult.valid();
         for (SoyType member : ((UnionType) type).getMembers()) {
-          if (!isValidClassForType(clazz, member)) {
-            return false;
-          }
+          result.merge(isValidClassForType(clazz, member));
         }
-        return true;
+        return result;
       case VE:
       case VE_DATA:
-        reporter.veParam();
-        // Return true here because we've already reported an error and returning false would report
-        // an additional confusing type error.
-        return true;
+        throw new IllegalStateException("This should have been caught above");
       case ERROR:
         throw new IllegalStateException("Cannot have error type from function signature");
     }
 
-    throw new AssertionError("above switch is exhaustive");
+    checkState(expectedClasses != null, "expectedClass not set!");
+    if (expectedClasses.contains(clazz)) {
+      return ValidationResult.valid();
+    }
+    ImmutableSet<String> expectedDescriptorNames = ImmutableSet.of();
+    if (expectedDescriptor instanceof Descriptor) {
+      expectedDescriptorNames =
+          ImmutableSet.of(JavaQualifiedNames.getClassName((Descriptor) expectedDescriptor));
+      if (matchesProtoDescriptor(Message.class, clazz, expectedDescriptor)) {
+        return ValidationResult.valid();
+      }
+    }
+    if (expectedDescriptor instanceof EnumDescriptor) {
+      expectedDescriptorNames =
+          ImmutableSet.of(JavaQualifiedNames.getClassName((EnumDescriptor) expectedDescriptor));
+      if (clazz.isEnum()
+          && matchesProtoDescriptor(ProtocolMessageEnum.class, clazz, expectedDescriptor)) {
+        return ValidationResult.valid();
+      }
+    }
+    // If none of the above conditions match, we failed.
+    return ValidationResult.invalid(
+        Stream.concat(
+                expectedClasses.stream().map(Class::getName), expectedDescriptorNames.stream())
+            .collect(toImmutableSet()));
   }
 
   private boolean matchesProtoDescriptor(

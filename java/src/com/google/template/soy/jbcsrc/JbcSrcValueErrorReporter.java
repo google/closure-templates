@@ -19,16 +19,19 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.jbcsrc.JbcSrcValueFactory.ValidationResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.SoyType;
 import java.lang.reflect.Method;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
 
@@ -60,9 +63,22 @@ final class JbcSrcValueErrorReporter {
           formatWithExpectedAndActual("Parameter length mismatch calling {4}."),
           StyleAllowance.NO_PUNCTUATION);
 
-  private static final SoyErrorKind PARAM_MISMATCH =
+  private static final SoyErrorKind PARAM_MISMATCH_ONE =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Type mismatch on the {4} parameter to {5}."),
+          formatWithExpectedAndActual("Type mismatch on the {4} parameter of {5}."),
+          StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind PARAM_MISMATCH_MANY =
+      SoyErrorKind.of(
+          formatWithExpectedListAndActual("Type mismatch on the {4} parameter of {5}."),
+          StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind VE_PARAM_NOT_SUPPORTED =
+      SoyErrorKind.of(
+          formatPlain(
+              "Invalid type passed to the {3} parameter of {4}, "
+                  + "ve and ve_data types cannot be used by plugins."
+                  + "\n  passed: {2}"),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_PARAM =
@@ -90,12 +106,6 @@ final class JbcSrcValueErrorReporter {
       SoyErrorKind.of(
           formatPlain("Invalid call to {2}, {3} is incompatible with {4}."),
           StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind VE_PARAM_NOT_SUPPORTED =
-      SoyErrorKind.of(
-          formatPlain("The ve and ve_data types cannot be passed to plugins."),
-          StyleAllowance.NO_PUNCTUATION);
-
   private static final SoyErrorKind UNEXPECTED_ERROR =
       SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
@@ -180,28 +190,60 @@ final class JbcSrcValueErrorReporter {
   }
 
   void invalidParameterType(
-      Method method, int paramIdx, Class<?> expectedType, Expression actualExpr) {
-    Type actualType =
-        actualExpr instanceof SoyExpression
-            ? ((SoyExpression) actualExpr).soyRuntimeType().runtimeType()
-            : actualExpr.resultType();
-    Class<?> actualClass = BytecodeUtils.classFromAsmType(actualType);
+      Method method, int paramIdx, Class<?> actualParamType, Expression expectedExprType) {
+    Type expectedType =
+        expectedExprType instanceof SoyExpression
+            ? ((SoyExpression) expectedExprType).soyRuntimeType().runtimeType()
+            : expectedExprType.resultType();
+    Class<?> expectedClass = BytecodeUtils.classFromAsmType(expectedType);
     report(
-        PARAM_MISMATCH,
-        "'" + expectedType.getName() + "'",
-        "'" + actualClass.getName() + "'",
-        paramIdx + getOrdinalSuffix(paramIdx),
+        PARAM_MISMATCH_ONE,
+        "'" + expectedClass.getName() + "'",
+        "'" + actualParamType.getName() + "'",
+        (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
         simpleMethodName(method));
   }
 
   void invalidParameterType(
-      Method method, int paramIdx, Class<?> expectedType, SoyType allowedSoyType) {
-    report(
-        PARAM_MISMATCH,
-        "java type of '" + expectedType.getName() + "'",
-        "soy type of '" + allowedSoyType + "'",
-        paramIdx + getOrdinalSuffix(paramIdx),
-        simpleMethodName(method));
+      Method method, int paramIdx, Class<?> expectedType, ValidationResult result) {
+    switch (result.result()) {
+      case VALID:
+        throw new IllegalStateException("unexpected valid result");
+      case INVALID:
+        SoyErrorKind msg;
+        String expected;
+        if (result.allowedTypes().size() == 1) {
+          msg = PARAM_MISMATCH_ONE;
+          expected = "'" + Iterables.getOnlyElement(result.allowedTypes()) + "'";
+        } else {
+          msg = PARAM_MISMATCH_MANY;
+          expected =
+              result.allowedTypes().stream()
+                  .collect(Collectors.joining("'\n          '", "\n          '", "'"));
+        }
+        report(
+            msg,
+            expected,
+            "'" + expectedType.getName() + "'",
+            (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
+            simpleMethodName(method));
+        break;
+      case VE:
+        report(
+            VE_PARAM_NOT_SUPPORTED,
+            "soy type ('" + result.allowedSoyType() + "')",
+            (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
+            simpleMethodName(method));
+        break;
+      case NULL_TO_PRIMITIVE:
+        report(
+            PARAM_MISMATCH_ONE,
+            "a nullable soy type ('" + result.allowedSoyType() + "')",
+            "primitive type '" + expectedType.getName() + "'",
+            (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
+            simpleMethodName(method));
+        break;
+    }
   }
 
   void nonSoyExpressionNotConvertible(Expression expr, SoyType newType, String methodName) {
@@ -255,23 +297,32 @@ final class JbcSrcValueErrorReporter {
     report(UNEXPECTED_ERROR, Throwables.getStackTraceAsString(t));
   }
 
-  void veParam() {
-    report(VE_PARAM_NOT_SUPPORTED);
-  }
-
   private static String formatPlain(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."
         + "\n"
         + innerFmt
-        + "\nPlugin implementation: {1}";
+        + "\nPlugin implementation: {1}"
+        + "\nTriggered by usage in template at:";
   }
 
   private static String formatWithExpectedAndActual(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."
         + "\n"
         + innerFmt
-        + "\n  expected: {2}, actual: {3}"
-        + "\nPlugin implementation: {1}";
+        + "\n  expected: {2}"
+        + "\n  actual:   {3}"
+        + "\nPlugin implementation: {1}"
+        + "\nTriggered by usage in template at:";
+  }
+
+  private static String formatWithExpectedListAndActual(String innerFmt) {
+    return "Error in plugin implementation for function ''{0}''."
+        + "\n"
+        + innerFmt
+        + "\n  expected one of: {2}"
+        + "\n  actual: {3}"
+        + "\nPlugin implementation: {1}"
+        + "\nTriggered by usage in template at:";
   }
 
   private static String simpleMethodName(Method method) {
