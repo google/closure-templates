@@ -496,31 +496,6 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testRequireStrictlyTypedIjs() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  require_strongly_typed_ij_params: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns}\n" + "{template .foo}{/template}\n");
-    assertViolation(
-        "requirement: {\n"
-            + "  require_strongly_typed_ij_params: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns}{template .foo}{$ij.foo}{/template}\n");
-    assertNoViolation(
-        "requirement: {\n"
-            + "  require_strongly_typed_ij_params: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns}{template .foo}{@inject foo : ?}{$foo}{/template}\n");
-  }
-
-  @Test
   public void testBanXidForCssObfuscation_valid() {
     assertNoViolation(
         "requirement { ban_xid_for_css_obfuscation {} error_message: 'foo' }",

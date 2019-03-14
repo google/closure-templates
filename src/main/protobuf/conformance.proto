@@ -60,10 +60,6 @@ message Requirement {
     // no customizable behavior
   }
 
-  message RequireStronglyTypedIjParams {
-    // no customizable behavior
-  }
-
   message BanXidForCssObfuscation {
     // Bans the usage of xid for css obfuscation
   }
@@ -75,7 +71,7 @@ message Requirement {
     string java_class = 1;
   }
 
-  reserved 1, 6;
+  reserved 1, 6, 13;
   oneof requirement_type {
     BannedCssSelector banned_css_selector = 2;
     BannedFunction banned_function = 3;
@@ -84,7 +80,6 @@ message Requirement {
     Custom custom = 7;
     BannedHtmlTag banned_html_tag = 11;
     RequireStrictAutoescaping require_strict_autoescaping = 12;
-    RequireStronglyTypedIjParams require_strongly_typed_ij_params = 13;
     BanXidForCssObfuscation ban_xid_for_css_obfuscation = 14;
   }
 
