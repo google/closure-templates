@@ -62,11 +62,11 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
 
   /**
    * Makes idom patch calls, inside of a patch context.
-   * This returns true when the skip handler runs (after initial render) and
+   * This returns true if the skip handler runs (after initial render) and
    * returns true.
    */
   protected renderInternal(
-      incrementaldom: IncrementalDomRenderer, data: TData,
+      renderer: IncrementalDomRenderer, data: TData,
       ignoreSkipHandler = false) {
     const newNode = new (
         this.constructor as
@@ -75,7 +75,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
         this.skipHandler(
             this as unknown as TInterface, newNode as unknown as TInterface)) {
       this.data = newNode.data;
-      incrementaldom.skipNode();
+      // This skips over the current node.
+      renderer.alignWithDOM(
+          this.node.localName, incrementaldom.getKey(this.node) as string);
       return true;
     }
     this.data = newNode.data;

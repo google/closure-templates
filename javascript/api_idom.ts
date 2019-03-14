@@ -62,6 +62,10 @@ export class IncrementalDomRenderer {
     return el;
   }
 
+  alignWithDOM(tagName: string, key: string) {
+    incrementaldom.alignWithDOM(tagName, key);
+  }
+
   /**
    * Called (from generated template render function) before OPENING
    * keyed elements.
@@ -227,6 +231,8 @@ export class NullRenderer extends IncrementalDomRenderer {
   elementOpen(
       nameOrCtor: string, key?: ElementKey, statics?: string[],
       ...varArgs: string[]) {}
+
+  alignWithDOM(name: string, key: string) {}
 
   elementClose(name: string) {}
 
