@@ -47,7 +47,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -454,14 +453,8 @@ final class TemplateVariableManager implements ClassFieldManager {
   // TODO(lukes): consider moving all these optional 'one per template' fields to a different object
   // for management.
 
-  /**
-   * Defines all the fields necessary for the registered variables.
-   *
-   * @return a statement to initialize the fields
-   */
-  @CheckReturnValue
-  Statement defineFields(ClassVisitor writer) {
-    List<Statement> initializers = new ArrayList<>();
+  /** Defines all the fields necessary for the registered variables. */
+  void defineFields(ClassVisitor writer) {
     for (Variable var : allVariables) {
       var.maybeDefineField(writer);
     }
@@ -474,7 +467,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     if (currentAppendable != null) {
       currentAppendable.defineField(writer);
     }
-    return Statement.concat(initializers);
   }
 
   /**

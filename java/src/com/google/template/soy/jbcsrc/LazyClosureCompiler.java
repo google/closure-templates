@@ -343,7 +343,7 @@ final class LazyClosureCompiler {
             }
           };
       variableSet.defineStaticFields(writer);
-      Statement fieldInitializers = variableSet.defineFields(writer);
+      variableSet.defineFields(writer);
       Expression constructExpr =
           generateConstructor(
               new Statement() {
@@ -353,7 +353,6 @@ final class LazyClosureCompiler {
                   adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
                 }
               },
-              fieldInitializers,
               lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, writer);
@@ -410,7 +409,7 @@ final class LazyClosureCompiler {
       SanitizedContentKind kind = renderUnit.getContentKind();
       final Expression contentKind = constantSanitizedContentKindAsContentKind(kind);
       variableSet.defineStaticFields(writer);
-      Statement fieldInitializers = variableSet.defineFields(writer);
+      variableSet.defineFields(writer);
       Statement superClassContstructor =
           new Statement() {
             @Override
@@ -421,8 +420,7 @@ final class LazyClosureCompiler {
             }
           };
       Expression constructExpr =
-          generateConstructor(
-              superClassContstructor, fieldInitializers, lookup.getCapturedFields());
+          generateConstructor(superClassContstructor, lookup.getCapturedFields());
 
       fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, writer);
       return constructExpr;
@@ -436,7 +434,6 @@ final class LazyClosureCompiler {
      */
     Expression generateConstructor(
         final Statement superClassConstructorInvocation,
-        final Statement fieldInitializers,
         Iterable<ParentCapture> captures) {
       final Label start = new Label();
       final Label end = new Label();
@@ -464,8 +461,6 @@ final class LazyClosureCompiler {
               cb.mark(start);
               // call super()
               superClassConstructorInvocation.gen(cb);
-              // init fields
-              fieldInitializers.gen(cb);
               // assign params to fields
               for (Statement assignment : assignments) {
                 assignment.gen(cb);

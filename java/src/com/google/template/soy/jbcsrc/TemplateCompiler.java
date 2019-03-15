@@ -178,9 +178,9 @@ final class TemplateCompiler {
       field.defineField(writer);
     }
 
-    Statement fieldInitializers = generateRenderMethod();
+    generateRenderMethod();
 
-    generateConstructor(fieldInitializers);
+    generateConstructor();
 
     innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
@@ -259,7 +259,7 @@ final class TemplateCompiler {
     return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
-  private Statement generateRenderMethod() {
+  private void generateRenderMethod() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -312,7 +312,7 @@ final class TemplateCompiler {
     }.writeIOExceptionMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), writer);
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
     variableSet.defineStaticFields(writer);
-    return variableSet.defineFields(writer);
+    variableSet.defineFields(writer);
   }
 
   private ImmutableMap<TemplateStateVar, SoyExpression> generateStateInitializers(
@@ -349,17 +349,14 @@ final class TemplateCompiler {
    * params.
    *
    * <p>This constructor is called by the generate factory classes.
-   *
-   * @param fieldInitializers additional statements to initialize fields (other than params)
    */
-  private void generateConstructor(Statement fieldInitializers) {
+  private void generateConstructor() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
     final LocalVariable paramsVar = createLocal("params", 1, SOY_RECORD_TYPE, start, end);
     final LocalVariable ijVar = createLocal("ij", 2, SOY_RECORD_TYPE, start, end);
     final List<Statement> assignments = new ArrayList<>();
-    assignments.add(fieldInitializers); // for other fields needed by the compiler.
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
     for (TemplateParam param : templateNode.getAllParams()) {
