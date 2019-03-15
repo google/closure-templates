@@ -424,28 +424,19 @@ final class TemplateVariableManager implements ClassFieldManager {
 
   @Override
   public FieldRef addStaticField(String proposedName, Expression initializer) {
-    String name = fieldNames.generateName(proposedName);
-    FieldRef ref =
-        FieldRef.create(
-            owner,
-            name,
-            initializer.resultType(),
-            Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE,
-            !initializer.isNonNullable());
-    staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
-    return ref;
+    return addStaticField(
+        proposedName, initializer, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE);
   }
 
-  FieldRef addPackagePrivateStaticField(
-      String proposedName, Type fieldType, Expression initializer) {
+  FieldRef addPackagePrivateStaticField(String proposedName, Expression initializer) {
+    return addStaticField(proposedName, initializer, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+  }
+
+  private FieldRef addStaticField(String proposedName, Expression initializer, int accessFlags) {
     String name = fieldNames.generateName(proposedName);
     FieldRef ref =
         FieldRef.create(
-            owner,
-            name,
-            fieldType,
-            Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
-            !initializer.isNonNullable());
+            owner, name, initializer.resultType(), accessFlags, !initializer.isNonNullable());
     staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
     return ref;
   }

@@ -334,9 +334,7 @@ final class TemplateCompiler {
       }
       if (!stateValue.isCheap()) {
         // these fields are package private so that lazy closures can access them directly.
-        FieldRef ref =
-            varManager.addPackagePrivateStaticField(
-                state.name(), stateValue.resultType(), stateValue);
+        FieldRef ref = varManager.addPackagePrivateStaticField(state.name(), stateValue);
         stateValue = stateValue.withSource(ref.accessor());
       }
       builder.put(state, stateValue);
