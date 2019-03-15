@@ -96,7 +96,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
       }
     }
 
-    this.delPriority = soyFileHeaderInfo.priority;
+    this.delPriority = soyFileHeaderInfo.getPriority();
     genInternalTemplateNameHelper();
     return this;
   }
@@ -155,8 +155,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
       }
     }
     String generatedPartialTemplateName =
-        partialDeltemplateTemplateName(delTemplateName, soyFileHeaderInfo.delPackageName, variant);
-    String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
+        partialDeltemplateTemplateName(
+            delTemplateName, soyFileHeaderInfo.getDelPackageName(), variant);
+    String generatedTemplateName = soyFileHeaderInfo.getNamespace() + generatedPartialTemplateName;
     setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
   }
 

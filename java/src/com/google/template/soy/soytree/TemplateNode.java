@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
@@ -36,7 +35,9 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -91,21 +92,22 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    *
    * <p>TODO(lukes): merge this object with SoyFileNode. The track nearly identical information.
    */
-  @Immutable
   public static class SoyFileHeaderInfo {
     /** A header with no aliases, used for parsing non-files. */
     public static final SoyFileHeaderInfo EMPTY = new SoyFileHeaderInfo("sample.ns");
 
     /** Map from aliases to namespaces for this file. */
-    public final ImmutableMap<String, String> aliasToNamespaceMap;
+    private final ImmutableMap<String, String> aliasToNamespaceMap;
 
     /** Map from aliases to namespaces for this file. */
-    public final ImmutableList<AliasDeclaration> aliasDeclarations;
+    private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
-    @Nullable public final String delPackageName;
-    final Priority priority;
-    @Nullable public final String namespace;
-    public final AutoescapeMode defaultAutoescapeMode;
+    @Nullable private final String delPackageName;
+    private final Priority priority;
+    @Nullable private final String namespace;
+    private final AutoescapeMode defaultAutoescapeMode;
+
+    private final Set<String> usedAliases;
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
@@ -122,12 +124,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
     @VisibleForTesting
     public SoyFileHeaderInfo(String namespace) {
-      this(
-          null,
-          namespace,
-          AutoescapeMode.STRICT,
-          ImmutableMap.<String, String>of(),
-          ImmutableList.<AliasDeclaration>of());
+      this(null, namespace, AutoescapeMode.STRICT, ImmutableMap.of(), ImmutableList.of());
     }
 
     private SoyFileHeaderInfo(
@@ -142,6 +139,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       this.defaultAutoescapeMode = defaultAutoescapeMode;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
+      this.usedAliases = new HashSet<>();
+    }
+
+    private SoyFileHeaderInfo(SoyFileHeaderInfo orig) {
+      this.delPackageName = orig.delPackageName;
+      this.priority = orig.priority;
+      this.namespace = orig.namespace;
+      this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
+      this.aliasToNamespaceMap = orig.aliasToNamespaceMap;
+      this.aliasDeclarations = orig.aliasDeclarations;
+      this.usedAliases = new HashSet<>(orig.usedAliases);
     }
 
     /** Resolves an potentially-aliased name against the aliases in this file. */
@@ -158,7 +166,38 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       }
 
       String alias = aliasToNamespaceMap.get(firstIdent);
+      if (alias != null) {
+        usedAliases.add(firstIdent);
+      }
       return alias == null ? fullName : alias + remainder;
+    }
+
+    public boolean hasAlias(String alias) {
+      return aliasToNamespaceMap.containsKey(alias);
+    }
+
+    public boolean aliasUsed(String alias) {
+      return usedAliases.contains(alias);
+    }
+
+    public String getNamespace() {
+      return namespace;
+    }
+
+    public String getDelPackageName() {
+      return delPackageName;
+    }
+
+    public ImmutableList<AliasDeclaration> getAliases() {
+      return aliasDeclarations;
+    }
+
+    public Priority getPriority() {
+      return priority;
+    }
+
+    public AutoescapeMode getDefaultAutoescapeMode() {
+      return defaultAutoescapeMode;
     }
 
     private static ImmutableMap<String, String> createAliasMap(
@@ -185,6 +224,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         map.put(alias, aliasNamespace);
       }
       return ImmutableMap.copyOf(map);
+    }
+
+    public SoyFileHeaderInfo copy() {
+      return new SoyFileHeaderInfo(this);
     }
   }
 
@@ -295,7 +338,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    */
   protected TemplateNode(TemplateNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.soyFileHeaderInfo = orig.soyFileHeaderInfo; // immutable
+    this.soyFileHeaderInfo = orig.soyFileHeaderInfo.copy();
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
     this.visibility = orig.visibility;

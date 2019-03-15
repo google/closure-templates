@@ -44,7 +44,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /**
    * @param id The id for this node.
    * @param filePath The path to the Soy source file.
-   * @param soyFileKind The kind of this Soy file.
    * @param namespaceDeclaration This Soy file's namespace and attributes. Nullable for backwards
    *     compatibility only.
    * @param headerInfo Other file metadata, (e.g. delpackages, aliases)
@@ -56,9 +55,9 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       TemplateNode.SoyFileHeaderInfo headerInfo) {
     super(id, new SourceLocation(filePath));
     this.headerInfo = headerInfo;
-    this.delPackageName = headerInfo.delPackageName;
+    this.delPackageName = headerInfo.getDelPackageName();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
-    this.aliasDeclarations = headerInfo.aliasDeclarations; // immutable
+    this.aliasDeclarations = headerInfo.getAliases(); // immutable
   }
 
   /**
@@ -71,7 +70,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.delPackageName = orig.delPackageName;
     this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
-    this.headerInfo = orig.headerInfo; // immutable
+    this.headerInfo = orig.headerInfo.copy();
   }
 
   @Override
@@ -125,6 +124,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Resolves a qualified name against the aliases for this file. */
   public String resolveAlias(String fullName) {
     return headerInfo.resolveAlias(fullName);
+  }
+
+  public boolean aliasUsed(String alias) {
+    return headerInfo.aliasUsed(alias);
   }
 
   /** @deprecated SoyFileNodes don't have source locations. */

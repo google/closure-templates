@@ -46,13 +46,13 @@ final class SoyParseUtils {
     switch (ident.type()) {
       case DOT_IDENT:
         // Case 1: Source callee name is partial.
-        return header.namespace + name;
+        return header.getNamespace() + name;
       case DOTTED_IDENT:
         // Case 2: Source callee name is a proper dotted ident, which might start with an alias.
         return header.resolveAlias(name);
       case SINGLE_IDENT:
         // Case 3: Source callee name is a single ident (not dotted).
-        if (header.aliasToNamespaceMap.containsKey(name)) {
+        if (header.hasAlias(name)) {
           // Case 3a: This callee collides with a namespace alias, which likely means the alias
           // incorrectly references a template.
           errorReporter.report(ident.location(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, name);

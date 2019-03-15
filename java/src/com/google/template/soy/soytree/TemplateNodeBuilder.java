@@ -166,7 +166,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml", "whitespace");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
-    AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
+    AutoescapeMode autoescapeMode = soyFileHeaderInfo.getDefaultAutoescapeMode();
     SanitizedContentKind kind = null;
     SourceLocation kindLocation = null;
     for (CommandTagAttribute attribute : attrs) {
