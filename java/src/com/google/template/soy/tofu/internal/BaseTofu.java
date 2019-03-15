@@ -30,7 +30,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -168,11 +167,6 @@ public final class BaseTofu implements SoyTofu {
   private static void collectIjParams(TemplateNode template, Set<String> into) {
     for (TemplateParam param : template.getInjectedParams()) {
       into.add(param.name());
-    }
-    for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
-      if (varRef.isDollarSignIjParameter()) {
-        into.add(varRef.getName());
-      }
     }
   }
 

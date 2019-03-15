@@ -323,15 +323,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVarRefNode(VarRefNode node) {
-    Expression translation;
-    if (node.isDollarSignIjParameter()) {
-      // Case 1: Injected data reference.
-      return OPT_IJ_DATA.dotAccess(node.getName());
-    } else if ((translation = variableMappings.maybeGet(node.getName())) != null) {
-      // Case 2: In-scope local var.
+    Expression translation = variableMappings.maybeGet(node.getName());
+    if (translation != null) {
+      // Case 1: In-scope local var.
       return translation;
     } else {
-      // Case 3: Data reference.
+      // Case 2: Data reference.
       return genCodeForParamAccess(node.getName(), node.getDefnDecl());
     }
   }

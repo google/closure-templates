@@ -23,20 +23,17 @@ import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 
 /**
- * Expression representing an unqualified variable name, e.g. $foo, $ij.foo.
+ * Expression representing an unqualified variable name, e.g. $foo.
  *
  */
 public final class VarRefNode extends AbstractExprNode {
 
   public static VarRefNode error(SourceLocation location) {
-    return new VarRefNode("error", location, false, null);
+    return new VarRefNode("error", location, null);
   }
 
   /** The name of the variable, without the preceding dollar sign. */
   private final String name;
-
-  /** Whether this is an injected parameter reference. */
-  private final boolean isDollarSignIjParameter;
 
   /** Reference to the variable declaration. */
   private VarDefn defn;
@@ -50,30 +47,25 @@ public final class VarRefNode extends AbstractExprNode {
   /**
    * @param name The name of the variable.
    * @param sourceLocation The node's source location.
-   * @param isDollarSignIjParameter Whether this is an {@code $ij} variable.
    * @param defn (optional) The variable declaration for this variable.
    */
   public VarRefNode(
       String name,
       SourceLocation sourceLocation,
-      boolean isDollarSignIjParameter,
       @Nullable VarDefn defn) {
     super(sourceLocation);
     this.name = Preconditions.checkNotNull(name);
-    this.isDollarSignIjParameter = isDollarSignIjParameter;
     this.defn = defn;
   }
 
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
     this.subtituteType = orig.subtituteType;
     // Maintain the original def in case only a subtree is getting cloned, but also register a
-    // listener so that if the defn is replaced we will get updated also. Unless this is an
-    // $ij param which doesn't get cloned because they are implicitly defined by their var refs.
+    // listener so that if the defn is replaced we will get updated also.
     this.defn = orig.defn;
-    if (orig.defn != null && orig.defn.kind() != VarDefn.Kind.IJ_PARAM) {
+    if (orig.defn != null) {
       copyState.registerRefListener(
           orig.defn,
           new CopyState.Listener<VarDefn>() {
@@ -100,15 +92,6 @@ public final class VarRefNode extends AbstractExprNode {
   /** Returns the name of the variable. */
   public String getName() {
     return name;
-  }
-
-  /**
-   * Returns Whether this is an {@code $ij} parameter reference.
-   *
-   * <p>You almost certainly don't want to use this method and instead want {@link #isInjected()}.
-   */
-  public boolean isDollarSignIjParameter() {
-    return isDollarSignIjParameter;
   }
 
   /** Returns Whether this is an injected parameter reference. */
@@ -156,7 +139,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return "$" + (isDollarSignIjParameter ? "ij." : "") + name;
+    return "$" + name;
   }
 
   @Override

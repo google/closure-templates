@@ -726,14 +726,6 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testInjectParam_legacyIj() {
-    assertThatTemplateBody("{$ij.foo + 1}")
-        .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
-        .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
-        .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
-  }
-
-  @Test
   public void testDebugger() {
     assertThatTemplateBody("{debugger}").rendersAs("");
   }

@@ -34,7 +34,7 @@ public final class RecordLiteralNodeTest {
 
   @Test
   public void testToSourceString() {
-    VarRefNode fooDataRef = new VarRefNode("foo", X, false, null);
+    VarRefNode fooDataRef = new VarRefNode("foo", X, null);
 
     RecordLiteralNode recordLit =
         new RecordLiteralNode(

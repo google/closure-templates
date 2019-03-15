@@ -153,13 +153,13 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 insertionLocation,
                 /* isImplicit= */ true,
                 /* expr= */ new VarRefNode(
-                    letNode.getVar().name(), insertionLocation, false, letNode.getVar()),
+                    letNode.getVar().name(), insertionLocation, letNode.getVar()),
                 /* attributes= */ ImmutableList.of(),
                 ErrorReporter.exploding()));
         letNode.addChild(attributeName);
         node.getParent().addChild(node.getParent().getChildIndex(node), letNode);
         funcNode.addChild(
-            new VarRefNode(letNode.getVar().name(), insertionLocation, false, letNode.getVar()));
+            new VarRefNode(letNode.getVar().name(), insertionLocation, letNode.getVar()));
       }
       PrintNode loggingFunctionAttribute =
           new PrintNode(

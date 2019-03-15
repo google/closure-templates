@@ -87,17 +87,6 @@ public final class PreevalVisitorTest {
     }
   }
 
-  @Test
-  public void testPreevalWithIjData() {
-
-    try {
-      preeval("6 + $ij.foo");
-      fail();
-    } catch (RenderException re) {
-      // Test passes.
-    }
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 

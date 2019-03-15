@@ -86,7 +86,6 @@ import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -777,19 +776,6 @@ final class ExpressionCompiler {
           paramExpr.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
-    @Override
-    SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
-      Expression ij =
-          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-              parameters.getIjRecord(), constant(param.name()));
-      return SoyExpression.forSoyValue(
-          varRef.getType(),
-          detacher
-              .get()
-              .resolveSoyValueProvider(ij)
-              .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
-    }
-
     // Let vars
 
     @Override
@@ -1209,11 +1195,6 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
-      return true;
-    }
-
-    @Override
-    Boolean visitIjParam(VarRefNode node, InjectedParam param) {
       return true;
     }
 

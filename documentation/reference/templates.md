@@ -132,8 +132,7 @@ Syntax:
 
 `{@inject}` declares an [injected template parameter](../concepts/ij-data.md).
 The syntax is identical to the [@param](#param) syntax with the exception of the
-keyword. This should be used in preference to the `$ij` syntax since it allows
-for strong type checking and better code generation.
+keyword.
 
 See the [types reference](types) for instructions on how to declare types.
 

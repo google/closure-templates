@@ -83,7 +83,6 @@ final class V1ExpressionPass extends CompilerFilePass {
               new VarRefNode(
                   matcher.group(1),
                   varLocation,
-                  /* isDollarSignIjParameter= */ false,
                   /* defn= */ null));
         }
       }

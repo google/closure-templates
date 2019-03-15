@@ -752,7 +752,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       evalVisitor =
           evalVisitorFactory.create(
               env,
-              ijData,
               cssRenamingMap,
               xidRenamingMap,
               msgBundle,

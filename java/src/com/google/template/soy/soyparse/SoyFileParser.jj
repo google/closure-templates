@@ -456,8 +456,6 @@ public class SoyFileParser {
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind INVALID_PARAM_NAME =
       SoyErrorKind.of("Invalid param name ''{0}''.");
-  private static final SoyErrorKind INVALID_VAR_NAME_IJ =
-      SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
   private static final SoyErrorKind OLD_RECORD_LITERAL_SYNTAX =
@@ -1104,8 +1102,6 @@ TOKEN_MGR_DECLS: {
 
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> TOKEN: {
   < IDENT: <RAW_IDENT> >
-  // N.B. <IJ> needs to be defined above <DOLLAR_IDENT> so $ij isn't parsed as <DOLLAR_IDENT>
-| < IJ:  "$ij" >
 | < DOLLAR_IDENT: "$" <IDENT> >
 }
 
@@ -1761,7 +1757,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
               errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
             }
             break;
-          case IJ_PARAM:
           case LOCAL_VAR:
           case UNDECLARED:
             throw new AssertionError("unexpected var kind: " + param.kind());
@@ -3526,7 +3521,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunctionCallLike | ListLiteral | Primitive
+ * Primary -> "(" Expr ")" | VarRef | GlobalOrFunctionCallLike | ListLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3537,8 +3532,6 @@ private ExprNode Primary() :
     <LPAREN>
     primary = Expr()
     <RPAREN>
-  |
-    primary = IjRef()
   |
     primary = VarRef()
   |
@@ -3554,28 +3547,6 @@ private ExprNode Primary() :
 
 
 /**
- * IjRef -> "$ij" "." Ident
- */
-private VarRefNode IjRef() :
-{
-  Token ij;
-  Token ident;
-}
-{
-  ij = <IJ>
-  try {
-    <DOT>
-    ident = <IDENT>
-    { return new VarRefNode(ident.image, createSrcLoc(ij, ident), true, null); }
-  } catch (ParseException e) {
-    SourceLocation loc = createSrcLoc(ij);
-    errorReporter.report(loc, INVALID_VAR_NAME_IJ);
-    return new VarRefNode("ij", loc, false, null);
-  }
-}
-
-
-/**
  * VarRef -> DollarIdent
  */
 private VarRefNode VarRef() :
@@ -3584,7 +3555,7 @@ private VarRefNode VarRef() :
 }
 {
   ident = <DOLLAR_IDENT>
-  { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), false, null); }
+  { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), null); }
 }
 
 

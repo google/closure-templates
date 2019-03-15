@@ -51,7 +51,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -470,19 +469,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           params.put(
               param.name(),
               typeRegistry.getOrCreateUnionType(Arrays.asList(param.type(), oldType)));
-        }
-      }
-      for (VarRefNode varRef : SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
-        if (varRef.isDollarSignIjParameter()) {
-          // for the most part getType() is '?' but it may be special cased elsewhere in the
-          // compiler so use the var ref type.  (e.g. ContentSecurityPolicyNonceInjectionPass)
-          SoyType oldType = params.put(varRef.getName(), varRef.getType());
-          if (oldType != null) {
-            // merge the types
-            params.put(
-                varRef.getName(),
-                typeRegistry.getOrCreateUnionType(Arrays.asList(varRef.getType(), oldType)));
-          }
         }
       }
     }

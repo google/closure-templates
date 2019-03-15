@@ -16,11 +16,9 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -46,11 +44,6 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
     assertCandidateBaseNamesForExpr(ImmutableList.of("AA_BB"), exprText);
 
     exprText = "$aaBb.ccDd";
-    assertNaiveBaseNameForExpr("CC_DD", exprText);
-    assertShortestBaseNameForExpr("CC_DD", exprText);
-    assertCandidateBaseNamesForExpr(ImmutableList.of("CC_DD", "AA_BB_CC_DD"), exprText);
-
-    exprText = "$ij.aaBb.ccDd";
     assertNaiveBaseNameForExpr("CC_DD", exprText);
     assertShortestBaseNameForExpr("CC_DD", exprText);
     assertCandidateBaseNamesForExpr(ImmutableList.of("CC_DD", "AA_BB_CC_DD"), exprText);
@@ -108,25 +101,13 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
   @Test
   public void testGenNoncollidingBaseNames() {
     assertNoncollidingBaseNamesForExprs(ImmutableList.of("GENDER"), "$user.gender");
-    assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for vars. "
-            + "Colliding expressions: '$gender' and '$ij.gender'.",
-        "$gender",
-        "$ij.gender");
-    assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for vars. "
-            + "Colliding expressions: '$ij.gender' and '$userGender'.",
-        "$userGender",
-        "$ij.gender");
-    assertNoncollidingBaseNamesForExprs(
-        ImmutableList.of("USERGENDER", "GENDER"), "$usergender", "$ij.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USER_GENDER", "TARGET_GENDER"), "$userGender", "$target.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USER_GENDER", "TARGET_GENDER"), "$user.gender", "$target.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USER_GENDER", "TARGET_0_GENDER", "TARGET_1_GENDER"),
-        "$ij.user.gender",
+        "$user.gender",
         "$target[0]?.gender",
         "$target[1]?.gender");
     assertNoncollidingBaseNamesForExprs(
@@ -146,20 +127,6 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
         MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
             exprs, "FALLBACK", ErrorReporter.exploding());
     assertEquals(expected, actual);
-  }
-
-  private void assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-      String expectedErrorMsg, String... exprTexts) {
-    List<ExprNode> exprs = new ArrayList<>();
-    for (String exprText : exprTexts) {
-      exprs.add(parse(exprText));
-    }
-
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprs, "FALLBACK", errorReporter);
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .contains(expectedErrorMsg);
   }
 
   private ExprNode parse(String exprText) {

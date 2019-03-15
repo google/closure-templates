@@ -155,14 +155,13 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         return typedOther.getDefnDecl() == node.getDefnDecl();
       }
       // When getDefnDecl() are null, we should not directly return true. Instead, we should compare
-      // the names and if both are injected parameters.
+      // the names.
       // This checking seems redundant but it is possible that getDefnDecl will return null if
       // we haven't assigned the VarDefns yet. This happens in unit tests and will potentially
       // happen in some passes before we assign the VarDefns.
       // Note that this might return true for VarRefNodes from different templates. Be careful when
       // you use this to compare ExprNodes among templates.
-      return typedOther.getName().equals(node.getName())
-          && typedOther.isDollarSignIjParameter() == node.isDollarSignIjParameter();
+      return typedOther.getName().equals(node.getName());
     }
 
     @Override

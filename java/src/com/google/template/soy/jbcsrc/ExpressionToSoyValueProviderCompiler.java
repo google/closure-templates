@@ -17,7 +17,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.data.SoyValueProvider;
@@ -32,9 +31,7 @@ import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -219,13 +216,6 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     Optional<Expression> visitParam(VarRefNode varRef, TemplateParam param) {
       return Optional.of(variables.getParam(param));
-    }
-
-    @Override
-    Optional<Expression> visitIjParam(VarRefNode node, InjectedParam ij) {
-      return Optional.of(
-          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-              variables.getIjRecord(), constant(ij.name())));
     }
 
     @Override

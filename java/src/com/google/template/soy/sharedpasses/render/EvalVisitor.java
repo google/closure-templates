@@ -128,7 +128,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      * Creates an EvalVisitor.
      *
      * @param env The current environment.
-     * @param ijData The current injected data.
      * @param cssRenamingMap The CSS renaming map, or null if not applicable.
      * @param xidRenamingMap The XID renaming map, or null if not applicable.
      * @param pluginInstances The instances used for evaluating functions that call instance
@@ -137,7 +136,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      */
     EvalVisitor create(
         Environment env,
-        @Nullable SoyRecord ijData,
         @Nullable SoyCssRenamingMap cssRenamingMap,
         @Nullable SoyIdRenamingMap xidRenamingMap,
         @Nullable SoyMsgBundle msgBundle,
@@ -147,9 +145,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   /** The current environment. */
   private final Environment env;
-
-  /** The current injected data. */
-  @Nullable private final SoyRecord ijData;
 
   @Nullable private final SoyMsgBundle msgBundle;
 
@@ -172,20 +167,17 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final ImmutableMap<String, Supplier<Object>> pluginInstances;
 
   /**
-   * @param ijData The current injected data.
    * @param env The current environment.
    * @param pluginInstances The instances used for evaluating functions that call instance methods.
    */
   protected EvalVisitor(
       Environment env,
-      @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyMsgBundle msgBundle,
       boolean debugSoyTemplateInfo,
       ImmutableMap<String, Supplier<Object>> pluginInstances) {
     this.env = checkNotNull(env);
-    this.ijData = ijData;
     this.msgBundle = msgBundle;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
@@ -337,25 +329,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private SoyValue visitNullSafeVarRefNode(VarRefNode varRef) {
-    SoyValue result = null;
-    if (varRef.isDollarSignIjParameter()) {
-      // TODO(lukes): it would be nice to move this logic into Environment or even eliminate the
-      // ijData == null case.  It seems like this case is mostly for prerendering, though im not
-      // sure.
-      if (ijData != null) {
-        result = ijData.getField(varRef.getName());
-      } else {
-        throw RenderException.create(
-            "Injected data not provided, yet referenced (" + varRef.toSourceString() + ").");
-      }
-    } else if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+    if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
       TemplateStateVar state = (TemplateStateVar) varRef.getDefnDecl();
       return visit(state.defaultValue());
     } else {
       return env.getVar(varRef.getDefnDecl());
     }
-
-    return (result != null) ? result : UndefinedData.INSTANCE;
   }
 
   private SoyValue visitNullSafeFieldAccessNode(FieldAccessNode fieldAccess) {

@@ -399,7 +399,8 @@ public final class RewriteGenderMsgsPassTest {
     String soyCode =
         ""
             + "{@param target : ?}\n"
-            + "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" "
+            + "{@param userGender : ?}\n"
+            + "{msg genders=\"$userGender, $target[0].gender, $target[1].gender\" "
             + "desc=\"...\"}\n"
             + "  You starred {$target[0].name}'s photo in {$target[1].name}'s album.\n"
             + "{/msg}\n";
@@ -419,10 +420,9 @@ public final class RewriteGenderMsgsPassTest {
             + "{/select}";
     String expectedMsgSrc =
         ""
-            +
             // Note: Still has genders="..." in command text.
-            "{msg desc=\"...\" genders=\"$ij.userGender, $target[0].gender, $target[1].gender\"}"
-            + "{select $ij.userGender}"
+            + "{msg desc=\"...\" genders=\"$userGender, $target[0].gender, $target[1].gender\"}"
+            + "{select $userGender}"
             + // note: 'phname' not specified because generated is same
             "{case 'female'}"
             + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"

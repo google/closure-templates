@@ -393,8 +393,9 @@ public class RenderVisitorTest {
             + "{@param goo : ? }\n"
             + "{@param undefined : ? }\n"
             + "{@param toStringTestValue : ? }\n"
+            + "{@inject ijStr : ? }\n"
             + "  {$boo} {$foo.bar}{sp}\n"
-            + "  {$ij.ijStr}\n"
+            + "  {$ijStr}\n"
             + "  {$goo[5] + 1}{sp}\n"
             + "  {$f ?: ''} {$undefined ?: -1}{sp}\n"
             + "  {' blah aablahblahblah' |insertWordBreaks:8}{sp}\n"
@@ -408,8 +409,9 @@ public class RenderVisitorTest {
   public void testRenderMsgStmt() throws Exception {
     String templateBody =
         "{@param foo: ?}\n"
+            + "{@inject ijInt: ?}\n"
             + "  {msg desc=\"Tells user's quota usage.\"}\n"
-            + "    You're currently using {$ij.ijInt} MB of your quota.{sp}\n"
+            + "    You're currently using {$ijInt} MB of your quota.{sp}\n"
             + "    <a href=\"{$foo.bar}\">Learn more</A>\n"
             + "    <br /><br />\n"
             + "  {/msg}\n"
@@ -722,11 +724,12 @@ public class RenderVisitorTest {
             + "{@param goo: ?}\n"
             + "{@param moo: ?}\n"
             + "{@param f: ?}\n"
+            + "{@inject ijBool: ?}\n"
             + "  {if $boo}{$boo}{/if}\n"
             + "  {if ''}-{else}+{/if}\n"
             + "  {if $f ?: 0.0}\n"
             + "    Blah\n"
-            + "  {elseif $goo[2] > 2 and $ij.ijBool}\n"
+            + "  {elseif $goo[2] > 2 and $ijBool}\n"
             + "    {$moo}\n"
             + "  {else}\n"
             + "    Blah {$moo}\n"
@@ -1008,7 +1011,8 @@ public class RenderVisitorTest {
             + "{template .calleeTemplate}\n"
             + "  {@param boo: ?}\n"
             + "  {@param goo: ?}\n"
-            + "  {$boo}{$ij.future}\n"
+            + "  {@inject future: ?}\n"
+            + "  {$boo}{$future}\n"
             + "  {for $n in $goo} {$n}{/for}{\\n}\n"
             + "{/template}\n";
 
@@ -1111,7 +1115,8 @@ public class RenderVisitorTest {
             + "\n"
             + "{template .helper}\n"
             + "  {@param boo: ?}\n"
-            + "  {$boo} {$ij.ijStr}\n"
+            + "  {@inject ijStr: ?}\n"
+            + "  {$boo} {$ijStr}\n"
             + "{/template}\n";
 
     final ParseResult parseResult =

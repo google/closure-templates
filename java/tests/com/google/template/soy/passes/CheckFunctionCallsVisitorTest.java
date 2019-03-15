@@ -57,16 +57,6 @@ public final class CheckFunctionCallsVisitorTest {
         "Function 'index' must have a loop variable as its argument",
         "{namespace ns}\n",
         "{template .foo}",
-        "  {print index($ij.data)}",
-        "{/template}");
-  }
-
-  @Test
-  public void testNotALoopVariable4() {
-    assertFunctionCallsInvalid(
-        "Function 'index' must have a loop variable as its argument",
-        "{namespace ns}\n",
-        "{template .foo}",
         "  {@param x: ?}",
         "  {print index($x + 1)}",
         "{/template}");

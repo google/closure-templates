@@ -121,9 +121,7 @@ public final class SharedTestUtils {
 
       @Override
       protected void visitVarRefNode(VarRefNode node) {
-        if (!node.isDollarSignIjParameter()) {
-          names.add(node.getName());
-        }
+        names.add(node.getName());
       }
 
       @Override

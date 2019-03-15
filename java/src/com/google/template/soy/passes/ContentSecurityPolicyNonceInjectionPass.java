@@ -96,21 +96,12 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // first, make sure that the user hasn't specified any injected parameters called 'csp_nonce'
-    // Search for injected params named 'csp_nonce'.  This includes:
-    // * @inject params
-    // * $ij references
+    // Search for injected params named 'csp_nonce'.
     for (TemplateNode template : file.getChildren()) {
       for (TemplateParam param : template.getAllParams()) {
         if (param.isInjected() && param.name().equals(CSP_NONCE_VARIABLE_NAME)) {
           errorReporter.report(param.nameLocation(), IJ_CSP_NONCE_REFERENCE);
         }
-      }
-    }
-    for (VarRefNode var : SoyTreeUtils.getAllNodesOfType(file, VarRefNode.class)) {
-      // this is one of the rare cases where we do want to use isDollarSignIjParameter instead
-      // of isInjected
-      if (var.isDollarSignIjParameter() && var.getName().equals(CSP_NONCE_VARIABLE_NAME)) {
-        errorReporter.report(var.getSourceLocation(), IJ_CSP_NONCE_REFERENCE);
       }
     }
     for (TemplateNode template : file.getChildren()) {
@@ -234,7 +225,6 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
 
   private static VarRefNode referenceCspNonce(
       SourceLocation insertionLocation, TemplateParam defn) {
-    return new VarRefNode(
-        CSP_NONCE_VARIABLE_NAME, insertionLocation, /* isDollarSignIjParameter= */ false, defn);
+    return new VarRefNode(CSP_NONCE_VARIABLE_NAME, insertionLocation, defn);
   }
 }

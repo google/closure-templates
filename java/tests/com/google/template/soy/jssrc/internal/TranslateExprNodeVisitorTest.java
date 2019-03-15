@@ -75,13 +75,6 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
-  public void testIjDataRef() {
-    // For normal injected data, generates code without additional protection.
-    // This is expected since if users do not provide the ijData object, it should be an error.
-    assertThatSoyExpr("$ij.foo").generatesCode("opt_ijData.foo;");
-  }
-
-  @Test
   public void testDataRef() {
     assertThatSoyExpr("$boo").generatesCode("opt_data.boo;");
     assertThatSoyExpr("$boo.goo").generatesCode("opt_data.boo.goo;");

@@ -57,9 +57,6 @@ public class EvalVisitorTest {
 
   protected static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
-  private static final SoyRecord TEST_IJ_DATA =
-      SoyValueConverterUtility.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
-
   private static final ImmutableMap<String, SoyValueProvider> LOCALS =
       ImmutableMap.<String, SoyValueProvider>of(
           "zoo", StringData.forValue("loo"),
@@ -155,7 +152,6 @@ public class EvalVisitorTest {
         new EvalVisitorFactoryImpl()
             .create(
                 TestingEnvironment.createForTest(testData, LOCALS),
-                TEST_IJ_DATA,
                 cssRenamingMap,
                 xidRenamingMap,
                 null,
@@ -305,14 +301,9 @@ public class EvalVisitorTest {
     assertEval("$foo.bar", "baz");
     assertEval("$goo[2]", 6);
 
-    assertEval("$ij.ijBool", true);
-    assertEval("$ij.ijInt", 26);
-    assertEval("$ij.ijStr", "injected");
-
     assertThat(eval("$too")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$foo.too")).isInstanceOf(UndefinedData.class);
     assertThat(eval("$foo.goo2[22]")).isInstanceOf(UndefinedData.class);
-    assertThat(eval("$ij.boo")).isInstanceOf(UndefinedData.class);
 
     // TODO: If enabling exception for undefined LHS (see EvalVisitor), uncomment tests below.
     //assertRenderException(
@@ -334,10 +325,6 @@ public class EvalVisitorTest {
     assertThat(eval("$roo.too")).isInstanceOf(UndefinedData.class);
     //assertRenderException("$roo[2]", "encountered undefined LHS just before accessing \"[2]\"");
     assertThat(eval("$roo[2]")).isInstanceOf(UndefinedData.class);
-    assertThat(eval("$ij.ijInt.boo")).isInstanceOf(UndefinedData.class);
-    //assertRenderException(
-    //    "$ij.ijZoo.boo", "encountered undefined LHS just before accessing \".boo\"");
-    assertThat(eval("$ij.ijZoo.boo")).isInstanceOf(UndefinedData.class);
   }
 
   @Test
@@ -355,9 +342,6 @@ public class EvalVisitorTest {
     assertRenderException("$moo?.too", "encountered non-record just before accessing \"?.too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
-    assertRenderException(
-        "$ij.ijInt?.boo", "encountered non-record just before accessing \"?.boo\"");
-    assertThat(eval("$ij.ijZoo?.boo")).isInstanceOf(NullData.class);
   }
 
   @Test
@@ -375,9 +359,7 @@ public class EvalVisitorTest {
 
     assertEval("-99+-111", -210);
     assertEval("$moo + $goo[5]", 24.14);
-    assertEval("$ij.ijInt + $boo", 34);
     assertEval("'boo'+'hoo'", "boohoo"); // string concatenation
-    assertEval("$foo.bar + $ij.ijStr", "bazinjected"); // string concatenation
     assertEval("8 + $zoo + 8.0", "8loo8"); // coercion to string type
 
     assertEval("$goo[4] - $boo", 7);
@@ -407,7 +389,6 @@ public class EvalVisitorTest {
     assertEval("not $t", false);
     assertEval("not null", true);
     assertEval("not $boo", false);
-    assertEval("not $ij.ijBool", false);
     assertEval("not 0.0", true);
     assertEval("not $foo.bar", false);
     assertEval("not ''", true);

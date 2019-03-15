@@ -40,7 +40,7 @@ public final class AbstractOperatorNodeTest {
   private static final SourceLocation X = SourceLocation.UNKNOWN;
   // Note: We're going to reuse this leaf node in the test trees. This isn't really correct, but
   // should work for this test.
-  private static final VarRefNode x = new VarRefNode("x", X, false, null);
+  private static final VarRefNode x = new VarRefNode("x", X, null);
 
   @Test
   public void testToSourceString1() {

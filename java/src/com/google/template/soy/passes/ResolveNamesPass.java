@@ -43,7 +43,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -52,7 +51,6 @@ import com.google.template.soy.soytree.defn.UndeclaredVar;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -219,8 +217,6 @@ public final class ResolveNamesPass extends CompilerFilePass {
   /** Scope for injected params. */
   private LocalVariables localVariables;
 
-  private Map<String, InjectedParam> ijParams;
-
   private final ErrorReporter errorReporter;
 
   public ResolveNamesPass(ErrorReporter errorReporter) {
@@ -238,7 +234,6 @@ public final class ResolveNamesPass extends CompilerFilePass {
       // Create a scope for all parameters.
       localVariables = new LocalVariables();
       localVariables.enterScope();
-      ijParams = new HashMap<>();
 
       // Add both injected and regular params to the param scope.
       for (TemplateParam param : node.getAllParams()) {
@@ -256,7 +251,6 @@ public final class ResolveNamesPass extends CompilerFilePass {
       node.setMaxLocalVariableTableSize(localVariables.nextSlotToClaim);
 
       localVariables = null;
-      ijParams = null;
     }
 
     @Override
@@ -330,7 +324,6 @@ public final class ResolveNamesPass extends CompilerFilePass {
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
       case STATE:
         return Optional.of(((TemplateStateVar) varDefn).nameLocation());
-      case IJ_PARAM:
       case UNDECLARED:
         return Optional.absent();
     }
@@ -389,13 +382,6 @@ public final class ResolveNamesPass extends CompilerFilePass {
       if (varRef.getDefnDecl() != null) {
         // some passes (e.g. ContentSecurityPolicyNonceInjectionPass) add var refs with accurate
         // defns.
-        return;
-      }
-      if (varRef.isDollarSignIjParameter()) {
-        InjectedParam ijParam =
-            ijParams.computeIfAbsent(
-                varRef.getName(), k -> new InjectedParam(k, varRef.getSourceLocation()));
-        varRef.setDefn(ijParam);
         return;
       }
       VarDefn varDefn = localVariables.lookup(varRef.getName());

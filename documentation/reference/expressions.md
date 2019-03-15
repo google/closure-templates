@@ -143,16 +143,6 @@ Parameters and locals are introduced by:
 To reference a variable, use a dollar sign `$` followed by the variable name.
 For example: `$foo`
 
-### `$ij.` parameters
-
-Injected data can be referenced by referencing properties of the `$ij` pseudo
-object. It is preferred to use the [`@inject` syntax](templates.md#inject),
-instead since it allows authors to declare type information.
-
-For example,
-
-*   `$ij.foo` accesses the foo injected parameter
-
 ### globals
 
 A global is a reference that looks like a simple dotted identifier sequence.

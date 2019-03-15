@@ -530,12 +530,14 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace ns}\n\n",
             "{template .foo kind=\"js\"}\n",
-            "`<div a=\"q\">${lb} {$ij.foo |escapeJsValue} {rb}</div>`\n",
+            "  {@param foo: ?}\n",
+            "`<div a=\"q\">${lb} {$foo |escapeJsValue} {rb}</div>`\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo kind=\"js\"}\n",
-            "`<div a=\"q\">${lb} {$ij.foo} {rb}</div>`\n",
+            "  {@param foo: ?}\n",
+            "`<div a=\"q\">${lb} {$foo} {rb}</div>`\n",
             "{/template}"));
 
     assertRewriteFails(
@@ -543,7 +545,8 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace ns}\n\n",
             "{template .foo kind=\"js\"}\n",
-            "`<div a=\"q\">{$ij.foo}</div>`\n",
+            "  {@param foo: ?}\n",
+            "`<div a=\"q\">{$foo}</div>`\n",
             "{/template}"));
 
     // can't merge across different template depths
@@ -553,7 +556,8 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace ns}\n\n",
             "{template .foo kind=\"js\"}\n",
-            "{if $ij.b}`<div a=\"q\">{else}</div>{/if}`\n",
+            "  {@param foo: ?}\n",
+            "{if $foo}`<div a=\"q\">{else}</div>{/if}`\n",
             "{/template}"));
   }
 

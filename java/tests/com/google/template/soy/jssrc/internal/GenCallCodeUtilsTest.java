@@ -160,17 +160,6 @@ public final class GenCallCodeUtilsTest {
         .isEqualTo(
             "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), opt_data.voo, true)"
                 + "(/** @type {?} */ (opt_data), opt_ijData);");
-
-    assertThat(
-            getCallExprTextHelper(
-                "{@param moo : ?}",
-                "{delcall my.other.delegate variant=\"'voo' + $ij.voo\"}",
-                "  {param goo: $moo /}",
-                "{/delcall}"))
-        .isEqualTo(
-            "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('my.other.delegate'), 'voo' + opt_ijData.voo, false)"
-                + "(/** @type {?} */ ({goo: opt_data.moo}), opt_ijData);");
   }
 
   @Test

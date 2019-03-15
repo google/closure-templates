@@ -33,7 +33,7 @@ public final class KeyNodeTest {
 
   @Test
   public void testToSourceString() {
-    VarRefNode foo = new VarRefNode("foo", X, false, null);
+    VarRefNode foo = new VarRefNode("foo", X, null);
     KeyNode keyNode0 = new KeyNode(0, X, foo);
     assertThat(keyNode0.toSourceString()).isEqualTo("{key $foo}");
 

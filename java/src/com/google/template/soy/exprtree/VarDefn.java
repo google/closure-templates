@@ -32,8 +32,6 @@ public interface VarDefn {
   enum Kind {
     // Explicitly declared parameter.
     PARAM,
-    // Injected parameter.
-    IJ_PARAM,
     // Local variable
     LOCAL_VAR,
     // State variable
@@ -59,13 +57,10 @@ public interface VarDefn {
   /** Returns the data type of this variable. */
   SoyType type();
 
-  /** Returns true if this is an {@code $ij} variable or an {@code @inject} param. */
+  /** Returns true if this is an {@code @inject} param. */
   boolean isInjected();
 
-  /**
-   * Returns the index of this variable in the local variable table of the template or {@code -1}
-   * for {@link Kind#IJ_PARAM ij params}.
-   */
+  /** Returns the index of this variable in the local variable table of the template. */
   int localVariableIndex();
 
   /** Assigns the index of this variable in the local variable table for its containing template. */

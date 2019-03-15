@@ -37,7 +37,7 @@ public final class ListLiteralNodeTest {
   @Test
   public void testToSourceString() {
 
-    VarRefNode dataRef = new VarRefNode("foo", X, false, null);
+    VarRefNode dataRef = new VarRefNode("foo", X, null);
 
     ListLiteralNode listLit =
         new ListLiteralNode(

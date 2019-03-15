@@ -46,7 +46,6 @@ final class PreevalVisitor extends EvalVisitor {
   PreevalVisitor(Environment env) {
     super(
         env,
-        /* ijData= */ null,
         /* cssRenamingMap= */ null,
         /* xidRenamingMap= */ null,
         /* msgBundle= */ null,
