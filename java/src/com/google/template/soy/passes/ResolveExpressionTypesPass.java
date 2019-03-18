@@ -215,7 +215,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
   private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
-      SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.");
+      SoyErrorKind.of("The initializer for ''{0}'' must be a constant value.  {1}.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
@@ -282,30 +282,30 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
 
       // If the default value expressions are not constant, they could reference another default
       // value parameter, which won't work because it's looking up the type of the parameter when it
-      // hasn't been inferred yet. So stop early if we find non-constant default value expressions.
-      Checkpoint cp = errorReporter.checkpoint();
+      // hasn't been inferred yet.  So report an error and override the type to be the errortype
       for (TemplateHeaderVarDefn headerVar : headerVars) {
         if (headerVar.defaultValue() != null) {
-          if (!SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
+          for (ExprNode nonConstantChild :
+              SoyTreeUtils.getNonConstantChildren(headerVar.defaultValue())) {
+            String extra;
+            switch (nonConstantChild.getKind()) {
+              case VAR_REF_NODE:
+                extra = "Parameters are non-constant";
+                ((VarRefNode) nonConstantChild).setSubstituteType(ErrorType.getInstance());
+                break;
+              case FUNCTION_NODE:
+                extra = "Only pure functions can be used in state initializers";
+                break;
+              default:
+                throw new AssertionError("Unexpected non-constant expression: " + nonConstantChild);
+            }
             errorReporter.report(
-                headerVar.defaultValue().getSourceLocation(),
+                nonConstantChild.getSourceLocation(),
                 STATE_MUST_BE_CONSTANT,
-                headerVar.name());
-            headerVar.setType(ErrorType.getInstance());
+                headerVar.name(),
+                extra);
           }
         }
-      }
-      if (errorReporter.errorsSince(cp)) {
-        for (TemplateHeaderVarDefn headerVar : headerVars) {
-          if (!headerVar.hasType()) {
-            // Later parts of the compiler require the type to be non-null. Since we're stopping
-            // before inferring types, set the the types that would be inferred to the error type.
-            headerVar.setType(ErrorType.getInstance());
-          }
-        }
-        // TODO(lukes): find a way to keep going.  we will need a way to avoid blowing up when
-        // visitExpressions visits a defaultValue expression that references a var ref.
-        return;
       }
 
       visitExpressions(node);
@@ -686,6 +686,13 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyType newType = getTypeSubstitution(varRef);
       if (newType != null) {
         varRef.setSubstituteType(newType);
+      } else {
+        if (varRef.getType() == null) {
+          // sanity check, default params and state params have complex type initialization logic
+          // double check that it worked.
+          throw new IllegalStateException(
+              "VarRefNode @" + varRef.getSourceLocation() + " doesn't have a type!");
+        }
       }
     }
 

@@ -366,30 +366,45 @@ public final class SoyTreeUtils {
 
   /**
    * Return whether the given root node is a constant expression or not. Pure functions are
-   * considered constant iff their parameter is a constant expression.
+   * considered constant iff their parameters are all constant expressions.
    *
    * @param rootSoyNode the root of the expression tree.
    * @return {@code true} if the expression is constant in evaluation, {@code false} otherwise.
    */
   public static boolean isConstantExpr(ExprNode rootSoyNode) {
+    return getNonConstantChildren(rootSoyNode, /*all=*/ false).isEmpty();
+  }
+
+  /**
+   * Returns a list of all the subexpressions that are non-constant. Pure functions are considered
+   * constant iff their parameters are all constant expressions.
+   *
+   * @param rootSoyNode the root of the expression tree.
+   */
+  public static ImmutableList<ExprNode> getNonConstantChildren(ExprNode rootSoyNode) {
+    return getNonConstantChildren(rootSoyNode, /*all=*/ true);
+  }
+
+  private static ImmutableList<ExprNode> getNonConstantChildren(ExprNode rootSoyNode, boolean all) {
     class ConstantNodeVisitor implements NodeVisitor<Node, VisitDirective> {
-      boolean isConstant = true;
+      ImmutableList.Builder<ExprNode> nonConstantExpressions = ImmutableList.builder();
 
       @Override
       public VisitDirective exec(Node node) {
         // Note: ExprNodes only contain other ExprNodes, so this down-cast is safe.
-        switch (((ExprNode) node).getKind()) {
+        ExprNode expr = (ExprNode) node;
+        switch (expr.getKind()) {
           case VAR_REF_NODE:
-            isConstant = false;
-            return VisitDirective.ABORT;
+            nonConstantExpressions.add(expr);
+            return all ? VisitDirective.CONTINUE : VisitDirective.ABORT;
           case FUNCTION_NODE:
             FunctionNode fn = (FunctionNode) node;
             if (fn.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
               // Continue to evaluate the const-ness of the pure function's parameters.
               return VisitDirective.CONTINUE;
             } else {
-              isConstant = false;
-              return VisitDirective.ABORT;
+              nonConstantExpressions.add(expr);
+              return all ? VisitDirective.CONTINUE : VisitDirective.ABORT;
             }
           default:
             return VisitDirective.CONTINUE;
@@ -399,7 +414,7 @@ public final class SoyTreeUtils {
 
     ConstantNodeVisitor visitor = new ConstantNodeVisitor();
     visitAllNodes(rootSoyNode, visitor);
-    return visitor.isConstant;
+    return visitor.nonConstantExpressions.build();
   }
 
   /**
