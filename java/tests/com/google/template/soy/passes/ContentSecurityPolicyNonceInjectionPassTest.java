@@ -20,12 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -343,29 +340,14 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
         join("{template .foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
   }
 
-  @Test
-  public void testAlreadyHasNonce() {
-    assertInjectedWithWarning(
-        "{template .foo}\n<script nonce=''></script>\n{/template}",
-        "{template .foo}\n<script nonce=''></script>\n{/template}",
-        "Found a 'nonce' attribute on a tag that is supported by Soy auto-nonce support.");
-  }
-
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }
 
   private void assertInjected(String expectedOutput, String input) {
-    assertInjectedWithWarning(expectedOutput, input, null);
-  }
-
-  private void assertInjectedWithWarning(
-      String expectedOutput, String input, @Nullable String warning) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
     String namespace = "{namespace ns}\n\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(namespace + input)
-            .errorReporter(errorReporter)
             .runAutoescaper(true)
             .parse()
             .fileSet();
@@ -376,13 +358,6 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     String output = src.toString().trim();
     if (output.startsWith("{namespace ns")) {
       output = output.substring(output.indexOf('}') + 1).trim();
-    }
-
-    assertThat(errorReporter.getErrors()).isEmpty();
-    if (warning != null) {
-      assertThat(Iterables.getOnlyElement(errorReporter.getWarnings()).message()).contains(warning);
-    } else {
-      assertThat(errorReporter.getWarnings()).isEmpty();
     }
 
     assertThat(output).isEqualTo(expectedOutput);

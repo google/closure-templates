@@ -151,8 +151,7 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
         || (name.equals("link") && isNonceableLink(tag))) {
       HtmlAttributeNode manualNonce = tag.getDirectAttributeNamed("nonce");
       if (manualNonce != null) {
-        // TODO(jakubvrana): Change to an error once all violations are fixed.
-        errorReporter.warn(manualNonce.getSourceLocation(), MANUAL_NONCE);
+        errorReporter.report(manualNonce.getSourceLocation(), MANUAL_NONCE);
         return false;
       }
       return true;
