@@ -140,6 +140,8 @@ public final class JsRuntime {
   /** A constant for the template parameter {@code opt_ijData}. */
   public static final Expression OPT_IJ_DATA = id("opt_ijData");
 
+  public static final Expression EXPORTS = id("exports");
+
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
       ImmutableMap.<String, Expression>builder()

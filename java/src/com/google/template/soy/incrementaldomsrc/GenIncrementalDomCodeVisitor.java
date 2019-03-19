@@ -286,7 +286,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       } else {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
       }
-      getJsCodeBuilder().append(Statement.assign(alias + ".contentKind", type));
+      getJsCodeBuilder().append(Statement.assign(id(alias).dotAccess("contentKind"), type));
     }
 
     if (node instanceof TemplateElementNode) {
@@ -346,7 +346,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
           Statement.assign(
-              "opt_data",
+              JsRuntime.OPT_DATA,
               JsRuntime.OPT_DATA.or(
                   EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
     }
@@ -457,7 +457,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
       stateVarInitializations.add(
           Statement.assign(
-              "this." + STATE_PREFIX + stateVar.name(),
+              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
               translateExpr(stateVar.defaultValue()),
               stateVarJsdoc));
     }
@@ -479,7 +479,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         Statement.ifStatement(
                 id("super")
                     .dotAccess("renderInternal")
-                    .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA, Expression.id("ignoreSkipHandler")),
+                    .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA, id("ignoreSkipHandler")),
                 Statement.returnValue(Expression.LITERAL_TRUE))
             .build();
 
@@ -549,9 +549,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private Statement generateExportsForSoyElement(String soyElementClassName) {
     return Statement.assign(
         // Idom only supports goog.module generation.
-        "exports."
+        JsRuntime.EXPORTS.dotAccess(
             // Drop the leading '$' from soyElementClassName.
-            + soyElementClassName.substring(1),
+            soyElementClassName.substring(1)),
         id(soyElementClassName));
   }
 
@@ -842,7 +842,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     for (int i = 0; i < node.numChildren(); i++) {
       visit(node.getChild(i));
     }
-    getJsCodeBuilder().append(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, Expression.id(id)));
+    getJsCodeBuilder().append(SOY_IDOM_VISIT_HTML_COMMENT.call(INCREMENTAL_DOM, id(id)));
     getJsCodeBuilder().popOutputVar();
     getJsCodeBuilder().setContentKind(prev);
   }
@@ -926,7 +926,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       visit(value);
       getJsCodeBuilder().popOutputVar();
       getJsCodeBuilder().setContentKind(prev);
-      return ImmutableList.of(Expression.id(outputVar));
+      return ImmutableList.of(id(outputVar));
     }
     return genJsExprsVisitor.exec(value);
   }
@@ -962,7 +962,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // and lazily initialize it in the template.
     if (!staticAttributes.isEmpty()) {
       String id = "_statics_" + staticsCounter++;
-      Expression idExpr = Expression.id(alias + id);
+      Expression idExpr = id(alias + id);
       Expression lazyAssignment =
           // Generator can be null because we know this evaluates to an or
           // ie alias_statics_1 || alias_statics_1 = []
@@ -1248,8 +1248,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       case HTML_RCDATA:
         getJsCodeBuilder()
             .append(
-                INCREMENTAL_DOM_TEXT.call(
-                    Expression.id("String").call(CodeChunkUtils.concatChunks(chunks))));
+                INCREMENTAL_DOM_TEXT.call(id("String").call(CodeChunkUtils.concatChunks(chunks))));
         break;
       default:
         super.visitPrintNode(node);
@@ -1271,7 +1270,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression isLogOnlyReference = null;
     if (node.getLogonlyExpression() != null) {
       String idName = "velog_" + staticsCounter++;
-      isLogOnlyReference = Expression.id(idName);
+      isLogOnlyReference = id(idName);
       isLogOnly = getExprTranslator().exec(node.getLogonlyExpression());
       isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
       getJsCodeBuilder()
@@ -1280,8 +1279,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   isLogOnlyVar,
                   Statement.ifStatement(
                           INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                          Statement.assign(
-                              INCREMENTAL_DOM_PARAM_NAME, INCREMENTAL_DOM_TONULL.call()))
+                          Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
                       .build()));
     }
     Expression veData = getExprTranslator().exec(node.getVeDataExpression());
@@ -1295,8 +1293,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       return Statement.of(
           exit,
           Statement.ifStatement(
-                  isLogOnly,
-                  Statement.assign(INCREMENTAL_DOM_PARAM_NAME, INCREMENTAL_DOM_TODEFAULT.call()))
+                  isLogOnly, Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TODEFAULT.call()))
               .build());
     }
     return exit;
@@ -1346,8 +1343,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         break;
       case HTML_RCDATA:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
-        getJsCodeBuilder()
-            .append(INCREMENTAL_DOM_TEXT.call(Expression.id("String").call(msgExpression)));
+        getJsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(id("String").call(msgExpression)));
         break;
       default:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);

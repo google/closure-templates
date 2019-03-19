@@ -240,8 +240,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** This template's name. */
   private final String templateName;
 
-  /** This template's partial name. Only applicable for V2. */
-  @Nullable private final String partialTemplateName;
+  /** This template's partial name. */
+  private final String partialTemplateName;
 
   /** Visibility of this template. */
   private final Visibility visibility;
@@ -387,7 +387,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Returns this template's partial name. */
-  @Nullable
   public String getPartialTemplateName() {
     return partialTemplateName;
   }

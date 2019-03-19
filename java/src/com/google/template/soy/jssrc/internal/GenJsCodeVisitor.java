@@ -669,14 +669,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     String templateName = node.getTemplateName();
-    String partialName = node.getPartialTemplateName();
+    String partialName = node.getPartialTemplateName().substring(1);
     String alias;
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
-      alias = partialName.substring(1);
+      alias = partialName;
     } else {
       alias = templateAliases.get(templateName);
     }
+    Expression aliasExp = dottedIdNoRequire(alias);
 
     // TODO(lukes): reserve all the namespace prefixes that are in scope
     // TODO(lukes): use this for all local variable declarations
@@ -697,11 +698,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
       // don't export deltemplates or private templates
       if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
-        declarations.add(
-            assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
+        declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), id(alias)));
       }
     } else {
-      declarations.add(Statement.assign(alias, function, jsDoc));
+      declarations.add(Statement.assign(aliasExp, function, jsDoc));
     }
 
     // ------ Add the @typedef of opt_data. ------
@@ -719,7 +719,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
     declarations.add(
-        ifStatement(GOOG_DEBUG, assign(alias + ".soyTemplateName", stringLiteral(templateName)))
+        ifStatement(
+                GOOG_DEBUG,
+                assign(aliasExp.dotAccess("soyTemplateName"), stringLiteral(templateName)))
             .build());
 
     // ------ If delegate template, generate a statement to register it. ------
@@ -767,9 +769,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
         Statement.assign(
-            "opt_ijData",
-            Expression.id("opt_ijData_deprecated")
-                .or(Expression.id("opt_ijData"), templateTranslationContext.codeGenerator())
+            JsRuntime.OPT_IJ_DATA,
+            id("opt_ijData_deprecated")
+                .or(JsRuntime.OPT_IJ_DATA, templateTranslationContext.codeGenerator())
                 .castAs("!soy.IjData")));
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
@@ -784,7 +786,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
           assign(
-              "opt_data",
+              OPT_DATA,
               OPT_DATA.or(EMPTY_OBJECT_LITERAL, templateTranslationContext.codeGenerator())));
     }
 
@@ -1179,7 +1181,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Math.max(0, Match.ceil((end - start)/step))
       // should yield identical results.
       limitInitializer =
-          Expression.dottedIdNoRequire("Math.max")
+          dottedIdNoRequire("Math.max")
               .call(
                   number(0), dottedIdNoRequire("Math.ceil").call(end.minus(start).divideBy(step)));
       // optimize for foreach over a range

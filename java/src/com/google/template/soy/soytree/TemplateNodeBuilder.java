@@ -333,9 +333,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
-    this.templateName = templateName;
-    this.partialTemplateName = partialTemplateName;
+  protected final void setTemplateNames(String templateName, String partialTemplateName) {
+    this.templateName = checkNotNull(templateName);
+    this.partialTemplateName = checkNotNull(partialTemplateName);
   }
 
   protected boolean getStrictHtmlDisabled() {
@@ -346,7 +346,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return templateName;
   }
 
-  @Nullable
   protected String getPartialTemplateName() {
     return partialTemplateName;
   }
