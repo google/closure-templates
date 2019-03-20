@@ -128,10 +128,6 @@ SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent` :
 Python     | `sanitize.SanitizedHtml`
 
-Additionally, Java and JavaScript have support for coercing
-`webutil.html.types.SafeHtmlProto` to an `html` object.
-
-TODO(b/30781527): Support native coercion of `SafeHtml` in Python.
 
 ### `js` {#js}
 
@@ -146,8 +142,6 @@ SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent` :
 Python     | `sanitize.SanitizedJs`
 
-Additionally, all backends have support for coercing
-`webutil.html.types.SafeScriptProto` to a `js` object.
 
 ### `uri` {#uri}
 
