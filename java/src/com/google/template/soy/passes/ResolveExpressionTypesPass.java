@@ -184,6 +184,8 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           "Soy lists do not have a ''length'' field. Use function length(...) instead.");
   private static final SoyErrorKind MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for node {0}.");
+  private static final SoyErrorKind NOT_PROTO_INIT =
+      SoyErrorKind.of("Expected a protocol buffer for the second argument.");
   private static final SoyErrorKind NOT_A_PROTO_TYPE =
       SoyErrorKind.of("''{0}'' is a ''{1}'', expected a protocol buffer.");
   private static final SoyErrorKind OR_OPERATOR_HAS_CONSTANT_OPERAND =

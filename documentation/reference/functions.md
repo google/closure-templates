@@ -11,6 +11,7 @@ Support](../dev/localization#bidi_functions). For information on writing custom
 
 [TOC]
 
+
 ## `isFirst($var)` {#isFirst}
 
 Use this with the `for` command. See the [`for` section](control-flow.md#for) of
