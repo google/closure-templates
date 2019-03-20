@@ -116,32 +116,19 @@ public final class JsType {
       builder()
           .addType("boolean")
           .setPredicate(
-              new TypePredicate() {
-                @Override
-                public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
+              (value, codeGenerator) ->
                   // TODO(lukes): we shouldn't allow numbers here, see if anyone relies on this
                   // 'feature'.
-                  return Optional.of(
+                  Optional.of(
                       GOOG_IS_BOOLEAN
                           .call(value)
                           .or(value.tripleEquals(number(1)), codeGenerator)
-                          .or(value.tripleEquals(number(0)), codeGenerator));
-                }
-              })
+                          .or(value.tripleEquals(number(0)), codeGenerator)))
           .build();
 
   // Unlike BOOLEAN_TYPE, type assertion does not allow values of 0 or 1.
   private static final JsType BOOLEAN_TYPE_STRICT =
-      builder()
-          .addType("boolean")
-          .setPredicate(
-              new TypePredicate() {
-                @Override
-                public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-                  return Optional.of(GOOG_IS_BOOLEAN.call(value));
-                }
-              })
-          .build();
+      builder().addType("boolean").setPredicate(GOOG_IS_BOOLEAN).build();
 
   private static final JsType NUMBER_TYPE =
       builder().addType("number").setPredicate(GOOG_IS_NUMBER).build();
@@ -162,15 +149,11 @@ public final class JsType {
           .addType("!goog.soy.data.UnsanitizedText")
           .addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"))
           .setPredicate(
-              new TypePredicate() {
-                @Override
-                public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-                  return Optional.of(
+              (value, codeGenerator) ->
+                  Optional.of(
                       GOOG_IS_STRING
                           .call(value)
-                          .or(value.instanceOf(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator));
-                }
-              })
+                          .or(value.instanceOf(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator)))
           .build();
 
   private static final JsType RAW_ARRAY_TYPE =
@@ -183,13 +166,7 @@ public final class JsType {
       builder()
           .addType("null")
           .addType("undefined")
-          .setPredicate(
-              new TypePredicate() {
-                @Override
-                public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-                  return Optional.of(value.doubleEqualsNull());
-                }
-              })
+          .setPredicate((value, codeGenerator) -> Optional.of(value.doubleEqualsNull()))
           .build();
 
   private static final ImmutableMap<SanitizedContentKind, JsType> SANITIZED_TYPES;
@@ -225,15 +202,28 @@ public final class JsType {
               GoogRequire.createWithAlias(
                   "google3.javascript.template.soy.api_idom", "incrementaldomlib"))
           .setPredicate(
-              new TypePredicate() {
-                @Override
-                public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-                  return Optional.of(
+              (value, codeGenerator) ->
+                  Optional.of(
                       IS_IDOM_FUNCTION_TYPE
                           .call(value, SANITIZED_CONTENT_KIND.dotAccess("HTML"))
-                          .or(value.instanceOf(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
-                }
-              })
+                          .or(value.instanceOf(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator)))
+          .build();
+
+  private static final JsType VE_TYPE =
+      builder()
+          .addType("!soy.velog.$$VisualElement")
+          .addRequire(SOY_VELOG)
+          .setPredicate(
+              (value, codeGenerator) -> Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT)))
+          .build();
+
+  private static final JsType VE_DATA_TYPE =
+      builder()
+          .addType("!soy.velog.$$VisualElementData")
+          .addRequire(SOY_VELOG)
+          .setPredicate(
+              (value, codeGenerator) ->
+                  Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT_DATA)))
           .build();
 
   static {
@@ -401,13 +391,8 @@ public final class JsType {
             .addRequire(GoogRequire.create(protoTypeName))
             .addCoercionStrategy(ValueCoercionStrategy.PROTO)
             .setPredicate(
-                new TypePredicate() {
-                  @Override
-                  public Optional<Expression> maybeCheck(
-                      Expression value, Generator codeGenerator) {
-                    return Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType)));
-                  }
-                })
+                (value, codeGenerator) ->
+                    Optional.of(value.instanceOf(JsRuntime.protoConstructor(protoType))))
             .build();
 
       case RECORD:
@@ -455,57 +440,31 @@ public final class JsType {
           }
           return builder
               .setPredicate(
-                  new TypePredicate() {
-                    @Override
-                    public Optional<Expression> maybeCheck(
-                        Expression value, Generator codeGenerator) {
-                      Expression result = null;
-                      // TODO(lukes): this will cause reevaluations, resolve by conditionally
-                      // bouncing into a a temporary variable or augmenting the codechunk api to do
-                      // this automatically.
-                      for (JsType memberType : types) {
-                        Optional<Expression> typeAssertion =
-                            memberType.getTypeAssertion(value, codeGenerator);
-                        if (!typeAssertion.isPresent()) {
-                          return Optional.absent();
-                        }
-                        if (result == null) {
-                          result = typeAssertion.get();
-                        } else {
-                          result = result.or(typeAssertion.get(), codeGenerator);
-                        }
+                  (value, codeGenerator) -> {
+                    Expression result = null;
+                    // TODO(lukes): this will cause reevaluations, resolve by conditionally
+                    // bouncing into a a temporary variable or augmenting the codechunk api to do
+                    // this automatically.
+                    for (JsType memberType : types) {
+                      Optional<Expression> typeAssertion =
+                          memberType.getTypeAssertion(value, codeGenerator);
+                      if (!typeAssertion.isPresent()) {
+                        return Optional.absent();
                       }
-                      return Optional.of(result);
+                      if (result == null) {
+                        result = typeAssertion.get();
+                      } else {
+                        result = result.or(typeAssertion.get(), codeGenerator);
+                      }
                     }
+                    return Optional.of(result);
                   })
               .build();
         }
       case VE:
-        return builder()
-            .addType("!soy.velog.$$VisualElement")
-            .addRequire(SOY_VELOG)
-            .setPredicate(
-                new TypePredicate() {
-                  @Override
-                  public Optional<Expression> maybeCheck(
-                      Expression value, Generator codeGenerator) {
-                    return Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT));
-                  }
-                })
-            .build();
+        return VE_TYPE;
       case VE_DATA:
-        return builder()
-            .addType("!soy.velog.$$VisualElementData")
-            .addRequire(SOY_VELOG)
-            .setPredicate(
-                new TypePredicate() {
-                  @Override
-                  public Optional<Expression> maybeCheck(
-                      Expression value, Generator codeGenerator) {
-                    return Optional.of(value.instanceOf(JsRuntime.SOY_VISUAL_ELEMENT_DATA));
-                  }
-                })
-            .build();
+        return VE_DATA_TYPE;
       case ERROR:
         // continue
     }
@@ -514,13 +473,7 @@ public final class JsType {
 
   /** Can generate code chunks which validate the 'type' of a given code chunk. */
   private interface TypePredicate {
-    final TypePredicate NO_OP =
-        new TypePredicate() {
-          @Override
-          public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-            return Optional.absent();
-          }
-        };
+    TypePredicate NO_OP = (value, codeGenerator) -> Optional.absent();
 
     /**
      * Returns a code chunk that evaluates to {@code true} if the given chunk matches the predicate
@@ -657,13 +610,8 @@ public final class JsType {
     final String compatibleWithString = isStrict ? "isCompatibleWithStrict" : "isCompatibleWith";
     return builder
         .setPredicate(
-            new TypePredicate() {
-              @Override
-              public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-                return Optional.of(
-                    sanitizedContentType(kind).dotAccess(compatibleWithString).call(value));
-              }
-            })
+            (value, codeGenerator) ->
+                Optional.of(sanitizedContentType(kind).dotAccess(compatibleWithString).call(value)))
         .build();
   }
 
@@ -718,12 +666,7 @@ public final class JsType {
     /** Sets a predicate which simply invokes the given function. */
     Builder setPredicate(final Expression predicateFunction) {
       return setPredicate(
-          new TypePredicate() {
-            @Override
-            public Optional<Expression> maybeCheck(Expression value, Generator codeGenerator) {
-              return Optional.of(checkNotNull(predicateFunction).call(value));
-            }
-          });
+          (value, codeGenerator) -> Optional.of(checkNotNull(predicateFunction).call(value)));
     }
 
     JsType build() {
