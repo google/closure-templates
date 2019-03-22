@@ -4115,19 +4115,22 @@ goog.html.SafeHtml.createWithDir = function(dir, tagName, opt_attributes, opt_co
   html.dir_ = dir;
   return html;
 };
-goog.html.SafeHtml.concat = function(var_args) {
-  var dir = goog.i18n.bidi.Dir.NEUTRAL, content = "", addArgument = function(argument) {
+goog.html.SafeHtml.join = function(separator, parts) {
+  var separatorHtml = goog.html.SafeHtml.htmlEscape(separator), dir = separatorHtml.getDirection(), content = [], addArgument = function(argument) {
     if (goog.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
       var html = goog.html.SafeHtml.htmlEscape(argument);
-      content += goog.html.SafeHtml.unwrap(html);
+      content.push(goog.html.SafeHtml.unwrap(html));
       var htmlDir = html.getDirection();
       dir == goog.i18n.bidi.Dir.NEUTRAL ? dir = htmlDir : htmlDir != goog.i18n.bidi.Dir.NEUTRAL && dir != htmlDir && (dir = null);
     }
   };
-  goog.array.forEach(arguments, addArgument);
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(content, dir);
+  goog.array.forEach(parts, addArgument);
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(content.join(goog.html.SafeHtml.unwrap(separatorHtml)), dir);
+};
+goog.html.SafeHtml.concat = function(var_args) {
+  return goog.html.SafeHtml.join(goog.html.SafeHtml.EMPTY, Array.prototype.slice.call(arguments));
 };
 goog.html.SafeHtml.concatWithDir = function(dir, var_args) {
   var html = goog.html.SafeHtml.concat(goog.array.slice(arguments, 1));
