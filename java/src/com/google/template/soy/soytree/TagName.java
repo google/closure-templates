@@ -79,6 +79,43 @@ public final class TagName {
           "track",
           "wbr");
 
+  // With default styling, these elements do not start on a new line and only takes up as much width
+  private static final ImmutableSet<String> INLINE_TAG_NAME =
+      ImmutableSet.of(
+          "a",
+          "abbr",
+          "acronym",
+          "b",
+          "bdo",
+          "big",
+          "br",
+          "button",
+          "cite",
+          "code",
+          "dfn",
+          "em",
+          "i",
+          "img",
+          "input",
+          "kbd",
+          "label",
+          "map",
+          "object",
+          "output",
+          "q",
+          "samp",
+          "script",
+          "select",
+          "small",
+          "span",
+          "strong",
+          "sub",
+          "sup",
+          "textarea",
+          "time",
+          "tt",
+          "var");
+
   /**
    * A map that is used to check whether a particular optional tag can be auto closed by a following
    * close tag. See {@link #checkCloseTagClosesOptional} method for more information.
@@ -206,14 +243,15 @@ public final class TagName {
     return VOID_TAG_NAMES.contains(nameAsLowerCase);
   }
 
+  public boolean isDefinitelyInline() {
+    return INLINE_TAG_NAME.contains(nameAsLowerCase);
+  }
+
   public boolean isExcludedOptionalTag() {
-    return isStatic() && HTML_OPEN_TAG_EXCLUDE_SET.contains(getStaticTagNameAsLowerCase());
+    return HTML_OPEN_TAG_EXCLUDE_SET.contains(nameAsLowerCase);
   }
 
   public boolean isDefinitelyOptional() {
-    if (nameAsLowerCase == null) {
-      return false;
-    }
     return OPTIONAL_TAG_CLOSE_TAG_RULES.containsKey(nameAsLowerCase)
         || OPTIONAL_TAG_OPEN_CLOSE_RULES.containsKey(nameAsLowerCase)
         || "html".equals(nameAsLowerCase);
