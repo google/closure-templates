@@ -32,7 +32,6 @@ import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThis
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -278,10 +277,6 @@ final class TemplateCompiler {
     TemplateVariables variables =
         new TemplateVariables(
             variableSet, thisVar, stateInitializers, new RenderContextExpression(contextVar));
-    List<TemplateStateVar> stateVars = ImmutableList.of();
-    if (templateNode instanceof TemplateElementNode) {
-      stateVars = ((TemplateElementNode) templateNode).getStateVars();
-    }
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -292,8 +287,7 @@ final class TemplateCompiler {
                 variableSet,
                 variables,
                 reporter,
-                soyTypeRegistry,
-                stateVars)
+                soyTypeRegistry)
             .compile(templateNode);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {

@@ -175,7 +175,6 @@ final class LazyClosureCompiler {
   private final TemplateVariableManager parentVariables;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
-  private final List<TemplateStateVar> stateVars;
 
   LazyClosureCompiler(
       CompiledTemplateRegistry registry,
@@ -184,8 +183,7 @@ final class LazyClosureCompiler {
       TemplateVariableManager parentVariables,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       ErrorReporter reporter,
-      SoyTypeRegistry typeRegistry,
-      List<TemplateStateVar> stateVars) {
+      SoyTypeRegistry typeRegistry) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
@@ -193,7 +191,6 @@ final class LazyClosureCompiler {
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
     this.reporter = reporter;
     this.typeRegistry = typeRegistry;
-    this.stateVars = stateVars;
   }
 
   Expression compileLazyExpression(
@@ -386,8 +383,7 @@ final class LazyClosureCompiler {
               variableSet,
               lookup,
               reporter,
-              typeRegistry,
-              stateVars);
+              typeRegistry);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();
@@ -484,8 +480,8 @@ final class LazyClosureCompiler {
    * Represents a field captured from our parent. To capture a value from our parent we grab the
    * expression that produces that value and then generate a field in the child with the same type.
    *
-   * <p>{@link CompilationUnit#generateConstructor(Iterable)} generates the code to propagate the
-   * captured values from the parent to the child, and from the constructor to the generated fields.
+   * <p>{@link CompilationUnit#generateConstructor} generates the code to propagate the captured
+   * values from the parent to the child, and from the constructor to the generated fields.
    */
   @AutoValue
   abstract static class ParentCapture {
