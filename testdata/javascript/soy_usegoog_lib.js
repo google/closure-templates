@@ -6408,7 +6408,6 @@ goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
  * @visibility {//javascript/closure/dom:__pkg__}
  * @visibility {//javascript/closure/html:__pkg__}
  * @visibility {//javascript/closure/labs/useragent:__pkg__}
- * @visibility {//javascript/closure/string:__pkg__}
  */
 
 
@@ -6798,7 +6797,6 @@ goog.string.internal.compareElements_ = function(left, right) {
  * should not be used outside of goog.labs.userAgent.*.
  *
  * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
  * @visibility {//javascript/closure/dom:__subpackages__}
  * @visibility {//javascript/closure/style:__pkg__}
  * @visibility {//javascript/closure/testing:__pkg__}
