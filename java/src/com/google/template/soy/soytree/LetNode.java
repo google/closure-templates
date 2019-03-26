@@ -45,9 +45,9 @@ public abstract class LetNode extends AbstractCommandNode
       int id,
       SourceLocation sourceLocation,
       String localVarName,
-      SourceLocation localVaNameLocation) {
+      SourceLocation localVarNameLocation) {
     super(id, sourceLocation, "let");
-    this.var = new LocalVar(localVarName, localVaNameLocation, this, /* type= */ null);
+    this.var = new LocalVar(localVarName, localVarNameLocation, this, /* type= */ null);
   }
 
   /**
