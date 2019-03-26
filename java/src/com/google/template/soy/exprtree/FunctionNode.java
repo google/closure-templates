@@ -25,7 +25,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -144,5 +146,17 @@ public final class FunctionNode extends AbstractParentExprNode {
   @Override
   public FunctionNode copy(CopyState copyState) {
     return new FunctionNode(this, copyState);
+  }
+
+  /**
+   * Whether or not this function is pure.
+   *
+   * <p>See {@link SoyPureFunction} for the definition of a pure function.
+   */
+  public boolean isPure() {
+    if (soyFunction instanceof BuiltinFunction) {
+      return ((BuiltinFunction) soyFunction).isPure();
+    }
+    return soyFunction.getClass().isAnnotationPresent(SoyPureFunction.class);
   }
 }

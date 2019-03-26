@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 /**
  * Annotation for a Soy function that's pure (e.g. can be preevaluated during optimization).
  *
+ * <p>A pure function is one that's idempotent: if you evaluate a pure function with a given set of
+ * arguments it will always return the same value.
  */
 @Target(TYPE)
 @Retention(RUNTIME)

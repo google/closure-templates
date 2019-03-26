@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -399,7 +398,7 @@ public final class SoyTreeUtils {
             return all ? VisitDirective.CONTINUE : VisitDirective.ABORT;
           case FUNCTION_NODE:
             FunctionNode fn = (FunctionNode) node;
-            if (fn.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
+            if (fn.isPure()) {
               // Continue to evaluate the const-ness of the pure function's parameters.
               return VisitDirective.CONTINUE;
             } else {
