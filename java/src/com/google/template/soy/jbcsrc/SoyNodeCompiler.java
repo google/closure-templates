@@ -104,6 +104,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -1010,59 +1011,90 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {
     if (node.numChildren() == 0) {
-      // Easy, just use the data attribute
-      return getDataExpression(node, reattachPoint);
-    } else {
-      // Otherwise we need to build a dictionary from {param} statements.
-      Expression paramStoreExpression = getParamStoreExpression(node, reattachPoint);
-      for (CallParamNode child : node.getChildren()) {
-        String paramKey = child.getKey().identifier();
-        Expression valueExpr;
-        if (child instanceof CallParamContentNode) {
-          valueExpr =
-              lazyClosureCompiler.compileLazyContent(
-                  "param", (CallParamContentNode) child, paramKey);
-        } else {
-          valueExpr =
-              lazyClosureCompiler.compileLazyExpression(
-                  "param", child, paramKey, ((CallParamValueNode) child).getExpr());
-        }
-        // ParamStore.setField return 'this' so we can just chain the invocations together.
-        paramStoreExpression =
-            MethodRef.PARAM_STORE_SET_FIELD.invoke(
-                paramStoreExpression, BytecodeUtils.constant(paramKey), valueExpr);
+      if (!node.isPassingData()) {
+        return FieldRef.EMPTY_DICT.accessor();
+      } else if (!node.isPassingAllData()) {
+        return getDataRecordExpression(node, reattachPoint);
       }
-      return paramStoreExpression;
-    }
-  }
 
-  /** Returns an expression that creates a new {@link ParamStore} suitable for holding all the */
-  private Expression getParamStoreExpression(CallNode node, Label reattachPoint) {
-    Expression paramStoreExpression;
-    if (node.isPassingData()) {
+      Expression paramsRecord = parameterLookup.getParamsRecord();
+      return maybeAddDefaultParams(
+              node,
+              ConstructorRef.AUGMENTED_PARAM_STORE.construct(
+                  paramsRecord, constant(node.numChildren())))
+          .or(paramsRecord);
+    }
+
+    Expression paramStoreExpression = getParamStoreExpression(node, reattachPoint);
+    for (CallParamNode child : node.getChildren()) {
+      String paramKey = child.getKey().identifier();
+      Expression valueExpr;
+      if (child instanceof CallParamContentNode) {
+        valueExpr =
+            lazyClosureCompiler.compileLazyContent("param", (CallParamContentNode) child, paramKey);
+      } else {
+        valueExpr =
+            lazyClosureCompiler.compileLazyExpression(
+                "param", child, paramKey, ((CallParamValueNode) child).getExpr());
+      }
+      // ParamStore.setField return 'this' so we can just chain the invocations together.
       paramStoreExpression =
-          ConstructorRef.AUGMENTED_PARAM_STORE.construct(
-              getDataExpression(node, reattachPoint), constant(node.numChildren()));
-    } else {
-      paramStoreExpression =
-          ConstructorRef.BASIC_PARAM_STORE.construct(constant(node.numChildren()));
+          MethodRef.PARAM_STORE_SET_FIELD.invoke(
+              paramStoreExpression, BytecodeUtils.constant(paramKey), valueExpr);
     }
     return paramStoreExpression;
   }
 
-  private Expression getDataExpression(CallNode node, Label reattachPoint) {
-    if (node.isPassingData()) {
-      if (node.isPassingAllData()) {
-        return parameterLookup.getParamsRecord();
-      } else {
-        return exprCompiler
-            .compile(node.getDataExpr(), reattachPoint)
-            .box()
-            .checkedCast(SoyRecord.class);
-      }
-    } else {
-      return FieldRef.EMPTY_DICT.accessor();
+  /**
+   * Returns an expression that creates a new {@link ParamStore} suitable for holding all the
+   * parameters.
+   */
+  private Expression getParamStoreExpression(CallNode node, Label reattachPoint) {
+    if (!node.isPassingData()) {
+      return ConstructorRef.BASIC_PARAM_STORE.construct(constant(node.numChildren()));
     }
+
+    Expression dataExpression;
+    if (node.isPassingAllData()) {
+      dataExpression = parameterLookup.getParamsRecord();
+    } else {
+      dataExpression = getDataRecordExpression(node, reattachPoint);
+    }
+    Expression paramStoreExpression =
+        ConstructorRef.AUGMENTED_PARAM_STORE.construct(
+            dataExpression, constant(node.numChildren()));
+    if (node.isPassingAllData()) {
+      paramStoreExpression =
+          maybeAddDefaultParams(node, paramStoreExpression).or(paramStoreExpression);
+    }
+    return paramStoreExpression;
+  }
+
+  private Optional<Expression> maybeAddDefaultParams(
+      CallNode node, Expression paramStoreExpression) {
+    boolean foundDefaultParams = false;
+    // If this is a data="all" call and the caller has default parameters we need to augment the
+    // params record to make sure any unset default parameters are set to the default in the
+    // params record. It's not worth it to determine if we're using the default value or not
+    // here, so just augment all default parameters with whatever value they ended up with.
+    for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
+      if (param.hasDefault()) {
+        foundDefaultParams = true;
+        paramStoreExpression =
+            MethodRef.PARAM_STORE_SET_FIELD.invoke(
+                paramStoreExpression,
+                BytecodeUtils.constant(param.name()),
+                parameterLookup.getParam(param));
+      }
+    }
+    return foundDefaultParams ? Optional.of(paramStoreExpression) : Optional.absent();
+  }
+
+  private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {
+    return exprCompiler
+        .compile(node.getDataExpr(), reattachPoint)
+        .box()
+        .checkedCast(SoyRecord.class);
   }
 
   @Override

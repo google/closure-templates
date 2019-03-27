@@ -29,6 +29,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
@@ -236,6 +237,15 @@ public class SoySauceTest {
             .isEqualTo("strict_test.callsItself.render(strict.soy:34)");
       }
     }
+  }
+
+  /** Tests that a parameter set to {@code NullData} doesn't trigger the default parameter logic. */
+  @Test
+  public void testDefaultParam() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.defaultParam");
+
+    assertThat(tmpl.setData(ImmutableMap.of("p", NullData.INSTANCE)).render().get())
+        .isEqualTo("null");
   }
 
   private static final class TestAppendable implements AdvisingAppendable {

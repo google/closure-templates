@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
@@ -148,15 +150,25 @@ public final class JbcSrcRuntime {
    * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
    * #NULL_PROVIDER} for missing fields.
    */
-  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
-    if (record == null) {
-      throw new NullPointerException("Attempted to access field '" + field + "' of null");
-    }
+  public static SoyValueProvider getFieldProvider(
+      SoyRecord record, String field, @Nullable SoyValue defaultValue) {
+    checkNotNull(record, "Attempted to access field '%s' of null", field);
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
     SoyValueProvider provider = record.getFieldProvider(field);
-    // | instead of || avoids a branch
-    return (provider == null | provider instanceof NullData) ? NULL_PROVIDER : provider;
+    if (provider == null) {
+      if (defaultValue == null) {
+        return NULL_PROVIDER;
+      }
+      return defaultValue;
+    } else if (provider instanceof NullData) {
+      return NULL_PROVIDER;
+    }
+    return provider;
+  }
+
+  public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
+    return getFieldProvider(record, field, /* defaultValue= */ null);
   }
 
   /**

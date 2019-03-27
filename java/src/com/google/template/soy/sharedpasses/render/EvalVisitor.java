@@ -96,6 +96,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -333,7 +334,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       TemplateStateVar state = (TemplateStateVar) varRef.getDefnDecl();
       return visit(state.defaultValue());
     } else {
-      return env.getVar(varRef.getDefnDecl());
+      SoyValue value = env.getVar(varRef.getDefnDecl());
+      if (varRef.getDefnDecl().kind() == VarDefn.Kind.PARAM
+          && ((TemplateParam) varRef.getDefnDecl()).hasDefault()
+          && (UndefinedData.INSTANCE == value)) {
+        // Use the default value if it has one and the parameter is undefined.
+        value = visit(((TemplateParam) varRef.getDefnDecl()).defaultValue());
+      }
+      return value;
     }
   }
 

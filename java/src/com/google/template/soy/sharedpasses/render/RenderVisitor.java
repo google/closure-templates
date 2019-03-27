@@ -162,8 +162,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param outputBuf The Appendable to append the output to.
-   * @param templateRegistry A registry of all templates. Should never be null (except in some unit
-   *     tests).
    * @param data The current template data.
    * @param ijData The current injected data.
    * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
@@ -537,69 +535,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  @SuppressWarnings("ConstantConditions") // for IntelliJ
   private void visitCallNodeHelper(CallNode node, TemplateNode callee) {
 
     // ------ Build the call data. ------
-    SoyRecord dataToPass;
-    if (node.isPassingAllData()) {
-      dataToPass = data;
-    } else if (node.isPassingData()) {
-      SoyValue dataRefValue = eval(node.getDataExpr(), node);
-      if (!(dataRefValue instanceof SoyRecord)) {
-        throw RenderException.create(
-                "In 'call' command "
-                    + node.toSourceString()
-                    + ", the data reference does not resolve to a SoyRecord.")
-            .addStackTraceElement(node);
-      }
-      dataToPass = (SoyRecord) dataRefValue;
-    } else {
-      dataToPass = null;
-    }
-
-    SoyRecord callData;
-
-    int numChildren = node.numChildren();
-    if (numChildren == 0) {
-      // --- Cases 1 and 2: Not passing params. ---
-      if (dataToPass == null) {
-        // Case 1: Not passing data and not passing params.
-        callData = ParamStore.EMPTY_INSTANCE;
-      } else {
-        // Case 2: Passing data and not passing params.
-        callData = dataToPass;
-      }
-
-    } else {
-      // --- Cases 3 and 4: Passing params. ---
-      ParamStore mutableCallData;
-
-      if (dataToPass == null) {
-        // Case 3: Not passing data and passing params.
-        mutableCallData = new BasicParamStore(numChildren);
-      } else {
-        // Case 4: Passing data and passing params.
-        mutableCallData = new AugmentedParamStore(dataToPass, numChildren);
-      }
-
-      for (CallParamNode child : node.getChildren()) {
-
-        if (child instanceof CallParamValueNode) {
-          mutableCallData.setField(
-              child.getKey().identifier(), lazyEval(((CallParamValueNode) child).getExpr(), child));
-
-        } else if (child instanceof CallParamContentNode) {
-          mutableCallData.setField(
-              child.getKey().identifier(), renderRenderUnitNode((CallParamContentNode) child));
-
-        } else {
-          throw new AssertionError();
-        }
-      }
-
-      callData = mutableCallData;
-    }
+    SoyRecord callData = createCallParams(node);
 
     // ------ Render the callee template with the callData built above. ------
 
@@ -638,6 +577,91 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       append(currOutputBuf, resultData, node);
     }
+  }
+
+  private SoyRecord createCallParams(CallNode node) {
+    if (node.numChildren() == 0) {
+      if (!node.isPassingData()) {
+        // Case 1: Not passing data and not passing params.
+        return ParamStore.EMPTY_INSTANCE;
+      }
+
+      // Case 2: Passing data and not passing params.
+      if (!node.isPassingAllData()) {
+        return getDataRecord(node);
+      }
+
+      ImmutableList<TemplateParam> params = node.getNearestAncestor(TemplateNode.class).getParams();
+      ParamStore dataWithDefaults = null;
+      // If this is a data="all" call and the caller has default parameters we need to augment the
+      // data record to make sure any default parameters are set to the default in the data record.
+      for (TemplateParam param : params) {
+        if (param.hasDefault() && data.getField(param.name()) == null) {
+          if (dataWithDefaults == null) {
+            dataWithDefaults = new AugmentedParamStore(data, params.size());
+          }
+          // This could be made more performant by precalculating the default value, but Tofu is
+          // legacy so don't worry about.
+          dataWithDefaults.setField(param.name(), lazyEval(param.defaultValue(), node));
+        }
+      }
+      return dataWithDefaults == null ? data : dataWithDefaults;
+    }
+
+    ParamStore params;
+    if (node.isPassingData()) {
+      // Case 3: Passing data and passing params.
+      SoyRecord dataRecord;
+      if (node.isPassingAllData()) {
+        dataRecord = data;
+      } else {
+        dataRecord = getDataRecord(node);
+      }
+      params = new AugmentedParamStore(dataRecord, node.numChildren());
+      if (node.isPassingAllData()) {
+        for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
+          // If this is a data="all" call and the caller has default parameters we need to augment
+          // the params record to make sure any unset default parameters are set to the default in
+          // the params record.
+          if (param.hasDefault() && params.getField(param.name()) == null) {
+            params.setField(param.name(), lazyEval(param.defaultValue(), node));
+          }
+        }
+      }
+    } else {
+      // Case 4: Not passing data and passing params.
+      params = new BasicParamStore(node.numChildren());
+    }
+
+    // --- Cases 3 and 4: Passing params. ---
+    for (CallParamNode child : node.getChildren()) {
+
+      if (child instanceof CallParamValueNode) {
+        params.setField(
+            child.getKey().identifier(), lazyEval(((CallParamValueNode) child).getExpr(), child));
+
+      } else if (child instanceof CallParamContentNode) {
+        params.setField(
+            child.getKey().identifier(), renderRenderUnitNode((CallParamContentNode) child));
+
+      } else {
+        throw new AssertionError();
+      }
+    }
+
+    return params;
+  }
+
+  private SoyRecord getDataRecord(CallNode node) {
+    SoyValue dataRefValue = eval(node.getDataExpr(), node);
+    if (!(dataRefValue instanceof SoyRecord)) {
+      throw RenderException.create(
+              "In 'call' command "
+                  + node.toSourceString()
+                  + ", the data reference does not resolve to a SoyRecord.")
+          .addStackTraceElement(node);
+    }
+    return (SoyRecord) dataRefValue;
   }
 
   @Override
@@ -901,6 +925,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             });
         return;
       }
+    } else if (param.hasDefault() && paramValue.resolve() instanceof UndefinedData) {
+      // Default parameters are undefined if they're unset.
+      return;
     }
     checkValueType(param, paramValue.resolve(), node);
   }

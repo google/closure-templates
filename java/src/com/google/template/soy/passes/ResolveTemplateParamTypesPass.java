@@ -23,14 +23,18 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
 final class ResolveTemplateParamTypesPass extends CompilerFilePass {
   private final TypeNodeConverter converter;
+  private final boolean disableAllTypeChecking;
 
-  ResolveTemplateParamTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolveTemplateParamTypesPass(
+      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.converter = new TypeNodeConverter(errorReporter, typeRegistry);
+    this.disableAllTypeChecking = disableAllTypeChecking;
   }
 
   @Override
@@ -39,6 +43,13 @@ final class ResolveTemplateParamTypesPass extends CompilerFilePass {
       for (TemplateParam param : template.getAllParams()) {
         if (param.getTypeNode() != null) {
           param.setType(converter.getOrCreateType(param.getTypeNode()));
+        } else if (disableAllTypeChecking) {
+          // If there's no type node, this is a default parameter. Normally, we'd set the type on
+          // this once we figure out the type of the default expression in
+          // ResolveExpressionTypesPass. But if type checking is disabled that pass won't run, so
+          // instead we set the type to unknown here, because later parts of the compiler require a
+          // (non-null) type.
+          param.setType(UnknownType.getInstance());
         }
       }
       if (template instanceof TemplateElementNode) {
