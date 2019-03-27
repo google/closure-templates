@@ -50,7 +50,6 @@ import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
@@ -73,7 +72,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -728,22 +726,6 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testDefaultParam() {
-    assertThatTemplateBody("{@param default:= 18}", "{$default}")
-        .rendersAs("18", ImmutableMap.of())
-        .rendersAs("-12", ImmutableMap.of("default", -12));
-
-    // This can't be an ImmutableMap because they don't allow null values.
-    Map<String, Object> nullValue = new HashMap<>();
-    nullValue.put("nullable", null);
-    assertThatTemplateBody("{@param nullable : null|string = 'default'}", "{$nullable}")
-        .rendersAs("default", ImmutableMap.of())
-        .rendersAs("override", ImmutableMap.of("nullable", "override"))
-        .rendersAs("null", nullValue)
-        .rendersAs("null", ImmutableMap.of("nullable", NullData.INSTANCE));
-  }
-
-  @Test
   public void testDebugger() {
     assertThatTemplateBody("{debugger}").rendersAs("");
   }
@@ -783,8 +765,7 @@ public class BytecodeCompilerTest {
                 "{@param foo : string}",
                 "{@param baz : string}",
                 "{@inject bar : string}",
-                "{@param defaultP:= 'orange'}",
-                "{$foo + $baz + $bar + $defaultP}")
+                "{$foo + $baz + $bar}")
             .getTemplateFactory("ns.foo");
     SoyDict params =
         SoyValueConverterUtility.newDict(
@@ -795,16 +776,6 @@ public class BytecodeCompilerTest {
     assertThat(getField("foo", template)).isEqualTo(StringData.forValue("foo"));
     assertThat(getField("bar", template)).isEqualTo(StringData.forValue("bar"));
     assertThat(getField("baz", template)).isEqualTo(StringData.forValue("baz"));
-    assertThat(getField("defaultP", template)).isEqualTo(StringData.forValue("orange"));
-
-    SoyDict overrideParam =
-        SoyValueConverterUtility.newDict(
-            "foo", StringData.forValue("foo"),
-            "bar", StringData.forValue("bar"),
-            "baz", StringData.forValue("baz"),
-            "defaultP", StringData.forValue("green"));
-    template = multipleParams.create(overrideParam, overrideParam);
-    assertThat(getField("defaultP", template)).isEqualTo(StringData.forValue("green"));
 
     TemplateMetadata templateMetadata = template.getClass().getAnnotation(TemplateMetadata.class);
     assertThat(templateMetadata.injectedParams()).asList().containsExactly("bar");

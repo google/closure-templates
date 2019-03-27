@@ -38,7 +38,6 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
@@ -72,7 +71,6 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.NullType;
@@ -81,7 +79,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -180,9 +177,9 @@ final class TemplateCompiler {
       field.defineField(writer);
     }
 
-    ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers = generateRenderMethod();
+    generateRenderMethod();
 
-    generateConstructor(defaultParamInitializers);
+    generateConstructor();
 
     innerClasses.registerAllInnerClasses(writer);
     writer.visitEnd();
@@ -261,7 +258,7 @@ final class TemplateCompiler {
     return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
-  private ImmutableMap<TemplateParam, SoyExpression> generateRenderMethod() {
+  private void generateRenderMethod() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -273,15 +270,10 @@ final class TemplateCompiler {
         new TemplateVariableManager(
             fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     ImmutableMap<TemplateStateVar, SoyExpression> stateInitializers = ImmutableMap.of();
-    BasicExpressionCompiler constantCompiler =
-        ExpressionCompiler.createConstantCompiler(variableSet, reporter, soyTypeRegistry);
     if (templateNode instanceof TemplateElementNode) {
       stateInitializers =
-          generateStateInitializers(
-              (TemplateElementNode) templateNode, variableSet, constantCompiler);
+          generateStateInitializers((TemplateElementNode) templateNode, variableSet);
     }
-    ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers =
-        generateDefaultParamInitializers(templateNode, variableSet, constantCompiler);
     TemplateVariables variables =
         new TemplateVariables(
             variableSet, thisVar, stateInitializers, new RenderContextExpression(contextVar));
@@ -315,61 +307,33 @@ final class TemplateCompiler {
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
     variableSet.defineStaticFields(writer);
     variableSet.defineFields(writer);
-    return defaultParamInitializers;
   }
 
   private ImmutableMap<TemplateStateVar, SoyExpression> generateStateInitializers(
-      TemplateElementNode node,
-      TemplateVariableManager varManager,
-      BasicExpressionCompiler constantCompiler) {
+      TemplateElementNode node, TemplateVariableManager varManager) {
+    BasicExpressionCompiler constantCompiler =
+        ExpressionCompiler.createConstantCompiler(varManager, reporter, soyTypeRegistry);
     ImmutableMap.Builder<TemplateStateVar, SoyExpression> builder = ImmutableMap.builder();
     for (TemplateStateVar state : node.getStateVars()) {
-      SoyExpression stateValue = getDefaultValueVarRef(state, varManager, constantCompiler);
+      SoyExpression stateValue;
+      if (state.defaultValue().getType() == NullType.getInstance()) {
+        // a special case for null to avoid poor handling elsewhere in the compiler.
+        stateValue =
+            SoyExpression.forSoyValue(
+                state.type(),
+                BytecodeUtils.constantNull(
+                    SoyRuntimeType.getBoxedType(state.type()).runtimeType()));
+      } else {
+        stateValue = constantCompiler.compile(state.defaultValue());
+      }
+      if (!stateValue.isCheap()) {
+        // these fields are package private so that lazy closures can access them directly.
+        FieldRef ref = varManager.addPackagePrivateStaticField(state.name(), stateValue);
+        stateValue = stateValue.withSource(ref.accessor());
+      }
       builder.put(state, stateValue);
     }
     return builder.build();
-  }
-
-  private ImmutableMap<TemplateParam, SoyExpression> generateDefaultParamInitializers(
-      TemplateNode template,
-      TemplateVariableManager varManager,
-      BasicExpressionCompiler constantCompiler) {
-    ImmutableMap.Builder<TemplateParam, SoyExpression> params = ImmutableMap.builder();
-    for (TemplateParam param : template.getParams()) {
-      if (param.hasDefault()) {
-        SoyExpression defaultParamRef = getDefaultValueVarRef(param, varManager, constantCompiler);
-        params.put(param, defaultParamRef);
-      }
-    }
-    return params.build();
-  }
-
-  private SoyExpression getDefaultValueVarRef(
-      TemplateHeaderVarDefn headerVar,
-      TemplateVariableManager varManager,
-      BasicExpressionCompiler constantCompiler) {
-    SoyExpression varRef;
-    if (headerVar.defaultValue().getType() == NullType.getInstance()) {
-      // a special case for null to avoid poor handling elsewhere in the compiler.
-      varRef =
-          SoyExpression.forSoyValue(
-              headerVar.type(),
-              BytecodeUtils.constantNull(
-                  SoyRuntimeType.getBoxedType(headerVar.type()).runtimeType()));
-    } else {
-      varRef = constantCompiler.compile(headerVar.defaultValue());
-    }
-    if (!varRef.isCheap()) {
-      FieldRef ref;
-      if (headerVar.kind() == Kind.STATE) {
-        // State fields are package private so that lazy closures can access them directly.
-        ref = varManager.addPackagePrivateStaticField(headerVar.name(), varRef);
-      } else {
-        ref = varManager.addStaticField("default$" + headerVar.name(), varRef);
-      }
-      varRef = varRef.withSource(ref.accessor());
-    }
-    return varRef;
   }
 
   /**
@@ -378,8 +342,7 @@ final class TemplateCompiler {
    *
    * <p>This constructor is called by the generate factory classes.
    */
-  private void generateConstructor(
-      ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers) {
+  private void generateConstructor() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -389,8 +352,7 @@ final class TemplateCompiler {
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
     for (TemplateParam param : templateNode.getAllParams()) {
-      Expression paramProvider =
-          getParam(paramsVar, ijVar, param, defaultParamInitializers.get(param));
+      Expression paramProvider = getParam(paramsVar, ijVar, param);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }
     Statement constructorBody =
@@ -420,20 +382,12 @@ final class TemplateCompiler {
    * parameter is missing.
    */
   private static Expression getParam(
-      LocalVariable paramsVar,
-      LocalVariable ijVar,
-      TemplateParam param,
-      @Nullable SoyExpression defaultValue) {
+      LocalVariable paramsVar, LocalVariable ijVar, TemplateParam param) {
     Expression fieldName = BytecodeUtils.constant(param.name());
     Expression record = param.isInjected() ? ijVar : paramsVar;
     // NOTE: for compatibility with Tofu and jssrc we do not check for missing required parameters
     // here instead they will just turn into null.  Existing templates depend on this.
-    if (defaultValue == null) {
-      return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
-    } else {
-      return MethodRef.RUNTIME_GET_FIELD_PROVIDER_DEFAULT.invoke(
-          record, fieldName, defaultValue.box());
-    }
+    return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
   }
 
   private final class TemplateVariables implements TemplateParameterLookup {

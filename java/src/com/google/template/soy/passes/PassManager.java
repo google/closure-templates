@@ -260,9 +260,7 @@ public final class PassManager {
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
-      addPass(
-          new ResolveTemplateParamTypesPass(registry, errorReporter, disableAllTypeChecking),
-          singleFilePassesBuilder);
+      addPass(new ResolveTemplateParamTypesPass(registry, errorReporter), singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // needs to come before SoyConformancePass
       addPass(new ResolvePluginsPass(pluginResolver, registry), singleFilePassesBuilder);
