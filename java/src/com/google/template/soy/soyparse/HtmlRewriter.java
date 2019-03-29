@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
+import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -2071,6 +2072,7 @@ final class HtmlRewriter {
     }
 
     /** Asserts that the context is empty. */
+    @FormatMethod
     void checkEmpty(String fmt, Object... args) {
       StringBuilder error = null;
 
@@ -2131,6 +2133,7 @@ final class HtmlRewriter {
       }
     }
 
+    @FormatMethod
     private static StringBuilder format(StringBuilder error, String fmt, Object... args) {
       if (error == null) {
         error = new StringBuilder();

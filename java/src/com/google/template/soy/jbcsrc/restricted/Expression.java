@@ -23,6 +23,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -260,6 +261,7 @@ public abstract class Expression extends BytecodeProducer {
   }
 
   /** Check that this expression is assignable to {@code expected}. */
+  @FormatMethod
   public final void checkAssignableTo(Type expected, String fmt, Object... args) {
     if (Flags.DEBUG && !BytecodeUtils.isPossiblyAssignableFrom(expected, resultType())) {
       String message =
