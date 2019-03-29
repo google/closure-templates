@@ -50,13 +50,23 @@ public class SoyTemplateInfo {
    *
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
-   * @param ijParamSet Set of injected params used by this template (or a transitive callee).
+   */
+  protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
+    this(name, paramMap, "strict");
+  }
+
+  /**
+   * Constructor for internal use only, for the general case.
+   *
+   * <p>Important: Do not construct SoyTemplateInfo objects outside of Soy internal or Soy-generated
+   * code. User code that constructs SoyTemplateInfo objects will be broken by future Soy changes.
+   *
+   * @param name The full template name.
+   * @param paramMap Map from each param to whether it's required for this template.
    * @param autoescapeMode The auto escape mode used by this template.
    */
   protected SoyTemplateInfo(
-      String name,
-      ImmutableMap<String, ParamRequisiteness> paramMap,
-      String autoescapeMode) {
+      String name, ImmutableMap<String, ParamRequisiteness> paramMap, String autoescapeMode) {
     this.name = name;
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
