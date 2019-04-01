@@ -523,11 +523,13 @@ final class ProtoUtils {
         SanitizedContentKind kind = ((SanitizedType) node.getType()).getContentKind();
         Descriptor messageType = descriptor.getMessageType();
         MethodRef methodRef = SAFE_PROTO_TO_ACCESSOR.get(messageType.getFullName());
+        // TODO(lukes): change this method to require a SanitizedContent boxed value
         return SoyExpression.forSanitizedString(
-            field
-                .checkedCast(methodRef.owner().type()) // cast needed for extensions
-                .invoke(methodRef),
-            kind);
+                field
+                    .checkedCast(methodRef.owner().type()) // cast needed for extensions
+                    .invoke(methodRef),
+                kind)
+            .box();
       }
     }
 

@@ -507,7 +507,8 @@ public final class SoyExpression extends Expression {
             };
           };
     }
-    // We need to ensure that santized types don't lose their content kinds
+    // TODO(b/129677847): Drop support for unboxing SanitizedContent objects.
+    // We need to ensure that sanitized types don't lose their content kinds
     return soyRuntimeType.isKnownSanitizedContent()
         ? forSanitizedString(unboxedString, ((SanitizedType) soyType()).getContentKind())
         : forString(unboxedString);
