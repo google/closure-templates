@@ -97,7 +97,8 @@ public abstract class Environment {
         SoyValueProvider provider =
             (param.isInjected() ? ijData : data).getFieldProvider(param.name());
         if (provider == null) {
-          provider = param.isRequired() ? UndefinedData.INSTANCE : NullData.INSTANCE;
+          provider =
+              param.isRequired() || param.hasDefault() ? UndefinedData.INSTANCE : NullData.INSTANCE;
         }
         localVariableTable[param.localVariableIndex()] = provider;
       }
