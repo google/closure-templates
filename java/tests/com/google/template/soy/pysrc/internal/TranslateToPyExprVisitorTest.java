@@ -163,4 +163,10 @@ public class TranslateToPyExprVisitorTest {
   public void testXid() {
     assertThatSoyExpr("xid('foo')").translatesTo("runtime.get_xid_name('foo')", Integer.MAX_VALUE);
   }
+
+  @Test
+  public void testDefaultParamAccess() {
+    assertThatSoyExpr("{@param p:= 18}\n" + "  {$p}\n")
+        .compilesTo(new PyExpr("data.get('p', 18)", Integer.MAX_VALUE));
+  }
 }

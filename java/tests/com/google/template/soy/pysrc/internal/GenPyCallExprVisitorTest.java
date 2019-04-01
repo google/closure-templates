@@ -146,4 +146,12 @@ public final class GenPyCallExprVisitorTest {
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
   }
+
+  @Test
+  public void testDataAllWithDefaultParams() {
+    String soyCode = "{@param goo:= 'str'}\n" + "{call .goo data='all' /}";
+    String expectedPyCode = "goo(runtime.merge_into_dict({'goo': 'str'}, data), ijData)";
+
+    assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
+  }
 }

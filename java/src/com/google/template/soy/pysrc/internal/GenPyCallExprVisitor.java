@@ -40,6 +40,7 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -199,11 +200,6 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       dataToPass = "{}";
     }
 
-    // Case 1: No additional params.
-    if (callNode.numChildren() == 0) {
-      return dataToPass;
-    }
-
     // Build an object literal containing the additional params.
     Map<PyExpr, PyExpr> additionalParams = new LinkedHashMap<>();
 
@@ -239,13 +235,35 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       }
     }
 
+    Map<PyExpr, PyExpr> defaultParams = new LinkedHashMap<>();
+    for (TemplateParam param : callNode.getNearestAncestor(TemplateNode.class).getParams()) {
+      if (param.hasDefault()) {
+        defaultParams.put(
+            new PyStringExpr("'" + param.name() + "'"), translator.exec(param.defaultValue()));
+      }
+    }
+
     PyExpr additionalParamsExpr = PyExprUtils.convertMapToPyExpr(additionalParams);
 
     // Cases 2 and 3: Additional params with and without original data to pass.
     if (callNode.isPassingData()) {
-      // make a shallow copy so we don't accidentally modify the param
-      dataToPass = "dict(" + dataToPass + ")";
-      return "runtime.merge_into_dict(" + dataToPass + ", " + additionalParamsExpr.getText() + ")";
+      if (callNode.numChildren() > 0) {
+        // make a shallow copy so we don't accidentally modify the param
+        dataToPass = "dict(" + dataToPass + ")";
+        dataToPass =
+            "runtime.merge_into_dict(" + dataToPass + ", " + additionalParamsExpr.getText() + ")";
+      }
+
+      if (!defaultParams.isEmpty()) {
+        // If there are default parameters, merge the data we have so far into a dict of the default
+        // parameters. This will override the parameter defaults with actual values (if there are
+        // actual values).
+        PyExpr defaultParamsExpr = PyExprUtils.convertMapToPyExpr(defaultParams);
+        dataToPass =
+            "runtime.merge_into_dict(" + defaultParamsExpr.getText() + ", " + dataToPass + ")";
+      }
+
+      return dataToPass;
     } else {
       return additionalParamsExpr.getText();
     }

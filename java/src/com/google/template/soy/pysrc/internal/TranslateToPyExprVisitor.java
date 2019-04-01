@@ -16,6 +16,8 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -56,6 +58,7 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -63,6 +66,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@link ExprNode}) into an equivalent
@@ -71,12 +75,51 @@ import java.util.stream.Collectors;
  */
 public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 
-  /** How a key access should behave if a key is not in the structure. */
-  private enum NotFoundBehavior {
+  private static class NotFoundBehavior {
+    private static final NotFoundBehavior RETURN_NONE = new NotFoundBehavior(Type.RETURN_NONE);
+    private static final NotFoundBehavior THROW = new NotFoundBehavior(Type.THROW);
+
     /** Return {@code None} if the key is not in the structure. */
-    RETURN_NONE,
+    private static NotFoundBehavior returnNone() {
+      return RETURN_NONE;
+    }
+
     /** Throw an exception if the key is not in the structure. */
-    THROW
+    private static NotFoundBehavior throwException() {
+      return THROW;
+    }
+
+    /** Default to the given value if the key is not in the structure. */
+    private static NotFoundBehavior defaultValue(PyExpr defaultValue) {
+      return new NotFoundBehavior(defaultValue);
+    }
+
+    private enum Type {
+      RETURN_NONE,
+      THROW,
+      DEFAULT_VALUE,
+    }
+
+    private final Type type;
+    @Nullable private final PyExpr defaultValue;
+
+    private NotFoundBehavior(Type type) {
+      this.type = type;
+      this.defaultValue = null;
+    }
+
+    private NotFoundBehavior(PyExpr defaultValue) {
+      this.type = Type.DEFAULT_VALUE;
+      this.defaultValue = checkNotNull(defaultValue);
+    }
+
+    private Type getType() {
+      return type;
+    }
+
+    private PyExpr getDefaultValue() {
+      return defaultValue;
+    }
   }
 
   /** If a key should be coerced to a string before a key access. */
@@ -206,10 +249,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitVarRefNode(VarRefNode node) {
-    if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
-      TemplateStateVar state = (TemplateStateVar) node.getDefnDecl();
-      return visit(state.defaultValue());
-    }
     return visitNullSafeNode(node);
   }
 
@@ -250,7 +289,22 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               return translation.getText();
             } else {
               // Case 3: Data reference.
-              return genCodeForLiteralKeyAccess("data", varRef.getName());
+              NotFoundBehavior notFoundBehavior = NotFoundBehavior.throwException();
+              if (varRef.getDefnDecl().kind() == VarDefn.Kind.PARAM
+                  && ((TemplateParam) varRef.getDefnDecl()).hasDefault()) {
+                // This evaluates the default value at every access of a parameter with a default
+                // value. This could be made more performant by only evaluating the default value
+                // once at the beginning of the template. But the Python backend is minimally
+                // supported so this is fine.
+                PyExpr defaultValue =
+                    new PyExpr(
+                        visitNullSafeNodeRecurse(
+                            ((TemplateParam) varRef.getDefnDecl()).defaultValue(),
+                            nullSafetyPrefix),
+                        Integer.MAX_VALUE);
+                notFoundBehavior = NotFoundBehavior.defaultValue(defaultValue);
+              }
+              return genCodeForLiteralKeyAccess("data", varRef.getName(), notFoundBehavior);
             }
           }
         }
@@ -283,7 +337,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             switch (baseKind) {
               case LIST:
                 return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.NO);
+                    refText, keyPyExpr, NotFoundBehavior.returnNone(), CoerceKeyToString.NO);
               case UNKNOWN:
                 errorReporter.report(
                     itemAccess.getKeyExprChild().getSourceLocation(),
@@ -292,11 +346,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               case MAP:
               case UNION:
                 return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.RETURN_NONE, CoerceKeyToString.YES);
+                    refText, keyPyExpr, NotFoundBehavior.returnNone(), CoerceKeyToString.YES);
               case LEGACY_OBJECT_MAP:
               case RECORD:
                 return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.THROW, CoerceKeyToString.YES);
+                    refText, keyPyExpr, NotFoundBehavior.throwException(), CoerceKeyToString.YES);
               default:
                 throw new AssertionError("illegal item access on " + baseKind);
             }
@@ -517,11 +571,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param key the String literal value to be used as a key
    */
   private static String genCodeForLiteralKeyAccess(String containerExpr, String key) {
+    return genCodeForLiteralKeyAccess(containerExpr, key, NotFoundBehavior.throwException());
+  }
+
+  private static String genCodeForLiteralKeyAccess(
+      String containerExpr, String key, NotFoundBehavior notFoundBehavior) {
     return genCodeForKeyAccess(
-        containerExpr,
-        new PyStringExpr("'" + key + "'"),
-        NotFoundBehavior.THROW,
-        CoerceKeyToString.NO);
+        containerExpr, new PyStringExpr("'" + key + "'"), notFoundBehavior, CoerceKeyToString.NO);
   }
 
   /**
@@ -540,14 +596,21 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     if (coerceKeyToString == CoerceKeyToString.YES) {
       key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
     }
-    if (notFoundBehavior == NotFoundBehavior.RETURN_NONE) {
-      return new PyFunctionExprBuilder("runtime.key_safe_data_access")
-          .addArg(new PyExpr(containerExpr, Integer.MAX_VALUE))
-          .addArg(key)
-          .build();
-    } else {
-      return new PyFunctionExprBuilder(containerExpr + ".get").addArg(key).build();
+    switch (notFoundBehavior.getType()) {
+      case RETURN_NONE:
+        return new PyFunctionExprBuilder("runtime.key_safe_data_access")
+            .addArg(new PyExpr(containerExpr, Integer.MAX_VALUE))
+            .addArg(key)
+            .build();
+      case THROW:
+        return new PyFunctionExprBuilder(containerExpr + ".get").addArg(key).build();
+      case DEFAULT_VALUE:
+        return new PyFunctionExprBuilder(containerExpr + ".get")
+            .addArg(key)
+            .addArg(notFoundBehavior.getDefaultValue())
+            .build();
     }
+    throw new AssertionError(notFoundBehavior.getType());
   }
 
   /**
