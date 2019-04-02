@@ -516,7 +516,7 @@ public final class JsType {
     return typeExpr();
   }
 
-  final ImmutableSet<GoogRequire> getGoogRequires() {
+  public final ImmutableSet<GoogRequire> getGoogRequires() {
     return extraRequires;
   }
 

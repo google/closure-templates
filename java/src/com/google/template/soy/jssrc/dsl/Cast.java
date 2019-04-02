@@ -17,7 +17,9 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents a JavaScript type cast. */
@@ -28,8 +30,14 @@ abstract class Cast extends Expression {
 
   abstract String typeExpr();
 
+  abstract ImmutableSet<GoogRequire> googRequires();
+
   static Cast create(Expression expr, String typeExpr) {
-    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr);
+    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr, ImmutableSet.of());
+  }
+
+  static Cast create(Expression expr, String typeExpr, ImmutableSet<GoogRequire> googRequires) {
+    return new AutoValue_Cast(expr.initialStatements(), expr, typeExpr, googRequires);
   }
 
   @Override
@@ -41,6 +49,9 @@ abstract class Cast extends Expression {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
+    for (GoogRequire require : googRequires()) {
+      collector.add(require);
+    }
     expr().collectRequires(collector);
   }
 

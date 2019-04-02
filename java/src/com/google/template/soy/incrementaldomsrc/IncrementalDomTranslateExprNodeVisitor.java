@@ -23,6 +23,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
@@ -31,6 +32,7 @@ import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
 public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
@@ -61,6 +63,21 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
           Expression.stringLiteral(loggingNode.getPlaceholder()));
     }
     return super.visitFunctionNode(node);
+  }
+
+  @Override
+  protected Expression visitGlobalNode(GlobalNode node) {
+    if (node.isResolved()) {
+      // If the types don't match this means this is a proto enum.  Add a cast to ensure the js
+      // compiler knows the type
+      // TODO(b/128869068) Ensure that a hard require is added for this type.
+      if (!node.getType().equals(node.getValue().getType())) {
+        JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
+        return visit(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
+      }
+      return visit(node.getValue());
+    }
+    return super.visit(node);
   }
 
   @Override
