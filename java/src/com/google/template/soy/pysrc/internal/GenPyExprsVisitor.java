@@ -222,7 +222,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
       PyExpr fallbackMsg = generateMsgFunc(node.getFallbackMsg());
 
       // Build Python ternary expression: a if cond else c
-      pyExprTextSb.append(msg.getText()).append(" if ");
+      pyExprTextSb.append("(").append(msg.getText()).append(") if (");
 
       // The fallback message is only used if the first message is not available, but the fallback
       // is. So availability of both messages must be tested.
@@ -239,7 +239,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
           .append(id2)
           .append(")");
 
-      pyExprTextSb.append(" else ").append(fallbackMsg.getText());
+      pyExprTextSb.append(") else (").append(fallbackMsg.getText()).append(")");
       msg =
           new PyStringExpr(
               pyExprTextSb.toString(), PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
@@ -277,6 +277,11 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     StringBuilder pyExprTextSb = new StringBuilder();
 
     boolean hasElse = false;
+    // We need to be careful about parenthesizing the sub-expressions in a python ternary operator,
+    // as nested ternary operators will right-associate. Due to the structure of the parse tree,
+    // we accumulate open parens in the loop below, and pendingParens tracks how many closing parens
+    // we need to add at the end.
+    int pendingParens = 0;
     for (SoyNode child : node.getChildren()) {
 
       if (child instanceof IfCondNode) {
@@ -289,18 +294,20 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
         condBlock =
             PyExprUtils.maybeProtect(
                 condBlock, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
-        pyExprTextSb.append(condBlock.getText());
+        pyExprTextSb.append("(").append(condBlock.getText());
 
         // Append the conditional and if/else syntax.
         PyExpr condPyExpr = translator.exec(icn.getExpr());
-        pyExprTextSb.append(" if ").append(condPyExpr.getText()).append(" else ");
+        pyExprTextSb.append(") if (").append(condPyExpr.getText()).append(") else (");
+        pendingParens++;
 
       } else if (child instanceof IfElseNode) {
         hasElse = true;
         IfElseNode ien = (IfElseNode) child;
 
         PyExpr elseBlock = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(ien)).toPyString();
-        pyExprTextSb.append(elseBlock.getText());
+        pyExprTextSb.append(elseBlock.getText()).append(")");
+        pendingParens--;
       } else {
         throw new AssertionError("Unexpected if child node type. Child: " + child);
       }
@@ -308,6 +315,9 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
 
     if (!hasElse) {
       pyExprTextSb.append("''");
+    }
+    for (int i = 0; i < pendingParens; i++) {
+      pyExprTextSb.append(")");
     }
 
     // By their nature, inline'd conditionals can only contain output strings, so they can be

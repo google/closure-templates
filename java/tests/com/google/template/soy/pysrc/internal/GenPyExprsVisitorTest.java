@@ -66,7 +66,30 @@ public final class GenPyExprsVisitorTest {
             + "  Bluh\n"
             + "{/if}\n";
     String expectedPyExprText =
-        "'Blah' if data.get('boo') else 'Bleh' if not data.get('goo') else 'Bluh'";
+        "('Blah') if (data.get('boo')) else (('Bleh') if (not data.get('goo')) else ('Bluh'))";
+
+    assertThatSoyExpr(soyNodeCode)
+        .compilesTo(
+            new PyExpr(
+                expectedPyExprText, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testIf_noelse() {
+    String soyNodeCode =
+        "{@param boo:?}\n"
+            + "{@param goo:?}\n"
+            + "{@param woo:?}\n"
+            + "{if $boo}\n"
+            + "  Blah\n"
+            + "{elseif not $goo}\n"
+            + "  Bleh\n"
+            + "{elseif $woo}\n"
+            + "  Bluh\n"
+            + "{/if}\n";
+    String expectedPyExprText =
+        "('Blah') if (data.get('boo')) else "
+            + "(('Bleh') if (not data.get('goo')) else (('Bluh') if (data.get('woo')) else ('')))";
 
     assertThatSoyExpr(soyNodeCode)
         .compilesTo(
@@ -86,7 +109,37 @@ public final class GenPyExprsVisitorTest {
             + "{else}\n"
             + "  Bleh\n"
             + "{/if}\n";
-    String expectedPyExprText = "'Blah' if data.get('goo') else '' if data.get('boo') else 'Bleh'";
+    String expectedPyExprText =
+        "(('Blah') if (data.get('goo')) else ('')) if (data.get('boo')) else ('Bleh')";
+
+    assertThatSoyExpr(soyNodeCode)
+        .compilesTo(
+            new PyExpr(
+                expectedPyExprText, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testIf_double_nested() {
+    String soyNodeCode =
+        "{@param boo:?}\n"
+            + "{@param foo:?}\n"
+            + "{if $boo}\n"
+            + "  {if $foo}\n"
+            + "    bf\n"
+            + "  {else}\n"
+            + "    b\n"
+            + "  {/if}\n"
+            + "{else}\n"
+            + "  {if $foo}\n"
+            + "    f\n"
+            + "  {else}\n"
+            + "    \n"
+            + "  {/if}\n"
+            + "{/if}\n";
+    String expectedPyExprText =
+        "(('bf') if (data.get('foo')) else ('b'))"
+            + " if (data.get('boo')) else "
+            + "(('f') if (data.get('foo')) else (''))";
 
     assertThatSoyExpr(soyNodeCode)
         .compilesTo(
@@ -118,14 +171,14 @@ public final class GenPyExprsVisitorTest {
             + "{/msg}\n";
 
     String expectedPyCode =
-        "translator_impl.render_literal("
+        "(translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'archive')) "
-            + "if translator_impl.is_msg_available(###) or "
-            + "not translator_impl.is_msg_available(###) "
-            + "else translator_impl.render_literal("
-            + "translator_impl.prepare_literal(###, 'ARCHIVE'))";
+            + "'archive'))) "
+            + "if (translator_impl.is_msg_available(###) or "
+            + "not translator_impl.is_msg_available(###)) "
+            + "else (translator_impl.render_literal("
+            + "translator_impl.prepare_literal(###, 'ARCHIVE')))";
 
     assertThatSoyExpr(soyCode)
         .compilesTo(
