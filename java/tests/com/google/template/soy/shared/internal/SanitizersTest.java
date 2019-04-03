@@ -96,7 +96,7 @@ public class SanitizersTest {
             +
             // RegExp operators.
             " \\x24\\x5e\\x2a\\x28\\x29\\x2d\\x2b\\x7b\\x7d\\x5b\\x5d\\x7c\\x3f",
-        Sanitizers.escapeJsRegex("\u0000 \" \' \\ / \r \n \u2028 \u2029" + " $^*()-+{}[]|?"));
+        Sanitizers.escapeJsRegex("\u0000 \" \' \\ / \r \n \u2028 \u2029 $^*()-+{}[]|?"));
 
     for (String hazard : EMBEDDING_HAZARDS) {
       assertWithMessage(hazard).that(Sanitizers.escapeJsRegex(hazard)).doesNotContain(hazard);

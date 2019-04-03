@@ -54,8 +54,7 @@ public class BidiFormatterTest {
     // Text contains HTML or HTML-escaping.
     assertEquals(LTR, BidiFormatter.estimateDirection(HE + "<some sort of an HTML tag/>", false));
     assertEquals(RTL, BidiFormatter.estimateDirection(HE + "<some sort of an HTML tag/>", true));
-    assertEquals(
-        NEUTRAL, BidiFormatter.estimateDirection("." + "<some sort of an HTML tag/>", true));
+    assertEquals(NEUTRAL, BidiFormatter.estimateDirection(".<some sort of an HTML tag/>", true));
   }
 
   @Test
@@ -115,7 +114,7 @@ public class BidiFormatterTest {
         LTR_FMT.spanWrap(null, EN_TAG + HE + EN_TAG, true));
     assertEquals(
         "neutral treated as opposite to LTR context",
-        "<span dir=\"rtl\">" + "." + "</span>" + LRM,
+        "<span dir=\"rtl\">.</span>" + LRM,
         LTR_FMT.spanWrap(RTL, ".", false));
     assertEquals(
         "uniform dir opposite to RTL context",
@@ -127,7 +126,7 @@ public class BidiFormatterTest {
         RTL_FMT.spanWrap(null, HE_TAG + EN + HE_TAG, true));
     assertEquals(
         "neutral treated as opposite to RTL context",
-        "<span dir=\"ltr\">" + "." + "</span>" + RLM,
+        "<span dir=\"ltr\">.</span>" + RLM,
         RTL_FMT.spanWrap(LTR, ".", false));
 
     // "Known" unknown directionality is estimated.

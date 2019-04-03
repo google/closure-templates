@@ -520,7 +520,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 JsDoc.builder()
                     .addAnnotation(
                         "extends",
-                        "{soyIdom.$SoyElement<" + paramsType + "," + "!" + elementAccessor + ">}")
+                        "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
                     .addParameterizedAnnotation("implements", soyElementAccessorName)
                     .build())
             .setRhs(soyElementClass)

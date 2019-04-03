@@ -311,11 +311,10 @@ public class BidiUtilsTest {
     assertEquals(
         RTL,
         estimateTextDir(
-            "5710 5720 5730. \u05d4\u05d3\u05dc\u05ea. " + "\u05d4\u05e0\u05e9\u05d9\u05e7\u05d4"));
+            "5710 5720 5730. \u05d4\u05d3\u05dc\u05ea. \u05d4\u05e0\u05e9\u05d9\u05e7\u05d4"));
     assertEquals(
         RTL,
-        estimateTextDir(
-            "\u05d4\u05d3\u05dc\u05ea http://www.google.com " + "http://www.gmail.com"));
+        estimateTextDir("\u05d4\u05d3\u05dc\u05ea http://www.google.com http://www.gmail.com"));
     assertEquals(LTR, estimateTextDir("\u05d4\u05d3\u05dc\u05ea <some quite nasty html mark up>"));
     assertEquals(RTL, estimateHtmlDir("\u05d4\u05d3\u05dc\u05ea <some quite nasty html mark up>"));
     assertEquals(LTR, estimateTextDir("\u05d4\u05d3\u05dc\u05ea &amp; &lt; &gt;"));

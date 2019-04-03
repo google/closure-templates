@@ -248,7 +248,7 @@ class FormatNumDirective
     if (!JS_ARGS_TO_ENUM.containsKey(numberFormatType)) {
       String validKeys = Joiner.on("', '").join(JS_ARGS_TO_ENUM.keySet());
       throw new IllegalArgumentException(
-          "First argument to formatNum must be " + "constant, and one of: '" + validKeys + "'.");
+          "First argument to formatNum must be constant, and one of: '" + validKeys + "'.");
     }
 
     return numberFormatType;
