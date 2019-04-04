@@ -410,8 +410,7 @@ public final class TemplateParserTest {
             + "  Archive\n"
             + "{/msg}");
     assertValidTemplate(
-        "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n"
-            + "{$aaa + 1}{print $bbb.ccc[$ddd] |noAutoescape}");
+        "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n" + "{$aaa + 1}{print $bbb.ccc[$ddd]}");
     assertValidTemplate("{css('selected-option')}{css('CSS_SELECTED_OPTION')}");
     assertValidTemplate("{xid('selected-option')}{xid('SELECTED_OPTION_ID')}");
     assertValidTemplate(
@@ -465,7 +464,7 @@ public final class TemplateParserTest {
             + "{msg meaning=\"boo\" desc=\"blah\"}\n"
             + "  {$boo phname=\"foo\"} is a \n"
             + "  <a phname=\"begin_link\" href=\"{$fooUrl}\">\n"
-            + "    {$foo |noAutoescape phname=\"booFoo\" }\n"
+            + "    {$foo phname=\"booFoo\" }\n"
             + "  </a phname=\"END_LINK\" >.\n"
             + "  {call .aaa data=\"all\"\nphname=\"AaaBbb\"/}\n"
             + "  {call .aaa phname=\"AaaBbb\" data=\"all\"}{/call}\n"
@@ -926,7 +925,7 @@ public final class TemplateParserTest {
     String templateBody =
         "{@param boo : ?}{@param goo : ?}\n"
             + "  {$boo.foo}{$boo.foo}\n"
-            + "  {$goo + 1 |noAutoescape}\n"
+            + "  {$goo + 1}\n"
             + "  {'blah    blahblahblah' |insertWordBreaks:8}\n";
 
     List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
@@ -945,9 +944,7 @@ public final class TemplateParserTest {
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$goo + 1", pn2.getExpr().toSourceString());
-    assertEquals(1, pn2.getChildren().size());
-    PrintDirectiveNode pn2d0 = pn2.getChild(0);
-    assertEquals("|noAutoescape", pn2d0.getName());
+    assertEquals(0, pn2.getChildren().size());
     assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExpr().getRoot() instanceof PlusOpNode);
 

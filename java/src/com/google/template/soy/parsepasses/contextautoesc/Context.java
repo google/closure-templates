@@ -273,10 +273,6 @@ public final class Context {
       if (uriType == UriType.TRUSTED_RESOURCE) {
         return derive(UriPart.AUTHORITY_OR_PATH);
       }
-      // TODO(gboyer): When we start enforcing strict URI syntax, make it an error to call this if
-      // we're already in MAYBE*_SCHEME, because it is possible in a non-strict contextual template
-      // that someone would use noAutoescape to try and get around the requirement of no print
-      // statements in MAYBE*_SCHEME.
       return derive(UriPart.MAYBE_VARIABLE_SCHEME);
     }
     return this;

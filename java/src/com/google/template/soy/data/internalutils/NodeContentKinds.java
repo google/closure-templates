@@ -52,9 +52,7 @@ public final class NodeContentKinds {
           .put(
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "goog.soy.data.SanitizedTrustedResourceUri")
-          // NOTE: Text intentionally doesn't follow the convention. Note that we don't just
-          // convert them to a string, because the UnsanitizedText wrapper helps prevent the
-          // content from getting used elsewhere in a noAutoescape.
+          // NOTE: Text could be a string but for legacy reasons, it's UnsanitizedText.
           .put(SanitizedContentKind.TEXT, "goog.soy.data.UnsanitizedText")
           .build();
 
@@ -68,9 +66,6 @@ public final class NodeContentKinds {
           .put(
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "goog.soy.data.SanitizedTrustedResourceUri")
-          // NOTE: Text intentionally doesn't follow the convention. Note that we don't just
-          // convert them to a string, because the UnsanitizedText wrapper helps prevent the
-          // content from getting used elsewhere in a noAutoescape.
           .put(SanitizedContentKind.TEXT, "goog.soy.data.UnsanitizedText")
           .build();
 

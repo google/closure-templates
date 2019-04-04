@@ -24,6 +24,6 @@ public final class CoreDirectives {
   private CoreDirectives() {}
 
   public static ImmutableSet<SoyPrintDirective> directives() {
-    return ImmutableSet.of(new NoAutoescapeDirective(), new EscapeHtmlDirective());
+    return ImmutableSet.of(new EscapeHtmlDirective());
   }
 }

@@ -23,8 +23,6 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -35,7 +33,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -794,74 +791,6 @@ public class SanitizersTest {
     assertThat(Sanitizers.cleanHtml("<span dir=ltr>f<object>oo</span>", treatSpanSafe))
         .isEqualTo(
             UnsafeSanitizedContentOrdainer.ordainAsSafe("<span>foo</span>", ContentKind.HTML));
-  }
-
-  @Test
-  public void testFilterNoAutoescape() {
-    // Filter out anything marked with sanitized content of kind "text" which indicates it
-    // previously was constructed without any escaping.
-    assertThat(
-            Sanitizers.filterNoAutoescape(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "x", SanitizedContent.ContentKind.TEXT)))
-        .isEqualTo(StringData.forValue("zSoyz"));
-    assertThat(
-            Sanitizers.filterNoAutoescape(
-                UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                    "<!@*!@(*!@(>", SanitizedContent.ContentKind.TEXT)))
-        .isEqualTo(StringData.forValue("zSoyz"));
-
-    // Everything else should be let through. Hope it's safe!
-    assertThat(
-            Sanitizers.filterNoAutoescape(
-                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                        "<div>test</div>", SanitizedContent.ContentKind.HTML))
-                .stringValue())
-        .isEqualTo("<div>test</div>");
-    assertThat(
-            Sanitizers.filterNoAutoescape(
-                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                        "foo='bar'", SanitizedContent.ContentKind.ATTRIBUTES))
-                .stringValue())
-        .isEqualTo("foo='bar'");
-    assertThat(
-            Sanitizers.filterNoAutoescape(
-                    UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                        ".foo{color:green}", SanitizedContent.ContentKind.CSS))
-                .stringValue())
-        .isEqualTo(".foo{color:green}");
-    assertThat(Sanitizers.filterNoAutoescape(StringData.forValue("<div>test</div>")))
-        .isEqualTo(StringData.forValue("<div>test</div>"));
-    assertThat(Sanitizers.filterNoAutoescape(NullData.INSTANCE)).isEqualTo(NullData.INSTANCE);
-    assertThat(Sanitizers.filterNoAutoescape(IntegerData.forValue(123)))
-        .isEqualTo(IntegerData.forValue(123));
-  }
-
-  @Test
-  public void testFilterNoAutoescapeStreamingNoContentKind() throws IOException {
-    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
-    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
-    escapingBuffer.append("foo");
-    assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-  }
-
-  @Test
-  public void testFilterNoAutoescapeStreamingHtml() throws IOException {
-    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
-    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
-    escapingBuffer.setSanitizedContentKind(ContentKind.HTML);
-    escapingBuffer.append("foo");
-    assertThat(buffer.getAndClearBuffer()).isEqualTo("foo");
-  }
-
-  @Test
-  public void testFilterNoAutoescapeStreamingText() throws IOException {
-    BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
-    LoggingAdvisingAppendable escapingBuffer = Sanitizers.filterNoAutoescapeStreaming(buffer);
-    escapingBuffer.setSanitizedContentKind(ContentKind.TEXT);
-    assertThat(buffer.getAndClearBuffer()).isEqualTo("zSoyz");
-    escapingBuffer.append("foo");
-    assertThat(buffer.getAndClearBuffer()).isEmpty();
   }
 
   @Test

@@ -22,7 +22,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 
 /**
- * Conformance rule banning particular Soy directives (plausible example: {@code |noAutoescape}).
+ * Conformance rule banning particular Soy directives.
  *
  * @author brndn@google.com (Brendan Linn)
  */

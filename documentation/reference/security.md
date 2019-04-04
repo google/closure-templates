@@ -509,8 +509,7 @@ url(?q=%28O%27Reilly%29%20OR%20Books)"&gt;</code></td>
 
 Autoescaping works by automatically adding [print directives](print-directives)
 to templates, so you can remove the print directives that you explicitly added,
-including `|escapeUri`, and especially those dangerous `|noAutoescape`
-directives.
+including `|escapeUri`.
 
 In case you have defined custom [print directives](../dev/plugins) and your
 custom directive expects already-escaped input instead of plain text, you can
@@ -524,10 +523,7 @@ Autoescaping augments `Closure Templates` to choose an appropriate encoding for
 each dynamic value so that even if a particular dynamic value can be controlled
 by an attacker, certain safety properties hold.
 
-Specifically, if a template, and all the templates that it calls have
-`autoescape="deprecated-contextual"` or `autoescape="strict"`, and have no
-manual escaping overrides such as `|noAutoescape`, then the following properties
-hold:
+Specifically the following properties hold:
 
 #### Structure is preserved
 
@@ -600,7 +596,3 @@ The autoescaped version of the template instead produces:
 ```
 
 which parses properly.
-
-If a template or the templates that it calls do not have autoescaping enabled,
-or use explicit escaping directives like `|noAutoescape` incorrectly, then the
-autoescaper makes a best effort to preserve these properties but might fail.

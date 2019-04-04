@@ -40,25 +40,25 @@ An enterprising hacker might try to sneak a malicious value into your template
 to take it over via XSS. Perhaps using
 
 ```js
-{ x: 'javascript:/*</style></script>/**//<script>1/(alert(1337))//</script>' }
+var x = 'javascript:/*</style></script>/**//<script>1/(alert(1337))//</script>';
 ```
 
 Say it's passed into a naive template, like:
 
-```soy
-{template .foo autoescape="deprecated-contextual"}
-  <a href="{$x|noAutoescape}"
-   onclick="{$x|noAutoescape}"
-   >{$x|noAutoescape}</a>
-  <script>var x = '{$x|noAutoescape}'</script>
+```js
+`
+  <a href="{$x}"
+   onclick="{$x}"
+   >{$x}</a>
+  <script>var x = '{$x}'</script>
   <style>
     p {
-      font-family: "{$x|noAutoescape}";
-      background: url(/images?q={$x|noAutoescape});
-      left: {$x|noAutoescape}
+      font-family: "{$x}";
+      background: url(/images?q={$x});
+      left: {$x}
     }
   </style>
-{/template}
+`;
 ```
 
 This attack succeeds. The above template produces:
@@ -112,8 +112,7 @@ malicious inputs by choosing a single consistent meaning for a dynamic value,
 and choosing an escaping scheme that makes sure the browser will interpret it
 the same way.
 
-So if we pass that same malicious input to an autoescaped template: (Note that
-only the `|noAutoescape`'s have been removed.)
+So if we pass that same malicious input to an autoescaped template:
 
 ```soy
 {template .foo autoescape="deprecated-contextual"}

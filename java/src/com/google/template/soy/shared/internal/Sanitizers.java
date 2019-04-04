@@ -28,7 +28,6 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -872,102 +871,6 @@ public final class Sanitizers {
     }
     logger.log(Level.WARNING, "|filterHtmlElementName received bad value ''{0}''", value);
     return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
-  }
-
-  /**
-   * Filters noAutoescape input from explicitly tainted content.
-   *
-   * <p>SanitizedContent.ContentKind.TEXT is used to explicitly mark input that is never meant to be
-   * used unescaped. Specifically, {let} and {param} blocks of kind "text" are explicitly forbidden
-   * from being noAutoescaped to avoid XSS regressions during application transition.
-   */
-  public static SoyValue filterNoAutoescape(SoyValue value) {
-    value = normalizeNull(value);
-    // TODO: Consider also checking for things that are never valid, like null characters.
-    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TEXT)) {
-      logger.log(
-          Level.WARNING,
-          "|noAutoescape received value explicitly tagged as ContentKind.TEXT: ''{0}''",
-          value);
-      return StringData.forValue(EscapingConventions.INNOCUOUS_OUTPUT);
-    }
-    return value;
-  }
-
-  /**
-   * Applies the |noAutoescape directive and filters explicitly tainted content.
-   *
-   * <p>See {@link #filterNoAutoescape(SoyValue)}
-   */
-  public static LoggingAdvisingAppendable filterNoAutoescapeStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return new ForwardingLoggingAdvisingAppendable(appendable) {
-
-      private boolean isInText() {
-        return getSantizedContentKind() == ContentKind.TEXT;
-      }
-
-      @Override
-      protected void notifyContentKind(ContentKind kind) throws IOException {
-        if (isInText()) {
-          logger.log(
-              Level.WARNING, "|noAutoescape received value explicitly tagged as ContentKind.TEXT");
-          // append directly to the delegate.
-          delegate.append(EscapingConventions.INNOCUOUS_OUTPUT);
-        }
-      }
-
-      @Override
-      public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-          LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-          throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.appendLoggingFunctionInvocation(funCall, escapers);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable append(char c) throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.append(c);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.append(csq);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable append(CharSequence csq, int start, int end)
-          throws IOException {
-        if (isInText()) {
-          return this;
-        }
-        return super.append(csq, start, end);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-        if (isInText()) {
-          return this;
-        }
-        return super.enterLoggableElement(statement);
-      }
-
-      @Override
-      public LoggingAdvisingAppendable exitLoggableElement() {
-        if (isInText()) {
-          return this;
-        }
-        return super.exitLoggableElement();
-      }
-    };
   }
 
   /** True iff the given value is sanitized content of the given kind. */

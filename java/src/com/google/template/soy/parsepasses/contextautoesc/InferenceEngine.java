@@ -407,32 +407,6 @@ final class InferenceEngine {
     @Override
     protected void visitPrintNode(PrintNode printNode) {
       printNode.setHtmlContext(context.state);
-      // It is an error to use autoescape-canceling print directives in strict mode unless in a
-      // block of kind text.
-      if (autoescapeMode == AutoescapeMode.STRICT && context.state != HtmlContext.TEXT) {
-        for (PrintDirectiveNode printDirective : printNode.getChildren()) {
-          if (printDirective.getName().equals("|noAutoescape")) {
-            // Treat noAutoescape specially:
-            // - It is allowed in strict sub-contexts if the surrounding template is non-strict,
-            // to help with migration. This does not apply to other escaping directives since
-            // they are just as dangerous, but less obvious to auditors.
-            if (templateAutoescapeMode == AutoescapeMode.STRICT) {
-              // Help the user figure out the best content kind to use, using existing heuristics.
-              SanitizedContentKind recommendedKind = context.getMostAppropriateContentKind();
-              String recommendedKindStr =
-                  (recommendedKind == SanitizedContentKind.TEXT)
-                      ? "appropriate kind=\"...\""
-                      : ("kind=\"" + recommendedKind.asAttributeValue() + "\"");
-              throw SoyAutoescapeException.createWithNode(
-                  "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a "
-                      + "{param} with "
-                      + recommendedKindStr
-                      + " or SanitizedContent.",
-                  printNode);
-            }
-          }
-        }
-      }
 
       checkUriEnd();
       checkHtmlHtmlAttributePosition(printNode);

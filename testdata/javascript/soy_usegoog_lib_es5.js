@@ -6290,9 +6290,6 @@ soy.$$escapeCssString = function(value) {
 soy.$$filterCssValue = function(value) {
   return soy.checks.isCss(value) ? soy.$$embedCssIntoHtml_(value.content) : null == value ? "" : value instanceof goog.html.SafeStyle ? soy.$$embedCssIntoHtml_(goog.html.SafeStyle.unwrap(value)) : value instanceof goog.html.SafeStyleSheet ? soy.$$embedCssIntoHtml_(goog.html.SafeStyleSheet.unwrap(value)) : soy.esc.$$filterCssValueHelper(value);
 };
-soy.$$filterNoAutoescape = function(value) {
-  return soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.TEXT) ? (goog.asserts.fail("Tainted SanitizedContentKind.TEXT for |noAutoescape: `%s`", [value.content]), "zSoyz") : value;
-};
 soy.$$changeNewlineToBr = function(value) {
   var result = goog.string.newLineToBr(String(value), !1);
   return soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML) ? soydata.VERY_UNSAFE.ordainSanitizedHtml(result, soydata.getContentDir(value)) : result;

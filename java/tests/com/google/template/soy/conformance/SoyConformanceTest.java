@@ -78,13 +78,13 @@ public class SoyConformanceTest {
     assertViolation(
         "requirement: {\n"
             + "  banned_directive: {\n"
-            + "    directive: '|noAutoescape'\n"
+            + "    directive: '|escapeUri'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
             + "{template .foo autoescape=\"deprecated-contextual\"}\n"
-            + "{print 'blah' |noAutoescape}\n"
+            + "{print 'blah' |escapeUri}\n"
             + "{/template}");
   }
 
@@ -93,12 +93,12 @@ public class SoyConformanceTest {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_directive: {\n"
-            + "    directive: '|noAutoescape'\n"
+            + "    directive: '|filterUri'\n"
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}\n"
-            + "{template .noAutoescape}\n"
+            + "{template .filterUri}\n"
             + "This should be allowed.\n"
             + "{/template}");
   }

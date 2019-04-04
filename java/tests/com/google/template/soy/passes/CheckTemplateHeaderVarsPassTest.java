@@ -43,7 +43,7 @@ public final class CheckTemplateHeaderVarsPassTest {
 
     // ------ Only 'print' statements ------
     params = "{@param boo: ?}{@param foo: ?}{@param? goo: ?}{@param moo: ?}";
-    templateBody = "{$boo}{$foo.goo |noAutoescape}{2 * $goo[round($moo)]}";
+    templateBody = "{$boo}{$foo.goo}{2 * $goo[round($moo)]}";
     assertThat(paramsErrorsForTemplate(params, templateBody)).isEmpty();
 
     // ------ Simple 'if' statement with nested 'print' statement ------

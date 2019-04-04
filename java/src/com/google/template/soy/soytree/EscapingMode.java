@@ -143,14 +143,7 @@ public enum EscapingMode {
   // TODO(shwetakarwa): Change second argument when function is implemented.
   FILTER_TRUSTED_RESOURCE_URI(false, null, /* internalOnly= */ true),
 
-  /** The explicit rejection of escaping. */
-  NO_AUTOESCAPE(false, SanitizedContentKind.TEXT),
-
-  /**
-   * Outputs plain text and performs no escaping. Unlike noAutoescape, this will not fail if passed
-   * SanitizedContent of kind TEXT, but this may never be used manually by the developer. This has
-   * no escaping.
-   */
+  /** Outputs plain text and performs no escaping. */
   TEXT(false, SanitizedContentKind.TEXT, /* internalOnly= */ true);
 
   /** The Soy <code>{print}</code> directive that specifies this escaping mode. */

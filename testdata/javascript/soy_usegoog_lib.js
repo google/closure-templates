@@ -25882,17 +25882,12 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
 
 
 /**
- * Protects a string from being used in an noAutoescaped context.
+ * Marks content as UnsanitizedText. This serves no purpose anymore.
  *
- * This is useful for content where there is significant risk of accidental
- * unescaped usage in a Soy template. A great case is for user-controlled
- * data that has historically been a source of vulernabilities.
- *
- * @param {?} content Text to protect.
+ * @param {?} content Text.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.UnsanitizedText} A wrapper that is rejected by the
- *     Soy noAutoescape print directive.
+ * @return {!goog.soy.data.UnsanitizedText}
  */
 soydata.markUnsanitizedText = function(content, opt_contentDir) {
   return new goog.soy.data.UnsanitizedText(content, opt_contentDir);
@@ -27276,29 +27271,6 @@ soy.$$filterCssValue = function(value) {
 };
 
 
-/**
- * Sanity-checks noAutoescape input for explicitly tainted content.
- *
- * SanitizedContentKind.TEXT is used to explicitly mark input that was never
- * meant to be used unescaped.
- *
- * @param {?} value The value to filter.
- * @return {?} The value, that we dearly hope will not cause an attack.
- */
-soy.$$filterNoAutoescape = function(value) {
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.TEXT)) {
-    // Fail in development mode.
-    goog.asserts.fail(
-        'Tainted SanitizedContentKind.TEXT for |noAutoescape: `%s`',
-        [value.getContent()]);
-    // Return innocuous data in production.
-    return 'zSoyz';
-  }
-
-  return value;
-};
-
-
 // -----------------------------------------------------------------------------
 // Basic directives/functions.
 
@@ -27613,12 +27585,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
   // explicit and automatic HTML escaping, if any, is done before calling
   // |bidiSpanWrap because the BidiSpanWrapDirective Java class implements
   // SanitizedContentOperator, but this does not mean that the input has to be
-  // HTML SanitizedContent. In legacy usage, a string that is not
-  // SanitizedContent is often printed in an autoescape="false" template or by
-  // a print with a |noAutoescape, in which case our input is just SoyData.) If
-  // the output will be treated as HTML, the input had better be safe
-  // HTML/HTML-escaped (even if it isn't HTML SanitizedData), or we have an XSS
-  // opportunity and a much bigger problem than bidi garbling.
+  // HTML SanitizedContent.
   var html = goog.html.uncheckedconversions.
       safeHtmlFromStringKnownToSatisfyTypeContract(
           goog.string.Const.from(
@@ -27654,12 +27621,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
 
-  // We treat the value as HTML if and only if it says it's HTML, even though in
-  // legacy usage, we sometimes have an HTML string (not SanitizedContent) that
-  // is passed to an autoescape="false" template or a {print $foo|noAutoescape},
-  // with the output going into an HTML context without escaping. We simply have
-  // no way of knowing if this is what is happening when we get
-  // non-SanitizedContent input, and most of the time it isn't.
+  // We treat the value as HTML if and only if it says it's HTML.
   var isHtml =
       soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML);
   var wrappedText = formatter.unicodeWrapWithKnownDir(

@@ -61,30 +61,20 @@ public final class ContextualAutoescaperTest {
               return ImmutableSet.of(0);
             }
           },
-          new SoyPrintDirective() {
-            @Override
-            public String getName() {
-              return "|noAutoescape";
-            }
-
-            @Override
-            public Set<Integer> getValidArgsSizes() {
-              return ImmutableSet.of(0);
-            }
-          },
           new FakeBidiSpanWrapDirective());
 
   @Test
   public void testStrictModeIsDefault() {
     assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"html\" or SanitizedContent.",
+        "Soy strict autoescaping currently forbids calls to non-strict templates. "
+            + "Please migrate the callee to strict.",
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<b>{$foo|noAutoescape}</b>\n",
-            "{/template}"));
+            "  {call .contextual /}\n",
+            "{/template}\n\n",
+            "{template .contextual autoescape=\"deprecated-contextual\"}\n",
+            "{/template}\n"));
   }
 
   @Test
@@ -1161,17 +1151,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testExplicitNoescapeNoop() throws Exception {
-    assertContextualRewritingNoop(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param FOO: ?}\n",
-            "<script>a = \"{$FOO |noAutoescape}\";</script>\n",
-            "{/template}"));
-  }
-
-  @Test
   public void testCustomDirectives() throws Exception {
     assertContextualRewriting(
         join(
@@ -1585,32 +1564,6 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTypedLetBlockIsStrictModeAutoescaped() {
     assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"html\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            // Strict templates never allow noAutoescape.
-            "{template .t}\n",
-            "  {@param y: ?}\n",
-            "{let $l kind=\"html\"}\n",
-            "<b>{$y |noAutoescape}</b>",
-            "{/let}\n",
-            "{/template}"));
-
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"js\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            // Strict templates never allow noAutoescape.
-            "{template .t}\n",
-            "  {@param y: ?}\n",
-            "{let $l kind=\"html\"}\n",
-            "<script>{$y |noAutoescape}</script>",
-            "{/let}\n",
-            "{/template}"));
-
-    assertRewriteFails(
         "Soy strict autoescaping currently forbids calls to non-strict templates. "
             + "Please migrate the callee to strict.",
         join(
@@ -1676,8 +1629,8 @@ public final class ContextualAutoescaperTest {
             "\n{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
             "  {@param? fooHtml: ?}\n",
-            "{$fooHtml |noAutoescape}",
-            "\n{/template}"),
+            "{$fooHtml |escapeHtml}\n",
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
@@ -1693,7 +1646,7 @@ public final class ContextualAutoescaperTest {
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
             "  {@param? fooHtml: ?}\n",
-            "  {$fooHtml |noAutoescape}\n",
+            "  {$fooHtml}\n",
             "{/template}"));
   }
 
@@ -1734,25 +1687,6 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testTypedParamBlockIsStrictModeAutoescaped() {
-    // noAutoescape has a special error message.
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"html\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}",
-            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-            "{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee visibility=\"private\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x}</b>\n",
-            "{/template}"));
-
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
         "Soy strict autoescaping currently forbids calls to non-strict templates. "
@@ -1810,39 +1744,6 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testTransitionalTypedParamBlock() {
-    // In non-strict contextual templates, param blocks employ "transitional" strict autoescaping,
-    // which permits noAutoescape. This helps teams migrate the callees to strict even if not all
-    // the callers can be fixed.
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}",
-            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-            "{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x |escapeHtml}</b>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}",
-            "{param x kind=\"html\"}<b>{$y |noAutoescape}</b>{/param}",
-            "{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"deprecated-contextual\" visibility=\"private\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x}</b>\n",
-            "{/template}"));
-
     // NOTE: This error only works for non-extern templates.
     assertRewriteFails(
         "Soy strict autoescaping currently forbids calls to non-strict templates. "
@@ -1963,60 +1864,6 @@ public final class ContextualAutoescaperTest {
             "{/let}",
             "{$a}",
             "\n{/template}"));
-  }
-
-  @Test
-  public void testStrictModeRejectsAutoescapeCancellingDirectives() {
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"html\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<b>{$foo|noAutoescape}</b>\n",
-            "{/template}"));
-
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"uri\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<a href=\"{$foo|noAutoescape}\">Test</a>\n",
-            "{/template}"));
-
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"attributes\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<div {$foo|noAutoescape}>Test</div>\n",
-            "{/template}"));
-
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with kind=\"js\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<script>{$foo|noAutoescape}</script>\n",
-            "{/template}"));
-
-    // NOTE: There's no recommended context for textarea, since it's really essentially text.
-    assertRewriteFails(
-        "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a {param} "
-            + "with appropriate kind=\"...\" or SanitizedContent.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main}\n",
-            "  {@param foo: ?}\n",
-            "<textarea>{$foo|noAutoescape}</textarea>\n",
-            "{/template}"));
   }
 
   @Test

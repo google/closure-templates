@@ -76,16 +76,6 @@ wrapping with CSS `word-wrap: break-word`.
 This can insert `<wbr>` tags into content if there are more than `NNN`
 characters between word breaks.
 
-### `|noAutoescape` {#noAutoescape}
-
-Disables the autoescaper for a particular print statement. This is disallowed
-when using `autoescape="strict"` (the default), but may be used in older
-templates.
-
-This will allow all content through with the exception of content that has been
-explicitly marked with `kind="text"` such content is explicitly unsafe and will
-be replaced with the innocuous text `zSoyz`.
-
 ### `|truncate` {#truncate}
 
 **IMPORTANT**: This print directive is generally unadvisable.

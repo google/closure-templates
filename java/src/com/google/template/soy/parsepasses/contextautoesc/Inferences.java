@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -92,8 +91,6 @@ final class Inferences {
       EscapingMode mode = EscapingMode.fromDirective(directiveNode.getName());
       if (mode != null) {
         modes.add(mode);
-      } else if (directiveNode.getPrintDirective() instanceof NoAutoescapeDirective) {
-        modes.add(EscapingMode.NO_AUTOESCAPE);
       }
     }
     return modes.build();

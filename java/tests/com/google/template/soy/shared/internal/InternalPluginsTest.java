@@ -18,7 +18,6 @@ package com.google.template.soy.shared.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -42,10 +41,6 @@ public final class InternalPluginsTest {
 
   private SoyScopedData data;
 
-  // pysrc has intentionally not implemented a few directives.
-  private static final ImmutableSet<String> PYSRC_DIRECTIVE_BLACKLIST =
-      ImmutableSet.of(NoAutoescapeDirective.NAME);
-
   @Before
   public void setUp() {
     data = new NoOpScopedData();
@@ -57,9 +52,7 @@ public final class InternalPluginsTest {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
-      if (!PYSRC_DIRECTIVE_BLACKLIST.contains(directive.getName())) {
-        assertThat(directive).isInstanceOf(SoyPySrcPrintDirective.class);
-      }
+      assertThat(directive).isInstanceOf(SoyPySrcPrintDirective.class);
     }
   }
 
@@ -102,7 +95,6 @@ public final class InternalPluginsTest {
             "|escapeHtmlRcdata",
             "|escapeJsRegex",
             "|text",
-            "|noAutoescape",
             "|normalizeUri",
             "|changeNewlineToBr",
             "|bidiSpanWrap",

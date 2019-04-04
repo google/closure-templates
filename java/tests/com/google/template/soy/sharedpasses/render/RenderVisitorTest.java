@@ -399,7 +399,7 @@ public class RenderVisitorTest {
             + "  {$goo[5] + 1}{sp}\n"
             + "  {$f ?: ''} {$undefined ?: -1}{sp}\n"
             + "  {' blah aablahblahblah' |insertWordBreaks:8}{sp}\n"
-            + "  {$toStringTestValue |noAutoescape}\n";
+            + "  {$toStringTestValue}\n";
 
     assertRender(
         templateBody, "8 baz injected22 false -1  blah aablahbl<wbr>ahblah coerceToString()");
