@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nullable;
 
 /** Evaluates an expression as a statement. */
 @AutoValue
@@ -25,14 +26,24 @@ import com.google.errorprone.annotations.Immutable;
 abstract class ExpressionStatement extends Statement {
 
   static ExpressionStatement of(Expression expression) {
-    return new AutoValue_ExpressionStatement(expression);
+    return of(expression, /* jsDoc= */ null);
+  }
+
+  static ExpressionStatement of(Expression expression, JsDoc jsDoc) {
+    return new AutoValue_ExpressionStatement(expression, jsDoc);
   }
 
   abstract Expression expr();
 
+  @Nullable
+  abstract JsDoc jsDoc();
+
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(expr());
+    if (jsDoc() != null) {
+      ctx.append(jsDoc()).endLine();
+    }
     ctx.appendOutputExpression(expr());
     ctx.append(";");
     ctx.endLine();

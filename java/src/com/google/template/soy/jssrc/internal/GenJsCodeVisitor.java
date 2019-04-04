@@ -698,7 +698,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       declarations.add(VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
       // don't export deltemplates or private templates
       if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
-        declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), id(alias)));
+        declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
       }
     } else {
       declarations.add(Statement.assign(aliasExp, function, jsDoc));
@@ -706,15 +706,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // ------ Add the @typedef of opt_data. ------
     if (!node.getParams().isEmpty()) {
-      String paramsRecordType = genParamsRecordType(node);
-      StringBuilder sb = new StringBuilder();
-      sb.append(JsDoc.builder().addParameterizedAnnotation("typedef", paramsRecordType).build());
-      sb.append("\n");
-      // TODO(b/35203585): find a way to represent declarations like this in codechunks
-      sb.append(alias).append(".Params");
       declarations.add(
-          Statement.treatRawStringAsStatementLegacyOnly(
-              sb.toString(), ImmutableList.<GoogRequire>of()));
+          aliasExp
+              .dotAccess("Params")
+              .asStatement(
+                  JsDoc.builder()
+                      .addParameterizedAnnotation("typedef", genParamsRecordType(node))
+                      .build()));
     }
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
@@ -734,7 +732,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                       stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
                   stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
                   number(nodeAsDelTemplate.getDelPriority().getValue()),
-                  dottedIdNoRequire(alias))
+                  aliasExp)
               .asStatement());
     }
 

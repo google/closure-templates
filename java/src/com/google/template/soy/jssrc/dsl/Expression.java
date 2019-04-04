@@ -238,6 +238,11 @@ public abstract class Expression extends CodeChunk {
     return ExpressionStatement.of(this);
   }
 
+  /** Formats this expression as a statement with JsDoc. */
+  public final Statement asStatement(JsDoc jsDoc) {
+    return ExpressionStatement.of(this, jsDoc);
+  }
+
   public final Expression plus(Expression rhs) {
     return BinaryOperation.create(Operator.PLUS, this, rhs);
   }
