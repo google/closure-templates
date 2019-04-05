@@ -383,6 +383,7 @@ goog.define = function(name, defaultValue) {
   goog.exportPath_(name, defaultValue);
   return defaultValue;
 };
+goog.FEATURESET_YEAR = 2012;
 goog.DEBUG = !1;
 goog.LOCALE = "en";
 goog.TRUSTED_SITE = !0;
