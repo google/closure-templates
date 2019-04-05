@@ -325,64 +325,6 @@ public final class CheckDelegatesPassTest {
             + "{/template}\n");
   }
 
-  @Test
-  public void testStrictModeContentKindMatches() {
-    // One is strict and the other is not.
-    assertInvalidSoyFiles(
-        "If one deltemplate has strict autoescaping, all its peers must also be strictly "
-            + "autoescaped with the same content kind: HTML != null. "
-            + "Conflicting definition at no-path-3:4:1.",
-        ""
-            + "{namespace ns}\n\n"
-            + "/***/\n"
-            + "{template .main autoescape=\"deprecated-contextual\"}\n"
-            + "{delcall foo}\n"
-            + "{param x: '' /}\n"
-            + "{/delcall}\n"
-            + "{/template}",
-        ""
-            + "{delpackage dp1}\n"
-            + "{namespace ns}\n\n"
-            + "{deltemplate foo autoescape=\"deprecated-contextual\"}\n"
-            + "  {@param x: ?}\n"
-            + "<b>{$x}</b>\n"
-            + "{/deltemplate}",
-        ""
-            + "{delpackage dp2}\n"
-            + "{namespace ns}\n\n"
-            + "{deltemplate foo stricthtml=\"false\"}\n"
-            + "  {@param x: ?}\n"
-            + "<i>{$x}</i>\n"
-            + "{/deltemplate}");
-
-    // Both are strict, but have non-matching kinds.
-    assertInvalidSoyFiles(
-        "If one deltemplate has strict autoescaping, all its peers must also be strictly "
-            + "autoescaped with the same content kind: TEXT != HTML. "
-            + "Conflicting definition at no-path-3:4:1.",
-        ""
-            + "{namespace ns}\n\n"
-            + "/***/\n"
-            + "{template .main autoescape=\"deprecated-contextual\"}\n"
-            + "{delcall foo}\n"
-            + "{param x: '' /}\n"
-            + "{/delcall}\n"
-            + "{/template}",
-        ""
-            + "{namespace ns.default}\n\n"
-            + "{deltemplate foo stricthtml=\"false\"}\n"
-            + "  {@param x: ?}\n"
-            + "<b>{$x}</b>\n"
-            + "{/deltemplate}",
-        ""
-            + "{delpackage dp2}\n"
-            + "{namespace ns}\n\n"
-            + "{deltemplate foo kind=\"text\"}\n"
-            + "  {@param x: ?}\n"
-            + "<i>{$x}</i>\n"
-            + "{/deltemplate}");
-  }
-
   private void assertValidSoyFiles(String... soyFileContents) {
     SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
   }

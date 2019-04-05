@@ -18,7 +18,6 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
@@ -458,16 +457,8 @@ public final class BaseTofu implements SoyTofu {
               cssRenamingMap,
               debugSoyTemplateInfo,
               getPluginInstances());
-      if (contentKindExplicitlySet || template.getContentKind() != null) {
-        // Enforce the content kind if:
-        // - The caller explicitly set a content kind to validate.
-        // - The template is strict. This avoids accidentally using a text strict template in a
-        // place where HTML was implicitly expected.
-        enforceContentKind(template);
-      }
-      return template.getContentKind() != null
-          ? SanitizedContent.ContentKind.valueOf(template.getContentKind().name())
-          : null;
+      enforceContentKind(template);
+      return SanitizedContent.ContentKind.valueOf(template.getContentKind().name());
     }
 
     @Override
@@ -493,18 +484,10 @@ public final class BaseTofu implements SoyTofu {
 
     private void enforceContentKind(TemplateNode template) {
       if (expectedContentKind == SanitizedContent.ContentKind.TEXT) {
-        // Allow any template to be called as text. This is consistent with the fact that
-        // kind="text" templates can call any other template.
+        // Allow any template to be called as text.
         return;
       }
-      if (template.getContentKind() == null) {
-        throw new SoyTofuException(
-            "Cannot render a non strict template '"
-                + templateName
-                + "' as '"
-                + Ascii.toLowerCase(expectedContentKind.name())
-                + "'");
-      }
+      checkNotNull(template.getContentKind());
       SanitizedContentKind expectedAsSanitizedContentKind =
           SanitizedContentKind.valueOf(expectedContentKind.name());
       if (expectedAsSanitizedContentKind != template.getContentKind()) {

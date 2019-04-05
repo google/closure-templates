@@ -684,12 +684,11 @@ public final class GenerateParseInfoVisitor
         }
       }
       appendImmutableMap(ilb, "<String, ParamRequisiteness>", entrySnippetPairs.build());
-      ilb.appendLineEnd(",");
+      ilb.appendLineEnd(");");
     } else {
-      ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of(),");
+      ilb.appendLine("ImmutableMap.<String, ParamRequisiteness>of());");
     }
 
-    ilb.appendLine("\"", node.getAutoescapeMode().getAttributeValue(), "\");");
     ilb.decreaseIndent(2);
 
     ilb.decreaseIndent();

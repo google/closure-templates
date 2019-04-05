@@ -42,9 +42,6 @@ public final class SoyGeneralOptions implements Cloneable {
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
   private TriState allowExternalCalls = TriState.UNSET;
 
-  /** Whether Strict autoescaping is required. */
-  private TriState strictAutoescapingRequired = TriState.UNSET;
-
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
@@ -58,7 +55,6 @@ public final class SoyGeneralOptions implements Cloneable {
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
     this.allowExternalCalls = orig.allowExternalCalls;
-    this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
     this.compileTimeGlobals = orig.compileTimeGlobals;
     this.experimentalFeatures = ImmutableSet.copyOf(orig.experimentalFeatures);
     this.enabledOptimizer = orig.isOptimizerEnabled();
@@ -102,24 +98,6 @@ public final class SoyGeneralOptions implements Cloneable {
    */
   public TriState allowExternalCalls() {
     return allowExternalCalls;
-  }
-
-  /**
-   * Sets whether strict autoescaping is required.
-   *
-   * @param strictAutoescapingRequired Whether autoescaping is required.
-   */
-  public SoyGeneralOptions setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
-    this.strictAutoescapingRequired = TriState.from(strictAutoescapingRequired);
-    return this;
-  }
-
-  /**
-   * Returns whether strict autoescaping is required. If this option was never explicitly set, then
-   * returns {@link TriState#UNSET}.
-   */
-  public TriState isStrictAutoescapingRequired() {
-    return strictAutoescapingRequired;
   }
 
   /**
@@ -217,7 +195,6 @@ public final class SoyGeneralOptions implements Cloneable {
   public final String toString() {
     return MoreObjects.toStringHelper(this)
         .add("allowExternalCalls", allowExternalCalls)
-        .add("strictAutoescapingRequired", strictAutoescapingRequired)
         .add("compileTimeGlobals", compileTimeGlobals)
         .add("experimentalFeatures", experimentalFeatures)
         .add("enabledOptimizer", enabledOptimizer)

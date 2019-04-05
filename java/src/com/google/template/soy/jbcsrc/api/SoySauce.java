@@ -79,8 +79,7 @@ public interface SoySauce {
     /**
      * Sets the expected content kind.
      *
-     * <p>An attempt to render a non-strict template or a strict template with a different kind will
-     * fail if this has been called.
+     * <p>An attempt to render a template with a different kind will fail if this has been called.
      */
     Renderer setExpectedContentKind(ContentKind kind);
 

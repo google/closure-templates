@@ -318,10 +318,6 @@ public final class PassManager {
       addPass(
           new ValidateAliasesPass(registry, errorReporter, options, loggingConfig),
           singleFilePassesBuilder);
-      // If requiring strict autoescaping, check and enforce it.
-      if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
-        addPass(new AssertStrictAutoescapingPass(errorReporter), singleFilePassesBuilder);
-      }
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root

@@ -27,7 +27,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.HtmlHtmlAttributePosition;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -52,7 +51,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
-import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -102,9 +100,7 @@ final class InferenceEngine {
       Context startContext,
       Inferences inferences,
       ErrorReporter errorReporter) {
-    AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
-    InferenceEngine inferenceEngine =
-        new InferenceEngine(autoescapeMode, autoescapeMode, inferences, errorReporter);
+    InferenceEngine inferenceEngine = new InferenceEngine(inferences, errorReporter);
     // Context started off as startContext and we have propagated context through all of
     // template's children, so now return the template's end context.
     return inferenceEngine.infer(templateNode, startContext);
@@ -118,20 +114,12 @@ final class InferenceEngine {
   private static void checkBlockEndContext(RenderUnitNode node, Context endContext) {
     if (!endContext.isValidEndContextForContentKind(
         MoreObjects.firstNonNull(node.getContentKind(), SanitizedContentKind.HTML))) {
-      String msg;
-      if (node.getContentKind() == null) {
-        msg =
-            String.format(
-                "A deprecated-contextual block cannot end in context %s. Likely cause is %s.",
-                endContext, endContext.getLikelyEndContextMismatchCause(SanitizedContentKind.HTML));
-      } else {
-        msg =
-            String.format(
-                "A strict block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
-                node.getContentKind().asAttributeValue(),
-                endContext,
-                endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
-      }
+      String msg =
+          String.format(
+              "A block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
+              node.getContentKind().asAttributeValue(),
+              endContext,
+              endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
       throw SoyAutoescapeException.createWithNode(msg, node);
     }
   }
@@ -146,16 +134,8 @@ final class InferenceEngine {
    * attribute.
    */
   static void inferStrictRenderUnitNode(
-      AutoescapeMode templateAutoescapeMode,
-      RenderUnitNode node,
-      Inferences inferences,
-      ErrorReporter errorReporter) {
-    InferenceEngine inferenceEngine =
-        new InferenceEngine(
-            AutoescapeMode.STRICT,
-            templateAutoescapeMode,
-            inferences,
-            errorReporter);
+      RenderUnitNode node, Inferences inferences, ErrorReporter errorReporter) {
+    InferenceEngine inferenceEngine = new InferenceEngine(inferences, errorReporter);
     // Context started off as startContext and we have propagated context through all of
     // node's children, so now context is the node's end context.
     Context endContext =
@@ -165,25 +145,13 @@ final class InferenceEngine {
     checkBlockEndContext(node, endContext);
   }
 
-  /** The autoescaping mode in this current context. */
-  private final AutoescapeMode autoescapeMode;
-
-  /** The autoescape mode of the surrounding {template}. */
-  private final AutoescapeMode templateAutoescapeMode;
-
   /** Receives modifications and typing inferences. */
   private final Inferences inferences;
 
   /** For reporting errors. */
   private final ErrorReporter errorReporter;
 
-  private InferenceEngine(
-      AutoescapeMode autoescapeMode,
-      AutoescapeMode templateAutoescapeMode,
-      Inferences inferences,
-      ErrorReporter errorReporter) {
-    this.autoescapeMode = autoescapeMode;
-    this.templateAutoescapeMode = templateAutoescapeMode;
+  private InferenceEngine(Inferences inferences, ErrorReporter errorReporter) {
     this.inferences = inferences;
     this.errorReporter = errorReporter;
   }
@@ -232,16 +200,11 @@ final class InferenceEngine {
     @Override
     protected void visitTemplateNode(TemplateNode templateNode) {
       Preconditions.checkState(
-          templateNode.getAutoescapeMode() == autoescapeMode,
-          "Same ContextPropagatingVisitor cannot be reused for multiple escaping modes.");
-      if (autoescapeMode == AutoescapeMode.STRICT) {
-        Preconditions.checkState(
-            context.isValidStartContextForContentKind(templateNode.getContentKind()),
-            "Strict templates may only be visited in the context for their declared content kind.");
-        // Normalize to the canonical context, even if we started in a similar but allowable
-        // context (e.g.  single versus double quotes).
-        context = Context.getStartContextForContentKind(templateNode.getContentKind());
-      }
+          context.isValidStartContextForContentKind(templateNode.getContentKind()),
+          "Templates may only be visited in the context for their declared content kind.");
+      // Normalize to the canonical context, even if we started in a similar but allowable
+      // context (e.g.  single versus double quotes).
+      context = Context.getStartContextForContentKind(templateNode.getContentKind());
       visitChildren(templateNode);
       checkBlockEndContext(templateNode, context);
     }
@@ -275,8 +238,7 @@ final class InferenceEngine {
 
       // (2) Run the inference engine on the parts of the message in that context.
       Context msgEndContext =
-          new InferenceEngine(autoescapeMode, templateAutoescapeMode, inferences, errorReporter)
-              .inferChildren(node, strategy.childContext);
+          new InferenceEngine(inferences, errorReporter).inferChildren(node, strategy.childContext);
 
       // (3) Make sure the message didn't itself change context.
       if (!msgEndContext.equals(strategy.childContext)) {
@@ -323,20 +285,9 @@ final class InferenceEngine {
     }
 
     private void visitRenderUnitNode(RenderUnitNode node) {
-      switch (autoescapeMode) {
-        case CONTEXTUAL:
-          // if there is a kind and we are contextual, respect it, otherwise, html it is!
-          if (node.getContentKind() == null) {
-            inferInContextualModeForHtml(node);
-          } else {
-            inferInStrictMode(node);
-          }
-          break;
-        case STRICT:
-          // The CheckEscapingSanityVisitor ensures that node.getContentKind is non-null
-          inferInStrictMode(node);
-          break;
-      }
+      // TODO(b/80336719): Change the parser (or the RenderUnitNode constructor) to require a kind.
+      // The CheckEscapingSanityVisitor ensures that node.getContentKind is non-null
+      inferInStrictMode(node);
     }
 
     @Override
@@ -407,7 +358,6 @@ final class InferenceEngine {
     @Override
     protected void visitPrintNode(PrintNode printNode) {
       printNode.setHtmlContext(context.state);
-
       checkUriEnd();
       checkHtmlHtmlAttributePosition(printNode);
 
@@ -574,78 +524,26 @@ final class InferenceEngine {
         CallNode callNode, Context startContext, String templateName, Inferences inferences) {
       List<TemplateMetadata> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
-      if (autoescapeMode == AutoescapeMode.STRICT) {
-        // We're currently in a strict mode template. Check what kind of template is being called.
-        if (calleeStrictContentKind != null
-            && startContext.isValidStartContextForContentKind(calleeStrictContentKind)) {
-          // As an optimization, don't escape the call site if the callee has the right content
-          // kind. Since all deltemplates with the same name must be of the same kind (checked
-          // elsewhere), we can make this optimization even if we can't see all the deltemplates.
-          return startContext.getContextAfterDynamicValue();
-        } else if (calleeStrictContentKind != null || targets.isEmpty()) {
-          // If a strict template calls another strict template (or an unknown extern), the result
-          // will be escaped, so the call statement behaves effectively like a print statement.
-          // No re-contextualization of the callee is done.
-          // TODO(gboyer): Throw an exception if the list of escaping modes is empty, which
-          // indicates that there's no valid escaper for this context. My plan is to actually have
-          // getEscapingModes() itself throw the exception, but this requires some weeding out of
-          // bad existing templates.
-          inferences.setEscapingDirectives(
-              callNode,
-              startContext,
-              startContext.getEscapingModes(callNode, ImmutableList.<PrintDirectiveNode>of()));
-          return startContext.getContextAfterDynamicValue();
-        } else {
-          throw SoyAutoescapeException.createWithNode(
-              "Soy strict autoescaping currently forbids calls to non-strict templates. "
-                  + "Please migrate the callee to strict.",
-              callNode);
-        }
-
+      // Check what kind of template is being called.
+      if (calleeStrictContentKind != null
+          && startContext.isValidStartContextForContentKind(calleeStrictContentKind)) {
+        // As an optimization, don't escape the call site if the callee has the right content
+        // kind. Since all deltemplates with the same name must be of the same kind (checked
+        // elsewhere), we can make this optimization even if we can't see all the deltemplates.
+        return startContext.getContextAfterDynamicValue();
       } else {
-        // In a non-strict mode template.
-        if (targets.isEmpty()) {
-          // External template not visible to compiler -- let's pray for the best! We might end up
-          // calling a Javascript-escaping template from HTML or vice versa.
-          // TODO(lukes): this should be getContextAfterDynamicValue
-          return startContext;
-        } else if (calleeStrictContentKind != null) {
-          // Non-strict templates may call strict templates, but only if the context is a match.
-          // NOTE: While contextual templates *might* do escaping like strict in this context, it
-          // would silently break if the template is compiled as an extern. By having this check,
-          // teams can do a single monolithic compilation for error checking to prevent this.
-          // We're a little loose in this check to allow calling URI templates within URI
-          // attributes, even though it's not technically valid HTML, in order to help migration.
-          if (!startContext.isValidStartContextForContentKindLoose(calleeStrictContentKind)) {
-            String msg =
-                String.format(
-                    "Cannot call strictly autoescaped template %s of kind=\"%s\" from "
-                        + "incompatible context %s. Strict templates generate extra code to safely "
-                        + "call templates of other content kinds, but non-strict templates do not.",
-                    templateName, calleeStrictContentKind.asAttributeValue(), startContext);
-            throw SoyAutoescapeException.createWithNode(msg, callNode);
-          }
-          // TODO(lukes): this should be getContextAfterDynamicValue
-          return startContext;
-        } else {
-          if (!startContext.equals(Context.HTML_PCDATA)) {
-            throw SoyAutoescapeException.createWithNode(
-                "Attempting to call non-strict template '"
-                    + templateName
-                    + "' from a non-strict template in context '"
-                    + startContext.state
-                    + "'. This is no longer supported."
-                    + " Please migrate to strict autoescaping.",
-                callNode);
-          }
-          // This is the correct answer because
-          // 1. we are starting in HTML_PCDATA, per the previous check
-          // 2. the only valid end-context for HTML_PCDATA is HTML_PCDATA
-          // 3. All deprecated-contextual templates are required to start and end in this context
-          //    due to the checks in visitTemplateNode above.
-          // So we don't actually have to look at the callees
-          return Context.HTML_PCDATA;
-        }
+        // If a strict template calls another strict template (or an unknown extern), the result
+        // will be escaped, so the call statement behaves effectively like a print statement.
+        // No re-contextualization of the callee is done.
+        // TODO(gboyer): Throw an exception if the list of escaping modes is empty, which
+        // indicates that there's no valid escaper for this context. My plan is to actually have
+        // getEscapingModes() itself throw the exception, but this requires some weeding out of
+        // bad existing templates.
+        inferences.setEscapingDirectives(
+            callNode,
+            startContext,
+            startContext.getEscapingModes(callNode, ImmutableList.<PrintDirectiveNode>of()));
+        return startContext.getContextAfterDynamicValue();
       }
     }
 
@@ -694,28 +592,7 @@ final class InferenceEngine {
     }
 
     private void inferInStrictMode(RenderUnitNode node) {
-      inferStrictRenderUnitNode(
-          templateAutoescapeMode,
-          node,
-          inferences,
-          errorReporter);
-    }
-
-    /** Applies HTML contextual autoescaping on a legacy contextual parameter block. */
-    private void inferInContextualModeForHtml(CommandNode node) {
-      // NOTE: Previously this wouldn't do any contextual analysis, which resulted in subtle bugs
-      // such as the contextual autoescaper not seeing typed parameters in nested calls.
-      final Context paramContentNodeEndContext =
-          new InferenceEngine(
-                  AutoescapeMode.CONTEXTUAL,
-                  templateAutoescapeMode,
-                  inferences,
-                  errorReporter)
-              .inferChildren(node, Context.HTML_PCDATA);
-      if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {
-        throw SoyAutoescapeException.createWithNode(
-            "Blocks should start and end in HTML context.", node);
-      }
+      inferStrictRenderUnitNode(node, inferences, errorReporter);
     }
   }
 

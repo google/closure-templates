@@ -37,19 +37,6 @@ public final class NamespaceDeclaration {
     String cssBaseNamespace = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
-        case "autoescape":
-          AutoescapeMode mode = AutoescapeMode.forAttributeValue(attr.getValue());
-          if (mode == AutoescapeMode.STRICT) {
-            errorReporter.report(
-                attr.getName().location(),
-                CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
-                "autoescape",
-                "strict");
-          } else {
-            errorReporter.report(
-                attr.getName().location(), CommandTagAttribute.NAMESPACE_AUTOESCAPE_ATTRIBUTE);
-          }
-          break;
         case "requirecss":
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
           break;

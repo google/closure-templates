@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -36,7 +35,6 @@ import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherTagNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlTagMatchingPass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -94,14 +92,6 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
   }
 
   private void checkTemplateNode(TemplateNode node, IdGenerator idGenerator) {
-    AutoescapeMode autoescapeMode = node.getAutoescapeMode();
-    // The SoyConformance pass runs before this pass, which guarantees that any strict HTML node has
-    // STRICT autoescaping mode. Note that you are allowed to set STRICT autoescaping mode on
-    // a non-strict-HTML node.
-    checkState(
-        autoescapeMode.equals(AutoescapeMode.STRICT) || !node.isStrictHtml(),
-        "Strict HTML template without strict autoescaping.");
-    // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
     if (node.isStrictHtml()) {
       htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
       new HtmlTagMatchingPass(

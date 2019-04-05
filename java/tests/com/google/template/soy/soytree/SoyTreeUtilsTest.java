@@ -125,7 +125,7 @@ public final class SoyTreeUtilsTest {
           .join(
               "{namespace ns}",
               "/** example for cloning. */",
-              "{template .ex1 autoescape=\"deprecated-contextual\" visibility=\"private\"}",
+              "{template .ex1 visibility=\"private\"}",
               "  {@param a : ?}",
               "  {@param b : ?}",
               "  {@param c : ?}",
@@ -163,7 +163,7 @@ public final class SoyTreeUtilsTest {
               "    {for $item in $items}",
               "      <li>{$item}</li>",
               "    {ifempty}",
-              "      <li><i>Nothing to see here!",
+              "      <li><i>Nothing to see here!</i>",
               "    {/for}",
               "  </ol>",
               "  {let $local : 'foo' /}",

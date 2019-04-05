@@ -78,7 +78,7 @@ public final class CompiledTemplates {
   }
 
   /** Returns the strict content type of the template. */
-  public Optional<ContentKind> getTemplateContentKind(String name) {
+  public ContentKind getTemplateContentKind(String name) {
     return getTemplateData(name).kind;
   }
 
@@ -186,7 +186,7 @@ public final class CompiledTemplates {
     final Class<? extends CompiledTemplate> templateClass;
     // will be null for private templates since we don't compile factories for them.
     @Nullable final CompiledTemplate.Factory factory;
-    final Optional<ContentKind> kind;
+    final ContentKind kind;
     final ImmutableSet<String> callees;
     final ImmutableSet<String> delCallees;
     final ImmutableSet<String> injectedParams;
@@ -229,10 +229,7 @@ public final class CompiledTemplates {
       // time is expensive.
       TemplateMetadata annotation = template.getAnnotation(TemplateMetadata.class);
       String contentKind = annotation.contentKind();
-      this.kind =
-          contentKind.isEmpty()
-              ? Optional.<ContentKind>absent()
-              : Optional.of(ContentKind.valueOf(contentKind));
+      this.kind = ContentKind.valueOf(contentKind);
       this.callees = ImmutableSet.copyOf(annotation.callees());
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
       this.injectedParams = ImmutableSet.copyOf(annotation.injectedParams());

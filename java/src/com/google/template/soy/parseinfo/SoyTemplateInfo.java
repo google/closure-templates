@@ -39,9 +39,6 @@ public class SoyTemplateInfo {
   /** Map from each param to whether it's required for this template. */
   private final ImmutableMap<String, ParamRequisiteness> paramMap;
 
-  /** If the template is using strict auto escaping mode. */
-  private final String autoescapeMode;
-
   /**
    * Constructor for internal use only, for the general case.
    *
@@ -52,25 +49,9 @@ public class SoyTemplateInfo {
    * @param paramMap Map from each param to whether it's required for this template.
    */
   protected SoyTemplateInfo(String name, ImmutableMap<String, ParamRequisiteness> paramMap) {
-    this(name, paramMap, "strict");
-  }
-
-  /**
-   * Constructor for internal use only, for the general case.
-   *
-   * <p>Important: Do not construct SoyTemplateInfo objects outside of Soy internal or Soy-generated
-   * code. User code that constructs SoyTemplateInfo objects will be broken by future Soy changes.
-   *
-   * @param name The full template name.
-   * @param paramMap Map from each param to whether it's required for this template.
-   * @param autoescapeMode The auto escape mode used by this template.
-   */
-  protected SoyTemplateInfo(
-      String name, ImmutableMap<String, ParamRequisiteness> paramMap, String autoescapeMode) {
     this.name = name;
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
-    this.autoescapeMode = autoescapeMode;
   }
 
   /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
@@ -86,10 +67,5 @@ public class SoyTemplateInfo {
   /** Returns a map from each param to whether it's required for this template. */
   public ImmutableMap<String, ParamRequisiteness> getParams() {
     return paramMap;
-  }
-
-  /** Returns if the current template is using strict auto escaping mode. */
-  public String getAutoescapeMode() {
-    return autoescapeMode;
   }
 }

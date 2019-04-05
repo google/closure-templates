@@ -56,10 +56,6 @@ message Requirement {
     repeated string tag = 1;
   }
 
-  message RequireStrictAutoescaping {
-    // no customizable behavior
-  }
-
   message BanXidForCssObfuscation {
     // Bans the usage of xid for css obfuscation
   }
@@ -71,7 +67,7 @@ message Requirement {
     string java_class = 1;
   }
 
-  reserved 1, 6, 13;
+  reserved 1, 6, 12, 13;
   oneof requirement_type {
     BannedCssSelector banned_css_selector = 2;
     BannedFunction banned_function = 3;
@@ -79,7 +75,6 @@ message Requirement {
     BannedRawText banned_raw_text = 5;
     Custom custom = 7;
     BannedHtmlTag banned_html_tag = 11;
-    RequireStrictAutoescaping require_strict_autoescaping = 12;
     BanXidForCssObfuscation ban_xid_for_css_obfuscation = 14;
   }
 

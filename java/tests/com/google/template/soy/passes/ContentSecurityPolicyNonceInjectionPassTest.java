@@ -193,21 +193,21 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   public void testInlineEventHandlersAndStyles() {
     assertInjected(
         join(
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo}\n",
             "  {@param height: int}\n",
             DEFN,
             "<a href='#' style='",
             "height:{$height |filterCssValue |escapeHtmlAttribute}px;'",
             " onclick='",
             "foo() &amp;& bar(\"baz\")'",
-            ">",
+            "></a>",
 
             // Don't bless unquoted attributes since we can't
             // be confident that they end where they're supposed to,
             // so aren't sure that we aren't also blessing an
             // untrusted suffix.
             "<a href='#' onmouseover=foo()",
-            " style=color:red>",
+            " style=color:red></a>",
             // stricthtml mode doesn't preserve the whitespace around the equals sign
             "<input checked ONCHANGE=\"",
             "Panic()\"",
@@ -219,10 +219,10 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             ">baz()</script>\n",
             "{/template}"),
         join(
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo}\n",
             "  {@param height: int}\n",
-            "<a href='#' style='height:{$height}px;' onclick='foo() &amp;& bar(\"baz\")'>",
-            "<a href='#' onmouseover=foo() style=color:red>",
+            "<a href='#' style='height:{$height}px;' onclick='foo() &amp;& bar(\"baz\")'></a>",
+            "<a href='#' onmouseover=foo() style=color:red></a>",
             "<input checked ONCHANGE = \"Panic()\">",
             "<script onerror= 'scriptError()'>baz()</script>\n",
             "{/template}"));

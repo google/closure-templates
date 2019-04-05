@@ -105,7 +105,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     @Nullable private final String delPackageName;
     private final Priority priority;
     @Nullable private final String namespace;
-    private final AutoescapeMode defaultAutoescapeMode;
 
     private final Set<String> usedAliases;
 
@@ -117,26 +116,23 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       this(
           delpackageName == null ? null : delpackageName.identifier(),
           namespaceDeclaration.getNamespace(),
-          AutoescapeMode.STRICT,
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
           ImmutableList.copyOf(aliases));
     }
 
     @VisibleForTesting
     public SoyFileHeaderInfo(String namespace) {
-      this(null, namespace, AutoescapeMode.STRICT, ImmutableMap.of(), ImmutableList.of());
+      this(null, namespace, ImmutableMap.of(), ImmutableList.of());
     }
 
     private SoyFileHeaderInfo(
         @Nullable String delPackageName,
         String namespace,
-        AutoescapeMode defaultAutoescapeMode,
         ImmutableMap<String, String> aliasToNamespaceMap,
         ImmutableList<AliasDeclaration> aliasDeclarations) {
       this.delPackageName = delPackageName;
       this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
-      this.defaultAutoescapeMode = defaultAutoescapeMode;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
       this.usedAliases = new HashSet<>();
@@ -146,7 +142,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       this.delPackageName = orig.delPackageName;
       this.priority = orig.priority;
       this.namespace = orig.namespace;
-      this.defaultAutoescapeMode = orig.defaultAutoescapeMode;
       this.aliasToNamespaceMap = orig.aliasToNamespaceMap;
       this.aliasDeclarations = orig.aliasDeclarations;
       this.usedAliases = new HashSet<>(orig.usedAliases);
@@ -194,10 +189,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
     public Priority getPriority() {
       return priority;
-    }
-
-    public AutoescapeMode getDefaultAutoescapeMode() {
-      return defaultAutoescapeMode;
     }
 
     private static ImmutableMap<String, String> createAliasMap(
@@ -249,11 +240,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Whitespace handling mode for this template. */
   private final WhitespaceMode whitespaceMode;
 
-  /** The mode of autoescaping for this template. */
-  private final AutoescapeMode autoescapeMode;
-
-  /** Strict mode context. Nonnull iff autoescapeMode is strict. */
-  @Nullable private final SanitizedContentKind contentKind;
+  /** Strict mode context. Nonnull. */
+  private final SanitizedContentKind contentKind;
 
   /** Required CSS namespaces. */
   private final ImmutableList<String> requiredCssNamespaces;
@@ -305,7 +293,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
     this.visibility = visibility;
     this.whitespaceMode = nodeBuilder.getWhitespaceMode();
-    this.autoescapeMode = nodeBuilder.getAutoescapeMode();
     this.contentKind = nodeBuilder.getContentKind();
     this.requiredCssNamespaces = nodeBuilder.getRequiredCssNamespaces();
     this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
@@ -343,7 +330,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.partialTemplateName = orig.partialTemplateName;
     this.visibility = orig.visibility;
     this.whitespaceMode = orig.whitespaceMode;
-    this.autoescapeMode = orig.autoescapeMode;
     this.contentKind = orig.contentKind;
     this.requiredCssNamespaces = orig.requiredCssNamespaces;
     this.cssBaseNamespace = orig.cssBaseNamespace;
@@ -406,11 +392,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return whitespaceMode;
   }
 
-  /** Returns the mode of autoescaping. */
-  public AutoescapeMode getAutoescapeMode() {
-    return autoescapeMode;
-  }
-
   private String getDeclName(TemplateHeaderVarDefn headerVar) {
     if (headerVar instanceof TemplateStateVar) {
       return "@state";
@@ -425,12 +406,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (strictHtmlDisabled) {
       // Use the value that is explicitly set in template.
       return false;
-    } else if (contentKind != SanitizedContentKind.HTML
-        || autoescapeMode != AutoescapeMode.STRICT) {
-      // Non-HTML or non-strict-autoescaping templates couldn't be strictHtml.
+    } else if (contentKind != SanitizedContentKind.HTML) {
+      // Non-HTML templates couldn't be strictHtml.
       return false;
     } else {
-      // Strict autoescaping HTML templates have strictHtml enabled by default.
+      // HTML templates have strictHtml enabled by default.
       return true;
     }
   }
@@ -440,9 +420,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return strictHtml;
   }
 
-  /** Returns the content kind for strict autoescaping. Nonnull iff autoescapeMode is strict. */
+  /** Returns the content kind for strict autoescaping. */
   @Override
-  @Nullable
   public SanitizedContentKind getContentKind() {
     return contentKind;
   }

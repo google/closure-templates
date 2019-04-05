@@ -62,7 +62,7 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);
-    setAutoescapeInfo(AutoescapeMode.STRICT, SanitizedContentKind.HTML, this.sourceLocation);
+    setContentKind(SanitizedContentKind.HTML);
   }
 
   @Override

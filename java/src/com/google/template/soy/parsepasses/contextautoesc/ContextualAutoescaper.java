@@ -94,8 +94,8 @@ public final class ContextualAutoescaper {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode templateNode : file.getChildren()) {
         try {
-          // In strict mode, the author specifies the kind of SanitizedContent to produce, and
-          // thus the context in which to escape.  In deprecated-contextual, it is always HTML.
+          // The author specifies the kind of SanitizedContent to produce, and thus the context in
+          // which to escape.
           Context startContext =
               Context.getStartContextForContentKind(
                   MoreObjects.firstNonNull(

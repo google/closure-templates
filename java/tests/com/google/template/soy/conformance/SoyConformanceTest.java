@@ -82,10 +82,7 @@ public class SoyConformanceTest {
             + "  }\n"
             + "  error_message: 'foo'"
             + "}",
-        "{namespace ns}\n"
-            + "{template .foo autoescape=\"deprecated-contextual\"}\n"
-            + "{print 'blah' |escapeUri}\n"
-            + "{/template}");
+        "{namespace ns}\n" + "{template .foo}\n" + "{print 'blah' |escapeUri}\n" + "{/template}");
   }
 
   @Test
@@ -475,24 +472,6 @@ public class SoyConformanceTest {
             + "  error_message: 'foo'"
             + "}",
         "{namespace ns}{template .bar}{@param foo : ?}{css($foo, 'foo')}{/template}");
-  }
-
-  @Test
-  public void testRequireStrictAutoescaping() {
-    assertNoViolation(
-        "requirement: {\n"
-            + "  require_strict_autoescaping: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns}\n" + "{template .foo}{/template}\n");
-    assertViolation(
-        "requirement: {\n"
-            + "  require_strict_autoescaping: {}\n"
-            + "  error_message: 'foo'"
-            + " "
-            + "}",
-        "{namespace ns }\n" + "{template .foo autoescape=\"deprecated-contextual\"}{/template}\n");
   }
 
   @Test

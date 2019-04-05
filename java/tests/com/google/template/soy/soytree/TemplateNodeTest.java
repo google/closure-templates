@@ -108,31 +108,20 @@ public class TemplateNodeTest {
         .isEqualTo(
             "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
     errorReporter = ErrorReporter.createForTest();
-    parse("{namespace ns}\n{template .foo autoescape=\"false\"}{/template}", errorReporter);
+    parse(
+        "{namespace ns}\n{template .foo autoescape=\"deprecated-contextual\"}{/template}",
+        errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Invalid value for attribute 'autoescape', expected deprecated-contextual.");
-
-    // assertion inside no-arg templateBasicNode() is that there is no exception.
-    parse("{namespace ns}\n{template .foo autoescape=\n\t\r \"deprecated-contextual\"}{/template}");
+        .isEqualTo(
+            "Unsupported attribute 'autoescape' for 'template' tag, expected one of [visibility, "
+                + "kind, requirecss, cssbase, stricthtml, whitespace].");
   }
 
   @Test
   public void testValidStrictTemplates() {
     // "kind" is optional, defaults to HTML
     TemplateNode node = parse("{namespace ns}\n" + "{template .boo}{/template}");
-    assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
     assertEquals(SanitizedContentKind.HTML, node.getContentKind());
-  }
-
-  @Test
-  public void testInvalidStrictTemplates() {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    parse(
-        "{namespace ns}\n"
-            + "{template .boo autoescape=\"deprecated-contextual\" kind=\"text\"}{/template}",
-        errorReporter);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("kind=\"...\" attribute is only valid with autoescape=\"strict\".");
   }
 
   @Test

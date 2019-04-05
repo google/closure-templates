@@ -41,7 +41,6 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -459,9 +458,6 @@ final class HtmlRewriter {
     final String filePath;
     final AstEdits edits = new AstEdits();
     final ErrorReporter errorReporter;
-
-    // mode for the current template
-    private AutoescapeMode autoescapeMode;
 
     // RawText handling fields.
     RawTextNode currentRawTextNode;
@@ -1216,7 +1212,6 @@ final class HtmlRewriter {
       // reset everything for each template
       edits.clear();
       context = null;
-      autoescapeMode = node.getAutoescapeMode();
 
       Checkpoint checkPoint = errorReporter.checkpoint();
       visitScopedBlock(node.getContentKind(), node, "template");
@@ -1225,7 +1220,6 @@ final class HtmlRewriter {
       if (!errorReporter.errorsSince(checkPoint)) {
         edits.apply();
       }
-      autoescapeMode = null;
     }
 
     @Override
@@ -1507,17 +1501,10 @@ final class HtmlRewriter {
       // * this is a let/param block without a kind parameter (these are only legal in non-strict
       //   templates)
       if (blockKind == null) {
-        switch (autoescapeMode) {
-          case CONTEXTUAL:
-            blockKind = SanitizedContentKind.HTML;
-            break;
-          case STRICT:
-            // TODO(lukes): in this case an error will be reported by a later part of the compiler.
-            // we could change the CheckEscapingSanitiyVisitor to run before this pass.  By leaving
-            // blockKind == null we will avoid parsing this block. (since State will == NONE).
-            // we could also just assume html... but that might be confusing in some cases?
-            break;
-        }
+        // TODO(lukes): in this case an error will be reported by a later part of the compiler.
+        // we could change the CheckEscapingSanitiyVisitor to run before this pass.  By leaving
+        // blockKind == null we will avoid parsing this block. (since State will == NONE).
+        // we could also just assume html... but that might be confusing in some cases?
       }
       State startState = State.fromKind(blockKind);
       Checkpoint checkpoint = errorReporter.checkpoint();

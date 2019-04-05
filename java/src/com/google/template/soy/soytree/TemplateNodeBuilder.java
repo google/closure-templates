@@ -31,7 +31,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.HashSet;
@@ -54,10 +53,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
               + "Use '{@param}' in the template header instead.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
-  private static final SoyErrorKind KIND_BUT_NOT_STRICT =
-      SoyErrorKind.of(
-          "kind=\"...\" attribute is only valid with autoescape=\"strict\".",
-          StyleAllowance.NO_CAPS);
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("Param ''{0}'' already declared.");
 
@@ -91,12 +86,6 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** This template's whitespace handling mode. */
   protected WhitespaceMode whitespaceMode = WhitespaceMode.JOIN;
 
-  /**
-   * The mode of autoescaping for this template. This is private instead of protected to enforce use
-   * of setAutoescapeInfo().
-   */
-  private AutoescapeMode autoescapeMode;
-
   /** Required CSS namespaces. */
   private ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
 
@@ -104,8 +93,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   private String cssBaseNamespace;
 
   /**
-   * Strict mode context. Nonnull iff autoescapeMode is strict. This is private instead of protected
-   * to enforce use of setAutoescapeInfo().
+   * Strict mode context. This is private instead of protected to enforce use of setContentKind().
    */
   private SanitizedContentKind contentKind;
 
@@ -163,21 +151,16 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public abstract T setCommandValues(Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("autoescape", "kind", "requirecss", "cssbase", "stricthtml", "whitespace");
+      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
-    AutoescapeMode autoescapeMode = soyFileHeaderInfo.getDefaultAutoescapeMode();
-    SanitizedContentKind kind = null;
-    SourceLocation kindLocation = null;
+    SanitizedContentKind kind = SanitizedContentKind.HTML;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
-        case "autoescape":
-          autoescapeMode = attribute.valueAsAutoescapeMode(errorReporter);
-          break;
         case "kind":
           kind = attribute.valueAsContentKind(errorReporter);
-          kindLocation = attribute.getValueLocation();
+          SourceLocation kindLocation = attribute.getValueLocation();
           if (kind == SanitizedContentKind.HTML) {
             errorReporter.report(
                 kindLocation, CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE, "kind", "html");
@@ -199,7 +182,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
           break;
       }
     }
-    setAutoescapeInfo(autoescapeMode, kind, kindLocation);
+    setContentKind(kind);
   }
 
   /**
@@ -260,20 +243,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected void setAutoescapeInfo(
-      AutoescapeMode autoescapeMode,
-      @Nullable SanitizedContentKind contentKind,
-      @Nullable SourceLocation kindLocation) {
-
-    Preconditions.checkArgument(autoescapeMode != null);
-    this.autoescapeMode = autoescapeMode;
-
-    if (contentKind == null && autoescapeMode == AutoescapeMode.STRICT) {
-      // Default mode is HTML.
-      contentKind = SanitizedContentKind.HTML;
-    } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
-      errorReporter.report(kindLocation, KIND_BUT_NOT_STRICT);
-    }
+  protected void setContentKind(SanitizedContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
@@ -297,16 +267,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return soyDocDesc;
   }
 
-  /** @return The mode of autoescaping for this template. */
-  protected AutoescapeMode getAutoescapeMode() {
-    Preconditions.checkState(autoescapeMode != null);
-    return autoescapeMode;
-  }
-
-  /** @return Strict mode context. Nonnull iff autoescapeMode is strict. */
-  @Nullable
+  /** @return Strict mode context. */
   public SanitizedContentKind getContentKind() {
-    checkState(autoescapeMode != null); // make sure setAutoescapeInfo was called
     return contentKind;
   }
 

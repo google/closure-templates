@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -36,9 +35,6 @@ import com.google.template.soy.soytree.TemplateNode;
  * Visitor performing escaping sanity checks over all input -- not just input affected by the
  * contextual autoescaping inference engine.
  *
- * <p>Checks that typed {@code {param}} and {@code {let}} nodes only appear in contextually
- * autoescaped templates.
- *
  * <p>Checks that internal-only directives such as {@code |text} are not used.
  *
  * <p>{@link #exec} should be called on a full parse tree.
@@ -50,8 +46,7 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
       SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");
 
   private static final SoyErrorKind RENDER_UNIT_WITHOUT_KIND =
-      SoyErrorKind.of(
-          "In strict templates, '{'{0}'}'...'{'/{0}'}' blocks require an explicit kind=\"\".");
+      SoyErrorKind.of("'{'{0}'}'...'{'/{0}'}' blocks require an explicit kind=\"\".");
 
   private final Visitor visitor;
 
@@ -65,9 +60,6 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
-    /** Current escaping mode. */
-    AutoescapeMode autoescapeMode;
-
     final ErrorReporter errorReporter;
 
     Visitor(ErrorReporter errorReporter) {
@@ -78,7 +70,6 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      autoescapeMode = node.getAutoescapeMode();
       visitChildren(node);
     }
 
@@ -101,19 +92,13 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
     }
 
     private void visitRenderUnitNode(RenderUnitNode node) {
-      final AutoescapeMode oldMode = autoescapeMode;
-      if (node.getContentKind() != null) {
-        // Temporarily enter strict mode.
-        autoescapeMode = AutoescapeMode.STRICT;
-      } else if (autoescapeMode == AutoescapeMode.STRICT) {
+      if (node.getContentKind() == null) {
         errorReporter.report(
             node.getSourceLocation(),
             RENDER_UNIT_WITHOUT_KIND,
             node.getKind() == Kind.LET_CONTENT_NODE ? "let" : "param");
       }
       visitChildren(node);
-      // Pop out of strict mode if we entered it just for this unit.
-      autoescapeMode = oldMode;
     }
 
     // --------------------------------------------------------------------------------------------

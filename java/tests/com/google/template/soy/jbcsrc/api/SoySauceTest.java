@@ -49,7 +49,6 @@ public class SoySauceTest {
   public void setUp() throws Exception {
     SoyFileSet.Builder builder = SoyFileSet.builder();
     builder.add(SoySauceTest.class.getResource("strict.soy"));
-    builder.add(SoySauceTest.class.getResource("non_strict.soy"));
     sauce = builder.build().compileTemplates();
   }
 
@@ -122,43 +121,6 @@ public class SoySauceTest {
                 .render()
                 .get())
         .isEqualTo("'Hello world'");
-  }
-
-  @Test
-  public void testNonStrictContentHandling() {
-    assertThat(sauce.renderTemplate("nonstrict_test.hello").render().get())
-        .isEqualTo("Hello world");
-    assertEquals(
-        "Hello world",
-        sauce
-            .renderTemplate("nonstrict_test.hello")
-            .setExpectedContentKind(ContentKind.TEXT) // text is always fine
-            .render()
-            .get());
-    assertEquals(
-        SanitizedContents.unsanitizedText("Hello world"),
-        sauce
-            .renderTemplate("nonstrict_test.hello")
-            .setExpectedContentKind(ContentKind.TEXT) // text is always fine, even with renderStrict
-            .renderStrict()
-            .get());
-    try {
-      sauce.renderTemplate("nonstrict_test.hello").renderStrict();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'html'");
-    }
-
-    try {
-      sauce.renderTemplate("nonstrict_test.hello").setExpectedContentKind(ContentKind.JS).render();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo("Cannot render a non strict template 'nonstrict_test.hello' as 'js'");
-    }
   }
 
   @Test

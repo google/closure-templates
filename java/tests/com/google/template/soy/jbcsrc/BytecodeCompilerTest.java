@@ -891,23 +891,7 @@ public class BytecodeCompilerTest {
     } catch (IllegalArgumentException expected) {
     }
     // we can still access metadata
-    assertThat(templates.getTemplateContentKind("ns.foo")).hasValue(ContentKind.HTML);
-  }
-
-  @Test
-  public void testContentKindNonStrict() {
-    assertThat(
-            TemplateTester.compileFile(
-                    "{namespace ns}",
-                    "/** foo */",
-                    "{template .foo autoescape=\"deprecated-contextual\"}",
-                    "{/template}")
-                .getTemplateFactory("ns.foo")
-                .getClass()
-                .getDeclaringClass()
-                .getAnnotation(TemplateMetadata.class)
-                .contentKind())
-        .isEmpty();
+    assertThat(templates.getTemplateContentKind("ns.foo")).isEqualTo(ContentKind.HTML);
   }
 
   @Test
