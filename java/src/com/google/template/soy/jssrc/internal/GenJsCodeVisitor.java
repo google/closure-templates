@@ -774,10 +774,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
       for (TemplateStateVar stateVar : elementNode.getStateVars()) {
-        bodyStatements.add(
-            VariableDeclaration.builder(stateVar.name())
-                .setRhs(getExprTranslator().exec(stateVar.defaultValue()))
-                .build());
+        Expression expr = getExprTranslator().exec(stateVar.defaultValue());
+        // A  state variable can be something like ns.foo.FooProto|null. Without
+        // this cast, access to this variable can trigger JS conformance errors
+        // due to unknown type.
+        if (!stateVar.type().equals(stateVar.defaultValue().getType())) {
+          expr = expr.castAs(JsType.forJsSrc(stateVar.type()).typeExpr());
+        }
+        bodyStatements.add(VariableDeclaration.builder(stateVar.name()).setRhs(expr).build());
       }
     }
     // Generate statement to ensure data is defined, if necessary.
