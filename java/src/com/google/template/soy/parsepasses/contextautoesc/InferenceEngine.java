@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDelimiter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.HtmlHtmlAttributePosition;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -231,6 +232,11 @@ final class InferenceEngine {
                 + "translators to write source code; if this is desired, try factoring the "
                 + "message into a {let} block: "
                 + context,
+            node);
+      } else if (context.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+        throw SoyAutoescapeException.createWithNode(
+            "Messages are not supported in this context because a space in the translation would "
+                + "end the attribute value. Wrap the attribute value into quotes.",
             node);
       }
       Context.MsgEscapingStrategy strategy = maybeStrategy.get();

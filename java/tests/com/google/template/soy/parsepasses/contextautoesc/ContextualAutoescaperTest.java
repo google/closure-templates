@@ -1918,6 +1918,18 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
+  public void testMsgForbiddenHtmlAttributeContexts() {
+    assertRewriteFails(
+        "Messages are not supported in this context because a space in the translation would "
+            + "end the attribute value. Wrap the attribute value into quotes.",
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  <p title={msg desc=\"\"}a{/msg}>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testMsgForbiddenCssContext() {
     assertRewriteFails(
         getForbiddenMsgError("CSS"),
