@@ -73,9 +73,15 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.headerInfo = orig.headerInfo.copy();
   }
 
+
   @Override
   public Kind getKind() {
     return Kind.SOY_FILE_NODE;
+  }
+
+  /** Returns the attibutes of the namespace tag. */
+  public ImmutableList<CommandTagAttribute> getNamespaceAttributes() {
+    return namespaceDeclaration.attrs;
   }
 
   /** Returns the name of the containing delegate package, or null if none. */
