@@ -28,12 +28,14 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
 
   /**
    * Patches the current dom node.
+   * @param renderer Allows injecting a subclass of IncrementalDomRenderer
+   *                 to customize the behavior of patches.
    */
-  render() {
+  render(renderer = new IncrementalDomRenderer()) {
     assert(this.node);
     incrementaldom.patchOuter(this.node!, () => {
       // If there are parameters, they must already be specified.
-      this.renderInternal(new IncrementalDomRenderer(), this.data!, true);
+      this.renderInternal(renderer, this.data!, true);
     });
   }
 
