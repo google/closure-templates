@@ -17,31 +17,37 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.Map;
+import java.util.function.Function;
 
 /** Represents a JavaScript object literal expression. */
 @AutoValue
 @Immutable
 abstract class ObjectLiteral extends Expression {
 
-  abstract ImmutableList<? extends Expression> keys();
+  abstract ImmutableMap<Expression, Expression> values();
 
-  abstract ImmutableList<? extends Expression> values();
+  static ObjectLiteral create(Map<String, Expression> object) {
+    return create(object, Expression::id);
+  }
 
-  static ObjectLiteral create(
-      ImmutableList<? extends Expression> keys, ImmutableList<? extends Expression> values) {
-    Preconditions.checkArgument(keys.size() == values.size(), "Mismatch between keys and values.");
+  static ObjectLiteral createWithQuotedKeys(Map<String, Expression> object) {
+    return create(object, Expression::stringLiteral);
+  }
+
+  private static ObjectLiteral create(
+      Map<String, Expression> object, Function<String, Expression> createKeyFn) {
     ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
-    for (Expression key : keys) {
-      initialStatements.addAll(key.initialStatements());
+    ImmutableMap.Builder<Expression, Expression> values = ImmutableMap.builder();
+    for (Map.Entry<String, Expression> entry : object.entrySet()) {
+      initialStatements.addAll(entry.getValue().initialStatements());
+      values.put(createKeyFn.apply(entry.getKey()), entry.getValue());
     }
-    for (Expression value : values) {
-      initialStatements.addAll(value.initialStatements());
-    }
-    return new AutoValue_ObjectLiteral(initialStatements.build(), keys, values);
+    return new AutoValue_ObjectLiteral(initialStatements.build(), values.build());
   }
 
   @Override
@@ -54,33 +60,29 @@ abstract class ObjectLiteral extends Expression {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('{');
-    for (int i = 0; i < keys().size(); i++) {
-      if (i > 0) {
+    boolean first = true;
+    for (Map.Entry<Expression, Expression> entry : values().entrySet()) {
+      if (!first) {
         ctx.append(", ");
       }
-      ctx.appendOutputExpression(keys().get(i))
+      first = false;
+      ctx.appendOutputExpression(entry.getKey())
           .append(": ")
-          .appendOutputExpression(values().get(i));
+          .appendOutputExpression(entry.getValue());
     }
     ctx.append('}');
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (Expression key : keys()) {
-      ctx.appendInitialStatements(key);
-    }
-    for (Expression value : values()) {
+    for (Expression value : values().values()) {
       ctx.appendInitialStatements(value);
     }
   }
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (Expression key : keys()) {
-      key.collectRequires(collector);
-    }
-    for (Expression value : values()) {
+    for (Expression value : values().values()) {
       value.collectRequires(collector);
     }
   }

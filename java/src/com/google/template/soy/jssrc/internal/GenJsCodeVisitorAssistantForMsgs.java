@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
-import static com.google.template.soy.jssrc.dsl.Expression.objectLiteral;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE_FORMAT;
@@ -655,11 +654,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
 
     Expression build() {
-      ImmutableList.Builder<Expression> keys = ImmutableList.builder();
-      for (String key : map.keySet()) {
-        keys.add(stringLiteral(key));
-      }
-      return objectLiteral(keys.build(), map.values());
+      return Expression.objectLiteralWithQuotedKeys(map);
     }
   }
 }

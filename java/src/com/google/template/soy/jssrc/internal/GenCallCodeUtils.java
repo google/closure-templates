@@ -47,7 +47,9 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Generates JS code for {call}s and {delcall}s.
@@ -282,47 +284,44 @@ public class GenCallCodeUtils {
     }
 
     // ------ Build an object literal containing the additional params ------
-    ImmutableList.Builder<Expression> keys = ImmutableList.builder();
-    ImmutableList.Builder<Expression> values = ImmutableList.builder();
+    Map<String, Expression> params = new LinkedHashMap<>();
 
     for (CallParamNode child : callNode.getChildren()) {
-      keys.add(id(child.getKey().identifier()));
+      Expression value;
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        Expression value = exprTranslator.exec(cpvn.getExpr());
-        values.add(value);
+        value = exprTranslator.exec(cpvn.getExpr());
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
 
-        Expression content;
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
           List<Expression> chunks =
               genJsExprsVisitorFactory
                   .create(translationContext, templateAliases, errorReporter)
                   .exec(cpcn);
-          content = CodeChunkUtils.concatChunksForceString(chunks);
+          value = CodeChunkUtils.concatChunksForceString(chunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
-          content = id("param" + cpcn.getId());
+          value = id("param" + cpcn.getId());
         }
 
-        content = maybeWrapContent(translationContext.codeGenerator(), cpcn, content);
-        values.add(content);
+        value = maybeWrapContent(translationContext.codeGenerator(), cpcn, value);
       }
+      params.put(child.getKey().identifier(), value);
     }
 
-    Expression params = Expression.objectLiteral(keys.build(), values.build());
+    Expression paramsExp = Expression.objectLiteral(params);
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.isPassingData()) {
-      Expression allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
+      Expression allData = SOY_ASSIGN_DEFAULTS.call(paramsExp, dataToPass);
       // No need to cast; assignDefaults already returns {?}.
       return allData;
     } else {
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return params.castAs("?");
+      return paramsExp.castAs("?");
     }
   }
 

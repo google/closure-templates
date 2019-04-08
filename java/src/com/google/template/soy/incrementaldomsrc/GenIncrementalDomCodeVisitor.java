@@ -1307,7 +1307,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         String id = "_msg_" + alias + "_" + staticsCounter++;
         VariableDeclaration staticDecl =
             VariableDeclaration.builder(id)
-                .setRhs(Expression.objectLiteral(ImmutableList.of(), ImmutableList.of()))
+                .setRhs(Expression.objectLiteral(ImmutableMap.of()))
                 .build();
         staticsDeclarations.add(staticDecl);
         CodeChunk chunk =

@@ -269,15 +269,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitRecordLiteralNode(RecordLiteralNode node) {
-    LinkedHashMap<Expression, Expression> objLiteral = new LinkedHashMap<>();
+    LinkedHashMap<String, Expression> objLiteral = new LinkedHashMap<>();
 
     // Process children
     for (int i = 0; i < node.numChildren(); i++) {
-      objLiteral.put(id(node.getKey(i).identifier()), visit(node.getChild(i)));
+      objLiteral.put(node.getKey(i).identifier(), visit(node.getChild(i)));
     }
 
     // Build the record literal
-    return Expression.objectLiteral(objLiteral.keySet(), objLiteral.values());
+    return Expression.objectLiteral(objLiteral);
   }
 
   @Override
