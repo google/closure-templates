@@ -102,6 +102,7 @@ goog.exportSymbol('goog.i18n.bidi.Dir.RTL', goog.i18n.bidi.Dir.RTL);
 goog.exportSymbol('goog.i18n.bidi.estimateDirection', goog.i18n.bidi.estimateDirection);
 goog.exportSymbol('goog.isArray', goog.isArray);
 goog.exportSymbol('goog.isBoolean', goog.isBoolean);
+goog.exportSymbol('goog.isDef', goog.isDef);
 goog.exportSymbol('goog.isFunction', goog.isFunction);
 goog.exportSymbol('goog.isNumber', goog.isNumber);
 goog.exportSymbol('goog.isObject', goog.isObject);

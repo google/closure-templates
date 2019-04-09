@@ -47,6 +47,8 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -277,14 +279,18 @@ public class GenCallCodeUtils {
       dataToPass = LITERAL_NULL;
     }
 
+    Map<String, Expression> paramDefaults = getDefaultParams(callNode, translationContext);
     // ------ Case 1: No additional params ------
     if (callNode.numChildren() == 0) {
+      if (!paramDefaults.isEmpty()) {
+        dataToPass = SOY_ASSIGN_DEFAULTS.call(dataToPass, Expression.objectLiteral(paramDefaults));
+      }
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
       return dataToPass.castAs("?");
     }
 
     // ------ Build an object literal containing the additional params ------
-    Map<String, Expression> params = new LinkedHashMap<>();
+    Map<String, Expression> params = paramDefaults;
 
     for (CallParamNode child : callNode.getChildren()) {
       Expression value;
@@ -323,6 +329,24 @@ public class GenCallCodeUtils {
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
       return paramsExp.castAs("?");
     }
+  }
+
+  private Map<String, Expression> getDefaultParams(
+      CallNode node, TranslationContext translationContext) {
+    Map<String, Expression> defaultParams = new LinkedHashMap<>();
+    if (!node.isPassingAllData()) {
+      return defaultParams;
+    }
+    for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
+      if (param.hasDefault()) {
+        // Just put the parameter value in here, which will be the default if the parameter is
+        // unset. The additional JS to figure out of a parameter is the default or not isn't worth
+        // it.
+        defaultParams.put(
+            param.name(), translationContext.soyToJsVariableMappings().get(param.name()));
+      }
+    }
+    return defaultParams;
   }
 
   /**

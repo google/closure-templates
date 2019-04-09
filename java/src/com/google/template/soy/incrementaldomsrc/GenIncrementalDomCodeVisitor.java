@@ -187,7 +187,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   // Counter for static variables that are declared at the global scope.
   private int staticsCounter = 0;
   private String alias = "";
-  private List<CodeChunk> staticsDeclarations;
 
   GenIncrementalDomCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
@@ -268,7 +267,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     keyCounterStack = new ArrayDeque<>();
     keyCounterStack.push(new Holder<>(0));
     staticsCounter = 0;
-    staticsDeclarations = new ArrayList<>();
     SanitizedContentKind kind = node.getContentKind();
     getJsCodeBuilder().setContentKind(kind);
     if (node instanceof TemplateDelegateNode) {
@@ -298,11 +296,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateExportsForSoyElement(elementAccessor));
       getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
-    }
-
-    // Static declarations are populated through visitTemplateNode.
-    for (CodeChunk entry : staticsDeclarations) {
-      getJsCodeBuilder().append(entry);
     }
   }
 
@@ -340,7 +333,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected Statement generateFunctionBody(TemplateNode node) {
+  protected Statement generateFunctionBody(TemplateNode node, String alias) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
@@ -354,16 +347,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     bodyStatements.add(
         node instanceof TemplateElementNode
             ? this.generateFunctionBodyForSoyElement(node)
-            : this.generateIncrementalDomRenderCalls(node));
+            : this.generateIncrementalDomRenderCalls(node, alias));
     return Statement.of(bodyStatements.build());
   }
 
   /** Generates idom#elementOpen, idom#elementClose, etc. function calls for the given node. */
-  private Statement generateIncrementalDomRenderCalls(TemplateNode node) {
+  private Statement generateIncrementalDomRenderCalls(TemplateNode node, String alias) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
-    Statement typeChecks = genParamTypeChecks(node);
+    Statement typeChecks = genParamTypeChecks(node, alias);
     // Note: we do not try to combine this into a single return statement if the content is
     // computable as a JsExpr. A JavaScript compiler, such as Closure Compiler, is able to perform
     // the transformation.
@@ -502,7 +495,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 VariableDeclaration.builder("opt_ijData")
                     .setRhs(Expression.THIS.dotAccess("ijData"))
                     .build(),
-                generateIncrementalDomRenderCalls(node),
+                generateIncrementalDomRenderCalls(node, alias),
                 Statement.returnValue(Expression.LITERAL_FALSE)));
 
     ClassExpression soyElementClass =
@@ -607,6 +600,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           Statement.of(ImmutableList.of()));
     }
     Expression value = id("this").dotAccess("data").dotAccess(param.name());
+    if (param.hasDefault()) {
+      value =
+          templateTranslationContext
+              .codeGenerator()
+              .declarationBuilder()
+              .setRhs(value)
+              .build()
+              .ref();
+      value =
+          value.withInitialStatement(
+              genParamDefault(
+                  param,
+                  value,
+                  alias,
+                  getJsTypeForParamTypeCheck(param.type()),
+                  /* declareStatic= */ false));
+    }
     MethodDeclaration getParamMethod =
         MethodDeclaration.create(
             "get" + accessorSuffix,
@@ -969,7 +979,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           idExpr.or(
               idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
               /* codeGenerator= */ null);
-      staticsDeclarations.add(VariableDeclaration.builder(alias + id).build());
+      staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
       args.add(lazyAssignment);
     }
 
@@ -1309,7 +1319,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             VariableDeclaration.builder(id)
                 .setRhs(Expression.objectLiteral(ImmutableMap.of()))
                 .build();
-        staticsDeclarations.add(staticDecl);
+        staticVarDeclarations.add(staticDecl);
         CodeChunk chunk =
             new AssistantForHtmlMsgs(
                     /* master= */ this,

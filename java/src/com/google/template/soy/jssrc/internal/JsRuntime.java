@@ -81,6 +81,8 @@ public final class JsRuntime {
 
   public static final Expression GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
 
+  public static final Expression GOOG_IS_DEF = dottedIdNoRequire("goog.isDef");
+
   public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =

@@ -174,7 +174,10 @@ $jscomp.polyfill("WeakMap", function(NativeWeakMap) {
   function WeakMapMembership() {
   }
   function insert(target) {
-    $jscomp.owns(target, prop) || $jscomp.defineProperty(target, prop, {value:new WeakMapMembership});
+    if (!$jscomp.owns(target, prop)) {
+      var obj = new WeakMapMembership;
+      $jscomp.defineProperty(target, prop, {value:obj});
+    }
   }
   function patch(name) {
     var prev = Object[name];
