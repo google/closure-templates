@@ -85,7 +85,7 @@ public final class BasicFunctionsRuntime {
   public static String join(SoyList list, String separator) {
     List<String> stringList = new ArrayList<>();
     for (SoyValue value : list.asResolvedJavaList()) {
-      stringList.add(value.stringValue());
+      stringList.add(value.coerceToString());
     }
     return Joiner.on(separator).join(stringList);
   }

@@ -40,7 +40,7 @@ import java.util.List;
     name = "join",
     value = {
       @Signature(
-          parameterTypes = {"list<string>", "string"},
+          parameterTypes = {"list<string|int>", "string"},
           returnType = "string"),
     })
 @SoyPureFunction
@@ -56,7 +56,9 @@ final class JoinFunction
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return args.get(1).getProp("join").call(args.get(0));
+    return args.get(1)
+        .getProp("join")
+        .call(factory.global("map").call(factory.global("str"), args.get(0)));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
