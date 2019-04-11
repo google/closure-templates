@@ -7,6 +7,7 @@
 import 'goog:soy.velog'; // from //javascript/template/soy:soyutils_velog
 
 import UnsanitizedText from 'goog:goog.soy.data.UnsanitizedText'; // from //javascript/closure/soy:data
+import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
@@ -22,6 +23,11 @@ function unwrapKey(key: ElementKeyParam): ElementKey {
   if (key === undefined) return null;
   return key;
 }
+
+/** Type for HTML templates */
+export type Template<T> =
+    // tslint:disable-next-line:no-any
+    (renderer: IncrementalDomRenderer, args: T, ijData?: soy.IjData) => any;
 
 /**
  * Class that mostly delegates to global Incremental DOM runtime. This will
