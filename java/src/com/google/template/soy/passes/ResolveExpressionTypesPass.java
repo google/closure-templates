@@ -213,7 +213,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
-  private static final SoyErrorKind TYPE_MISMATCH_STATE =
+  private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
       SoyErrorKind.of(
           "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
   private static final SoyErrorKind STATE_MUST_BE_CONSTANT =
@@ -234,10 +234,6 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of(
           "The inferred type of this parameter is ''null'' which is not a useful type. "
               + "Use an explicit type declaration to specify a wider type.");
-  private static final SoyErrorKind EXPLICIT_TYPE_SAME_AS_INFERRED =
-      SoyErrorKind.of(
-          "The inferred type of this parameter is the same as the declared type, use the '':='' "
-              + "syntax to use the inferred type.");
   private static final SoyErrorKind VE_NO_CONFIG_FOR_ELEMENT =
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
@@ -323,14 +319,10 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
             if (!declaredType.isAssignableFrom(actualType)) {
               errorReporter.report(
                   headerVar.defaultValue().getSourceLocation(),
-                  TYPE_MISMATCH_STATE,
+                  DECLARED_DEFAULT_TYPE_MISMATCH,
                   headerVar.name(),
                   actualType,
                   declaredType);
-            }
-            if (declaredType.equals(actualType)) {
-              errorReporter.report(
-                  headerVar.getTypeNode().sourceLocation(), EXPLICIT_TYPE_SAME_AS_INFERRED);
             }
           } else {
             // in this case the declaredType is inferred from the initializer expression, so just
