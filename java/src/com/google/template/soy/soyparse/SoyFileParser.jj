@@ -507,7 +507,7 @@ public class SoyFileParser {
       ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(typeText, filePath, errorReporter);
     try {
-      return parser.TypeExpr();
+      return parser.TypeExprInput();
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(
           errorReporter, filePath, e, parser.token_source.curLexState);
@@ -3956,6 +3956,20 @@ private Token Keyword(String keyword) :
 // performance.
 //
 // NOTE: all the tokens we are consuming are defined in the EXPR lexical state.
+
+
+/** Parses a TypeExpr and ensures there's no additional tokens. */
+private TypeNode TypeExprInput() :
+{
+  TypeNode type;
+}
+{
+  type = TypeExpr()
+  <EOF>
+  {
+    return type;
+  }
+}
 
 
 /**
