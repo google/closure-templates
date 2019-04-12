@@ -5770,9 +5770,9 @@ goog.soy.data.SanitizedContent.prototype.contentDir = null;
 goog.soy.data.SanitizedContent.prototype.toString = function() {
   return this.content;
 };
-goog.soy.data.UnsanitizedText = function(content, opt_contentDir) {
+goog.soy.data.UnsanitizedText = function(content) {
   this.content = String(content);
-  this.contentDir = null != opt_contentDir ? opt_contentDir : null;
+  this.contentDir = null;
 };
 goog.inherits(goog.soy.data.UnsanitizedText, goog.soy.data.SanitizedContent);
 goog.soy.data.UnsanitizedText.prototype.contentKind = goog.soy.data.SanitizedContentKind.TEXT;
