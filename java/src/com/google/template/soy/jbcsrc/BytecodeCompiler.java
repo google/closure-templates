@@ -201,8 +201,11 @@ public final class BytecodeCompiler {
               delTemplates.add(name);
             }
           });
-      String delData = Joiner.on('\n').join(delTemplates);
-      writer.writeEntry(Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
+      if (!delTemplates.isEmpty()) {
+        String delData = Joiner.on('\n').join(delTemplates);
+        writer.writeEntry(
+            Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
+      }
     }
   }
 
