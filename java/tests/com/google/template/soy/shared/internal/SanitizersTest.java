@@ -61,7 +61,7 @@ public class SanitizersTest {
   @Test
   public void testEscapeJsString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.escapeJsString("\u0000 \" \' \\ \r \n \u2028 \u2029"))
         .isEqualTo("\\x00 \\x22 \\x27 \\\\ \\r \\n \\u2028 \\u2029");
 
@@ -87,7 +87,7 @@ public class SanitizersTest {
   @Test
   public void testEscapeJsRegExpString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertEquals(
         "\\x00 \\x22 \\x27 \\\\ \\/ \\r \\n \\u2028 \\u2029"
             +
@@ -141,7 +141,7 @@ public class SanitizersTest {
   @Test
   public void testEscapeCssString() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.escapeCssString("\u0000 \" \' \\ \n \u000c \r"))
         .isEqualTo("\\0  \\22  \\27  \\5c  \\a  \\c  \\d ");
 
@@ -262,7 +262,7 @@ public class SanitizersTest {
   @Test
   public void testEscapeUri() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.escapeUri("\u0000\n\f\r\"#&'/:=?@"))
         .isEqualTo("%00%0A%0C%0D%22%23%26%27%2F%3A%3D%3F%40");
 
@@ -551,7 +551,7 @@ public class SanitizersTest {
   @Test
   public void testEscapeHtmlAttributeNospace() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.escapeHtmlAttributeNospace("\u0009\n\u000B\u000C\r \"'\u0060<>&"))
         .isEqualTo("&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;&amp;");
 
@@ -572,7 +572,7 @@ public class SanitizersTest {
   @Test
   public void testNormalizeHtml() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.normalizeHtml("\"'<>")).isEqualTo("&quot;&#39;&lt;&gt;");
 
     String escapedAscii =
@@ -592,7 +592,7 @@ public class SanitizersTest {
   @Test
   public void testNormalizeHtmlNospace() {
     // The minimal escapes.
-    // Do not remove anything from this set without talking to your friendly local ise-team@.
+    // Do not remove anything from this set without talking to your friendly local go/ise-team-yaqs.
     assertThat(Sanitizers.normalizeHtmlNospace("\u0009\n\u000B\u000C\r \"'\u0060<>"))
         .isEqualTo("&#9;&#10;&#11;&#12;&#13;&#32;&quot;&#39;&#96;&lt;&gt;");
 

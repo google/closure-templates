@@ -94,12 +94,12 @@ public final class TagWhitelist {
   private static final Pattern VALID_TAG_NAME =
       Pattern.compile("^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*\\z");
 
-  // Any changes to this must be reviewed by ise-team@.
+  // Any changes to this must be reviewed by go/ise-team-yaqs.
   /** A white-list of common formatting tags used by jslayout. */
   public static final TagWhitelist FORMATTING =
       new TagWhitelist(
           "b", "br", "em", "i", "s", "strong", "sub", "sup", "u"
-          // Any changes to this must be reviewed by ise-team@.
+          // Any changes to this must be reviewed by go/ise-team-yaqs.
           );
 
   public Set<String> asSet() {

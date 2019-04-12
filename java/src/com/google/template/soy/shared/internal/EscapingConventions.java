@@ -909,7 +909,7 @@ public final class EscapingConventions {
       // Disallows any protocol that is not in a whitelist.
       // The below passes if there is
       // (1) Either a protocol in a whitelist (http, https, mailto).  This could be expanded but
-      //     talk to your friendly local ise-team@ first.
+      //     talk to your friendly local go/ise-team-yaqs first.
       // (2) or no protocol.  A protocol must be followed by a colon.  The below allows that by
       //     allowing colons only after one of the characters [/?#].
       //     A colon after a hash (#) must be in the fragment.
