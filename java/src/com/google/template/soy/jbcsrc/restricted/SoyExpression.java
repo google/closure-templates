@@ -23,7 +23,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -75,10 +74,6 @@ public final class SoyExpression extends Expression {
 
   public static SoyExpression forString(Expression delegate) {
     return new SoyExpression(getUnboxedType(StringType.getInstance()), delegate);
-  }
-
-  public static SoyExpression forSanitizedString(Expression delegate, SanitizedContentKind kind) {
-    return new SoyExpression(getUnboxedType(SanitizedType.getTypeForContentKind(kind)), delegate);
   }
 
   public static SoyExpression forList(ListType listType, Expression delegate) {
@@ -504,14 +499,10 @@ public final class SoyExpression extends Expression {
               BytecodeUtils.nullCoalesce(adapter, end);
               MethodRef.SOY_VALUE_STRING_VALUE.invokeUnchecked(adapter);
               adapter.mark(end);
-            };
+            }
           };
     }
-    // TODO(b/129677847): Drop support for unboxing SanitizedContent objects.
-    // We need to ensure that sanitized types don't lose their content kinds
-    return soyRuntimeType.isKnownSanitizedContent()
-        ? forSanitizedString(unboxedString, ((SanitizedType) soyType()).getContentKind())
-        : forString(unboxedString);
+    return forString(unboxedString);
   }
 
   /**

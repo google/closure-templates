@@ -58,8 +58,8 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -81,7 +81,6 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
-import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import java.util.ArrayList;
@@ -142,33 +141,31 @@ final class ProtoUtils {
   // We use the full name as the key instead of the descriptor, since descriptors use identity
   // semantics for equality and we may load the descriptors for these protos from multiple sources
   // depending on our configuration.
-  private static final ImmutableMap<String, MethodRef> SAFE_PROTO_TO_ACCESSOR =
+  private static final ImmutableMap<String, MethodRef> SAFE_PROTO_TO_SANITIZED_CONTENT =
       ImmutableMap.<String, MethodRef>builder()
-          .put(SafeHtmlProto.getDescriptor().getFullName(), createSafeAccessor(SafeHtmlProto.class))
+          .put(
+              SafeHtmlProto.getDescriptor().getFullName(),
+              createSafeProtoToSanitizedContentFactoryMethod(SafeHtmlProto.class))
           .put(
               SafeScriptProto.getDescriptor().getFullName(),
-              createSafeAccessor(SafeScriptProto.class))
+              createSafeProtoToSanitizedContentFactoryMethod(SafeScriptProto.class))
           .put(
               SafeStyleProto.getDescriptor().getFullName(),
-              createSafeAccessor(SafeStyleProto.class))
+              createSafeProtoToSanitizedContentFactoryMethod(SafeStyleProto.class))
           .put(
               SafeStyleSheetProto.getDescriptor().getFullName(),
-              createSafeAccessor(SafeStyleSheetProto.class))
-          .put(SafeUrlProto.getDescriptor().getFullName(), createSafeAccessor(SafeUrlProto.class))
+              createSafeProtoToSanitizedContentFactoryMethod(SafeStyleSheetProto.class))
+          .put(
+              SafeUrlProto.getDescriptor().getFullName(),
+              createSafeProtoToSanitizedContentFactoryMethod(SafeUrlProto.class))
           .put(
               TrustedResourceUrlProto.getDescriptor().getFullName(),
-              createSafeAccessor(TrustedResourceUrlProto.class))
+              createSafeProtoToSanitizedContentFactoryMethod(TrustedResourceUrlProto.class))
           .build();
 
-  private static MethodRef createSafeAccessor(Class<?> clazz) {
-    // All the safe web types have the same format for their access method names:
-    // getPrivateDoNotAccessOrElse + name + WrappedValue  where name is the prefix of the message
-    // type.
-    String simpleName = clazz.getSimpleName();
-    simpleName = simpleName.substring(0, simpleName.length() - "Proto".length());
-    return MethodRef.create(clazz, "getPrivateDoNotAccessOrElse" + simpleName + "WrappedValue")
-        .asNonNullable()
-        .asCheap();
+  private static MethodRef createSafeProtoToSanitizedContentFactoryMethod(Class<?> clazz) {
+    return MethodRef.create(SanitizedContents.class, "from" + clazz.getSimpleName(), clazz)
+        .asNonNullable();
   }
 
   private static final ImmutableMap<String, MethodRef> SANITIZED_CONTENT_TO_PROTO =
@@ -481,7 +478,8 @@ final class ProtoUtils {
         case STRING:
           return SoyExpression.forString(field.checkedCast(String.class));
         case MESSAGE:
-          return messageToSoyExpression(field);
+          Type javaType = SoyRuntimeType.protoType(descriptor.getMessageType());
+          return messageToSoyExpression(field.checkedCast(javaType));
         case BYTE_STRING:
           // Current tofu support for ByteString is to base64 encode it.
           return byteStringToBase64String(field.checkedCast(ByteString.class));
@@ -514,22 +512,12 @@ final class ProtoUtils {
       if (node.getType().getKind() == SoyType.Kind.PROTO) {
         SoyProtoType fieldProtoType = (SoyProtoType) node.getType();
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
-        return SoyExpression.forProto(
-            protoRuntimeType,
-            // cast needed for extensions
-            field.checkedCast(protoRuntimeType.runtimeType()));
+        return SoyExpression.forProto(protoRuntimeType, field);
       } else {
         // All other are special sanitized types
-        SanitizedContentKind kind = ((SanitizedType) node.getType()).getContentKind();
         Descriptor messageType = descriptor.getMessageType();
-        MethodRef methodRef = SAFE_PROTO_TO_ACCESSOR.get(messageType.getFullName());
-        // TODO(lukes): change this method to require a SanitizedContent boxed value
-        return SoyExpression.forSanitizedString(
-                field
-                    .checkedCast(methodRef.owner().type()) // cast needed for extensions
-                    .invoke(methodRef),
-                kind)
-            .box();
+        MethodRef fromProtoMethod = SAFE_PROTO_TO_SANITIZED_CONTENT.get(messageType.getFullName());
+        return SoyExpression.forSoyValue(node.getType(), fromProtoMethod.invoke(field));
       }
     }
 
@@ -1141,7 +1129,7 @@ final class ProtoUtils {
     // TODO(user): Consider consolidating all the safe proto references to a single place.
     private static boolean isSafeProto(FieldDescriptor field) {
       return field.getJavaType() == JavaType.MESSAGE
-          && SAFE_PROTO_TO_ACCESSOR.containsKey(field.getMessageType().getFullName());
+          && SAFE_PROTO_TO_SANITIZED_CONTENT.containsKey(field.getMessageType().getFullName());
     }
   }
 

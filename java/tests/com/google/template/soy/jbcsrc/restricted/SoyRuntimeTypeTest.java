@@ -74,7 +74,7 @@ public class SoyRuntimeTypeTest {
       }
       assertThat(SanitizedType.getTypeForContentKind(kind))
           .isBoxedAs(SanitizedContent.class)
-          .isUnboxedAs(String.class);
+          .isNotUnboxable();
     }
     assertThat(
             new SoyProtoType(
@@ -103,7 +103,7 @@ public class SoyRuntimeTypeTest {
     assertThat(
             UnionType.of(SanitizedType.HtmlType.getInstance(), SanitizedType.JsType.getInstance()))
         .isBoxedAs(SanitizedContent.class)
-        .isUnboxedAs(String.class);
+        .isNotUnboxable();
   }
 
   static SoyRuntimeTypeSubject assertThat(SoyType type) {

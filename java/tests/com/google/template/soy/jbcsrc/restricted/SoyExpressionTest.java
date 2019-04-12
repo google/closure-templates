@@ -20,14 +20,10 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYP
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forList;
-import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forSanitizedString;
 import static com.google.template.soy.jbcsrc.restricted.SoyExpression.forString;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -114,14 +110,6 @@ public class SoyExpressionTest {
     assertThatExpression(SoyExpression.NULL.coerceToString()).evaluatesTo("null");
   }
 
-  @Test
-  public void testSanitizedExpressions() {
-    assertThatExpression(forSanitizedString(constant("foo"), SanitizedContentKind.ATTRIBUTES).box())
-        .evaluatesTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.ATTRIBUTES));
-    assertThatExpression(
-            forSanitizedString(constant("foo"), SanitizedContentKind.ATTRIBUTES).coerceToBoolean())
-        .evaluatesTo(true);
-  }
 
   @Test
   public void testStringExpression() {
