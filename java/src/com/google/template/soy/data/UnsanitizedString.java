@@ -23,21 +23,13 @@ import javax.annotation.Nullable;
 /** A sanitized content that implements SoyString. This is only relevant to kind=TEXT */
 public final class UnsanitizedString extends SanitizedContent implements SoyString {
 
-  static UnsanitizedString create(String content, @Nullable Dir dir) {
-    return new UnsanitizedString(content, dir);
-  }
-
   /** Creates a UnsanitizedString object with default direction. */
   static UnsanitizedString create(String content) {
     return new UnsanitizedString(content);
   }
 
-  private UnsanitizedString(String content, @Nullable Dir dir) {
-    super(content, ContentKind.TEXT, dir);
-  }
-
   private UnsanitizedString(String content) {
-    super(content, ContentKind.TEXT, ContentKind.TEXT.getDefaultDir());
+    super(content, ContentKind.TEXT, /*contentDir=*/ null);
   }
 
   @Override
@@ -49,7 +41,6 @@ public final class UnsanitizedString extends SanitizedContent implements SoyStri
       return ((StringData) other).stringValue().equals(this.getContent());
     }
     return other instanceof UnsanitizedString
-        && this.getContentDirection() == ((SanitizedContent) other).getContentDirection()
         && this.getContent().equals(((UnsanitizedString) other).getContent());
   }
 

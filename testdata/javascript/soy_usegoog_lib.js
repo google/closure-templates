@@ -25914,12 +25914,11 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
  * Marks content as UnsanitizedText. This serves no purpose anymore.
  *
  * @param {?} content Text.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
+ * @param {?goog.i18n.bidi.Dir=} contentDir ignored
  * @return {!goog.soy.data.UnsanitizedText}
  */
-soydata.markUnsanitizedText = function(content, opt_contentDir) {
-  return new goog.soy.data.UnsanitizedText(content, opt_contentDir);
+soydata.markUnsanitizedText = function(content, contentDir) {
+  return new goog.soy.data.UnsanitizedText(content);
 };
 
 
@@ -26466,18 +26465,15 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
  * Creates kind="text" block contents (internal use only).
  *
  * @param {?} content Text.
- * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
- *     unknown and thus to be estimated when necessary. Default: null.
  * @return {!goog.soy.data.UnsanitizedText|!soydata.$$EMPTY_STRING_} Wrapped
  *     result.
  */
-soydata.$$markUnsanitizedTextForInternalBlocks = function(
-    content, opt_contentDir) {
+soydata.$$markUnsanitizedTextForInternalBlocks = function(content) {
   var contentString = String(content);
   if (!contentString) {
     return soydata.$$EMPTY_STRING_.VALUE;
   }
-  return new goog.soy.data.UnsanitizedText(contentString, opt_contentDir);
+  return new goog.soy.data.UnsanitizedText(contentString);
 };
 
 
@@ -27667,7 +27663,7 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   // string data.
   // ATTENTION: Do these need to be ...ForInternalBlocks()?
   if (soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.TEXT)) {
-    return new goog.soy.data.UnsanitizedText(wrappedText, wrappedTextDir);
+    return soydata.markUnsanitizedText(wrappedText);
   }
   if (isHtml) {
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);

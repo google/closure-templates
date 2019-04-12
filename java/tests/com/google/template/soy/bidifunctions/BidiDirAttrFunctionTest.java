@@ -22,6 +22,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
@@ -50,11 +51,18 @@ public class BidiDirAttrFunctionTest {
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(rtl);
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0"))).isEqualTo(rtl);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.RTL)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.RTL)))
         .isEqualTo(rtl);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.LTR)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.LTR)))
         .isEqualTo(empty);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                    "\u05E0", ContentKind.HTML, Dir.NEUTRAL)))
         .isEqualTo(empty);
 
     tester =
@@ -63,10 +71,17 @@ public class BidiDirAttrFunctionTest {
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(ltr);
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo(ltr);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.LTR))).isEqualTo(ltr);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.LTR)))
+        .isEqualTo(ltr);
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.RTL)))
         .isEqualTo(empty);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.NEUTRAL)))
         .isEqualTo(empty);
   }
 }

@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class UnsafeSanitizedContentOrdainerTest {
   @Test
   public void testOrdainAsSafe() {
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT))
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", null));
+        .isEqualTo(SanitizedContents.unsanitizedText("Hello World"));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello <b>World</b>", ContentKind.HTML))
         .isEqualTo(SanitizedContent.create("Hello <b>World</b>", ContentKind.HTML, null));
     assertThat(UnsafeSanitizedContentOrdainer.ordainAsSafe("hello_world();", ContentKind.JS))
@@ -47,16 +48,33 @@ public class UnsafeSanitizedContentOrdainerTest {
   }
 
   @Test
+  public void testTextDoesntSupportDir() {
+    try {
+      UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR);
+      fail();
+    } catch (IllegalArgumentException iae) {
+      assertThat(iae).hasMessageThat().isEqualTo("TEXT objects don't support contend directions.");
+    }
+  }
+
+  @Test
   public void testOrdainAsSafeWithDir() {
-    assertThat(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.LTR))
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.LTR));
-    assertThat(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.RTL))
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.RTL));
-    assertThat(
-            UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                "Hello World", ContentKind.TEXT, Dir.NEUTRAL))
-        .isEqualTo(SanitizedContents.unsanitizedText("Hello World", Dir.NEUTRAL));
+    SanitizedContent html =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.HTML, Dir.LTR);
+    assertThat(html.getContent()).isEqualTo("Hello World");
+    assertThat(html.getContentDirection()).isEqualTo(Dir.LTR);
+
+    html = UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.HTML, Dir.RTL);
+    assertThat(html.getContent()).isEqualTo("Hello World");
+    assertThat(html.getContentDirection()).isEqualTo(Dir.RTL);
+
+    html =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.HTML, Dir.NEUTRAL);
+    assertThat(html.getContent()).isEqualTo("Hello World");
+    assertThat(html.getContentDirection()).isEqualTo(Dir.NEUTRAL);
+
+    html = UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.HTML);
+    assertThat(html.getContent()).isEqualTo("Hello World");
+    assertThat(html.getContentDirection()).isNull();
   }
 }

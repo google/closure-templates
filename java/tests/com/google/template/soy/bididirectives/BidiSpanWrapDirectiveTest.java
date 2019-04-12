@@ -21,7 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -58,19 +60,19 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput(
         "<span dir=\"rtl\">\u05E0</span>\u200E",
-        SanitizedContents.unsanitizedText("\u05E0", Dir.RTL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.RTL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput(
         "\u05E0\u200E",
-        SanitizedContents.unsanitizedText("\u05E0", Dir.LTR),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.LTR),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput(
         "\u05E0\u200E",
-        SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput(
         "blah",
-        SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("blah", ContentKind.HTML, Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
 
     assertTofuOutput("", "", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
@@ -84,19 +86,19 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput(
         "<span dir=\"ltr\">blah</span>\u200F",
-        SanitizedContents.unsanitizedText("blah", Dir.LTR),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("blah", ContentKind.HTML, Dir.LTR),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput(
         "blah\u200F",
-        SanitizedContents.unsanitizedText("blah", Dir.RTL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("blah", ContentKind.HTML, Dir.RTL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput(
         "blah\u200F",
-        SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("blah", ContentKind.HTML, Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput(
         "\u05E0",
-        SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
   }
 

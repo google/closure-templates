@@ -69,7 +69,7 @@ public final class SanitizedContents {
   /** Creates an empty string constant. */
   public static SanitizedContent emptyString(ContentKind kind) {
     if (kind == ContentKind.TEXT) {
-      return UnsanitizedString.create("", Dir.NEUTRAL);
+      return UnsanitizedString.create("");
     }
     return SanitizedContent.create("", kind, Dir.NEUTRAL); // Empty string is neutral.
   }
@@ -78,9 +78,12 @@ public final class SanitizedContents {
    * Creates a SanitizedContent object of kind TEXT of a given direction (null if unknown).
    *
    * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
+   *
+   * @deprecated Call {@link #unsanitizedText(String)} instead
    */
+  @Deprecated
   public static UnsanitizedString unsanitizedText(String text, @Nullable Dir dir) {
-    return UnsanitizedString.create(text, dir);
+    return UnsanitizedString.create(text);
   }
 
   /**
@@ -89,7 +92,7 @@ public final class SanitizedContents {
    * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
    */
   public static UnsanitizedString unsanitizedText(String text) {
-    return unsanitizedText(text, null);
+    return UnsanitizedString.create(text);
   }
 
   /**

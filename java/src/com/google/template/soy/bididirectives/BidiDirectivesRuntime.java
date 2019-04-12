@@ -25,6 +25,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
@@ -58,7 +59,9 @@ public final class BidiDirectivesRuntime {
 
     // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
     // Unicode-wrapping safe HTML.
-    if (valueKind == ContentKind.TEXT || valueKind == ContentKind.HTML) {
+    if (valueKind == ContentKind.TEXT) {
+      return SanitizedContents.unsanitizedText(wrappedValue);
+    } else if (valueKind == ContentKind.HTML) {
       // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
       // anything, we will indicate this known direction in the output SanitizedContent, even though
       // the intended consumer of that information - a bidi wrapping directive - has already been

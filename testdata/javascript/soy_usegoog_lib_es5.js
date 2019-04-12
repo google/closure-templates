@@ -5974,8 +5974,8 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
     return new InstantiableCtor(String(content));
   };
 };
-soydata.markUnsanitizedText = function(content, opt_contentDir) {
-  return new goog.soy.data.UnsanitizedText(content, opt_contentDir);
+soydata.markUnsanitizedText = function(content) {
+  return new goog.soy.data.UnsanitizedText(content);
 };
 soydata.VERY_UNSAFE.ordainSanitizedHtml = soydata.$$makeSanitizedContentFactory_(goog.soy.data.SanitizedHtml);
 soydata.VERY_UNSAFE.ordainSanitizedJs = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedJs);
@@ -6086,9 +6086,9 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ = func
     return contentString ? new InstantiableCtor(contentString) : soydata.$$EMPTY_STRING_.VALUE;
   };
 };
-soydata.$$markUnsanitizedTextForInternalBlocks = function(content, opt_contentDir) {
+soydata.$$markUnsanitizedTextForInternalBlocks = function(content) {
   var contentString = String(content);
-  return contentString ? new goog.soy.data.UnsanitizedText(contentString, opt_contentDir) : soydata.$$EMPTY_STRING_.VALUE;
+  return contentString ? new goog.soy.data.UnsanitizedText(contentString) : soydata.$$EMPTY_STRING_.VALUE;
 };
 soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks = soydata.$$makeSanitizedContentFactoryForInternalBlocks_(goog.soy.data.SanitizedHtml);
 soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(goog.soy.data.SanitizedJs);
@@ -6375,7 +6375,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
 };
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir), isHtml = soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML), wrappedText = formatter.unicodeWrapWithKnownDir(soydata.getContentDir(text), text + "", isHtml), wrappedTextDir = formatter.contextDir_;
-  return soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.TEXT) ? new goog.soy.data.UnsanitizedText(wrappedText, wrappedTextDir) : isHtml ? soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir) : wrappedText;
+  return soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.TEXT) ? soydata.markUnsanitizedText(wrappedText) : isHtml ? soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir) : wrappedText;
 };
 soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   if (goog.asserts.ENABLE_ASSERTS && !condition) {

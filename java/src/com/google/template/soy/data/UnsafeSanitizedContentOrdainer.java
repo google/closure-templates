@@ -74,7 +74,10 @@ public final class UnsafeSanitizedContentOrdainer {
    */
   public static SanitizedContent ordainAsSafe(String value, ContentKind kind, @Nullable Dir dir) {
     if (kind == ContentKind.TEXT) {
-      return UnsanitizedString.create(value, dir);
+      if (dir != null) {
+        throw new IllegalArgumentException("TEXT objects don't support contend directions.");
+      }
+      return UnsanitizedString.create(value);
     }
     return SanitizedContent.create(value, kind, dir);
   }

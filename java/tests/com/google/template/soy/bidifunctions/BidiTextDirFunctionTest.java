@@ -19,7 +19,9 @@ package com.google.template.soy.bidifunctions;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import org.junit.Test;
@@ -43,9 +45,17 @@ public class BidiTextDirFunctionTest {
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(-1);
 
     assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo(1);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.LTR))).isEqualTo(1);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.RTL))).isEqualTo(-1);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a", Dir.NEUTRAL)))
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.LTR)))
+        .isEqualTo(1);
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.RTL)))
+        .isEqualTo(-1);
+    assertThat(
+            tester.callFunction(
+                UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.NEUTRAL)))
         .isEqualTo(0);
   }
 }

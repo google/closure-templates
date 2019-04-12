@@ -655,10 +655,10 @@ class SanitizedTrustedResourceUri(SanitizedContent):
 class UnsanitizedText(SanitizedContent):
   content_kind = CONTENT_KIND.TEXT
 
-  def __init__(self, content=None, content_dir=None, approval=None):
+  def __init__(self, content=None, approval=None):
     # approval is still in the api for consistency, but unsanitized text is
     # always approved.
     approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
         'Unsanitized Text does not require approval.')
-    super(UnsanitizedText, self).__init__(str(content), content_dir,
-                                          approval=approval)
+    super(UnsanitizedText, self).__init__(
+        content=str(content), content_dir=None, approval=approval)
