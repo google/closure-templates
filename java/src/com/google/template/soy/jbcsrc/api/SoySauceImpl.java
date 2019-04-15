@@ -26,6 +26,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -200,7 +201,7 @@ public final class SoySauceImpl implements SoySauce {
       StringBuilder sb = new StringBuilder();
       OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.stringContinuation(startRender(buf), sb, buf);
+        return Continuations.stringContinuation(startRender(buf), sb);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
@@ -212,7 +213,7 @@ public final class SoySauceImpl implements SoySauce {
       StringBuilder sb = new StringBuilder();
       OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.strictContinuation(startRender(buf), sb, buf, expectedContentKind);
+        return Continuations.strictContinuation(startRender(buf), sb, expectedContentKind);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
@@ -278,10 +279,21 @@ public final class SoySauceImpl implements SoySauce {
 
   private static final class WriteContinuationImpl implements WriteContinuation {
     final RenderResult result;
+    final Object lock = new Object();
+
+    @GuardedBy("lock")
     final Scoper scoper;
+
+    @GuardedBy("lock")
     final RenderContext context;
+
+    @GuardedBy("lock")
     final LoggingAdvisingAppendable out;
+
+    @GuardedBy("lock")
     final CompiledTemplate template;
+
+    @GuardedBy("lock")
     boolean hasContinueBeenCalled;
 
     WriteContinuationImpl(
@@ -305,11 +317,13 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public WriteContinuation continueRender() throws IOException {
-      if (hasContinueBeenCalled) {
-        throw new IllegalStateException("continueRender() has already been called.");
+      synchronized (lock) {
+        if (hasContinueBeenCalled) {
+          throw new IllegalStateException("continueRender() has already been called.");
+        }
+        hasContinueBeenCalled = true;
+        return doRender(template, scoper, out, context);
       }
-      hasContinueBeenCalled = true;
-      return doRender(template, scoper, out, context);
     }
   }
 

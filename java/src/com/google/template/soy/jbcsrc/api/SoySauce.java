@@ -198,7 +198,7 @@ public interface SoySauce {
    *
    * @param <T> Either a {@link String} or a {@link SanitizedContent} object.
    */
-  interface Continuation<T> {
+  interface Continuation< T> {
     /** The result of the prior rendering operation. */
     RenderResult result();
 

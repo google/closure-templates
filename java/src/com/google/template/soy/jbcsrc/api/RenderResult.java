@@ -65,7 +65,9 @@ public final class RenderResult {
   }
 
   private final Type type;
-  @Nullable private final Future<?> future;
+
+  @Nullable
+  private final Future<?> future;
 
   private RenderResult(Type type) {
     this.type = type;

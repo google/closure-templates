@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.Dir;
 import javax.annotation.Nullable;
@@ -31,6 +32,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
+@Immutable
 public final class BidiGlobalDir {
   public static final BidiGlobalDir LTR = new BidiGlobalDir(1);
   public static final BidiGlobalDir RTL = new BidiGlobalDir(-1);

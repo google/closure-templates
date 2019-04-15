@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.ArrayDeque;
@@ -131,6 +132,7 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
   }
 
   @AutoValue
+  @Immutable
   abstract static class Data {
     @Nullable
     abstract String locale();

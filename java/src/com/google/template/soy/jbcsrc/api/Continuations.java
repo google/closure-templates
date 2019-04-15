@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -39,14 +40,14 @@ final class Continuations {
    * WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<String> stringContinuation(
-      WriteContinuation delegate, final StringBuilder buffer, OutputAppendable appendable) {
+      WriteContinuation delegate, final StringBuilder buffer) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(buffer.toString());
     }
-    return new AbstractContinuation<String>(delegate, appendable) {
+    return new AbstractContinuation<String>(delegate) {
       @Override
       Continuation<String> nextContinuation(WriteContinuation next) {
-        return stringContinuation(next, buffer, appendable);
+        return stringContinuation(next, buffer);
       }
     };
   }
@@ -58,16 +59,15 @@ final class Continuations {
   static Continuation<SanitizedContent> strictContinuation(
       WriteContinuation delegate,
       final StringBuilder buffer,
-      OutputAppendable appendable,
       final ContentKind kind) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(
           UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind));
     }
-    return new AbstractContinuation<SanitizedContent>(delegate, appendable) {
+    return new AbstractContinuation<SanitizedContent>(delegate) {
       @Override
       Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
-        return strictContinuation(next, buffer, appendable, kind);
+        return strictContinuation(next, buffer, kind);
       }
     };
   }
@@ -76,13 +76,12 @@ final class Continuations {
    * Base class for logic shared between {@link #strictContinuation} and {@link
    * #stringContinuation}.
    */
-  private abstract static class AbstractContinuation<T> implements Continuation<T> {
+  private abstract static class AbstractContinuation< T>
+      implements Continuation<T> {
     final WriteContinuation delegate;
-    final OutputAppendable appendable;
 
-    AbstractContinuation(WriteContinuation delegate, OutputAppendable appendable) {
+    AbstractContinuation(WriteContinuation delegate) {
       this.delegate = delegate;
-      this.appendable = appendable;
     }
 
     @Override
@@ -107,6 +106,7 @@ final class Continuations {
     abstract Continuation<T> nextContinuation(WriteContinuation next);
   }
 
+  @Immutable
   private enum FinalContinuation implements WriteContinuation {
     INSTANCE;
 
@@ -122,7 +122,8 @@ final class Continuations {
   }
 
   /** A 'done' {@link Continuation} with a non-null value */
-  private static final class ResultContinuation<T> implements Continuation<T> {
+  private static final class ResultContinuation< T>
+      implements Continuation<T> {
     final T value;
 
     ResultContinuation(T value) {
