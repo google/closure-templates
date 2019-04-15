@@ -491,7 +491,7 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testPropNodeBoolean() {
+  public void testStateNodeBoolean() {
     assertThatElementBody("{@state foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
         .rendersAs("<p>1</p>");
   }

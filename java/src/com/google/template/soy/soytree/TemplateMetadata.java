@@ -84,8 +84,8 @@ public abstract class TemplateMetadata {
   /**
    * Represents minimal information about a template parameter.
    *
-   * <p>This only represents normal parameters. Information about injected params or props is not
-   * recorded.
+   * <p>This only represents normal parameters. Information about injected params or state variables
+   * is not recorded.
    */
   @AutoValue
   public abstract static class Parameter {
